@@ -1,0 +1,9 @@
+[submodule "go.ta-lib"]
+	path = go.ta-lib
+	url = https://gitee.com/quant1x/ta-lib
+[submodule "go.pandas"]
+	path = go.pandas
+	url = https://gitee.com/quant1x/pandas
+[submodule "go.stdlib"]
+	path = go.stdlib
+	url = https://gitee.com/quant1x/gox
