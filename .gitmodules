@@ -22,3 +22,6 @@
 [submodule "python.pytdx"]
 	path = python.pytdx
 	url = https://gitee.com/quant1x/pytdx
+[submodule "python.tdx"]
+	path = python.tdx
+	url = https://gitee.com/quant1x/pytdx
