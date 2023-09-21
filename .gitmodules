@@ -7,3 +7,6 @@
 [submodule "go.stdlib"]
 	path = go.stdlib
 	url = https://gitee.com/quant1x/gox
+[submodule "python.xtquant-win64"]
+	path = python.xtquant-win64
+	url = https://gitee.com/quant1x/xtquant
