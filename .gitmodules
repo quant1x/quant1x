@@ -19,3 +19,6 @@
 [submodule "python.formula"]
 	path = python.formula
 	url = https://gitee.com/quant1x/formula
+[submodule "python.pytdx"]
+	path = python.pytdx
+	url = https://gitee.com/quant1x/pytdx
