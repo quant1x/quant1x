@@ -13,3 +13,6 @@
 [submodule "go.tdx"]
 	path = go.tdx
 	url = https://gitee.com/quant1x/gotdx
+[submodule "python.miniQMT-win64"]
+	path = python.miniQMT-win64
+	url = https://gitee.com/quant1x/qmt
