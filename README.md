@@ -33,7 +33,7 @@ pyenv versions
 ```shell
 pyenv install -l
 ```
-### 2.1.3 安装指定版本的python, 本文指定3.10.10或3.8.x更新版本
+### 2.1.3 安装指定版本的python, 本文指定3.10.10或3.10.x更新版本
 ```shell
 pyenv install 3.10.10
 ```
