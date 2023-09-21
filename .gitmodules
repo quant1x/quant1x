@@ -10,3 +10,6 @@
 [submodule "python.xtquant-win64"]
 	path = python.xtquant-win64
 	url = https://gitee.com/quant1x/xtquant
+[submodule "go.tdx"]
+	path = go.tdx
+	url = https://gitee.com/quant1x/gotdx
