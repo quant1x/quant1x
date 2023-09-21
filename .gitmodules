@@ -16,3 +16,6 @@
 [submodule "python.miniQMT-win64"]
 	path = python.miniQMT-win64
 	url = https://gitee.com/quant1x/qmt
+[submodule "python.formula"]
+	path = python.formula
+	url = https://gitee.com/quant1x/formula
