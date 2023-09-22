@@ -49,6 +49,24 @@ pyenv install 3.10.10
 | pip-autoremove| 自动删除类库所有依赖库                  |
 |pipreqs| 项目/类库交叉依赖检测                  |
 
+### 2.1.6 pip 源配置
+windows
+```shell
+cd ~\AppData\Roaming\pip
+notepad.exe pip.ini
+```
+*nix
+```shell
+cd ~/.pip
+vim pip.conf
+```
+输入以下内容
+```text
+[global]
+index-url = https://pypi.tuna.tsinghua.edu.cn/simple
+[install]
+trusted-host = https://pypi.tuna.tsinghua.edu.cn
+```
 
 ## 2.2 依赖库
 python环境中依赖管理的配置文件为requirements.txt，类似java的maven pom.xml、golang的go.mod。
