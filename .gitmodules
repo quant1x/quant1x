@@ -1,3 +1,6 @@
+[submodule "go.data"]
+	path = go.data
+	url = https://gitee.com/quant1x/engine
 [submodule "go.ta-lib"]
 	path = go.ta-lib
 	url = https://gitee.com/quant1x/ta-lib
@@ -22,6 +25,3 @@
 [submodule "python.tdx"]
 	path = python.tdx
 	url = https://gitee.com/quant1x/pytdx
-[submodule "data.go"]
-	path = data.go
-	url = https://gitee.com/quant1x/engine
