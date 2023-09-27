@@ -22,3 +22,6 @@
 [submodule "python.tdx"]
 	path = python.tdx
 	url = https://gitee.com/quant1x/pytdx
+[submodule "data.go"]
+	path = data.go
+	url = https://gitee.com/quant1x/engine
