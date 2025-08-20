@@ -1,0 +1,36 @@
+# 1. project build tools: setuptools, twine, wheel
+setuptools~=78.0.0
+twine~=6.1.0
+wheel~=0.45.1
+requests-toolbelt~=1.0.0
+# 2. logger
+loguru~=0.7.3
+icecream~=2.1.5
+# 3. configure
+PyYAML~=6.0.2
+# 4. num & dataframe
+numpy~=2.3.0
+pandas~=2.3.0
+# 5. git
+gitpython~=3.1.44
+
+python-dateutil~=2.9.0.post0
+matplotlib~=3.10.5
+
+# AKShare
+akshare~=1.17.38
+findpeaks~=2.7.4
+
+mootdx~=0.11.7
+numpy~=2.3.0
+pandas~=2.3.0
+python-dateutil~=2.9.0.post0
+requests==2.32.0
+tqdm~=4.67.1
+xgboost~=3.0.0
+scikit-learn~=1.7.1
+matplotlib~=3.10.1
+scipy~=1.16.0
+caerus~=0.1.10
+joblib~=1.5.1
+quant1x-base~=0.6.18
