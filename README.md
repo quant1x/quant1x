@@ -3,9 +3,9 @@
 
 # 1. 环境配置
 ## 1.1 默认均为64位操作系统
-| python |golang|
-|:-------|:---|
-| 3.10.x| 1.21.x|
+| python | golang |
+|:-------|:-------|
+| 3.12.x | 1.25.x |
 
 ## 1.2 环境安装推荐使用brew
 安装brew时需要注意避免使用root权限 
@@ -33,9 +33,9 @@ pyenv versions
 ```shell
 pyenv install -l
 ```
-### 2.1.3 安装指定版本的python, 本文指定3.10.10或3.10.x更新版本
+### 2.1.3 安装指定版本的python, 本文指定3.12.9或3.12.x更新版本
 ```shell
-pyenv install 3.10.10
+pyenv install 3.12.9
 ```
 
 ### 2.1.4 pip类库管理工具
