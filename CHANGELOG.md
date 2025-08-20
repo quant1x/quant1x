@@ -3,12 +3,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.12] - 2025-08-21
+### Changed
+- 删除全部的子模块
+
 ## [0.1.11] - 2025-08-21
 ### Changed
 - update changelog
 - 更新python支持版本到3.12.x, go版本到1.25.x
 - Merge branch 'master' of https://gitee.com/quant1x/quant1x
 - 更新版本
+- update changelog
 
 ## [0.1.10] - 2023-09-28
 ### Changed
@@ -62,7 +67,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.11...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.12...HEAD
+[0.1.12]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.11...v0.1.12
 [0.1.11]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.10...v0.1.11
 [0.1.10]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.9...v0.1.10
 [0.1.9]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.8...v0.1.9
