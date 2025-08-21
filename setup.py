@@ -41,10 +41,11 @@ setuptools.setup(
     version=__app_version__,
     author=__app_author__,
     long_description=readme,
+    long_description_content_type='text/markdown',
     packages=setuptools.find_packages(include=["quant1x", "quant1x.*"]),
     include_package_data=True,
     install_requires=requirements,
-    license="MIT license",
+    license="Apache 2.0 license",
     zip_safe=False,
     keywords="quant1x python",
     entry_points={
@@ -64,6 +65,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
     ],
     data_files=[
         # ('xtquant', ['xtquant/xtdata.ini', 'xtquant/xtdata.log4cxx']),
