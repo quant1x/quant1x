@@ -8,10 +8,11 @@ echo "打包完成"
 echo "正在上传PyPi.org..."
 twine upload dist/*
 echo "上传完成"
-rmdir /S /Q dist
-rmdir /S /Q build
-rmdir /S /Q quant1x_base.egg-info
-rmdir /S /Q .eggs
+REM 静默删除目录（如果存在）
+if exist dist rmdir /S /Q dist >nul 2>&1
+if exist build rmdir /S /Q build >nul 2>&1
+if exist quant1x.egg-info rmdir /S /Q quant1x.egg-info >nul 2>&1
+if exist .eggs rmdir /S /Q .eggs >nul 2>&1
 rem version=`python setup.py --version`
 REM echo "版本号: ${version}"
 REM echo "git 代码打tag"
