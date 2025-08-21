@@ -11,6 +11,14 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
+*.csv
+__pycache__/
+.eggs/
+build/
+dist/
+*.egg-info/
+*.json
+
 # Dependency directories (remove the comment below to include it)
 # vendor/
 strategy-mac-amd64
