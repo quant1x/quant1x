@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from deprecated.sphinx import deprecated
 
-from quant1x.base.formula import SUM, DMA, REF
+from formula import SUM, DMA, REF
 
 
 # ------------------------工具函数---------------------------------------------
@@ -97,7 +97,7 @@ def SAR(HIGH, LOW, N=10, S=2, M=20):
     """
     求抛物转向。 例如SAR(10,2,20)表示计算10日抛物转向，步长为2%，步长极限为20%
     Created by: jqz1226, 2021-11-24首次发表于聚宽(www.joinquant.com)
-    
+
     :param HIGH: high序列
     :param LOW: low序列
     :param N: 计算周期

@@ -1,7 +1,4 @@
-import numpy as np
-import pandas as pd
-
-from quant1x.base.formula import *
+from quant1x.formula.formula import *
 
 # df=pd.DataFrame({'x':[1,2,3,4,5,6,7,8,9]})
 # 逻辑表达式测试
@@ -24,7 +21,7 @@ v2 = MA(df['x'], s2)
 print(v2)
 
 
-from quant1x.base.formula import *
+from quant1x.formula.formula import *
 f1 = [1, 2, 3, 4]
 r1 = pd.Series(f1)[::-1]
 print(r1)

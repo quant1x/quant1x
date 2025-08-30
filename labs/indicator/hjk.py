@@ -3,7 +3,7 @@
 import pandas
 
 from quant1x.base import basic
-from quant1x.base.formula import *
+from quant1x.formula.formula import *
 
 
 def hjk(code:str, data:pandas.DataFrame):

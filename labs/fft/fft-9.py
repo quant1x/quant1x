@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import scipy.signal as signal
 from scipy.fftpack import fft
 
-from quant1x.base.formula import *
+from quant1x.formula.formula import *
 
 
 def fftTransfer(timeseries, n=10, fmin=0.2):

@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 import pandas
 
-from quant1x.base.formula import *
+from quant1x.formula.formula import *
 
 np.seterr(divide='ignore', invalid='ignore')
 

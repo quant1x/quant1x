@@ -3,7 +3,7 @@
 import os
 
 from quant1x import data
-from quant1x.base.formula import *
+from quant1x.formula.formula import *
 from quant1x.data import D
 
 

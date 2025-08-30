@@ -10,7 +10,7 @@ import requests
 from mootdx.quotes import Quotes
 from tqdm import tqdm
 
-from quant1x.base.formula import *
+from quant1x.formula.formula import *
 from quant1x.data import *
 
 # 中国内地证券市场

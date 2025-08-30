@@ -1,7 +1,6 @@
 import numpy as np
 
-from quant1x.base.formula import FORCAST
-from quant1x.formula import CONST
+from quant1x.formula.formula import FORCAST
 import pandas as pd
 from quant1x import base
 
