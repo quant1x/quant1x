@@ -3,8 +3,8 @@
 """The setup script."""
 import setuptools
 
-from q1x.base import __author__
-from q1x.base.version import project_version
+from quant1x.base import __author__
+from quant1x.base.version import project_version
 
 try:
     from setuptools import find_packages, setup
