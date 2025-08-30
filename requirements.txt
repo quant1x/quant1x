@@ -29,6 +29,6 @@ xgboost~=3.0.0
 scikit-learn~=1.7.1
 matplotlib~=3.10.1
 scipy~=1.16.0
-caerus~=0.1.10
+caerus~=1.0.1
 joblib~=1.5.1
 numba~=0.61.2
