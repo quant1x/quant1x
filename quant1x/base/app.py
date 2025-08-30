@@ -2,7 +2,7 @@
 import os.path
 import sys
 
-import file
+from . import file
 
 
 def application() -> tuple[str, str, str]:

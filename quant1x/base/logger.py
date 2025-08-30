@@ -3,7 +3,7 @@ import os.path
 
 from loguru import logger as __logger
 
-import file, app
+from . import file, app
 
 __user_home = file.homedir()
 __user_home = os.path.expanduser(__user_home)

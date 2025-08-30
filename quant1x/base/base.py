@@ -3,7 +3,8 @@ import os
 
 import yaml
 
-import file
+from . import file
+
 
 def get_quant1x_config_filename() -> str:
     """
@@ -37,6 +38,7 @@ def load_config(file_path: str) -> dict:
     except Exception as e:
         raise ValueError(f"加载配置失败: {str(e)}")
 
+
 class Quant1XConfig:
     _instance = None
 
@@ -63,10 +65,11 @@ class Quant1XConfig:
 
         if not self.data_path:
             self.data_path = os.path.join(self.__default_main_path, 'data')
-        self.data_path= os.path.expanduser(self.data_path)
+        self.data_path = os.path.expanduser(self.data_path)
         # 数据路径
         self.kline_path = os.path.join(self.data_path, 'day')
         """str: K线路径 """
+
 
 # 创建配置单例
 config = Quant1XConfig()

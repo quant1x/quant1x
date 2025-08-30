@@ -31,3 +31,4 @@ matplotlib~=3.10.1
 scipy~=1.16.0
 caerus~=0.1.10
 joblib~=1.5.1
+numba~=0.61.2
