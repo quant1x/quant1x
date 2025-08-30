@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.5] - 2025-08-31
+### Changed
+- 新增.gitattributes, 为bat设置单独的回车换行
+
 ## [0.5.4] - 2025-08-31
 ### Changed
 - Merge branch '0.5.x' of https://gitee.com/quant1x/quant1x into 0.5.x
+- update changelog
 
 ## [0.5.3] - 2025-08-31
 ### Changed
@@ -98,7 +103,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.4...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.5...HEAD
+[0.5.5]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.4...v0.5.5
 [0.5.4]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.3...v0.5.4
 [0.5.3]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.2...v0.5.3
 [0.5.2]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.1...v0.5.2
