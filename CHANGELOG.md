@@ -3,9 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.3] - 2025-08-31
+### Changed
+- 删除废弃的代码
+- 复制q1x-base代码
+
 ## [0.5.2] - 2025-08-21
 ### Changed
 - 优化发布pypi脚本
+- update changelog
 
 ## [0.5.1] - 2025-08-21
 ### Changed
@@ -86,7 +92,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.2...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.3...HEAD
+[0.5.3]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.2...v0.5.3
 [0.5.2]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.1...v0.5.2
 [0.5.1]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.0...v0.5.1
 [0.5.0]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.13...v0.5.0
