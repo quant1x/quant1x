@@ -24,5 +24,14 @@ dist/
 strategy-mac-amd64
 strategy-win-amd64.exe
 *.png
-*.csv
 *.pkl
+
+#visual studio
+.vs/
+out/
+
+# CMake specific
+*build/
+
+# vcpkg specific
+vcpkg_installed/
