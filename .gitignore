@@ -35,3 +35,6 @@ out/
 
 # vcpkg specific
 vcpkg_installed/
+
+# CLion
+.cache/
