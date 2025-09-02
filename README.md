@@ -1,11 +1,11 @@
-正确打开Quant1X项目的方式
+Quant1X量化交易实验室
 ===
 
 # 1. 环境配置
 ## 1.1 默认均为64位操作系统
-| python | golang |
-|:-------|:-------|
-| 3.12.x | 1.25.x |
+| python | golang | rust       | c++                        |
+|:-------|:-------|:-----------|:---------------------------|
+| 3.12.x | 1.25.x | 1.88+/2024 | gcc14.3+/clang18+/msvc14.3 |
 
 ## 1.2 环境安装推荐使用brew
 安装brew时需要注意避免使用root权限 
@@ -27,7 +27,7 @@ pyenv versions
 ```text
   system
   3.8.16
-* 3.10.10 (set by /Users/wangfeng/.pyenv/version)
+* 3.10.10 (set by /Users/${USERNAME}/.pyenv/version)
 ```
 ### 2.1.2 查看可安装的版本
 ```shell
@@ -121,7 +121,7 @@ matplotlib.matplotlib_fname() #输出matplotlib包所在的配置文件的路径
 ### 2.4.2 根据上面的路径打开文件夹（根据自己实际的输出路径去操作）
 我选择了SimHei中文字体, 复制到fonts/ttf/目录下
 ```shell
-cp -r /Users/wangfeng/Library/Fonts/SimHei.ttf fonts/ttf/
+cp -r /Users/${USERNAME}/Library/Fonts/SimHei.ttf fonts/ttf/
 ```
 
 ### 2.4.3 编辑2.4.1获得路径matplotlibrc文件
@@ -142,3 +142,7 @@ go env -w GO111MODULE=on
 go env -w GOPROXY=https://goproxy.cn,direct
 go env -w GOPRIVATE=gitee.com
 ```
+
+# 4. rust
+
+# 5. c++
