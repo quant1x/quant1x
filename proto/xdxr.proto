@@ -1,0 +1,20 @@
+// protoc.exe --cpp_out=include\q1x\proto --proto_path=.\proto\ xdxr.proto
+syntax = "proto3";
+
+package xdxr;
+
+// 累计复权因子
+message factor {
+    int64  timestamp = 1;  // 时间戳
+    double m         = 2;  // 系数
+    double a         = 3;  // 偏移
+    int32  number    = 4;  // 当前复权的序号
+}
+
+message factor_list {
+    repeated factor values = 1;
+}
+
+message adjust_map {
+    map<string, factor_list> complex_map = 1;
+}

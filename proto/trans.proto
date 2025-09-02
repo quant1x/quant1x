@@ -1,0 +1,13 @@
+// protoc --cpp_out=include\q1x\proto --proto_path=.\proto\ trans.proto
+syntax = "proto3";
+
+package datasets;
+
+message TickTransaction {
+  string time = 1;       // 成交时间(HH:MM格式)
+  double price = 2;      // 成交价格
+  int64 vol = 3;         // 成交量(股数)
+  int64 num = 4;         // 成交笔数(历史数据中可能不存在)
+  double amount = 5;     // 成交金额
+  int64 buy_or_sell = 6; // 买卖方向(对应tick_xxx常量)
+}
