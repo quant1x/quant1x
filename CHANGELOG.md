@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.1] - 2025-09-02
+### Changed
+- 修订README文件, 开发语言支持python/go/c++。rust视情况而定, 部分实现可以参考q1x-rust。后续q1x为前缀的项目会归档后放弃维护
+- 更新c++第三方库xsimd版本到13.2.0(eb3bacbe1012bf79a1ad68f2aec53b3e051bc14d)
+
 ## [0.6.0] - 2025-09-02
 ### Changed
 - 新增go模块
@@ -34,6 +39,7 @@ All notable changes to this project will be documented in this file.
 - 新增c++README.md
 - 补全c++实现的其它代码
 - 新增go项目模块文件
+- update changelog
 
 ## [0.5.9] - 2025-08-31
 ### Changed
@@ -156,7 +162,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.0...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.1...HEAD
+[0.6.1]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.0...v0.6.1
 [0.6.0]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.9...v0.6.0
 [0.5.9]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.8...v0.5.9
 [0.5.8]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.7...v0.5.8
