@@ -3,9 +3,42 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.0] - 2025-09-02
+### Changed
+- 新增go模块
+- 修订git仓库需要忽略的文件类型或目录
+- 新增c++的实现代码
+- 新增clangd配置
+- 新增c++第三方库argparse
+- 新增c++第三方库xtensor
+- 新增c++第三方库asio
+- 新增c++第三方库backward-cpp
+- 新增c++第三方库backward-cpp
+- 新增c++第三方库cista
+- 新增c++第三方库spdlog
+- 新增c++第三方库boost.pfr
+- 新增c++第三方库protobuf
+- 新增c++第三方库bs::thread-pool
+- 新增c++第三方库mio
+- 新增c++第三方库csv2
+- 新增c++第三方库date,fmt
+- 新增c++第三方库indicators
+- 新增c++第三方库magic_enum
+- 新增c++第三方库croncpp
+- 新增c++第三方库nlohmann json
+- 新增c++第三方库inja
+- 新增c++第三方库robin-map
+- 新增二进制协议定义文件
+- git仓库忽略.cache目录
+- 新增二进制文件转c++代码的python脚本
+- 新增c++README.md
+- 补全c++实现的其它代码
+- 新增go项目模块文件
+
 ## [0.5.9] - 2025-08-31
 ### Changed
 - 更新依赖库numpy版本
+- update changelog
 
 ## [0.5.8] - 2025-08-31
 ### Changed
@@ -123,7 +156,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.9...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.0...HEAD
+[0.6.0]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.9...v0.6.0
 [0.5.9]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.8...v0.5.9
 [0.5.8]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.7...v0.5.8
 [0.5.7]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.6...v0.5.7
