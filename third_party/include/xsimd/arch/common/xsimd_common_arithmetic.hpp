@@ -139,20 +139,6 @@ namespace xsimd
             return fma(x, y, select(mask, neg(z), z));
         }
 
-        // hadd
-        template <class A, class T, class /*=typename std::enable_if<std::is_integral<T>::value, void>::type*/>
-        XSIMD_INLINE T hadd(batch<T, A> const& self, requires_arch<common>) noexcept
-        {
-            alignas(A::alignment()) T buffer[batch<T, A>::size];
-            self.store_aligned(buffer);
-            T res = 0;
-            for (T val : buffer)
-            {
-                res += val;
-            }
-            return res;
-        }
-
         // incr
         template <class A, class T>
         XSIMD_INLINE batch<T, A> incr(batch<T, A> const& self, requires_arch<common>) noexcept
@@ -203,10 +189,9 @@ namespace xsimd
         {
             if (std::is_signed<T>::value)
             {
-                auto mask = (other >> (8 * sizeof(T) - 1));
                 auto self_pos_branch = min(std::numeric_limits<T>::max() - other, self);
                 auto self_neg_branch = max(std::numeric_limits<T>::min() - other, self);
-                return other + select(batch_bool<T, A>(mask.data), self_neg_branch, self_pos_branch);
+                return other + select(other >= 0, self_pos_branch, self_neg_branch);
             }
             else
             {
