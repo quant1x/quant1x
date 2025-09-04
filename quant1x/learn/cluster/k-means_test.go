@@ -12,8 +12,14 @@ func TestKMeans_Basic(t *testing.T) {
 		{10.0, 10.0}, {10.1, 9.9}, {9.9, 10.1},
 	}
 
-	km := NewKMeans(3, 100, 1e-4)
-	km.Fit(data)
+	km, err := NewKMeans(3, 100, 1e-4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = km.Fit(data)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	fmt.Println("聚类中心:")
 	for i, c := range km.Centroids {
@@ -26,16 +32,23 @@ func TestKMeans_Basic(t *testing.T) {
 	}
 
 	fmt.Printf("\nInertia: %.4f\n", km.Inertia)
-	fmt.Printf("轮廓系数: %.4f\n", km.SilhouetteScore(data))
+	sihouetteScore, err := km.SilhouetteScore(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Printf("轮廓系数: %.4f\n", sihouetteScore)
 
-	sizes := km.GetClusterSizes()
+	sizes, err := km.GetClusterSizes()
+	if err != nil {
+		t.Fatal(err)
+	}
 	fmt.Println("\n簇大小:")
 	for i, s := range sizes {
 		fmt.Printf("簇%d: %d个点\n", i, s)
 	}
 
 	newPoints := [][]float64{{1.5, 2.0}, {5.5, 5.0}, {10.5, 10.0}}
-	newLabels := km.Predict(newPoints)
+	newLabels, _ := km.Predict(newPoints)
 	fmt.Println("\n新点预测:")
 	for i, p := range newPoints {
 		fmt.Printf("点%v -> 簇%d\n", p, newLabels[i])
