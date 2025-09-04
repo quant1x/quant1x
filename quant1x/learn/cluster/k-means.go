@@ -1,9 +1,24 @@
 package cluster
 
 import (
+	"errors"
+	"fmt"
 	"math"
 	"math/rand"
 	"time"
+)
+
+// 全局错误变量
+var (
+	ErrEmptyData        = errors.New("cluster: empty data")
+	ErrKTooLarge        = errors.New("cluster: K cannot be greater than number of data points")
+	ErrInvalidK         = errors.New("cluster: k must be positive")
+	ErrInvalidMaxIter   = errors.New("cluster: maxIterations must be positive")
+	ErrInvalidTolerance = errors.New("cluster: tolerance must be positive")
+	ErrInconsistentDim  = errors.New("cluster: inconsistent feature dimensions")
+	ErrNotFitted        = errors.New("cluster: KMeans not fitted")
+	ErrPointDimMismatch = errors.New("cluster: point dimension mismatch")
+	ErrDataNotProvided  = errors.New("cluster: data not provided")
 )
 
 const (
@@ -26,15 +41,15 @@ type KMeans struct {
 }
 
 // NewKMeans 创建K-means实例
-func NewKMeans(k int, maxIterations int, tolerance float64) *KMeans {
+func NewKMeans(k int, maxIterations int, tolerance float64) (*KMeans, error) {
 	if k <= 0 {
-		panic("k must be positive")
+		return nil, ErrInvalidK
 	}
 	if maxIterations <= 0 {
-		panic("maxIterations must be positive")
+		return nil, ErrInvalidMaxIter
 	}
 	if tolerance <= 0 {
-		panic("tolerance must be positive")
+		return nil, ErrInvalidTolerance
 	}
 	var rng *rand.Rand
 	if kmeansSeed >= 0 {
@@ -47,32 +62,36 @@ func NewKMeans(k int, maxIterations int, tolerance float64) *KMeans {
 		MaxIterations: maxIterations,
 		Tolerance:     tolerance,
 		rng:           rng,
-	}
+	}, nil
 }
 
 // distanceSquared 计算两点之间的欧氏距离平方（避免开方）
-func (km *KMeans) distanceSquared(a, b []float64) float64 {
+func (km *KMeans) distanceSquared(a, b []float64) (float64, error) {
 	if len(a) != len(b) {
-		panic("points have different dimensions")
+		return 0, ErrInconsistentDim
 	}
 	sum := 0.0
 	for i := range a {
 		diff := a[i] - b[i]
 		sum += diff * diff
 	}
-	return sum
+	return sum, nil
 }
 
 // distance 计算欧氏距离
-func (km *KMeans) distance(a, b []float64) float64 {
-	return math.Sqrt(km.distanceSquared(a, b))
+func (km *KMeans) distance(a, b []float64) (float64, error) {
+	distSq, err := km.distanceSquared(a, b)
+	if err != nil {
+		return 0, err
+	}
+	return math.Sqrt(distSq), nil
 }
 
 // initializeCentroids 初始化聚类中心（K-means++）
-func (km *KMeans) initializeCentroids(data [][]float64) [][]float64 {
+func (km *KMeans) initializeCentroids(data [][]float64) ([][]float64, error) {
 	n := len(data)
 	if n < km.K {
-		panic("number of data points must be >= K")
+		return nil, ErrKTooLarge
 	}
 
 	centroids := make([][]float64, km.K)
@@ -87,7 +106,10 @@ func (km *KMeans) initializeCentroids(data [][]float64) [][]float64 {
 		for j, point := range data {
 			minDist := math.MaxFloat64
 			for k := 0; k < i; k++ {
-				dist := km.distanceSquared(point, centroids[k])
+				dist, err := km.distanceSquared(point, centroids[k])
+				if err != nil {
+					return nil, err
+				}
 				if dist < minDist {
 					minDist = dist
 				}
@@ -108,11 +130,11 @@ func (km *KMeans) initializeCentroids(data [][]float64) [][]float64 {
 		}
 	}
 
-	return centroids
+	return centroids, nil
 }
 
 // assignPoints 分配点到最近的聚类中心
-func (km *KMeans) assignPoints(data [][]float64, centroids [][]float64) ([]int, float64) {
+func (km *KMeans) assignPoints(data [][]float64, centroids [][]float64) ([]int, float64, error) {
 	labels := make([]int, len(data))
 	inertia := 0.0
 
@@ -120,7 +142,10 @@ func (km *KMeans) assignPoints(data [][]float64, centroids [][]float64) ([]int, 
 		minDist := math.MaxFloat64
 		bestCluster := -1
 		for j, centroid := range centroids {
-			dist := km.distanceSquared(point, centroid)
+			dist, err := km.distanceSquared(point, centroid)
+			if err != nil {
+				return nil, 0, err
+			}
 			if dist < minDist {
 				minDist = dist
 				bestCluster = j
@@ -130,11 +155,11 @@ func (km *KMeans) assignPoints(data [][]float64, centroids [][]float64) ([]int, 
 		inertia += minDist
 	}
 
-	return labels, inertia
+	return labels, inertia, nil
 }
 
 // updateCentroids 更新聚类中心
-func (km *KMeans) updateCentroids(data [][]float64, labels []int, oldCentroids [][]float64) [][]float64 {
+func (km *KMeans) updateCentroids(data [][]float64, labels []int, oldCentroids [][]float64) ([][]float64, error) {
 	counts := make([]int, km.K)
 	sums := make([][]float64, km.K)
 	for i := range sums {
@@ -142,6 +167,9 @@ func (km *KMeans) updateCentroids(data [][]float64, labels []int, oldCentroids [
 	}
 
 	for i, point := range data {
+		if len(point) != km.nFeatures {
+			return nil, ErrInconsistentDim
+		}
 		cluster := labels[i]
 		counts[cluster]++
 		for j := range point {
@@ -158,56 +186,72 @@ func (km *KMeans) updateCentroids(data [][]float64, labels []int, oldCentroids [
 			}
 		} else {
 			// 空簇：随机选择一个点作为新中心
-			randIdx := km.rng.Intn(len(data)) // ✅ 用 km.rng
+			randIdx := km.rng.Intn(len(data))
+			newCentroids[i] = make([]float64, len(data[randIdx]))
 			copy(newCentroids[i], data[randIdx])
 		}
 	}
 
-	return newCentroids
+	return newCentroids, nil
 }
 
 // hasConverged 检查是否收敛
-func (km *KMeans) hasConverged(oldCentroids, newCentroids [][]float64, oldInertia, newInertia float64) bool {
+func (km *KMeans) hasConverged(oldCentroids, newCentroids [][]float64, oldInertia, newInertia float64) (bool, error) {
 	maxMove := 0.0
 	for i := range oldCentroids {
-		move := km.distance(oldCentroids[i], newCentroids[i])
+		move, err := km.distance(oldCentroids[i], newCentroids[i])
+		if err != nil {
+			return false, err
+		}
 		if move > maxMove {
 			maxMove = move
 		}
 	}
 	inertiaChange := math.Abs(oldInertia-newInertia) / oldInertia
-	return maxMove < km.Tolerance && inertiaChange < km.Tolerance
+	return maxMove < km.Tolerance && inertiaChange < km.Tolerance, nil
 }
 
 // Fit 执行K-means聚类
-func (km *KMeans) Fit(data [][]float64) *KMeans {
+func (km *KMeans) Fit(data [][]float64) error {
 	if len(data) == 0 {
-		panic("empty data")
+		return ErrEmptyData
 	}
 	if km.K > len(data) {
-		panic("K cannot be greater than number of data points")
+		return ErrKTooLarge
 	}
 
 	km.nFeatures = len(data[0])
 	// 检查维度一致性
 	for _, point := range data {
 		if len(point) != km.nFeatures {
-			panic("inconsistent feature dimensions")
+			return ErrInconsistentDim
 		}
 	}
 
-	km.Centroids = km.initializeCentroids(data)
+	centroids, err := km.initializeCentroids(data)
+	if err != nil {
+		return err
+	}
+	km.Centroids = centroids
+
 	var labels []int
 	var inertia float64
 	oldInertia := math.MaxFloat64
-	var oldCentroids [][]float64 // ✅ 在循环外声明
+	var oldCentroids [][]float64
 
 	for iteration := 0; iteration < km.MaxIterations; iteration++ {
-		labels, inertia = km.assignPoints(data, km.Centroids)
+		labels, inertia, err = km.assignPoints(data, km.Centroids)
+		if err != nil {
+			return err
+		}
 
-		// ✅ 第一次迭代不检查收敛
+		// 第一次迭代不检查收敛
 		if iteration > 0 {
-			if km.hasConverged(oldCentroids, km.Centroids, oldInertia, inertia) {
+			converged, convErr := km.hasConverged(oldCentroids, km.Centroids, oldInertia, inertia)
+			if convErr != nil {
+				return convErr
+			}
+			if converged {
 				break
 			}
 		}
@@ -220,32 +264,38 @@ func (km *KMeans) Fit(data [][]float64) *KMeans {
 		}
 		oldInertia = inertia
 
-		km.Centroids = km.updateCentroids(data, labels, oldCentroids)
+		km.Centroids, err = km.updateCentroids(data, labels, oldCentroids)
+		if err != nil {
+			return err
+		}
 	}
 
 	km.Labels = labels
 	km.Inertia = inertia
-	return km
+	return nil
 }
 
 // Predict 预测新数据点的簇标签
-func (km *KMeans) Predict(newPoints [][]float64) []int {
+func (km *KMeans) Predict(newPoints [][]float64) ([]int, error) {
 	if km.Centroids == nil {
-		panic("KMeans not fitted")
+		return nil, ErrNotFitted
 	}
 	if len(newPoints) == 0 {
-		return []int{}
+		return []int{}, nil
 	}
 
 	labels := make([]int, len(newPoints))
 	for i, point := range newPoints {
 		if len(point) != km.nFeatures {
-			panic("point dimension mismatch")
+			return nil, fmt.Errorf("%w: expected %d, got %d", ErrPointDimMismatch, km.nFeatures, len(point))
 		}
 		minDist := math.MaxFloat64
 		bestCluster := -1
 		for j, centroid := range km.Centroids {
-			dist := km.distanceSquared(point, centroid)
+			dist, err := km.distanceSquared(point, centroid)
+			if err != nil {
+				return nil, err
+			}
 			if dist < minDist {
 				minDist = dist
 				bestCluster = j
@@ -253,42 +303,45 @@ func (km *KMeans) Predict(newPoints [][]float64) []int {
 		}
 		labels[i] = bestCluster
 	}
-	return labels
+	return labels, nil
 }
 
 // GetClusterSizes 获取每个簇的大小
-func (km *KMeans) GetClusterSizes() []int {
+func (km *KMeans) GetClusterSizes() ([]int, error) {
 	if km.Labels == nil {
-		return nil
+		return nil, ErrNotFitted
 	}
 	sizes := make([]int, km.K)
 	for _, label := range km.Labels {
 		sizes[label]++
 	}
-	return sizes
+	return sizes, nil
 }
 
 // GetClusterPoints 获取每个簇的点
-func (km *KMeans) GetClusterPoints(data [][]float64) [][][]float64 {
-	if km.Labels == nil || len(data) != len(km.Labels) {
-		return nil
+func (km *KMeans) GetClusterPoints(data [][]float64) ([][][]float64, error) {
+	if km.Labels == nil {
+		return nil, ErrNotFitted
+	}
+	if len(data) != len(km.Labels) {
+		return nil, ErrDataNotProvided
 	}
 	clusters := make([][][]float64, km.K)
 	for i, point := range data {
 		cluster := km.Labels[i]
 		clusters[cluster] = append(clusters[cluster], point)
 	}
-	return clusters
+	return clusters, nil
 }
 
 // SilhouetteScore 计算轮廓系数
-func (km *KMeans) SilhouetteScore(data [][]float64) float64 {
+func (km *KMeans) SilhouetteScore(data [][]float64) (float64, error) {
 	if km.Labels == nil {
-		panic("KMeans not fitted")
+		return 0, ErrNotFitted
 	}
 	n := len(data)
 	if n == 0 {
-		return 0
+		return 0, nil
 	}
 
 	totalScore := 0.0
@@ -302,7 +355,10 @@ func (km *KMeans) SilhouetteScore(data [][]float64) float64 {
 			if i == j {
 				continue
 			}
-			distance := km.distance(data[i], data[j])
+			distance, err := km.distance(data[i], data[j])
+			if err != nil {
+				return 0, err
+			}
 			if km.Labels[i] == km.Labels[j] {
 				a += distance
 				countA++
@@ -336,5 +392,5 @@ func (km *KMeans) SilhouetteScore(data [][]float64) float64 {
 		}
 	}
 
-	return totalScore / float64(n)
+	return totalScore / float64(n), nil
 }
