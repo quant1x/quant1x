@@ -3,9 +3,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.4] - 2025-09-04
+### Changed
+- 实验PyProject.toml配置模式
+- 新增机器学习的聚类模块
+- 删除废弃的尝试go1.25新特征go-import meta
+- 优化k-means++代码
+- 调整测试代码
+
 ## [0.6.3] - 2025-09-04
 ### Changed
 - 更新c++第三方库版本到1.36.0
+- update changelog
 
 ## [0.6.2] - 2025-09-04
 ### Changed
@@ -173,7 +182,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.3...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.4...HEAD
+[0.6.4]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.3...v0.6.4
 [0.6.3]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.2...v0.6.3
 [0.6.2]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.1...v0.6.2
 [0.6.1]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.0...v0.6.1
