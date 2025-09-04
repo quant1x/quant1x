@@ -1,0 +1,43 @@
+package cluster
+
+import (
+	"fmt"
+	"testing"
+)
+
+func TestKMeans_Basic(t *testing.T) {
+	data := [][]float64{
+		{1.0, 2.0}, {1.1, 2.1}, {0.9, 1.9}, {1.2, 2.0},
+		{5.0, 5.0}, {5.1, 5.1}, {5.2, 4.9}, {4.9, 5.1},
+		{10.0, 10.0}, {10.1, 9.9}, {9.9, 10.1},
+	}
+
+	km := NewKMeans(3, 100, 1e-4)
+	km.Fit(data)
+
+	fmt.Println("聚类中心:")
+	for i, c := range km.Centroids {
+		fmt.Printf("簇%d: %v\n", i, c)
+	}
+
+	fmt.Println("\n每个点的标签:")
+	for i, p := range data {
+		fmt.Printf("点%v -> 簇%d\n", p, km.Labels[i])
+	}
+
+	fmt.Printf("\nInertia: %.4f\n", km.Inertia)
+	fmt.Printf("轮廓系数: %.4f\n", km.SilhouetteScore(data))
+
+	sizes := km.GetClusterSizes()
+	fmt.Println("\n簇大小:")
+	for i, s := range sizes {
+		fmt.Printf("簇%d: %d个点\n", i, s)
+	}
+
+	newPoints := [][]float64{{1.5, 2.0}, {5.5, 5.0}, {10.5, 10.0}}
+	newLabels := km.Predict(newPoints)
+	fmt.Println("\n新点预测:")
+	for i, p := range newPoints {
+		fmt.Printf("点%v -> 簇%d\n", p, newLabels[i])
+	}
+}
