@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quant1x"
+version = "2024.1.0"  # 需要从你的version模块获取动态版本
+description = "Quant1X量化研究"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "Apache 2.0 license"}
+authors = [
+    {name = "wangfeng", email = "wangfengxy@sina.cn"}
+]
+keywords = ["quant1x", "python"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+urls = {Homepage = "https://gitee.com/quant1x/quant1x"}
+dependencies = [
+    # 这里放置requirements.txt的内容
+    # 例如: "requests>=2.25.0",
+]
+
+[project.optional-dependencies]
+test = [
+    # 这里放置测试依赖
+]
+
+[tool.setuptools]
+packages = {find = {where = ["."], include = ["quant1x", "quant1x.*"]}}
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.package-data]
+"*" = ["*.dll", "*.pyd", "*.ini", "*.log4cxx"]
+
+[tool.setuptools.dynamic]
+version = {attr = "quant1x.base.version.project_version"}  # 动态获取版本
+
+[project.scripts]
+# quant1x = "quant1x.__main__:entry"
+# quant1x-qmt = "quant1x.trader.qmt:main"
