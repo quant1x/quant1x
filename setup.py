@@ -6,11 +6,6 @@ import setuptools
 from quant1x.base import __author__
 from quant1x.base.version import project_version
 
-try:
-    from setuptools import find_packages, setup
-except ImportError:
-    from distutils.core import find_packages, setup
-
 latest, author = project_version()
 
 __app_version__ = latest
