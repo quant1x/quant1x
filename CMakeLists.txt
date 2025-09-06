@@ -866,8 +866,10 @@ install(TARGETS quant1x third_libs xtensor_optimize global_compile_options EXPOR
 
 # 安装主库头文件
 install(
-    DIRECTORY include/
+    DIRECTORY quant1x/
     DESTINATION include/
+    FILES_MATCHING
+    PATTERN "*.h"
 )
 
 install(
