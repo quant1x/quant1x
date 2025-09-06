@@ -833,7 +833,7 @@ string(TOLOWER ${quant1x_build_type} lib_build_type)
 # 设置编译器
 string(TOLOWER ${CMAKE_CXX_COMPILER_ID} lib_compiler)
 # 设置 Debug 版本后缀, 并标记为高级选项(默认不显示在 CMake GUI 中)
-set(lib_suffix "${lib_build_type}-${lib_compiler}" CACHE STRING "Default debug/release postfix")
+set(lib_suffix "-${lib_build_type}-${lib_compiler}" CACHE STRING "Default debug/release postfix")
 if (WIN32)
     set(lib_suffix "${lib_suffix}-win")
 elseif(APPLE)
