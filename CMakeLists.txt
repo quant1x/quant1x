@@ -911,5 +911,7 @@ install(FILES
     DESTINATION lib/cmake/quant1x
 )
 
+install(TARGETS q2x
+    DESTINATION bin)
 # 单元测试
 add_subdirectory(tests)
