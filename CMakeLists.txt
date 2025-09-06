@@ -870,6 +870,10 @@ install(
     DESTINATION include/quant1x
     FILES_MATCHING
     PATTERN "*.h"
+    PATTERN "*.hpp"
+    PATTERN "*.inl"
+    PATTERN "__pycache__" EXCLUDE  # 忽略 Python 缓存目录（安全防护）
+    PATTERN ".git" EXCLUDE         # 可选：忽略 .git 目录
 )
 
 install(
