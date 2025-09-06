@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.6] - 2025-09-06
+### Changed
+- 修订setup.py, 删除废弃的rst格式历史信息文档
+
 ## [0.6.5] - 2025-09-04
 ### Changed
 - 调整测试代码
+- update changelog
 
 ## [0.6.4] - 2025-09-04
 ### Changed
@@ -187,7 +192,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.5...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.6...HEAD
+[0.6.6]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.5...v0.6.6
 [0.6.5]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.4...v0.6.5
 [0.6.4]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.3...v0.6.4
 [0.6.3]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.2...v0.6.3
