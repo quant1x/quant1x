@@ -607,8 +607,8 @@ private:
 };
 
 TEST_CASE("chips-v2", "[chips]") {
-    std::string code          = "000158";
-    std::string date          = "2025-07-18";
+    std::string code          = "000999";
+    std::string date          = "2025-09-05";
     std::string security_code = exchange::CorrectSecurityCode(code);
     std::cout << "当前日期: " << date << ", 证券代码: " << security_code << std::endl;
     ChipDistribution cd(defaultConfig);
