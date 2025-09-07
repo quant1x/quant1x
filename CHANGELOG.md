@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.17] - 2025-09-07
+### Changed
+- 修复头文件兼容问题
+
 ## [0.6.16] - 2025-09-07
 ### Changed
 - 修订msvc的版本号
+- update changelog
 
 ## [0.6.15] - 2025-09-07
 ### Changed
@@ -244,7 +249,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.16...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.17...HEAD
+[0.6.17]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.16...v0.6.17
 [0.6.16]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.15...v0.6.16
 [0.6.15]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.14...v0.6.15
 [0.6.14]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.13...v0.6.14
