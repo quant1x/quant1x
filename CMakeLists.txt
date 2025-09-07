@@ -224,15 +224,6 @@ if (MSVC)
     endif ()
 endif ()
 
-# ==============================
-# cista
-# find_package(cista CONFIG REQUIRED)
-# ==============================
-# Cista
-#find_package(cista CONFIG REQUIRED)
-set(CISTA_VERSION "0.15") # 无法获取, 手动设定
-echo_lib_version(cista ${CISTA_VERSION})
-
 message(STATUS "================== 底层 工具库 ==================")
 # ASIO
 include(cmake/network.cmake)
@@ -260,9 +251,6 @@ target_link_libraries(third_libs INTERFACE unofficial::duktape::duktape)
 echo_lib_version(duktape ${unofficial-duktape_VERSION})
 
 message(STATUS "================== 测试工具库 ==================")
-## 查找 Matplot++, 需要安装gnuplot, msvc编译出现错误, 无法绘图
-#find_package(Matplot++ REQUIRED)
-#echo_lib_version(Matplot++, ${Matplot++_VERSION})
 
 # 查找 Google Benchmark 包
 find_package(benchmark REQUIRED)
@@ -282,7 +270,7 @@ target_compile_definitions(test-catch2 INTERFACE
 # GTest
 find_package(GTest CONFIG REQUIRED)
 add_library(test-gtest INTERFACE)
-target_link_libraries(test-gtest INTERFACE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main Matplot++::cimg  Matplot++::matplot)
+target_link_libraries(test-gtest INTERFACE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
 echo_lib_version(GTest ${GTest_VERSION})
 
 # ============================================================
@@ -345,7 +333,6 @@ set(DEPENDENCY_ARGPARSE "v${argparse_VERSION}")
 set(DEPENDENCY_YAML_CPP "v${yaml-cpp_VERSION}")
 set(DEPENDENCY_PROTOBUF "v${Protobuf_VERSION}")
 set(DEPENDENCY_CAPNP "v${CapnProto_VERSION}")
-set(DEPENDENCY_CISTA "v${CISTA_VERSION}")
 set(DEPENDENCY_MIMALLOC "v${mimalloc_VERSION}")
 set(DEPENDENCY_SPDLOG "v${spdlog_VERSION}")
 set(DEPENDENCY_CPR "v${cpr_VERSION}")
@@ -459,6 +446,7 @@ set(quant1x-headers
     quant1x/exchange/timestamp.h
 
     # level1
+    quant1x/level1/config.h
     quant1x/level1/minute_time.h
     quant1x/level1/client.h
     quant1x/level1/protocol.h
@@ -541,9 +529,9 @@ set(quant1x-sources
     quant1x/engine/adapter.cpp
 
     # level1
+    quant1x/level1/config.cpp
     quant1x/level1/client.cpp
     quant1x/level1/protocol.cpp
-    quant1x/level1/server.cpp
 
     # 配置信息
     quant1x/config/config.cpp
@@ -744,7 +732,6 @@ message(STATUS "                                argparse : v${argparse_VERSION}"
 message(STATUS "                                yaml-cpp : v${yaml-cpp_VERSION}")
 message(STATUS "                                Protobuf : v${Protobuf_VERSION}")
 message(STATUS "                             Cap'n Proto : v${CapnProto_VERSION}")
-message(STATUS "                                Cista(√) : v${CISTA_VERSION}")
 message(STATUS "                                mimalloc : v${mimalloc_VERSION}")
 message(STATUS "                                  spdlog : v${spdlog_VERSION}")
 message(STATUS "     C++ Requests Library (Cpr for curl) : v${cpr_VERSION}")
@@ -833,7 +820,7 @@ string(TOLOWER ${quant1x_build_type} lib_build_type)
 # 设置编译器
 string(TOLOWER ${CMAKE_CXX_COMPILER_ID} lib_compiler)
 # 设置 Debug 版本后缀, 并标记为高级选项(默认不显示在 CMake GUI 中)
-set(lib_suffix "${lib_build_type}-${lib_compiler}" CACHE STRING "Default debug/release postfix")
+set(lib_suffix "-${lib_build_type}-${lib_compiler}" CACHE STRING "Default debug/release postfix")
 if (WIN32)
     set(lib_suffix "${lib_suffix}-win")
 elseif(APPLE)
@@ -866,8 +853,14 @@ install(TARGETS quant1x third_libs xtensor_optimize global_compile_options EXPOR
 
 # 安装主库头文件
 install(
-    DIRECTORY include/
-    DESTINATION include/
+    DIRECTORY quant1x/
+    DESTINATION include/quant1x
+    FILES_MATCHING
+    PATTERN "*.h"
+    PATTERN "*.hpp"
+    PATTERN "*.inl"
+    PATTERN "__pycache__" EXCLUDE  # 忽略 Python 缓存目录（安全防护）
+    PATTERN ".git" EXCLUDE         # 可选：忽略 .git 目录
 )
 
 install(
@@ -909,5 +902,7 @@ install(FILES
     DESTINATION lib/cmake/quant1x
 )
 
+install(TARGETS q2x
+    DESTINATION bin)
 # 单元测试
 add_subdirectory(tests)

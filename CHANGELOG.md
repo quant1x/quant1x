@@ -3,6 +3,77 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.13] - 2025-09-07
+### Changed
+- 剔除绘图的库
+
+## [0.6.12] - 2025-09-07
+### Changed
+- 剔除对cista库的依赖
+- update changelog
+
+## [0.6.11] - 2025-09-07
+### Changed
+- 安装头文件排除__pycache__目录
+- update changelog
+
+## [0.6.10] - 2025-09-07
+### Changed
+- 调整测试代码
+- update changelog
+
+## [0.6.9] - 2025-09-07
+### Changed
+- 新增安装应用q2x的配置
+- update changelog
+
+## [0.6.8] - 2025-09-06
+### Changed
+- 修订安装quant1x库的头文件路径
+- 修订安装quant1x库的头文件路径
+- update changelog
+
+## [0.6.7] - 2025-09-06
+### Changed
+- 调整静态库后缀
+- update changelog
+
+## [0.6.6] - 2025-09-06
+### Changed
+- 修订setup.py, 删除废弃的rst格式历史信息文档
+- update changelog
+
+## [0.6.5] - 2025-09-04
+### Changed
+- 调整测试代码
+- update changelog
+
+## [0.6.4] - 2025-09-04
+### Changed
+- 实验PyProject.toml配置模式
+- 新增机器学习的聚类模块
+- 删除废弃的尝试go1.25新特征go-import meta
+- 优化k-means++代码
+- 调整测试代码
+- update changelog
+
+## [0.6.3] - 2025-09-04
+### Changed
+- 更新c++第三方库版本到1.36.0
+- update changelog
+
+## [0.6.2] - 2025-09-04
+### Changed
+- git仓库忽略cmake构建的临时目录
+- cmake变量名前缀, 统一quant1x_
+- update changelog
+
+## [0.6.1] - 2025-09-02
+### Changed
+- 修订README文件, 开发语言支持python/go/c++。rust视情况而定, 部分实现可以参考q1x-rust。后续q1x为前缀的项目会归档后放弃维护
+- 更新c++第三方库xsimd版本到13.2.0(eb3bacbe1012bf79a1ad68f2aec53b3e051bc14d)
+- update changelog
+
 ## [0.6.0] - 2025-09-02
 ### Changed
 - 新增go模块
@@ -34,6 +105,7 @@ All notable changes to this project will be documented in this file.
 - 新增c++README.md
 - 补全c++实现的其它代码
 - 新增go项目模块文件
+- update changelog
 
 ## [0.5.9] - 2025-08-31
 ### Changed
@@ -156,7 +228,20 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.0...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.13...HEAD
+[0.6.13]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.12...v0.6.13
+[0.6.12]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.11...v0.6.12
+[0.6.11]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.10...v0.6.11
+[0.6.10]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.9...v0.6.10
+[0.6.9]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.8...v0.6.9
+[0.6.8]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.7...v0.6.8
+[0.6.7]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.6...v0.6.7
+[0.6.6]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.5...v0.6.6
+[0.6.5]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.4...v0.6.5
+[0.6.4]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.3...v0.6.4
+[0.6.3]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.2...v0.6.3
+[0.6.2]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.1...v0.6.2
+[0.6.1]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.0...v0.6.1
 [0.6.0]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.9...v0.6.0
 [0.5.9]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.8...v0.5.9
 [0.5.8]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.7...v0.5.8

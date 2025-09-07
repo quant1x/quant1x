@@ -29,7 +29,7 @@
 //#include "company_category.h"
 //#include "company_content.h"
 #include "minute_time.h"
-#include "server.h"
+#include "config.h"
 
 namespace level1 {
 
