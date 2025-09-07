@@ -1,10 +1,10 @@
-#include <quant1x/level1/server.h>
+#include <quant1x/level1/config.h>
 #include <quant1x/level1/hello1.h>
 #include <quant1x/level1/hello2.h>
 
 namespace level1 {
     // 标准行情服务器列表
-    const std::vector<Server> StandardServerList = {
+    const std::vector<ServerInfo> StandardServerList = {
         {"通达信", "深圳双线主站1", "110.41.147.114", 7709, 0},
         {"通达信", "深圳双线主站2", "110.41.2.72", 7709, 0},
         {"通达信", "深圳双线主站3", "110.41.4.4", 7709, 0},
@@ -152,7 +152,7 @@ namespace level1 {
     };
 
     // 扩展行情服务器列表
-    const std::vector<Server> ExtensionServerList = {
+    const std::vector<ServerInfo> ExtensionServerList = {
         {"通达信", "扩展市场深圳双线1", "112.74.214.43", 7727, 0},
         {"通达信", "扩展市场深圳双线2", "120.25.218.6", 7727, 0},
         {"通达信", "扩展市场深圳双线3", "47.107.75.159", 7727, 0},
@@ -199,13 +199,13 @@ namespace level1 {
         {"国泰君安", "扩展行情主站7", "103.221.142.73", 7721, 0}
     };
 
-    cista::offset::vector<Server> detect(i64 elapsed_time, int conn_limit, int connect_timeout_milliseconds) {
+    std::vector<ServerInfo> detect(i64 elapsed_time, int conn_limit, int connect_timeout_milliseconds) {
         runtime::global_init();
         // 创建线程池
         const size_t num_threads = std::min(static_cast<size_t>(std::thread::hardware_concurrency()), StandardServerList.size());
         std::vector<std::thread> workers;
         std::mutex results_mutex;
-        std::vector<Server> best_ips;
+        std::vector<ServerInfo> best_ips;
 
         // 工作函数 - 每个线程测试一组服务器
         auto worker_func = [&](size_t start, size_t end) {
@@ -272,8 +272,8 @@ namespace level1 {
                     spdlog::debug("cross time={}", duration);
 
                     if (duration < elapsed_time) {
-                        Server srv = v;
-                        srv.CrossTime = duration;
+                        ServerInfo srv = v;
+                        srv.latency_ms = duration;
 
                         std::lock_guard<std::mutex> lock(results_mutex);
                         best_ips.emplace_back(srv);
@@ -306,14 +306,14 @@ namespace level1 {
         }
 
         // 排序结果
-        std::sort(best_ips.begin(), best_ips.end(), [](const Server &a, const Server &b) {
-            return a.CrossTime < b.CrossTime;
+        std::sort(best_ips.begin(), best_ips.end(), [](const ServerInfo &a, const ServerInfo &b) {
+            return a.latency_ms < b.latency_ms;
         });
 
         // 输出结果
         for (size_t i = 0; i < best_ips.size(); i++) {
             auto &v = best_ips[i];
-            spdlog::debug("{}: {}={}:{}, crossTime={}", i, v.Name, v.Host, v.Port, v.CrossTime);
+            spdlog::debug("{}: {}={}:{}, crossTime={}", i, v.Name, v.Host, v.Port, v.latency_ms);
         }
 
         auto length = std::min(best_ips.size(), static_cast<size_t>(conn_limit));

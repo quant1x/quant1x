@@ -224,15 +224,6 @@ if (MSVC)
     endif ()
 endif ()
 
-# ==============================
-# cista
-# find_package(cista CONFIG REQUIRED)
-# ==============================
-# Cista
-#find_package(cista CONFIG REQUIRED)
-set(CISTA_VERSION "0.15") # 无法获取, 手动设定
-echo_lib_version(cista ${CISTA_VERSION})
-
 message(STATUS "================== 底层 工具库 ==================")
 # ASIO
 include(cmake/network.cmake)
@@ -345,7 +336,6 @@ set(DEPENDENCY_ARGPARSE "v${argparse_VERSION}")
 set(DEPENDENCY_YAML_CPP "v${yaml-cpp_VERSION}")
 set(DEPENDENCY_PROTOBUF "v${Protobuf_VERSION}")
 set(DEPENDENCY_CAPNP "v${CapnProto_VERSION}")
-set(DEPENDENCY_CISTA "v${CISTA_VERSION}")
 set(DEPENDENCY_MIMALLOC "v${mimalloc_VERSION}")
 set(DEPENDENCY_SPDLOG "v${spdlog_VERSION}")
 set(DEPENDENCY_CPR "v${cpr_VERSION}")
@@ -459,6 +449,7 @@ set(quant1x-headers
     quant1x/exchange/timestamp.h
 
     # level1
+    quant1x/level1/config.h
     quant1x/level1/minute_time.h
     quant1x/level1/client.h
     quant1x/level1/protocol.h
@@ -541,9 +532,9 @@ set(quant1x-sources
     quant1x/engine/adapter.cpp
 
     # level1
+    quant1x/level1/config.cpp
     quant1x/level1/client.cpp
     quant1x/level1/protocol.cpp
-    quant1x/level1/server.cpp
 
     # 配置信息
     quant1x/config/config.cpp
@@ -744,7 +735,6 @@ message(STATUS "                                argparse : v${argparse_VERSION}"
 message(STATUS "                                yaml-cpp : v${yaml-cpp_VERSION}")
 message(STATUS "                                Protobuf : v${Protobuf_VERSION}")
 message(STATUS "                             Cap'n Proto : v${CapnProto_VERSION}")
-message(STATUS "                                Cista(√) : v${CISTA_VERSION}")
 message(STATUS "                                mimalloc : v${mimalloc_VERSION}")
 message(STATUS "                                  spdlog : v${spdlog_VERSION}")
 message(STATUS "     C++ Requests Library (Cpr for curl) : v${cpr_VERSION}")

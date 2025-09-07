@@ -3,19 +3,6 @@
 #define QUANT1X_LEVEL1_ENCODING_H 1
 
 #include <quant1x/std/feature_detection.h>
-// 手动处理字节序检测
-#if OS_IS_WINDOWS
-#define CISTA_LITTLE_ENDIAN 1
-#else
-#if OS_IS_APPLE
-#include <machine/endian.h>
-#else
-#include <endian.h>
-#endif
-#define IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
-#endif
-
-#include <cista/serialization.h>
 #include <quant1x/std/api.h>
 #include <zlib.h>
 

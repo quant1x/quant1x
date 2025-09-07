@@ -11,18 +11,16 @@ namespace level1 {
     constexpr int64_t _max_elapsed_time = std::chrono::milliseconds(100).count();  ///< 最大连接耗时
 
     // 定义Server结构体
-    struct Server {
-        cista::offset::string Source;
-        cista::offset::string Name;
-        cista::offset::string Host;
-        u16                   Port;
-        i64                   CrossTime;
-        // 定义 Cista 反射
-        constexpr auto serialize() { return std::tie(Source, Name, Host, Port, CrossTime); }
+    struct ServerInfo {
+        std::string Source;
+        std::string Name;
+        std::string Host;
+        u16         Port;
+        i64         latency_ms;
     };
 
     // 标准行情服务器列表
-    cista::offset::vector<Server> detect(i64 elapsed_time = _max_elapsed_time, int conn_limit = _max_connections, int connect_timeout_milliseconds = 1000);
+    std::vector<ServerInfo> detect(i64 elapsed_time = _max_elapsed_time, int conn_limit = _max_connections, int connect_timeout_milliseconds = 1000);
 
 }  // namespace level1
 

@@ -40,7 +40,7 @@ static std::string build_version_info() {
 }
 
 // 应用入口
-int main(int argc, const char *const argv[]) {
+int main(const int argc, const char *const argv[]) {
     // 提取默认的 program_name
     std::string program_name = io::executable_name();
     std::string program_version = build_version_info();
