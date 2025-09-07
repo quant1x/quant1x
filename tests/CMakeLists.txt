@@ -118,11 +118,22 @@ add_catch2_executable(tdd-calendar.cpp)
 add_catch2_executable(test-calender.cpp)
 
 # 测试协议
+add_catch2_executable(tdd-tdx.cpp)
 add_catch2_executable(tdd-level1-detect-server.cpp)
+add_catch2_executable(tdd-level1-encoding.cpp)
 
-# formula测试
+# ta 测试
+add_gtest_executable(tdd-ta.cpp)
 add_catch2_executable(tdd-formula.cpp)
 add_catch2_executable(tdd-rolling.cpp)
+add_catch2_executable(tdd-series.cpp)
+add_catch2_executable(tdd-ta-ma.cpp)
+add_catch2_executable(tdd-ta-dbscan.cpp)
+
+# DataFrame 测试
+add_catch2_executable(tdd-dataframe-ewm.cpp)
+add_catch2_executable(tdd-dataframe-data.cpp)
+add_catch2_executable(tdd-dataframe-release.cpp)
 
 # numerics 数值类功能测试
 add_catch2_executable(tdd-number-range.cpp)
