@@ -345,6 +345,7 @@ set(DEPENDENCY_CATCH2 "v${Catch2_VERSION}")
 # ============================================================
 
 set(quant1x-headers
+    quant1x/std/affinity.h
     quant1x/std/api.h
     quant1x/std/base.h
     quant1x/std/buffer.h
@@ -354,6 +355,7 @@ set(quant1x-headers
     quant1x/std/feature_detection.h
     quant1x/std/numerics.h
     quant1x/std/safe.h
+    quant1x/std/scheduler.h
     quant1x/std/simd.h
 
     # i/o 相关
@@ -369,14 +371,12 @@ set(quant1x-headers
     quant1x/encoding/yaml.h
 
     # 运行时
-    quant1x/std/affinity.h
     quant1x/runtime/crash.h
     quant1x/runtime/service.h
     quant1x/runtime/cache1d.h
     quant1x/runtime/once.h
     quant1x/runtime/core.h
-    quant1x/std/scheduler.h
-
+    
     # 配置
     quant1x/config/rule-parameter.h
     quant1x/config/strategy-parameter.h
