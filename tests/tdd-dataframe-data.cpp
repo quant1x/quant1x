@@ -157,7 +157,7 @@ std::string DataFrame::print(
     size_t                                nMinRows   = maxRows / 2;
     size_t                                nTotal     = 0;
 
-    if (shortRows && nrows > maxRows) {
+    if (shortRows && static_cast<int>(nrows) > maxRows) {
         shortening = true;
         DataFrame head = Subset(0, nMinRows);
         records = head.Records(true);
@@ -202,7 +202,7 @@ std::string DataFrame::print(
     std::vector<std::string> typesRow(ncols + 1);
     typesRow[0] = "";
     auto types = Types();
-    for (int i = 0; i < ncols; ++i) {
+    for (int i = 0; i < static_cast<int>(ncols); ++i) {
         typesRow[i + 1] = "<" + types[i] + ">";
     }
 
@@ -226,7 +226,7 @@ std::string DataFrame::print(
 
     if (shortCols) {
         int colWidth = 0;
-        for (int column = 1; column <= ncols; ++column) {
+        for (int column = 1; column <= static_cast<int>(ncols); ++column) {
             colWidth += maxChars[column];
             if (colWidth > maxCharsTotal) {
                 maxCols = column;
@@ -249,12 +249,12 @@ std::string DataFrame::print(
         row[0] = addLeftPadding(row[0], maxChars[0] + 1);
 
         for (size_t j = 1; j < row.size(); ++j) {
-            if (int(j) >= maxCols) break;
+            if (j >= maxCols) break;
             row[j] = addRightPadding(row[j], maxChars[j]);
         }
 
         std::vector<std::string> trimmedRow;
-        for (int j = 0; j < maxCols; ++j) {
+        for (int j = 0; j < static_cast<int>(maxCols); ++j) {
             if (j < static_cast<int>(row.size())) {
                 trimmedRow.push_back(row[j]);
             }
@@ -578,7 +578,7 @@ std::vector<std::string> csv_row_to_vector(
     return values;
 }
 
-#include <q1x/datasets/kline.h>
+#include <quant1x/datasets/kline.h>
 
 void process_csv(const std::string& filename) {
     csv2::Reader<csv2::delimiter<','>> reader;

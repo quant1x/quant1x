@@ -4,7 +4,7 @@
 #include <malloc.h>
 #include <stdio.h>
 #include <windows.h>
-#include <q1x/ta/simd.h>
+#include <quant1x/ta/simd.h>
 
 int code_convert(const char *from_charset, const char *to_charset, char *inbuf, size_t inlen,
                  char *outbuf, size_t outlen) {

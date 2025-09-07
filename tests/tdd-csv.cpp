@@ -1,4 +1,4 @@
-#include <test/test.h>
+#include <quant1x/test/test.h>
 
 #include <csv2/reader.hpp>
 #include <csv2/writer.hpp>
@@ -212,14 +212,14 @@ TEST_CASE("csv-write-slices", "[encoding]") {
     }
 }
 
-#include <q1x/factors/share-holder.h>
+#include <quant1x/factors/share-holder.h>
 
 TEST_CASE("f10-share-holder", "[factors]") {
     auto list = dfcf::GetCacheShareHolder("sh600600", "2025-05-20");
     std::cout << list.size() << std::endl;
 }
 
-#include <q1x/factors/f10.h>
+#include <quant1x/factors/f10.h>
 
 TEST_CASE("f10-struct", "[factors]") {
     F10 info;

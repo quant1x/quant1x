@@ -1,7 +1,7 @@
-#include "test/test.h"
+#include "quant1x/test/test.h"
 #include <iostream>
 
-#include <q1x/net/endpoint.h>
+#include <quant1x/net/endpoint.h>
 
 TEST_CASE("endpoint pool", "[net]") {
     EndpointManager manager;
@@ -37,8 +37,8 @@ TEST_CASE("endpoint pool", "[net]") {
     std::cout << "ep2 - Active: " << stats2.second << "/" << stats2.first << std::endl;
 }
 
-#include <q1x/net/connection_pool.h>
-#include <q1x/net/operation_handler.h>
+#include <quant1x/net/connection_pool.h>
+#include <quant1x/net/operation_handler.h>
 
 /**
  * @brief 模拟网络操作处理器，用于测试

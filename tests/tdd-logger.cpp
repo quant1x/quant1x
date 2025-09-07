@@ -1,7 +1,7 @@
-#include <test/test.h>
-#include <q1x/std/strings.h>
+#include <quant1x/test/test.h>
+#include <quant1x/std/strings.h>
 #include <spdlog/sinks/daily_file_sink.h>
-#include <q1x/io/file.h>
+#include <quant1x/io/file.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 #include "spdlog/spdlog.h"

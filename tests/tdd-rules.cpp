@@ -1,6 +1,6 @@
-#include <test/test.h>
+#include <quant1x/test/test.h>
 
-#include <q1x/strategies/rule-engine.h>
+#include <quant1x/strategies/rule-engine.h>
 #include <capnp/message.h>
 
 engine::RuleError ExampleBaseRule(const engine::RuleContext& ctx) {

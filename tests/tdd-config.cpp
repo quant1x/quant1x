@@ -1,5 +1,5 @@
-#include <test/test.h>
-#include <q1x/runtime/config.h>
+#include <quant1x/test/test.h>
+#include <quant1x/runtime/config.h>
 
 // 从YAML加载配置
 config::TraderParameter LoadConfigFromYAML(const std::string& filename) {

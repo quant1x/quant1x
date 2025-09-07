@@ -1,6 +1,6 @@
-#include <q1x/datasets/kline.h>
+#include <quant1x/datasets/kline.h>
 #include <users/no1.h>
-#include <q1x/backtest/backtest.h>
+#include <quant1x/backtest/backtest.h>
 #include <indicators/progress_bar.hpp>
 
 int main() {

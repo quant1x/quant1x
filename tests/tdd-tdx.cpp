@@ -250,8 +250,8 @@ TEST_CASE("block-network-info", "[tdx]") {
     spdlog::debug(response.toString());
 }
 
-#include <q1x/exchange/security.h>
-#include <q1x/exchange/blocks.h>
+#include <quant1x/exchange/security.h>
+#include <quant1x/exchange/blocks.h>
 
 TEST_CASE("block-file-update", "[cache]") {
     spdlog::set_level(spdlog::level::debug);
@@ -284,7 +284,7 @@ TEST_CASE("security_list", "[cache]") {
     std::cout << info->name << std::endl;
 }
 
-//#include <q1x/tdx/server.h>
+//#include <quant1x/tdx/server.h>
 
 TEST_CASE("bestip", "[cache]") {
     spdlog::set_level(spdlog::level::debug);

@@ -1,9 +1,9 @@
-#include <test/test.h>
-#include <q1x/factors/history.h>
-#include <q1x/factors/base.h>
-#include <q1x/dataframe/dataframe.h>
-#include <q1x/formula.h>
-#include <q1x/datasets/trans.h>
+#include <quant1x/test/test.h>
+#include <quant1x/factors/history.h>
+#include <quant1x/factors/base.h>
+#include <quant1x/dataframe/dataframe.h>
+#include <quant1x/formula.h>
+#include <quant1x/datasets/trans.h>
 
 // 测试获取指定日期的历史成交数据
 TEST_CASE("history-trans", "[features]") {

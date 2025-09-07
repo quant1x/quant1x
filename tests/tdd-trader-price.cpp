@@ -1,6 +1,6 @@
-#include <test/test.h>
-#include <q1x/runtime/core.h>
-#include <q1x/trader/fee.h>
+#include <quant1x/test/test.h>
+#include <quant1x/runtime/core.h>
+#include <quant1x/trader/fee.h>
 
 TEST_CASE("price-cage-default", "[trader]") {
     runtime::global_init();

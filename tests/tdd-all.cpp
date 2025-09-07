@@ -1,17 +1,17 @@
-#include <test/test.h>
+#include <quant1x/test/test.h>
 
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
-#include <q1x/level1/encoding.h>
+#include <quant1x/level1/encoding.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <chrono>
 #include <format>
 #include <iostream>
-#include <q1x/std/time.h>
-#include <q1x/runtime/core.h>
-#include <q1x/io/file.h>
+#include <quant1x/std/time.h>
+#include <quant1x/runtime/core.h>
+#include <quant1x/io/file.h>
 
 TEST_CASE("stem", "[filesystem]") {
     std::string fn = "c:\\abc\\e.exe.zip";
@@ -214,7 +214,7 @@ TEST_CASE("Test trim function", "[strings]") {
 //    }
 }
 
-#include <q1x/runtime/once.h>
+#include <quant1x/runtime/once.h>
 static int test_number = 0;
 void test_once() {
     std::cout << "test_number incr" << std::endl;

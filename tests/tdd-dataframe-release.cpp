@@ -353,7 +353,7 @@ TEST_CASE("v1_struct-to-dataframe-print", "[dataframe]") {
     std::cout << df.to_string() << std::endl;;
 }
 
-#include <q1x/datasets/kline.h>
+#include <quant1x/datasets/kline.h>
 
 TEST_CASE("v2_struct-to-dataframe-print", "[dataframe]") {
     std::string code = "sh603338";

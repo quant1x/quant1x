@@ -1,16 +1,16 @@
-#include <test/test.h>
-#include <q1x/datasets/xdxr.h>
-#include <q1x/datasets/xdxr_adjust_factor.h>
+#include <quant1x/test/test.h>
+#include <quant1x/datasets/xdxr.h>
+#include <quant1x/datasets/xdxr_adjust_factor.h>
 
 #include <ranges>
-#include <q1x/datasets/kline.h>
-#include <q1x/encoding/csv.h>
-#include <q1x/datasets/kline_raw.h>
-#include <q1x/exchange/security.h>
-#include <q1x/exchange.h>
-#include <q1x/factors/f10.h>
-#include <q1x/factors/history.h>
-#include <q1x/dataframe/dataframe.h>
+#include <quant1x/datasets/kline.h>
+#include <quant1x/encoding/csv.h>
+#include <quant1x/datasets/kline_raw.h>
+#include <quant1x/exchange/security.h>
+#include <quant1x/exchange.h>
+#include <quant1x/factors/f10.h>
+#include <quant1x/factors/history.h>
+#include <quant1x/dataframe/dataframe.h>
 
 TEST_CASE("xdxr-extract", "[xdxr]") {
     spdlog::set_level(spdlog::level::debug);
@@ -134,7 +134,7 @@ void check_and_update(const exchange::timestamp& timestamp) {
     }
 }
 
-#include <q1x/proto/xdxr.pb.h>
+#include <quant1x/proto/xdxr.pb.h>
 
 void check_and_update_pb(const exchange::timestamp& timestamp) {
     std::unordered_map<std::string, std::vector<factors::CumulativeAdjustment>> xdxr_map = checkout_dividends_map(timestamp);

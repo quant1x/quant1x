@@ -1,7 +1,7 @@
-#include <test/test.h>
-#include <q1x/strategies/strategy.h>
+#include <quant1x/test/test.h>
+#include <quant1x/strategies/strategy.h>
 #include <capnp/message.h>
-#include <q1x/std/numerics.h>
+#include <quant1x/std/numerics.h>
 #include <indicators/dynamic_progress.hpp>
 #include <indicators/progress_bar.hpp>
 #include <users/no1.h>

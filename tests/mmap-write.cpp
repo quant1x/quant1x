@@ -2,7 +2,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include "test-mmap.h"
-#include <q1x/runtime/core.h>
+#include <quant1x/runtime/core.h>
 
 int main(int argc, const char * const argv[]) {
     (void)argc;

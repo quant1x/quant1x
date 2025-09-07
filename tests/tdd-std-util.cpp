@@ -1,5 +1,5 @@
-#include <test/test.h>
-#include <q1x/std/util.h>
+#include <quant1x/test/test.h>
+#include <quant1x/std/util.h>
 
 TEST_CASE("getenv", "[std]") {
 	auto homedir = util::homedir();

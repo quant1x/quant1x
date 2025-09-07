@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
-#include <q1x/ta/ma.h>
-#include <q1x/ta/ema.h>
-#include <q1x/ta/sma.h>
-#include <q1x/ta/rsi.h>
-#include <q1x/ta/macd.h>
+#include <quant1x/ta/ma.h>
+#include <quant1x/ta/ema.h>
+#include <quant1x/ta/sma.h>
+#include <quant1x/ta/rsi.h>
+#include <quant1x/ta/macd.h>
 
 using namespace ta;
 

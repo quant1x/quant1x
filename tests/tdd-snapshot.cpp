@@ -1,7 +1,7 @@
-#include <test/test.h>
-#include <q1x/runtime/config.h>
-#include <q1x/exchange.h>
-#include <q1x/std/util.h>
+#include <quant1x/test/test.h>
+#include <quant1x/runtime/config.h>
+#include <quant1x/exchange.h>
+#include <quant1x/std/util.h>
 
 TEST_CASE("base-snapshot", "[runtime]") {
     runtime::global_init();
@@ -52,7 +52,7 @@ TEST_CASE("base-snapshot", "[runtime]") {
     }
 }
 
-#include <q1x/proto/data.h>
+#include <quant1x/proto/data.h>
 #include <capnp/message.h>
 #include <capnp/serialize-packed.h>
 
@@ -397,8 +397,8 @@ TEST_CASE("print-snapshot", "[capnp]") {
     printBinaryFileAsJson(tdd_capnp_cache_filename);
 }
 
-#include <q1x/realtime/snapshot.h>
-#include <q1x/trader/tracker.h>
+#include <quant1x/realtime/snapshot.h>
+#include <quant1x/trader/tracker.h>
 #include <users/no1.h>
 
 TEST_CASE("sync-snapshot", "[realtime]") {

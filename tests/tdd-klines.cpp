@@ -1,5 +1,5 @@
-#include <test/test.h>
-#include <q1x/datasets/kline_raw.h>
+#include <quant1x/test/test.h>
+#include <quant1x/datasets/kline_raw.h>
 
 TEST_CASE("download-kline-raw", "[datasets]") {
     std::string code = "sz300773";

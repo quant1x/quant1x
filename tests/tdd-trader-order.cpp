@@ -1,8 +1,8 @@
-#include <test/test.h>
-#include <q1x/trader/order_state.h>
+#include <quant1x/test/test.h>
+#include <quant1x/trader/order_state.h>
 #include <users/no1.h>
-#include <q1x/trader/trader.h>
-#include <q1x/trader/account.h>
+#include <quant1x/trader/trader.h>
+#include <quant1x/trader/account.h>
 
 TEST_CASE("trader-account", "[trader]") {
     auto info = trader::QueryAccount();

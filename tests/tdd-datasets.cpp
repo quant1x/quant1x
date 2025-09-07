@@ -1,7 +1,7 @@
-#include <test/test.h>
-#include <q1x/exchange.h>
-#include <q1x/exchange/session.h>
-#include <q1x/proto/data.h>
+#include <quant1x/test/test.h>
+#include <quant1x/exchange.h>
+#include <quant1x/exchange/session.h>
+#include <quant1x/proto/data.h>
 
 TEST_CASE("lower-upper", "[strings]") {
     spdlog::set_level(spdlog::level::debug);
@@ -334,7 +334,7 @@ TEST_CASE("cista-for-each", "[cista]") {
     });
 }
 
-#include <q1x/datasets/xdxr.h>
+#include <quant1x/datasets/xdxr.h>
 
 TEST_CASE("xdxr-factor", "[datasets]") {
     spdlog::set_level(spdlog::level::debug);
@@ -346,7 +346,7 @@ TEST_CASE("xdxr-factor", "[datasets]") {
 }
 
 #include <filesystem>
-#include <q1x/datasets/kline_raw.h>
+#include <quant1x/datasets/kline_raw.h>
 
 namespace fs = std::filesystem;
 
