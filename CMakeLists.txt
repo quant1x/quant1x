@@ -251,9 +251,6 @@ target_link_libraries(third_libs INTERFACE unofficial::duktape::duktape)
 echo_lib_version(duktape ${unofficial-duktape_VERSION})
 
 message(STATUS "================== 测试工具库 ==================")
-## 查找 Matplot++, 需要安装gnuplot, msvc编译出现错误, 无法绘图
-#find_package(Matplot++ REQUIRED)
-#echo_lib_version(Matplot++, ${Matplot++_VERSION})
 
 # 查找 Google Benchmark 包
 find_package(benchmark REQUIRED)
@@ -273,7 +270,7 @@ target_compile_definitions(test-catch2 INTERFACE
 # GTest
 find_package(GTest CONFIG REQUIRED)
 add_library(test-gtest INTERFACE)
-target_link_libraries(test-gtest INTERFACE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main Matplot++::cimg  Matplot++::matplot)
+target_link_libraries(test-gtest INTERFACE GTest::gtest GTest::gtest_main GTest::gmock GTest::gmock_main)
 echo_lib_version(GTest ${GTest_VERSION})
 
 # ============================================================
