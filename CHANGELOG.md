@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.19] - 2025-09-08
+### Changed
+- 修正头文件归类不清晰的问题
+
 ## [0.6.18] - 2025-09-08
 ### Changed
 - 更新依赖库boost.pfr版本(d9fde1f2a0ab92e7db204c49c1612536cb296dad)
+- update changelog
 
 ## [0.6.17] - 2025-09-07
 ### Changed
@@ -254,7 +259,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.18...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.19...HEAD
+[0.6.19]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.18...v0.6.19
 [0.6.18]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.17...v0.6.18
 [0.6.17]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.16...v0.6.17
 [0.6.16]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.15...v0.6.16
