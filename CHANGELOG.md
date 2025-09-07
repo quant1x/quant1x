@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.13] - 2025-09-07
+### Changed
+- 剔除绘图的库
+
 ## [0.6.12] - 2025-09-07
 ### Changed
 - 剔除对cista库的依赖
+- update changelog
 
 ## [0.6.11] - 2025-09-07
 ### Changed
@@ -223,7 +228,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.12...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.13...HEAD
+[0.6.13]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.12...v0.6.13
 [0.6.12]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.11...v0.6.12
 [0.6.11]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.10...v0.6.11
 [0.6.10]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.9...v0.6.10
