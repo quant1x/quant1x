@@ -1,2 +1,1 @@
-# 为 .bat 文件设置 CRLF 换行符
 *.bat text working-tree-encoding=GBK eol=crlf
