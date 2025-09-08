@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.20] - 2025-09-08
+### Changed
+- bat文件设置GBK编码和回车换行
+
 ## [0.6.19] - 2025-09-08
 ### Changed
 - 修正头文件归类不清晰的问题
+- update changelog
 
 ## [0.6.18] - 2025-09-08
 ### Changed
@@ -259,7 +264,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.19...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.20...HEAD
+[0.6.20]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.19...v0.6.20
 [0.6.19]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.18...v0.6.19
 [0.6.18]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.17...v0.6.18
 [0.6.17]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.16...v0.6.17
