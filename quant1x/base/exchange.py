@@ -7,7 +7,7 @@ from functools import lru_cache
 import numpy as np
 import pandas as pd
 
-from . import base, timestamp
+from quant1x.base import base, timestamp
 
 
 class MarketType(Enum):

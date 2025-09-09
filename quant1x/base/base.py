@@ -3,7 +3,7 @@ import os
 
 import yaml
 
-from . import file
+from quant1x.base import file
 
 
 def get_quant1x_config_filename() -> str:

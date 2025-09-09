@@ -9,7 +9,7 @@ import pandas as pd
 from dateutil import parser
 from pandas import DataFrame
 
-from . import base, exchange
+from quant1x.base import base, exchange
 
 
 @lru_cache(maxsize=None)

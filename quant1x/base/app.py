@@ -1,36 +1,40 @@
 # -*- coding: UTF-8 -*-
+"""
+应用程序工具模块，提供获取应用信息和用户信息的函数。
+"""
+
 import os.path
 import sys
+from typing import Tuple
 
-from . import file
+from quant1x.base import file
 
 
-def application() -> tuple[str, str, str]:
+def application() -> Tuple[str, str, str]:
     """
-    获取应用程序的名字
-    :return: 目录, 文件名, 扩展名
+    获取当前应用程序的路径信息。
+
+    Returns:
+        Tuple[str, str, str]: 返回包含目录路径、文件名(不含扩展名)和扩展名的元组
     """
-    app = sys.argv[0]
-    # print(app)
-    # print(os.path.abspath(app))
-    abspath = os.path.abspath(app)
-    # print(os.path.realpath(app))
-    dirname, filename = os.path.split(abspath)
-    (filename, ext) = os.path.splitext(filename)
-    # print(filename, ext)
-    return dirname, filename, ext
+    app_path = os.path.abspath(sys.argv[0])
+    dir_path, full_filename = os.path.split(app_path)
+    filename, ext = os.path.splitext(full_filename)
+    return dir_path, filename, ext
 
 
-def getuser():
+def getuser() -> str:
     """
-    获取用户名
-    :return:
+    获取当前用户名。
+
+    Returns:
+        str: 当前用户名
     """
-    home = file.homedir()
-    _, username = os.path.split(home)
+    home_dir = file.homedir()
+    _, username = os.path.split(home_dir)
     return username
 
 
 if __name__ == '__main__':
-    name = application()
-    print(name)
+    app_info = application()
+    print(app_info)
