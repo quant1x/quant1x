@@ -19,7 +19,7 @@ namespace q1x::engine {
 
     /**
      * @brief 守护进程入口
-     * @param service_command
+     * @param cmd
      */
     int daemon(const argparse::ArgumentParser& cmd);
 }
