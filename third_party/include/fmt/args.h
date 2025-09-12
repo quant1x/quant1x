@@ -212,7 +212,7 @@ FMT_EXPORT template <typename Context> class dynamic_format_arg_store {
   }
 
   /// Returns the number of elements in the store.
-  auto size() const noexcept -> size_t { return data_.size(); }
+  size_t size() const noexcept { return data_.size(); }
 };
 
 FMT_END_NAMESPACE

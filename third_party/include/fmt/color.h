@@ -375,17 +375,19 @@ template <typename Char> struct ansi_color_escape {
       // 10 more.
       if (is_background) value += 10u;
 
-      buffer[size++] = static_cast<Char>('\x1b');
-      buffer[size++] = static_cast<Char>('[');
+      size_t index = 0;
+      buffer[index++] = static_cast<Char>('\x1b');
+      buffer[index++] = static_cast<Char>('[');
 
       if (value >= 100u) {
-        buffer[size++] = static_cast<Char>('1');
+        buffer[index++] = static_cast<Char>('1');
         value %= 100u;
       }
-      buffer[size++] = static_cast<Char>('0' + value / 10u);
-      buffer[size++] = static_cast<Char>('0' + value % 10u);
+      buffer[index++] = static_cast<Char>('0' + value / 10u);
+      buffer[index++] = static_cast<Char>('0' + value % 10u);
 
-      buffer[size++] = static_cast<Char>('m');
+      buffer[index++] = static_cast<Char>('m');
+      buffer[index++] = static_cast<Char>('\0');
       return;
     }
 
@@ -396,7 +398,7 @@ template <typename Char> struct ansi_color_escape {
     to_esc(color.r, buffer + 7, ';');
     to_esc(color.g, buffer + 11, ';');
     to_esc(color.b, buffer + 15, 'm');
-    size = 19;
+    buffer[19] = static_cast<Char>(0);
   }
   FMT_CONSTEXPR ansi_color_escape(emphasis em) noexcept {
     uint8_t em_codes[num_emphases] = {};
@@ -409,28 +411,26 @@ template <typename Char> struct ansi_color_escape {
     if (has_emphasis(em, emphasis::conceal)) em_codes[6] = 8;
     if (has_emphasis(em, emphasis::strikethrough)) em_codes[7] = 9;
 
-    buffer[size++] = static_cast<Char>('\x1b');
-    buffer[size++] = static_cast<Char>('[');
-
+    size_t index = 0;
     for (size_t i = 0; i < num_emphases; ++i) {
       if (!em_codes[i]) continue;
-      buffer[size++] = static_cast<Char>('0' + em_codes[i]);
-      buffer[size++] = static_cast<Char>(';');
+      buffer[index++] = static_cast<Char>('\x1b');
+      buffer[index++] = static_cast<Char>('[');
+      buffer[index++] = static_cast<Char>('0' + em_codes[i]);
+      buffer[index++] = static_cast<Char>('m');
     }
-
-    buffer[size - 1] = static_cast<Char>('m');
+    buffer[index++] = static_cast<Char>(0);
   }
   FMT_CONSTEXPR operator const Char*() const noexcept { return buffer; }
 
   FMT_CONSTEXPR auto begin() const noexcept -> const Char* { return buffer; }
-  FMT_CONSTEXPR auto end() const noexcept -> const Char* {
-    return buffer + size;
+  FMT_CONSTEXPR20 auto end() const noexcept -> const Char* {
+    return buffer + basic_string_view<Char>(buffer).size();
   }
 
  private:
   static constexpr size_t num_emphases = 8;
-  Char buffer[7u + 4u * num_emphases];
-  size_t size = 0;
+  Char buffer[7u + 3u * num_emphases + 1u];
 
   static FMT_CONSTEXPR void to_esc(uint8_t c, Char* out,
                                    char delimiter) noexcept {

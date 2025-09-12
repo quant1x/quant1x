@@ -60,20 +60,21 @@
 #  endif
 #endif
 
-#ifdef FMT_CPP_LIB_FILESYSTEM
-// Use the provided definition.
-#elif defined(__cpp_lib_filesystem)
-#  define FMT_CPP_LIB_FILESYSTEM __cpp_lib_filesystem
-#else
-#  define FMT_CPP_LIB_FILESYSTEM 0
+// For older Xcode versions, __cpp_lib_xxx flags are inaccurately defined.
+#ifndef FMT_CPP_LIB_FILESYSTEM
+#  ifdef __cpp_lib_filesystem
+#    define FMT_CPP_LIB_FILESYSTEM __cpp_lib_filesystem
+#  else
+#    define FMT_CPP_LIB_FILESYSTEM 0
+#  endif
 #endif
 
-#ifdef FMT_CPP_LIB_VARIANT
-// Use the provided definition.
-#elif defined(__cpp_lib_variant)
-#  define FMT_CPP_LIB_VARIANT __cpp_lib_variant
-#else
-#  define FMT_CPP_LIB_VARIANT 0
+#ifndef FMT_CPP_LIB_VARIANT
+#  ifdef __cpp_lib_variant
+#    define FMT_CPP_LIB_VARIANT __cpp_lib_variant
+#  else
+#    define FMT_CPP_LIB_VARIANT 0
+#  endif
 #endif
 
 FMT_BEGIN_NAMESPACE
@@ -128,8 +129,9 @@ struct is_variant_like_<std::variant<Types...>> : std::true_type {};
 
 template <typename Variant, typename Char> class is_variant_formattable {
   template <size_t... Is>
-  static auto check(std::index_sequence<Is...>) -> std::conjunction<
-      is_formattable<std::variant_alternative_t<Is, Variant>, Char>...>;
+  static std::conjunction<
+      is_formattable<std::variant_alternative_t<Is, Variant>, Char>...>
+      check(std::index_sequence<Is...>);
 
  public:
   static constexpr bool value = decltype(check(
