@@ -3,9 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.23] - 2025-09-12
+### Changed
+- 更新date库
+- 更新fmt库
+
 ## [0.6.22] - 2025-09-09
 ### Changed
 - 调整base内部引用包的路径, 取消相对路径的用法
+- update changelog
 
 ## [0.6.21] - 2025-09-08
 ### Changed
@@ -274,7 +280,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.22...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.23...HEAD
+[0.6.23]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.22...v0.6.23
 [0.6.22]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.21...v0.6.22
 [0.6.21]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.20...v0.6.21
 [0.6.20]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.19...v0.6.20
