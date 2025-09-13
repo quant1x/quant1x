@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_DATAFRAME_DATAFRAME_H
-#define QUANT1X_DATAFRAME_DATAFRAME_H 1
+#ifndef QUANT1X_PANDAS_DATAFRAME_H
+#define QUANT1X_PANDAS_DATAFRAME_H 1
 
 #include <iostream>
 #include <vector>
@@ -289,4 +289,4 @@ private:
     }
 };
 
-#endif //QUANT1X_DATAFRAME_DATAFRAME_H
+#endif //QUANT1X_PANDAS_DATAFRAME_H

@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_DATAFRAME_TECHNICAL_ANALYSIS_SERIES_H
-#define QUANT1X_DATAFRAME_TECHNICAL_ANALYSIS_SERIES_H 1
+#ifndef QUANT1X_PANDAS_SERIES_H
+#define QUANT1X_PANDAS_SERIES_H 1
 
 #include <quant1x/std/simd.h>
 #include "ewm.h"
@@ -244,4 +244,4 @@ namespace ta {
 
 } // namespace ta
 
-#endif // QUANT1X_DATAFRAME_TECHNICAL_ANALYSIS_SERIES_H
+#endif // QUANT1X_PANDAS_SERIES_H
