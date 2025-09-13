@@ -3,9 +3,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.26] - 2025-09-13
+### Changed
+- 修订函数注释
+- 删除废弃的cista编解码库的测试代码, 弃用cista
+- 优化yaml配置自动反序列化
+- 进度条indicators使用别名mpb，防止与技术指标冲突
+- 原dataframe目录改名pandas
+- 修改日线源文件名, 去掉复数s, 与其它类型k线命名保持一致
+- 原dataframe目录改名pandas
+- 新增分钟级别的K线
+- 优化分钟级别K线开关, 默认关闭
+
 ## [0.6.25] - 2025-09-12
 ### Changed
 - 更新依赖库boost.pfr版本
+- update changelog
 
 ## [0.6.24] - 2025-09-12
 ### Changed
@@ -290,7 +303,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.25...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.26...HEAD
+[0.6.26]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.25...v0.6.26
 [0.6.25]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.24...v0.6.25
 [0.6.24]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.23...v0.6.24
 [0.6.23]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.22...v0.6.23
