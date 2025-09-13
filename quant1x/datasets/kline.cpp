@@ -28,23 +28,24 @@ namespace datasets {
             // 300773拉卡拉, 2025年6月6日除权, 数据公布于6月3日之前, 那么在6月6日之前的6月4日收盘前是不能除权除息的，6月5日收盘可以除权
             auto const& last_day_next = exchange::next_trading_day(ts_last_day).only_date();
             auto start_date = startDate.only_date();
-            auto xdxrs = dividends | std::views::filter([&last_day_next](const level1::XdxrInfo & x) {return last_day_next >= x.Date && x.Category == 1;});
+            auto xdxr_infos = dividends | std::views::filter([&last_day_next](const level1::XdxrInfo & x) {return last_day_next >= x.Date && x.Category == 1;});
             //int times = 0; // 除权除息次数
-            size_t count = std::ranges::distance(xdxrs); // 除权除息总次数
+            size_t count = std::ranges::distance(xdxr_infos); // 除权除息总次数
             // 时间越早的记录除权除息次数越多, 第一条数据时时总的除权除息次数
             auto times = count;
-            for(auto const & xdxr : xdxrs) {
-                if(xdxr.Date <= start_date) {
+            for(auto const & info : xdxr_infos) {
+                if(info.Date <= start_date) {
                     // 除权除息数据在日线第一条数据之前, 也就是ipo上市日期之前的数据, 不能用作复权
                     //continue;
                 } else {
-                    auto [m, a] = xdxr.adjustFactor();
-                    for (size_t i = 0; i < klines.size(); ++i) {
+                    auto [m, a] = info.adjustFactor();
+                    auto klines_size = klines.size();
+                    for (size_t i = 0; i < klines_size; ++i) {
                         auto kl = &(klines[i]);
-                        if (kl->Date >= xdxr.Date) {
+                        if (kl->Date >= info.Date) {
                             break;
                         }
-                        if (kl->Date < xdxr.Date) {
+                        if (kl->Date < info.Date) {
                             kl->Open = kl->Open * m + a;
                             kl->Close = kl->Close * m + a;
                             kl->High = kl->High * m + a;
