@@ -32,4 +32,4 @@ scipy~=1.16.0
 caerus~=1.0.1
 joblib~=1.5.1
 numba~=0.61.2
-inflection~=0.5.1 # 字符串风格转换
+inflection~=0.5.1
