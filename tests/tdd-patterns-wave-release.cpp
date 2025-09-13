@@ -20,7 +20,7 @@ TEST_CASE("patterns-wave-v1", "[release]") {
 
 
 #include <quant1x/factors/base.h>
-#include <quant1x/dataframe/dataframe.h>
+#include <quant1x/pandas/dataframe.h>
 #include <quant1x/std/format.h>
 #include <span>
 #include <ranges>

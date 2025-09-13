@@ -1,6 +1,6 @@
 #include <quant1x/test/test.h>
 
-#include <quant1x/dataframe/series.h>
+#include <quant1x/pandas/series.h>
 #include <quant1x/formula.h>
 #include <xtensor/views/xview.hpp>
 

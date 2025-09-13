@@ -1,7 +1,7 @@
 #include <quant1x/test/test.h>
 
-#include <quant1x/dataframe/series.h>
-#include <quant1x/dataframe/ewm.h>
+#include <quant1x/pandas/series.h>
+#include <quant1x/pandas/ewm.h>
 
 #ifdef _WIN32
 #include <windows.h>
