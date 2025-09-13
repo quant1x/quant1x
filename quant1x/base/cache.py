@@ -10,6 +10,7 @@ from dateutil import parser
 from pandas import DataFrame
 
 from quant1x.base import base, exchange
+import inflection
 
 
 @lru_cache(maxsize=None)
@@ -56,7 +57,10 @@ def klines(code: str, freq:str = 'D') -> pd.DataFrame | None:
     full_path = os.path.join(symbol_directory, filename)
 
     if os.path.isfile(full_path):
-        return pd.read_csv(full_path)
+        df = pd.read_csv(full_path)
+        # 转换所有列名为 snake_case
+        df.columns = [inflection.underscore(col) for col in df.columns]
+        return df
     return None
 
 
@@ -244,7 +248,9 @@ def get_tick_transaction(code: str, date: str) -> DataFrame | None:
     full_path = os.path.join(base_path, year, cache_date, filename)
 
     if os.path.isfile(full_path):
-        return pd.read_csv(full_path)
+        df = pd.read_csv(full_path)
+        df.columns = [col.lower() for col in df.columns]
+        return df
     return None
 
 
