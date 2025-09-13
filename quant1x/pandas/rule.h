@@ -4,6 +4,9 @@
 #include <chrono>
 
 namespace pandas {
+    // 解析频率
+    std::tuple<int, std::string> parse_frequency(const std::string& freq);
+
     // 解析频率字符串并返回对应的duration
     std::chrono::duration<long long, std::nano> ParseTimeRule(const std::string& freq);
 } // namespace pandas

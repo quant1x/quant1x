@@ -2,7 +2,7 @@
 #include <quant1x/datasets/kline_raw.h>
 #include <ranges>
 
-#include "quant1x/pandas/rule.h"
+#include <quant1x/pandas/rule.h>
 
 namespace datasets {
 
@@ -68,22 +68,22 @@ namespace datasets {
             }
         }
 
-        config::MinuteKLineConfig kline_config() {
-            config::MinuteKLineConfig config{};
-            auto const &local_cfg = config::global_config().data.cache.kline;
-            if (local_cfg.size() != 1) {
-                throw std::runtime_error("kline config size must be exactly one");
-            }
-            const auto minute_kline_config = local_cfg.begin();
-            const auto key = minute_kline_config->first;
-            auto value = minute_kline_config->second;
-            auto d = pandas::ParseTimeRule(key);
-            auto minutes = std::chrono::duration_cast<std::chrono::minutes>(d);
-            config.minutes = minutes.count();
-            config.frequency = key;
-            config.enabled = value;
-            return config;
-        }
+        // config::MinuteKLineConfig kline_config() {
+        //     config::MinuteKLineConfig config{};
+        //     auto const &local_cfg = config::global_config().data.cache.kline;
+        //     if (local_cfg.size() != 1) {
+        //         throw std::runtime_error("kline config size must be exactly one");
+        //     }
+        //     const auto minute_kline_config = local_cfg.begin();
+        //     const auto key = minute_kline_config->first;
+        //     const auto value = minute_kline_config->second;
+        //     const auto d = pandas::ParseTimeRule(key);
+        //     const auto minutes = std::chrono::duration_cast<std::chrono::minutes>(d);
+        //     config.minutes = minutes.count();
+        //     config.frequency = key;
+        //     config.enabled = value;
+        //     return config;
+        // }
 
     }
 
@@ -124,8 +124,9 @@ namespace datasets {
         return klines;
     }
 
-    std::vector<MinuteKLine> load_minute_kline(const std::string &code) {
-        auto filename = config::get_kline_filename(code);
+    std::vector<MinuteKLine> load_minute_kline(const std::string &code, const std::string &freq) {
+        auto [minutes, frequency] = pandas::parse_frequency(freq);
+        auto filename = config::get_kline_filename_ex(code, frequency);
         spdlog::debug("[dataset::MinuteKLine] kline file: {}", filename);
         return read_minute_kline_from_csv(filename);
     }
@@ -136,14 +137,13 @@ namespace datasets {
     }
 
     void DataMinuteKLine::Update(const std::string &code, const exchange::timestamp &date) {
-        auto cfg = kline_config();
-        if (!cfg.enabled) {
+        if (!mkc_.enabled) {
             return;
         }
 //        if(date != exchange::last_trading_day()) {
 //            return;
 //        }
-        const std::string freq_ = cfg.frequency;
+        const std::string freq_ = mkc_.frequency;
         (void)date;
         // 1. 确定本地有效数据最后1条数据作为拉取数据的开始日期
         auto current_start_date = market_first_date;
@@ -155,8 +155,8 @@ namespace datasets {
             auto period = 1;
             auto numberOfDay = 1;
             level1::KLineType kline_type = level1::_1MIN;
-            if (cfg.enabled) {
-                period = cfg.minutes;
+            if (mkc_.enabled) {
+                period = mkc_.minutes;
                 numberOfDay = detail::CN_DEFAULT_TOTALFZNUM / period;
                 switch (period) {
                     case 5:

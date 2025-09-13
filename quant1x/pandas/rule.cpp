@@ -8,18 +8,26 @@
 #include <cctype>
 
 namespace pandas {
+
+    std::tuple<int, std::string> parse_frequency(const std::string& freq) {
+        const auto frequency = strings::trim(freq);
+        const auto d = ParseTimeRule(frequency);
+        const auto minutes = std::chrono::duration_cast<std::chrono::minutes>(d);
+        return std::tuple<int, std::string>(minutes.count(), frequency);
+    }
+
     // 解析频率字符串并返回对应的duration
     // frequencies, from pandas.tseries.frequencies import to_offset
     std::chrono::duration<long long, std::nano> ParseTimeRule(const std::string& freq) {
-        std::string trimmed = strings::trim(freq);
+        const std::string frequency = strings::trim(freq);
 
-        if (trimmed.empty()) {
+        if (frequency.empty()) {
             throw std::runtime_error("empty freq string");
         }
 
         // 解析数字部分
         size_t i = 0;
-        while (i < trimmed.size() && std::isdigit(trimmed[i])) {
+        while (i < frequency.size() && std::isdigit(frequency[i])) {
             i++;
         }
 
@@ -28,13 +36,13 @@ namespace pandas {
             n = 1; // 默认倍数为1
         } else {
             try {
-                n = std::stoi(trimmed.substr(0, i));
+                n = std::stoi(frequency.substr(0, i));
             } catch (const std::exception& e) {
                 throw std::runtime_error("invalid number in freq: " + std::string(e.what()));
             }
         }
 
-        std::string unit = trimmed.substr(i);
+        const std::string unit = frequency.substr(i);
         if (unit.empty()) {
             throw std::runtime_error("missing unit in freq");
         }
@@ -42,21 +50,26 @@ namespace pandas {
         // 映射单位到duration
         if (unit == "N" || unit == "ns") {
             return std::chrono::nanoseconds(n);
-        } else if (unit == "U" || unit == "us" || unit == "µs") {
-            return std::chrono::microseconds(n);
-        } else if (unit == "L" || unit == "ms") {
-            return std::chrono::milliseconds(n);
-        } else if (unit == "S") {
-            return std::chrono::seconds(n);
-        } else if (unit == "T" || unit == "min") {
-            return std::chrono::minutes(n);
-        } else if (unit == "H") {
-            return std::chrono::hours(n);
-        } else if (unit == "D") {
-            return std::chrono::hours(24 * n);
-        } else {
-            throw std::runtime_error("unsupported freq unit: " + unit);
         }
+        if (unit == "U" || unit == "us" || unit == "µs") {
+            return std::chrono::microseconds(n);
+        }
+        if (unit == "L" || unit == "ms") {
+            return std::chrono::milliseconds(n);
+        }
+        if (unit == "S" || unit == "s") {
+            return std::chrono::seconds(n);
+        }
+        if (unit == "T" || unit == "min") {
+            return std::chrono::minutes(n);
+        }
+        if (unit == "H" || unit == "h") {
+            return std::chrono::hours(n);
+        }
+        if (unit == "D" || unit == "d") {
+            return std::chrono::hours(24 * n);
+        }
+        throw std::runtime_error("unsupported freq unit: " + unit);
     }
 
     enum class BinAlignment { Left, Right, Center };
@@ -64,10 +77,10 @@ namespace pandas {
     // 生成时间序列
     std::vector<std::chrono::system_clock::time_point> DateRange(
         const std::chrono::system_clock::time_point& start,
-        int periods,
+        const int periods,
         const std::string& freqStr)
     {
-        auto dur = ParseTimeRule(freqStr);
+        const auto dur = ParseTimeRule(freqStr);
 
         std::vector<std::chrono::system_clock::time_point> result;
         std::chrono::system_clock::time_point t = start;

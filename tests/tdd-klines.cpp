@@ -15,6 +15,7 @@ TEST_CASE("minute-kline", "[datasets]") {
     runtime::global_init();
     std::string code = "sz300773";
     exchange::timestamp now = exchange::last_trading_day();
-    const auto adapter = std::make_unique<datasets::DataMinuteKLine>();
+
+    const auto adapter = std::make_unique<datasets::DataMinuteKLine>("1min");
     adapter->Update(code, now);
 }

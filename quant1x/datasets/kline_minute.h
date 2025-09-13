@@ -4,6 +4,8 @@
 
 #include <quant1x/datasets/xdxr.h>
 
+#include "quant1x/pandas/rule.h"
+
 namespace datasets {
 
     // 日K线 结构体
@@ -46,23 +48,38 @@ namespace datasets {
     };
 
     std::vector<MinuteKLine> read_minute_kline_from_csv(const std::string &filename);
-    std::vector<MinuteKLine> load_minute_kline(const std::string &code);
+    std::vector<MinuteKLine> load_minute_kline(const std::string &code, const std::string &freq);
 
     class DataMinuteKLine : public cache::DataAdapter {
+    public:
+        DataMinuteKLine(const config::MinuteKLineConfig &config):mkc_(config){}
+
+        DataMinuteKLine(const std::string &freq) {
+            auto [minutes, freq_] = pandas::parse_frequency(freq);
+            auto cfg = config::MinuteKLineConfig{};
+            cfg.minutes = minutes;
+            cfg.frequency = freq_;
+            cfg.enabled = true;
+            mkc_ = cfg;
+        }
+
     public:
         cache::Kind Kind() const override { return BaseMinuteKLine; }
 
         std::string Owner() override { return cache::DefaultDataProvider; }
 
-        std::string Key() const override { return "day"; }
+        std::string Key() const override { return "min"; }
 
-        std::string Name() const override { return "日K线"; }
+        std::string Name() const override { return "分钟级K线"; }
 
-        std::string Usage() const override { return "日K线"; }
+        std::string Usage() const override { return "分钟级K线"; }
 
         void Print(const std::string &code, const std::vector<exchange::timestamp> &dates) override;
 
         void Update(const std::string &code, const exchange::timestamp &date) override;
+
+    private:
+        config::MinuteKLineConfig mkc_;
     };
 
 }  // namespace datasets
