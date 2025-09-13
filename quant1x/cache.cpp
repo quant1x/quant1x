@@ -7,6 +7,7 @@
 namespace cache {
 
     namespace fs = std::filesystem;
+    namespace mpb = indicators;
 
     namespace {
         // 常量定义
@@ -62,43 +63,43 @@ namespace cache {
 
     int update_with_adapters(const std::vector<cache::DataAdapter*> &adapters, const exchange::timestamp& feature_date) {
         // 隐藏终端光标以获得更流畅的显示效果
-        indicators::show_console_cursor(false);
+        mpb::show_console_cursor(false);
 
         // 创建多进度条管理器
-        indicators::DynamicProgress<indicators::ProgressBar> bars;
+        mpb::DynamicProgress<mpb::ProgressBar> bars;
 
         // 主进度条为适配器
         auto count = adapters.size();
-        indicators::ProgressBar barMain{
-            indicators::option::BarWidth{50},
-            indicators::option::ForegroundColor{indicators::Color::cyan},
-            indicators::option::Start{"["},
-            indicators::option::Fill{"="},
-            indicators::option::Lead{">"},
-            indicators::option::Remainder{" "},
-            indicators::option::End{"]"},
-            indicators::option::ShowElapsedTime{true},
-            indicators::option::ShowRemainingTime{true},
-            indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}},
-            indicators::option::ShowPercentage{true},
-            indicators::option::ShowSpeed{true},
-            indicators::option::MaxProgress{count}
+        mpb::ProgressBar barMain{
+            mpb::option::BarWidth{50},
+            mpb::option::ForegroundColor{mpb::Color::cyan},
+            mpb::option::Start{"["},
+            mpb::option::Fill{"="},
+            mpb::option::Lead{">"},
+            mpb::option::Remainder{" "},
+            mpb::option::End{"]"},
+            mpb::option::ShowElapsedTime{true},
+            mpb::option::ShowRemainingTime{true},
+            mpb::option::FontStyles{std::vector<mpb::FontStyle>{mpb::FontStyle::bold}},
+            mpb::option::ShowPercentage{true},
+            mpb::option::ShowSpeed{true},
+            mpb::option::MaxProgress{count}
         };
         bars.push_back(barMain);
         bars[0].set_progress(0);
 
         auto first = adapters[0]->Key();
         auto allCodes = exchange::GetCodeList();
-        indicators::ProgressBar barCodes(
-            indicators::option::BarWidth{50},
-            indicators::option::ForegroundColor{indicators::Color::yellow},
-            indicators::option::ShowElapsedTime{true},
-            indicators::option::ShowRemainingTime{true},
-            indicators::option::PrefixText{first + ": fetching..."},
-            indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}},
-            indicators::option::ShowPercentage{true},
-            indicators::option::ShowSpeed{true},
-            indicators::option::MaxProgress{allCodes.size()});
+        mpb::ProgressBar barCodes(
+            mpb::option::BarWidth{50},
+            mpb::option::ForegroundColor{mpb::Color::yellow},
+            mpb::option::ShowElapsedTime{true},
+            mpb::option::ShowRemainingTime{true},
+            mpb::option::PrefixText{first + ": fetching..."},
+            mpb::option::FontStyles{std::vector<mpb::FontStyle>{mpb::FontStyle::bold}},
+            mpb::option::ShowPercentage{true},
+            mpb::option::ShowSpeed{true},
+            mpb::option::MaxProgress{allCodes.size()});
         bars.push_back(barCodes);
 
         // 缓存日期
@@ -112,13 +113,13 @@ namespace cache {
             std::string module_name = std::format("{}({}/{})", adapter->Key(), (idx+1), count);
 
             spdlog::info("[update] plugin={}, start", module_name);
-            bars[0].set_option(indicators::option::PrefixText{module_name + ""});
-            bars[1].set_option(indicators::option::PrefixText{module_name + ""});
+            bars[0].set_option(mpb::option::PrefixText{module_name + ""});
+            bars[1].set_option(mpb::option::PrefixText{module_name + ""});
             bars[1].set_progress(0);
             bars[1].mark_as_started();
-            bars[1].set_option(indicators::option::Completed {false});
+            bars[1].set_option(mpb::option::Completed {false});
             auto codeCount = allCodes.size();
-            bars[1].set_option(indicators::option::MaxProgress{codeCount+0});
+            bars[1].set_option(mpb::option::MaxProgress{codeCount+0});
 
             // 初始化特征适配器
             bool is_feature_adapter = false;
@@ -176,7 +177,7 @@ namespace cache {
                         {
                             std::lock_guard<std::mutex> lock(progress_mutex);
                             std::string codePrefix = std::format("{}({}/{})", code, current, codeCount);
-                            bars[1].set_option(indicators::option::PrefixText{codePrefix + ""});
+                            bars[1].set_option(mpb::option::PrefixText{codePrefix + ""});
                             bars[1].tick();
                         }
                     } catch (const std::exception &e) {
@@ -267,7 +268,7 @@ namespace cache {
                 }
             }
 
-            bars[1].set_option(indicators::option::PrefixText{module_name + ""});
+            bars[1].set_option(mpb::option::PrefixText{module_name + ""});
             bars[1].mark_as_completed();
             bars[0].tick();
             spdlog::info("[update] plugin={}, end", module_name);
@@ -275,7 +276,7 @@ namespace cache {
 
         bars[0].mark_as_completed();
         // 恢复终端光标显示
-        indicators::show_console_cursor(true);
+        mpb::show_console_cursor(true);
         return int(count);
     }
 

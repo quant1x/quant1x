@@ -17,6 +17,7 @@
 #include <quant1x/trader/account.h>
 
 namespace trader {
+    namespace mpb = ::indicators;
 
     void tracker(void) {
         uint64_t strategy_id = 1; // 默认1号策略
@@ -46,20 +47,20 @@ namespace trader {
         auto all_codes = exchange::GetCodeList();
         auto codeCount = all_codes.size();
         {
-            indicators::ProgressBar bar{
-                indicators::option::BarWidth{50},
-                indicators::option::ForegroundColor{indicators::Color::cyan},
-                indicators::option::Start{"["},
-                indicators::option::Fill{"="},
-                indicators::option::Lead{">"},
-                indicators::option::Remainder{" "},
-                indicators::option::End{"]"},
-                indicators::option::ShowElapsedTime{true},
-                indicators::option::ShowRemainingTime{true},
-                indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}},
-                indicators::option::ShowPercentage{true},
-                indicators::option::ShowSpeed{true},
-                indicators::option::MaxProgress{codeCount + 0},
+            mpb::ProgressBar bar{
+                mpb::option::BarWidth{50},
+                mpb::option::ForegroundColor{mpb::Color::cyan},
+                mpb::option::Start{"["},
+                mpb::option::Fill{"="},
+                mpb::option::Lead{">"},
+                mpb::option::Remainder{" "},
+                mpb::option::End{"]"},
+                mpb::option::ShowElapsedTime{true},
+                mpb::option::ShowRemainingTime{true},
+                mpb::option::FontStyles{std::vector<mpb::FontStyle>{mpb::FontStyle::bold}},
+                mpb::option::ShowPercentage{true},
+                mpb::option::ShowSpeed{true},
+                mpb::option::MaxProgress{codeCount + 0},
             };
             int processed_codes = 0;
             auto timestamp = exchange::timestamp::now();
@@ -71,7 +72,7 @@ namespace trader {
             for (auto const &code: all_codes) {
                 size_t current = ++processed_codes;
                 std::string codePrefix = std::format("{}({}/{})", code, current, codeCount);
-                bar.set_option(indicators::option::PrefixText{codePrefix + ""});
+                bar.set_option(mpb::option::PrefixText{codePrefix + ""});
                 // 4. 运行回测
                 std::string securityCode = exchange::CorrectSecurityCode(code);
                 // result.date = feature_date;
