@@ -2,7 +2,7 @@
 #ifndef QUANT1X_FORMULA_H
 #define QUANT1X_FORMULA_H 1
 
-#include <quant1x/dataframe/series.h>
+#include <quant1x/pandas/series.h>
 
 
 // ==============================

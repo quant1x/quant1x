@@ -1,7 +1,7 @@
 #include <quant1x/factors/history.h>
 #include <quant1x/formula.h>
 #include <quant1x/datasets/trans.h>
-#include <quant1x/dataframe/dataframe.h>
+#include <quant1x/pandas/dataframe.h>
 #include <boost/pfr.hpp>
 #include <quant1x/encoding/csv.h>
 
