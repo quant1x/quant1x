@@ -9,8 +9,9 @@ namespace datasets {
     namespace detail {
         // 日线最小容错回溯(偏移)天数
         constexpr const size_t MAX_KLINE_LOOKBACK_DAYS = 1;
+        constexpr const int CN_DEFAULT_TOTALFZNUM = 240; // A股默认全天交易240分钟
         // 拉取数据
-        std::vector<level1::SecurityBar> fetch_kline(const std::string &code, u16 start, u16 count);
+        std::vector<level1::SecurityBar> fetch_kline(const std::string &code, u16 start, u16 count, level1::KLineType kline_type = level1::KLineType::RI_K);
     }  // namespace detail
 
     // 日K线 结构体

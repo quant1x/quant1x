@@ -4,6 +4,8 @@
 
 #include "quant1x/std/api.h"
 #include <mutex>
+#include <ostream>
+#include <quant1x/config/data-cache.h>
 
 // 全部的配置信息
 namespace config {
@@ -21,29 +23,29 @@ namespace config {
 #include <quant1x/config/trader-parameter.h>
 
 namespace config {
-
-    //// 内存守卫结构
-    //struct ConfigMemoryGuard {
-    //    uint64_t     magic_header = 0xDEADBEEFCAFEBABE;  // 头部魔数
-    //    std::string *filename_ptr;                       // 监控的字符串地址
-    //    size_t       initial_capacity;                   // 初始容量
-    //    size_t       initial_size;                       // 初始大小
-    //    uint64_t     magic_footer = 0xCAFEBABEDEADBEEF;  // 尾部魔数
-    //};
-
     struct BaseConfig {
         std::string filename;
         std::string homeDir;
         std::string cacheDir;
         std::string logsDir;
         bool running_in_debug = false;
+        DataParameter data{};
+        friend std::ostream & operator<<(std::ostream &os, const BaseConfig &obj) {
+            return os
+                   << "filename: " << obj.filename
+                   << " homeDir: " << obj.homeDir
+                   << " cacheDir: " << obj.cacheDir
+                   << " logsDir: " << obj.logsDir
+                   << " running_in_debug: " << obj.running_in_debug
+                   << " data: " << obj.data;
+        }
     };
 
-    // 全局守卫实例
-    //extern ConfigMemoryGuard g_config_guard;
 
     extern std::once_flag global_cache_once;
-    extern BaseConfig global_quant1x_config;
+    //extern BaseConfig global_quant1x_config;
+
+    BaseConfig &global_config();
 
     // 配置文件路径
     std::string config_filename();
@@ -89,6 +91,10 @@ namespace config {
 
     // 日K线文件路径
     std::string get_day_path();
+
+    // 日K线文件路径
+    std::string get_kline_path(const std::string &freq = "day");
+
     // 除权除息文件名
     std::string get_xdxr_filename(const std::string &code);
 
@@ -99,6 +105,10 @@ namespace config {
      * @return 前复权返回文件名后缀是csv, 不复权是raw
      */
     std::string get_kline_filename(const std::string &code, bool forward = true);
+
+    // 通用K线文件名
+    std::string get_kline_filename_ex(const std::string &code, const std::string &freq);
+
     // 分时数据文件名
     std::string get_minute_filename(const std::string &code, const std::string &cache_date);
 

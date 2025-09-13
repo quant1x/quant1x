@@ -106,6 +106,8 @@ add_catch2_executable(tdd-error.cpp)
 add_catch2_executable(tdd-homedir.cpp)
 # 字符集测试
 add_catch2_executable(tdd-iconv.cpp)
+# 测试配置
+add_catch2_executable(tdd-config.cpp)
 
 # cron测试
 add_catch2_executable(tdd-cron.cpp)
@@ -146,6 +148,9 @@ add_catch2_executable(tdd-times.cpp)
 # 文件锁/落地标识
 add_catch2_executable(tdd-touch.cpp)
 add_catch2_executable(tdd-filelock.cpp)
+
+# 基础数据测试
+add_catch2_executable(tdd-klines.cpp)
 
 # f10
 add_catch2_executable(tdd-notices.cpp)

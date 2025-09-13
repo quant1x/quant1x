@@ -6,7 +6,8 @@
 TEST_CASE("session-minutes", "[session]") {
     runtime::logger_set(true, true);
     exchange::timestamp now = exchange::timestamp::now().since(9,31,0);
-    std::cout << exchange::ts_today_session.get().minutes(now)<< std::endl;
+    std::cout << exchange::ts_today_session.get().minutes(now) << std::endl;
+    std::cout << exchange::ts_today_session.get().minutes() << std::endl;
 }
 
 TEST_CASE("check-realtime-status", "[session]") {

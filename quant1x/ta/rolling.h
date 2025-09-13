@@ -2,8 +2,8 @@
 #ifndef QUANT1X_TECHNICAL_ANALYSIS_ROLLING_H
 #define QUANT1X_TECHNICAL_ANALYSIS_ROLLING_H 1
 
-#include <quant1x/dataframe/series.h>
-#include <quant1x/dataframe/periods.h>
+#include <quant1x/pandas/series.h>
+#include <quant1x/pandas/periods.h>
 #include "rolling_window.h"
 #include <vector>
 #include <functional>

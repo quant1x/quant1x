@@ -4,12 +4,12 @@ namespace datasets {
 
     namespace detail {
         // 拉取数据
-        std::vector<level1::SecurityBar> fetch_kline(const std::string &code, u16 start, u16 count) {
+        std::vector<level1::SecurityBar> fetch_kline(const std::string &code, u16 start, u16 count, level1::KLineType kline_type) {
             try {
                 auto conn = level1::client();
-                auto category = level1::KLineType::RI_K;
-                level1::SecurityBarsRequest request(code, category, start, count);
-                level1::SecurityBarsResponse response(request.isIndex, category);
+                //constexpr auto category = kline_type;
+                level1::SecurityBarsRequest request(code, kline_type, start, count);
+                level1::SecurityBarsResponse response(request.isIndex, kline_type);
                 level1::process(conn->socket(), request, response);
                 return response.List;
             } catch (const std::exception &e) {  // 其他标准异常

@@ -17,6 +17,7 @@ namespace datasets {
     constexpr cache::Kind BaseWideKLine           = cache::PluginMaskBaseData | (baseKind +  8); // 基础数据-宽表
     constexpr cache::Kind BasePerformanceForecast = cache::PluginMaskBaseData | (baseKind +  9); // 基础数据-业绩预告
     constexpr cache::Kind BaseChipDistribution    = cache::PluginMaskBaseData | (baseKind + 10); // 基础数据-筹码分布
+    constexpr cache::Kind BaseMinuteKLine         = cache::PluginMaskBaseData | (baseKind + 11); // 基础数据-分钟级别K线
 
     // 市场开埠日期
     inline exchange::timestamp market_first_date = exchange::timestamp::parse(exchange::market_cn_first_listtime).pre_market_time();
