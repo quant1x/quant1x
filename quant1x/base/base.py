@@ -16,8 +16,12 @@ def get_quant1x_config_filename() -> str:
     yaml_filename = os.path.join('~', 'runtime', 'etc', default_config_filename)
     yaml_filename = os.path.expanduser(yaml_filename)
     user_home = file.homedir()
+    quant1x_work = 'quant1x'
+    quant1x_work_env = file.env('QUANT1X_WORK')
+    if len(quant1x_work_env) > 0:
+        quant1x_work = quant1x_work_env
     if not os.path.isfile(yaml_filename):
-        quant1x_root = os.path.join(user_home, '.quant1x')
+        quant1x_root = os.path.join(user_home, f'.{quant1x_work}')
         yaml_filename = os.path.join(quant1x_root, default_config_filename)
         yaml_filename = os.path.expanduser(yaml_filename)
     yaml_filename = os.path.expanduser(yaml_filename)

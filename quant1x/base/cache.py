@@ -43,13 +43,14 @@ def stock_name(code: str) -> str:
     return name
 
 
-def klines(code: str) -> pd.DataFrame | None:
+def klines(code: str, freq:str = 'D') -> pd.DataFrame | None:
     """
     获取缓存的日线数据
     """
     corrected_symbol = exchange.correct_security_code(code)
     suffix_length = 3  # 修正拼写并明确表示后缀长度
-    symbol_directory = os.path.join(base.config.kline_path, corrected_symbol[:-suffix_length])  # 更清晰表达目录用途
+    freq_path = 'day' if freq == 'D' else freq
+    symbol_directory = os.path.join(base.config.data_path, freq_path, corrected_symbol[:-suffix_length])  # 更清晰表达目录用途
     file_extension = '.csv'
     filename = f"{corrected_symbol}{file_extension}"  # 使用f-string格式化
     full_path = os.path.join(symbol_directory, filename)
