@@ -32,11 +32,11 @@ func TestKMeans_Basic(t *testing.T) {
 	}
 
 	fmt.Printf("\nInertia: %.4f\n", km.Inertia)
-	silhouetteScore, err := km.SilhouetteScore(data)
+	sihouetteScore, err := km.SilhouetteScore(data)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Printf("轮廓系数: %.4f\n", silhouetteScore)
+	fmt.Printf("轮廓系数: %.4f\n", sihouetteScore)
 
 	sizes, err := km.GetClusterSizes()
 	if err != nil {
