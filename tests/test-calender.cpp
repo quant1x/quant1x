@@ -267,9 +267,10 @@ TEST_CASE("c1", "[calendar]") {
 
     // Try decoding as SimpleDate (likely S function)
     auto dates = dec.decode<std::string>(encoded_data);
-    std::cout << "\n--- Decoded Dates ---\n";
-    for (const auto& d : dates) {
-        std::cout << d << "\n";
+    size_t length = dates.size();
+    std::cout << "交易日总数: " << length << std::endl;
+    std::cout << "--- Decoded Dates ---" << std::endl;
+    for (size_t i = 0; i < length; i++) {
+        std::cout << i << ", " << dates[i] << "\n";
     }
-
 }
