@@ -3,10 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.33] - 2025-09-14
+### Changed
+- 更新依赖库版本
+
 ## [0.6.32] - 2025-09-14
 ### Changed
 - 调整交易日历实验性代码, 检测结果只有开始的日期是对的，还是存在问题.
 - 新增go版本机器学习-聚类工具
+- update changelog
 
 ## [0.6.31] - 2025-09-13
 ### Changed
@@ -335,7 +340,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.32...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.33...HEAD
+[0.6.33]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.32...v0.6.33
 [0.6.32]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.31...v0.6.32
 [0.6.31]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.30...v0.6.31
 [0.6.30]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.29...v0.6.30
