@@ -18,6 +18,73 @@ namespace cache {
 
     } // 匿名命名空间
 
+#include <iostream>
+
+#ifdef _WIN32
+#   include <windows.h>
+#elif __linux__
+#   include <fstream>
+#   include <string>
+#   include <set>
+#elif __APPLE__
+#   include <sys/sysctl.h>
+#endif
+
+    int getPhysicalCPUCount() {
+#ifdef _WIN32
+        DWORD buffer_size = 0;
+        GetLogicalProcessorInformationEx(RelationProcessorPackage, nullptr, &buffer_size);
+
+        if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
+            return 1;
+        }
+
+        std::vector<char> buffer(buffer_size);
+        PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX info =
+            reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(buffer.data());
+
+        if (!GetLogicalProcessorInformationEx(RelationProcessorPackage, info, &buffer_size)) {
+            return 1;
+        }
+
+        int socket_count = 0;
+        DWORD offset = 0;
+        while (offset < buffer_size) {
+            if (info->Relationship == RelationProcessorPackage) {
+                socket_count++;
+            }
+            offset += info->Size;
+            info = reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(
+                reinterpret_cast<char*>(info) + info->Size);
+        }
+        return socket_count;
+
+#elif __linux__
+        std::ifstream cpuinfo("/proc/cpuinfo");
+        std::string line;
+        std::set<int> physical_ids;
+
+        while (std::getline(cpuinfo, line)) {
+            if (line.find("physical id") != std::string::npos) {
+                int id = std::stoi(line.substr(line.find_last_of(':') + 1));
+                physical_ids.insert(id);
+            }
+        }
+        return physical_ids.size();
+
+#elif __APPLE__
+        int numSockets = 0;
+        size_t len = sizeof(numSockets);
+        if (sysctlbyname("hw.packages", &numSockets, &len, nullptr, 0) == -1) {
+            return 1;
+        }
+        return numSockets;
+
+#else
+        return 1; // 不支持平台，默认1颗
+#endif
+    }
+
     std::string getVariablePath() {
         return config::default_cache_path() + "/var";
     }
@@ -107,8 +174,10 @@ namespace cache {
 
         // 线程池大小，根据CPU核心数调整
         const size_t num_threads = std::min<size_t>(std::thread::hardware_concurrency(), 5);
-
+        //const size_t num_cpus = getPhysicalCPUCount();
         for (size_t idx = 0; idx < count; ++idx) {
+            // 默认物理CPU数量的2倍与最大连接数一半, 取最小值
+            //size_t concurrency = std::min(num_cpus*2, size_t(level1::_max_connections) / 2);
             auto* adapter = adapters[idx];
             std::string module_name = std::format("{}({}/{})", adapter->Key(), (idx+1), count);
 
@@ -129,6 +198,7 @@ namespace cache {
             if((adapter->Kind() & cache::PluginMaskFeature) == cache::PluginMaskFeature) {
                 featureAdapter = dynamic_cast<cache::FeatureAdapter*>(adapter);
                 if(featureAdapter) {
+                    //concurrency = std::min<size_t>(std::thread::hardware_concurrency(), 8);
                     featureAdapter->init(feature_date);
                     cache_filename = featureAdapter->Filename(cache_date);
                     is_feature_adapter = true;
@@ -175,7 +245,7 @@ namespace cache {
                         // 更新进度
                         size_t current = ++processed_codes;
                         {
-                            std::lock_guard<std::mutex> lock(progress_mutex);
+                            //std::lock_guard<std::mutex> lock(progress_mutex);
                             std::string codePrefix = std::format("{}({}/{})", code, current, codeCount);
                             bars[1].set_option(mpb::option::PrefixText{codePrefix + ""});
                             bars[1].tick();
