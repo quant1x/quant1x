@@ -106,7 +106,7 @@ namespace cache {
         auto cache_date = exchange::next_trading_day(feature_date);
 
         // 线程池大小，根据CPU核心数调整
-        const size_t num_threads = std::min<size_t>(std::thread::hardware_concurrency(), 8);
+        const size_t num_threads = std::min<size_t>(std::thread::hardware_concurrency(), 5);
 
         for (size_t idx = 0; idx < count; ++idx) {
             auto* adapter = adapters[idx];
