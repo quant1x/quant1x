@@ -3,6 +3,8 @@
 #include <quant1x/exchange/session.h>
 #include <quant1x/proto/data.h>
 
+#include "quant1x/datasets/trans.h"
+
 TEST_CASE("lower-upper", "[strings]") {
     spdlog::set_level(spdlog::level::debug);
     std::string s("SH000001");
@@ -326,14 +328,6 @@ TEST_CASE("session-check", "[exchange]") {
     std::cout << "            status = " << status << std::endl;
 }
 
-TEST_CASE("cista-for-each", "[cista]") {
-    spdlog::set_level(spdlog::level::debug);
-    level1::XdxrInfo xi={};
-    cista::for_each_field(xi, [](auto && m) {
-        spdlog::debug(m);
-    });
-}
-
 #include <quant1x/datasets/xdxr.h>
 
 TEST_CASE("xdxr-factor", "[datasets]") {
@@ -407,150 +401,150 @@ std::vector<level1::SecurityBar> fetch(const std::string &code, u16 start, u16 c
     return {};
 }
 
-void update_pb(const std::string &code, const std::string &date) {
-    (void)date;
-    // 1. 确定本地有效数据最后1条数据作为拉取数据的开始日期
-    auto startDate = datasets::market_first_date;
-    try {
-        std::string cache_filename = config::get_kline_filename(code) + ".pb";
-        KLine cacheKLines = {};
-        {
-            std::ifstream input(cache_filename, std::ios::in | std::ios::binary);
-            cacheKLines.ParseFromIstream(&input);
-        }
-
-        auto kLength = cacheKLines.datetime_size();
-        auto klineDaysOffset = static_cast<int>(datasets::detail::MAX_KLINE_LOOKBACK_DAYS);
-        if(kLength > 0) {
-            if (klineDaysOffset > kLength) {
-                klineDaysOffset = kLength;
-            }
-            startDate = cacheKLines.datetime(kLength-klineDaysOffset);
-        }
-        // 2. 确定结束日期
-        auto endDate = exchange::timestamp::now().pre_market_time();
-        spdlog::debug("[{}]: from {} to {}", code, startDate.only_date(), endDate.only_date());
-        auto ts = exchange::date_range(startDate, endDate);
-        auto total = ts.size();
-        startDate = ts[0];
-        endDate = ts[total-1];
-        spdlog::debug("[{}]: from {} to {}", code, startDate.only_date(), endDate.only_date());
-        size_t step = level1::security_bars_max;
-        u16 start = 0;
-        //u16 category = level1::RI_K;
-        // 3. 拉取数据
-        std::vector<std::vector<level1::SecurityBar>> hs;
-        //std::vector<level1::SecurityBar> history;
-        size_t elementCount = 0;
-        do {
-            u16 count = u16(step);
-            if(total - start >= step) {
-                count = u16(step);
-            } else {
-                count = u16(total - start);
-            }
-            auto reply = fetch(code, start, count);
-            if (reply.empty()) {
-                break;
-            }
-            elementCount += reply.size();
-            //hs.insert(hs.end(), reply.begin(), reply.end());
-            hs.emplace_back(reply);
-            if (reply.size() < count) {
-                break;
-            }
-            start += count;
-        } while (start < total);
-        (void)elementCount;
-        // 4. 由于K线数据，每次获取数据是从后往前获取, 所以这里需要反转历史数据的切片
-        std::reverse(hs.begin(), hs.end());
-        // 5. 调整成交量, 单位从手改成股, vol字段 * 100
-        //std::vector<KLine> newKLines;
-        KLine newKLines = {};
-        //newKLines.reserve(elementCount);
-        for(const auto & vec : hs) {
-            for (const auto & row : vec) {
-                auto dateTime = exchange::timestamp(row.Year, row.Month, row.Day).pre_market_time();
-                if (dateTime < startDate || dateTime > endDate) {
-                    continue;
-                }
-                newKLines.add_datetime(dateTime); // 时间
-                newKLines.add_open(row.Open); // 开盘价
-                newKLines.add_close(row.Close); // 收盘价
-                newKLines.add_high(row.High); // 最高价
-                newKLines.add_low(row.Low); // 最低价
-                newKLines.add_volume(row.Vol * 100); // 成交量(股)
-                newKLines.add_amount(row.Amount); // 成交金额(元)
-                newKLines.add_up(row.UpCount); // 上涨家数 / 外盘
-                newKLines.add_down(row.DownCount); // 下跌家数 / 内盘
-                newKLines.add_adjustmentcount(0); // 新增：除权除息次数
-            }
-        }
-        // 6. K线数据转换成KLine结构
-        // 6.1 判断是否已除权的依据是当前更新K线只有1条记录
-        bool adjusted = newKLines.datetime_size() == 1;
-//        auto dividends = load_xdxr(code);
-//        if (adjusted) {
-//            calculate_pre_adjust(newKLines, startDate, dividends);
-//        }
-        (void) adjusted;
-        // 6.2 只前复权当日数据
-        // 7. 拼接缓存和新增的数据
-        //std::vector<KLine> klines;
-        KLine klines = {};
-        // 7.1 先截取本地缓存的数据
-        if (kLength > klineDaysOffset) {
-            klines.mutable_open()->Add(cacheKLines.open().begin(), cacheKLines.open().begin()+(kLength-klineDaysOffset));
-            klines.mutable_close()->Add(cacheKLines.close().begin(), cacheKLines.close().begin()+(kLength-klineDaysOffset));
-            klines.mutable_high()->Add(cacheKLines.high().begin(), cacheKLines.high().begin()+(kLength-klineDaysOffset));
-            klines.mutable_low()->Add(cacheKLines.low().begin(), cacheKLines.low().begin()+(kLength-klineDaysOffset));
-            klines.mutable_volume()->Add(cacheKLines.volume().begin(), cacheKLines.volume().begin()+(kLength-klineDaysOffset));
-            klines.mutable_amount()->Add(cacheKLines.amount().begin(), cacheKLines.amount().begin()+(kLength-klineDaysOffset));
-            klines.mutable_up()->Add(cacheKLines.up().begin(), cacheKLines.up().begin()+(kLength-klineDaysOffset));
-            klines.mutable_down()->Add(cacheKLines.down().begin(), cacheKLines.down().begin()+(kLength-klineDaysOffset));
-            klines.mutable_datetime()->Add(cacheKLines.datetime().begin(), cacheKLines.datetime().begin()+(kLength-klineDaysOffset));
-            klines.mutable_adjustmentcount()->Add(cacheKLines.adjustmentcount().begin(), cacheKLines.adjustmentcount().begin()+(kLength-klineDaysOffset));
-        }
-        // 7.2 拼接新增的数据
-        if (klines.datetime().empty()) {
-            klines = newKLines;
-        } else {
-            klines.mutable_open()->Add(newKLines.open().begin(), newKLines.open().end());
-            klines.mutable_close()->Add(newKLines.close().begin(), newKLines.close().end());
-            klines.mutable_high()->Add(newKLines.high().begin(), newKLines.high().end());
-            klines.mutable_low()->Add(newKLines.low().begin(), newKLines.low().end());
-            klines.mutable_volume()->Add(newKLines.volume().begin(), newKLines.volume().end());
-            klines.mutable_amount()->Add(newKLines.amount().begin(), newKLines.amount().end());
-            klines.mutable_up()->Add(newKLines.up().begin(), newKLines.up().end());
-            klines.mutable_down()->Add(newKLines.down().begin(), newKLines.down().end());
-            klines.mutable_datetime()->Add(newKLines.datetime().begin(), newKLines.datetime().end());
-            klines.mutable_adjustmentcount()->Add(newKLines.adjustmentcount().begin(), newKLines.adjustmentcount().end());
-        }
-//        // 8. 前复权
-//        if(!adjusted) {
-//            calculate_pre_adjust(klines, startDate, dividends);
-//        }
-        // 9. 刷新缓存文件
-        {
-            std::ofstream output(cache_filename, std::ios::out | std::ios::binary);
-            klines.SerializeToOstream(&output);
-            output.close();
-        }
-    } catch (const std::exception &e) {  // 其他标准异常
-        spdlog::error("全局捕获 - 标准异常: {} (type: {})", e.what(), typeid(e).name());
-        // 对于system_error可以记录更多信息
-        if (auto se = dynamic_cast<const std::system_error *>(&e)) {
-            spdlog::error("Error code: {}, category: {}", se->code().value(), se->code().category().name());
-        }
-    } catch (...) {
-        spdlog::error("获取日K线异常");
-    }
-}
-
-TEST_CASE("pb-kline", "[datasets]") {
-    spdlog::set_level(spdlog::level::debug);
-    update_pb("sz000048", "2025-05-06");
-}
+// void update_pb(const std::string &code, const std::string &date) {
+//     (void)date;
+//     // 1. 确定本地有效数据最后1条数据作为拉取数据的开始日期
+//     auto startDate = datasets::market_first_date;
+//     try {
+//         std::string cache_filename = config::get_kline_filename(code) + ".pb";
+//         KLine cacheKLines = {};
+//         {
+//             std::ifstream input(cache_filename, std::ios::in | std::ios::binary);
+//             cacheKLines.ParseFromIstream(&input);
+//         }
+//
+//         auto kLength = cacheKLines.datetime_size();
+//         auto klineDaysOffset = static_cast<int>(datasets::detail::MAX_KLINE_LOOKBACK_DAYS);
+//         if(kLength > 0) {
+//             if (klineDaysOffset > kLength) {
+//                 klineDaysOffset = kLength;
+//             }
+//             startDate = cacheKLines.datetime(kLength-klineDaysOffset);
+//         }
+//         // 2. 确定结束日期
+//         auto endDate = exchange::timestamp::now().pre_market_time();
+//         spdlog::debug("[{}]: from {} to {}", code, startDate.only_date(), endDate.only_date());
+//         auto ts = exchange::date_range(startDate, endDate);
+//         auto total = ts.size();
+//         startDate = ts[0];
+//         endDate = ts[total-1];
+//         spdlog::debug("[{}]: from {} to {}", code, startDate.only_date(), endDate.only_date());
+//         size_t step = level1::security_bars_max;
+//         u16 start = 0;
+//         //u16 category = level1::RI_K;
+//         // 3. 拉取数据
+//         std::vector<std::vector<level1::SecurityBar>> hs;
+//         //std::vector<level1::SecurityBar> history;
+//         size_t elementCount = 0;
+//         do {
+//             u16 count = u16(step);
+//             if(total - start >= step) {
+//                 count = u16(step);
+//             } else {
+//                 count = u16(total - start);
+//             }
+//             auto reply = fetch(code, start, count);
+//             if (reply.empty()) {
+//                 break;
+//             }
+//             elementCount += reply.size();
+//             //hs.insert(hs.end(), reply.begin(), reply.end());
+//             hs.emplace_back(reply);
+//             if (reply.size() < count) {
+//                 break;
+//             }
+//             start += count;
+//         } while (start < total);
+//         (void)elementCount;
+//         // 4. 由于K线数据，每次获取数据是从后往前获取, 所以这里需要反转历史数据的切片
+//         std::reverse(hs.begin(), hs.end());
+//         // 5. 调整成交量, 单位从手改成股, vol字段 * 100
+//         //std::vector<KLine> newKLines;
+//         KLine newKLines = {};
+//         //newKLines.reserve(elementCount);
+//         for(const auto & vec : hs) {
+//             for (const auto & row : vec) {
+//                 auto dateTime = exchange::timestamp(row.Year, row.Month, row.Day).pre_market_time();
+//                 if (dateTime < startDate || dateTime > endDate) {
+//                     continue;
+//                 }
+//                 newKLines.add_datetime(dateTime); // 时间
+//                 newKLines.add_open(row.Open); // 开盘价
+//                 newKLines.add_close(row.Close); // 收盘价
+//                 newKLines.add_high(row.High); // 最高价
+//                 newKLines.add_low(row.Low); // 最低价
+//                 newKLines.add_volume(row.Vol * 100); // 成交量(股)
+//                 newKLines.add_amount(row.Amount); // 成交金额(元)
+//                 newKLines.add_up(row.UpCount); // 上涨家数 / 外盘
+//                 newKLines.add_down(row.DownCount); // 下跌家数 / 内盘
+//                 newKLines.add_adjustmentcount(0); // 新增：除权除息次数
+//             }
+//         }
+//         // 6. K线数据转换成KLine结构
+//         // 6.1 判断是否已除权的依据是当前更新K线只有1条记录
+//         bool adjusted = newKLines.datetime_size() == 1;
+// //        auto dividends = load_xdxr(code);
+// //        if (adjusted) {
+// //            calculate_pre_adjust(newKLines, startDate, dividends);
+// //        }
+//         (void) adjusted;
+//         // 6.2 只前复权当日数据
+//         // 7. 拼接缓存和新增的数据
+//         //std::vector<KLine> klines;
+//         KLine klines = {};
+//         // 7.1 先截取本地缓存的数据
+//         if (kLength > klineDaysOffset) {
+//             klines.mutable_open()->Add(cacheKLines.open().begin(), cacheKLines.open().begin()+(kLength-klineDaysOffset));
+//             klines.mutable_close()->Add(cacheKLines.close().begin(), cacheKLines.close().begin()+(kLength-klineDaysOffset));
+//             klines.mutable_high()->Add(cacheKLines.high().begin(), cacheKLines.high().begin()+(kLength-klineDaysOffset));
+//             klines.mutable_low()->Add(cacheKLines.low().begin(), cacheKLines.low().begin()+(kLength-klineDaysOffset));
+//             klines.mutable_volume()->Add(cacheKLines.volume().begin(), cacheKLines.volume().begin()+(kLength-klineDaysOffset));
+//             klines.mutable_amount()->Add(cacheKLines.amount().begin(), cacheKLines.amount().begin()+(kLength-klineDaysOffset));
+//             klines.mutable_up()->Add(cacheKLines.up().begin(), cacheKLines.up().begin()+(kLength-klineDaysOffset));
+//             klines.mutable_down()->Add(cacheKLines.down().begin(), cacheKLines.down().begin()+(kLength-klineDaysOffset));
+//             klines.mutable_datetime()->Add(cacheKLines.datetime().begin(), cacheKLines.datetime().begin()+(kLength-klineDaysOffset));
+//             klines.mutable_adjustmentcount()->Add(cacheKLines.adjustmentcount().begin(), cacheKLines.adjustmentcount().begin()+(kLength-klineDaysOffset));
+//         }
+//         // 7.2 拼接新增的数据
+//         if (klines.datetime().empty()) {
+//             klines = newKLines;
+//         } else {
+//             klines.mutable_open()->Add(newKLines.open().begin(), newKLines.open().end());
+//             klines.mutable_close()->Add(newKLines.close().begin(), newKLines.close().end());
+//             klines.mutable_high()->Add(newKLines.high().begin(), newKLines.high().end());
+//             klines.mutable_low()->Add(newKLines.low().begin(), newKLines.low().end());
+//             klines.mutable_volume()->Add(newKLines.volume().begin(), newKLines.volume().end());
+//             klines.mutable_amount()->Add(newKLines.amount().begin(), newKLines.amount().end());
+//             klines.mutable_up()->Add(newKLines.up().begin(), newKLines.up().end());
+//             klines.mutable_down()->Add(newKLines.down().begin(), newKLines.down().end());
+//             klines.mutable_datetime()->Add(newKLines.datetime().begin(), newKLines.datetime().end());
+//             klines.mutable_adjustmentcount()->Add(newKLines.adjustmentcount().begin(), newKLines.adjustmentcount().end());
+//         }
+// //        // 8. 前复权
+// //        if(!adjusted) {
+// //            calculate_pre_adjust(klines, startDate, dividends);
+// //        }
+//         // 9. 刷新缓存文件
+//         {
+//             std::ofstream output(cache_filename, std::ios::out | std::ios::binary);
+//             klines.SerializeToOstream(&output);
+//             output.close();
+//         }
+//     } catch (const std::exception &e) {  // 其他标准异常
+//         spdlog::error("全局捕获 - 标准异常: {} (type: {})", e.what(), typeid(e).name());
+//         // 对于system_error可以记录更多信息
+//         if (auto se = dynamic_cast<const std::system_error *>(&e)) {
+//             spdlog::error("Error code: {}, category: {}", se->code().value(), se->code().category().name());
+//         }
+//     } catch (...) {
+//         spdlog::error("获取日K线异常");
+//     }
+// }
+//
+// TEST_CASE("pb-kline", "[datasets]") {
+//     spdlog::set_level(spdlog::level::debug);
+//     update_pb("sz000048", "2025-05-06");
+// }
 
 
 #include <xsimd/xsimd.hpp>
@@ -724,3 +718,11 @@ TEST_CASE("xtensor-add-v1", "[xtensor]") {
     std::cout << result << std::endl;
 }
 
+TEST_CASE("trans-v1", "[datasets]") {
+    runtime::global_init();
+    std::string code = "sz300773";
+    exchange::timestamp now = exchange::last_trading_day();
+
+    const auto adapter = std::make_unique<datasets::DataTrans>();
+    adapter->Update(code, now);
+}

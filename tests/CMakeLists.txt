@@ -150,6 +150,7 @@ add_catch2_executable(tdd-touch.cpp)
 add_catch2_executable(tdd-filelock.cpp)
 
 # 基础数据测试
+add_catch2_executable(tdd-datasets.cpp)
 add_catch2_executable(tdd-klines.cpp)
 
 # f10

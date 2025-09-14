@@ -120,7 +120,7 @@ namespace datasets {
                         break;
                     }
 
-                    std::vector<level1::TickTransaction> tmp;
+                    std::vector<level1::TickTransaction> tmp{};
                     auto tmpList = response.List;
                     std::reverse(tmpList.begin(), tmpList.end());
                     for (const auto &td: tmpList) {
@@ -156,7 +156,7 @@ namespace datasets {
                         break;
                     }
 
-                    std::vector<level1::TickTransaction> tmp;
+                    std::vector<level1::TickTransaction> tmp{};
                     auto tmpList = response.List;
                     std::reverse(tmpList.begin(), tmpList.end());
                     for (const auto &td: tmpList) {
