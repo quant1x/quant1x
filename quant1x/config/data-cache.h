@@ -8,7 +8,6 @@
 #include <variant>
 
 namespace config {
-
     using ConfigValue = std::variant<std::nullptr_t, // 对应 YAML 的 null
         bool, // 布尔类型
         int64_t, // 整数（推荐 int64_t，兼容 long 和 int）
@@ -27,10 +26,10 @@ namespace config {
     struct CacheParameter {
         std::map<std::string, bool> kline{}; // K线配置
 
-        friend std::ostream& operator<<(std::ostream& os, const CacheParameter& obj) {
+        friend std::ostream &operator<<(std::ostream &os, const CacheParameter &obj) {
             os << "kline: {";
             bool first = true;
-            for (const auto& [key, value] : obj.kline) {
+            for (const auto &[key, value]: obj.kline) {
                 if (!first) {
                     os << ", ";
                 }
@@ -45,10 +44,21 @@ namespace config {
     // 数据配置
     struct DataParameter {
         CacheParameter cache{};
-        friend std::ostream & operator<<(std::ostream &os, const DataParameter &obj) {
-            return os << "cache: " << obj.cache;
+        std::map<std::string, int> concurrency; // 并发参数
+
+        friend std::ostream &operator<<(std::ostream &os, const DataParameter &obj) {
+            os << "cache: " << obj.cache << ", concurrency: {";
+            bool first = true;
+            for (const auto &[key, value]: obj.concurrency) {
+                if (!first) {
+                    os << ", ";
+                }
+                os << "\"" << key << "\": " << value;
+                first = false;
+            }
+            os << "}";
+            return os;
         }
     };
-
 } // namespace config
 #endif  // QUANT1X_CONFIG_DATA_CACHE_H

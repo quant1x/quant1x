@@ -15,75 +15,9 @@ namespace cache {
         constexpr const char *const timeLayoutOfPhase = "{:%H:%M:%S}";
         const std::string lastUpdateTime = "22:00:00";
         const std::vector<std::string> allDateUpdateTimes = {"15:10:00", lastUpdateTime};
-
+        const size_t default_concurrency_max = std::min<size_t>(std::thread::hardware_concurrency(), 8);
+        constexpr const std::string default_concurrency_key = "default";
     } // 匿名命名空间
-
-#include <iostream>
-
-#ifdef _WIN32
-#   include <windows.h>
-#elif __linux__
-#   include <fstream>
-#   include <string>
-#   include <set>
-#elif __APPLE__
-#   include <sys/sysctl.h>
-#endif
-
-    int getPhysicalCPUCount() {
-#ifdef _WIN32
-        DWORD buffer_size = 0;
-        GetLogicalProcessorInformationEx(RelationProcessorPackage, nullptr, &buffer_size);
-
-        if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
-            return 1;
-        }
-
-        std::vector<char> buffer(buffer_size);
-        PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX info =
-            reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(buffer.data());
-
-        if (!GetLogicalProcessorInformationEx(RelationProcessorPackage, info, &buffer_size)) {
-            return 1;
-        }
-
-        int socket_count = 0;
-        DWORD offset = 0;
-        while (offset < buffer_size) {
-            if (info->Relationship == RelationProcessorPackage) {
-                socket_count++;
-            }
-            offset += info->Size;
-            info = reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(
-                reinterpret_cast<char*>(info) + info->Size);
-        }
-        return socket_count;
-
-#elif __linux__
-        std::ifstream cpuinfo("/proc/cpuinfo");
-        std::string line;
-        std::set<int> physical_ids;
-
-        while (std::getline(cpuinfo, line)) {
-            if (line.find("physical id") != std::string::npos) {
-                int id = std::stoi(line.substr(line.find_last_of(':') + 1));
-                physical_ids.insert(id);
-            }
-        }
-        return physical_ids.size();
-
-#elif __APPLE__
-        int numSockets = 0;
-        size_t len = sizeof(numSockets);
-        if (sysctlbyname("hw.packages", &numSockets, &len, nullptr, 0) == -1) {
-            return 1;
-        }
-        return numSockets;
-
-#else
-        return 1; // 不支持平台，默认1颗
-#endif
-    }
 
     std::string getVariablePath() {
         return config::default_cache_path() + "/var";
@@ -129,6 +63,8 @@ namespace cache {
     }
 
     int update_with_adapters(const std::vector<cache::DataAdapter*> &adapters, const exchange::timestamp& feature_date) {
+        auto const & config = config::global_config();
+        auto const & cfg_concurrency = config.data.concurrency;
         // 隐藏终端光标以获得更流畅的显示效果
         mpb::show_console_cursor(false);
 
@@ -173,11 +109,20 @@ namespace cache {
         auto cache_date = exchange::next_trading_day(feature_date);
 
         // 线程池大小，根据CPU核心数调整
-        const size_t num_threads = std::min<size_t>(std::thread::hardware_concurrency(), 5);
+        //const size_t num_threads = std::min<size_t>(std::thread::hardware_concurrency(), 5);
         //const size_t num_cpus = getPhysicalCPUCount();
+        // 默认并发数, 按照系统默认值预先设置
+        size_t default_concurrency = default_concurrency_max;
+        // 从配置文件读取默认的并发数, 如果存在则覆盖
+        auto const & cfg_default = cfg_concurrency.find(default_concurrency_key);
+        if (cfg_default != cfg_concurrency.end() && cfg_default->second > 0) {
+            default_concurrency = cfg_default->second;
+        }
+        spdlog::info("[{}] concurrency={}", default_concurrency_key, default_concurrency);
         for (size_t idx = 0; idx < count; ++idx) {
             // 默认物理CPU数量的2倍与最大连接数一半, 取最小值
             //size_t concurrency = std::min(num_cpus*2, size_t(level1::_max_connections) / 2);
+
             auto* adapter = adapters[idx];
             std::string module_name = std::format("{}({}/{})", adapter->Key(), (idx+1), count);
 
@@ -189,7 +134,12 @@ namespace cache {
             bars[1].set_option(mpb::option::Completed {false});
             auto codeCount = allCodes.size();
             bars[1].set_option(mpb::option::MaxProgress{codeCount+0});
-
+            size_t num_threads = default_concurrency;
+            auto const & cfg_adapter = cfg_concurrency.find(adapter->Key());
+            if (cfg_adapter != cfg_concurrency.end() && cfg_adapter->second > 0) {
+                num_threads = cfg_adapter->second;
+            }
+            spdlog::info("[{}] concurrency={}", adapter->Key(), num_threads);
             // 初始化特征适配器
             bool is_feature_adapter = false;
             std::string cache_filename;
