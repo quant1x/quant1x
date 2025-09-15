@@ -1,10 +1,16 @@
-# -*- coding: UTF-8 -*-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+@Project : quant1x
+@Package : quant1x.config
+@File    : config.py
+@Author  : wangfeng
+@Date    : 2025/9/15 16:37
+@Desc    :
+"""
 import os
-
 import yaml
-
-from quant1x.base import file
-
+from quant1x import system
 
 def get_quant1x_config_filename() -> str:
     """
@@ -15,9 +21,9 @@ def get_quant1x_config_filename() -> str:
     default_config_filename = 'quant1x.yaml'
     yaml_filename = os.path.join('~', 'runtime', 'etc', default_config_filename)
     yaml_filename = os.path.expanduser(yaml_filename)
-    user_home = file.homedir()
+    user_home = system.homedir()
     quant1x_work = 'quant1x'
-    quant1x_work_env = file.env('QUANT1X_WORK')
+    quant1x_work_env = system.env('QUANT1X_WORK')
     if len(quant1x_work_env) > 0:
         quant1x_work = quant1x_work_env
     if not os.path.isfile(yaml_filename):
@@ -54,7 +60,7 @@ class Quant1XConfig:
 
     def _initialize(self):
         """初始化配置"""
-        self.__home_path = file.homedir()
+        self.__home_path = system.homedir()
         self.__config_filename = get_quant1x_config_filename()
         self.__config = load_config(self.__config_filename)
 
@@ -76,4 +82,4 @@ class Quant1XConfig:
 
 
 # 创建配置单例
-config = Quant1XConfig()
+quant1x_config = Quant1XConfig()

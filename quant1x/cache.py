@@ -9,7 +9,7 @@ import pandas as pd
 from dateutil import parser
 from pandas import DataFrame
 
-from quant1x.base import base, exchange
+from quant1x import exchange, config
 import inflection
 
 
@@ -18,7 +18,7 @@ def securities() -> pd.DataFrame:
     """
     证券列表
     """
-    full_path = os.path.join(base.config.meta_path, 'securities.csv')
+    full_path = os.path.join(config.quant1x_config.meta_path, 'securities.csv')
     if not os.path.isfile(full_path):
         return pd.DataFrame()
     df = pd.read_csv(full_path)
@@ -51,7 +51,7 @@ def klines(code: str, freq:str = 'D') -> pd.DataFrame | None:
     corrected_symbol = exchange.correct_security_code(code)
     suffix_length = 3  # 修正拼写并明确表示后缀长度
     freq_path = 'day' if freq == 'D' else freq
-    symbol_directory = os.path.join(base.config.data_path, freq_path, corrected_symbol[:-suffix_length])  # 更清晰表达目录用途
+    symbol_directory = os.path.join(config.quant1x_config.data_path, freq_path, corrected_symbol[:-suffix_length])  # 更清晰表达目录用途
     file_extension = '.csv'
     filename = f"{corrected_symbol}{file_extension}"  # 使用f-string格式化
     full_path = os.path.join(symbol_directory, filename)
@@ -138,7 +138,7 @@ def sector_filename(date: str = '') -> str:
     cache_date = date.strip()
     if len(cache_date) == 0:
         cache_date = exchange.last_trade_date()
-    filename = os.path.join(base.config.meta_path, f'{name}.{cache_date}')
+    filename = os.path.join(config.quant1x_config.meta_path, f'{name}.{cache_date}')
     return filename
 
 
@@ -192,7 +192,7 @@ def get_minutes_data(code: str, date: str) -> DataFrame | None:
     # 获取年份
     cache_date = date_format(cache_date, layout='%Y%m%d')
     year = cache_date[:4]
-    base_path = os.path.join(base.config.data_path, 'minutes')
+    base_path = os.path.join(config.quant1x_config.data_path, 'minutes')
     full_path = os.path.join(base_path, year, cache_date, filename)
 
     if os.path.isfile(full_path):
@@ -207,7 +207,7 @@ def cache_f10(date: str = None) -> DataFrame:
     file_extension = exchange.fix_trade_date(trade_date)
     filename = f"{factor_name}.{file_extension}"
     year = trade_date[:4]
-    base_path = os.path.join(base.config.data_path, 'flash')
+    base_path = os.path.join(config.quant1x_config.data_path, 'flash')
     return pd.read_csv(os.path.join(base_path, year, filename))
 
 
@@ -244,7 +244,7 @@ def get_tick_transaction(code: str, date: str) -> DataFrame | None:
     # 获取年份
     cache_date = date_format(cache_date, layout='%Y%m%d')
     year = cache_date[:4]
-    base_path = os.path.join(base.config.data_path, 'trans')
+    base_path = os.path.join(config.quant1x_config.data_path, 'trans')
     full_path = os.path.join(base_path, year, cache_date, filename)
 
     if os.path.isfile(full_path):
@@ -255,9 +255,9 @@ def get_tick_transaction(code: str, date: str) -> DataFrame | None:
 
 
 if __name__ == '__main__':
-    print(base.get_quant1x_config_filename())
-    print('data_path', base.config.data_path)
-    print('kline_path', base.config.kline_path)
+    print(config.get_quant1x_config_filename())
+    print('data_path', config.quant1x_config.data_path)
+    print('kline_path', config.quant1x_config.kline_path)
     code = '600600'
     df = klines(code)
     print(df)

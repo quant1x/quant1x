@@ -10,15 +10,15 @@ from pathlib import Path
 from typing import Optional
 
 from loguru import logger as __logger
-from quant1x.base import file, app
+from quant1x import system
 
 # 配置日志路径
-__USER_HOME = Path(file.homedir()).expanduser()
+__USER_HOME = Path(system.homedir()).expanduser()
 __LOG_DIR = __USER_HOME / ".quant1x" / "logs"
 __LOG_DIR.mkdir(parents=True, exist_ok=True)  # 确保日志目录存在
 
 # 获取应用名称作为日志文件名
-_, filename, _ = app.application()
+_, filename, _ = system.application()
 _LOG_NAME = "quant1x" if filename == "pythonservice" else filename
 _LOG_FILE = __LOG_DIR / f"{_LOG_NAME}.log"
 
@@ -32,8 +32,8 @@ __logger.add(
     diagnose=True,  # 显示诊断信息
 )
 
-logger = __logger
+#logger = __logger
 
 if __name__ == "__main__":
-    logger.warning("日志配置测试")
-    logger.info(f"日志文件路径: {_LOG_FILE}")
+    __logger.warning("日志配置测试")
+    __logger.info(f"日志文件路径: {_LOG_FILE}")

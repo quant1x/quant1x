@@ -4,7 +4,7 @@ import inspect
 
 import pandas
 
-from quant1x.base import basic
+from quant1x import basic
 from quant1x.formula.formula import *
 
 

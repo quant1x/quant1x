@@ -3,13 +3,12 @@
 """The setup script."""
 import setuptools
 
-from quant1x.base import __author__
-from quant1x.base.version import project_version
+from quant1x.version import project_version
 
 latest, author = project_version()
 
 __app_version__ = latest
-__app_author__ = __author__
+__app_author__ = author
 
 
 def parse_requirements(filename):

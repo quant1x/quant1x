@@ -7,7 +7,7 @@ from functools import lru_cache
 import numpy as np
 import pandas as pd
 
-from quant1x.base import base, timestamp
+from quant1x import config, timestamp
 
 
 class MarketType(Enum):
@@ -191,7 +191,7 @@ def __calendar() -> pd.Series:
     """
     交易日历
     """
-    fn = os.path.join(base.config.meta_path, "calendar")
+    fn = os.path.join(config.quant1x_config.meta_path, "calendar")
     df = pd.read_csv(fn)
     return df['date']
 
