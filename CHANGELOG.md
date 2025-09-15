@@ -3,9 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.36] - 2025-09-15
+### Changed
+- 新增获取cpu信息的函数
+- 各数据下载的并发数可以从配置文件加载
+
 ## [0.6.35] - 2025-09-15
 ### Changed
 - 新增获取物理CPU数量的函数
+- update changelog
 
 ## [0.6.34] - 2025-09-15
 ### Changed
@@ -351,7 +357,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.35...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.36...HEAD
+[0.6.36]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.35...v0.6.36
 [0.6.35]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.34...v0.6.35
 [0.6.34]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.33...v0.6.34
 [0.6.33]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.32...v0.6.33
