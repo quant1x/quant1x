@@ -87,7 +87,7 @@ namespace exchange {
 
     // 判断当前是否为尾盘集合竞价
     inline bool IsCallAuctionClosePhase(uint8_t status) {
-        return (status & ExchangeCallAuction | MaskClosing) == (ExchangeCallAuction | MaskClosing);
+        return (status & (ExchangeCallAuction | MaskClosing)) == (ExchangeCallAuction | MaskClosing);
     }
 
     // 判断当前是否为可撤单状态
