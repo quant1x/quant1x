@@ -5,11 +5,15 @@ namespace exchange {
     int TimeRange::minutes(const exchange::timestamp& timestamp) const {
         i64 seconds = 0;
         bool in_status = status_ == TimeStatus::ExchangeTrading || status_ == TimeStatus::ExchangeCallAuctionClosePhase;
+        auto ts_close_phase = end_;
         if(in_status) {
+            if (status_ == TimeStatus::ExchangeCallAuctionClosePhase) {
+                ts_close_phase = ts_close_phase.floor();
+            }
             if (timestamp.value() == 0) {
-                seconds = (end_ - begin_) / exchange::milliseconds_per_second;
+                seconds = (ts_close_phase - begin_) / exchange::milliseconds_per_second;
             } else if(this->in(timestamp)) {
-                seconds = (std::min(end_, timestamp) - begin_) / exchange::milliseconds_per_second;
+                seconds = (std::min(ts_close_phase, timestamp) - begin_) / exchange::milliseconds_per_second;
             }
         }
         int minutes = (int(seconds) + 59) / 60;
