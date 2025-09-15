@@ -357,6 +357,7 @@ set(quant1x-headers
     quant1x/std/safe.h
     quant1x/std/scheduler.h
     quant1x/std/simd.h
+    quant1x/std/cpu_info.h
 
     # i/o 相关
     quant1x/io/csv-reader.h
@@ -431,6 +432,7 @@ set(quant1x-headers
     quant1x/datasets/trans.h
     quant1x/datasets/minute.h
     quant1x/datasets/chips.h
+    quant1x/datasets/kline_minute.h
 
     # 实时模块
     quant1x/realtime/snapshot.h
@@ -504,7 +506,6 @@ set(quant1x-headers
 
     # 应用入口
     quant1x/quant1x.h
-    quant1x/datasets/kline_minute.h
 )
 
 set(quant1x-sources
@@ -515,6 +516,7 @@ set(quant1x-sources
     quant1x/std/numerics.cpp
     quant1x/std/safe.cpp
     quant1x/std/simd.cpp
+    quant1x/std/cpu_info.cpp
 
     # 运行时
     quant1x/std/affinity.cpp
@@ -571,6 +573,7 @@ set(quant1x-sources
     quant1x/datasets/minute.cpp
     quant1x/datasets/trans.cpp
     quant1x/datasets/chips.cpp
+    quant1x/datasets/kline_minute.cpp
     quant1x/datasets.cpp
 
     # 交易所相关
@@ -618,7 +621,6 @@ set(quant1x-sources
 
     # 应用入口
     quant1x/quant1x.cpp
-    quant1x/datasets/kline_minute.cpp
 )
 
 if (WIN32)
