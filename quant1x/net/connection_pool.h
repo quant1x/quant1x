@@ -1,6 +1,6 @@
 #pragma once
-#ifndef API_NET_CONNECTION_POOL_H
-#define API_NET_CONNECTION_POOL_H 1
+#ifndef QUANT1X_NETWORK_IO_CONNECTION_POOL_H
+#define QUANT1X_NETWORK_IO_CONNECTION_POOL_H 1
 
 #include "quant1x/net/endpoint.h"
 #include "quant1x/net/operation_handler.h"
@@ -497,4 +497,4 @@ private:
     }
 };
 
-#endif //API_NET_CONNECTION_POOL_H
+#endif //QUANT1X_NETWORK_IO_CONNECTION_POOL_H

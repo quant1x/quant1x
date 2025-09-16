@@ -1,6 +1,6 @@
 #pragma once
-#ifndef API_NET_ENDPOINT_H
-#define API_NET_ENDPOINT_H 1
+#ifndef QUANT1X_NETWORK_IO_ENDPOINT_H
+#define QUANT1X_NETWORK_IO_ENDPOINT_H 1
 
 #include "quant1x/net/base.h"
 #include "quant1x/runtime/core.h"
@@ -154,4 +154,4 @@ private:
     mutable std::mutex mutex_;
 };
 
-#endif //API_NET_ENDPOINT_H
+#endif //QUANT1X_NETWORK_IO_ENDPOINT_H

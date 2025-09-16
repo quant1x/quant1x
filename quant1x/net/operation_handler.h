@@ -1,6 +1,6 @@
 #pragma once
-#ifndef API_NET_OPERATION_HANDLER_H
-#define API_NET_OPERATION_HANDLER_H 1
+#ifndef QUANT1X_NETWORK_IO_OPERATION_HANDLER_H
+#define QUANT1X_NETWORK_IO_OPERATION_HANDLER_H 1
 
 #include "quant1x/net/base.h"
 
@@ -55,4 +55,4 @@ private:
     std::chrono::milliseconds timeout_ = std::chrono::seconds(10); ///< 默认超时10秒
 };
 
-#endif //API_NET_OPERATION_HANDLER_H
+#endif //QUANT1X_NETWORK_IO_OPERATION_HANDLER_H
