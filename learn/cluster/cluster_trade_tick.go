@@ -6,7 +6,7 @@ import (
 
 	"gitee.com/quant1x/gotdx/quotes"
 	"gitee.com/quant1x/num"
-	"gitee.com/quant1x/quant1x/quant1x/learn/preprocessing"
+	"gitee.com/quant1x/quant1x/learn/preprocessing"
 )
 
 // TradeBehavior 表示一个分笔窗口的交易行为特征

@@ -5,7 +5,7 @@ import (
 	"math"
 	"sort"
 
-	"gitee.com/quant1x/quant1x/quant1x/learn/preprocessing"
+	"gitee.com/quant1x/quant1x/learn/preprocessing"
 )
 
 // getOriginalCentroids 反标准化
