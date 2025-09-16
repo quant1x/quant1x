@@ -51,8 +51,8 @@ const TechSignal StrongSupport     = 1 << 4;  // 强支撑       (0001 0000)
 // 可继续扩展其他信号...
 
 // 组合信号示例
-const TechSignal ReboundWithSupport = ShortTermRebound | StrongSupport;    // 0001 0001
-const TechSignal BreakoutSignals    = ShortTermBreakout | VolumeBreakout;  // 0000 0110
+//const TechSignal ReboundWithSupport = ShortTermRebound | StrongSupport;    // 0001 0001
+//const TechSignal BreakoutSignals    = ShortTermBreakout | VolumeBreakout;  // 0000 0110
 
 // Has 判断是否包含某信号
 bool TechSignalHas(TechSignal ts, TechSignal signal) {

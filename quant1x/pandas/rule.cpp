@@ -81,12 +81,12 @@ namespace pandas {
         const std::string& freqStr)
     {
         const auto dur = ParseTimeRule(freqStr);
-
+        
         std::vector<std::chrono::system_clock::time_point> result;
         std::chrono::system_clock::time_point t = start;
         for (int i = 0; i < periods; i++) {
             result.push_back(t);
-            t += dur;
+            t += std::chrono::duration_cast<std::chrono::system_clock::duration>(dur);
         }
         return result;
     }
