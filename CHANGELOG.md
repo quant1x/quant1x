@@ -3,9 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.40] - 2025-09-16
+### Changed
+- 更新依赖库版本
+- 调整网络部分组件头文件宏前缀
+
 ## [0.6.39] - 2025-09-15
 ### Changed
 - 修复全天交易时段分钟数综合大于240的bug
+- update changelog
 
 ## [0.6.38] - 2025-09-15
 ### Changed
@@ -373,7 +379,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.39...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.40...HEAD
+[0.6.40]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.39...v0.6.40
 [0.6.39]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.38...v0.6.39
 [0.6.38]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.37...v0.6.38
 [0.6.37]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.36...v0.6.37
