@@ -1,0 +1,20 @@
+{
+  "name": "quant1x",
+  "version": "0.6.0",
+  "description": "quant1x",
+  "dependencies": [
+    "openssl",
+    "libiconv",
+    "yaml-cpp",
+    "zlib",
+    "mimalloc",
+    "cpr",
+    "duktape",
+    "flatbuffers",
+    "capnproto",
+    "benchmark",
+    "catch2",
+    "gtest",
+    "matplotplusplus"
+  ]
+}
