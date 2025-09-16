@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_LEVEL1_ENCODING_H
-#define QUANT1X_LEVEL1_ENCODING_H 1
+#ifndef QUANT1X_LEVEL1_HELPERS_H
+#define QUANT1X_LEVEL1_HELPERS_H 1
 
 #include <quant1x/std/feature_detection.h>
 #include <quant1x/std/api.h>
@@ -14,7 +14,7 @@
 namespace level1 {
 
     /// 编解码
-    namespace encoding {
+    namespace helpers {
 
         // 获取日期和时间
         // @param category 数据类别
@@ -265,7 +265,7 @@ namespace level1 {
 
             return static_cast<double>(v);
         }
-    } // namespace encoding
+    } // namespace helpers
 } // namespace level1
 
-#endif //QUANT1X_LEVEL1_ENCODING_H
+#endif //QUANT1X_LEVEL1_HELPERS_H
