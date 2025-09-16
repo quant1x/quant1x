@@ -203,7 +203,7 @@ namespace level1 {
                 u8 category = bs.get_u8(); // 类型
                 u8 data[16] = {0}; // 数据
                 bs.get_array(data);
-                auto [year, month, day, hour, minute] = encoding::GetDatetimeFromUint32(9, date, 0);
+                auto [year, month, day, hour, minute] = helpers::GetDatetimeFromUint32(9, date, 0);
                 e.Category = category;
                 e.Date = fmt::format("{:04d}-{:02d}-{:02d}", year, month, day);
                 e.Name = XDXR_CATEGORY_MAPPING.at(e.Category);
@@ -266,7 +266,7 @@ namespace level1 {
             if (v == 0) {
                 return 0;
             }
-            return encoding::IntToFloat64(v);
+            return helpers::IntToFloat64(v);
         }
     };
 

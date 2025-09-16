@@ -3,7 +3,7 @@
 #define QUANT1X_LEVEL1_SECURITY_QUOTE_H 1
 
 #include "protocol.h"
-#include "encoding.h"
+#include "helpers.h"
 #include "quant1x/exchange/code.h"
 #include "quant1x/exchange/session.h"
 
@@ -250,7 +250,7 @@ namespace level1 {
                 ele.reversedBytes0 = stream.varint_decode();
                 if (ele.reversedBytes0 > 0) {
                     //ele.ServerTime = timeFromStr(fmt.Sprintf("%d",ele.ReversedBytes0))
-                    ele.serverTime = encoding::format_time(ele.reversedBytes0);
+                    ele.serverTime = helpers::format_time(ele.reversedBytes0);
                 } else {
                     ele.serverTime = "0";
                     // 如果出现这种情况, 可能是退市或者其实交易状态异常的数据, 摘牌的情况下, 证券代码是错的
@@ -263,7 +263,7 @@ namespace level1 {
                 ele.vol *= 100;
                 ele.curVol = stream.varint_decode();
                 u32 rawAmount = stream.get_u32();
-                ele.amount = encoding::IntToFloat64(int(rawAmount));
+                ele.amount = helpers::IntToFloat64(int(rawAmount));
 
                 ele.sVol = stream.varint_decode();
                 ele.bVol = stream.varint_decode();

@@ -7,7 +7,7 @@
 #include "quant1x/std/util.h"
 #include "quant1x/encoding/iconv.h"
 #include "quant1x/std/buffer.h"
-#include "encoding.h"
+#include "helpers.h"
 
 namespace level1 {
 

@@ -4,7 +4,7 @@
 
 #include <ostream>
 #include "protocol.h"
-#include "encoding.h"
+#include "helpers.h"
 
 // ==============================
 // 证券列表
@@ -79,7 +79,7 @@ namespace level1 {
                 buf.get_array(e.Reversed1);
                 e.DecimalPoint = buf.get_u8();
                 u32 tmp = buf.get_u32();
-                e.PreClose = encoding::IntToFloat64(tmp);
+                e.PreClose = helpers::IntToFloat64(tmp);
                 buf.get_array(e.Reversed2);
                 List.push_back(e);
                 //std::cout <<"offset:"<<buf.position() << " ,data="<< e << std::endl;

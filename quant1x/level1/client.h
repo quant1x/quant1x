@@ -11,7 +11,7 @@
 #include "quant1x/exchange/code.h"
 #include "quant1x/exchange/session.h"
 #include "protocol.h"
-#include "encoding.h"
+#include "helpers.h"
 #include "hello1.h"
 #include "hello2.h"
 #include "heartbeat.h"
