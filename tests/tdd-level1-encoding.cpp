@@ -1,5 +1,4 @@
 #include <quant1x/test/test.h>
-
 #include <quant1x/level1/helpers.h>
 
 // 测试快照时间戳
@@ -25,8 +24,6 @@ TEST_CASE("encoding-format_time", "[level1]") {
         printf("Input: %d, Output: %s\n", test_cases[i], level1::helpers::format_time(test_cases[i]).c_str());
     }
 }
-
-
 
 // 测试整形编解码
 TEST_CASE("Test Varint for quant1x", "[math]") {
