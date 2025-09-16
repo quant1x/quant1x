@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.43] - 2025-09-16
+### Changed
+- 调整level1下的encoding为helpers, 防止与顶层编解码encoding冲突
+
 ## [0.6.42] - 2025-09-16
 ### Changed
 - 新增为msvc准备的vcpkg的配置文件
+- update changelog
 
 ## [0.6.41] - 2025-09-16
 ### Changed
@@ -389,7 +394,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.42...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.43...HEAD
+[0.6.43]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.42...v0.6.43
 [0.6.42]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.41...v0.6.42
 [0.6.41]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.40...v0.6.41
 [0.6.40]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.39...v0.6.40
