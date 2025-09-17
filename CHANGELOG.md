@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.50] - 2025-09-17
+### Changed
+- 修订波峰检测的测试代码
+
 ## [0.6.49] - 2025-09-17
 ### Changed
 - 修订过滤规则的测试代码
+- update changelog
 
 ## [0.6.48] - 2025-09-17
 ### Changed
@@ -425,7 +430,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.49...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.50...HEAD
+[0.6.50]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.49...v0.6.50
 [0.6.49]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.48...v0.6.49
 [0.6.48]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.47...v0.6.48
 [0.6.47]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.46...v0.6.47
