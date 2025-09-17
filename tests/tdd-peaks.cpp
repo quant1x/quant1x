@@ -139,11 +139,11 @@ public:
     }
 
     // 获取结果
-    vector<int> getPeaks() const {
+    [[nodiscard]] vector<int> getPeaks() const {
         return peakIndex;
     }
 
-    vector<int> getValleys() const {
+    [[nodiscard]] vector<int> getValleys() const {
         return valleyIndex;
     }
 };
