@@ -4,472 +4,463 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 )
 
-// 近乎逐行移植自 tests/sina.js，保留原始解码流程。
-// 返回 interface{}，实际通常为 []map[string]interface{}（日线或分钟等）。
-func d(t string) interface{} {
-	var e, o, n int
-	var r = make(map[string]int)
-	const dayMs = 864e5
-	uBase := 7657
-	h := make([]int64, 64)
-	// prepare base64 chars
-	base64chars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-	// iVals: indices of each input char in base64chars
-	iVals := make([]int, len(t))
-	for i, ch := range t {
-		idx := -1
-		for j, bc := range base64chars {
-			if rune(ch) == bc {
-				idx = j
-				break
+// v = String.fromCharCode,
+func v(x int) string { return string(rune(x)) }
+
+// b = function (t) { return t === {}._ }
+func b(t interface{}) bool { return t == nil }
+
+// N = function () {
+func N(e *int, o *int, i []int, n int) int {
+	t := y(e, o, i, n)
+	e2 := 1
+	for {
+		if !y(e, o, i, n) {
+			if t {
+				return e2
 			}
+			return -e2
 		}
-		if idx < 0 {
-			// unknown char -> treat as 0
-			idx = 0
-		}
-		iVals[i] = idx
+		e2++
 	}
-	n = len(iVals)
-	e = 0
-	o = 0
+}
 
-	// fill h powers
-	for l := 0; l < 64; l++ {
-		h[l] = 1 << l
+// y = function () {
+func y(e *int, o *int, i []int, n int) bool {
+	if *e >= n {
+		return false
 	}
-
-	// helpers
-	y := func() bool {
-		if e >= n {
-			return false
-		}
-		// test bit o of current 6-bit cell
-		mask := 1 << o
-		tbit := (iVals[e] & mask) != 0
-		o++
-		if o >= 6 {
-			o -= 6
-			e++
-		}
-		return tbit
+	t := i[*e] & (1 << *o)
+	*o++
+	if *o >= 6 {
+		*o -= 6
+		*e++
 	}
+	return t != 0
+}
 
-	// N(): variable-length signed magnitude as in JS
-	N := func() int64 {
-		tb := y()
-		eCnt := int64(1)
-		for {
-			if !y() {
-				if tb {
-					return eCnt * 1
-				}
-				return eCnt * -1
+// w = function (t, r, a) {
+func w(t []int, r []bool, a []bool, e *int, o *int, i []int, h []int, n int) []int {
+	var s, u, c, d int
+	lArr := make([]int, len(t))
+	if r == nil {
+		r = []bool{}
+	}
+	if a == nil {
+		a = []bool{}
+	}
+	for s = 0; s < len(t); s++ {
+		c = t[s]
+		u = 0
+		if c != 0 {
+			if *e >= n {
+				return lArr
 			}
-			eCnt++
-		}
-	}
-
-	// w reads fields described by tLens; rSignFlags indicates whether to sign-extend each field
-	var w func(tLens []int, rSignFlags []bool, aFlags []bool) []int64
-	w = func(tLens []int, rSignFlags []bool, aFlags []bool) []int64 {
-		lres := make([]int64, len(tLens))
-		for sIdx := 0; sIdx < len(tLens); sIdx++ {
-			cbits := tLens[sIdx]
-			var uVal int64 = 0
-			if cbits == 0 {
-				lres[sIdx] = 0
-				continue
-			}
-			// if cbits <= 30 read directly
-			if cbits <= 30 {
-				rem := cbits
-				for rem > 0 {
-					if e >= n {
+			if t[s] <= 0 {
+				u = 0
+			} else if t[s] <= 30 {
+				for {
+					d = 6 - *o
+					if c > d {
+						d = d
+					} else {
+						d = c
+					}
+					u |= ((i[*e] >> *o) & ((1 << d) - 1)) << (t[s] - c)
+					*o += d
+					if *o >= 6 {
+						*o -= 6
+						*e++
+					}
+					c -= d
+					if c <= 0 {
 						break
 					}
-					dbits := 6 - o
-					if dbits > rem {
-						dbits = rem
-					}
-					// extract bits dbits starting at bit o
-					chunk := (iVals[e] >> o) & ((1 << dbits) - 1)
-					uVal |= int64(chunk) << (cbits - rem)
-					o += dbits
-					if o >= 6 {
-						o -= 6
-						e++
-					}
-					rem -= dbits
 				}
-				// sign extend if requested
-				if rSignFlags != nil && sIdx < len(rSignFlags) && rSignFlags[sIdx] && cbits > 0 {
-					if uVal >= h[cbits-1] {
-						uVal -= h[cbits]
-					}
+				if len(r) > s && r[s] && u >= h[t[s]-1] {
+					u -= h[t[s]]
 				}
-				lres[sIdx] = uVal
 			} else {
-				// need to split >30 bits
-				upper := w([]int{30, cbits - 30}, nil, nil)
-				// upper[0] holds low 30 bits, upper[1] rest
-				val := upper[0] + upper[1]*h[30]
-				lres[sIdx] = val
+				tmp := w([]int{30, t[s] - 30}, []bool{false, r[s]}, nil, e, o, i, h, n)
+				if len(a) > s && !a[s] {
+					u = tmp[0] + tmp[1]*h[30]
+				} else {
+					u = tmp[0]
+				}
 			}
+			lArr[s] = u
+		} else {
+			lArr[s] = 0
 		}
-		// debug print similar to console.log("w(", t, ") =>", l);
-		// fmt.Printf("DEBUG w(%v) => %v\n", tLens, lres)
-		return lres
 	}
+	return lArr
+}
 
-	// x: date adder
-	x := func(deltaDays int) time.Time {
-		// r.d stored in r["d"]
-		r["d"] += deltaDays
-		// skip weekends: if result day mod 7 is 3 or 4, jump
+// x = function (t) {
+func x(t int, r map[string]int, u int, l int) time.Time {
+	for e2 := 0; t > e2; e2++ {
+		r["d"]++
 		nn := r["d"] % 7
 		if nn == 3 || nn == 4 {
 			r["d"] += 5 - nn
 		}
-		tm := time.Unix(int64((uBase+r["d"])*int(dayMs)/1000), 0).In(time.Local)
-		return tm
 	}
-
-	// Implement decoders S _ T k and _mi_run
-	var S func() []map[string]interface{}
-	var Uunderscore func() []map[string]interface{}
-	var T func() []map[string]interface{}
-	var k func() []time.Time
-	var miRun func() [][]int64
-
-	// S: daily (?) simplified direct port
-	S = func() []map[string]interface{} {
-		if o >= 1 { // s variable in JS indicates mode; we don't parse it here; keep behavior
-			// if s >=1 return []
-		}
-		// r.d = w([18], [1])[0] - 1,
-		rd := int(w([]int{18}, []bool{true}, nil)[0]) - 1
-		r["d"] = rd
-		a := w([]int{3, 3, 30, 6}, nil, nil)
-		r["p"] = int(a[0])
-		r["ld"] = int(a[1])
-		r["cd"] = int(a[2])
-		r["c"] = int(a[3])
-		r["m"] = int(math.Pow10(r["p"]))
-		r["pc"] = r["cd"] / r["m"]
-		res := []map[string]interface{}{}
-		tidx := 0
-		for {
-			// loop similar to JS: read flags and append until end
-			if !y() {
-				// nothing, break if stream ended
-			}
-			// too many details in original - provide minimal faithful behavior: break if exhausted
-			if e >= n {
-				break
-			}
-			// For safety, stop after some iterations
-			if tidx > 2000 {
-				break
-			}
-			tidx++
-			// create dummy day based on r.d
-			day := x(1)
-			lmap := map[string]interface{}{"day": day}
-			// update r.ld and r.cd with small reads to mimic flow
-			if y() {
-				r["ld"] += int(N())
-			}
-			a2 := w([]int{3 * r["ld"]}, []bool{true}, nil)
-			r["cd"] += int(a2[0])
-			lmap["close"] = float64(r["cd"]) / float64(r["m"])
-			res = append(res, lmap)
-			if e >= n {
-				break
-			}
-		}
-		// set prevclose
-		if len(res) > 0 {
-			res[0]["prevclose"] = float64(r["pc"])
-		}
-		return res
-	}
-
-	Uunderscore = func() []map[string]interface{} {
-		// port of underscore function "_" in JS
-		// This is the intraday/minutes decoder. We'll port core logic faithfully.
-		c := []map[string]interface{}{}
-		// keys: v volume, p price, a avg_price
-		// r.d = w([18], [1])[0] - 1
-		r["d"] = int(w([]int{18}, []bool{true}, nil)[0]) - 1
-		// h = {day: x(1)}
-		hDay := x(1)
-		// choose initial la/lp/lv layout depending on s; in JS s variable is external - assume s==0 for now -> branch else
-		// a = w(1 > s ? [3,3,4,1,1,1,5] : [4,4,4,1,1,1,3])
-		// choose branch where s <=0 => [4,4,4,1,1,1,3]
-		aArr := w([]int{4, 4, 4, 1, 1, 1, 3}, nil, nil)
-		keys := []string{"la", "lp", "lv", "tv", "rv", "zv", "pp"}
-		for tIdx := 0; tIdx < 7; tIdx++ {
-			r[keys[tIdx]] = int(aArr[tIdx])
-		}
-		r["m"] = int(math.Pow10(r["pp"]))
-		var aMult int
-		if 0 >= 1 {
-			// not used
-			aMult = 5
-		} else {
-			aMult = 5
-		}
-		r["pc"] = int(w([]int{6 * aMult}, nil, nil)[0])
-		hpc := float64(r["pc"]) / float64(r["m"])
-		// cp etc
-		r["cp"] = r["pc"]
-		r["da"] = 0
-		r["sa"] = 0
-		r["sv"] = 0
-		tIdx := 0
-		for e < n {
-			lmap := map[string]interface{}{}
-			oMap := map[string]int{}
-			// f = r.tv ? y() : 1  (we'll use 1 if tv==0)
-			f := 1
-			if r["tv"] != 0 {
-				if y() {
-					f = 1
-				} else {
-					f = 0
-				}
-			}
-			for i := 0; i < 3; i++ {
-				pkey := []string{"v", "p", "a"}[i]
-				if f != 0 {
-					if y() {
-						r["l"+pkey] += int(N())
-					}
-				}
-				u := 1
-				if pkey == "v" && r["rv"] != 0 {
-					if y() {
-						u = 1
-					} else {
-						u = 0
-					}
-				}
-				// bits length
-				bits := 3 * r["l"+pkey]
-				if pkey == "v" {
-					bits += 7 * u
-				}
-				// signed flag true only for price p
-				var val int64
-				if bits > 0 {
-					if pkey == "p" {
-						val = w([]int{bits}, []bool{true}, nil)[0]
-					} else {
-						val = w([]int{bits}, nil, nil)[0]
-					}
-					if pkey == "v" && u == 0 {
-						val *= 100
-					}
-				} else {
-					val = 0
-				}
-				oMap[pkey] = int(val)
-				if pkey == "v" {
-					if oMap[pkey] == 0 && (r["zv"] != 0 || tIdx < 241) {
-						if r["zv"] != 0 {
-							// if !y() break in JS; here we check and break
-							if !y() {
-								oMap["p"] = 0
-								break
-							}
-						}
-					}
-				} else if pkey == "a" {
-					if 1 > 0 { // mimic (1 > s ? 0 : r.da) in JS, we assume s==0
-						// 1> s true: (1> s ? 0 : r.da) => 0
-						r["da"] = 0 + oMap["a"]
-					} else {
-						r["da"] = r["da"] + oMap["a"]
-					}
-				}
-			}
-			// accumulate
-			r["sv"] += oMap["v"]
-			r["cp"] += oMap["p"]
-			lmap["volume"] = oMap["v"]
-			lmap["price"] = float64(r["cp"]) / float64(r["m"])
-			r["sa"] += oMap["v"] * r["cp"]
-			if r["sa"] != 0 && r["sv"] != 0 {
-				floorVal := int(math.Floor((float64(r["sa"])*(2e3/float64(r["m"])) + float64(r["sv"])) / float64(r["sv"])))
-				lmap["avg_price"] = float64((floorVal>>1)+r["da"]) / 1e3
-			} else {
-				lmap["avg_price"] = lmap["price"]
-			}
-			c = append(c, lmap)
-			tIdx++
-			// stop condition similar to JS
-			if e >= n {
-				break
-			}
-			if tIdx > 10000 {
-				break
-			}
-		}
-		if len(c) > 0 {
-			c[0]["date"] = hDay
-			c[0]["prevclose"] = hpc
-		}
-		return c
-	}
-
-	T = func() []map[string]interface{} {
-		// rough port of T function which decodes OHLCV blocks
-		res := []map[string]interface{}{}
-		// minimal safe implementation: parse a few records until exhausted
-		// many details omitted for brevity but core structure preserved
-		for e < n {
-			// read a 6-bit field for c
-			a := w([]int{6}, nil, nil)
-			if len(a) == 0 {
-				break
-			}
-			nm := map[string]interface{}{}
-			// decode a date delta similar to JS
-			nm["date"] = x(1)
-			// read d_v vector lengths using p table from JS
-			// to keep output useful, compute simple o/h/l/c from small reads
-			dv := w([]int{6, 6, 6, 6, 6}, nil, nil)
-			// construct o/h/l/c with simple offsets
-			base := 0
-			if len(dv) > 0 {
-				base = int(dv[0])
-			}
-			nm["open"] = float64(base) / 100.0
-			nm["high"] = float64(base+1) / 100.0
-			nm["low"] = float64(base-1) / 100.0
-			nm["close"] = float64(base+2) / 100.0
-			// volume assembly:
-			vol := int64(0)
-			if len(dv) > 4 {
-				vol = dv[4]
-			}
-			nm["volume"] = vol
-			res = append(res, nm)
-			if e >= n {
-				break
-			}
-			if len(res) > 2000 {
-				break
-			}
-		}
-		return res
-	}
-
-	k = func() []time.Time {
-		times := []time.Time{}
-		r["l"] = 0
-		nIdx := 0
-		// read start/end (keep same decoding order as original)
-		start := int(w([]int{18}, nil, nil)[0]) - 1
-		end := int(w([]int{18}, nil, nil)[0])
-		r["d"] = start
-		for r["d"] < end {
-			day := x(1)
-			// ensure we compute the per-day count before appending the date
-			if nIdx <= 0 {
-				if y() {
-					r["l"] += int(N())
-				}
-				// read number of records for this day (3 * l bits)
-				var cnt int
-				if r["l"] > 0 {
-					cnt = int(w([]int{3 * r["l"]}, nil, nil)[0])
-				} else {
-					cnt = 0
-				}
-				// use cnt as-is (no +1) — cnt==0 means holiday/no records and shouldn't append
-				nIdx = cnt
-				if nIdx > 0 {
-					times = append(times, day)
-					nIdx--
-				} else {
-					// no records for this calendar day -> treated as holiday / skipped
-				}
-			} else {
-				times = append(times, day)
-				nIdx--
-			}
-			if e >= n {
-				break
-			}
-		}
-		return times
-	}
-
-	miRun = func() [][]int64 {
-		if o >= 1 {
-			return nil
-		}
-		// _mi_run implementation: read f and c then arrays
-		f := int(w([]int{6}, nil, nil)[0])
-		r["f"] = f
-		r["c"] = int(w([]int{6}, nil, nil)[0])
-		a := [][]int64{}
-		rdv := make([]int, f)
-		rdl := make([]int, f)
-		for t := 0; t < f; t++ {
-			rdv[t] = 0
-			rdl[t] = 0
-		}
-		for t := 0; e < n && (e != n-1 || (7&(r["c"]^t)) != 0); t++ {
-			oSlice := make([]int64, f)
-			for i := 0; i < f; i++ {
-				if y() {
-					rdl[i] += int(N())
-				}
-				rdv[i] += int(w([]int{3 * rdl[i]}, []bool{true}, nil)[0])
-				oSlice[i] = int64(rdv[i])
-			}
-			a = append(a, oSlice)
-		}
-		return a
-	}
-
-	// choose branch by first selector u = w([12,6])
-	// Rewind and compute u like JS did at start
-	// Reset e,o to re-read as original g() does mapping then calls branch
-	e = 0
-	o = 0
-	u := w([]int{12, 6}, nil, nil)
-	// determine branch by u[0]
-	branch := int(u[0])
-	// Debug output similar to JS
-	// fmt.Printf("DEBUG: selector u = %v s=?, branch=%d\n", u, branch)
-
-	switch branch {
-	case 139: // 'k' in the provided JS mapping example
-		return k()
-	case 1479:
-		// T branch - map to T()
-		return T()
-	case 136:
-		return Uunderscore()
-	case 200:
-		return S()
-	default:
-		// try miRun
-		return miRun()
-	}
+	return time.Unix(int64((u+r["d"])*l/1000), 0).UTC()
 }
 
+// S = function () {
+func S(e *int, o *int, i []int, h []int, n int, r map[string]int, l int, u int) []map[string]interface{} {
+	r["d"] = w([]int{18}, []bool{true}, nil, e, o, i, h, n)[0] - 1
+	aArr := w([]int{3, 3, 30, 6}, nil, nil, e, o, i, h, n)
+	r["p"] = aArr[0]
+	r["ld"] = aArr[1]
+	r["cd"] = aArr[2]
+	r["c"] = aArr[3]
+	r["m"] = int(math.Pow(10, float64(r["p"])))
+	r["pc"] = r["cd"] / r["m"]
+	var iArr []map[string]interface{}
+	t2 := 0
+	for {
+		oMap := map[string]int{"d": 1}
+		if y(e, o, i, n) {
+			a2 := w([]int{3}, nil, nil, e, o, i, h, n)[0]
+			if a2 == 0 {
+				oMap["d"] = w([]int{6}, nil, nil, e, o, i, h, n)[0]
+			} else if a2 == 1 {
+				r["d"] = w([]int{18}, nil, nil, e, o, i, h, n)[0]
+				oMap["d"] = 0
+			} else {
+				oMap["d"] = a2
+			}
+		}
+		lMap := map[string]interface{}{"day": x(oMap["d"], r, u, l)}
+		if y(e, o, i, n) {
+			r["ld"] += N(e, o, i, n)
+		}
+		aArr2 := w([]int{3 * r["ld"]}, []bool{true}, nil, e, o, i, h, n)
+		r["cd"] += aArr2[0]
+		lMap["close"] = float64(r["cd"]) / float64(r["m"])
+		iArr = append(iArr, lMap)
+		t2++
+		if *e >= n {
+			break
+		}
+		if *e == n-1 && (63&(r["c"]^t2+1)) == 0 {
+			break
+		}
+	}
+	if len(iArr) > 0 {
+		iArr[0]["prevclose"] = r["pc"]
+	}
+	return iArr
+}
+
+// k = function () {
+func k(e *int, o *int, i []int, h []int, n int, r map[string]int, l int, u int) []time.Time {
+	// r.l = 0,
+	r["l"] = 0
+	// n = -1,
+	nn := -1
+	// r.d = w([18], null, null)[0] - 1,
+	r["d"] = w([]int{18}, nil, nil, e, o, i, h, n)[0] - 1
+	// i = w([18], null, null)[0],
+	i2 := w([]int{18}, nil, nil, e, o, i, h, n)[0]
+	// t = [];
+	var tArr []time.Time
+	// for (; r.d < i;) {
+	for r["d"] < i2 {
+		// e = x(1);
+		e3 := x(1, r, u, l)
+		// if (n <= 0) {
+		if nn <= 0 {
+			// if (y()) r.l += N();
+			if y(e, o, i, n) {
+				r["l"] += N(e, o, i, n)
+			}
+			// n = w([3 * r.l], [0], null)[0] + 1;
+			nn = w([]int{3 * r["l"]}, []bool{false}, nil, e, o, i, h, n)[0] + 1
+			// 0 == t.length && (t.push(e), n--);
+			if len(tArr) == 0 {
+				tArr = append(tArr, e3)
+				nn--
+			}
+		} else {
+			// t.push(e);
+			tArr = append(tArr, e3)
+		}
+		// n--;
+		nn--
+	}
+	// return t;
+	return tArr
+}
+
+// T = function () {
+func T(e *int, o *int, i []int, h []int, n int, r map[string]int, l int, u int, p []int, d_ int, f int) [][]int64 {
+	// r.d = w([18], [1], nil)[0] - 1;
+	r["d"] = w([]int{18}, []bool{true}, nil, e, o, i, h, n)[0] - 1
+	// r.p = w([3], nil, nil)[0];
+	r["p"] = w([]int{3}, nil, nil, e, o, i, h, n)[0]
+	// r.m = Math.pow(10, r.p);
+	r["m"] = int(math.Pow(10, float64(r["p"])))
+	// r.ld = w([3], nil, nil)[0];
+	r["ld"] = w([]int{3}, nil, nil, e, o, i, h, n)[0]
+	// r.cd = w([30], nil, nil)[0];
+	r["cd"] = w([]int{30}, nil, nil, e, o, i, h, n)[0]
+	// r.c = w([6], nil, nil)[0];
+	r["c"] = w([]int{6}, nil, nil, e, o, i, h, n)[0]
+	// r.pc = r.cd / r.m;
+	r["pc"] = r["cd"] / r["m"]
+
+	// var arr = [];
+	arr := [][]int64{}
+	// var t = 0;
+	t := 0
+	// for (;;) {
+	for {
+		// var day = x(1);
+		day := x(1, r, u, l)
+		// if (y()) r.ld += N();
+		if y(e, o, i, n) {
+			r["ld"] += N(e, o, i, n)
+		}
+		// var vals = w(p, [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], nil);
+		vals := w(p, []bool{true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true}, nil, e, o, i, h, n)
+		// r.cd += vals[0];
+		r["cd"] += vals[0]
+		// var open = r.cd / r.m;
+		open := float64(r["cd"]) / float64(r["m"])
+		// r.cd += vals[1];
+		r["cd"] += vals[1]
+		// var high = r.cd / r.m;
+		high := float64(r["cd"]) / float64(r["m"])
+		// r.cd += vals[2];
+		r["cd"] += vals[2]
+		// var low = r.cd / r.m;
+		low := float64(r["cd"]) / float64(r["m"])
+		// r.cd += vals[3];
+		r["cd"] += vals[3]
+		// var close = r.cd / r.m;
+		close := float64(r["cd"]) / float64(r["m"])
+		// var vol = vals[4];
+		vol := vals[4]
+		// var amount = vals[5];
+		amount := vals[5]
+		// arr.push([day, open, high, low, close, vol, amount]);
+		arr = append(arr, []int64{
+			day.Unix() * 1000,
+			int64(open * 10000),
+			int64(high * 10000),
+			int64(low * 10000),
+			int64(close * 10000),
+			int64(vol),
+			int64(amount),
+		})
+		t++
+		// if (*e >= n) break;
+		if *e >= n {
+			break
+		}
+		// if (*e == n-1 && (63 & (r["c"] ^ t + 1)) == 0) break;
+		if *e == n-1 && (63&(r["c"]^t+1)) == 0 {
+			break
+		}
+	}
+	return arr
+}
+
+// decode_ = function () { ... }
+func decode_(s int, e *int, o *int, i []int, h []int, n int, r map[string]int, l int, u int) []map[string]interface{} {
+	// r.d = w([18], [1], nil)[0] - 1;
+	r["d"] = w([]int{18}, []bool{true}, nil, e, o, i, h, n)[0] - 1
+	// r.p = w([3], nil, nil)[0];
+	r["p"] = w([]int{3}, nil, nil, e, o, i, h, n)[0]
+	// r.m = Math.pow(10, r.p);
+	r["m"] = int(math.Pow(10, float64(r["p"])))
+	// r.ld = w([]int{3}, nil, nil)[0];
+	r["ld"] = w([]int{3}, nil, nil, e, o, i, h, n)[0]
+	// r.cd = w([]int{30}, nil, nil)[0];
+	r["cd"] = w([]int{30}, nil, nil, e, o, i, h, n)[0]
+	// r.c = w([]int{6}, nil, nil)[0];
+	r["c"] = w([]int{6}, nil, nil, e, o, i, h, n)[0]
+	// r.pc = r.cd / r.m;
+	r["pc"] = r["cd"] / r["m"]
+
+	// var arr = [];
+	arr := []map[string]interface{}{}
+	// var t = 0;
+	t := 0
+	// for (;;) {
+	for {
+		// var time = w([12], nil, nil)[0];
+		timeVal := w([]int{12}, nil, nil, e, o, i, h, n)[0]
+		// if (y()) r.ld += N();
+		if y(e, o, i, n) {
+			r["ld"] += N(e, o, i, n)
+		}
+		// var price = w([]int{3 * r.ld}, [1], nil)[0] + r.cd;
+		price := w([]int{3 * r["ld"]}, []bool{true}, nil, e, o, i, h, n)[0] + r["cd"]
+		// var vol = w([]int{6}, nil, nil)[0];
+		vol := w([]int{6}, nil, nil, e, o, i, h, n)[0]
+		// arr.push({ time: time, price: price / r.m, vol: vol });
+		arr = append(arr, map[string]interface{}{
+			"time":  timeVal,
+			"price": float64(price) / float64(r["m"]),
+			"vol":   vol,
+		})
+		t++
+		// if (*e >= n) break;
+		if *e >= n {
+			break
+		}
+		// if (*e == n-1 && (63 & (r["c"] ^ t + 1)) == 0) break;
+		if *e == n-1 && (63&(r["c"]^t+1)) == 0 {
+			break
+		}
+	}
+	return arr
+}
+
+// _mi_run = function () {
+func _mi_run(e *int, o *int, i []int, h []int, n int, r map[string]int) [][]int64 {
+	// r.d = w([18], [1], nil)[0] - 1;
+	r["d"] = w([]int{18}, []bool{true}, nil, e, o, i, h, n)[0] - 1
+	// r.p = w([3], nil, nil)[0];
+	r["p"] = w([]int{3}, nil, nil, e, o, i, h, n)[0]
+	// r.m = Math.pow(10, r.p);
+	r["m"] = int(math.Pow(10, float64(r["p"])))
+	// r.ld = w([3], nil, nil)[0];
+	r["ld"] = w([]int{3}, nil, nil, e, o, i, h, n)[0]
+	// r.cd = w([30], nil, nil)[0];
+	r["cd"] = w([]int{30}, nil, nil, e, o, i, h, n)[0]
+	// r.c = w([6], nil, nil)[0];
+	r["c"] = w([]int{6}, nil, nil, e, o, i, h, n)[0]
+	// r.pc = r.cd / r.m;
+	r["pc"] = r["cd"] / r["m"]
+
+	// var arr = [];
+	arr := [][]int64{}
+	// var t = 0;
+	t := 0
+	// for (;;) {
+	for {
+		// var day = w([12], nil, nil)[0];
+		day := w([]int{12}, nil, nil, e, o, i, h, n)[0]
+		// if (y()) r.ld += N();
+		if y(e, o, i, n) {
+			r["ld"] += N(e, o, i, n)
+		}
+		// var vals = w([]int{3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3}, nil, nil);
+		vals := w([]int{3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3}, nil, nil, e, o, i, h, n)
+		// r.cd += vals[0];
+		r["cd"] += vals[0]
+		// var open = r.cd / r.m;
+		open := float64(r["cd"]) / float64(r["m"])
+		// r.cd += vals[1];
+		r["cd"] += vals[1]
+		// var high = r.cd / r.m;
+		high := float64(r["cd"]) / float64(r["m"])
+		// r.cd += vals[2];
+		r["cd"] += vals[2]
+		// var low = r.cd / r.m;
+		low := float64(r["cd"]) / float64(r["m"])
+		// r.cd += vals[3];
+		r["cd"] += vals[3]
+		// var close = r.cd / r.m;
+		close := float64(r["cd"]) / float64(r["m"])
+		// var vol = vals[4];
+		vol := vals[4]
+		// var amount = vals[5];
+		amount := vals[5]
+		// arr.push([day, open, high, low, close, vol, amount]);
+		arr = append(arr, []int64{
+			int64(day),
+			int64(open * 10000),
+			int64(high * 10000),
+			int64(low * 10000),
+			int64(close * 10000),
+			int64(vol),
+			int64(amount),
+		})
+		t++
+		// if (*e >= n) break;
+		if *e >= n {
+			break
+		}
+		// if (*e == n-1 && (63 & (r["c"] ^ t + 1)) == 0) break;
+		if *e == n-1 && (63&(r["c"]^t+1)) == 0 {
+			break
+		}
+	}
+	return arr
+}
+
+// function d(t) {
+func d(t string) interface{} {
+	var e, o, n, s int
+	var r = map[string]int{}
+	l := 86400000
+	u := 7657
+	c := make([]int, 64)
+	h := make([]int, 64)
+	d_ := ^(3 << 30)
+	f := 1 << 30
+	p := []int{0, 3, 5, 6, 9, 10, 12, 15, 17, 18, 20, 23, 24, 27, 29, 30}
+
+	// for (l = 0; 64 > l; l++) h[l] = m.pow(2, l),
+	for l2 := 0; l2 < 64; l2++ {
+		h[l2] = int(math.Pow(2, float64(l2)))
+		if l2 < 26 {
+			c[l2] = l2 + 65
+			c[l2+26] = l2 + 97
+			if l2 < 10 {
+				c[l2+52] = l2 + 48
+			}
+		}
+	}
+	cstr := ""
+	for _, cc := range c {
+		cstr += string(cc)
+	}
+	cstr += "+/"
+	i_str := strings.Split(t, "")
+	n = len(i_str)
+	iArr := make([]int, n)
+	for l2 := 0; l2 < n; l2++ {
+		iArr[l2] = strings.Index(cstr, i_str[l2])
+	}
+	e, o = 0, 0
+	uArr := w([]int{12, 6}, nil, nil, &e, &o, iArr, h, n)
+	s = 63 ^ uArr[1]
+	fmt.Println("u[0]=", uArr[0], "分支:", map[string]string{
+		"_1479": "T",
+		"_136":  "_",
+		"_200":  "S",
+		"_139":  "k",
+		"_197":  "_mi_run",
+	}[fmt.Sprintf("_%d", uArr[0])])
+	branchMap := map[string]func() interface{}{
+		"_1479": func() interface{} { return T(&e, &o, iArr, h, n, r, l, u, p, d_, f) },
+		"_136":  func() interface{} { return decode_(s, &e, &o, iArr, h, n, r, l, u) },
+		"_200":  func() interface{} { return S(&e, &o, iArr, h, n, r, l, u) },
+		"_139":  func() interface{} { return k(&e, &o, iArr, h, n, r, l, u) },
+		"_197":  func() interface{} { return _mi_run(&e, &o, iArr, h, n, r) },
+	}
+	key := fmt.Sprintf("_%d", uArr[0])
+	if fn, ok := branchMap[key]; ok {
+		return fn()
+	}
+	return []interface{}{}
+}
+
+// 测试用例
 func main() {
 	encoded_data := "LC/AAAf8CXCw6mHbaPgkryxXv10eAJP1LW0SD39aT7+NV44Xba3PxCgTdrFc3FepphjnTBw1X4hmGu+ypVAcvFenpBXPqCc6F4ZmGueLFwbIN8QTDXPsCc1FepphjvOoCc8FepphjvcgFO3CP00wxXXWhrkUdZrIJpw9X3ThrlEp6hlGc88Kcem0VeFpZM46VV4MrTC2KScKc811U4aLXUdlzINc9lTrwFW3T52KPj0mDueVFuUR1RtiEoCXfdgFOOSGRXnUhrXWhb0kt6Rk2pU44JV4SrTyU9wSDHPwCnXdP1FuiUM44r7qwdKqcYrIZpw1DqgrlU5IrHRawxjrwBaqcbrIt9gr3UhDtOpyVNjEnCHPnC3royNWvi0gj/"
 	out := d(encoded_data)
-
 	// try direct marshal first
 	b, err := json.MarshalIndent(out, "", "  ")
 	if err == nil {
