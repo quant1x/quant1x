@@ -1,7 +1,6 @@
-package main
+package tests
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"strings"
@@ -102,14 +101,14 @@ func w(t []int, r []bool, a []bool, e *int, o *int, i []int, h []int, n int) []i
 
 // x = function (t) {
 func x(t int, r map[string]int, u int, l int) time.Time {
-	for e2 := 0; t > e2; e2++ {
+	for e := 0; e < t; e++ {
 		r["d"]++
-		nn := r["d"] % 7
-		if nn == 3 || nn == 4 {
-			r["d"] += 5 - nn
+		n := r["d"] % 7
+		if n == 3 || n == 4 {
+			r["d"] += 5 - n
 		}
 	}
-	return time.Unix(int64((u+r["d"])*l/1000), 0).UTC()
+	return time.Unix(int64((u+r["d"])*l/1000), 0)
 }
 
 // S = function () {
@@ -424,7 +423,7 @@ func d(t string) interface{} {
 	}
 	cstr := ""
 	for _, cc := range c {
-		cstr += string(cc)
+		cstr += string(rune(cc))
 	}
 	cstr += "+/"
 	i_str := strings.Split(t, "")
@@ -455,50 +454,4 @@ func d(t string) interface{} {
 		return fn()
 	}
 	return []interface{}{}
-}
-
-// 测试用例
-func main() {
-	encoded_data := "LC/AAAf8CXCw6mHbaPgkryxXv10eAJP1LW0SD39aT7+NV44Xba3PxCgTdrFc3FepphjnTBw1X4hmGu+ypVAcvFenpBXPqCc6F4ZmGueLFwbIN8QTDXPsCc1FepphjvOoCc8FepphjvcgFO3CP00wxXXWhrkUdZrIJpw9X3ThrlEp6hlGc88Kcem0VeFpZM46VV4MrTC2KScKc811U4aLXUdlzINc9lTrwFW3T52KPj0mDueVFuUR1RtiEoCXfdgFOOSGRXnUhrXWhb0kt6Rk2pU44JV4SrTyU9wSDHPwCnXdP1FuiUM44r7qwdKqcYrIZpw1DqgrlU5IrHRawxjrwBaqcbrIt9gr3UhDtOpyVNjEnCHPnC3royNWvi0gj/"
-	out := d(encoded_data)
-	// try direct marshal first
-	b, err := json.MarshalIndent(out, "", "  ")
-	if err == nil {
-		fmt.Println(string(b))
-		return
-	}
-
-	// fallback normalizers
-	switch v := out.(type) {
-	case []time.Time:
-		ss := make([]string, len(v))
-		for i, t := range v {
-			ss[i] = t.Format("2006-01-02")
-		}
-		if b, err = json.MarshalIndent(ss, "", "  "); err == nil {
-			fmt.Println(string(b))
-			return
-		}
-	case []map[string]interface{}:
-		// convert any time.Time values to ISO strings
-		for _, m := range v {
-			for k, val := range m {
-				if tt, ok := val.(time.Time); ok {
-					m[k] = tt.Format("2006-01-02 15:04:05")
-				}
-			}
-		}
-		if b, err = json.MarshalIndent(v, "", "  "); err == nil {
-			fmt.Println(string(b))
-			return
-		}
-	case [][]int64:
-		if b, err = json.MarshalIndent(v, "", "  "); err == nil {
-			fmt.Println(string(b))
-			return
-		}
-	}
-
-	// final fallback: print error + Go value
-	fmt.Printf("json.Marshal failed: %v\n%#v\n", err, out)
 }
