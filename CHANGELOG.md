@@ -3,9 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.47] - 2025-09-17
+### Changed
+- 修行性能优化指南的
+- 补充后续可能的优化点的实验性代码
+
 ## [0.6.46] - 2025-09-17
 ### Changed
 - 修复clang编译失败的问题
+- update changelog
 
 ## [0.6.45] - 2025-09-16
 ### Changed
@@ -409,7 +415,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.46...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.47...HEAD
+[0.6.47]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.46...v0.6.47
 [0.6.46]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.45...v0.6.46
 [0.6.45]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.44...v0.6.45
 [0.6.44]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.43...v0.6.44
