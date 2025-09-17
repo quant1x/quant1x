@@ -14,7 +14,7 @@ static void findPeaksAndValleys(const vector<int64_t> &nums) {
     vector<int64_t> peaks;    // 存储波峰位置
     vector<int64_t> valleys;  // 存储波谷位置
 
-    int64_t count = int64_t(nums.size());
+    int64_t count = static_cast<int64_t>(nums.size());
 
     for (int64_t i = 1; i < count - 1; ++i) {
         // 检查是否为波峰
@@ -35,7 +35,7 @@ static void findPeaksAndValleys(const vector<int64_t> &nums) {
         } else if (nums[0] < nums[1]) {
             valleys.push_back(0);
         }
-        int64_t x = int64_t(nums.size());
+        int64_t x = static_cast<int64_t>(nums.size());
         if (nums.back() > nums[x-2]) {
             peaks.push_back(x-1);
         } else if (nums.back() < nums[x-2]) {
@@ -93,7 +93,7 @@ public:
 
     // Normalize: 前向差分归一化，并处理零值（平台）
     void Normalize() {
-        int n = int(data.size());
+        int n = static_cast<int>(data.size());
         for (int i = 0; i < n - 1; ++i) {
             diff[i] = compare(data[static_cast<std::vector<double, std::allocator<double>>::size_type>(i) + 1],
                               data[i]);
@@ -124,7 +124,7 @@ public:
 
     // Find: 找波峰波谷，基于一阶差分的变化（类似二阶导数）
     void Find() {
-        auto n = int(diff.size());
+        auto n = static_cast<int>(diff.size());
         for (int i = 0; i < n - 1; ++i) {
             int d = diff[i + 1] - diff[i];
 
