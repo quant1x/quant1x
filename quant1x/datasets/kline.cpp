@@ -6,6 +6,18 @@ namespace datasets {
 
     namespace {
 
+        // template <typename T, std::size_t... I>
+        // void write_field_names_impl(std::index_sequence<I...>) {
+        //     constexpr auto field_names = boost::pfr::names_as_array<T>();
+        //     write_row(field_names[I]...); // 自动展开所有字段名
+        // }
+        //
+        // template <typename T>
+        // void write_field_names_as_row() {
+        //     constexpr auto field_count = boost::pfr::tuple_size<T>::value;
+        //     write_field_names_impl<T>(std::make_index_sequence<field_count>{});
+        // }
+
         void save_kline(const std::string &filename, const std::vector<KLine>& values) {
             util::check_filepath(filename, true);
             io::CSVWriter writer(filename);
