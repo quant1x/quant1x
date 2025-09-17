@@ -3,9 +3,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.51] - 2025-09-18
+### Changed
+- 新增go版本实验性质的交易日历解码工具
+- 调整代码
+- 实验结果, 可能是解码的问题, 只过滤双休日, 对于法定的节假日处理的比较薄弱，应该不是x的函数的问题。
+- 统一交易日历编解码的源文件名
+
 ## [0.6.50] - 2025-09-17
 ### Changed
 - 修订波峰检测的测试代码
+- update changelog
 
 ## [0.6.49] - 2025-09-17
 ### Changed
@@ -430,7 +438,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.50...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.51...HEAD
+[0.6.51]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.50...v0.6.51
 [0.6.50]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.49...v0.6.50
 [0.6.49]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.48...v0.6.49
 [0.6.48]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.47...v0.6.48
