@@ -1,7 +1,10 @@
 #include <quant1x/test/test.h>
 
-#include <quant1x/strategies/rule-engine.h>
 #include <capnp/message.h>
+
+#include "quant1x/engine/rule-context.h"
+#include "quant1x/engine/rule-engine.h"
+#include "quant1x/engine/rule-error.h"
 
 engine::RuleError ExampleBaseRule(const engine::RuleContext& ctx) {
     if (ctx.snapshot->getPrice() > 100.0) {
