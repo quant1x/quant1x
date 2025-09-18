@@ -4,6 +4,8 @@
 #include <iomanip>
 #include <sstream>
 #include <quant1x/std/time.h>
+#define CPPHTTPLIB_OPENSSL_SUPPORT
+#include <httplib.h>
 
 namespace io {
 
@@ -17,13 +19,6 @@ namespace io {
         return std::format("{:%a, %d %b %Y %H:%M:%S} GMT",
                            std::chrono::floor<std::chrono::seconds>(tp));
     }
-
-//    static std::tm parseHttpDate(const std::string& httpDate) {
-//        std::tm tm = {};
-//        std::istringstream ss(httpDate);
-//        ss >> std::get_time(&tm, "%a, %d %b %Y %H:%M:%S GMT");
-//        return tm;
-//    }
 
     static int64_t parse_http_date(const std::string& date) {
         auto ts = api::parse_date(date);
@@ -50,6 +45,26 @@ namespace io {
                 //std::cout << "Last-Modified header not found in the response." << std::endl;
             }
             return {response.text, tm};
+        } else {
+            return {"", tm};
+        }
+    }
+
+    // If-Modified-Since (cpp-httplib 版本，支持 http/https)
+    std::tuple<std::string, int64_t> request_httplib(const std::string &url, int64_t fileLastModified) {
+        httplib::Headers headers = {};
+        if (fileLastModified != 0) {
+            headers.emplace("If-Modified-Since", time_point_to_http_date_cpp20(fileLastModified));
+        }
+        httplib::Client cli(url); // 直接用完整URL，自动支持http/https
+        auto res = cli.Get("/", headers); // "/"表示请求根路径，实际会用URL里的path
+        int64_t tm = 0;
+        if (res && res->status == 200) {
+            auto it = res->headers.find("Last-Modified");
+            if (it != res->headers.end()) {
+                tm = parse_http_date(it->second);
+            }
+            return {res->body, tm};
         } else {
             return {"", tm};
         }
