@@ -228,15 +228,15 @@ message(STATUS "================== 底层 工具库 ==================")
 # ASIO
 include(cmake/network.cmake)
 
-## mimalloc
-#find_package(mimalloc CONFIG REQUIRED)
-#target_link_libraries(third_libs INTERFACE $<IF:$<TARGET_EXISTS:mimalloc-static>,mimalloc-static,mimalloc>)
-#target_compile_definitions(third_libs INTERFACE
-#    #MI_OVERRIDE=1
-#    MI_OVERRIDE_NEW_DELETE=1  # 让mimalloc只重载operator new/delete
-#    MI_INTERPOSE=0            # 禁用拦截标准库函数
-#)
-#echo_lib_version(mimalloc ${mimalloc_VERSION})
+# mimalloc
+find_package(mimalloc CONFIG REQUIRED)
+target_link_libraries(third_libs INTERFACE $<IF:$<TARGET_EXISTS:mimalloc-static>,mimalloc-static,mimalloc>)
+target_compile_definitions(third_libs INTERFACE
+   #MI_OVERRIDE=1
+   MI_OVERRIDE_NEW_DELETE=1  # 让mimalloc只重载operator new/delete
+   MI_INTERPOSE=0            # 禁用拦截标准库函数
+)
+echo_lib_version(mimalloc ${mimalloc_VERSION})
 
 # spdlog
 include(cmake/spdlog.cmake)
