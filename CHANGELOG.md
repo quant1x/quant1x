@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.55] - 2025-09-19
+### Changed
+- 修复日历js原算法的测试数据(√)
+
 ## [0.6.54] - 2025-09-19
 ### Changed
 - 修复日历的c++/go的算法(√)
+- update changelog
 
 ## [0.6.53] - 2025-09-18
 ### Changed
@@ -459,7 +464,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.54...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.55...HEAD
+[0.6.55]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.54...v0.6.55
 [0.6.54]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.53...v0.6.54
 [0.6.53]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.52...v0.6.53
 [0.6.52]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.51...v0.6.52
