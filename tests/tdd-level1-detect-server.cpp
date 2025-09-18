@@ -62,8 +62,7 @@ private:
     static void deserialize_to_object(const YAML::Node &node, T &obj) {
         boost::pfr::for_each_field(obj, [&](auto &field, std::size_t idx) {
             const auto &field_names = boost::pfr::names_as_array<T>();
-            const auto  field_name  = field_names[idx];  // 使用 string_view
-
+            const auto field_name = std::string(field_names[idx]);  // 修正点
             if (node[field_name]) {
                 deserialize_field(node[field_name], field);
             }
