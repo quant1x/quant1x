@@ -635,7 +635,7 @@ namespace xsimd
     }
 
     /**
-     * @ingroup batch_bool_reducers
+     * @ingroup batch_reducers
      *
      * Count the number of values set to true in the batch \c x
      * @param x boolean or batch of boolean
@@ -1880,20 +1880,6 @@ namespace xsimd
     }
 
     /**
-     * @ingroup batch_reducers
-     *
-     * Multiplies of all the scalars of the batch \c x.
-     * @param x batch involved in the reduction
-     * @return the result of the reduction.
-     */
-    template <class T, class A>
-    XSIMD_INLINE T reduce_mul(batch<T, A> const& x) noexcept
-    {
-        detail::static_check_supported_config<T, A>();
-        return kernel::reduce_mul<A>(x, A {});
-    }
-
-    /**
      * @ingroup batch_math
      *
      * Computes the remainder of dividing \c x by \c y
@@ -2220,9 +2206,6 @@ namespace xsimd
      * Slide the whole batch to the left by \c n bytes. This is different from
      * \c bitwise_lshift that shifts each batch element to the left.
      *
-     * @warning The behavior of this function is platform-dependent on big
-     * endian architectures.
-     *
      * @tparam N Amount of bytes to slide to the left.
      * @param x batch of integer values.
      * @return slided batch.
@@ -2240,9 +2223,6 @@ namespace xsimd
      *
      * Slide the whole batch to the right by \c N bytes. This is different from
      * \c bitwise_rshift that shifts each batch element to the right.
-     *
-     * @warning The behavior of this function is platform-dependent on big
-     * endian architectures.
      *
      * @tparam N Amount of bytes to slide to the right.
      * @param x batch of integer values.

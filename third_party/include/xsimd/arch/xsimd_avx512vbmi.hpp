@@ -24,26 +24,54 @@ namespace xsimd
     {
         using namespace types;
 
+        namespace detail
+        {
+            template <size_t N, size_t... Is>
+            constexpr std::array<uint8_t, sizeof...(Is)> make_slide_left_bytes_pattern(::xsimd::detail::index_sequence<Is...>)
+            {
+                return { (Is >= N ? Is - N : 0)... };
+            }
+
+            template <size_t N, size_t... Is>
+            constexpr std::array<uint8_t, sizeof...(Is)> make_slide_right_bytes_pattern(::xsimd::detail::index_sequence<Is...>)
+            {
+                return { (Is < (64 - N) ? Is + N : 0)... };
+            }
+        }
+
         // slide_left
-        template <size_t N, class A, class T, class = typename std::enable_if<(N & 3) != 0 && (N < 64)>::type>
+        template <size_t N, class A, class T>
         XSIMD_INLINE batch<T, A> slide_left(batch<T, A> const& x, requires_arch<avx512vbmi>) noexcept
         {
-            static_assert((N & 3) != 0 && N < 64, "The AVX512F implementation may have a lower latency.");
+            if (N == 0)
+            {
+                return x;
+            }
+            if (N >= 64)
+            {
+                return batch<T, A>(T(0));
+            }
 
             __mmask64 mask = 0xFFFFFFFFFFFFFFFFull << (N & 63);
-            auto slide_pattern = make_batch_constant<uint8_t, detail::make_slide_left_pattern<N>, A>();
-            return _mm512_maskz_permutexvar_epi8(mask, slide_pattern.as_batch(), x);
+            alignas(A::alignment()) auto slide_pattern = detail::make_slide_left_bytes_pattern<N>(::xsimd::detail::make_index_sequence<512 / 8>());
+            return _mm512_maskz_permutexvar_epi8(mask, _mm512_load_epi32(slide_pattern.data()), x);
         }
 
         // slide_right
-        template <size_t N, class A, class T, class = typename std::enable_if<(N & 3) != 0 && (N < 64)>::type>
+        template <size_t N, class A, class T>
         XSIMD_INLINE batch<T, A> slide_right(batch<T, A> const& x, requires_arch<avx512vbmi>) noexcept
         {
-            static_assert((N & 3) != 0 && N < 64, "The AVX512F implementation may have a lower latency.");
-
+            if (N == 0)
+            {
+                return x;
+            }
+            if (N >= 64)
+            {
+                return batch<T, A>(T(0));
+            }
             __mmask64 mask = 0xFFFFFFFFFFFFFFFFull >> (N & 63);
-            auto slide_pattern = make_batch_constant<uint8_t, detail::make_slide_right_pattern<N>, A>();
-            return _mm512_maskz_permutexvar_epi8(mask, slide_pattern.as_batch(), x);
+            alignas(A::alignment()) auto slide_pattern = detail::make_slide_right_bytes_pattern<N>(::xsimd::detail::make_index_sequence<512 / 8>());
+            return _mm512_maskz_permutexvar_epi8(mask, _mm512_load_epi32(slide_pattern.data()), x);
         }
 
         // swizzle (dynamic version)

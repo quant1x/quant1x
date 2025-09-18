@@ -72,10 +72,6 @@
 #include "./xsimd_avx512f.hpp"
 #endif
 
-#if XSIMD_WITH_AVX512DQ
-#include "./xsimd_avx512dq.hpp"
-#endif
-
 #if XSIMD_WITH_AVX512BW
 #include "./xsimd_avx512bw.hpp"
 #endif
@@ -130,10 +126,6 @@
 
 #if XSIMD_WITH_WASM
 #include "./xsimd_wasm.hpp"
-#endif
-
-#if XSIMD_WITH_VSX
-#include "./xsimd_vsx.hpp"
 #endif
 
 // Must come last to have access to all conversion specializations.

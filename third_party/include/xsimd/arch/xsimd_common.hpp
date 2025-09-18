@@ -18,7 +18,6 @@
 #include "./common/xsimd_common_math.hpp"
 #include "./common/xsimd_common_memory.hpp"
 #include "./common/xsimd_common_rounding.hpp"
-#include "./common/xsimd_common_swizzle.hpp"
 #include "./common/xsimd_common_trigo.hpp"
 
 #endif

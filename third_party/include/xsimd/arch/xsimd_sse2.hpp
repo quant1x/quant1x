@@ -1290,7 +1290,7 @@ namespace xsimd
             }
             else
             {
-                return reduce_add(self, common {});
+                return hadd(self, common {});
             }
         }
 
@@ -1342,52 +1342,6 @@ namespace xsimd
             batch<T, A> step3 = bitwise_cast<T>(bitwise_cast<uint16_t>(acc2) >> 8);
             batch<T, A> acc3 = min(acc2, step3);
             return first(acc3, A {});
-        }
-
-        // reduce_mul
-        template <class A>
-        XSIMD_INLINE float reduce_mul(batch<float, A> const& self, requires_arch<sse2>) noexcept
-        {
-            __m128 tmp0 = _mm_mul_ps(self, _mm_movehl_ps(self, self));
-            __m128 tmp1 = _mm_mul_ss(tmp0, _mm_shuffle_ps(tmp0, tmp0, 1));
-            return _mm_cvtss_f32(tmp1);
-        }
-
-        template <class A>
-        XSIMD_INLINE double reduce_mul(batch<double, A> const& self, requires_arch<sse2>) noexcept
-        {
-            return _mm_cvtsd_f64(_mm_mul_sd(self, _mm_unpackhi_pd(self, self)));
-        }
-
-        template <class A, class T, class = typename std::enable_if<std::is_integral<T>::value, void>::type>
-        XSIMD_INLINE T reduce_mul(batch<T, A> const& self, requires_arch<sse2>) noexcept
-        {
-            XSIMD_IF_CONSTEXPR(sizeof(T) == 4)
-            {
-                batch<T, A> tmp1 = _mm_shuffle_epi32(self, _MM_SHUFFLE(0, 1, 2, 3));
-                tmp1 = tmp1 * self;
-                batch<T, A> tmp2 = _mm_unpackhi_epi32(tmp1, tmp1);
-                tmp2 = tmp2 * tmp1;
-                return _mm_cvtsi128_si32(tmp2);
-            }
-            else XSIMD_IF_CONSTEXPR(sizeof(T) == 8)
-            {
-                batch<T, A> tmp1 = _mm_unpackhi_epi64(self, self);
-                auto tmp2 = tmp1 * self;
-#if defined(__x86_64__)
-                return _mm_cvtsi128_si64(tmp2);
-#else
-                __m128i m;
-                _mm_storel_epi64(&m, tmp2);
-                int64_t i;
-                std::memcpy(&i, &m, sizeof(i));
-                return i;
-#endif
-            }
-            else
-            {
-                return reduce_mul(self, common {});
-            }
         }
 
         // rsqrt
@@ -1734,78 +1688,22 @@ namespace xsimd
         }
 
         template <class A, uint16_t V0, uint16_t V1, uint16_t V2, uint16_t V3, uint16_t V4, uint16_t V5, uint16_t V6, uint16_t V7>
-        XSIMD_INLINE batch<uint16_t, A> swizzle(batch<uint16_t, A> const& self, batch_constant<uint16_t, A, V0, V1, V2, V3, V4, V5, V6, V7> mask, requires_arch<sse2>) noexcept
+        XSIMD_INLINE batch<uint16_t, A> swizzle(batch<uint16_t, A> const& self, batch_constant<uint16_t, A, V0, V1, V2, V3, V4, V5, V6, V7>, requires_arch<sse2>) noexcept
         {
-            constexpr bool is_identity = detail::is_identity(mask);
-            constexpr bool is_dup_lo = detail::is_dup_lo(mask);
-            constexpr bool is_dup_hi = detail::is_dup_hi(mask);
-
-            XSIMD_IF_CONSTEXPR(is_identity)
-            {
-                return self;
-            }
-            XSIMD_IF_CONSTEXPR(is_dup_lo)
-            {
-                // permute the low half
-                constexpr int imm = detail::mod_shuffle(V0, V1, V2, V3);
-                const auto lo = _mm_shufflelo_epi16(self, imm);
-                // broadcast that 64-bit low half into both halves
-                const auto lo_all = _mm_unpacklo_epi64(lo, lo);
-                return lo_all;
-            }
-            XSIMD_IF_CONSTEXPR(is_dup_hi)
-            {
-                // permute the high half
-                constexpr int imm = detail::mod_shuffle(V4, V5, V6, V7);
-                const auto hi = _mm_shufflehi_epi16(self, imm);
-                // broadcast that 64-bit high half into both halves
-                const auto hi_all = _mm_unpackhi_epi64(hi, hi);
-                return hi_all;
-            }
-            // Only pick elements from the low lane
-            XSIMD_IF_CONSTEXPR((V0 < 4) && (V1 < 4) && (V2 < 4) && (V3 < 4) && (V4 < 4) && (V5 < 4) && (V6 < 4) && (V7 < 4))
-            {
-                // permute within each sub lane
-                constexpr auto mask_lo = detail::mod_shuffle(V0, V1, V2, V3);
-                constexpr auto mask_hi = detail::mod_shuffle(V4, V5, V6, V7);
-                __m128i lol = _mm_shufflelo_epi16(self, mask_lo);
-                __m128i loh = _mm_shufflelo_epi16(self, mask_hi);
-
-                // generate temporary lanes
-                return _mm_unpacklo_epi64(lol, loh);
-            }
-            // Only pick elements from the high lane
-            XSIMD_IF_CONSTEXPR((V0 >= 4) && (V1 >= 4) && (V2 >= 4) && (V3 >= 4) && (V4 >= 4) && (V5 >= 4) && (V6 >= 4) && (V7 >= 4))
-            {
-                // permute within each sub lane
-                constexpr auto mask_lo = detail::mod_shuffle(V0, V1, V2, V3);
-                constexpr auto mask_hi = detail::mod_shuffle(V4, V5, V6, V7);
-                __m128i hil = _mm_shufflehi_epi16(self, mask_lo);
-                __m128i hih = _mm_shufflehi_epi16(self, mask_hi);
-
-                // generate temporary lanes
-                return _mm_unpackhi_epi64(hil, hih);
-            }
-
-            // Generic case
-
-            // permute within each sub lane
+            // permute within each lane
             constexpr auto mask_lo = detail::mod_shuffle(V0, V1, V2, V3);
             constexpr auto mask_hi = detail::mod_shuffle(V4, V5, V6, V7);
-            __m128i lol = _mm_shufflelo_epi16(self, mask_lo);
-            __m128i loh = _mm_shufflelo_epi16(self, mask_hi);
-            __m128i hil = _mm_shufflehi_epi16(self, mask_lo);
-            __m128i hih = _mm_shufflehi_epi16(self, mask_hi);
+            __m128i lo = _mm_shufflelo_epi16(self, mask_lo);
+            __m128i hi = _mm_shufflehi_epi16(self, mask_hi);
 
-            // generate temporary lanes
-            __m128i lo = _mm_unpacklo_epi64(lol, loh);
-            __m128i hi = _mm_unpackhi_epi64(hil, hih);
+            __m128i lo_lo = _mm_castpd_si128(_mm_shuffle_pd(_mm_castsi128_pd(lo), _mm_castsi128_pd(lo), _MM_SHUFFLE2(0, 0)));
+            __m128i hi_hi = _mm_castpd_si128(_mm_shuffle_pd(_mm_castsi128_pd(hi), _mm_castsi128_pd(hi), _MM_SHUFFLE2(1, 1)));
 
             // mask to choose the right lane
             batch_bool_constant<uint16_t, A, (V0 < 4), (V1 < 4), (V2 < 4), (V3 < 4), (V4 < 4), (V5 < 4), (V6 < 4), (V7 < 4)> blend_mask;
 
             // blend the two permutes
-            return select(blend_mask, batch<uint16_t, A>(lo), batch<uint16_t, A>(hi));
+            return select(blend_mask, batch<uint16_t, A>(lo_lo), batch<uint16_t, A>(hi_hi));
         }
 
         template <class A, uint16_t V0, uint16_t V1, uint16_t V2, uint16_t V3, uint16_t V4, uint16_t V5, uint16_t V6, uint16_t V7>
