@@ -16,7 +16,7 @@ namespace cache {
         const std::string lastUpdateTime = "22:00:00";
         const std::vector<std::string> allDateUpdateTimes = {"15:10:00", lastUpdateTime};
         const size_t default_concurrency_max = std::min<size_t>(std::thread::hardware_concurrency(), 8);
-        constexpr const std::string default_concurrency_key = "default";
+        const std::string default_concurrency_key = "default";
     } // 匿名命名空间
 
     std::string getVariablePath() {

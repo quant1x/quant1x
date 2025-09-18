@@ -116,8 +116,8 @@ namespace encoding {
         inline void deserialize_to_object(const YAML::Node &node, T &obj) {
             boost::pfr::for_each_field(obj, [&](auto &field, std::size_t idx) {
                 const auto field_name = get_field_name<T>(idx);
-                if (node[field_name]) {
-                    deserialize_field(node[field_name], field);
+                if (node[std::string(field_name)]) { // ← 这里加类型转换
+                    deserialize_field(node[std::string(field_name)], field);
                 }
             });
         }
@@ -166,7 +166,7 @@ namespace encoding {
             YAML::Node node;
             boost::pfr::for_each_field(obj, [&](const auto &field, std::size_t idx) {
                 const auto field_name = get_field_name<T>(idx);
-                auto &&target_node = node[field_name]; // ✅ 万能引用，兼容一切
+                auto &&target_node = node[std::string(field_name)]; // ← 这里加类型转换
                 serialize_field(target_node, field);
             });
             return node;

@@ -4,11 +4,12 @@
 #include <quant1x/encoding/yaml.h>
 
 namespace level1 {
-    namespace {
-        struct ServerList {
-            std::vector<ServerInfo> servers;
-        };
+    struct ServerList {
+        std::vector<ServerInfo> servers;
+    };
 
+        
+    namespace {
         std::unique_ptr<TcpConnectionPool<ProtocolHandler> > tdx_connection_pool() {
             namespace fs = std::filesystem;
             auto _handler = std::make_shared<ProtocolHandler>();
