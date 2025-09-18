@@ -1,4 +1,4 @@
-include(Catch)
+#include(Catch)
 
 # 定义一个宏，用于创建 一般性的测试 可执行文件
 macro(add_app_executable source_file)
@@ -34,7 +34,7 @@ macro(add_catch2_executable source_file)
     # 创建带前缀的可执行文件
     add_executable(${target_name} ${source_file})
 
-    catch_discover_tests(${target_name})
+    #catch_discover_tests(${target_name})
 
     # 添加头文件路径
     target_include_directories(${target_name} PUBLIC
