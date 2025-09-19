@@ -110,12 +110,12 @@ int main(const int argc, const char *const argv[]) {
     }
     // 设置日志信息
     runtime::logger_set(verbose, debug);
-    q1x::engine::init([]{
+    quant1x::engine::init([]{
         std::cout << "这里执行定制的初始化工作" << std::endl;
     });
 
     if(program.is_subcommand_used("service")) {
-        return q1x::engine::daemon(service_command);
+        return quant1x::engine::daemon(service_command);
     }
 
     // 判断激活的子命令并执行对应逻辑

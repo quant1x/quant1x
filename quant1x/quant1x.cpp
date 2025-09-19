@@ -9,7 +9,7 @@
 #include <quant1x/cache.h>
 #include <quant1x/trader/tracker.h>
 
-namespace q1x::engine {
+namespace quant1x::engine {
 
     int daemon(const argparse::ArgumentParser& cmd) {
         auto action = cmd.get<std::string>("action");
@@ -87,4 +87,4 @@ namespace q1x::engine {
         spdlog::default_logger()->flush();
         return 0;
     }
-}
+} // namespace quant1x::engine
