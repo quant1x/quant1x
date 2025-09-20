@@ -1,0 +1,15 @@
+[package]
+name = "quant1x"
+version = "0.1.0"
+edition = "2021"
+authors = ["Quant1X Team"]
+description = "Cross-language standard library for quantitative trading"
+license = "MIT"
+
+[lib]
+name = "quant1x"
+crate-type = ["cdylib"]
+path = "quant1x/lib.rs"
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
