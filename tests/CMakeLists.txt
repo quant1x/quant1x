@@ -123,7 +123,7 @@ add_catch2_executable(tdd-calendar.cpp)
 add_catch2_executable(test-calender.cpp)
 
 # 测试协议
-add_catch2_executable(tdd-tdx.cpp)
+add_catch2_executable(tdd-level1.cpp)
 add_catch2_executable(tdd-level1-detect-server.cpp)
 add_catch2_executable(tdd-level1-encoding.cpp)
 
