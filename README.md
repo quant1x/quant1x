@@ -1,5 +1,10 @@
-Quant1X量化交易实验室
+Quant1X 量化交易实验室
 ===
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![C++](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://isocpp.org/)
+[![Go](https://img.shields.io/badge/Go-1.25-blue.svg)](https://golang.org/)
+[![Rust](https://img.shields.io/badge/Rust-1.88+-orange.svg)](https://www.rust-lang.org/)
+[![CMake](https://img.shields.io/badge/CMake-3.30+-green.svg)](https://cmake.org/)
 
 # 1. 环境配置
 ## 1.1 默认均为64位操作系统
