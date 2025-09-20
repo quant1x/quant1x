@@ -646,9 +646,9 @@ endif ()
 # 检查编译器选项
 get_target_property(_include_dirs third_libs INTERFACE_INCLUDE_DIRECTORIES)
 get_target_property(_library_dirs third_libs INTERFACE_LIBRARY_DIRECTORIES)
-get_target_property(_libs     third_libs INTERFACE_LINK_LIBRARIES)
-get_target_property(_defines  third_libs INTERFACE_COMPILE_DEFINITIONS)
-get_target_property(_options  third_libs INTERFACE_COMPILE_OPTIONS)
+get_target_property(_libs         third_libs INTERFACE_LINK_LIBRARIES)
+get_target_property(_defines      third_libs INTERFACE_COMPILE_DEFINITIONS)
+get_target_property(_options      third_libs INTERFACE_COMPILE_OPTIONS)
 
 message(STATUS "third_libs Include dirs: ${_include_dirs}")
 message(STATUS "third_libs Library dirs: ${_library_dirs}")
