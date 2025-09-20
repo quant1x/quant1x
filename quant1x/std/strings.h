@@ -527,6 +527,67 @@ namespace strings {
     std::vector<uint8_t> hexToBytes(const std::string& hex);
     // 全部替换
     std::string replace_all(std::string str, const std::string &from, const std::string &to);
+
+    // =============================================================================
+    // Go 代码移植函数 - 转换为 C++ 实现
+    // =============================================================================
+    
+    // 基础字符工具函数
+    bool is_lower(char ch);
+    bool is_upper(char ch);
+    char to_lower(char ch);
+    char to_upper(char ch);
+    bool is_space(char ch);
+    bool is_delimiter(char ch);
+    
+    // 字符串迭代器回调函数类型
+    using iter_func = std::function<void(char prev, char curr, char next)>;
+    void string_iter(const std::string& s, const iter_func& callback);
+    
+    // ToString 系列函数 - 将各种类型转换为字符串
+    std::string toString(int8_t value);
+    std::string toString(int16_t value);
+    std::string toString(int32_t value);
+    std::string toString(int64_t value);
+    std::string toString(uint8_t value);
+    std::string toString(uint16_t value);
+    std::string toString(uint32_t value);
+    std::string toString(uint64_t value);
+    std::string toString(float value);
+    std::string toString(double value);
+    std::string toString(bool value);
+    
+    // 通用 ToString 模板
+    template<typename T>
+    std::string toString(const T& value) {
+        std::ostringstream oss;
+        oss << value;
+        return oss.str();
+    }
+    
+    // CamelCase 转换函数
+    std::string to_camel_case(const std::string& str);
+    std::string upper_camel_case(const std::string& str);
+    std::string lower_camel_case(const std::string& str);
+    
+    // SnakeCase 转换函数  
+    std::string snake_case(const std::string& str);
+    std::string upper_snake_case(const std::string& str);
+    
+    // KebabCase 转换函数
+    std::string kebab_case(const std::string& str);
+    std::string upper_kebab_case(const std::string& str);
+    
+    // 字符串匹配和判断函数
+    bool starts_with(const std::string& str, const std::vector<std::string>& prefixes);
+    bool ends_with(const std::string& str, const std::vector<std::string>& suffixes);
+    bool is_empty(const std::string& str);
+    
+    // // 内部辅助函数
+    // namespace detail {
+    //     std::string camel_case_impl(const std::string& str, bool upper_first);
+    //     std::string delimiter_case_impl(const std::string& str, char delimiter, bool upper_case);
+    // }
 }
 
 #endif //QUANT1X_STD_STRINGS_H

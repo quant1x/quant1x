@@ -195,4 +195,261 @@ namespace strings {
         }
         return str;
     }
+
+    // =============================================================================
+    // Go 代码移植实现 - 从 api/strings*.go 转换而来
+    // =============================================================================
+
+    // 基础字符工具函数
+    bool is_lower(char ch) {
+        return ch >= 'a' && ch <= 'z';
+    }
+
+    bool is_upper(char ch) {
+        return ch >= 'A' && ch <= 'Z';
+    }
+
+    char to_lower(char ch) {
+        if (ch >= 'A' && ch <= 'Z') {
+            return ch + 32;
+        }
+        return ch;
+    }
+
+    char to_upper(char ch) {
+        if (ch >= 'a' && ch <= 'z') {
+            return ch - 32;
+        }
+        return ch;
+    }
+
+    bool is_space(char ch) {
+        return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
+    }
+
+    bool is_delimiter(char ch) {
+        return ch == '-' || ch == '_' || is_space(ch);
+    }
+
+    // 字符串迭代器实现
+    void string_iter(const std::string& s, const iter_func& callback) {
+        if (s.empty()) return;
+        
+        char prev = 0;
+        char curr = 0;
+        
+        for (size_t i = 0; i < s.length(); ++i) {
+            char next = (i + 1 < s.length()) ? s[i + 1] : 0;
+            
+            if (curr == 0) {
+                prev = curr;
+                curr = s[i];
+                continue;
+            }
+            
+            callback(prev, curr, next);
+            
+            prev = curr;
+            curr = s[i];
+        }
+        
+        if (!s.empty()) {
+            callback(prev, curr, 0);
+        }
+    }
+
+    // ToString 系列函数实现
+    std::string toString(int8_t value) {
+        return std::to_string(static_cast<int>(value));
+    }
+
+    std::string toString(int16_t value) {
+        return std::to_string(value);
+    }
+
+    std::string toString(int32_t value) {
+        return std::to_string(value);
+    }
+
+    std::string toString(int64_t value) {
+        return std::to_string(value);
+    }
+
+    std::string toString(uint8_t value) {
+        return std::to_string(static_cast<unsigned>(value));
+    }
+
+    std::string toString(uint16_t value) {
+        return std::to_string(value);
+    }
+
+    std::string toString(uint32_t value) {
+        return std::to_string(value);
+    }
+
+    std::string toString(uint64_t value) {
+        return std::to_string(value);
+    }
+
+    std::string toString(float value) {
+        return std::to_string(value);
+    }
+
+    std::string toString(double value) {
+        return std::to_string(value);
+    }
+
+    std::string toString(bool value) {
+        return value ? "true" : "false";
+    }
+
+    // 内部实现命名空间
+    namespace detail {
+        std::string camel_case_impl(const std::string& str, bool upper_first) {
+            std::string s = trim(str);
+            if (s.empty()) return s;
+            
+            std::string result;
+            result.reserve(s.length());
+            
+            string_iter(s, [&](char prev, char curr, char /*next*/) {
+                if (!is_delimiter(curr)) {
+                    if (is_delimiter(prev) || (upper_first && prev == 0)) {
+                        result += to_upper(curr);
+                    } else if (is_lower(prev)) {
+                        result += curr;
+                    } else {
+                        result += to_lower(curr);
+                    }
+                }
+            });
+            
+            return result;
+        }
+
+        std::string delimiter_case_impl(const std::string& str, char delimiter, bool upper_case) {
+            std::string s = trim(str);
+            if (s.empty()) return s;
+            
+            std::string result;
+            result.reserve(s.length() + 3);
+            
+            auto adjust_case = [upper_case](char c) { return upper_case ? to_upper(c) : to_lower(c); };
+            
+            char prev = 0;
+            char curr = 0;
+            
+            for (char next : s) {
+                if (is_delimiter(curr)) {
+                    if (!is_delimiter(prev) && prev != 0) {
+                        result += delimiter;
+                    }
+                } else if (is_upper(curr)) {
+                    if (is_lower(prev) || (is_upper(prev) && is_lower(next))) {
+                        result += delimiter;
+                    }
+                    result += adjust_case(curr);
+                } else if (curr != 0) {
+                    result += adjust_case(curr);
+                }
+                prev = curr;
+                curr = next;
+            }
+            
+            // 处理最后一个字符
+            if (!s.empty()) {
+                if (is_upper(curr) && is_lower(prev) && prev != 0) {
+                    result += delimiter;
+                }
+                if (!is_delimiter(curr)) {
+                    result += adjust_case(curr);
+                }
+            }
+            
+            return result;
+        }
+    }
+
+    // CamelCase 转换函数实现
+    std::string to_camel_case(const std::string& str) {
+        // 兼容原有的 ToCamelCase 逻辑
+        std::string result;
+        bool is_to_upper = false;
+        
+        for (char ch : str) {
+            if (is_to_upper) {
+                result += to_upper(ch);
+                is_to_upper = false;
+            } else {
+                if (ch == '-' || ch == '_') {
+                    is_to_upper = true;
+                } else {
+                    result += ch;
+                }
+            }
+        }
+        
+        return result;
+    }
+
+    std::string upper_camel_case(const std::string& str) {
+        return detail::camel_case_impl(str, true);
+    }
+
+    std::string lower_camel_case(const std::string& str) {
+        return detail::camel_case_impl(str, false);
+    }
+
+    // SnakeCase 转换函数实现
+    std::string snake_case(const std::string& str) {
+        return detail::delimiter_case_impl(str, '_', false);
+    }
+
+    std::string upper_snake_case(const std::string& str) {
+        return detail::delimiter_case_impl(str, '_', true);
+    }
+
+    // KebabCase 转换函数实现
+    std::string kebab_case(const std::string& str) {
+        return detail::delimiter_case_impl(str, '-', false);
+    }
+
+    std::string upper_kebab_case(const std::string& str) {
+        return detail::delimiter_case_impl(str, '-', true);
+    }
+
+    // 字符串匹配和判断函数实现
+    bool starts_with(const std::string& str, const std::vector<std::string>& prefixes) {
+        if (str.empty() || prefixes.empty()) {
+            return false;
+        }
+        
+        for (const auto& prefix : prefixes) {
+            if (str.length() >= prefix.length() && 
+                str.substr(0, prefix.length()) == prefix) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    bool ends_with(const std::string& str, const std::vector<std::string>& suffixes) {
+        if (str.empty() || suffixes.empty()) {
+            return false;
+        }
+        
+        for (const auto& suffix : suffixes) {
+            if (str.length() >= suffix.length() && 
+                str.substr(str.length() - suffix.length()) == suffix) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    bool is_empty(const std::string& str) {
+        return trim(str).empty();
+    }
 }
