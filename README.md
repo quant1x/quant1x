@@ -7,11 +7,11 @@
 [![Python](https://img.shields.io/badge/Python-3.12+-yellow.svg)](https://www.python.org/)
 [![CMake](https://img.shields.io/badge/CMake-3.30+-green.svg)](https://cmake.org/)
 
-Quant1X 是一个多语言量化交易框架，支持 C++、Go、Rust、Python 和 JavaScript/TypeScript，提供完整的量化交易解决方案，包括数据处理、策略开发、回测引擎、实时交易等功能。
+Quant1X 是一个多语言量化交易框架，支持 C++、Go、Rust、Python，提供完整的量化交易解决方案，包括数据处理、策略开发、回测引擎、实时交易等功能。
 
 ## ✨ 特性
 
-- **多语言支持**：C++20、Go 1.25、Rust 1.88+、Python 3.12+、JavaScript/TypeScript
+- **多语言支持**：C++20、Go 1.25、Rust 1.88+、Python 3.12+
 - **高性能**：优化的算法和数据结构，支持 SIMD 指令集
 - **模块化设计**：可插拔的组件架构，易于扩展
 - **实时数据**：支持 Level1/Level2 市场数据
