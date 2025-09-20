@@ -19,10 +19,6 @@ dist/
 *.egg-info/
 *.json
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
-strategy-mac-amd64
-strategy-win-amd64.exe
 *.png
 *.pkl
 
@@ -31,11 +27,14 @@ strategy-win-amd64.exe
 out/
 
 # CMake specific
-*build/
+*build*/
 cmake-build*/
 
 # vcpkg specific
 vcpkg_installed/
+
+# Rust specific
+target/
 
 # CLion
 .cache/
