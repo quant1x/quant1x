@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.62] - 2025-09-21
+### Changed
+- 更新xtensor版本到0.27.1
+
 ## [0.6.61] - 2025-09-20
 ### Changed
 - 删除对Javascript支持的内容
+- update changelog
 
 ## [0.6.60] - 2025-09-20
 ### Changed
@@ -500,7 +505,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.61...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.62...HEAD
+[0.6.62]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.61...v0.6.62
 [0.6.61]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.60...v0.6.61
 [0.6.60]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.59...v0.6.60
 [0.6.59]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.58...v0.6.59
