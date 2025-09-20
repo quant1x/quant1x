@@ -60,6 +60,12 @@ namespace encoding {
         struct is_vector : std::false_type {
         };
 
+        // ========== 类型特征：enum ==========
+        template<typename T>
+        struct is_enum : std::is_enum<T> {};
+        template<typename T>
+        constexpr bool is_enum_v = is_enum<T>::value;
+
         template<typename T, typename A>
         struct is_vector<std::vector<T, A> > : std::true_type {
         };
@@ -79,6 +85,15 @@ namespace encoding {
         template<typename T>
         constexpr bool is_map_v = is_map<T>::value;
 
+        // ========== 类型特征：optional ==========
+        template<typename T>
+        struct is_optional : std::false_type {};
+        template<typename T>
+        struct is_optional<std::optional<T>> : std::true_type {};
+        template<typename T>
+        constexpr bool is_optional_v = is_optional<T>::value;
+
+
         // ================================================
         // 对称的 YAML 序列化/反序列化器
         // ================================================
@@ -97,12 +112,24 @@ namespace encoding {
         template<typename T>
         inline void deserialize_map(const YAML::Node &node, T &map);
 
+        // ========== 反序列化补全 ==========
         template<typename T>
         inline void deserialize_field(const YAML::Node &node, T &field) {
-            if constexpr (std::is_same_v<T, std::string>) {
+            if constexpr (is_optional_v<T>) {
+                using ValueType = typename T::value_type;
+                if (node) {
+                    ValueType value{};
+                    deserialize_field(node, value);
+                    field = value;
+                } else {
+                    field = std::nullopt;
+                }
+            } else if constexpr (std::is_same_v<T, std::string>) {
                 field = node.as<std::string>();
             } else if constexpr (std::is_arithmetic_v<T> || std::is_same_v<T, bool>) {
                 field = node.as<T>();
+            } else if constexpr (is_enum_v<T>) {
+                field = static_cast<T>(node.as<int>());
             } else if constexpr (is_vector_v<T>) {
                 deserialize_vector(node, field);
             } else if constexpr (is_map_v<T>) {
@@ -154,6 +181,7 @@ namespace encoding {
         }
 
         // ========== 序列化 ==========
+        
         template<typename T>
         inline void serialize_field(YAML::Node &node, const T &field);
         template<typename T>
@@ -166,16 +194,23 @@ namespace encoding {
             YAML::Node node;
             boost::pfr::for_each_field(obj, [&](const auto &field, std::size_t idx) {
                 const auto field_name = get_field_name<T>(idx);
-                auto &&target_node = node[std::string(field_name)]; // ← 这里加类型转换
+                auto &&target_node = node[std::string(field_name)];
                 serialize_field(target_node, field);
             });
             return node;
         }
 
+        // ========== 序列化补全 ==========
         template<typename T>
         inline void serialize_field(YAML::Node &node, const T &field) {
-            if constexpr (std::is_same_v<T, std::string> || std::is_arithmetic_v<T> || std::is_same_v<T, bool>) {
+            if constexpr (is_optional_v<T>) {
+                if (field.has_value()) {
+                    serialize_field(node, field.value());
+                }
+            } else if constexpr (std::is_same_v<T, std::string> || std::is_arithmetic_v<T> || std::is_same_v<T, bool>) {
                 node = field;
+            } else if constexpr (is_enum_v<T>) {
+                node = static_cast<int>(field);
             } else if constexpr (is_vector_v<T>) {
                 serialize_vector(node, field);
             } else if constexpr (is_map_v<T>) {
