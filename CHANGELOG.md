@@ -3,9 +3,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.59] - 2025-09-20
+### Changed
+- 新增git仓库过滤rust临时文件
+- 新增rust项目初始设定
+- 优化cpu亲和性，新增numa节点感知功能
+- 调整README文档
+- 字符串操作新增字符串蛇形与驼峰的转换功能
+- 新增numa测试代码
+- 新增go版本的timestamp
+
 ## [0.6.58] - 2025-09-20
 ### Changed
 - 代码对齐
+- update changelog
 
 ## [0.6.57] - 2025-09-20
 ### Changed
@@ -479,7 +490,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.58...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.59...HEAD
+[0.6.59]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.58...v0.6.59
 [0.6.58]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.57...v0.6.58
 [0.6.57]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.56...v0.6.57
 [0.6.56]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.55...v0.6.56
