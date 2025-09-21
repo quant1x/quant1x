@@ -476,9 +476,11 @@ set(quant1x-headers
     quant1x/engine/rule-error.h
     quant1x/engine/rule-context.h
 
+    # 模型
+
     # 插件
-    quant1x/models/plugin-loader.h
-    quant1x/models/plugin-api.h
+    quant1x/plugins/plugin-loader.h
+    quant1x/plugins/plugin-api.h
 
     # 因子
     quant1x/factors/f10.h
