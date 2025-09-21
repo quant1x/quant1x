@@ -3,12 +3,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.64] - 2025-09-22
+### Changed
+- 调整yaml解码功能归于encoding包
+
 ## [0.6.63] - 2025-09-21
 ### Changed
 - 调整tdd协议测试源文件名
 - 删除python的行情数据实现
 - 更新magic_enum版本
 - 调度器归于runtime
+- update changelog
 
 ## [0.6.62] - 2025-09-21
 ### Changed
@@ -513,7 +518,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.63...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.64...HEAD
+[0.6.64]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.63...v0.6.64
 [0.6.63]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.62...v0.6.63
 [0.6.62]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.61...v0.6.62
 [0.6.61]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.60...v0.6.61
