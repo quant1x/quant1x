@@ -8,7 +8,7 @@
 #include <functional>
 #include <optional>
 #include <format>
-#include "quant1x/runtime/core.h"
+#include "core.h"
 
 /**
  * 在固定时间窗口内保证操作只执行一次，窗口通过 cron 表达式或时间间隔定义。
@@ -45,11 +45,11 @@ public:
     PeriodicOnce& operator=(const PeriodicOnce&) = delete;
 
     // 允许隐式转换
-    operator T&() {
+    explicit operator T&() {
         return get();
     }
     // 允许隐式转换
-    operator const T&() const {
+    explicit operator const T&() const {
         return get();
     }
 private:
@@ -101,9 +101,12 @@ public:
         }
     }
 
-    void Do(std::function<void()> f) {
+    template<typename F>
+    void Do(F&& f) {
         if (done_.load(std::memory_order_acquire) == 0) {
-            doSlow(std::move(f));
+            // 包裹为 std::function 只在真正需要执行时发生一次分配
+            std::function<void()> wrapper(std::forward<F>(f));
+            doSlow(wrapper);
         }
     }
 
@@ -128,7 +131,7 @@ private:
         spdlog::debug("RollingOnce add({})", task_id_);
     }
 
-    void doSlow(std::function<void()> f) {
+    void doSlow(const std::function<void()> &f) {
         std::unique_lock<std::mutex> lock(m_);
         if (done_.load(std::memory_order_relaxed) == 0) {
             try {

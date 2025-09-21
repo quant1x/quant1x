@@ -1,5 +1,5 @@
 #include <quant1x/test/test.h>
-#include <quant1x/std/scheduler.h>
+#include <quant1x/runtime/scheduler.h>
 #include <quant1x/runtime/once.h>
 #include <quant1x/std/time.h>
 #include <quant1x/exchange/timestamp.h>
@@ -15,16 +15,31 @@ void test_once() {
 TEST_CASE("cron-v1", "[runtime]") {
     runtime::global_init();
     runtime::logger_set(true, true);
+
+#ifdef FAST_CRON_TEST
+    constexpr int LOOP_COUNT = 3;                 // 原 10
+    constexpr auto LOOP_SLEEP = std::chrono::seconds(1); // 原 10s
+    constexpr auto PRE_SCHED_SLEEP = std::chrono::seconds(2); // 原 60s
+    constexpr auto CRON_PHASE_SLEEP = std::chrono::seconds(5); // 原 10 分钟
+    constexpr auto POST_CANCEL_SLEEP = std::chrono::seconds(2); // 原 100s
+#else
+    constexpr int LOOP_COUNT = 10;
+    constexpr auto LOOP_SLEEP = std::chrono::seconds(10);
+    constexpr auto PRE_SCHED_SLEEP = std::chrono::seconds(60);
+    constexpr auto CRON_PHASE_SLEEP = std::chrono::minutes(10);
+    constexpr auto POST_CANCEL_SLEEP = std::chrono::seconds(100);
+#endif
+
     auto once = RollingOnce::create("v1",5);
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < LOOP_COUNT; ++i) {
         once->Do(test_once);
         spdlog::debug("test_number={}", test_number);
-        std::this_thread::sleep_for(std::chrono::seconds(10));
+        std::this_thread::sleep_for(LOOP_SLEEP);
     }
-    std::this_thread::sleep_for(std::chrono::seconds(60));
+    std::this_thread::sleep_for(PRE_SCHED_SLEEP);
     AsyncScheduler scheduler;
 
-    // 每天8:30执行
+    // 每天8:30执行 (长周期任务, 快速模式下通常不会触发, 仅验证添加成功)
     auto id1 = scheduler.schedule_cron("T0830", "0 44 20 * * *", [] {
         std::cout << "Daily task at 8:30" << std::endl;
     });
@@ -32,16 +47,12 @@ TEST_CASE("cron-v1", "[runtime]") {
     // 每周一至周五每5秒钟
     auto id2 = scheduler.schedule_cron("T5s", "*/5 * * * * ?", [] {
         spdlog::debug("Every 5 seconds on weekdays");
-        //std::this_thread::sleep_for(std::chrono::seconds(10));
     });
 
-    std::this_thread::sleep_for(std::chrono::minutes(10));
+    std::this_thread::sleep_for(CRON_PHASE_SLEEP);
     scheduler.cancel(id2);
 
-
-    // 运行10秒后停止
-    std::this_thread::sleep_for(std::chrono::seconds(100));
-    //scheduler.stop();
+    std::this_thread::sleep_for(POST_CANCEL_SLEEP);
     (void) id1;
     (void) id2;
 }
@@ -75,7 +86,7 @@ public:
         std::lock_guard<std::mutex> lock(mutex_);
         done_.store(false, std::memory_order_release);
         value_.reset();  // 清空存储的值
-        spdlog::debug("reset....");
+    SPDLOG_TRACE("reset....");
     }
 
     // 禁止拷贝和赋值
@@ -83,11 +94,11 @@ public:
     PeriodicOnce1& operator=(const PeriodicOnce1&) = delete;
 
     // 允许隐式转换
-    operator T&() {
+    explicit operator T&() {
         return get();
     }
     // 允许隐式转换
-    operator const T&() const {
+    explicit operator const T&() const {
         return get();
     }
 private:
@@ -118,11 +129,11 @@ public:
     }
 
     // 允许隐式转换
-    operator T& () {
+    explicit operator T& () {
         return once_.get();
     }
     // 允许隐式转换
-    operator const T& () const {
+    explicit operator const T& () const {
         return once_.get();
     }
 private:
@@ -154,7 +165,7 @@ TEST_CASE("cache1d-cron", "[crontab]") {
     runtime::logger_set(true, true);
     auto ts_today_init = cache1d<exchange::timestamp>(init_timestamp);
     for(int i = 0; i < 5; ++i) {
-        std::cout << exchange::timestamp::now().toString() << ", " << ts_today_init << std::endl;
+        std::cout << exchange::timestamp::now().toString() << ", " << ts_today_init.get() << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
@@ -164,7 +175,23 @@ TEST_CASE("cache1d-release", "[crontab]") {
     runtime::logger_set(true, true);
     auto ts_today_init2 = runtime::cache1d<exchange::timestamp>("t2", init_timestamp, "*/1 * * * * *");
     for(int i = 0; i < 5; ++i) {
-        std::cout << exchange::timestamp::now().toString() << ", " << ts_today_init2 << std::endl;
+        std::cout << exchange::timestamp::now().toString() << ", " << ts_today_init2.get() << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
+}
+
+TEST_CASE("scheduler-stats", "[runtime][fast]") {
+    runtime::global_init();
+    runtime::logger_set(true, true);
+    AsyncScheduler scheduler;
+    auto id = scheduler.schedule_cron("STATFAST", "*/1 * * * * *", []{ /* fast task */ });
+    std::this_thread::sleep_for(std::chrono::seconds(2)); // allow at least one trigger
+    scheduler.cancel(id);
+    std::this_thread::sleep_for(std::chrono::seconds(1)); // ensure cancel processed
+    auto st = scheduler.get_stats();
+    spdlog::info("stats scheduled={}, executed={}, rescheduled={}, canceled={}, skipped_cancel={}, skipped_running={}",
+                 st.scheduled, st.executed, st.rescheduled, st.canceled, st.skipped_cancel, st.skipped_running);
+    REQUIRE(st.scheduled == 1);
+    REQUIRE(st.executed >= 1);
+    REQUIRE(st.canceled == 1);
 }

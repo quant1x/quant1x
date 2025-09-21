@@ -5,7 +5,7 @@
 #include <capnp/message.h>
 #include <mio/mmap.hpp>
 #include <quant1x/proto/data.h>
-#include <quant1x/std/scheduler.h>
+#include <quant1x/runtime/scheduler.h>
 
 namespace realtime {
 

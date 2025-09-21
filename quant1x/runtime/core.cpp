@@ -13,8 +13,8 @@
 #endif
 
 #include <quant1x/runtime/crash.h>
+#include <quant1x/runtime/scheduler.h>
 #include <quant1x/std/except.h>
-#include <quant1x/std/scheduler.h>
 #include <quant1x/io/file.h>
 
 namespace runtime {

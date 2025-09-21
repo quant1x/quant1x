@@ -16,6 +16,17 @@ project(quant1x
 
 set(BUILD_SHARED_LIBS OFF)  # 默认构建为 STATIC
 
+# ============================================================
+# Fast cron test option
+# 允许通过 -DFAST_CRON_TEST=ON 加速长耗时 cron 测试
+# 如果未显式指定，保持默认 OFF（完整时序）
+# ============================================================
+option(FAST_CRON_TEST "Enable shortened durations in cron-v1 test" OFF)
+if(FAST_CRON_TEST)
+    message(STATUS "FAST_CRON_TEST enabled: cron-v1 test will use shortened timings")
+    add_compile_definitions(FAST_CRON_TEST)
+endif()
+
 # 编译器选项
 include(cmake/compile_options.cmake)
 
@@ -345,6 +356,7 @@ set(DEPENDENCY_CATCH2 "v${Catch2_VERSION}")
 # ============================================================
 
 set(quant1x-headers
+    # 标准库
     quant1x/std/affinity.h
     quant1x/std/api.h
     quant1x/std/base.h
@@ -355,9 +367,17 @@ set(quant1x-headers
     quant1x/std/feature_detection.h
     quant1x/std/numerics.h
     quant1x/std/safe.h
-    quant1x/std/scheduler.h
     quant1x/std/simd.h
     quant1x/std/cpu_info.h
+
+    # 运行时
+    quant1x/runtime/crash.h
+    quant1x/runtime/service.h
+    quant1x/runtime/cache1d.h
+    quant1x/runtime/once.h
+    quant1x/runtime/core.h
+    quant1x/runtime/scheduler.h
+    
 
     # i/o 相关
     quant1x/io/csv-reader.h
@@ -371,13 +391,6 @@ set(quant1x-headers
     quant1x/encoding/json.h
     quant1x/encoding/yaml.h
 
-    # 运行时
-    quant1x/runtime/crash.h
-    quant1x/runtime/service.h
-    quant1x/runtime/cache1d.h
-    quant1x/runtime/once.h
-    quant1x/runtime/core.h
-    
     # 配置
     quant1x/config/data-cache.h
     quant1x/config/rule-parameter.h
@@ -517,12 +530,12 @@ set(quant1x-sources
     quant1x/std/safe.cpp
     quant1x/std/simd.cpp
     quant1x/std/cpu_info.cpp
-
-    # 运行时
     quant1x/std/affinity.cpp
+    
+    # 运行时
     quant1x/runtime/core.cpp
     quant1x/runtime/crash.cpp
-    quant1x/std/scheduler.cpp
+    quant1x/runtime/scheduler.cpp
 
     # i/o 相关
     quant1x/io/file.cpp

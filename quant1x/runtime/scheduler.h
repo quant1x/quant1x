@@ -13,8 +13,6 @@
 #include <mutex>
 #include <queue>
 #include <unordered_map>
-#include <unordered_set>
-#include <shared_mutex>
 
 /**
  * @brief 调度任务自带延迟, 即上次没执行完本次延后到下一次执行
@@ -26,6 +24,17 @@ public:
     runtime::task_id schedule_cron(const std::string& name, const std::string &cron_expr, std::function<void()> task);
     void             cancel(runtime::task_id id);
     void             stop();
+
+    struct Stats {
+        uint64_t scheduled      = 0; // 成功 schedule_cron 次数
+        uint64_t executed       = 0; // 实际执行的任务次数
+        uint64_t skipped_cancel = 0; // 因取消跳过次数
+        uint64_t skipped_running= 0; // 因上次仍在运行被跳过
+        uint64_t rescheduled    = 0; // 重新排程次数
+        uint64_t canceled       = 0; // cancel() 调用命中次数
+    };
+
+    Stats get_stats() const;
 
 private:
     using Clock     = std::chrono::system_clock;
@@ -44,6 +53,7 @@ private:
 
     struct CronTask {
         bool                  cron_running;
+        bool                  canceled{false};
         cron::cronexpr        expr;
         std::function<void()> task;
     };
@@ -55,8 +65,14 @@ private:
     std::mutex                                     mutex_;
     std::condition_variable                        condition_;
     std::atomic<runtime::task_id>                  next_id_;
-    std::unordered_set<runtime::task_id>           canceled_tasks_;
     std::unordered_map<runtime::task_id, CronTask> cron_tasks_;
+    // 统计
+    mutable std::atomic<uint64_t> st_scheduled_{0};
+    mutable std::atomic<uint64_t> st_executed_{0};
+    mutable std::atomic<uint64_t> st_skipped_cancel_{0};
+    mutable std::atomic<uint64_t> st_skipped_running_{0};
+    mutable std::atomic<uint64_t> st_rescheduled_{0};
+    mutable std::atomic<uint64_t> st_canceled_{0};
 
     void enqueue_task(ScheduledTask &&task);
     void execute_cron_task(runtime::task_id id, const std::string& name);
