@@ -3,10 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.66] - 2025-09-22
+### Changed
+- 整理插件模块源文件
+
 ## [0.6.65] - 2025-09-22
 ### Changed
 - 调整测试代码
 - 修正头文件引用
+- update changelog
 
 ## [0.6.64] - 2025-09-22
 ### Changed
@@ -524,7 +529,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.65...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.66...HEAD
+[0.6.66]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.65...v0.6.66
 [0.6.65]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.64...v0.6.65
 [0.6.64]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.63...v0.6.64
 [0.6.63]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.62...v0.6.63
