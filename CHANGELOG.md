@@ -3,9 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.70] - 2025-09-23
+### Changed
+- quant1x go实现只是提供新扩展的功能，主体功能都在engine中
+- 补全go版本应用入口
+
 ## [0.6.69] - 2025-09-22
 ### Changed
 - 调整go应用入口main
+- update changelog
 
 ## [0.6.68] - 2025-09-22
 ### Changed
@@ -544,7 +550,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.69...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.70...HEAD
+[0.6.70]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.69...v0.6.70
 [0.6.69]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.68...v0.6.69
 [0.6.68]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.67...v0.6.68
 [0.6.67]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.66...v0.6.67
