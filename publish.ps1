@@ -21,7 +21,8 @@
 [CmdletBinding()]
 param(
     [switch]$SkipClean,
-    [switch]$NoRich
+    [switch]$NoRich,
+    [switch]$AllowExisting
 )
 
 Set-StrictMode -Version Latest
@@ -47,6 +48,26 @@ try {
 
     Invoke-Step 'Reading version...' { $script:Version = (python setup.py --version).Trim(); if (-not $script:Version) { throw 'Version not found'} }
     Write-Info "Version: $script:Version"
+
+    # 版本存在性检查(阻断型)
+    $existing = $false
+    try {
+        $pypiUrl = 'https://pypi.org/pypi/quant1x/json'
+        $resp = Invoke-WebRequest -UseBasicParsing -Uri $pypiUrl -TimeoutSec 5 -ErrorAction Stop
+        if ($resp.StatusCode -eq 200) {
+            $pattern = '"' + [Regex]::Escape($script:Version) + '"'
+            if ($resp.Content -match $pattern) { $existing = $true }
+        }
+    } catch {
+        Write-Warn 'Skip version existence check (network issue)'
+    }
+    if ($existing -and -not $AllowExisting) {
+        Write-Err "Version $($script:Version) already exists on PyPI. Use -AllowExisting to force build/upload."
+        exit 2
+    }
+    elseif ($existing -and $AllowExisting) {
+        Write-Warn "Version $($script:Version) exists; proceeding due to -AllowExisting"
+    }
 
     Invoke-Step 'Remove old artifacts (if any)' {
         if (Test-Path dist) { Remove-Item dist -Recurse -Force }
