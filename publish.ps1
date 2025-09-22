@@ -26,7 +26,6 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-# 强制 UTF8 控制台，避免 rich 在 GBK 下输出符号失败
 try { chcp 65001 > $null 2>&1 } catch {}
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $env:PYTHONIOENCODING = 'utf-8'
@@ -38,24 +37,11 @@ function Write-Ok($msg)    { Write-Host "[ OK  ] $msg" -ForegroundColor Green }
 function Write-Warn($msg)  { Write-Host "[WARN ] $msg" -ForegroundColor Yellow }
 function Write-Err($msg)   { Write-Host "[FAIL ] $msg" -ForegroundColor Red }
 
-function Test-Command($name) {
-    if (-not (Get-Command $name -ErrorAction SilentlyContinue)) {
-        Write-Err "Missing command: $name"
-        throw "Please install $name"
-    }
-}
-
-function Invoke-Step {
-    param(
-        [string]$Title,
-        [scriptblock]$Action
-    )
-    Write-Info $Title
-    & $Action
-    if ($LASTEXITCODE -ne 0) { throw "Step failed: $Title (code=$LASTEXITCODE)" }
-}
+function Test-Command($name) { if (-not (Get-Command $name -ErrorAction SilentlyContinue)) { Write-Err "Missing command: $name"; throw "Please install $name" } }
+function Invoke-Step { param([string]$Title,[scriptblock]$Action); Write-Info $Title; & $Action; if ($LASTEXITCODE -ne 0) { throw "Step failed: $Title (code=$LASTEXITCODE)" } }
 
 try {
+    Write-Info "Console CodePage: $([Console]::OutputEncoding.CodePage)"
     Invoke-Step 'Checking required commands...' { Test-Command python; Test-Command twine; Test-Command pip }
     Write-Ok 'All commands ok'
 
@@ -73,11 +59,14 @@ try {
     Invoke-Step 'Building sdist + wheel' { python setup.py sdist bdist_wheel }
     Write-Ok 'Build done'
 
-    # Rich 在某些 GBK/简体中文默认控制台下会输出特殊符号导致失败，提供禁用开关
-    if ($NoRich) { $env:TWINE_DISABLE_PROGRESS_BAR = '1' }
-    else {
-        # 如果仍是本地化代码页，强制禁用
-        if (([Console]::OutputEncoding).CodePage -ne 65001) { $env:TWINE_DISABLE_PROGRESS_BAR = '1'; Write-Warn 'Progress bar disabled (non-UTF8 console)' }
+    # Progress bar handling (avoid Rich Unicode issues on non-UTF8 consoles)
+    if ($NoRich) {
+        $env:TWINE_DISABLE_PROGRESS_BAR = '1'
+        Write-Warn 'Progress bar disabled (NoRich)'
+    }
+    elseif (([Console]::OutputEncoding).CodePage -ne 65001) {
+        $env:TWINE_DISABLE_PROGRESS_BAR = '1'
+        Write-Warn 'Progress bar disabled (non-UTF8 console)'
     }
 
     Invoke-Step 'Uploading to PyPI' { twine upload dist/* }
@@ -91,15 +80,10 @@ try {
             if (Test-Path .eggs) { Remove-Item .eggs -Recurse -Force }
         }
         Write-Ok 'Clean done'
-    } else {
+    }
+    else {
         Write-Warn 'Skip clean (--SkipClean)'
     }
 }
-catch {
-    Write-Err "Publish failed: $_"
-    exit 1
-}
-finally {
-    $elapsed = (Get-Date) - $script:StartTime
-    Write-Info ("Elapsed: {0:N1} sec" -f $elapsed.TotalSeconds)
-}
+catch { Write-Err "Publish failed: $_"; exit 1 }
+finally { $elapsed = (Get-Date) - $script:StartTime; Write-Info ("Elapsed: {0:N1} sec" -f $elapsed.TotalSeconds) }
