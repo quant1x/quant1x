@@ -3,10 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.71] - 2025-09-23
+### Changed
+- 新增windows ps1的pypi发布脚本
+
 ## [0.6.70] - 2025-09-23
 ### Changed
 - quant1x go实现只是提供新扩展的功能，主体功能都在engine中
 - 补全go版本应用入口
+- update changelog
 
 ## [0.6.69] - 2025-09-22
 ### Changed
@@ -550,7 +555,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.70...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.71...HEAD
+[0.6.71]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.70...v0.6.71
 [0.6.70]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.69...v0.6.70
 [0.6.69]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.68...v0.6.69
 [0.6.68]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.67...v0.6.68
