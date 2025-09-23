@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.80] - 2025-09-23
+### Changed
+- 修订tcp连接池的注释及文档
+
 ## [0.6.79] - 2025-09-23
 ### Changed
 - 补充AI对tcp连接池实现方案的评估文档
+- update changelog
 
 ## [0.6.78] - 2025-09-23
 ### Changed
@@ -598,7 +603,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.79...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.80...HEAD
+[0.6.80]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.79...v0.6.80
 [0.6.79]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.78...v0.6.79
 [0.6.78]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.77...v0.6.78
 [0.6.77]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.76...v0.6.77
