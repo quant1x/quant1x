@@ -1,4 +1,4 @@
-@startuml
+@startuml quant-pm
 title A股 - 尾盘(14:57~15:02)
 concise "miniQMT" as QMT
 concise "量化策略工具" as Quant

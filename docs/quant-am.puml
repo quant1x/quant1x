@@ -1,4 +1,4 @@
-@startuml
+@startuml quant-am
 title A股 - 早盘(09:15~09:30)
 concise "miniQMT" as QMT
 concise "量化策略工具" as Quant

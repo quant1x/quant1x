@@ -1,4 +1,4 @@
-@startuml
+@startuml strategy
 
 start
 :加载板块列表;

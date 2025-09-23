@@ -2,7 +2,7 @@
 '更多皮肤 https://moretop.gitee.io/plantuml/themes
 skinparam backgroundColor #FCFCFC
 
-@startuml
+@startuml stock
 participant Stock as stock
 queue       TCPPool as pool
 control    IPPool as ips
