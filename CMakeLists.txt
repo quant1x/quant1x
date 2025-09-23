@@ -561,9 +561,9 @@ set(quant1x-sources
 
     # 配置信息
     quant1x/config/config.cpp
-    quant1x/config/detail/trading-session.cpp
-    quant1x/config/detail/trader-parameter.cpp
-    quant1x/config/detail/strategy-parameter.cpp
+    quant1x/config/trading-session.cpp
+    quant1x/config/trader-parameter.cpp
+    quant1x/config/strategy-parameter.cpp
 
     quant1x/cache.cpp
     quant1x/command.cpp
