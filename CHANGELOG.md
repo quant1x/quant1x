@@ -3,10 +3,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.77] - 2025-09-23
+### Changed
+- 补充部分技术文档
+- 修复plantuml语法上的告警
+
 ## [0.6.76] - 2025-09-23
 ### Changed
 - 新增factors go package概述
 - 调整config c++实现代码的路径
+- update changelog
 
 ## [0.6.75] - 2025-09-23
 ### Changed
@@ -581,7 +587,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.76...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.77...HEAD
+[0.6.77]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.76...v0.6.77
 [0.6.76]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.75...v0.6.76
 [0.6.75]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.74...v0.6.75
 [0.6.74]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.73...v0.6.74
