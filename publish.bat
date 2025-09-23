@@ -1,21 +1,21 @@
 @echo off
-REM PyPi Ä£¿é ·¢²¼½Å±¾
+REM PyPi æ¨¡å— å‘å¸ƒè„šæœ¬
 
-REM »ñÈ¡µ±Ç°Â·¾¶, ÓÃÓÚ·µ»Ø
-echo "ÕıÔÚ´ò°ü..."
+REM è·å–å½“å‰è·¯å¾„, ç”¨äºè¿”å›
+echo "æ­£åœ¨æ‰“åŒ…..."
 python setup.py sdist bdist_wheel
-echo "´ò°üÍê³É"
-echo "ÕıÔÚÉÏ´«PyPi.org..."
+echo "æ‰“åŒ…å®Œæˆ"
+echo "æ­£åœ¨ä¸Šä¼ PyPi.org..."
 twine upload dist/*
-echo "ÉÏ´«Íê³É"
-REM ¾²Ä¬É¾³ıÄ¿Â¼£¨Èç¹û´æÔÚ£©
+echo "ä¸Šä¼ å®Œæˆ"
+REM é™é»˜åˆ é™¤ç›®å½•ï¼ˆå¦‚æœå­˜åœ¨ï¼‰
 if exist dist rmdir /S /Q dist >nul 2>&1
 if exist build rmdir /S /Q build >nul 2>&1
 if exist quant1x.egg-info rmdir /S /Q quant1x.egg-info >nul 2>&1
 if exist .eggs rmdir /S /Q .eggs >nul 2>&1
 rem version=`python setup.py --version`
-REM echo "°æ±¾ºÅ: ${version}"
-REM echo "git ´úÂë´òtag"
+REM echo "ç‰ˆæœ¬å·: ${version}"
+REM echo "git ä»£ç æ‰“tag"
 REM git tag -a v$version -m "Release version ${version}"
 REM git push --tags
 @echo on
