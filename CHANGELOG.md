@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.83] - 2025-09-24
+### Changed
+- 删除废弃的代码，quant1x不收录实验性代码
+
 ## [0.6.82] - 2025-09-24
 ### Changed
 - 新增FP Growth的go语言实现版本
+- update changelog
 
 ## [0.6.81] - 2025-09-24
 ### Changed
@@ -621,7 +626,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.82...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.83...HEAD
+[0.6.83]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.82...v0.6.83
 [0.6.82]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.81...v0.6.82
 [0.6.81]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.80...v0.6.81
 [0.6.80]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.79...v0.6.80
