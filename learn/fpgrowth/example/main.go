@@ -6,7 +6,7 @@ package main
 import (
 	"fmt"
 
-	fpgrowth2 "gitee.com/quant1x/labs/qlab/learn/fpgrowth"
+	fpgrowth2 "gitee.com/quant1x/quant1x/learn/fpgrowth"
 )
 
 func main() {
