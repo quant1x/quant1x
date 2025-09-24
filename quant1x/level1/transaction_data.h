@@ -2,10 +2,10 @@
 #ifndef QUANT1X_LEVEL1_TRANSACTION_DATA_H
 #define QUANT1X_LEVEL1_TRANSACTION_DATA_H 1
 
-#include "protocol.h"
-#include "security_quote.h"
-#include "quant1x/exchange/code.h"
-#include "ostream"
+#include <quant1x/level1/protocol.h>
+#include <quant1x/level1/security_quote.h>
+#include <quant1x/exchange/code.h>
+#include <ostream>
 
 // ==============================
 // 分笔成交记录(Tick-by-Tick Transaction)

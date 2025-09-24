@@ -2,7 +2,7 @@
 #ifndef QUANT1X_LEVEL1_COMPANY_CONTENT_H
 #define QUANT1X_LEVEL1_COMPANY_CONTENT_H 1
 
-#include "protocol.h"
+#include <quant1x/level1/protocol.h>
 
 // ==============================
 // (F10)企业基本信息

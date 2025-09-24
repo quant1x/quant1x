@@ -2,7 +2,7 @@
 #ifndef QUANT1X_LEVEL1_MINUTE_TIME_H
 #define QUANT1X_LEVEL1_MINUTE_TIME_H 1
 
-#include "protocol.h"
+#include <quant1x/level1/protocol.h>
 
 // ==============================
 // 分时数据(历史), 当日分时数据和历史分时数据没区别, 只是命令字不同, 且ETF数据不准确

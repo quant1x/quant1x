@@ -2,7 +2,7 @@
 #ifndef QUANT1X_LEVEL1_HEARTBEAT_H
 #define QUANT1X_LEVEL1_HEARTBEAT_H 1
 
-#include "protocol.h"
+#include <quant1x/level1/protocol.h>
 
 // ==============================
 // 心跳

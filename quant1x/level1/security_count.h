@@ -6,7 +6,7 @@
 // 证券统计
 // ==============================
 
-#include "protocol.h"
+#include <quant1x/level1/protocol.h>
 
 namespace level1 {
 

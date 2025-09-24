@@ -2,7 +2,7 @@
 #ifndef QUANT1X_LEVEL1_XDXR_INFO_H
 #define QUANT1X_LEVEL1_XDXR_INFO_H 1
 
-#include "protocol.h"
+#include <quant1x/level1/protocol.h>
 #include <quant1x/exchange/code.h>
 #include <ostream>
 

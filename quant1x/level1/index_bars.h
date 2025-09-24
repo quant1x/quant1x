@@ -2,7 +2,7 @@
 #ifndef QUANT1X_LEVEL1_INDEX_BARS_H
 #define QUANT1X_LEVEL1_INDEX_BARS_H 1
 
-#include "protocol.h"
+#include <quant1x/level1/protocol.h>
 
 // ==============================
 // 指数类K线, 与security_bars合并

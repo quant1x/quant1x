@@ -2,8 +2,8 @@
 #ifndef QUANT1X_LEVEL1_TRANSACTION_HISTORY_H
 #define QUANT1X_LEVEL1_TRANSACTION_HISTORY_H 1
 
-#include "protocol.h"
-#include "transaction_data.h"
+#include <quant1x/level1/protocol.h>
+#include <quant1x/level1/transaction_data.h>
 
 // ==============================
 // 历史分笔成交记录
