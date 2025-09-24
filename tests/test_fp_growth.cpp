@@ -1,4 +1,4 @@
-#include "quant1x/fp_growth.h"
+#include "learn/fpgrowth/fp_growth.h"
 #include <iostream>
 #include <vector>
 

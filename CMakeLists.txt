@@ -522,7 +522,7 @@ set(quant1x-headers
     quant1x/quant1x.h
 
     # 数据处理功能 quant1x/data
-    quant1x/fp_growth.h
+    learn/fpgrowth/fp_growth.h
 )
 
 set(quant1x-sources
@@ -637,7 +637,7 @@ set(quant1x-sources
     quant1x/quant1x.cpp
 
     # 数据处理功能 quant1x/data
-    quant1x/fp_growth.cpp
+    learn/fpgrowth/fp_growth.cpp
 )
 
 if (WIN32)
@@ -887,6 +887,18 @@ install(TARGETS quant1x third_libs xtensor_optimize global_compile_options EXPOR
 install(
     DIRECTORY quant1x/
     DESTINATION include/quant1x
+    FILES_MATCHING
+    PATTERN "*.h"
+    PATTERN "*.hpp"
+    PATTERN "*.inl"
+    PATTERN "__pycache__" EXCLUDE  # 忽略 Python 缓存目录（安全防护）
+    PATTERN ".git" EXCLUDE         # 可选：忽略 .git 目录
+)
+
+# 安装主库头文件
+install(
+    DIRECTORY learn/
+    DESTINATION include/learn
     FILES_MATCHING
     PATTERN "*.h"
     PATTERN "*.hpp"
