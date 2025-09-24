@@ -191,13 +191,113 @@ std::vector<FPGrowth::FrequentPattern> FPGrowth::FPTree::mine_patterns(
 }
 
 std::vector<FPGrowth::FrequentPattern> FPGrowth::FPTree::mine_conditional_patterns(
-    [[maybe_unused]] const std::vector<HeaderEntry>& header_table,
-    [[maybe_unused]] size_t suffix_item,
-    [[maybe_unused]] size_t min_support) {
+    const std::vector<HeaderEntry>& header_table,
+    size_t suffix_item,
+    size_t min_support) {
 
-    // 这里简化实现，实际应该构建条件FP树
-    // 为了完整性，这里返回空结果
-    return {};
+    // 找到后缀项在项头表中的位置
+    const HeaderEntry* suffix_entry = nullptr;
+    for (const auto& entry : header_table) {
+        if (entry.item_id == suffix_item) {
+            suffix_entry = &entry;
+            break;
+        }
+    }
+
+    if (!suffix_entry || !suffix_entry->head) {
+        return {};  // 没有找到后缀项或没有节点
+    }
+
+    // 收集条件模式基：遍历后缀项的所有节点
+    std::vector<std::pair<Transaction, size_t>> conditional_patterns;
+
+    FPNode* current = suffix_entry->head;
+    while (current) {
+        // 从当前节点向上遍历到根，收集路径
+        Transaction path;
+        size_t path_count = current->count;
+
+        FPNode* node = current->parent;
+        while (node && node->item_id != 0) {  // 根节点的item_id为0
+            path.push_back(node->item_id);
+            node = node->parent;
+        }
+
+        if (!path.empty()) {
+            conditional_patterns.emplace_back(path, path_count);
+        }
+
+        current = current->next;
+    }
+
+    if (conditional_patterns.empty()) {
+        return {};
+    }
+
+    // 统计条件模式基中各项的频率
+    std::unordered_map<size_t, size_t> conditional_counts;
+    for (const auto& pattern : conditional_patterns) {
+        for (size_t item : pattern.first) {
+            conditional_counts[item] += pattern.second;
+        }
+    }
+
+    // 获取条件频繁项（在条件模式基中满足最小支持度的项）
+    std::vector<std::pair<size_t, size_t>> conditional_items;
+    for (const auto& pair : conditional_counts) {
+        if (pair.second >= min_support) {
+            conditional_items.emplace_back(pair.second, pair.first);
+        }
+    }
+
+    if (conditional_items.empty()) {
+        return {};
+    }
+
+    // 按支持度降序排序
+    std::sort(conditional_items.rbegin(), conditional_items.rend());
+
+    // 创建条件项的顺序映射
+    std::vector<size_t> conditional_item_order;
+    std::unordered_map<size_t, size_t> order_map;
+    for (size_t i = 0; i < conditional_items.size(); ++i) {
+        size_t item = conditional_items[i].second;
+        conditional_item_order.push_back(item);
+        order_map[item] = i;
+    }
+
+    // 构建条件FP树
+    FPTree conditional_tree;
+    std::vector<HeaderEntry> conditional_header_table;
+    conditional_header_table.reserve(conditional_item_order.size());
+
+    for (size_t item : conditional_item_order) {
+        conditional_header_table.emplace_back(item, conditional_counts[item]);
+    }
+
+    // 插入条件模式基到条件FP树
+    for (const auto& pattern : conditional_patterns) {
+        Transaction filtered_pattern;
+        for (size_t item : pattern.first) {
+            if (conditional_counts[item] >= min_support) {
+                filtered_pattern.push_back(item);
+            }
+        }
+
+        if (!filtered_pattern.empty()) {
+            // 按条件项的频率排序
+            std::sort(filtered_pattern.begin(), filtered_pattern.end(),
+                     [&order_map](size_t a, size_t b) {
+                         return order_map[a] < order_map[b];
+                     });
+
+            conditional_tree.insert(filtered_pattern, conditional_item_order,
+                                   conditional_header_table);
+        }
+    }
+
+    // 在条件FP树上递归挖掘模式
+    return conditional_tree.mine_patterns(conditional_header_table, min_support);
 }
 
 } // namespace quant1x
