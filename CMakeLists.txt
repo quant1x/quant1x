@@ -14,6 +14,7 @@ project(quant1x
         VERSION ${VERSION_FROM_GIT}
         LANGUAGES C CXX)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # 为VSCode生成compile_commands.json
 set(BUILD_SHARED_LIBS OFF)  # 默认构建为 STATIC
 
 # ============================================================

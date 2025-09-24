@@ -1,0 +1,9 @@
+{
+    "testMate.cpp.debug.configTemplate": null,
+    "python.analysis.autoImportCompletions": true,
+    "python.envFile": "${workspaceFolder}/.env",
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.configureSettings": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+    }
+}
