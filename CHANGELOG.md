@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.86] - 2025-09-24
+### Changed
+- 调整FP Growth到learn
+
 ## [0.6.85] - 2025-09-24
 ### Changed
 - 补全未实现的成员函数及文档
+- update changelog
 
 ## [0.6.84] - 2025-09-24
 ### Changed
@@ -637,7 +642,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.85...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.86...HEAD
+[0.6.86]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.85...v0.6.86
 [0.6.85]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.84...v0.6.85
 [0.6.84]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.83...v0.6.84
 [0.6.83]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.82...v0.6.83
