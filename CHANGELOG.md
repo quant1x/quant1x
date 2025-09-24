@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.88] - 2025-09-24
+### Changed
+- 调整项目文件增加tag的展示
+
 ## [0.6.87] - 2025-09-24
 ### Changed
 - 优化二进制文件转c++头文件的工具
+- update changelog
 
 ## [0.6.86] - 2025-09-24
 ### Changed
@@ -647,7 +652,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.87...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.88...HEAD
+[0.6.88]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.87...v0.6.88
 [0.6.87]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.86...v0.6.87
 [0.6.86]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.85...v0.6.86
 [0.6.85]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.84...v0.6.85
