@@ -24,6 +24,10 @@ pub use crate::timestamp::*;
 // timestamp 模块，现在位于 src/ 根目录
 mod timestamp;
 
+// FP-Growth 模块
+mod fpgrowth;
+pub use crate::fpgrowth::*;
+
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
 }
