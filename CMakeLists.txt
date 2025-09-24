@@ -435,8 +435,6 @@ set(quant1x-headers
     quant1x/ta/type_default.h
     quant1x/ta/sma.h
 
-    # 数据处理功能 quant1x/data
-
     # 数据集
     quant1x/datasets/base.h
     quant1x/datasets/xdxr.h
@@ -522,6 +520,9 @@ set(quant1x-headers
 
     # 应用入口
     quant1x/quant1x.h
+
+    # 数据处理功能 quant1x/data
+    quant1x/fp_growth.h
 )
 
 set(quant1x-sources
@@ -577,9 +578,6 @@ set(quant1x-sources
     quant1x/backtest/engine.cpp
     quant1x/backtest/order.cpp
     quant1x/backtest/trade.cpp
-
-    # 数据处理功能 quant1x/data
-
 
     # 数据集
     quant1x/datasets/xdxr_adjust_factor.cpp
@@ -637,6 +635,9 @@ set(quant1x-sources
 
     # 应用入口
     quant1x/quant1x.cpp
+
+    # 数据处理功能 quant1x/data
+    quant1x/fp_growth.cpp
 )
 
 if (WIN32)

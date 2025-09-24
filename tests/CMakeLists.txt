@@ -169,3 +169,6 @@ add_catch2_executable(tdd-peaks.cpp)
 add_catch2_executable(tdd-waves.cpp)
 add_catch2_executable(tdd-linear-regression.cpp)
 add_catch2_executable(tdd-patterns-wave-release.cpp)
+
+# FP growth测试
+add_catch2_executable(test_fp_growth.cpp)
