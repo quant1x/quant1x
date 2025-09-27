@@ -28,6 +28,10 @@ mod timestamp;
 mod fpgrowth;
 pub use crate::fpgrowth::*;
 
+// calendar decoder module
+mod decoder;
+pub use crate::decoder::*;
+
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
 }

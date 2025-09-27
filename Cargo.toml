@@ -8,8 +8,10 @@ license = "MIT"
 
 [lib]
 name = "quant1x"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 path = "quant1x/lib.rs"
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
