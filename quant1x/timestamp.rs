@@ -32,7 +32,7 @@ impl Timestamp {
     /// 
     /// # Examples
     /// ```
-    /// use quant1x_std::Timestamp;
+    /// use quant1x::Timestamp;
     /// let ts = Timestamp::new(1640995200000);
     /// ```
     pub fn new(ms: i64) -> Self {

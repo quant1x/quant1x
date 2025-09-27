@@ -5,14 +5,14 @@
 //!
 //! # 命名空间设计
 //! 
-//! - **Crate名称**: `quant1x-std`
-//! - **命名空间**: `quant1x_std::`
-//! - **使用方式**: `use quant1x_std::Timestamp;`
+//! - **Crate名称**: `quant1x`
+//! - **命名空间**: `quant1x::`
+//! - **使用方式**: `use quant1x::Timestamp;`
 //!
 //! # 示例
 //! 
 //! ```
-//! use quant1x_std::Timestamp;
+//! use quant1x::Timestamp;
 //! 
 //! let ts = Timestamp::now();
 //! let parsed = Timestamp::parse("2022-06-15 14:30:45").unwrap();

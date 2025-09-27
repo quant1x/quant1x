@@ -29,7 +29,7 @@
 //! // 输出结果
 //! println!("发现的频繁模式数量: {}", patterns.len());
 //! for (pattern, support) in patterns {
-//!     println!("模式 {:?} : 支持度 = {:.1}%", pattern, support * 100.0);
+//!     println!("模式 {:?} : 支持度 = {:.1}%", pattern, (support as f64) * 100.0);
 //! }
 //! ```
 
