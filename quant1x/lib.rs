@@ -32,6 +32,10 @@ pub use crate::fpgrowth::*;
 mod decoder;
 pub use crate::decoder::*;
 
+// network module (mio-based connection pool)
+mod net;
+pub use crate::net::*;
+
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
 }
