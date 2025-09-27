@@ -5,6 +5,23 @@ edition = "2021"
 authors = ["Quant1X Team"]
 description = "Cross-language standard library for quantitative trading"
 license = "MIT"
+readme = "README.md"
+
+# Prefer an explicit include whitelist. This is more reliable than trying to
+# exclude by extension because `cargo package` by default includes many
+# repository files; a whitelist ensures only the crate-relevant files are
+# packaged and uploaded to crates.io.
+include = [
+	"Cargo.toml",
+	"README.md",
+	"LICENSE",
+	"quant1x/**/*.rs",
+	"quant1x/*.rs",
+	"examples/*.rs",
+	"examples/**/*.rs",
+	"tests/*.rs",
+	"docs/README.md",
+]
 
 [lib]
 name = "quant1x"
