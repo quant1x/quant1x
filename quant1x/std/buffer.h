@@ -19,8 +19,10 @@ private:
     void push_le(T value) {
         constexpr size_t size = sizeof(T);
         ensure_capacity(offset + size);
+        using Unsigned = std::make_unsigned_t<T>;
+        Unsigned u = static_cast<Unsigned>(value);
         for (size_t i = 0; i < size; ++i) {
-            buffer[offset + i] = static_cast<uint8_t>(value >> (i * 8));
+            buffer[offset + i] = static_cast<uint8_t>(u >> (i * 8));
         }
         offset += size;
     }
@@ -29,10 +31,12 @@ private:
     T get_le() {
         constexpr size_t size = sizeof(T);
         check_available(size);
-        T value = 0;
+        using Unsigned = std::make_unsigned_t<T>;
+        Unsigned u = 0;
         for (size_t i = 0; i < size; ++i) {
-            value |= static_cast<T>(buffer[offset + i]) << (i * 8);
+            u |= static_cast<Unsigned>(buffer[offset + i]) << (i * 8);
         }
+        T value = static_cast<T>(u);
         offset += size;
         return value;
     }
@@ -44,7 +48,8 @@ private:
     }
 
     void check_available(size_t required) {
-        if (offset + required > buffer.size()) {
+        // Avoid overflow when computing offset + required
+        if (required > buffer.size() || offset > buffer.size() - required) {
             throw std::out_of_range("Insufficient data in buffer");
         }
     }
@@ -127,7 +132,7 @@ public:
 
     template <size_t N>
     void push_byte_array(const std::array<uint8_t, N>& data) {
-        push_byte_array(data.data());
+        push_byte_array(data.data(), N);
     }
 
     void push_byte_array(const uint8_t* data, size_t n) {
@@ -162,7 +167,7 @@ public:
     template <size_t N>
     std::array<uint8_t, N> get_byte_array() {
         std::array<uint8_t, N> arr;
-        get_byte_array(arr);
+        get_byte_array(arr.data(), N);
         return arr;
     }
 
@@ -225,20 +230,44 @@ public:
     }
 
     int64_t varint_decode() {
-        uint8_t *b = buffer.data();
-        int *pos = (int *)&offset;
-        uint8_t byte = b[(*pos)++];
-        bool sign = (byte & 0x40) != 0;
-        int64_t data = byte & 0x3F;
-        int shift = 6;
-
-        while (byte & 0x80) {
-            byte = b[(*pos)++];
-            data |= (int64_t)(byte & 0x7F) << shift;
-            shift += 7;
+        // Safe, bounds-checked varint decoding that preserves original format
+        // Format: first byte: continuation(0x80) | sign(0x40) | 6-bit payload
+        // subsequent bytes: continuation(0x80) | 7-bit payload
+        size_t pos = offset;
+        if (pos >= buffer.size()) {
+            throw std::out_of_range("Insufficient data in buffer for varint");
         }
 
-        return sign ? -data : data;
+        uint8_t byte = buffer[pos++];
+        bool sign = (byte & 0x40) != 0;
+        uint64_t data = static_cast<uint64_t>(byte & 0x3F);
+        unsigned shift = 6;
+
+        while (byte & 0x80) {
+            if (pos >= buffer.size()) {
+                throw std::out_of_range("Insufficient data in buffer during varint decoding");
+            }
+            byte = buffer[pos++];
+            data |= static_cast<uint64_t>(byte & 0x7F) << shift;
+            shift += 7;
+            if (shift >= 64) {
+                // Avoid undefined behavior on excessive shift / overflow
+                break;
+            }
+        }
+
+        // advance the global offset only after successful read
+        offset = pos;
+
+        int64_t signed_val;
+        if (data > static_cast<uint64_t>(std::numeric_limits<int64_t>::max())) {
+            // clamp to int64_t max (preserve behavior but avoid UB)
+            signed_val = std::numeric_limits<int64_t>::max();
+        } else {
+            signed_val = static_cast<int64_t>(data);
+        }
+
+        return sign ? -signed_val : signed_val;
     }
 
     // 工具方法
