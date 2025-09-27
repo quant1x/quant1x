@@ -3,10 +3,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.93] - 2025-09-27
+### Changed
+- 修复doctest
+- chore: prepare crate for publish (narrow include)
+- 优化二进制小端编解码器
+- 新增rust tcp连接池功能
+
 ## [0.6.92] - 2025-09-27
 ### Changed
 - 修复包路径错误
 - 新增rust版本的js解码器
+- update changelog
 
 ## [0.6.91] - 2025-09-25
 ### Changed
@@ -673,7 +681,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.92...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.93...HEAD
+[0.6.93]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.92...v0.6.93
 [0.6.92]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.91...v0.6.92
 [0.6.91]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.90...v0.6.91
 [0.6.90]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.89...v0.6.90
