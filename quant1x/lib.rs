@@ -38,6 +38,10 @@ pub use crate::net::*;
 mod std;
 pub use crate::std::*;
 
+// Level1 protocol bindings (partial, header-only equivalents)
+mod level1;
+pub use crate::level1::*;
+
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
 }

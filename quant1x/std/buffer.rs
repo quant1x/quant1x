@@ -67,7 +67,8 @@ impl BinaryStream {
         self.check_available(len);
         let slice = &self.buffer[self.offset..self.offset+len];
         let nul_pos = slice.iter().position(|&b| b == 0).unwrap_or(len);
-        let s = String::from_utf8(slice[..nul_pos].to_vec()).unwrap();
+        // tolerate non-UTF8 by using a lossy conversion (matches C++ std::string behavior)
+        let s = String::from_utf8_lossy(&slice[..nul_pos]).into_owned();
         self.offset += len;
         s
     }
