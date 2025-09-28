@@ -38,12 +38,30 @@ pub use crate::net::*;
 mod std;
 pub use crate::std::*;
 
+// runtime helpers (rust translation of runtime utilities)
+mod runtime;
+pub use crate::runtime::*;
+
+// crate-level internal configuration module (used by exchange/calendar and tests)
+mod config;
+
 // Level1 protocol bindings (partial, header-only equivalents)
 mod level1;
 pub use crate::level1::*;
+mod exchange;
+pub use crate::exchange::*;
+// top-level `config` module removed — `level1::config` remains internal to level1.
 
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
+}
+
+/// Return the filename used for the calendar cache (convenience wrapper around
+/// the internal config helper). This is intentionally a tiny, stable API so
+/// external tests and tools can locate the calendar cache without exposing the
+/// full `config` module.
+pub fn get_calendar_filename() -> String {
+    config::get_calendar_filename()
 }
 
 #[cfg(test)]

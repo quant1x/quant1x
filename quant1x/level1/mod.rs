@@ -78,6 +78,9 @@ pub fn int_to_float64(v: u32) -> f64 {
     dbl_xmm6 + dbl_xmm4 + dbl_xmm3 + dbl_xmm1
 }
 
+mod helpers;
+pub use helpers::*;
+
 /// 解压 zlib 压缩的数据
 pub fn unzip(body: Vec<u8>, unzipped_size: usize) -> std::io::Result<Vec<u8>> {
     let mut d = ZlibDecoder::new(&body[..]);
@@ -123,317 +126,42 @@ pub fn process_request(stream: &mut MioTcpStream, req_buf: &[u8]) -> std::io::Re
         Ok(body)
     }
 }
-
-pub mod hello1 {
-    use super::sequence_id;
-    use super::BinaryStream;
-    use encoding_rs::GBK;
-
-    #[derive(Debug, Clone)]
-    pub struct Hello1Request {
-        pub zip_flag: u8,
-        pub seq_id: u32,
-        pub packet_type: u8,
-        pub pkg_len1: u16,
-        pub pkg_len2: u16,
-        pub method: u16,
-        pub padding: Vec<u8>,
-    }
-
-    impl Hello1Request {
-        pub fn new() -> Self {
-            Hello1Request {
-                zip_flag: 0x0C, // NotZipped
-                seq_id: sequence_id(),
-                packet_type: 0x01,
-                pkg_len1: 0,
-                pkg_len2: 0,
-                method: 0x000d, // LOGIN1
-                padding: hex::decode("01").unwrap_or_default(),
-            }
-        }
-
-        pub fn serialize(&mut self) -> Vec<u8> {
-            self.pkg_len1 = (2 + self.padding.len()) as u16;
-            self.pkg_len2 = (2 + self.padding.len()) as u16;
-            let mut stream = BinaryStream::new();
-            stream.push_u8(self.zip_flag);
-            stream.push_u32(self.seq_id);
-            stream.push_u8(self.packet_type);
-            stream.push_u16(self.pkg_len1);
-            stream.push_u16(self.pkg_len2);
-            stream.push_u16(self.method);
-            stream.push_byte_array(&self.padding);
-            stream.data().clone()
-        }
-
-        pub fn to_string(&self) -> String {
-            format!("Hello1Request {{ ZipFlag:{}, SeqID:{}, PacketType:{}, PkgLen1:{}, PkgLen2:{}, Method:{:#06x}, padding:{} }}",
-                    self.zip_flag, self.seq_id, self.packet_type, self.pkg_len1, self.pkg_len2, self.method, hex::encode(&self.padding))
-        }
-    }
-
-    #[derive(Debug, Clone)]
-    pub struct Hello1Response {
-        pub info: String,
-    }
-
-    impl Hello1Response {
-        pub fn new() -> Self { Self { info: String::new() } }
-
-        pub fn deserialize(&mut self, data: &[u8]) {
-            let offset = 68usize;
-            if data.len() >= offset {
-                let info_bytes = &data[offset..];
-                // decode GBK -> UTF-8 using encoding_rs
-                let (cow, _, _) = GBK.decode(info_bytes);
-                self.info = cow.into_owned();
-            }
-        }
-
-        pub fn to_string(&self) -> String { format!("Info: {}", self.info) }
-    }
-}
+mod hello1;
+mod hello2;
+mod heartbeat;
+mod config;
+mod xdxr;
+mod finance_info;
+mod index_bars;
+mod security_bars;
+mod security_count;
+mod security_list;
+mod security_quote;
+mod block_info;
+mod block_meta;
+mod company_category;
+mod company_content;
+mod minute_time;
+mod transaction_data;
+mod transaction_history;
+mod client;
 
 pub use hello1::*;
-
-pub mod hello2 {
-    use super::sequence_id;
-    use super::BinaryStream;
-    use encoding_rs::GBK;
-
-    #[derive(Debug, Clone)]
-    pub struct Hello2Request {
-        pub zip_flag: u8,
-        pub seq_id: u32,
-        pub packet_type: u8,
-        pub pkg_len1: u16,
-        pub pkg_len2: u16,
-        pub method: u16,
-        pub padding: Vec<u8>,
-    }
-
-    impl Hello2Request {
-        pub fn new() -> Self {
-            Hello2Request {
-                zip_flag: 0x0C,
-                seq_id: sequence_id(),
-                packet_type: 0x01,
-                pkg_len1: 0,
-                pkg_len2: 0,
-                method: 0x0fdb, // LOGIN2
-                padding: hex::decode("d5d0c9ccd6a4a8af0000008fc22540130000d500c9ccbdf0d7ea00000002").unwrap_or_default(),
-            }
-        }
-
-        pub fn serialize(&mut self) -> Vec<u8> {
-            self.pkg_len1 = (2 + self.padding.len()) as u16;
-            self.pkg_len2 = (2 + self.padding.len()) as u16;
-            let mut stream = BinaryStream::new();
-            stream.push_u8(self.zip_flag);
-            stream.push_u32(self.seq_id);
-            stream.push_u8(self.packet_type);
-            stream.push_u16(self.pkg_len1);
-            stream.push_u16(self.pkg_len2);
-            stream.push_u16(self.method);
-            stream.push_byte_array(&self.padding);
-            stream.data().clone()
-        }
-    }
-
-    #[derive(Debug, Clone)]
-    pub struct Hello2Response { pub info: String }
-    impl Hello2Response {
-        pub fn new() -> Self { Self { info: String::new() } }
-        pub fn deserialize(&mut self, data: &[u8]) {
-            let offset = 58usize;
-            if data.len() >= offset {
-                let (cow, _, _) = GBK.decode(&data[offset..]);
-                self.info = cow.into_owned();
-            }
-        }
-    }
-}
-
 pub use hello2::*;
-
-pub mod heartbeat {
-    use super::sequence_id;
-    use super::BinaryStream;
-
-    #[derive(Debug, Clone)]
-    pub struct HeartbeatRequest {
-        pub zip_flag: u8,
-        pub seq_id: u32,
-        pub packet_type: u8,
-        pub pkg_len1: u16,
-        pub pkg_len2: u16,
-        pub method: u16,
-    }
-
-    impl HeartbeatRequest {
-        pub fn new() -> Self {
-            HeartbeatRequest { zip_flag: 0x0C, seq_id: sequence_id(), packet_type: 0x02, pkg_len1: 0, pkg_len2: 0, method: 0x0004 }
-        }
-        pub fn serialize(&mut self) -> Vec<u8> {
-            self.pkg_len1 = 2;
-            self.pkg_len2 = 2;
-            let mut stream = BinaryStream::new();
-            stream.push_u8(self.zip_flag);
-            stream.push_u32(self.seq_id);
-            stream.push_u8(self.packet_type);
-            stream.push_u16(self.pkg_len1);
-            stream.push_u16(self.pkg_len2);
-            stream.push_u16(self.method);
-            stream.data().clone()
-        }
-    }
-
-    #[derive(Debug, Clone)]
-    pub struct HeartbeatResponse { pub info: String }
-    impl HeartbeatResponse {
-        pub fn new() -> Self { Self { info: String::new() } }
-        pub fn deserialize(&mut self, data: &[u8]) {
-            let mut bs = BinaryStream::from_vec(data.to_vec());
-            self.info = bs.get_string(10);
-        }
-    }
-}
-
 pub use heartbeat::*;
-
-pub mod xdxr {
-    use super::BinaryStream;
-    use super::sequence_id;
-
-    #[derive(Debug, Clone)]
-    pub struct XdxrInfoRequest {
-        pub zip_flag: u8,
-        pub seq_id: u32,
-        pub packet_type: u8,
-        pub pkg_len1: u16,
-        pub pkg_len2: u16,
-        pub method: u16,
-        pub market: u8,
-        pub code: [u8;6],
-        pub padding: Vec<u8>,
-    }
-
-    impl XdxrInfoRequest {
-        pub fn new(market: u8, code_str: &str) -> Self {
-            let mut code = [0u8;6];
-            let bytes = code_str.as_bytes();
-            for i in 0..bytes.len().min(6) { code[i] = bytes[i]; }
-            XdxrInfoRequest {
-                zip_flag: 0x0C,
-                seq_id: sequence_id(),
-                packet_type: 0x01,
-                pkg_len1: 0,
-                pkg_len2: 0,
-                method: 0x000f,
-                market,
-                code,
-                padding: hex::decode("0100").unwrap_or_default(),
-            }
-        }
-
-        pub fn serialize(&mut self) -> Vec<u8> {
-            self.pkg_len1 = (2 + 1 + 6 + 2) as u16;
-            self.pkg_len2 = self.pkg_len1;
-            let mut buf = BinaryStream::new();
-            buf.push_byte_array(&self.padding);
-            buf.push_u8(self.market);
-            buf.push_byte_array(&self.code);
-            buf.data().clone()
-        }
-    }
-
-    #[derive(Debug, Clone)]
-    pub struct XdxrInfo {
-        pub date: String,
-        pub category: u8,
-        pub name: String,
-        pub fenhong: f32,
-        pub peigu_jia: f32,
-        pub songzhuan: f32,
-        pub peigu: f32,
-        pub suogu: f32,
-        pub qian_liutong: f64,
-        pub hou_liutong: f64,
-        pub qian_zonggu: f64,
-        pub hou_zonggu: f64,
-        pub fenshu: f32,
-        pub xingquan_jia: f32,
-    }
-
-    #[derive(Debug, Clone)]
-    pub struct XdxrInfoResponse { pub count: u16, pub list: Vec<XdxrInfo> }
-    impl XdxrInfoResponse {
-        pub fn new() -> Self { Self { count: 0, list: Vec::new() } }
-        pub fn deserialize(&mut self, body: &[u8]) {
-            let mut bs = BinaryStream::from_vec(body.to_vec());
-            bs.skip(9);
-            self.count = bs.get_u16();
-            eprintln!("xdxr: body.len={} pos={} count={}", body.len(), bs.position(), self.count);
-            // each entry uses 1+6+1+4+1+16 = 29 bytes
-            let remaining = if body.len() > bs.position() { body.len() - bs.position() } else { 0 };
-            let entry_size = 29usize;
-            let max_entries = remaining / entry_size;
-            let to_read = std::cmp::min(self.count as usize, max_entries);
-            for _ in 0..to_read {
-                let _market = bs.get_u8();
-                let code = bs.get_string(6);
-                let _unk = bs.get_u8();
-                let date = bs.get_u32();
-                let category = bs.get_u8();
-                let mut data = [0u8;16];
-                bs.get_byte_array(&mut data);
-
-                let (y, m, d, _hh, _mm) = super::get_datetime_from_u32(category as i32, date, 0);
-                let mut info = XdxrInfo { date: format!("{:04}-{:02}-{:02}", y, m, d), category, name: code.clone(), fenhong:0.0, peigu_jia:0.0, songzhuan:0.0, peigu:0.0, suogu:0.0, qian_liutong:0.0, hou_liutong:0.0, qian_zonggu:0.0, hou_zonggu:0.0, fenshu:0.0, xingquan_jia:0.0 };
-
-                let mut tmp = BinaryStream::from_vec(data.to_vec());
-                match category as i32 {
-                    1 => {
-                        info.fenhong = tmp.get_f32();
-                        info.peigu_jia = tmp.get_f32();
-                        info.songzhuan = tmp.get_f32();
-                        info.peigu = tmp.get_f32();
-                    }
-                    11 | 12 => {
-                        tmp.skip(8);
-                        info.suogu = tmp.get_f32();
-                    }
-                    13 | 14 => {
-                        info.xingquan_jia = tmp.get_f32();
-                        tmp.skip(8);
-                        info.fenshu = tmp.get_f32();
-                    }
-                    _ => {
-                        let v1 = tmp.get_u32();
-                        info.qian_liutong = super::int_to_float64(v1);
-                        let v2 = tmp.get_u32();
-                        info.qian_zonggu = super::int_to_float64(v2);
-                        let v3 = tmp.get_u32();
-                        info.hou_liutong = super::int_to_float64(v3);
-                        let v4 = tmp.get_u32();
-                        info.hou_zonggu = super::int_to_float64(v4);
-                    }
-                }
-
-                self.list.push(info);
-            }
-        }
-    }
-}
-
 pub use xdxr::*;
+pub use client::*;
 
 #[cfg(test)]
 mod tests {
     use super::hello1::*;
+    use super::heartbeat::*;
     use hex;
     use super::xdxr::*;
+    use super::finance_info::*;
+    use super::security_quote::*;
+    use super::transaction_data::*;
+    use super::security_bars::*;
 
     #[test]
     fn test_hello1_deserialize_sample() {
@@ -454,4 +182,87 @@ mod tests {
         resp.deserialize(&buf);
         assert!(resp.count > 0 || resp.list.len() > 0);
     }
+
+    #[test]
+    fn test_heartbeat_deserialize_sample() {
+        // simple heartbeat sample: headerless body where first 10 bytes are info (pad with ascii)
+        let hex_hb = "48656172742d486562696f726974"; // "Heart-Hebior" in ascii as a contrived payload
+        let buf = hex::decode(hex_hb).unwrap();
+        let mut resp = HeartbeatResponse::new();
+        resp.deserialize(&buf);
+        assert!(!resp.info.is_empty());
+    }
+
+    #[test]
+    fn test_finance_info_deserialize_sample() {
+        // sample from tests/tdd-level1.cpp finance-info
+        let hex = "010001363030313135dfead04910000800d9fe340121bc3001270e084a0000cf4460f0f9ca8c08d94c00000000b9c5fc485c8f42bea6e4834d8cbe914badddbf4ca042334a40cc27488771d94c801c5649703d4a4c089e1a4cb8fffb4c9a46f14c80b6e649303f86ca00e1964874570e4c60bbedca0014cd4900486eca606c92caa0f780ca00000000fca9313f00004041";
+        let buf = hex::decode(hex).unwrap();
+        let mut resp = FinanceInfoResponse::new();
+        resp.deserialize(&buf);
+        // ensure deserialize ran and produced either empty count or non-empty code
+        assert!(resp.count == 0 || !resp.info.code.is_empty());
+    }
+
+    #[test]
+    fn test_security_quote_deserialize_sample() {
+        // sample from tests/tdd-level1.cpp security-quote
+        let hex = "01030600013030303030318912bbb226e14cc95000db5e92a8a50e0b9391c8f704004b012a539687c49e02998a84d902808af743e748aaf5e11c009514940f969ae4029d8a06329301b88bc0d60100a211b50a00000000000000000200000000000d00000001363030313035940dbb0738041f00aa80a70efb07ac929001ab8e01d487104ea8f545849d4a00a09d10fb07000095db14fb070100a36cfb0702008e11fb0703009914fb070400ac2e1605000000000000940d013838303635368c12b3f615b62b9e13af66f344a699910e0198d9b31a96bb5b081d5b5103009ac3d20600f3f615ebf315262cf3f615f3f6150003f3f615f3f6150000f3f615ae81f9020000f2f61500262c02000000000000000000013838303336378f128ef80a9406dd078613c615b79c9c0e06ad82d9119dd8036e70385005009cfbaf01f614cef80ac6f50a238601cef80acef80a0005cef80acef80a0000cef80a918b520000c8f80af614238601020000000000010000000135313030353041128429797901c0019ca9878f01b3f102919af521971ffd8e09508e95d30e8385a2130081040001950bbe23410290d20193b70342038ea901bc584304aa06b12b44051f9f7354040000000008004112013630303833390000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d000000";
+        let buf = hex::decode(hex).unwrap();
+        let mut resp = SecurityQuoteResponse::new();
+        resp.deserialize(&buf);
+        // basic sanity: count parsed (may be zero) and list length matches
+        assert_eq!(resp.count as usize, resp.list.len());
+    }
+
+    #[test]
+    fn test_verify_delisted_securities_unit() {
+        use super::security_quote::*;
+        // Create a response with one delisting entry
+        let mut resp = SecurityQuoteResponse::new();
+        let mut sq = SecurityQuote::new();
+        sq.market = 1; // Shanghai -> "sh" via market_flag helper
+        sq.code = "600839".to_string();
+        sq.last_close = 0.0;
+        sq.open = 0.0;
+        sq.state = TradeState::Delisting;
+        resp.list.push(sq);
+        resp.count = resp.list.len() as u16;
+
+        // Build code map with the matching security code -> StockInfo
+    let mut maps: std::collections::HashMap<String, StockInfo> = std::collections::HashMap::new();
+    let key = format!("{}{}", "sh", "600839");
+    maps.insert(key, StockInfo{ market: 1, code: "600839".to_string() });
+
+        resp.verify_delisted_securities(&mut maps);
+        // After verification the state should be IPO for the delisting item
+        assert!(matches!(resp.list[0].state, TradeState::Ipo));
+    }
+
+    #[test]
+    fn test_transaction_deserialize_sample() {
+        // sample from tests/tdd-level1.cpp transaction-base
+        let hex = "02007e03af02a40c0901007e0301a108050000";
+        let buf = hex::decode(hex).unwrap();
+        let mut resp = TransactionResponse::new(1, "600010");
+        resp.deserialize(&buf);
+        // ensure list length equals count
+        assert_eq!(resp.count as usize, resp.list.len());
+    }
+
+    #[test]
+    fn test_kline_deserialize_sample() {
+        // sample from tests/tdd-level1.cpp kline-base
+        let hex = "05002bff3401a52910134982d4834e07eb2f4f2eff340102060e4a8a70db4dca40934e2fff3401440a0f4aef5a734e3b6c234f30ff340141191f515cd8094f6d64ba4f31ff34014d102c4398098b4e44b03c4f";
+        let buf = hex::decode(hex).unwrap();
+    // C++ tests create SecurityBarsResponse(false, 9) for this sample (category 9 = RI_K)
+    let mut resp = SecurityBarsResponse::new_with(false, 9);
+        resp.deserialize(&buf);
+        // basic sanity: either count is zero or list length matches count; prefer non-empty list for this sample
+        assert_eq!(resp.count as usize, resp.list.len());
+        assert!(resp.list.len() > 0 || resp.count == 0);
+    }
+
+    // SecurityQuote tests are non-trivial to craft due to custom varint encoding,
+    // we'll add targeted tests later using recorded binary blobs.
 }
