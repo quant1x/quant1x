@@ -22,6 +22,7 @@ namespace io {
 
     static int64_t parse_http_date(const std::string& date) {
         auto ts = api::parse_date(date);
+        ts = api::ms_utc_to_local(ts);
         return ts;
     }
 
