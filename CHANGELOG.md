@@ -3,10 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.100] - 2025-09-29
+### Changed
+- rust/c++的首页设置在github,仓库在gitee
+
 ## [0.6.99] - 2025-09-29
 ### Changed
 - 调整main.rs路径与c++保持一致
 - 调整rust package的包含路径
+- update changelog
 
 ## [0.6.98] - 2025-09-29
 ### Changed
@@ -717,7 +722,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.99...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.100...HEAD
+[0.6.100]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.99...v0.6.100
 [0.6.99]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.98...v0.6.99
 [0.6.98]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.97...v0.6.98
 [0.6.97]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.96...v0.6.97
