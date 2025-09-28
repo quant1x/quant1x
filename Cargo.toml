@@ -1,6 +1,6 @@
 [package]
 name = "quant1x"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Quant1X Team"]
 description = "Cross-language standard library for quantitative trading"
@@ -21,6 +21,10 @@ include = [
 	"examples/**/*.rs",
 	"tests/*.rs",
 	"docs/README.md",
+]
+
+exclude = [
+    "third_party/**",
 ]
 
 [lib]
