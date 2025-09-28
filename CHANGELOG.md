@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.96] - 2025-09-28
+### Changed
+- rust工具包quant1x发布0.2.0版本
+
 ## [0.6.95] - 2025-09-28
 ### Changed
 - 补充部分rust level1协议
@@ -11,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - http协议时间时UTC，需要转成本地时间
 - 删除rust废弃的代码
 - 新增rust版本的level1协议的实现
+- update changelog
 
 ## [0.6.94] - 2025-09-27
 ### Changed
@@ -696,7 +701,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.95...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.96...HEAD
+[0.6.96]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.95...v0.6.96
 [0.6.95]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.94...v0.6.95
 [0.6.94]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.93...v0.6.94
 [0.6.93]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.92...v0.6.93
