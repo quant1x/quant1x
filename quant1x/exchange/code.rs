@@ -1,16 +1,276 @@
 // Minimal Rust implementation of market flag helper mirroring C++ `GetMarketFlag`
 pub fn get_market_flag(market: u8) -> &'static str {
     match market {
-        0 => "sz",
-        2 => "bj",
-        21 => "hk",
-        22 => "us",
-        1 => "sh",
-        _ => "sh",
+        MARKET_SHENZHEN => MARKET_FLAG_SZ,
+        MARKET_BEIJING => MARKET_FLAG_BJ,
+        MARKET_HONGKONG => MARKET_FLAG_HK,
+        MARKET_USA => MARKET_FLAG_US,
+        MARKET_SHANGHAI => MARKET_FLAG_SH,
+        _ => MARKET_FLAG_SH,
     }
 }
 
 /// Build a security code string like C++ `exchange::GetMarketFlag(...) + code`
 pub fn security_code(market: u8, code: &str) -> String {
     format!("{}{}", get_market_flag(market), code)
+}
+
+/// Detect market id, market flag and pure code from a security string.
+/// Mirrors C++ exchange::DetectMarket behavior for common prefixes.
+pub fn detect_market(security_code: &str) -> (u8, String, String) {
+    let s = security_code.trim();
+    let lower = s.to_lowercase();
+
+    // market flags and prefix tables - mirror C++ lists
+    // market flag constants
+    const MARKET_FLAGS: [&str; 5] = [MARKET_FLAG_SH, MARKET_FLAG_SZ, MARKET_FLAG_BJ, MARKET_FLAG_HK, MARKET_FLAG_US];
+    let shanghai_main = ["50", "51", "60", "68", "90", "110", "113", "132", "204"];
+    let shanghai_special = ["5", "6", "9", "7"];
+    let shanghai_other = ["88"];
+    let shenzhen_main = ["00", "12", "13", "18", "15", "16", "18", "20", "30", "39", "115", "1318"];
+    let beijing_main = ["4", "8"];
+
+    // 1) explicit prefix like sh600000 or sh.600000
+    for &flag in &MARKET_FLAGS {
+        if lower.starts_with(flag) {
+            let pure = if s.len() > 2 && &s[2..3] == "." { s[3..].to_string() } else { s[2..].to_string() };
+            let market_id = match flag {
+                MARKET_FLAG_SH => MARKET_SHANGHAI,
+                MARKET_FLAG_SZ => MARKET_SHENZHEN,
+                MARKET_FLAG_BJ => MARKET_BEIJING,
+                MARKET_FLAG_HK => MARKET_HONGKONG,
+                MARKET_FLAG_US => MARKET_USA,
+                _ => MARKET_SHANGHAI,
+            };
+            return (market_id, flag.to_string(), pure);
+        }
+    }
+
+    // 2) explicit suffix like 600000.sh (we follow C++ behavior and strip last 3 chars)
+    for &flag in &MARKET_FLAGS {
+        let suffix = format!(".{}", flag);
+        if lower.ends_with(&suffix) {
+            let len = s.len();
+            if len > 3 {
+                let market_code = flag.to_string();
+                let pure = s[..len - 3].to_string();
+                let market_id = match flag {
+                    MARKET_FLAG_SH => MARKET_SHANGHAI,
+                    MARKET_FLAG_SZ => MARKET_SHENZHEN,
+                    MARKET_FLAG_BJ => MARKET_BEIJING,
+                    MARKET_FLAG_HK => MARKET_HONGKONG,
+                    MARKET_FLAG_US => MARKET_USA,
+                    _ => MARKET_SHANGHAI,
+                };
+                return (market_id, market_code, pure);
+            }
+        }
+    }
+
+    // 3) no explicit marker: use prefix tables
+    for &p in &shanghai_main {
+        if lower.starts_with(p) { return (MARKET_SHANGHAI, MARKET_FLAG_SH.to_string(), s.to_string()); }
+    }
+    for &p in &shenzhen_main {
+        if lower.starts_with(p) { return (MARKET_SHENZHEN, MARKET_FLAG_SZ.to_string(), s.to_string()); }
+    }
+    for &p in &shanghai_special {
+        if lower.starts_with(p) { return (MARKET_SHANGHAI, MARKET_FLAG_SH.to_string(), s.to_string()); }
+    }
+    for &p in &shanghai_other {
+        if lower.starts_with(p) { return (MARKET_SHANGHAI, MARKET_FLAG_SH.to_string(), s.to_string()); }
+    }
+    for &p in &beijing_main {
+        if lower.starts_with(p) { return (MARKET_BEIJING, MARKET_FLAG_BJ.to_string(), s.to_string()); }
+    }
+
+    // default fallback: heuristic same as prior implementation
+    if s.starts_with('6') { (MARKET_SHANGHAI, MARKET_FLAG_SH.to_string(), s.to_string()) } else { (MARKET_SHENZHEN, MARKET_FLAG_SZ.to_string(), s.to_string()) }
+}
+
+// Market id constants (mirror C++ MarketType enum)
+pub const MARKET_SHENZHEN: u8 = 0;
+pub const MARKET_SHANGHAI: u8 = 1;
+pub const MARKET_BEIJING: u8 = 2;
+pub const MARKET_HONGKONG: u8 = 21;
+pub const MARKET_USA: u8 = 22;
+
+// Market flag string constants (mirror C++ constants)
+pub const MARKET_FLAG_SH: &str = "sh";
+pub const MARKET_FLAG_SZ: &str = "sz";
+pub const MARKET_FLAG_BJ: &str = "bj";
+pub const MARKET_FLAG_HK: &str = "hk";
+pub const MARKET_FLAG_US: &str = "us";
+
+/// Return true if the given market id and pure code represent an index.
+pub fn assert_index_by_market_and_code(market_id: u8, symbol: &str) -> bool {
+    let s = symbol.trim();
+    if market_id == 1 && (s.starts_with("000") || s.starts_with("880") || s.starts_with("881")) {
+        return true;
+    }
+    if market_id == 0 && s.starts_with("399") {
+        return true;
+    }
+    false
+}
+
+/// Return true if the full security code represents an index.
+pub fn assert_index_by_security_code(security_code: &str) -> bool {
+    let (market_id, _, code) = detect_market(security_code);
+    assert_index_by_market_and_code(market_id, &code)
+}
+
+/// If the provided full security code is a Shanghai block (880/881), normalize it in-place
+/// to the canonical form (flag+code) and return true. Otherwise return false.
+pub fn assert_block_by_security_code(security_code: &mut String) -> bool {
+    let (market_id, flag, code) = detect_market(security_code);
+    if market_id != 1 {
+        return false;
+    }
+    if !(code.starts_with("880") || code.starts_with("881")) {
+        return false;
+    }
+    *security_code = format!("{}{}", flag, code);
+    true
+}
+
+/// Return true if the given market id and pure code represent an ETF (Shanghai 510...)
+pub fn assert_etf_by_market_and_code(market_id: u8, symbol: &str) -> bool {
+    market_id == 1 && symbol.trim().starts_with("510")
+}
+
+/// Return true if the given market id and pure code represent an ordinary stock
+pub fn assert_stock_by_market_and_code(market_id: u8, symbol: &str) -> bool {
+    let s = symbol.trim();
+    if market_id == 1 && (s.starts_with("60") || s.starts_with("68") || s.starts_with("510")) {
+        return true;
+    }
+    if market_id == 0 && (s.starts_with("00") || s.starts_with("30")) {
+        return true;
+    }
+    false
+}
+
+/// Return true if the full security code represents a stock
+pub fn assert_stock_by_security_code(security_code: &str) -> bool {
+    let (market_id, _, code) = detect_market(security_code);
+    assert_stock_by_market_and_code(market_id, &code)
+}
+
+/// Normalize a security code string to the canonical flag+code format. Empty input => empty output.
+pub fn correct_security_code(symbol: &str) -> String {
+    if symbol.is_empty() {
+        return String::new();
+    }
+    let (_mid, flag, code) = detect_market(symbol);
+    format!("{}{}", flag, code)
+}
+
+/// Classification of a security code
+#[derive(Debug, PartialEq, Eq)]
+pub enum TargetKind {
+    Stock,
+    Index,
+    Block,
+    Etf,
+}
+
+/// Determine the kind of the security code (block/index/etf/stock)
+pub fn assert_code(security_code: &str) -> TargetKind {
+    let (market_id, _flag, code) = detect_market(security_code);
+    if market_id == 1 {
+        if code.starts_with("880") || code.starts_with("881") {
+            return TargetKind::Block;
+        }
+        if code.starts_with("000") {
+            return TargetKind::Index;
+        }
+        if code.starts_with("510") {
+            return TargetKind::Etf;
+        }
+    }
+    if market_id == 0 && code.starts_with("399") {
+        return TargetKind::Index;
+    }
+    TargetKind::Stock
+}
+
+/// Check whether the security code is either an index or a stock (mirrors C++ checkIndexAndStock)
+pub fn check_index_and_stock(security_code: &str) -> bool {
+    if assert_index_by_security_code(security_code) {
+        return true;
+    }
+    if assert_stock_by_security_code(security_code) {
+        return true;
+    }
+    false
+}
+
+#[cfg(test)]
+mod assert_tests {
+    use super::*;
+
+    #[test]
+    fn test_assert_index_and_stock_variants() {
+        // Index examples
+        assert!(assert_index_by_security_code("sh000001"));
+        assert!(assert_index_by_security_code("000001.sh"));
+        assert!(assert_index_by_security_code("399001"));
+
+        // Stock examples
+        assert!(assert_stock_by_security_code("sh600000"));
+        assert!(assert_stock_by_security_code("sz000001"));
+
+        // ETF example
+        assert!(assert_etf_by_market_and_code(1, "510500"));
+        assert_eq!(assert_code("sh880001"), TargetKind::Block);
+        assert_eq!(assert_code("sh000001"), TargetKind::Index);
+        assert_eq!(assert_code("sz399001"), TargetKind::Index);
+        assert_eq!(assert_code("sh600000"), TargetKind::Stock);
+    }
+
+    #[test]
+    fn test_assert_block_and_correct_code() {
+        let mut s = String::from("880001");
+        // Without flag, detect_market will infer Shanghai and assert_block should normalize
+        assert!(assert_block_by_security_code(&mut s));
+        assert_eq!(s, "sh880001");
+
+        let mut s2 = String::from("sz000001");
+        assert!(!assert_block_by_security_code(&mut s2));
+
+        assert_eq!(correct_security_code("600000"), "sh600000".to_string());
+        assert_eq!(correct_security_code("") , "".to_string());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::detect_market;
+
+    #[test]
+    fn test_detect_market_prefix_and_suffix() {
+        let cases = vec![
+            ("sh600000", 1u8, "sh", "600000"),
+            ("sh.600000", 1u8, "sh", "600000"),
+            ("600000.sh", 1u8, "sh", "600000"),
+            ("sz000001", 0u8, "sz", "000001"),
+            ("000001.sz", 0u8, "sz", "000001"),
+            ("000001", 0u8, "sz", "000001"),
+            ("600000", 1u8, "sh", "600000"),
+            ("400001", 2u8, "bj", "400001"),
+            ("880000", 1u8, "sh", "880000"),
+            ("115000", 0u8, "sz", "115000"),
+            ("hk00700", 21u8, "hk", "00700"),
+            ("00700.hk", 21u8, "hk", "00700"),
+            ("usAAPL", 22u8, "us", "AAPL"),
+        ];
+
+        for (input, exp_id, exp_flag, exp_pure) in cases {
+            let (id, flag, pure) = detect_market(input);
+            assert_eq!(id, exp_id, "id mismatch for input: {}", input);
+            assert_eq!(flag, exp_flag.to_string(), "flag mismatch for input: {}", input);
+            assert_eq!(pure.to_lowercase(), exp_pure.to_lowercase(), "pure mismatch for input: {} -> {}", input, pure);
+        }
+    }
 }

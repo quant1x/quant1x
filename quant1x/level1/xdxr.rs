@@ -1,6 +1,7 @@
 use super::BinaryStream;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct XdxrInfoRequest {
     pub zip_flag: u8,
     pub seq_id: u32,
@@ -14,9 +15,13 @@ pub struct XdxrInfoRequest {
 }
 
 impl XdxrInfoRequest {
-    pub fn new(market: u8, code_str: &str) -> Self {
+    /// Create request from a full security code string like "sh600000" or "600000".
+    /// This mirrors C++ DetectMarket behaviour: strip market prefix and set Market id.
+    pub fn new(security_code: &str) -> Self {
         let mut code = [0u8;6];
-        let bytes = code_str.as_bytes();
+    let (_mid, _flag, pure) = crate::exchange::detect_market(security_code);
+    let market = _mid;
+        let bytes = pure.as_bytes();
         for i in 0..bytes.len().min(6) { code[i] = bytes[i]; }
         XdxrInfoRequest {
             zip_flag: 0x0C,
@@ -32,17 +37,31 @@ impl XdxrInfoRequest {
     }
 
     pub fn serialize(&mut self) -> Vec<u8> {
-        self.pkg_len1 = (2 + 1 + 6 + 2) as u16;
+        // payload = padding + market(1) + code(6)
+        let payload_len = (self.padding.len() + 1 + self.code.len()) as u16;
+        // pkg_len includes method (2) + payload
+        self.pkg_len1 = 2u16 + payload_len;
         self.pkg_len2 = self.pkg_len1;
+
+        // Build header exactly like C++ RequestHeader::headerSerialize()
         let mut buf = BinaryStream::new();
+        buf.push_u8(self.zip_flag);
+        buf.push_u32(self.seq_id);
+        buf.push_u8(self.packet_type);
+        buf.push_u16(self.pkg_len1);
+        buf.push_u16(self.pkg_len2);
+        buf.push_u16(self.method);
+
+        // payload
         buf.push_byte_array(&self.padding);
         buf.push_u8(self.market);
         buf.push_byte_array(&self.code);
+
         buf.data().clone()
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct XdxrInfo {
     pub date: String,
     pub category: u8,
@@ -60,7 +79,7 @@ pub struct XdxrInfo {
     pub xingquan_jia: f32,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct XdxrInfoResponse { pub count: u16, pub list: Vec<XdxrInfo> }
 impl XdxrInfoResponse {
     pub fn new() -> Self { Self { count: 0, list: Vec::new() } }
@@ -116,5 +135,60 @@ impl XdxrInfoResponse {
 
             self.list.push(info);
         }
+    }
+}
+
+/// Fetch XDXR info for a single security code using the level1 client pool.
+/// Returns Some(XdxrInfoResponse) on success, None on any error.
+pub fn fetch_xdxr(code: &str) -> Option<XdxrInfoResponse> {
+    // XdxrInfoRequest::new will detect market and pure code from the supplied string
+
+    // Acquire a pooled client connection
+    match crate::level1::client::client() {
+        Ok(mut pooled) => {
+            // prepare request
+            let mut req = XdxrInfoRequest::new(code);
+            let req_buf = XdxrInfoRequest::serialize(&mut req);
+            // process_request does the write/read and optional unzip
+            match crate::level1::process_request(pooled.stream(), req_buf.as_slice()) {
+                Ok(body) => {
+                    let mut resp = XdxrInfoResponse::new();
+                    resp.deserialize(&body);
+                    // Log response summary to help observation/diagnostics
+                    log::info!("level1::xdxr - code={} count={}", code, resp.count);
+                    for (i, it) in resp.list.iter().enumerate() {
+                        log::debug!("level1::xdxr [{}] date={} category={} name={} fenhong={} peigu_jia={} songzhuan={} peigu={} suogu={} qian_liutong={} hou_liutong={} qian_zonggu={} hou_zonggu={} fenshu={} xingquan_jia={}",
+                            i, it.date, it.category, it.name, it.fenhong, it.peigu_jia, it.songzhuan, it.peigu, it.suogu, it.qian_liutong, it.hou_liutong, it.qian_zonggu, it.hou_zonggu, it.fenshu, it.xingquan_jia);
+                    }
+                    Some(resp)
+                }
+                Err(e) => {
+                    log::error!("level1 process_request error for {}: {}", code, e);
+                    None
+                }
+            }
+        }
+        Err(e) => {
+            log::error!("failed to acquire level1 client for {}: {}", code, e);
+            None
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_xdxr_request_encoding_matches_cpp() {
+        // Build request for code "sh600000" (we'll use "sh6000" 6-bytes) and force seq_id=3
+    let mut req = XdxrInfoRequest::new("sh600000");
+        req.seq_id = 3; // match the sequence observed in logs
+    let buf = XdxrInfoRequest::serialize(&mut req);
+    // Expected hex per C++ serializeImpl (little-endian fields):
+    // header(12): 0c 03 00 00 00 01 0b 00 0b 00 0f 00
+    // payload(9): 01 00 00 73 68 36 30 30 30
+    let expected_hex = "0c03000000010b000b000f00010001363030303030";
+    assert_eq!(hex::encode(&buf), expected_hex);
     }
 }

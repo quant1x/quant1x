@@ -1,3 +1,4 @@
+#![allow(hidden_glob_reexports, ambiguous_glob_reexports, dead_code, unused_imports)]
 //! Quant1X Standard Library for Rust
 //! 
 //! This library provides cross-language compatible utilities for quantitative trading,
@@ -43,18 +44,16 @@ mod runtime;
 pub use crate::runtime::*;
 
 // crate-level internal configuration module (used by exchange/calendar and tests)
-mod config;
+pub mod config;
+// small application-level shims for main.rs to call; these are no-op fallbacks
+mod app;
+pub use crate::app::*;
 
 // Level1 protocol bindings (partial, header-only equivalents)
 mod level1;
 pub use crate::level1::*;
 mod exchange;
 pub use crate::exchange::*;
-// top-level `config` module removed — `level1::config` remains internal to level1.
-
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
 
 /// Return the filename used for the calendar cache (convenience wrapper around
 /// the internal config helper). This is intentionally a tiny, stable API so
@@ -64,15 +63,34 @@ pub fn get_calendar_filename() -> String {
     config::get_calendar_filename()
 }
 
+/// Public wrapper to return the meta directory path (eg. ~/.q2x-rust/meta)
+pub fn get_meta_path() -> String {
+    config::get_meta_path()
+}
+
+/// Public wrapper to return the securities CSV filename under meta
+pub fn get_security_filename() -> String {
+    config::get_security_filename()
+}
+
+/// Public wrapper to return the xdxr cache directory
+pub fn get_xdxr_path() -> String {
+    config::get_xdxr_path()
+}
+
+/// Public wrapper for default home path
+pub fn default_home_path() -> String {
+    config::default_home_path()
+}
+
+/// Public wrapper for default cache path
+pub fn default_cache_path() -> String {
+    config::default_cache_path()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
 
     #[test]
     fn test_timestamp_integration() {

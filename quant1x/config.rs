@@ -115,26 +115,53 @@ pub fn default_cache_path() -> String {
 }
 
 pub fn get_meta_path() -> String {
-    format!("{}/meta", default_home_path())
+    let mut p = std::path::PathBuf::from(default_home_path());
+    p.push("meta");
+    p.to_string_lossy().to_string()
 }
 
 pub fn get_logs_path() -> String {
-    format!("{}/logs", default_cache_path())
+    let mut p = std::path::PathBuf::from(default_cache_path());
+    p.push("logs");
+    p.to_string_lossy().to_string()
 }
 
 pub fn get_calendar_filename() -> String {
-    format!("{}/calendar", get_meta_path())
+    let mut p = std::path::PathBuf::from(get_meta_path());
+    p.push("calendar");
+    p.to_string_lossy().to_string()
 }
 
 pub fn get_security_filename() -> String {
-    format!("{}/securities.csv", get_meta_path())
+    let mut p = std::path::PathBuf::from(get_meta_path());
+    p.push("securities.csv");
+    p.to_string_lossy().to_string()
 }
 
 // helper: get file paths following C++ layout
-pub fn get_xdxr_path() -> String { format!("{}/xdxr", default_cache_path()) }
-pub fn get_day_path() -> String { format!("{}/day", default_cache_path()) }
-pub fn get_kline_path(freq: &str) -> String { format!("{}/{}", default_cache_path(), freq) }
-pub fn get_minute_path() -> String { format!("{}/minutes", default_cache_path()) }
+pub fn get_xdxr_path() -> String {
+    let mut p = std::path::PathBuf::from(default_cache_path());
+    p.push("xdxr");
+    p.to_string_lossy().to_string()
+}
+
+pub fn get_day_path() -> String {
+    let mut p = std::path::PathBuf::from(default_cache_path());
+    p.push("day");
+    p.to_string_lossy().to_string()
+}
+
+pub fn get_kline_path(freq: &str) -> String {
+    let mut p = std::path::PathBuf::from(default_cache_path());
+    p.push(freq);
+    p.to_string_lossy().to_string()
+}
+
+pub fn get_minute_path() -> String {
+    let mut p = std::path::PathBuf::from(default_cache_path());
+    p.push("minutes");
+    p.to_string_lossy().to_string()
+}
 
 // cache id utils (very small port of C++ helpers)
 pub fn cache_id(code: &str) -> String {
@@ -149,3 +176,42 @@ pub fn cache_id_path(code: &str) -> String {
 }
 
 pub fn get_holding_path() -> String { format!("{}/holding", default_cache_path()) }
+
+/// Return the full filename for an xdxr cache file for `code`.
+/// Mirrors C++ behavior: files are stored under <cache>/xdxr/<prefix>/<code>.csv
+pub fn get_xdxr_filename(code: &str) -> String {
+    // try to mirror C++ layout which keeps a prefix path to avoid too many files
+    let suffix_len = 3usize;
+    let mut path = std::path::PathBuf::from(get_xdxr_path());
+    if code.len() > suffix_len {
+        let prefix = &code[..code.len() - suffix_len];
+        // sanitize prefix to avoid accidental drive letters or path separators
+        let safe_prefix: String = prefix.chars().map(|c| if c == ':' || c == '\\' || c == '/' { '_' } else { c }).collect();
+        path.push(safe_prefix);
+    }
+    // ensure directory exists when caller needs to write
+    let filename = format!("{}.csv", code);
+    path.push(filename);
+    path.to_string_lossy().to_string()
+}
+
+/// Return the path where block/sector metadata files (tdxzs.cfg, tdxhy.cfg, etc.) are located.
+/// We mirror the C++ behavior by looking for a bundled resources/meta directory inside
+/// the crate workspace; fall back to <cache>/resources/meta if not present.
+pub fn get_block_path() -> String {
+    // prefer resources/meta inside the source tree (useful for tests and dev)
+    let mut p = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    p.push("resources");
+    p.push("meta");
+    if p.exists() {
+        return p.to_string_lossy().to_string();
+    }
+
+    // fallback to cache-based resources/meta
+    let mut p2 = std::path::PathBuf::from(default_cache_path());
+    p2.push("resources");
+    p2.push("meta");
+    // ensure directory exists when possible
+    let _ = std::fs::create_dir_all(&p2);
+    p2.to_string_lossy().to_string()
+}

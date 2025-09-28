@@ -5,6 +5,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use mio::net::TcpStream;
+use std::net::TcpStream as StdTcpStream;
 
 /// Trait that the user of the connection pool should implement to perform
 /// protocol-specific work: handshake and keepalive checks.
@@ -57,14 +58,35 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
             let mut idle = pool.idle.lock().unwrap();
             for _ in 0..min {
                 if let Some(ep) = pool.endpoint_manager.acquire_endpoint() {
-                    if let Ok(mut stream) = TcpStream::connect(ep) {
-                        let _ = stream.set_nodelay(true);
-                        // run handshake but ignore errors during pre-warm
-                        let _ = pool.handler.handshake(&mut stream);
-                        idle.push_back(Connection::new(stream, ep));
-                    } else {
-                        // if connect failed, release endpoint slot
-                        pool.endpoint_manager.release_endpoint(ep);
+                    // Use connect_timeout with a short pre-warm timeout so startup
+                    // doesn't block for long when endpoints are unreachable.
+                    let timeout = std::time::Duration::from_millis(500);
+                    log::info!("connection_pool: pre-warm trying to connect to {} (timeout {:?})", ep, timeout);
+                    match StdTcpStream::connect_timeout(&ep, timeout) {
+                        Ok(std_stream) => {
+                            let _ = std_stream.set_nodelay(true);
+                            // set read/write timeouts to avoid blocking indefinitely
+                            let _ = std_stream.set_read_timeout(Some(timeout));
+                            let _ = std_stream.set_write_timeout(Some(timeout));
+                            // Convert to mio TcpStream
+                            let mut stream = TcpStream::from_std(std_stream);
+                            // run handshake but ignore errors during pre-warm
+                            match pool.handler.handshake(&mut stream) {
+                                Ok(()) => {
+                                    log::info!("connection_pool: pre-warm handshake ok for {}", ep);
+                                    idle.push_back(Connection::new(stream, ep));
+                                }
+                                Err(e) => {
+                                    log::warn!("connection_pool: pre-warm handshake failed for {}: {}", ep, e);
+                                    pool.endpoint_manager.release_endpoint(ep);
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            log::warn!("connection_pool: pre-warm connect to {} failed: {}", ep, e);
+                            // if connect failed, release endpoint slot
+                            pool.endpoint_manager.release_endpoint(ep);
+                        }
                     }
                 } else {
                     break;
@@ -150,12 +172,22 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
             None => return Err(std::io::Error::new(std::io::ErrorKind::Other, "No available endpoints")),
         };
 
-        // Create a new non-blocking TcpStream and connect
-        let mut stream = TcpStream::connect(endpoint)?;
-        stream.set_nodelay(true)?;
+        // Create a new TcpStream and connect with timeout to avoid long hangs.
+        let timeout = self.handler.timeout();
+    log::info!("connection_pool: acquire connecting to {} with timeout {:?}", endpoint, timeout);
+        let std_stream = StdTcpStream::connect_timeout(&endpoint, timeout)?;
+        std_stream.set_nodelay(true)?;
+        // set read/write timeouts so handshake and subsequent process_request reads time out
+        std_stream.set_read_timeout(Some(timeout))?;
+        std_stream.set_write_timeout(Some(timeout))?;
+        let mut stream = TcpStream::from_std(std_stream);
 
         // perform handshake via handler
-        self.handler.handshake(&mut stream)?;
+    log::info!("connection_pool: running handshake for {}", endpoint);
+        match self.handler.handshake(&mut stream) {
+            Ok(()) => log::info!("connection_pool: handshake succeeded for {}", endpoint),
+            Err(e) => { log::error!("connection_pool: handshake failed for {}: {}", endpoint, e); return Err(e); }
+        }
 
         let conn = Connection::new(stream, endpoint);
         Ok(PooledConnection { pool: Arc::clone(self), conn: Some(conn) })

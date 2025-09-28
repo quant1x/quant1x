@@ -1,4 +1,91 @@
+#![allow(dead_code)]
 use crate::std::BinaryStream;
+use super::sequence_id;
+
+// Request builder for HISTORY_MINUTE_DATA
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct HistoryMinuteTimeRequest {
+	pub zip_flag: u8,
+	pub seq_id: u32,
+	pub packet_type: u8,
+	pub pkg_len1: u16,
+	pub pkg_len2: u16,
+	pub method: u16,
+	pub date: u32,
+	pub market: u8,
+	pub code: [u8; 6],
+}
+
+impl HistoryMinuteTimeRequest {
+	pub fn new(security_code: &str, date: u32) -> Self {
+	let (market, _flag, pure) = crate::exchange::detect_market(security_code);
+		let mut code = [0u8;6];
+		let sym = pure.as_bytes();
+		let copy_len = std::cmp::min(sym.len(), 6);
+		code[..copy_len].copy_from_slice(&sym[..copy_len]);
+
+		HistoryMinuteTimeRequest {
+			zip_flag: 0x0C,
+			seq_id: sequence_id(),
+			packet_type: 0x00,
+			pkg_len1: 0,
+			pkg_len2: 0,
+			method: 0x0521, // StdCommand::HISTORY_MINUTE_DATA
+			date,
+			market,
+			code,
+		}
+	}
+
+	pub fn serialize(&mut self) -> Vec<u8> {
+		// payload Date(u32) + Market(u8) + Code[6] -> 4+1+6 = 11
+		self.pkg_len1 = 2u16 + 4u16 + 1u16 + 6u16;
+		self.pkg_len2 = self.pkg_len1;
+
+		let mut header = BinaryStream::new();
+		header.push_u8(self.zip_flag);
+		header.push_u32(self.seq_id);
+		header.push_u8(self.packet_type);
+		header.push_u16(self.pkg_len1);
+		header.push_u16(self.pkg_len2);
+		header.push_u16(self.method);
+
+		let mut stream = BinaryStream::new();
+		stream.push_u32(self.date);
+		stream.push_u8(self.market);
+		stream.push_byte_array(&self.code);
+
+		let mut buf = header.data().clone();
+		let data = stream.data();
+		buf.extend_from_slice(data);
+		buf
+	}
+}
+
+pub fn fetch_history_minute_time(security_code: &str, date: u32) -> Option<MinuteTimeResponse> {
+	match crate::level1::client::client() {
+		Ok(mut pooled) => {
+			let mut req = HistoryMinuteTimeRequest::new(security_code, date);
+			let req_buf = req.serialize();
+			match crate::level1::process_request(pooled.stream(), req_buf.as_slice()) {
+				Ok(body) => {
+					let mut resp = MinuteTimeResponse::new(req.market as i32, &String::from_utf8_lossy(&req.code));
+					resp.deserialize(&body);
+					Some(resp)
+				}
+				Err(e) => {
+					log::error!("level1 process_request error for history_minute_time {} date {}: {}", security_code, date, e);
+					None
+				}
+			}
+		}
+		Err(e) => {
+			log::error!("failed to acquire level1 client for history_minute_time {} date {}: {}", security_code, date, e);
+			None
+		}
+	}
+}
 
 #[derive(Debug, Clone)]
 pub struct MinuteTime {

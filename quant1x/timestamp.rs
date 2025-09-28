@@ -557,7 +557,7 @@ mod tests {
             }
         }
         
-        println!("\n=== 测试 parse_time() 的灵活性 ===");
+    println!("\n=== 测试 parse_time() 的灵活性 ===");
         
         // parse_time() 主要用于时间，但也能处理完整日期时间
         let test_cases_parse_time = vec![
@@ -603,15 +603,15 @@ mod tests {
             }
         }
         
-        println!("\n=== 测试用户使用场景 ===");
+    println!("\n=== 测试用户使用场景 ===");
         
         // 用户场景1: 只关注时分秒，不关注日期
         let time_only = Timestamp::parse_time("14:30:45").unwrap();
-        println!("用户场景1 - 只关注时间: parse_time('14:30:45') -> {}", time_only.to_string());
+    println!("用户场景1 - 只关注时间: parse_time('14:30:45') -> {}", time_only.to_string());
         
         // 用户场景2: 传入完整日期时间给parse_time，不应该失败
         let full_datetime = Timestamp::parse_time("2022-06-15 14:30:45").unwrap();
-        println!("用户场景2 - 完整日期时间给parse_time: parse_time('2022-06-15 14:30:45') -> {}", full_datetime.to_string());
+    println!("用户场景2 - 完整日期时间给parse_time: parse_time('2022-06-15 14:30:45') -> {}", full_datetime.to_string());
         
         // 验证两种场景都成功了
         assert_eq!(time_only.to_datetime().hour(), 14);
@@ -622,7 +622,7 @@ mod tests {
         assert_eq!(full_datetime.to_datetime().minute(), 30);
         assert_eq!(full_datetime.to_datetime().second(), 45);
         
-        println!("✓ 所有用户场景测试通过！");
+    println!("✓ 所有用户场景测试通过！");
     }
 
     #[test]

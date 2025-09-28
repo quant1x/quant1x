@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
+use csv;
 
 /// Integration test: when the local calendar cache is missing, the loader should
 /// download, decode using CalendarDecoder, and write the cache file.
@@ -22,22 +23,18 @@ fn download_and_cache_calendar_creates_file() {
     assert!(path.exists(), "calendar cache file was not created: {:?}", path);
 
     let contents = fs::read_to_string(&path).expect("read created calendar cache");
-    // Count only date rows (skip CSV header). Lines like "YYYY-MM-DD,source" are valid.
-    let date_lines: Vec<&str> = contents
-        .lines()
-        .map(|l| l.trim())
-        .filter(|l| !l.is_empty())
-        .filter(|l| {
-            // skip header if present
-            if l.to_lowercase().starts_with("date") { return false; }
-            // expect format YYYY-MM-DD, maybe with a trailing ,source
-            if let Some(first) = l.split(',').next() {
-                let s = first.trim();
-                return s.len() == 10 && s.as_bytes()[4] == b'-' && s.as_bytes()[7] == b'-';
+    // Parse CSV robustly (skip header) and collect date rows from first column
+    let mut rdr = csv::ReaderBuilder::new().has_headers(true).from_reader(contents.as_bytes());
+    let mut date_lines: Vec<String> = Vec::new();
+    for result in rdr.records() {
+        let record = result.expect("csv record");
+        if let Some(first) = record.get(0) {
+            let s = first.trim();
+            if s.len() == 10 && s.as_bytes()[4] == b'-' && s.as_bytes()[7] == b'-' {
+                date_lines.push(s.to_string());
             }
-            false
-        })
-        .collect();
+        }
+    }
     assert!(!date_lines.is_empty(), "calendar cache file has no date rows");
 
     // And the returned in-memory list should have the same length as the date rows.

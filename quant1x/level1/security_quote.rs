@@ -3,6 +3,8 @@
 use crate::std::BinaryStream;
 use crate::Timestamp;
 use std::collections::{HashMap, VecDeque};
+use super::sequence_id;
+use hex;
 
 #[derive(Debug, Clone)]
 pub enum TradeState { Delisting, Normal, Suspend, Ipo }
@@ -83,6 +85,121 @@ impl SecurityQuote {
 			active2: 0,
 			time_stamp: String::new(),
 			state: TradeState::Normal,
+		}
+	}
+}
+
+/// Request builder for SECURITY_QUOTES (old)
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct SecurityQuoteRequest {
+	pub zip_flag: u8,
+	pub seq_id: u32,
+	pub packet_type: u8,
+	pub pkg_len1: u16,
+	pub pkg_len2: u16,
+	pub method: u16,
+	pub padding: Vec<u8>,
+	pub list: Vec<StockInfo>,
+}
+
+impl SecurityQuoteRequest {
+	pub fn new(codes: &[String]) -> Self {
+		let mut list: Vec<StockInfo> = Vec::new();
+		for s in codes.iter() {
+			let sc = s.trim();
+			if sc.is_empty() { continue; }
+			let (market, _flag, pure) = crate::exchange::detect_market(sc);
+			let mut code = pure.clone();
+			// ensure at most 6 chars
+			if code.len() > 6 { code.truncate(6); }
+			list.push(StockInfo { market, code });
+		}
+
+		SecurityQuoteRequest {
+			zip_flag: 0x0C,
+			seq_id: sequence_id(),
+			packet_type: 0x01,
+			pkg_len1: 0,
+			pkg_len2: 0,
+			method: 0x053e,
+			padding: hex::decode("0500000000000000").unwrap_or_default(),
+			list,
+		}
+	}
+
+	pub fn serialize(&mut self) -> Vec<u8> {
+		let count = self.list.len();
+		// PkgLen1 = 2 (count) + count*7 (1 market + 6 code) + 10 (padding/header extras per C++)
+		self.pkg_len1 = 2u16 + (count as u16).saturating_mul(7u16) + 10u16;
+		self.pkg_len2 = self.pkg_len1;
+
+		let mut buf = BinaryStream::new();
+		buf.push_u8(self.zip_flag);
+		buf.push_u32(self.seq_id);
+		buf.push_u8(self.packet_type);
+		buf.push_u16(self.pkg_len1);
+		buf.push_u16(self.pkg_len2);
+		buf.push_u16(self.method);
+
+		// padding
+		buf.push_byte_array(&self.padding);
+
+		// count
+		buf.push_u16(count as u16);
+
+		// entries: market (u8) + code (6 bytes)
+		for it in self.list.iter() {
+			buf.push_u8(it.market);
+			let mut code_bytes = [0u8; 6];
+			let b = it.code.as_bytes();
+			for i in 0..b.len().min(6) { code_bytes[i] = b[i]; }
+			buf.push_byte_array(&code_bytes);
+		}
+
+		buf.data().clone()
+	}
+}
+
+/// Fetch immediate quotes for a list of security codes. The request/response
+/// encoding/decoding is kept inside level1. Returns Some(SecurityQuoteResponse)
+/// on success, None on IO error.
+pub fn fetch_security_quote(codes: &[String]) -> Option<SecurityQuoteResponse> {
+	match crate::level1::client::client() {
+		Ok(mut pooled) => {
+			let mut req = SecurityQuoteRequest::new(codes);
+
+			// build a code map for verify_delisted_securities
+			let mut code_map: HashMap<String, StockInfo> = HashMap::new();
+			for it in req.list.iter() {
+				let prefix = match it.market {
+					1 => "sh",
+					0 => "sz",
+					2 => "bj",
+					_ => "sz",
+				};
+				let key = format!("{}{}", prefix, it.code);
+				code_map.insert(key, StockInfo{ market: it.market, code: it.code.clone() });
+			}
+
+			let req_buf = req.serialize();
+			match crate::level1::process_request(pooled.stream(), req_buf.as_slice()) {
+				Ok(body) => {
+					let mut resp = SecurityQuoteResponse::new();
+					resp.deserialize(&body);
+					resp.verify_delisted_securities(&mut code_map);
+					log::info!("level1::security_quote - requested={} received_count={}", codes.len(), resp.count);
+					Some(resp)
+				}
+				Err(e) => {
+					log::error!("level1 process_request error for security_quote: {}", e);
+					None
+				}
+			}
+		}
+		Err(e) => {
+			log::error!("failed to acquire level1 client for security_quote: {}", e);
+			None
 		}
 	}
 }

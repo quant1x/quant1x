@@ -2,7 +2,8 @@ use crate::timestamp::Timestamp;
 use once_cell::sync::Lazy;
 use std::sync::Mutex;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
+use std::io::Write;
+use csv;
 use std::fs::OpenOptions;
 use filetime::FileTime;
 use httpdate::parse_http_date;
@@ -36,40 +37,35 @@ fn default_calendar_path() -> PathBuf {
 }
 
 fn load_calendar_from_file(path: PathBuf) -> std::io::Result<()> {
-    let f = match File::open(&path) {
-        Ok(f) => f,
-        Err(e) => {
-            // try to download and cache
-            log::debug!("calendar file missing, try downloading: {}", e);
-            if let Err(err) = download_and_cache_calendar(&path) {
-                log::debug!("download calendar failed: {}", err);
-                return Err(e);
-            }
-            File::open(&path)?
+    // Ensure file exists: try download if missing, otherwise proceed to read contents
+    if !path.exists() {
+        log::debug!("calendar file missing, try downloading");
+        if let Err(err) = download_and_cache_calendar(&path) {
+            log::debug!("download calendar failed: {}", err);
+            return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "calendar missing"));
         }
-    };
-    let reader = BufReader::new(f);
+    }
     let mut strs = Vec::new();
     let mut tss = Vec::new();
-    for line in reader.lines() {
-        let s = line?;
-        let s = s.trim().to_string();
-        if s.is_empty() { continue; }
-        // skip header if present
-        if s.starts_with("date") || s.starts_with("Date") { continue; }
-        // CSV may have "YYYY-MM-DD,source"; extract first column as date
-        let date_str = s.split(',').next().map(|v| v.trim().to_string()).unwrap_or(s.clone());
-        if date_str.is_empty() { continue; }
-        strs.push(date_str.clone());
-        if let Ok(ts) = Timestamp::parse(&date_str) {
-            if let Some(pre) = Timestamp::pre_market_time(ts.extract().0, ts.extract().1, ts.extract().2) {
-                tss.push(pre);
-                continue;
+    // Use CSV parser to handle headers/quoting robustly. Read entire file into memory
+    // and parse with the csv crate (first column is the date).
+    let contents = std::fs::read_to_string(&path)?;
+    let mut rdr = csv::ReaderBuilder::new().has_headers(true).from_reader(contents.as_bytes());
+    for result in rdr.records() {
+        let record = result?;
+        if let Some(first) = record.get(0) {
+            let date_str = first.trim().to_string();
+            if date_str.is_empty() { continue; }
+            strs.push(date_str.clone());
+            if let Ok(ts) = Timestamp::parse(&date_str) {
+                if let Some(pre) = Timestamp::pre_market_time(ts.extract().0, ts.extract().1, ts.extract().2) {
+                    tss.push(pre);
+                    continue;
+                }
             }
-        }
-        // fallback: try parse as YYYY-MM-DD into midnight then pre_market_time
-        if let Ok(ts2) = Timestamp::parse(&date_str) {
-            tss.push(ts2);
+            if let Ok(ts2) = Timestamp::parse(&date_str) {
+                tss.push(ts2);
+            }
         }
     }
     {

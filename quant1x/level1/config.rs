@@ -68,7 +68,7 @@ pub fn save_cached_servers(servers: &[ServerInfo]) {
 }
 
 /// A small standard server list (partial) copied from the C++ port for detection.
-fn standard_server_list() -> Vec<ServerInfo> {
+pub fn standard_server_list() -> Vec<ServerInfo> {
     vec![
         ServerInfo { name: "通达信".to_string(), desc: "深圳双线主站1".to_string(), host: "110.41.147.114".to_string(), port: 7709, latency_ms: 0 },
         ServerInfo { name: "通达信".to_string(), desc: "深圳双线主站2".to_string(), host: "110.41.2.72".to_string(), port: 7709, latency_ms: 0 },

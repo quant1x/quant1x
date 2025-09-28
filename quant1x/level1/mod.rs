@@ -93,6 +93,9 @@ pub fn unzip(body: Vec<u8>, unzipped_size: usize) -> std::io::Result<Vec<u8>> {
 /// level1 response header and body, and return the (possibly decompressed)
 /// body bytes. This mirrors the C++ `level1::process()` unzip semantics.
 pub fn process_request(stream: &mut MioTcpStream, req_buf: &[u8]) -> std::io::Result<Vec<u8>> {
+    // Log outgoing request bytes for protocol debugging
+    log::info!("level1::process_request - sending request ({} bytes): {}", req_buf.len(), hex::encode(req_buf));
+
     // Write the request
     stream.write_all(req_buf)?;
 
@@ -100,15 +103,25 @@ pub fn process_request(stream: &mut MioTcpStream, req_buf: &[u8]) -> std::io::Re
     let mut hdr = [0u8; 16];
     stream.read_exact(&mut hdr)?;
 
+    // Log raw header bytes to help debugging protocol parsing
+    // Convert to hex for easy comparison with C++ dumps
+    let hdr_vec = hdr.to_vec();
+    if let Ok(h) = String::from_utf8(hex::encode(&hdr_vec).into_bytes()) {
+        log::debug!("level1::process_request - raw response header: {}", h);
+    }
+
     // Parse header fields (little-endian)
-    let mut bs = crate::std::BinaryStream::from_vec(hdr.to_vec());
-    let _i1 = bs.get_u32();
-    let _zip_flag = bs.get_u8();
-    let _seq_id = bs.get_u32();
-    let _i2 = bs.get_u8();
-    let _method = bs.get_u16();
+    let mut bs = crate::std::BinaryStream::from_vec(hdr_vec.clone());
+    let i1 = bs.get_u32();
+    let zip_flag = bs.get_u8();
+    let seq_id = bs.get_u32();
+    let i2 = bs.get_u8();
+    let method = bs.get_u16();
     let zip_size = bs.get_u16() as usize;
     let unzip_size = bs.get_u16() as usize;
+
+    log::info!("level1::process_request - parsed header: I1={}, ZipFlag={}, SeqID={}, I2={}, Method=0x{:04x}, ZipSize={}, UnZipSize={}",
+              i1, zip_flag, seq_id, i2, method, zip_size, unzip_size);
 
     if zip_size == 0 {
         return Ok(Vec::new());
@@ -119,23 +132,29 @@ pub fn process_request(stream: &mut MioTcpStream, req_buf: &[u8]) -> std::io::Re
     stream.read_exact(&mut body)?;
 
     // Decompress if needed
-    if zip_size != unzip_size {
-        let un = unzip(body, unzip_size)?;
-        Ok(un)
+    let final_body = if zip_size != unzip_size {
+        unzip(body, unzip_size)?
     } else {
-        Ok(body)
+        body
+    };
+
+    // Log body hex for debugging
+    if let Ok(h) = String::from_utf8(hex::encode(&final_body).into_bytes()) {
+        log::debug!("level1::process_request - response body ({} bytes): {}", final_body.len(), h);
     }
+
+    Ok(final_body)
 }
 mod hello1;
 mod hello2;
 mod heartbeat;
-mod config;
-mod xdxr;
+pub mod config;
+pub mod xdxr;
 mod finance_info;
 mod index_bars;
 mod security_bars;
 mod security_count;
-mod security_list;
+pub mod security_list;
 mod security_quote;
 mod block_info;
 mod block_meta;
