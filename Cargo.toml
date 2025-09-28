@@ -1,11 +1,15 @@
 [package]
 name = "quant1x"
-version = "0.2.0"
+version = "0.4.0"
 edition = "2021"
 authors = ["Quant1X Team"]
 description = "Cross-language standard library for quantitative trading"
 license = "MIT"
 readme = "README.md"
+homepage = "https://github.com/Quant1X/quant1x"
+repository = "https://github.com/Quant1X/quant1x"
+documentation = "https://github.com/Quant1X/quant1x"
+
 
 # Prefer an explicit include whitelist. This is more reliable than trying to
 # exclude by extension because `cargo package` by default includes many
@@ -14,9 +18,11 @@ readme = "README.md"
 include = [
 	"Cargo.toml",
 	"README.md",
+    "CHANGELOG.md",
 	"LICENSE",
 	"quant1x/**/*.rs",
 	"quant1x/*.rs",
+    "main.rs",
 	"examples/*.rs",
 	"examples/**/*.rs",
 	"tests/*.rs",
@@ -24,7 +30,7 @@ include = [
 ]
 
 exclude = [
-    "third_party/**",
+    "third_party/**/*",
 ]
 
 [lib]
@@ -61,5 +67,5 @@ mockito = "1.0"
 
 [[bin]]
 name = "stock"
-path = "src/main.rs"
+path = "main.rs"
 
