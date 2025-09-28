@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.97] - 2025-09-28
+### Changed
+- rust补全证券代码
+
 ## [0.6.96] - 2025-09-28
 ### Changed
 - rust工具包quant1x发布0.2.0版本
+- update changelog
 
 ## [0.6.95] - 2025-09-28
 ### Changed
@@ -701,7 +706,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.96...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.97...HEAD
+[0.6.97]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.96...v0.6.97
 [0.6.96]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.95...v0.6.96
 [0.6.95]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.94...v0.6.95
 [0.6.94]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.93...v0.6.94
