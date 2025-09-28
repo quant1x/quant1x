@@ -291,7 +291,10 @@ namespace io {
         return exec_filename;
     }
 
-    int64_t last_modified_time(const std::string& filename) {
+    int64_t last_modified_time(const std::string &filename) {
+        if (!std::filesystem::exists(filename)) {
+            return 0;
+        }
         auto mtime = std::filesystem::last_write_time(filename);
 
         // 使用 clock_cast 转换为 system_clock 的时间点
