@@ -3,9 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.99] - 2025-09-29
+### Changed
+- 调整main.rs路径与c++保持一致
+- 调整rust package的包含路径
+
 ## [0.6.98] - 2025-09-29
 ### Changed
 - 修复kline数据处理没有遵循”每页最新优先“的bug
+- update changelog
 
 ## [0.6.97] - 2025-09-28
 ### Changed
@@ -711,7 +717,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.98...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.99...HEAD
+[0.6.99]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.98...v0.6.99
 [0.6.98]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.97...v0.6.98
 [0.6.97]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.96...v0.6.97
 [0.6.96]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.95...v0.6.96
