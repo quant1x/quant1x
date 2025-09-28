@@ -19,8 +19,8 @@ impl XdxrInfoRequest {
     /// This mirrors C++ DetectMarket behaviour: strip market prefix and set Market id.
     pub fn new(security_code: &str) -> Self {
         let mut code = [0u8;6];
-    let (_mid, _flag, pure) = crate::exchange::detect_market(security_code);
-    let market = _mid;
+        let (_mid, _flag, pure) = crate::exchange::detect_market(security_code);
+        let market = _mid;
         let bytes = pure.as_bytes();
         for i in 0..bytes.len().min(6) { code[i] = bytes[i]; }
         XdxrInfoRequest {
@@ -63,20 +63,56 @@ impl XdxrInfoRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct XdxrInfo {
+    #[serde(rename = "Date")]
     pub date: String,
+    #[serde(rename = "Category")]
     pub category: u8,
+    #[serde(rename = "Name")]
     pub name: String,
+    #[serde(rename = "FenHong")]
     pub fenhong: f32,
+    #[serde(rename = "PeiGuJia")]
     pub peigu_jia: f32,
+    #[serde(rename = "SongZhuanGu")]
     pub songzhuan: f32,
+    #[serde(rename = "PeiGu")]
     pub peigu: f32,
+    #[serde(rename = "SuoGu")]
     pub suogu: f32,
+    #[serde(rename = "QianLiuTong")]
     pub qian_liutong: f64,
+    #[serde(rename = "HouLiuTong")]
     pub hou_liutong: f64,
+    #[serde(rename = "QianZongGuBen")]
     pub qian_zonggu: f64,
+    #[serde(rename = "HouZongGuBen")]
     pub hou_zonggu: f64,
+    #[serde(rename = "FenShu")]
     pub fenshu: f32,
+    #[serde(rename = "XingQuanJia")]
     pub xingquan_jia: f32,
+}
+
+impl XdxrInfo {
+    /// Return CSV header names in the same order used by C++ and datasets::xdxr
+    pub fn headers() -> &'static [&'static str] {
+        &["Date","Category","Name","FenHong","PeiGuJia","SongZhuanGu","PeiGu","SuoGu","QianLiuTong","HouLiuTong","QianZongGuBen","HouZongGuBen","FenShu","XingQuanJia"]
+    }
+
+    /// Compute (m, a) adjust factors equivalent to C++ adjustFactor()
+    pub fn adjust_factor(&self) -> (f64, f64) {
+        // A = (PeiGu * PeiGuJia - FenHong + FenShu * XingQuanJia) / 10.0
+        // B = (SongZhuanGu + PeiGu - SuoGu + FenShu) / 10.0
+        let a = ((self.peigu as f64 * self.peigu_jia as f64) - self.fenhong as f64 + (self.fenshu as f64 * self.xingquan_jia as f64)) / 10.0;
+        let b = ((self.songzhuan as f64) + (self.peigu as f64) - (self.suogu as f64) + (self.fenshu as f64)) / 10.0;
+        if (1.0 + b).abs() > 1e-10 {
+            let m = 1.0 / (1.0 + b);
+            let aa = a * m;
+            (m, aa)
+        } else {
+            (1.0, 0.0)
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -101,7 +137,7 @@ impl XdxrInfoResponse {
             let mut data = [0u8;16];
             bs.get_byte_array(&mut data);
 
-            let (y, m, d, _hh, _mm) = super::get_datetime_from_u32(category as i32, date, 0);
+            let (y, m, d, _hh, _mm) = super::get_datetime_from_u32(9 as i32, date, 0);
             let mut info = XdxrInfo { date: format!("{:04}-{:02}-{:02}", y, m, d), category, name: code.clone(), fenhong:0.0, peigu_jia:0.0, songzhuan:0.0, peigu:0.0, suogu:0.0, qian_liutong:0.0, hou_liutong:0.0, qian_zonggu:0.0, hou_zonggu:0.0, fenshu:0.0, xingquan_jia:0.0 };
 
             let mut tmp = BinaryStream::from_vec(data.to_vec());

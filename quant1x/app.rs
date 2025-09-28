@@ -8,7 +8,12 @@ pub fn global_init() {
 }
 
 pub fn datasets_init() {
-    // no-op
+    // Initialize datasets and register adapters implemented in Rust
+    if let Err(e) = std::panic::catch_unwind(|| {
+        crate::datasets::init();
+    }) {
+        log::error!("datasets::init() panicked: {:?}", e);
+    }
 }
 
 pub fn logger_set(_verbose: bool, _debug: bool) {
@@ -173,92 +178,17 @@ pub fn try_run_subcommand(name: &str, matches: &clap::ArgMatches) -> Result<bool
     // and no other flags were given, default is to update all base keys.
     let want_base = if all || (!all && base_keys.is_empty() && features_keys.is_empty()) { true } else { !base_keys.is_empty() };
     if want_base {
-        // Determine if we should run xdxr base update
-        let should_xdxr = base_keys.is_empty() || base_keys.iter().any(|k| k.eq_ignore_ascii_case("xdxr"));
-        if should_xdxr {
-            let codes: Vec<String> = crate::exchange::get_code_list();
-            if !codes.is_empty() {
-                let total = codes.len() as u64;
-                use indicatif::{ProgressBar, ProgressStyle};
-                let pb = ProgressBar::new(total);
-                pb.set_style(ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] {pos}/{len} {msg}").unwrap().progress_chars("=> "));
-
-                // ensure xdxr dir exists
-                let xdxr_dir = crate::config::get_xdxr_path();
-                if let Err(e) = std::fs::create_dir_all(&xdxr_dir) {
-                    log::error!("Failed to create xdxr dir {}: {}", xdxr_dir, e);
-                }
-
-                for code in codes.into_iter() {
-                    pb.set_message(code.clone());
-                    match crate::level1::xdxr::fetch_xdxr(&code) {
-                        Some(resp) => {
-                            // write CSV using C++ header order
-                            use std::io::Write;
-                            let filename = crate::config::get_xdxr_filename(&code);
-                            let tmp = format!("{}.tmp", filename);
-
-                            // header exactly as in datasets/xdxr.cpp
-                            let header = "Date,Category,Name,FenHong,PeiGuJia,SongZhuanGu,PeiGu,SuoGu,QianLiuTong,HouLiuTong,QianZongGuBen,HouZongGuBen,FenShu,XingQuanJia\n";
-
-                            // ensure parent directory for the per-code csv exists (e.g. <cache>/xdxr/sh600)
-                            if let Some(parent) = std::path::Path::new(&filename).parent() {
-                                if let Err(e) = std::fs::create_dir_all(parent) {
-                                    log::error!("Failed to create parent dir {:?}: {}", parent, e);
-                                }
-                            }
-
-                            match std::fs::File::create(&tmp) {
-                                Ok(mut f) => {
-                                    if let Err(e) = f.write_all(header.as_bytes()) {
-                                        log::error!("Failed to write header to tmp file {}: {}", tmp, e);
-                                    } else {
-                                        // write each row
-                                        for v in resp.list.iter() {
-                                            // format floating values with default Debug formatting
-                                            let row = format!("{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
-                                                v.date,
-                                                v.category,
-                                                v.name,
-                                                v.fenhong,
-                                                v.peigu_jia,
-                                                v.songzhuan,
-                                                v.peigu,
-                                                v.suogu,
-                                                v.qian_liutong,
-                                                v.hou_liutong,
-                                                v.qian_zonggu,
-                                                v.hou_zonggu,
-                                                v.fenshu,
-                                                v.xingquan_jia);
-                                            if let Err(e) = f.write_all(row.as_bytes()) {
-                                                log::error!("Failed to write row to tmp file {}: {}", tmp, e);
-                                                break;
-                                            }
-                                        }
-                                        if let Err(e) = f.flush() {
-                                            log::error!("Failed to flush tmp file {}: {}", tmp, e);
-                                        } else if let Err(e) = std::fs::rename(&tmp, &filename) {
-                                            log::error!("Failed to rename {} -> {}: {}", tmp, filename, e);
-                                        }
-                                    }
-                                }
-                                Err(e) => {
-                                    log::error!("Failed to create tmp file {}: {}", tmp, e);
-                                }
-                            }
-                        }
-                        None => {
-                            log::warn!("No XDXR response for {} (fetch failed)", code);
-                        }
-                    }
-                    pb.inc(1);
-                }
-                pb.finish_with_message("XDXR update completed");
-            }
+        // If the user specified base keys, select plugins with those keys; otherwise update all base data plugins
+        if base_keys.is_empty() {
+            // update all base adapters
+            let _count = crate::cache::update_all_mask(crate::cache::PLUGIN_MASK_BASE_DATA, None, crate::exchange::last_trading_day(crate::Timestamp::now()));
+            log::info!("Updated {} base adapters", _count);
+        } else {
+            // update only named base adapters
+            let ks: Vec<String> = base_keys.clone();
+            let _count = crate::cache::update_all_mask(crate::cache::PLUGIN_MASK_BASE_DATA, Some(&ks), crate::exchange::last_trading_day(crate::Timestamp::now()));
+            log::info!("Updated {} selected base adapters", _count);
         }
-        // calendar base handled above (do_calendar)
-        // servers base handled above (do_servers)
     }
 
     Ok(true)

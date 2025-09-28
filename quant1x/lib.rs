@@ -54,6 +54,12 @@ mod level1;
 pub use crate::level1::*;
 mod exchange;
 pub use crate::exchange::*;
+// cache adapter module (port of C++ engine::adapter)
+mod cache;
+pub use crate::cache::*;
+// datasets adapters (Rust ports)
+mod datasets;
+pub use crate::datasets::*;
 
 /// Return the filename used for the calendar cache (convenience wrapper around
 /// the internal config helper). This is intentionally a tiny, stable API so

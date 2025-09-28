@@ -168,130 +168,6 @@ fn download_and_cache_calendar_url(path: &PathBuf, url: &str) -> Result<(), Box<
     Ok(())
 }
 
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use tempfile::tempdir;
-
-    #[test]
-    fn test_download_and_cache_calendar_url_csv() {
-        let td = tempdir().unwrap();
-        let path = td.path().join("cal.csv");
-        // instead of mocking HTTP, directly exercise the text-processing path
-        let body = "date,source\n2025-09-01,sina\n2025-09-02,sina\n".to_string();
-        let res = download_and_cache_calendar_from_text(&path, &body, None);
-        assert!(res.is_ok());
-        let contents = std::fs::read_to_string(&path).unwrap();
-        assert!(contents.contains("2025-09-01"));
-    }
-
-    #[test]
-    fn test_lazy_load_calendar_from_file() {
-        use std::env;
-        let td = tempdir().unwrap();
-        let home = td.path().to_path_buf();
-        // ensure dirs::home_dir() will return our tempdir on Windows and Unix
-        env::set_var("HOME", &home);
-        env::set_var("USERPROFILE", &home);
-
-        // make the crate config point to our tempdir by ensuring the default home expands
-        // The config module uses lazy init; to force it to use our tempdir, set QUANT1X_HOME
-        // which the crate homedir helper checks first.
-        env::set_var("QUANT1X_HOME", &home);
-
-        // get the calendar path from crate config
-        let cal_path = crate::config::get_calendar_filename();
-    let cal = PathBuf::from(cal_path.clone());
-    if let Some(parent) = cal.parent() { std::fs::create_dir_all(parent).unwrap(); }
-
-        let mut f = File::create(&cal).unwrap();
-        writeln!(f, "date,source").unwrap();
-        writeln!(f, "2025-09-10,sina").unwrap();
-        writeln!(f, "2025-09-11,sina").unwrap();
-
-    // directly load from the file we created, then read from global in-memory list
-    load_calendar_from_file(cal.clone()).unwrap();
-    let list = GLOBAL_CALENDAR_STRINGS.lock().unwrap().clone();
-        assert!(list.contains(&"2025-09-10".to_string()));
-        assert!(list.contains(&"2025-09-11".to_string()));
-    }
-
-    #[test]
-    fn test_last_modified_sets_file_mtime() {
-        
-        // prepare temp file
-        let td = tempdir().unwrap();
-        let path = td.path().join("cal2.csv");
-        // Last-Modified example string
-        let lm_str = "Mon, 29 Sep 2014 19:43:31 GMT";
-        let parsed = parse_http_date(lm_str).expect("parse_http_date");
-        // use CSV body and pass parsed SystemTime into helper
-        let body = "date,source\n2014-09-29,sina\n".to_string();
-        let res = download_and_cache_calendar_from_text(&path, &body, Some(parsed));
-        assert!(res.is_ok());
-        // read metadata modified time
-        let meta = std::fs::metadata(&path).unwrap();
-        let modified = meta.modified().unwrap();
-        let dur_expected = parsed.duration_since(UNIX_EPOCH).unwrap();
-        let dur_actual = modified.duration_since(UNIX_EPOCH).unwrap();
-        // allow 2 seconds tolerance for filesystem timestamp granularity
-        let secs_exp = dur_expected.as_secs();
-        let secs_act = dur_actual.as_secs();
-        assert!((secs_exp as i64 - secs_act as i64).abs() <= 2, "expected {} got {}", secs_exp, secs_act);
-    }
-
-    // Helper used by tests: given the raw response text, process it the same way the HTTP
-    // path does (preprocess -> decode -> write CSV). `last_modified` is optional and if
-    // provided will set the file mtime.
-    fn download_and_cache_calendar_from_text(path: &PathBuf, text: &str, last_modified: Option<std::time::SystemTime>) -> Result<(), Box<dyn std::error::Error>> {
-        // If the response already looks like CSV (starts with "date,"), write it directly
-        if text.trim_start().starts_with("date,") {
-            if let Some(parent) = path.parent() { std::fs::create_dir_all(parent)?; }
-            let mut f = File::create(path)?;
-            f.write_all(text.as_bytes())?;
-            if let Some(st) = last_modified {
-                if let Ok(dur) = st.duration_since(UNIX_EPOCH) {
-                    let secs = dur.as_secs() as i64;
-                    let nsec = dur.subsec_nanos();
-                    let ft = FileTime::from_unix_time(secs, nsec);
-                    filetime::set_file_mtime(path, ft).ok();
-                } else {
-                    let ft = FileTime::from_system_time(st);
-                    filetime::set_file_mtime(path, ft).ok();
-                }
-            }
-            return Ok(())
-        }
-
-        let pre = preprocess_js(text);
-        let mut dec = CalendarDecoder::new(&pre);
-        dec.decode_base64(&pre);
-        let records = dec.decode();
-
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-        let mut dates: Vec<String> = records.iter().filter_map(|r| r.date.clone()).collect();
-        let missing = "1992-05-04".to_string();
-        match dates.binary_search(&missing) {
-            Ok(_) => {},
-            Err(pos) => { dates.insert(pos, missing.clone()); }
-        }
-
-        let mut f = File::create(path)?;
-        writeln!(f, "date,source")?;
-        for d in dates.iter() { writeln!(f, "{},sina", d)?; }
-
-        if let Some(st) = last_modified {
-            let ft = FileTime::from_system_time(st);
-            filetime::set_file_mtime(path, ft).ok();
-        }
-
-        Ok(())
-    }
-}
-
 fn lazy_load_calendar() {
     let path = default_calendar_path();
 
@@ -400,5 +276,139 @@ pub fn date_range(begin: Timestamp, end: Timestamp, _skip_today: bool) -> Vec<Ti
         let last = match tss.binary_search(&end) { Ok(i) => i+1, Err(e) => e };
         if first >= last { return vec![]; }
         tss[first..last].to_vec()
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_download_and_cache_calendar_url_csv() {
+        let td = tempdir().unwrap();
+        let path = td.path().join("cal.csv");
+        // instead of mocking HTTP, directly exercise the text-processing path
+        let body = "date,source\n2025-09-01,sina\n2025-09-02,sina\n".to_string();
+        let res = download_and_cache_calendar_from_text(&path, &body, None);
+        assert!(res.is_ok());
+        let contents = std::fs::read_to_string(&path).unwrap();
+        assert!(contents.contains("2025-09-01"));
+    }
+
+    #[test]
+    fn test_lazy_load_calendar_from_file() {
+        use std::env;
+        let td = tempdir().unwrap();
+        let home = td.path().to_path_buf();
+        // ensure dirs::home_dir() will return our tempdir on Windows and Unix
+        env::set_var("HOME", &home);
+        env::set_var("USERPROFILE", &home);
+
+        // make the crate config point to our tempdir by ensuring the default home expands
+        // The config module uses lazy init; to force it to use our tempdir, set QUANT1X_HOME
+        // which the crate homedir helper checks first.
+        env::set_var("QUANT1X_HOME", &home);
+
+        // get the calendar path from crate config
+        let cal_path = crate::config::get_calendar_filename();
+        let cal = PathBuf::from(cal_path.clone());
+        if let Some(parent) = cal.parent() { std::fs::create_dir_all(parent).unwrap(); }
+
+        let mut f = File::create(&cal).unwrap();
+        writeln!(f, "date,source").unwrap();
+        writeln!(f, "2025-09-10,sina").unwrap();
+        writeln!(f, "2025-09-11,sina").unwrap();
+
+        // directly load from the file we created, then read from global in-memory list
+        load_calendar_from_file(cal.clone()).unwrap();
+        let list = GLOBAL_CALENDAR_STRINGS.lock().unwrap().clone();
+        assert!(list.contains(&"2025-09-10".to_string()));
+        assert!(list.contains(&"2025-09-11".to_string()));
+    }
+
+    #[test]
+    fn test_last_modified_sets_file_mtime() {
+        // prepare temp file
+        let td = tempdir().unwrap();
+        let path = td.path().join("cal2.csv");
+        // Last-Modified example string
+        let lm_str = "Mon, 29 Sep 2014 19:43:31 GMT";
+        let parsed = parse_http_date(lm_str).expect("parse_http_date");
+        // use CSV body and pass parsed SystemTime into helper
+        let body = "date,source\n2014-09-29,sina\n".to_string();
+        let res = download_and_cache_calendar_from_text(&path, &body, Some(parsed));
+        assert!(res.is_ok());
+        // read metadata modified time
+        let meta = std::fs::metadata(&path).unwrap();
+        let modified = meta.modified().unwrap();
+        let dur_expected = parsed.duration_since(UNIX_EPOCH).unwrap();
+        let dur_actual = modified.duration_since(UNIX_EPOCH).unwrap();
+        // allow 2 seconds tolerance for filesystem timestamp granularity
+        let secs_exp = dur_expected.as_secs();
+        let secs_act = dur_actual.as_secs();
+        assert!((secs_exp as i64 - secs_act as i64).abs() <= 2, "expected {} got {}", secs_exp, secs_act);
+    }
+
+    // Helper used by tests: given the raw response text, process it the same way the HTTP
+    // path does (preprocess -> decode -> write CSV). `last_modified` is optional and if
+    // provided will set the file mtime.
+    fn download_and_cache_calendar_from_text(path: &PathBuf, text: &str, last_modified: Option<std::time::SystemTime>) -> Result<(), Box<dyn std::error::Error>> {
+        // If the response already looks like CSV (starts with "date,"), write it directly
+        if text.trim_start().starts_with("date,") {
+            if let Some(parent) = path.parent() { std::fs::create_dir_all(parent)?; }
+            let mut f = File::create(path)?;
+            f.write_all(text.as_bytes())?;
+            if let Some(st) = last_modified {
+                if let Ok(dur) = st.duration_since(UNIX_EPOCH) {
+                    let secs = dur.as_secs() as i64;
+                    let nsec = dur.subsec_nanos();
+                    let ft = FileTime::from_unix_time(secs, nsec);
+                    filetime::set_file_mtime(path, ft).ok();
+                } else {
+                    let ft = FileTime::from_system_time(st);
+                    filetime::set_file_mtime(path, ft).ok();
+                }
+            }
+            return Ok(())
+        }
+
+        let pre = preprocess_js(text);
+        let mut dec = CalendarDecoder::new(&pre);
+        dec.decode_base64(&pre);
+        let records = dec.decode();
+
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let mut dates: Vec<String> = records.iter().filter_map(|r| r.date.clone()).collect();
+        let missing = "1992-05-04".to_string();
+        match dates.binary_search(&missing) {
+            Ok(_) => {},
+            Err(pos) => { dates.insert(pos, missing.clone()); }
+        }
+
+        let mut f = File::create(path)?;
+        writeln!(f, "date,source")?;
+        for d in dates.iter() { writeln!(f, "{},sina", d)?; }
+
+        if let Some(st) = last_modified {
+            let ft = FileTime::from_system_time(st);
+            filetime::set_file_mtime(path, ft).ok();
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_date_range() -> Result<(), Box<dyn std::error::Error>> {
+        let start = crate::timestamp::Timestamp::pre_market_time(1990, 12, 19);
+        let end = crate::timestamp::Timestamp::pre_market_time(2025, 09, 26);
+        let ts = date_range(start.unwrap(), end.unwrap(), false);
+        for (i, t) in ts.iter().enumerate() {
+            println!("[{}] {:?}", i, t.only_date());
+        }
+        Ok(())
     }
 }

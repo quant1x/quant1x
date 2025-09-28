@@ -170,6 +170,7 @@ pub use hello2::*;
 pub use heartbeat::*;
 pub use xdxr::*;
 pub use client::*;
+pub use security_bars::*;
 
 #[cfg(test)]
 mod tests {

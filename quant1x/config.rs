@@ -195,22 +195,30 @@ pub fn get_xdxr_filename(code: &str) -> String {
     path.to_string_lossy().to_string()
 }
 
+/// Return the full filename for a day KLine cache file for `code`.
+/// Mirrors C++ config::get_kline_filename(code, forward)
+pub fn get_kline_filename(code: &str, forward: bool) -> String {
+    // Expecting code like "600000.SZ" (length 8) as in C++ implementation
+    if code.len() != 8 {
+        log::error!("invalid security code length (expected 8): {}", code);
+        return String::new();
+    }
+    let sub = &code[..code.len() - 3];
+    let mut path = std::path::PathBuf::from(get_day_path());
+    path.push(sub);
+    let ext = if forward { "csv" } else { "raw" };
+    path.push(format!("{}.{}", code, ext));
+    path.to_string_lossy().to_string()
+}
+
 /// Return the path where block/sector metadata files (tdxzs.cfg, tdxhy.cfg, etc.) are located.
 /// We mirror the C++ behavior by looking for a bundled resources/meta directory inside
 /// the crate workspace; fall back to <cache>/resources/meta if not present.
 pub fn get_block_path() -> String {
-    // prefer resources/meta inside the source tree (useful for tests and dev)
-    let mut p = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    p.push("resources");
-    p.push("meta");
-    if p.exists() {
-        return p.to_string_lossy().to_string();
-    }
-
     // fallback to cache-based resources/meta
-    let mut p2 = std::path::PathBuf::from(default_cache_path());
-    p2.push("resources");
-    p2.push("meta");
+    let p2 = std::path::PathBuf::from(get_meta_path());
+    //p2.push("resources");
+    //p2.push("meta");
     // ensure directory exists when possible
     let _ = std::fs::create_dir_all(&p2);
     p2.to_string_lossy().to_string()
