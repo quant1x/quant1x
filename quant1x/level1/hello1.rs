@@ -52,7 +52,11 @@ pub struct Hello1Response {
 }
 
 impl Hello1Response {
-    pub fn new() -> Self { Self { info: String::new() } }
+    pub fn new() -> Self {
+        Self {
+            info: String::new(),
+        }
+    }
 
     pub fn deserialize(&mut self, data: &[u8]) {
         let offset = 68usize;
@@ -64,5 +68,7 @@ impl Hello1Response {
         }
     }
 
-    pub fn to_string(&self) -> String { format!("Info: {}", self.info) }
+    pub fn to_string(&self) -> String {
+        format!("Info: {}", self.info)
+    }
 }

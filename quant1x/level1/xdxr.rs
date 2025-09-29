@@ -10,7 +10,7 @@ pub struct XdxrInfoRequest {
     pub pkg_len2: u16,
     pub method: u16,
     pub market: u8,
-    pub code: [u8;6],
+    pub code: [u8; 6],
     pub padding: Vec<u8>,
 }
 
@@ -18,11 +18,13 @@ impl XdxrInfoRequest {
     /// Create request from a full security code string like "sh600000" or "600000".
     /// This mirrors C++ DetectMarket behaviour: strip market prefix and set Market id.
     pub fn new(security_code: &str) -> Self {
-        let mut code = [0u8;6];
+        let mut code = [0u8; 6];
         let (_mid, _flag, pure) = crate::exchange::detect_market(security_code);
         let market = _mid;
         let bytes = pure.as_bytes();
-        for i in 0..bytes.len().min(6) { code[i] = bytes[i]; }
+        for i in 0..bytes.len().min(6) {
+            code[i] = bytes[i];
+        }
         XdxrInfoRequest {
             zip_flag: 0x0C,
             seq_id: super::sequence_id(),
@@ -96,15 +98,34 @@ pub struct XdxrInfo {
 impl XdxrInfo {
     /// Return CSV header names in the same order used by C++ and datasets::xdxr
     pub fn headers() -> &'static [&'static str] {
-        &["Date","Category","Name","FenHong","PeiGuJia","SongZhuanGu","PeiGu","SuoGu","QianLiuTong","HouLiuTong","QianZongGuBen","HouZongGuBen","FenShu","XingQuanJia"]
+        &[
+            "Date",
+            "Category",
+            "Name",
+            "FenHong",
+            "PeiGuJia",
+            "SongZhuanGu",
+            "PeiGu",
+            "SuoGu",
+            "QianLiuTong",
+            "HouLiuTong",
+            "QianZongGuBen",
+            "HouZongGuBen",
+            "FenShu",
+            "XingQuanJia",
+        ]
     }
 
     /// Compute (m, a) adjust factors equivalent to C++ adjustFactor()
     pub fn adjust_factor(&self) -> (f64, f64) {
         // A = (PeiGu * PeiGuJia - FenHong + FenShu * XingQuanJia) / 10.0
         // B = (SongZhuanGu + PeiGu - SuoGu + FenShu) / 10.0
-        let a = ((self.peigu as f64 * self.peigu_jia as f64) - self.fenhong as f64 + (self.fenshu as f64 * self.xingquan_jia as f64)) / 10.0;
-        let b = ((self.songzhuan as f64) + (self.peigu as f64) - (self.suogu as f64) + (self.fenshu as f64)) / 10.0;
+        let a = ((self.peigu as f64 * self.peigu_jia as f64) - self.fenhong as f64
+            + (self.fenshu as f64 * self.xingquan_jia as f64))
+            / 10.0;
+        let b = ((self.songzhuan as f64) + (self.peigu as f64) - (self.suogu as f64)
+            + (self.fenshu as f64))
+            / 10.0;
         if (1.0 + b).abs() > 1e-10 {
             let m = 1.0 / (1.0 + b);
             let aa = a * m;
@@ -116,15 +137,27 @@ impl XdxrInfo {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct XdxrInfoResponse { pub count: u16, pub list: Vec<XdxrInfo> }
+pub struct XdxrInfoResponse {
+    pub count: u16,
+    pub list: Vec<XdxrInfo>,
+}
 impl XdxrInfoResponse {
-    pub fn new() -> Self { Self { count: 0, list: Vec::new() } }
+    pub fn new() -> Self {
+        Self {
+            count: 0,
+            list: Vec::new(),
+        }
+    }
     pub fn deserialize(&mut self, body: &[u8]) {
         let mut bs = BinaryStream::from_vec(body.to_vec());
         bs.skip(9);
         self.count = bs.get_u16();
         // each entry uses 1+6+1+4+1+16 = 29 bytes
-        let remaining = if body.len() > bs.position() { body.len() - bs.position() } else { 0 };
+        let remaining = if body.len() > bs.position() {
+            body.len() - bs.position()
+        } else {
+            0
+        };
         let entry_size = 29usize;
         let max_entries = remaining / entry_size;
         let to_read = std::cmp::min(self.count as usize, max_entries);
@@ -134,11 +167,26 @@ impl XdxrInfoResponse {
             let _unk = bs.get_u8();
             let date = bs.get_u32();
             let category = bs.get_u8();
-            let mut data = [0u8;16];
+            let mut data = [0u8; 16];
             bs.get_byte_array(&mut data);
 
             let (y, m, d, _hh, _mm) = super::get_datetime_from_u32(9 as i32, date, 0);
-            let mut info = XdxrInfo { date: format!("{:04}-{:02}-{:02}", y, m, d), category, name: code.clone(), fenhong:0.0, peigu_jia:0.0, songzhuan:0.0, peigu:0.0, suogu:0.0, qian_liutong:0.0, hou_liutong:0.0, qian_zonggu:0.0, hou_zonggu:0.0, fenshu:0.0, xingquan_jia:0.0 };
+            let mut info = XdxrInfo {
+                date: format!("{:04}-{:02}-{:02}", y, m, d),
+                category,
+                name: code.clone(),
+                fenhong: 0.0,
+                peigu_jia: 0.0,
+                songzhuan: 0.0,
+                peigu: 0.0,
+                suogu: 0.0,
+                qian_liutong: 0.0,
+                hou_liutong: 0.0,
+                qian_zonggu: 0.0,
+                hou_zonggu: 0.0,
+                fenshu: 0.0,
+                xingquan_jia: 0.0,
+            };
 
             let mut tmp = BinaryStream::from_vec(data.to_vec());
             match category as i32 {
@@ -218,13 +266,13 @@ mod tests {
     #[test]
     fn test_xdxr_request_encoding_matches_cpp() {
         // Build request for code "sh600000" (we'll use "sh6000" 6-bytes) and force seq_id=3
-    let mut req = XdxrInfoRequest::new("sh600000");
+        let mut req = XdxrInfoRequest::new("sh600000");
         req.seq_id = 3; // match the sequence observed in logs
-    let buf = XdxrInfoRequest::serialize(&mut req);
-    // Expected hex per C++ serializeImpl (little-endian fields):
-    // header(12): 0c 03 00 00 00 01 0b 00 0b 00 0f 00
-    // payload(9): 01 00 00 73 68 36 30 30 30
-    let expected_hex = "0c03000000010b000b000f00010001363030303030";
-    assert_eq!(hex::encode(&buf), expected_hex);
+        let buf = XdxrInfoRequest::serialize(&mut req);
+        // Expected hex per C++ serializeImpl (little-endian fields):
+        // header(12): 0c 03 00 00 00 01 0b 00 0b 00 0f 00
+        // payload(9): 01 00 00 73 68 36 30 30 30
+        let expected_hex = "0c03000000010b000b000f00010001363030303030";
+        assert_eq!(hex::encode(&buf), expected_hex);
     }
 }

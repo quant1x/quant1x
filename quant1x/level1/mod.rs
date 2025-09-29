@@ -1,9 +1,9 @@
 use crate::std::BinaryStream;
-use std::sync::atomic::{AtomicU32, Ordering};
 use flate2::read::ZlibDecoder;
+use mio::net::TcpStream as MioTcpStream;
 use std::io::Read;
 use std::io::Write;
-use mio::net::TcpStream as MioTcpStream;
+use std::sync::atomic::{AtomicU32, Ordering};
 
 // Global sequence id to mimic C++ SequenceId()
 static SEQ_ID: AtomicU32 = AtomicU32::new(0);
@@ -14,7 +14,11 @@ pub fn sequence_id() -> u32 {
 }
 
 // helper: mimic level1::helpers::GetDatetimeFromUint32
-pub fn get_datetime_from_u32(category: i32, zipday: u32, tminutes: u16) -> (i32, i32, i32, i32, i32) {
+pub fn get_datetime_from_u32(
+    category: i32,
+    zipday: u32,
+    tminutes: u16,
+) -> (i32, i32, i32, i32, i32) {
     if category < 4 || category == 7 || category == 8 {
         let year = ((zipday >> 11) as i32) + 2004;
         let rem = (zipday % 2048) as i32;
@@ -33,7 +37,9 @@ pub fn get_datetime_from_u32(category: i32, zipday: u32, tminutes: u16) -> (i32,
 
 // helper: mimic level1::helpers::IntToFloat64
 pub fn int_to_float64(v: u32) -> f64 {
-    if v == 0 { return 0.0; }
+    if v == 0 {
+        return 0.0;
+    }
     let uinteger = v;
     let log_point = ((uinteger >> 24) & 0xFF) as i32;
     let hleax = ((uinteger >> 16) & 0xFF) as i32;
@@ -49,7 +55,9 @@ pub fn int_to_float64(v: u32) -> f64 {
     let mut dbl_xmm6: f64;
     let tmp_eax = if dw_ecx < 0 { -dw_ecx } else { dw_ecx };
     dbl_xmm6 = 2f64.powi(tmp_eax);
-    if dw_ecx < 0 { dbl_xmm6 = 1.0 / dbl_xmm6; }
+    if dw_ecx < 0 {
+        dbl_xmm6 = 1.0 / dbl_xmm6;
+    }
 
     // dblXmm4
     let dbl_xmm4: f64 = if hleax > 0x80 {
@@ -94,7 +102,11 @@ pub fn unzip(body: Vec<u8>, unzipped_size: usize) -> std::io::Result<Vec<u8>> {
 /// body bytes. This mirrors the C++ `level1::process()` unzip semantics.
 pub fn process_request(stream: &mut MioTcpStream, req_buf: &[u8]) -> std::io::Result<Vec<u8>> {
     // Log outgoing request bytes for protocol debugging
-    log::info!("level1::process_request - sending request ({} bytes): {}", req_buf.len(), hex::encode(req_buf));
+    log::info!(
+        "level1::process_request - sending request ({} bytes): {}",
+        req_buf.len(),
+        hex::encode(req_buf)
+    );
 
     // Write the request
     stream.write_all(req_buf)?;
@@ -140,48 +152,52 @@ pub fn process_request(stream: &mut MioTcpStream, req_buf: &[u8]) -> std::io::Re
 
     // Log body hex for debugging
     if let Ok(h) = String::from_utf8(hex::encode(&final_body).into_bytes()) {
-        log::debug!("level1::process_request - response body ({} bytes): {}", final_body.len(), h);
+        log::debug!(
+            "level1::process_request - response body ({} bytes): {}",
+            final_body.len(),
+            h
+        );
     }
 
     Ok(final_body)
 }
+mod block_info;
+mod block_meta;
+mod client;
+mod company_category;
+mod company_content;
+pub mod config;
+mod finance_info;
+mod heartbeat;
 mod hello1;
 mod hello2;
-mod heartbeat;
-pub mod config;
-pub mod xdxr;
-mod finance_info;
 mod index_bars;
+mod minute_time;
 mod security_bars;
 mod security_count;
 pub mod security_list;
 mod security_quote;
-mod block_info;
-mod block_meta;
-mod company_category;
-mod company_content;
-mod minute_time;
 pub mod transaction_data;
 pub mod transaction_history;
-mod client;
+pub mod xdxr;
 
+pub use client::*;
+pub use heartbeat::*;
 pub use hello1::*;
 pub use hello2::*;
-pub use heartbeat::*;
-pub use xdxr::*;
-pub use client::*;
 pub use security_bars::*;
+pub use xdxr::*;
 
 #[cfg(test)]
 mod tests {
-    use super::hello1::*;
-    use super::heartbeat::*;
-    use hex;
-    use super::xdxr::*;
     use super::finance_info::*;
+    use super::heartbeat::*;
+    use super::hello1::*;
+    use super::security_bars::*;
     use super::security_quote::*;
     use super::transaction_data::*;
-    use super::security_bars::*;
+    use super::xdxr::*;
+    use hex;
 
     #[test]
     fn test_hello1_deserialize_sample() {
@@ -250,9 +266,16 @@ mod tests {
         resp.count = resp.list.len() as u16;
 
         // Build code map with the matching security code -> StockInfo
-    let mut maps: std::collections::HashMap<String, StockInfo> = std::collections::HashMap::new();
-    let key = format!("{}{}", "sh", "600839");
-    maps.insert(key, StockInfo{ market: 1, code: "600839".to_string() });
+        let mut maps: std::collections::HashMap<String, StockInfo> =
+            std::collections::HashMap::new();
+        let key = format!("{}{}", "sh", "600839");
+        maps.insert(
+            key,
+            StockInfo {
+                market: 1,
+                code: "600839".to_string(),
+            },
+        );
 
         resp.verify_delisted_securities(&mut maps);
         // After verification the state should be IPO for the delisting item
@@ -275,8 +298,8 @@ mod tests {
         // sample from tests/tdd-level1.cpp kline-base
         let hex = "05002bff3401a52910134982d4834e07eb2f4f2eff340102060e4a8a70db4dca40934e2fff3401440a0f4aef5a734e3b6c234f30ff340141191f515cd8094f6d64ba4f31ff34014d102c4398098b4e44b03c4f";
         let buf = hex::decode(hex).unwrap();
-    // C++ tests create SecurityBarsResponse(false, 9) for this sample (category 9 = RI_K)
-    let mut resp = SecurityBarsResponse::new_with(false, 9);
+        // C++ tests create SecurityBarsResponse(false, 9) for this sample (category 9 = RI_K)
+        let mut resp = SecurityBarsResponse::new_with(false, 9);
         resp.deserialize(&buf);
         // basic sanity: either count is zero or list length matches count; prefer non-empty list for this sample
         assert_eq!(resp.count as usize, resp.list.len());

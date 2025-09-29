@@ -8,7 +8,9 @@ pub struct Endpoint {
 }
 
 impl From<SocketAddr> for Endpoint {
-    fn from(a: SocketAddr) -> Self { Endpoint { addr: a } }
+    fn from(a: SocketAddr) -> Self {
+        Endpoint { addr: a }
+    }
 }
 
 #[derive(Clone)]
@@ -25,17 +27,30 @@ pub struct EndpointManager {
 
 impl EndpointManager {
     pub fn new() -> Self {
-        Self { list: Mutex::new(Vec::new()), data: Mutex::new(HashMap::new()) }
+        Self {
+            list: Mutex::new(Vec::new()),
+            data: Mutex::new(HashMap::new()),
+        }
     }
 
     pub fn add_endpoint(&self, addr: SocketAddr, max_connections: usize) -> bool {
-        if max_connections == 0 { return false; }
+        if max_connections == 0 {
+            return false;
+        }
         let ep = Endpoint::from(addr);
         let mut list = self.list.lock().unwrap();
         let mut data = self.data.lock().unwrap();
-        if data.contains_key(&ep) { return false; }
+        if data.contains_key(&ep) {
+            return false;
+        }
         list.push(ep.clone());
-        data.insert(ep, EndpointData { max_connections, active_connections: 0 });
+        data.insert(
+            ep,
+            EndpointData {
+                max_connections,
+                active_connections: 0,
+            },
+        );
         true
     }
 
@@ -74,7 +89,8 @@ impl EndpointManager {
     pub fn get_endpoint_stats(&self, addr: SocketAddr) -> Option<(usize, usize)> {
         let ep = Endpoint::from(addr);
         let data = self.data.lock().unwrap();
-        data.get(&ep).map(|d| (d.max_connections, d.active_connections))
+        data.get(&ep)
+            .map(|d| (d.max_connections, d.active_connections))
     }
 
     pub fn get_all_endpoints(&self) -> Vec<SocketAddr> {
@@ -84,6 +100,14 @@ impl EndpointManager {
 
     pub fn get_available_resources(&self) -> usize {
         let data = self.data.lock().unwrap();
-        data.iter().map(|(_, d)| if d.active_connections < d.max_connections { d.max_connections - d.active_connections } else { 0 }).sum()
+        data.iter()
+            .map(|(_, d)| {
+                if d.active_connections < d.max_connections {
+                    d.max_connections - d.active_connections
+                } else {
+                    0
+                }
+            })
+            .sum()
     }
 }

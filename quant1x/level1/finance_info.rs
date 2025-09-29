@@ -15,7 +15,14 @@ pub struct FinanceInfoRequest {
 
 impl FinanceInfoRequest {
     pub fn new() -> Self {
-        FinanceInfoRequest { zip_flag: 0x0C, seq_id: super::sequence_id(), packet_type: 0x01, pkg_len1: 0, pkg_len2: 0, method: 0x0010 }
+        FinanceInfoRequest {
+            zip_flag: 0x0C,
+            seq_id: super::sequence_id(),
+            packet_type: 0x01,
+            pkg_len1: 0,
+            pkg_len2: 0,
+            method: 0x0010,
+        }
     }
     pub fn serialize(&mut self) -> Vec<u8> {
         let mut s = BinaryStream::new();
@@ -73,13 +80,42 @@ pub struct FinanceInfo {
 impl FinanceInfo {
     pub fn new() -> Self {
         Self {
-            code: String::new(), liu_tong_gu_ben: 0.0, province: 0, industry: 0, updated_date: 0, ipo_date: 0,
-            zong_gu_ben: 0.0, guo_jia_gu: 0.0, fa_qi_ren_fa_ren_gu: 0.0, fa_ren_gu: 0.0, b_gu: 0.0, h_gu: 0.0,
-            zhi_gong_gu: 0.0, zong_zi_chan: 0.0, liu_dong_zi_chan: 0.0, gu_ding_zi_chan: 0.0, wu_xing_zi_chan: 0.0,
-            gu_dong_ren_shu: 0.0, liu_dong_fu_zhai: 0.0, chang_qi_fu_zhai: 0.0, zi_ben_gong_ji_jin: 0.0, jing_zi_chan: 0.0,
-            zhu_ying_shou_ru: 0.0, zhu_ying_li_run: 0.0, ying_shou_zhang_kuan: 0.0, ying_ye_li_run: 0.0, tou_zi_shou_yu: 0.0,
-            jing_ying_xian_jin_liu: 0.0, zong_xian_jin_liu: 0.0, cun_huo: 0.0, li_run_zong_he: 0.0, shui_hou_li_run: 0.0,
-            jing_li_run: 0.0, wei_fen_li_run: 0.0, mei_gu_jing_zi_chan: 0.0, bao_liu2: 0.0,
+            code: String::new(),
+            liu_tong_gu_ben: 0.0,
+            province: 0,
+            industry: 0,
+            updated_date: 0,
+            ipo_date: 0,
+            zong_gu_ben: 0.0,
+            guo_jia_gu: 0.0,
+            fa_qi_ren_fa_ren_gu: 0.0,
+            fa_ren_gu: 0.0,
+            b_gu: 0.0,
+            h_gu: 0.0,
+            zhi_gong_gu: 0.0,
+            zong_zi_chan: 0.0,
+            liu_dong_zi_chan: 0.0,
+            gu_ding_zi_chan: 0.0,
+            wu_xing_zi_chan: 0.0,
+            gu_dong_ren_shu: 0.0,
+            liu_dong_fu_zhai: 0.0,
+            chang_qi_fu_zhai: 0.0,
+            zi_ben_gong_ji_jin: 0.0,
+            jing_zi_chan: 0.0,
+            zhu_ying_shou_ru: 0.0,
+            zhu_ying_li_run: 0.0,
+            ying_shou_zhang_kuan: 0.0,
+            ying_ye_li_run: 0.0,
+            tou_zi_shou_yu: 0.0,
+            jing_ying_xian_jin_liu: 0.0,
+            zong_xian_jin_liu: 0.0,
+            cun_huo: 0.0,
+            li_run_zong_he: 0.0,
+            shui_hou_li_run: 0.0,
+            jing_li_run: 0.0,
+            wei_fen_li_run: 0.0,
+            mei_gu_jing_zi_chan: 0.0,
+            bao_liu2: 0.0,
         }
     }
 }
@@ -87,7 +123,7 @@ impl FinanceInfo {
 #[derive(Debug, Clone)]
 struct RawFinanceInfo {
     market: u8,
-    code: [u8;6],
+    code: [u8; 6],
     liu_tong_gu_ben: f32,
     province: u16,
     industry: u16,
@@ -127,7 +163,7 @@ struct RawFinanceInfo {
 impl RawFinanceInfo {
     fn decode(bs: &mut BinaryStream) -> Self {
         let market = bs.get_u8();
-        let mut code = [0u8;6];
+        let mut code = [0u8; 6];
         bs.get_byte_array(&mut code);
         let liu_tong_gu_ben = bs.get_f32();
         let province = bs.get_u16();
@@ -166,13 +202,43 @@ impl RawFinanceInfo {
         let bao_liu2 = bs.get_f32();
 
         RawFinanceInfo {
-            market, code, liu_tong_gu_ben, province, industry, updated_date, ipo_date,
-            zong_gu_ben, guo_jia_gu, fa_qi_ren_fa_ren_gu, fa_ren_gu, b_gu, h_gu, zhi_gong_gu,
-            zong_zi_chan, liu_dong_zi_chan, gu_ding_zi_chan, wu_xing_zi_chan, gu_dong_ren_shu,
-            liu_dong_fu_zhai, chang_qi_fu_zhai, zi_ben_gong_ji_jin, jing_zi_chan, zhu_ying_shou_ru,
-            zhu_ying_li_run, ying_shou_zhang_kuan, ying_ye_li_run, tou_zi_shou_yu, jing_ying_xian_jin_liu,
-            zong_xian_jin_liu, cun_huo, li_run_zong_he, shui_hou_li_run, jing_li_run, wei_fen_li_run,
-            bao_liu1, bao_liu2,
+            market,
+            code,
+            liu_tong_gu_ben,
+            province,
+            industry,
+            updated_date,
+            ipo_date,
+            zong_gu_ben,
+            guo_jia_gu,
+            fa_qi_ren_fa_ren_gu,
+            fa_ren_gu,
+            b_gu,
+            h_gu,
+            zhi_gong_gu,
+            zong_zi_chan,
+            liu_dong_zi_chan,
+            gu_ding_zi_chan,
+            wu_xing_zi_chan,
+            gu_dong_ren_shu,
+            liu_dong_fu_zhai,
+            chang_qi_fu_zhai,
+            zi_ben_gong_ji_jin,
+            jing_zi_chan,
+            zhu_ying_shou_ru,
+            zhu_ying_li_run,
+            ying_shou_zhang_kuan,
+            ying_ye_li_run,
+            tou_zi_shou_yu,
+            jing_ying_xian_jin_liu,
+            zong_xian_jin_liu,
+            cun_huo,
+            li_run_zong_he,
+            shui_hou_li_run,
+            jing_li_run,
+            wei_fen_li_run,
+            bao_liu1,
+            bao_liu2,
         }
     }
 }
@@ -185,12 +251,19 @@ pub struct FinanceInfoResponse {
 }
 #[allow(dead_code)]
 impl FinanceInfoResponse {
-    pub fn new() -> Self { Self { count: 0, info: FinanceInfo::new() } }
+    pub fn new() -> Self {
+        Self {
+            count: 0,
+            info: FinanceInfo::new(),
+        }
+    }
 
     pub fn deserialize(&mut self, body: &[u8]) {
         let mut bs = BinaryStream::from_vec(body.to_vec());
         self.count = bs.get_u16();
-        if self.count == 0 { return; }
+        if self.count == 0 {
+            return;
+        }
         let raw = RawFinanceInfo::decode(&mut bs);
         let base_unit: f64 = 10000.0;
         let code = String::from_utf8_lossy(&raw.code).into_owned();
@@ -211,7 +284,7 @@ impl FinanceInfoResponse {
         self.info.liu_dong_zi_chan = (raw.liu_dong_zi_chan as f64) * base_unit;
         self.info.gu_ding_zi_chan = (raw.gu_ding_zi_chan as f64) * base_unit;
         self.info.wu_xing_zi_chan = (raw.wu_xing_zi_chan as f64) * base_unit;
-    self.info.gu_dong_ren_shu = raw.gu_dong_ren_shu as f64;
+        self.info.gu_dong_ren_shu = raw.gu_dong_ren_shu as f64;
         self.info.liu_dong_fu_zhai = (raw.liu_dong_fu_zhai as f64) * base_unit;
         self.info.chang_qi_fu_zhai = (raw.chang_qi_fu_zhai as f64) * base_unit;
         self.info.zi_ben_gong_ji_jin = (raw.zi_ben_gong_ji_jin as f64) * base_unit;
@@ -229,6 +302,6 @@ impl FinanceInfoResponse {
         self.info.jing_li_run = (raw.jing_li_run as f64) * base_unit;
         self.info.wei_fen_li_run = (raw.wei_fen_li_run as f64) * base_unit;
         self.info.mei_gu_jing_zi_chan = (raw.bao_liu1 as f64) * base_unit;
-    self.info.bao_liu2 = raw.bao_liu2 as f64;
+        self.info.bao_liu2 = raw.bao_liu2 as f64;
     }
 }

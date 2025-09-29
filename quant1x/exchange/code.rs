@@ -23,17 +23,29 @@ pub fn detect_market(security_code: &str) -> (u8, String, String) {
 
     // market flags and prefix tables - mirror C++ lists
     // market flag constants
-    const MARKET_FLAGS: [&str; 5] = [MARKET_FLAG_SH, MARKET_FLAG_SZ, MARKET_FLAG_BJ, MARKET_FLAG_HK, MARKET_FLAG_US];
+    const MARKET_FLAGS: [&str; 5] = [
+        MARKET_FLAG_SH,
+        MARKET_FLAG_SZ,
+        MARKET_FLAG_BJ,
+        MARKET_FLAG_HK,
+        MARKET_FLAG_US,
+    ];
     let shanghai_main = ["50", "51", "60", "68", "90", "110", "113", "132", "204"];
     let shanghai_special = ["5", "6", "9", "7"];
     let shanghai_other = ["88"];
-    let shenzhen_main = ["00", "12", "13", "18", "15", "16", "18", "20", "30", "39", "115", "1318"];
+    let shenzhen_main = [
+        "00", "12", "13", "18", "15", "16", "18", "20", "30", "39", "115", "1318",
+    ];
     let beijing_main = ["4", "8"];
 
     // 1) explicit prefix like sh600000 or sh.600000
     for &flag in &MARKET_FLAGS {
         if lower.starts_with(flag) {
-            let pure = if s.len() > 2 && &s[2..3] == "." { s[3..].to_string() } else { s[2..].to_string() };
+            let pure = if s.len() > 2 && &s[2..3] == "." {
+                s[3..].to_string()
+            } else {
+                s[2..].to_string()
+            };
             let market_id = match flag {
                 MARKET_FLAG_SH => MARKET_SHANGHAI,
                 MARKET_FLAG_SZ => MARKET_SHENZHEN,
@@ -69,23 +81,37 @@ pub fn detect_market(security_code: &str) -> (u8, String, String) {
 
     // 3) no explicit marker: use prefix tables
     for &p in &shanghai_main {
-        if lower.starts_with(p) { return (MARKET_SHANGHAI, MARKET_FLAG_SH.to_string(), s.to_string()); }
+        if lower.starts_with(p) {
+            return (MARKET_SHANGHAI, MARKET_FLAG_SH.to_string(), s.to_string());
+        }
     }
     for &p in &shenzhen_main {
-        if lower.starts_with(p) { return (MARKET_SHENZHEN, MARKET_FLAG_SZ.to_string(), s.to_string()); }
+        if lower.starts_with(p) {
+            return (MARKET_SHENZHEN, MARKET_FLAG_SZ.to_string(), s.to_string());
+        }
     }
     for &p in &shanghai_special {
-        if lower.starts_with(p) { return (MARKET_SHANGHAI, MARKET_FLAG_SH.to_string(), s.to_string()); }
+        if lower.starts_with(p) {
+            return (MARKET_SHANGHAI, MARKET_FLAG_SH.to_string(), s.to_string());
+        }
     }
     for &p in &shanghai_other {
-        if lower.starts_with(p) { return (MARKET_SHANGHAI, MARKET_FLAG_SH.to_string(), s.to_string()); }
+        if lower.starts_with(p) {
+            return (MARKET_SHANGHAI, MARKET_FLAG_SH.to_string(), s.to_string());
+        }
     }
     for &p in &beijing_main {
-        if lower.starts_with(p) { return (MARKET_BEIJING, MARKET_FLAG_BJ.to_string(), s.to_string()); }
+        if lower.starts_with(p) {
+            return (MARKET_BEIJING, MARKET_FLAG_BJ.to_string(), s.to_string());
+        }
     }
 
     // default fallback: heuristic same as prior implementation
-    if s.starts_with('6') { (MARKET_SHANGHAI, MARKET_FLAG_SH.to_string(), s.to_string()) } else { (MARKET_SHENZHEN, MARKET_FLAG_SZ.to_string(), s.to_string()) }
+    if s.starts_with('6') {
+        (MARKET_SHANGHAI, MARKET_FLAG_SH.to_string(), s.to_string())
+    } else {
+        (MARKET_SHENZHEN, MARKET_FLAG_SZ.to_string(), s.to_string())
+    }
 }
 
 // Market id constants (mirror C++ MarketType enum)
@@ -240,7 +266,7 @@ mod assert_tests {
         assert!(!assert_block_by_security_code(&mut s2));
 
         assert_eq!(correct_security_code("600000"), "sh600000".to_string());
-        assert_eq!(correct_security_code("") , "".to_string());
+        assert_eq!(correct_security_code(""), "".to_string());
     }
 }
 
@@ -269,8 +295,19 @@ mod tests {
         for (input, exp_id, exp_flag, exp_pure) in cases {
             let (id, flag, pure) = detect_market(input);
             assert_eq!(id, exp_id, "id mismatch for input: {}", input);
-            assert_eq!(flag, exp_flag.to_string(), "flag mismatch for input: {}", input);
-            assert_eq!(pure.to_lowercase(), exp_pure.to_lowercase(), "pure mismatch for input: {} -> {}", input, pure);
+            assert_eq!(
+                flag,
+                exp_flag.to_string(),
+                "flag mismatch for input: {}",
+                input
+            );
+            assert_eq!(
+                pure.to_lowercase(),
+                exp_pure.to_lowercase(),
+                "pure mismatch for input: {} -> {}",
+                input,
+                pure
+            );
         }
     }
 }

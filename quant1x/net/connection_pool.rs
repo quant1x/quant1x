@@ -16,8 +16,12 @@ pub trait NetworkHandler: Send + Sync + 'static {
     fn keepalive(&self, _stream: &mut TcpStream) -> std::io::Result<bool> {
         Ok(true)
     }
-    fn timeout(&self) -> Duration { Duration::from_secs(5) }
-    fn check_interval(&self) -> Duration { Duration::from_secs(5) }
+    fn timeout(&self) -> Duration {
+        Duration::from_secs(5)
+    }
+    fn check_interval(&self) -> Duration {
+        Duration::from_secs(5)
+    }
 }
 
 /// A pooled connection wrapper. The pool owns connections and returns a
@@ -30,12 +34,20 @@ pub struct Connection {
 
 impl Connection {
     pub fn new(stream: TcpStream, addr: SocketAddr) -> Self {
-        Self { stream, addr, last_used: Instant::now() }
+        Self {
+            stream,
+            addr,
+            last_used: Instant::now(),
+        }
     }
 
-    pub fn stream(&mut self) -> &mut TcpStream { &mut self.stream }
+    pub fn stream(&mut self) -> &mut TcpStream {
+        &mut self.stream
+    }
 
-    pub fn addr(&self) -> SocketAddr { self.addr }
+    pub fn addr(&self) -> SocketAddr {
+        self.addr
+    }
 }
 
 /// The Mio-based TCP connection pool. This is a simplified port of the C++
@@ -49,8 +61,18 @@ pub struct TcpConnectionPool<H: NetworkHandler> {
 }
 
 impl<H: NetworkHandler> TcpConnectionPool<H> {
-    pub fn new(min: usize, max: usize, handler: Arc<H>, endpoint_manager: Arc<crate::net::endpoint::EndpointManager>) -> Arc<Self> {
-        let pool = Arc::new(Self { handler: Arc::clone(&handler), max, endpoint_manager: Arc::clone(&endpoint_manager), idle: Mutex::new(VecDeque::new()) });
+    pub fn new(
+        min: usize,
+        max: usize,
+        handler: Arc<H>,
+        endpoint_manager: Arc<crate::net::endpoint::EndpointManager>,
+    ) -> Arc<Self> {
+        let pool = Arc::new(Self {
+            handler: Arc::clone(&handler),
+            max,
+            endpoint_manager: Arc::clone(&endpoint_manager),
+            idle: Mutex::new(VecDeque::new()),
+        });
 
         // Pre-warm: attempt to create `min` connections and place into idle queue.
         // Failures are ignored (network may be unavailable at startup).
@@ -61,7 +83,11 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
                     // Use connect_timeout with a short pre-warm timeout so startup
                     // doesn't block for long when endpoints are unreachable.
                     let timeout = std::time::Duration::from_millis(500);
-                    log::info!("connection_pool: pre-warm trying to connect to {} (timeout {:?})", ep, timeout);
+                    log::info!(
+                        "connection_pool: pre-warm trying to connect to {} (timeout {:?})",
+                        ep,
+                        timeout
+                    );
                     match StdTcpStream::connect_timeout(&ep, timeout) {
                         Ok(std_stream) => {
                             let _ = std_stream.set_nodelay(true);
@@ -77,7 +103,11 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
                                     idle.push_back(Connection::new(stream, ep));
                                 }
                                 Err(e) => {
-                                    log::warn!("connection_pool: pre-warm handshake failed for {}: {}", ep, e);
+                                    log::warn!(
+                                        "connection_pool: pre-warm handshake failed for {}: {}",
+                                        ep,
+                                        e
+                                    );
                                     pool.endpoint_manager.release_endpoint(ep);
                                 }
                             }
@@ -132,8 +162,11 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
                 let mut survivors: Vec<Connection> = Vec::with_capacity(drained.len());
                 for mut conn in drained {
                     match pool_arc.handler.keepalive(conn.stream()) {
-                        Ok(true) => { conn.last_used = Instant::now(); survivors.push(conn); }
-                        _ => { 
+                        Ok(true) => {
+                            conn.last_used = Instant::now();
+                            survivors.push(conn);
+                        }
+                        _ => {
                             // dead or error => release endpoint slot and drop
                             pool_arc.endpoint_manager.release_endpoint(conn.addr);
                         }
@@ -163,18 +196,30 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
         // Try to pop an idle connection first
         if let Some(mut conn) = self.idle.lock().unwrap().pop_front() {
             conn.last_used = Instant::now();
-            return Ok(PooledConnection { pool: Arc::clone(self), conn: Some(conn) });
+            return Ok(PooledConnection {
+                pool: Arc::clone(self),
+                conn: Some(conn),
+            });
         }
 
         // If no idle connection, request an endpoint from the manager
         let endpoint = match self.endpoint_manager.acquire_endpoint() {
             Some(ep) => ep,
-            None => return Err(std::io::Error::new(std::io::ErrorKind::Other, "No available endpoints")),
+            None => {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "No available endpoints",
+                ))
+            }
         };
 
         // Create a new TcpStream and connect with timeout to avoid long hangs.
         let timeout = self.handler.timeout();
-    log::info!("connection_pool: acquire connecting to {} with timeout {:?}", endpoint, timeout);
+        log::info!(
+            "connection_pool: acquire connecting to {} with timeout {:?}",
+            endpoint,
+            timeout
+        );
         let std_stream = StdTcpStream::connect_timeout(&endpoint, timeout)?;
         std_stream.set_nodelay(true)?;
         // set read/write timeouts so handshake and subsequent process_request reads time out
@@ -183,14 +228,20 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
         let mut stream = TcpStream::from_std(std_stream);
 
         // perform handshake via handler
-    log::info!("connection_pool: running handshake for {}", endpoint);
+        log::info!("connection_pool: running handshake for {}", endpoint);
         match self.handler.handshake(&mut stream) {
             Ok(()) => log::info!("connection_pool: handshake succeeded for {}", endpoint),
-            Err(e) => { log::error!("connection_pool: handshake failed for {}: {}", endpoint, e); return Err(e); }
+            Err(e) => {
+                log::error!("connection_pool: handshake failed for {}: {}", endpoint, e);
+                return Err(e);
+            }
         }
 
         let conn = Connection::new(stream, endpoint);
-        Ok(PooledConnection { pool: Arc::clone(self), conn: Some(conn) })
+        Ok(PooledConnection {
+            pool: Arc::clone(self),
+            conn: Some(conn),
+        })
     }
 
     fn release(&self, mut conn: Connection) {
@@ -225,8 +276,12 @@ pub struct PooledConnection<H: NetworkHandler> {
 }
 
 impl<H: NetworkHandler> PooledConnection<H> {
-    pub fn stream(&mut self) -> &mut TcpStream { &mut self.conn.as_mut().unwrap().stream }
-    pub fn addr(&self) -> SocketAddr { self.conn.as_ref().unwrap().addr }
+    pub fn stream(&mut self) -> &mut TcpStream {
+        &mut self.conn.as_mut().unwrap().stream
+    }
+    pub fn addr(&self) -> SocketAddr {
+        self.conn.as_ref().unwrap().addr
+    }
 }
 
 impl<H: NetworkHandler> Drop for PooledConnection<H> {
@@ -247,10 +302,18 @@ mod tests {
 
     struct TestHandler;
     impl NetworkHandler for TestHandler {
-        fn handshake(&self, _stream: &mut TcpStream) -> std::io::Result<()> { Ok(()) }
-        fn keepalive(&self, _stream: &mut TcpStream) -> std::io::Result<bool> { Ok(true) }
-        fn timeout(&self) -> Duration { Duration::from_secs(1) }
-        fn check_interval(&self) -> Duration { Duration::from_millis(50) }
+        fn handshake(&self, _stream: &mut TcpStream) -> std::io::Result<()> {
+            Ok(())
+        }
+        fn keepalive(&self, _stream: &mut TcpStream) -> std::io::Result<bool> {
+            Ok(true)
+        }
+        fn timeout(&self) -> Duration {
+            Duration::from_secs(1)
+        }
+        fn check_interval(&self) -> Duration {
+            Duration::from_millis(50)
+        }
     }
 
     #[test]

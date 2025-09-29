@@ -22,7 +22,8 @@ impl Hello2Request {
             pkg_len1: 0,
             pkg_len2: 0,
             method: 0x0fdb, // LOGIN2
-            padding: hex::decode("d5d0c9ccd6a4a8af0000008fc22540130000d500c9ccbdf0d7ea00000002").unwrap_or_default(),
+            padding: hex::decode("d5d0c9ccd6a4a8af0000008fc22540130000d500c9ccbdf0d7ea00000002")
+                .unwrap_or_default(),
         }
     }
 
@@ -42,9 +43,15 @@ impl Hello2Request {
 }
 
 #[derive(Debug, Clone)]
-pub struct Hello2Response { pub info: String }
+pub struct Hello2Response {
+    pub info: String,
+}
 impl Hello2Response {
-    pub fn new() -> Self { Self { info: String::new() } }
+    pub fn new() -> Self {
+        Self {
+            info: String::new(),
+        }
+    }
     pub fn deserialize(&mut self, data: &[u8]) {
         let offset = 58usize;
         if data.len() >= offset {

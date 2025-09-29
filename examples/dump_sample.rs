@@ -1,3 +1,3 @@
 fn main() {
-	println!("example placeholder");
+    println!("example placeholder");
 }

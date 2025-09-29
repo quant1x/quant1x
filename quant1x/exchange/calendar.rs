@@ -1,15 +1,15 @@
+use crate::decoder::CalendarDecoder;
 use crate::timestamp::Timestamp;
-use once_cell::sync::Lazy;
-use std::sync::Mutex;
-use std::fs::File;
-use std::io::Write;
+use chrono::Local;
 use csv;
-use std::fs::OpenOptions;
 use filetime::FileTime;
 use httpdate::parse_http_date;
-use crate::decoder::CalendarDecoder;
+use once_cell::sync::Lazy;
+use std::fs::File;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::path::PathBuf;
-use chrono::Local;
+use std::sync::Mutex;
 use std::time::UNIX_EPOCH;
 // ...existing code...
 use crate::runtime::RollingOnce;
@@ -42,7 +42,10 @@ fn load_calendar_from_file(path: PathBuf) -> std::io::Result<()> {
         log::debug!("calendar file missing, try downloading");
         if let Err(err) = download_and_cache_calendar(&path) {
             log::debug!("download calendar failed: {}", err);
-            return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "calendar missing"));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "calendar missing",
+            ));
         }
     }
     let mut strs = Vec::new();
@@ -50,15 +53,21 @@ fn load_calendar_from_file(path: PathBuf) -> std::io::Result<()> {
     // Use CSV parser to handle headers/quoting robustly. Read entire file into memory
     // and parse with the csv crate (first column is the date).
     let contents = std::fs::read_to_string(&path)?;
-    let mut rdr = csv::ReaderBuilder::new().has_headers(true).from_reader(contents.as_bytes());
+    let mut rdr = csv::ReaderBuilder::new()
+        .has_headers(true)
+        .from_reader(contents.as_bytes());
     for result in rdr.records() {
         let record = result?;
         if let Some(first) = record.get(0) {
             let date_str = first.trim().to_string();
-            if date_str.is_empty() { continue; }
+            if date_str.is_empty() {
+                continue;
+            }
             strs.push(date_str.clone());
             if let Ok(ts) = Timestamp::parse(&date_str) {
-                if let Some(pre) = Timestamp::pre_market_time(ts.extract().0, ts.extract().1, ts.extract().2) {
+                if let Some(pre) =
+                    Timestamp::pre_market_time(ts.extract().0, ts.extract().1, ts.extract().2)
+                {
                     tss.push(pre);
                     continue;
                 }
@@ -79,8 +88,12 @@ fn load_calendar_from_file(path: PathBuf) -> std::io::Result<()> {
 
 fn preprocess_js(text: &str) -> String {
     let mut processed = text.to_string();
-    if let Some(eq) = processed.find('=') { processed = processed[eq+1..].to_string(); }
-    if let Some(semi) = processed.find(';') { processed = processed[..semi].to_string(); }
+    if let Some(eq) = processed.find('=') {
+        processed = processed[eq + 1..].to_string();
+    }
+    if let Some(semi) = processed.find(';') {
+        processed = processed[..semi].to_string();
+    }
     processed.retain(|c| c != '"');
     processed
 }
@@ -91,7 +104,10 @@ fn download_and_cache_calendar(path: &PathBuf) -> Result<(), Box<dyn std::error:
     download_and_cache_calendar_url(path, url)
 }
 
-fn download_and_cache_calendar_url(path: &PathBuf, url: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn download_and_cache_calendar_url(
+    path: &PathBuf,
+    url: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
     // If file exists, provide If-Modified-Since
     let client = reqwest::blocking::Client::builder().build()?;
     let mut req = client.get(url);
@@ -111,7 +127,9 @@ fn download_and_cache_calendar_url(path: &PathBuf, url: &str) -> Result<(), Box<
         // Nothing changed
         return Ok(());
     }
-    if !status.is_success() { return Err(format!("http status {}", status).into()); }
+    if !status.is_success() {
+        return Err(format!("http status {}", status).into());
+    }
     let text = resp.text()?;
     let pre = preprocess_js(&text);
     // decoder expects base64-like payload; use CalendarDecoder
@@ -126,8 +144,10 @@ fn download_and_cache_calendar_url(path: &PathBuf, url: &str) -> Result<(), Box<
     let mut dates: Vec<String> = records.iter().filter_map(|r| r.date.clone()).collect();
     let missing = "1992-05-04".to_string();
     match dates.binary_search(&missing) {
-        Ok(_) => {},
-        Err(pos) => { dates.insert(pos, missing.clone()); }
+        Ok(_) => {}
+        Err(pos) => {
+            dates.insert(pos, missing.clone());
+        }
     }
 
     let mut f = File::create(path)?;
@@ -226,7 +246,8 @@ pub fn last_trading_day(date: Timestamp) -> Timestamp {
         let tss = GLOBAL_CALENDAR_TS.lock().unwrap();
         if tss.is_empty() {
             // fallback: return today's pre-market
-            return Timestamp::pre_market_time_from_current(&Timestamp::now()).unwrap_or(Timestamp::now());
+            return Timestamp::pre_market_time_from_current(&Timestamp::now())
+                .unwrap_or(Timestamp::now());
         }
         // find upper_bound
         match tss.binary_search(&date) {
@@ -236,7 +257,9 @@ pub fn last_trading_day(date: Timestamp) -> Timestamp {
                 // if current < last_timestamp (pre-market), move back
                 let last_ts = tss[it];
                 let current = Timestamp::now();
-                if current < last_ts && it > 0 { it -= 1; }
+                if current < last_ts && it > 0 {
+                    it -= 1;
+                }
                 tss[it]
             }
         }
@@ -247,10 +270,24 @@ pub fn prev_trading_day(date: Timestamp) -> Timestamp {
     lazy_load_calendar();
     {
         let tss = GLOBAL_CALENDAR_TS.lock().unwrap();
-        if tss.is_empty() { return date; }
+        if tss.is_empty() {
+            return date;
+        }
         match tss.binary_search(&date) {
-            Ok(idx) => if idx == 0 { tss[0] } else { tss[idx-1] },
-            Err(pos) => if pos == 0 { tss[0] } else { tss[pos-1] },
+            Ok(idx) => {
+                if idx == 0 {
+                    tss[0]
+                } else {
+                    tss[idx - 1]
+                }
+            }
+            Err(pos) => {
+                if pos == 0 {
+                    tss[0]
+                } else {
+                    tss[pos - 1]
+                }
+            }
         }
     }
 }
@@ -259,10 +296,24 @@ pub fn next_trading_day(date: Timestamp) -> Timestamp {
     lazy_load_calendar();
     {
         let tss = GLOBAL_CALENDAR_TS.lock().unwrap();
-        if tss.is_empty() { return date; }
+        if tss.is_empty() {
+            return date;
+        }
         match tss.binary_search(&date) {
-            Ok(idx) => if idx + 1 >= tss.len() { tss[idx] } else { tss[idx+1] },
-            Err(pos) => if pos >= tss.len() { tss[tss.len()-1] } else { tss[pos] },
+            Ok(idx) => {
+                if idx + 1 >= tss.len() {
+                    tss[idx]
+                } else {
+                    tss[idx + 1]
+                }
+            }
+            Err(pos) => {
+                if pos >= tss.len() {
+                    tss[tss.len() - 1]
+                } else {
+                    tss[pos]
+                }
+            }
         }
     }
 }
@@ -271,14 +322,23 @@ pub fn date_range(begin: Timestamp, end: Timestamp, _skip_today: bool) -> Vec<Ti
     lazy_load_calendar();
     {
         let tss = GLOBAL_CALENDAR_TS.lock().unwrap();
-        if tss.is_empty() { return vec![]; }
-        let first = match tss.binary_search(&begin) { Ok(i) => i, Err(e) => e };
-        let last = match tss.binary_search(&end) { Ok(i) => i+1, Err(e) => e };
-        if first >= last { return vec![]; }
+        if tss.is_empty() {
+            return vec![];
+        }
+        let first = match tss.binary_search(&begin) {
+            Ok(i) => i,
+            Err(e) => e,
+        };
+        let last = match tss.binary_search(&end) {
+            Ok(i) => i + 1,
+            Err(e) => e,
+        };
+        if first >= last {
+            return vec![];
+        }
         tss[first..last].to_vec()
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -314,7 +374,9 @@ mod tests {
         // get the calendar path from crate config
         let cal_path = crate::config::get_calendar_filename();
         let cal = PathBuf::from(cal_path.clone());
-        if let Some(parent) = cal.parent() { std::fs::create_dir_all(parent).unwrap(); }
+        if let Some(parent) = cal.parent() {
+            std::fs::create_dir_all(parent).unwrap();
+        }
 
         let mut f = File::create(&cal).unwrap();
         writeln!(f, "date,source").unwrap();
@@ -348,16 +410,27 @@ mod tests {
         // allow 2 seconds tolerance for filesystem timestamp granularity
         let secs_exp = dur_expected.as_secs();
         let secs_act = dur_actual.as_secs();
-        assert!((secs_exp as i64 - secs_act as i64).abs() <= 2, "expected {} got {}", secs_exp, secs_act);
+        assert!(
+            (secs_exp as i64 - secs_act as i64).abs() <= 2,
+            "expected {} got {}",
+            secs_exp,
+            secs_act
+        );
     }
 
     // Helper used by tests: given the raw response text, process it the same way the HTTP
     // path does (preprocess -> decode -> write CSV). `last_modified` is optional and if
     // provided will set the file mtime.
-    fn download_and_cache_calendar_from_text(path: &PathBuf, text: &str, last_modified: Option<std::time::SystemTime>) -> Result<(), Box<dyn std::error::Error>> {
+    fn download_and_cache_calendar_from_text(
+        path: &PathBuf,
+        text: &str,
+        last_modified: Option<std::time::SystemTime>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // If the response already looks like CSV (starts with "date,"), write it directly
         if text.trim_start().starts_with("date,") {
-            if let Some(parent) = path.parent() { std::fs::create_dir_all(parent)?; }
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
             let mut f = File::create(path)?;
             f.write_all(text.as_bytes())?;
             if let Some(st) = last_modified {
@@ -371,7 +444,7 @@ mod tests {
                     filetime::set_file_mtime(path, ft).ok();
                 }
             }
-            return Ok(())
+            return Ok(());
         }
 
         let pre = preprocess_js(text);
@@ -385,13 +458,17 @@ mod tests {
         let mut dates: Vec<String> = records.iter().filter_map(|r| r.date.clone()).collect();
         let missing = "1992-05-04".to_string();
         match dates.binary_search(&missing) {
-            Ok(_) => {},
-            Err(pos) => { dates.insert(pos, missing.clone()); }
+            Ok(_) => {}
+            Err(pos) => {
+                dates.insert(pos, missing.clone());
+            }
         }
 
         let mut f = File::create(path)?;
         writeln!(f, "date,source")?;
-        for d in dates.iter() { writeln!(f, "{},sina", d)?; }
+        for d in dates.iter() {
+            writeln!(f, "{},sina", d)?;
+        }
 
         if let Some(st) = last_modified {
             let ft = FileTime::from_system_time(st);

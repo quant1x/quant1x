@@ -1,7 +1,7 @@
 use std::sync::Arc;
 mod kline;
-mod xdxr;
 mod trans;
+mod xdxr;
 
 pub use crate::datasets::kline::*;
 pub use crate::datasets::xdxr::*;

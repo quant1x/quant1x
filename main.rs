@@ -5,10 +5,20 @@ fn build_version_info() -> String {
     // We keep a compact message here; projects can extend via a build script if needed.
     let mut s = String::new();
     s.push_str("quant1x - Rust edition\n");
-    s.push_str("--------------------------------------------------------------------------------\n");
-    s.push_str(&format!("               Version : {}\n", env!("CARGO_PKG_VERSION")));
-    s.push_str(&format!("                Author : {}\n", env!("CARGO_PKG_AUTHORS")));
-    s.push_str("--------------------------------------------------------------------------------\n");
+    s.push_str(
+        "--------------------------------------------------------------------------------\n",
+    );
+    s.push_str(&format!(
+        "               Version : {}\n",
+        env!("CARGO_PKG_VERSION")
+    ));
+    s.push_str(&format!(
+        "                Author : {}\n",
+        env!("CARGO_PKG_AUTHORS")
+    ));
+    s.push_str(
+        "--------------------------------------------------------------------------------\n",
+    );
     s
 }
 
@@ -21,18 +31,51 @@ fn main() {
 
     let service_sub = Command::new("service")
         .about("Manage the service.")
-        .arg(Arg::new("action").value_parser(["install","uninstall","start","stop","status","run"]).required(true))
+        .arg(
+            Arg::new("action")
+                .value_parser(["install", "uninstall", "start", "stop", "status", "run"])
+                .required(true),
+        )
         .arg(Arg::new("pipe").long("pipe").action(ArgAction::SetTrue))
         .arg(Arg::new("elevated-out").long("elevated-out").num_args(1))
         .arg(Arg::new("elevated-pipe").long("elevated-pipe").num_args(1));
 
     let update_sub = Command::new("update")
         .about("Update cached data (base / features)")
-        .arg(Arg::new("calendar").long("calendar").action(ArgAction::SetTrue).help("Only update calendar cache"))
-        .arg(Arg::new("servers").long("servers").action(ArgAction::SetTrue).help("Only detect and update level1 servers cache"))
-        .arg(Arg::new("all").long("all").action(ArgAction::SetTrue).help("Update everything (default)"))
-        .arg(Arg::new("base").long("base").num_args(1..).value_name("KEY").help("Update base data keys (e.g. xdxr)").value_parser(clap::builder::NonEmptyStringValueParser::new()))
-        .arg(Arg::new("features").long("features").num_args(1..).value_name("KEY").help("Update feature datasets (derived data)").value_parser(clap::builder::NonEmptyStringValueParser::new()));
+        .arg(
+            Arg::new("calendar")
+                .long("calendar")
+                .action(ArgAction::SetTrue)
+                .help("Only update calendar cache"),
+        )
+        .arg(
+            Arg::new("servers")
+                .long("servers")
+                .action(ArgAction::SetTrue)
+                .help("Only detect and update level1 servers cache"),
+        )
+        .arg(
+            Arg::new("all")
+                .long("all")
+                .action(ArgAction::SetTrue)
+                .help("Update everything (default)"),
+        )
+        .arg(
+            Arg::new("base")
+                .long("base")
+                .num_args(1..)
+                .value_name("KEY")
+                .help("Update base data keys (e.g. xdxr)")
+                .value_parser(clap::builder::NonEmptyStringValueParser::new()),
+        )
+        .arg(
+            Arg::new("features")
+                .long("features")
+                .num_args(1..)
+                .value_name("KEY")
+                .help("Update feature datasets (derived data)")
+                .value_parser(clap::builder::NonEmptyStringValueParser::new()),
+        );
 
     // Leaking these Strings is fine for a short-lived CLI process and avoids
     // lifetime headaches with clap which often expects 'static str for program
@@ -42,11 +85,27 @@ fn main() {
 
     let mut app = Command::new(program_name_static)
         .long_about(program_version_static)
-        .arg(Arg::new("verbose").long("verbose").action(ArgAction::SetTrue).help("显示日志信息到终端"))
-        .arg(Arg::new("debug").long("debug").action(ArgAction::SetTrue).help("打开日志的调试模式"))
+        .arg(
+            Arg::new("version")
+                .long("version")
+                .action(ArgAction::SetTrue)
+                .help("Print build version information and exit"),
+        )
+        .arg(
+            Arg::new("verbose")
+                .long("verbose")
+                .action(ArgAction::SetTrue)
+                .help("显示日志信息到终端"),
+        )
+        .arg(
+            Arg::new("debug")
+                .long("debug")
+                .action(ArgAction::SetTrue)
+                .help("打开日志的调试模式"),
+        )
         .subcommand_required(false)
-    .subcommand(service_sub)
-    .subcommand(update_sub);
+        .subcommand(service_sub)
+        .subcommand(update_sub);
 
     // Note: the C++ implementation dynamically registers subcommands from
     // `quant1x::subcommands`. The Rust port may not yet expose that list.
@@ -54,6 +113,13 @@ fn main() {
     // `quant1x::run_subcommand(name, matches)`, it can be wired here.
 
     let matches = app.clone().get_matches();
+
+    // Print build/version info and exit early if requested
+    if matches.get_flag("version") {
+        // program_version_static was created from build_version_info()
+        println!("{}", program_version_static);
+        return;
+    }
 
     let verbose = matches.get_flag("verbose");
     let debug = matches.get_flag("debug");
@@ -78,11 +144,23 @@ fn main() {
     if let Some((name, subm)) = matches.subcommand() {
         if name == "service" {
             // call engine::daemon(service_matches) if available
-            let action = subm.get_one::<String>("action").map(|s| s.as_str()).unwrap_or("");
+            let action = subm
+                .get_one::<String>("action")
+                .map(|s| s.as_str())
+                .unwrap_or("");
             let pipe = subm.get_flag("pipe");
-            let elevated_out = subm.get_one::<String>("elevated-out").map(|s| s.to_string());
-            let elevated_pipe = subm.get_one::<String>("elevated-pipe").map(|s| s.to_string());
-            let code = call_engine_daemon(action, pipe, elevated_out.as_deref(), elevated_pipe.as_deref());
+            let elevated_out = subm
+                .get_one::<String>("elevated-out")
+                .map(|s| s.to_string());
+            let elevated_pipe = subm
+                .get_one::<String>("elevated-pipe")
+                .map(|s| s.to_string());
+            let code = call_engine_daemon(
+                action,
+                pipe,
+                elevated_out.as_deref(),
+                elevated_pipe.as_deref(),
+            );
             std::process::exit(code);
         }
     }
@@ -102,7 +180,10 @@ fn main() {
                     return;
                 }
                 Ok(false) => {
-                    log::error!("Error: Command '{}' not implemented in Rust library.\n", name);
+                    log::error!(
+                        "Error: Command '{}' not implemented in Rust library.\n",
+                        name
+                    );
                     app.print_help().ok();
                     std::process::exit(1);
                 }
@@ -147,7 +228,12 @@ fn call_engine_init() -> Result<(), String> {
     Ok(())
 }
 
-fn call_engine_daemon(action: &str, pipe: bool, elevated_out: Option<&str>, elevated_pipe: Option<&str>) -> i32 {
+fn call_engine_daemon(
+    action: &str,
+    pipe: bool,
+    elevated_out: Option<&str>,
+    elevated_pipe: Option<&str>,
+) -> i32 {
     quant1x::engine_daemon(action, pipe, elevated_out, elevated_pipe)
 }
 

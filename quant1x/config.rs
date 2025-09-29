@@ -1,9 +1,9 @@
 #![allow(dead_code)]
-use std::sync::OnceLock;
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value as YamlValue;
 use std::fs;
 use std::path::PathBuf;
+use std::sync::OnceLock;
 
 /// Crate-level configuration and runtime paths.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -59,11 +59,18 @@ fn lazy_init() -> BaseConfig {
         match fs::read_to_string(&cfg.filename) {
             Ok(s) => match serde_yaml::from_str::<YamlValue>(&s) {
                 Ok(yaml) => {
-                    cfg.running_in_debug = yaml.get("debug").and_then(|v| v.as_bool()).unwrap_or(false);
-                    cfg.cache_dir = yaml.get("basedir").and_then(|v| v.as_str()).map(|s| {
-                        // expand relative to home if starts with ~
-                        expand_homedir(s).map(|p| p.to_string_lossy().to_string()).unwrap_or_else(|| cfg.home_dir.clone())
-                    }).unwrap_or_else(|| cfg.home_dir.clone());
+                    cfg.running_in_debug =
+                        yaml.get("debug").and_then(|v| v.as_bool()).unwrap_or(false);
+                    cfg.cache_dir = yaml
+                        .get("basedir")
+                        .and_then(|v| v.as_str())
+                        .map(|s| {
+                            // expand relative to home if starts with ~
+                            expand_homedir(s)
+                                .map(|p| p.to_string_lossy().to_string())
+                                .unwrap_or_else(|| cfg.home_dir.clone())
+                        })
+                        .unwrap_or_else(|| cfg.home_dir.clone());
                     cfg.data = Some(yaml);
                 }
                 Err(e) => {
@@ -171,11 +178,16 @@ pub fn cache_id(code: &str) -> String {
 
 pub fn cache_id_path(code: &str) -> String {
     let id = cache_id(code);
-    if id.len() <= 3 { id }
-    else { format!("{}/{}", &id[..id.len()-3], id) }
+    if id.len() <= 3 {
+        id
+    } else {
+        format!("{}/{}", &id[..id.len() - 3], id)
+    }
 }
 
-pub fn get_holding_path() -> String { format!("{}/holding", default_cache_path()) }
+pub fn get_holding_path() -> String {
+    format!("{}/holding", default_cache_path())
+}
 
 /// Return the full filename for an xdxr cache file for `code`.
 /// Mirrors C++ behavior: files are stored under <cache>/xdxr/<prefix>/<code>.csv
@@ -186,7 +198,16 @@ pub fn get_xdxr_filename(code: &str) -> String {
     if code.len() > suffix_len {
         let prefix = &code[..code.len() - suffix_len];
         // sanitize prefix to avoid accidental drive letters or path separators
-        let safe_prefix: String = prefix.chars().map(|c| if c == ':' || c == '\\' || c == '/' { '_' } else { c }).collect();
+        let safe_prefix: String = prefix
+            .chars()
+            .map(|c| {
+                if c == ':' || c == '\\' || c == '/' {
+                    '_'
+                } else {
+                    c
+                }
+            })
+            .collect();
         path.push(safe_prefix);
     }
     // ensure directory exists when caller needs to write

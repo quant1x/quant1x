@@ -19,6 +19,9 @@ fn parity_t_branch_has_ohlc() {
     assert!(!out.is_empty());
     let first = &out[0];
     assert!(first.date.is_some());
-    let has_ohlc = first.open.is_some() || first.high.is_some() || first.low.is_some() || first.close.is_some();
+    let has_ohlc = first.open.is_some()
+        || first.high.is_some()
+        || first.low.is_some()
+        || first.close.is_some();
     assert!(!has_ohlc, "expected no OHLC fields for 139 (dates) branch");
 }

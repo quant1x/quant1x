@@ -39,7 +39,10 @@ fn decode_empty_input_returns_empty() {
     let mut dec = CalendarDecoder::new("");
     dec.decode_base64("");
     let out = dec.decode();
-    assert!(out.is_empty(), "empty input should yield empty decode result");
+    assert!(
+        out.is_empty(),
+        "empty input should yield empty decode result"
+    );
 }
 
 #[test]
@@ -123,7 +126,10 @@ fn unknown_branch_decode_returns_empty() {
     dec.set_branch(9999, 0);
     dec.header_done = true;
     let out = dec.decode();
-    assert!(out.is_empty(), "unknown branch should yield empty decode result");
+    assert!(
+        out.is_empty(),
+        "unknown branch should yield empty decode result"
+    );
 }
 
 #[test]
@@ -134,7 +140,10 @@ fn k_list_target_zero_returns_empty() {
     // without any encoded target data, k_list should be empty
     let kl = dec.k_list();
     // current implementation yields at least one date in this scenario
-    assert!(!kl.is_empty(), "k_list should produce at least one date when target_date is zero with no encoded data");
+    assert!(
+        !kl.is_empty(),
+        "k_list should produce at least one date when target_date is zero with no encoded data"
+    );
 }
 
 #[test]

@@ -1,17 +1,27 @@
-use std::sync::Arc;
 use crate::cache::{self, DataAdapter, Kind};
 use crate::Timestamp;
+use std::sync::Arc;
 
 /// DataXdxr: query level1 xdxr response and write local CSV cache
 #[derive(Debug)]
 pub struct DataXdxr;
 
 impl cache::Schema for DataXdxr {
-    fn kind(&self) -> Kind { cache::PLUGIN_MASK_BASE_DATA | 1 }
-    fn owner(&self) -> String { cache::DEFAULT_DATA_PROVIDER.to_string() }
-    fn key(&self) -> String { "xdxr".to_string() }
-    fn name(&self) -> String { "除权除息".to_string() }
-    fn usage(&self) -> String { String::new() }
+    fn kind(&self) -> Kind {
+        cache::PLUGIN_MASK_BASE_DATA | 1
+    }
+    fn owner(&self) -> String {
+        cache::DEFAULT_DATA_PROVIDER.to_string()
+    }
+    fn key(&self) -> String {
+        "xdxr".to_string()
+    }
+    fn name(&self) -> String {
+        "除权除息".to_string()
+    }
+    fn usage(&self) -> String {
+        String::new()
+    }
 }
 
 impl cache::DataAdapter for DataXdxr {
@@ -44,10 +54,16 @@ impl cache::DataAdapter for DataXdxr {
                                 return;
                             }
                         }
-                        if let Err(e) = w.flush() { log::error!("Failed to flush tmp file {}: {}", tmp, e); }
-                        if let Err(e) = std::fs::rename(&tmp, &filename) { log::error!("Failed to rename {} -> {}: {}", tmp, filename, e); }
+                        if let Err(e) = w.flush() {
+                            log::error!("Failed to flush tmp file {}: {}", tmp, e);
+                        }
+                        if let Err(e) = std::fs::rename(&tmp, &filename) {
+                            log::error!("Failed to rename {} -> {}: {}", tmp, filename, e);
+                        }
                     }
-                    Err(e) => { log::error!("Failed to create tmp file {}: {}", tmp, e); }
+                    Err(e) => {
+                        log::error!("Failed to create tmp file {}: {}", tmp, e);
+                    }
                 }
             }
         } else {
@@ -67,7 +83,10 @@ pub fn load_xdxr(code: &str) -> Vec<crate::level1::xdxr::XdxrInfo> {
     let mut list: Vec<crate::level1::xdxr::XdxrInfo> = Vec::new();
     if let Ok(f) = std::fs::File::open(&filename) {
         let mut rdr = csv::ReaderBuilder::new().has_headers(true).from_reader(f);
-        match rdr.deserialize::<crate::level1::xdxr::XdxrInfo>().collect::<Result<Vec<_>, csv::Error>>() {
+        match rdr
+            .deserialize::<crate::level1::xdxr::XdxrInfo>()
+            .collect::<Result<Vec<_>, csv::Error>>()
+        {
             Ok(v) => list = v,
             Err(e) => log::error!("[DataXdxr] failed to deserialize {}: {}", filename, e),
         }

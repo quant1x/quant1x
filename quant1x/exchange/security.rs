@@ -1,14 +1,13 @@
+use crate::runtime::RollingOnce;
+use crate::timestamp::Timestamp;
 use once_cell::sync::Lazy;
-use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use crate::timestamp::Timestamp;
-use crate::runtime::RollingOnce;
+use std::sync::{Arc, Mutex};
 // protocol-level operations are handled inside level1::security_list::fetch_security_list
 
-static GLOBAL_SECURITY_MAP: Lazy<Mutex<HashMap<String, SecurityInfo>>> = Lazy::new(|| {
-    Mutex::new(HashMap::new())
-});
+static GLOBAL_SECURITY_MAP: Lazy<Mutex<HashMap<String, SecurityInfo>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
 // Global RollingOnce for securities (daily reset at 09:00)
 static GLOBAL_SECURITY_ONCE: Lazy<Arc<RollingOnce>> = Lazy::new(|| {
@@ -31,7 +30,12 @@ pub struct SecurityInfo {
 
 impl SecurityInfo {
     pub fn new(code: String, name: String, lot_size: u16, price_precision: u8) -> Self {
-        Self { code, name, lot_size, price_precision }
+        Self {
+            code,
+            name,
+            lot_size,
+            price_precision,
+        }
     }
 }
 
@@ -44,9 +48,14 @@ fn init_securities_impl() -> Result<(), Box<dyn std::error::Error>> {
     let need_update = match std::fs::metadata(&path) {
         Ok(meta) => {
             if let Ok(mtime) = meta.modified() {
-                let msecs = mtime.duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+                let msecs = mtime
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_millis() as i64)
+                    .unwrap_or(0);
                 let cache_time = Timestamp::from(msecs);
-                let check_point = Timestamp::now().pre_market_time_from_current().unwrap_or(Timestamp::now());
+                let check_point = Timestamp::now()
+                    .pre_market_time_from_current()
+                    .unwrap_or(Timestamp::now());
                 // if now >= check_point and cache_time < check_point then stale
                 let now = Timestamp::now();
                 if now >= check_point && cache_time < check_point {
@@ -54,7 +63,9 @@ fn init_securities_impl() -> Result<(), Box<dyn std::error::Error>> {
                 } else {
                     false
                 }
-            } else { true }
+            } else {
+                true
+            }
         }
         Err(_) => true,
     };
@@ -62,7 +73,7 @@ fn init_securities_impl() -> Result<(), Box<dyn std::error::Error>> {
     if need_update {
         log::info!("security: updating securities list into {}", filename);
 
-        use crate::exchange::{MARKET_SHANGHAI, MARKET_SHENZHEN, MARKET_FLAG_SH, MARKET_FLAG_SZ};
+        use crate::exchange::{MARKET_FLAG_SH, MARKET_FLAG_SZ, MARKET_SHANGHAI, MARKET_SHENZHEN};
 
         // markets to query (SZ then SH) mirror previous behavior
         let markets: [u16; 2] = [MARKET_SHENZHEN as u16, MARKET_SHANGHAI as u16];
@@ -73,19 +84,34 @@ fn init_securities_impl() -> Result<(), Box<dyn std::error::Error>> {
             loop {
                 match crate::level1::security_list::fetch_security_list(market as u16, start) {
                     Some(resp) => {
-                        log::info!("security list market={} start={} count={}", market, start, resp.count);
+                        log::info!(
+                            "security list market={} start={} count={}",
+                            market,
+                            start,
+                            resp.count
+                        );
                         let cnt = resp.list.len();
                         for e in resp.list.into_iter() {
-                            let prefix = if market == MARKET_SHANGHAI as u16 { MARKET_FLAG_SH } else { MARKET_FLAG_SZ };
+                            let prefix = if market == MARKET_SHANGHAI as u16 {
+                                MARKET_FLAG_SH
+                            } else {
+                                MARKET_FLAG_SZ
+                            };
                             let code = format!("{}{}", prefix, e.code);
                             all.push((code, e.vol_unit, e.decimal_point, e.name, e.pre_close));
                         }
                         // security_list_max in C++ is 1000
-                        if cnt < 1000 { break; }
+                        if cnt < 1000 {
+                            break;
+                        }
                         start = start.wrapping_add(1000u16);
                     }
                     None => {
-                        log::error!("security list request failed for market {} start {}", market, start);
+                        log::error!(
+                            "security list request failed for market {} start {}",
+                            market,
+                            start
+                        );
                         break;
                     }
                 }
@@ -108,11 +134,23 @@ fn init_securities_impl() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(parent) = std::path::Path::new(&filename).parent() {
                 let _ = std::fs::create_dir_all(parent);
             }
-            let mut tmp = tempfile::NamedTempFile::new_in(std::path::Path::new(&filename).parent().unwrap_or_else(|| std::path::Path::new(".")))?;
+            let mut tmp = tempfile::NamedTempFile::new_in(
+                std::path::Path::new(&filename)
+                    .parent()
+                    .unwrap_or_else(|| std::path::Path::new(".")),
+            )?;
             use std::io::Write;
             writeln!(tmp.as_file_mut(), "Code,VolUnit,DecimalPoint,Name,PreClose")?;
             for s in all.iter() {
-                writeln!(tmp.as_file_mut(), "{},{},{},{},{}", s.0, s.1, s.2, csv_escape(&s.3), s.4)?;
+                writeln!(
+                    tmp.as_file_mut(),
+                    "{},{},{},{},{}",
+                    s.0,
+                    s.1,
+                    s.2,
+                    csv_escape(&s.3),
+                    s.4
+                )?;
             }
             let _ = tmp.persist(&filename);
         }
@@ -133,7 +171,9 @@ fn init_securities_impl() -> Result<(), Box<dyn std::error::Error>> {
             if let Ok(rec) = result {
                 // rec: Code,VolUnit,DecimalPoint,Name,PreClose (Name may contain commas)
                 let code = rec.get(0).unwrap_or("").trim().to_string();
-                if code.is_empty() { continue; }
+                if code.is_empty() {
+                    continue;
+                }
                 let vol_unit = rec.get(1).and_then(|s| s.parse::<u16>().ok()).unwrap_or(0);
                 let decimal_point = rec.get(2).and_then(|s| s.parse::<u8>().ok()).unwrap_or(0);
                 let name = rec.get(3).unwrap_or("").to_string();
@@ -189,6 +229,9 @@ fn correct_security_code(s: &str) -> String {
     }
     // plain numeric code: infer market by leading digit
     let numeric = v.chars().filter(|c| c.is_ascii_digit()).collect::<String>();
-    if numeric.starts_with('6') { format!("sh{:0>6}", numeric) }
-    else { format!("sz{:0>6}", numeric) }
+    if numeric.starts_with('6') {
+        format!("sh{:0>6}", numeric)
+    } else {
+        format!("sz{:0>6}", numeric)
+    }
 }

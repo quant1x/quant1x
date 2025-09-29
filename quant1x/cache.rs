@@ -30,7 +30,9 @@ pub trait DataAdapter: Schema + Send + Sync {
     fn update(&self, code: &str, date: Timestamp);
     /// Optional hook: return a boxed FeatureAdapter clone if this adapter is a FeatureAdapter.
     /// Default implementation returns None; feature adapters should override and return Some(clone).
-    fn as_feature_clone(&self) -> Option<Box<dyn FeatureAdapter>> { None }
+    fn as_feature_clone(&self) -> Option<Box<dyn FeatureAdapter>> {
+        None
+    }
 }
 
 /// FeatureAdapter provides filename and aggregation helpers
@@ -61,7 +63,8 @@ pub trait FeatureAdapter: DataAdapter {
 }
 
 // Global registry
-static PLUGIN_MAP: Lazy<Mutex<BTreeMap<Kind, Arc<dyn DataAdapter>>>> = Lazy::new(|| Mutex::new(BTreeMap::new()));
+static PLUGIN_MAP: Lazy<Mutex<BTreeMap<Kind, Arc<dyn DataAdapter>>>> =
+    Lazy::new(|| Mutex::new(BTreeMap::new()));
 
 /// Register a plugin; panics if already registered (mirrors ErrAlreadyExists)
 pub fn register(plugin: Arc<dyn DataAdapter>) {
@@ -93,9 +96,13 @@ pub fn plugins(mask: Kind) -> Vec<Arc<dyn DataAdapter>> {
 
 /// Return plugins whose Key() is in keywords and which match plugin_type mask
 pub fn plugins_with_name(plugin_type: Kind, keywords: &[String]) -> Vec<Arc<dyn DataAdapter>> {
-    if keywords.is_empty() { return Vec::new(); }
+    if keywords.is_empty() {
+        return Vec::new();
+    }
     let mut keyword_set: HashSet<String> = HashSet::new();
-    for k in keywords { keyword_set.insert(k.clone()); }
+    for k in keywords {
+        keyword_set.insert(k.clone());
+    }
 
     let map = PLUGIN_MAP.lock().unwrap();
     let mut candidates: Vec<(Kind, Arc<dyn DataAdapter>)> = Vec::new();
@@ -104,7 +111,9 @@ pub fn plugins_with_name(plugin_type: Kind, keywords: &[String]) -> Vec<Arc<dyn 
             candidates.push((*k, plugin.clone()));
         }
     }
-    if candidates.is_empty() { return Vec::new(); }
+    if candidates.is_empty() {
+        return Vec::new();
+    }
     candidates.sort_by_key(|(k, _)| *k);
     candidates.into_iter().map(|(_, p)| p).collect()
 }
@@ -122,11 +131,29 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
     }
 
     // concurrency default
-    let default_concurrency = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4);
+    let default_concurrency = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(4);
 
     let mut processed_adapters = 0usize;
 
+    // Ensure base adapters run before feature adapters: partition into two groups
+    let mut base_adapters: Vec<Arc<dyn DataAdapter>> = Vec::new();
+    let mut feature_adapters: Vec<Arc<dyn DataAdapter>> = Vec::new();
     for adapter in adapters.iter() {
+        // classify by whether adapter exposes a FeatureAdapter clone
+        if adapter.as_feature_clone().is_some() {
+            feature_adapters.push(adapter.clone());
+        } else {
+            base_adapters.push(adapter.clone());
+        }
+    }
+
+    let ordered_iter = base_adapters
+        .into_iter()
+        .chain(feature_adapters.into_iter());
+
+    for adapter in ordered_iter {
         processed_adapters += 1;
         let kind = adapter.kind();
         let module_name = format!("{}({})", adapter.key(), kind);
@@ -134,7 +161,10 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
 
         // show a progress bar for codes
         let pb = ProgressBar::new(all_codes.len() as u64);
-        pb.set_style(ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] {pos}/{len} {msg}").unwrap());
+        pb.set_style(
+            ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] {pos}/{len} {msg}")
+                .unwrap(),
+        );
 
         // detect feature adapter
         if let Some(feature_prototype) = adapter.as_feature_clone() {
@@ -144,7 +174,8 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
 
             // prepare results container shared across threads
             use std::sync::{Arc as StdArc, Mutex as StdMutex};
-            let results: StdArc<StdMutex<Vec<(String, Vec<String>)>>> = StdArc::new(StdMutex::new(Vec::new()));
+            let results: StdArc<StdMutex<Vec<(String, Vec<String>)>>> =
+                StdArc::new(StdMutex::new(Vec::new()));
 
             // partition codes
             let num_threads = std::cmp::min(default_concurrency, 8);
@@ -155,7 +186,9 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
             for t in 0..num_threads {
                 let start = t * chunk_size;
                 let end = std::cmp::min(start + chunk_size, codes.len());
-                if start >= end { continue; }
+                if start >= end {
+                    continue;
+                }
                 let codes_slice = codes[start..end].to_vec();
                 let adapter_clone = adapter.clone();
                 let results_clone = results.clone();
@@ -182,7 +215,9 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
             }
 
             // wait for threads
-            for h in handles { let _ = h.join(); }
+            for h in handles {
+                let _ = h.join();
+            }
 
             // aggregate and write CSV
             let mut all_data = Vec::new();
@@ -192,7 +227,9 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
             // sort results by code order
             let mut ordered = guard.clone();
             let mut code_order = std::collections::HashMap::new();
-            for (i, c) in all_codes.iter().enumerate() { code_order.insert(c.clone(), i); }
+            for (i, c) in all_codes.iter().enumerate() {
+                code_order.insert(c.clone(), i);
+            }
             ordered.sort_by_key(|(code, _)| *code_order.get(code).unwrap_or(&usize::MAX));
             for (_code, vals) in ordered.into_iter() {
                 all_data.push(vals);
@@ -200,14 +237,21 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
 
             // write CSV
             if all_data.len() > 1 {
-                if let Err(e) = std::fs::create_dir_all(std::path::Path::new(&cache_filename).parent().unwrap_or(std::path::Path::new("."))) {
+                if let Err(e) = std::fs::create_dir_all(
+                    std::path::Path::new(&cache_filename)
+                        .parent()
+                        .unwrap_or(std::path::Path::new(".")),
+                ) {
                     log::error!("Failed to create cache dir for {}: {}", cache_filename, e);
                 } else {
                     match std::fs::File::create(&cache_filename) {
                         Ok(f) => {
                             let mut w = csv::Writer::from_writer(f);
                             for row in all_data.into_iter() {
-                                if let Err(e) = w.write_record(row) { log::error!("Failed to write csv: {}", e); break; }
+                                if let Err(e) = w.write_record(row) {
+                                    log::error!("Failed to write csv: {}", e);
+                                    break;
+                                }
                             }
                             let _ = w.flush();
                         }
@@ -228,7 +272,9 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
             for t in 0..num_threads {
                 let start = t * chunk_size;
                 let end = std::cmp::min(start + chunk_size, codes.len());
-                if start >= end { continue; }
+                if start >= end {
+                    continue;
+                }
                 let slice = codes[start..end].to_vec();
                 let adapter_clone = adapter.clone();
                 let pb_clone = pb.clone();
@@ -240,7 +286,9 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
                 });
                 handles.push(handle);
             }
-            for h in handles { let _ = h.join(); }
+            for h in handles {
+                let _ = h.join();
+            }
             pb.finish_with_message(format!("{} done", module_name));
         }
 
@@ -274,11 +322,21 @@ mod tests {
     struct DummyAdapter;
 
     impl Schema for DummyAdapter {
-        fn kind(&self) -> Kind { 0x999 }
-        fn owner(&self) -> String { DEFAULT_DATA_PROVIDER.to_string() }
-        fn key(&self) -> String { "dummy".to_string() }
-        fn name(&self) -> String { "dummy".to_string() }
-        fn usage(&self) -> String { "".to_string() }
+        fn kind(&self) -> Kind {
+            0x999
+        }
+        fn owner(&self) -> String {
+            DEFAULT_DATA_PROVIDER.to_string()
+        }
+        fn key(&self) -> String {
+            "dummy".to_string()
+        }
+        fn name(&self) -> String {
+            "dummy".to_string()
+        }
+        fn usage(&self) -> String {
+            "".to_string()
+        }
     }
     impl DataAdapter for DummyAdapter {
         fn print(&self, _code: &str, _dates: &[Timestamp]) {}
@@ -287,8 +345,8 @@ mod tests {
 
     #[test]
     fn test_register_and_plugins() {
-    let d = std::sync::Arc::new(DummyAdapter) as Arc<dyn DataAdapter>;
-    register(d);
+        let d = std::sync::Arc::new(DummyAdapter) as Arc<dyn DataAdapter>;
+        register(d);
         let all = plugins(0);
         assert!(!all.is_empty());
     }

@@ -107,7 +107,10 @@ pub fn get_code_list() -> Vec<String> {
 }
 
 /// Utility: write securities list (one code per line) to given path
-pub fn write_securities_csv<P: AsRef<std::path::Path>>(path: P, codes: &[String]) -> std::io::Result<()> {
+pub fn write_securities_csv<P: AsRef<std::path::Path>>(
+    path: P,
+    codes: &[String],
+) -> std::io::Result<()> {
     let mut f = std::fs::File::create(path)?;
     use std::io::Write;
     for c in codes {

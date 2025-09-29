@@ -1,10 +1,12 @@
 use chrono::{Local, Timelike};
-use std::path::PathBuf;
 use std::io::{self, Write};
-use std::sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}};
+use std::path::PathBuf;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex,
+};
 use std::thread;
 use std::time::Duration;
-
 
 /// RollingOnce provides C++-equivalent semantics:
 /// - a shared, in-memory done flag guarded by a mutex
@@ -49,36 +51,44 @@ impl RollingOnce {
 
         // Spawn the background thread that calls reset() every day at the provided local time.
         let cancel = instance.cancelled.clone();
-            let weak_inst = Arc::downgrade(&instance);
-            thread::Builder::new()
-                .name(format!("rolling-once-reset-{}:{}", hour, minute))
-                .spawn(move || {
-                    while !cancel.load(Ordering::Relaxed) {
-                        if let Some(inst) = weak_inst.upgrade() {
-                            let now = Local::now();
-                            // compute next occurrence
-                            let mut next = now.with_hour(hour).and_then(|d| d.with_minute(minute)).and_then(|d| d.with_second(0)).unwrap_or(now);
-                            if next <= now {
-                                next = next + chrono::Duration::days(1);
+        let weak_inst = Arc::downgrade(&instance);
+        thread::Builder::new()
+            .name(format!("rolling-once-reset-{}:{}", hour, minute))
+            .spawn(move || {
+                while !cancel.load(Ordering::Relaxed) {
+                    if let Some(inst) = weak_inst.upgrade() {
+                        let now = Local::now();
+                        // compute next occurrence
+                        let mut next = now
+                            .with_hour(hour)
+                            .and_then(|d| d.with_minute(minute))
+                            .and_then(|d| d.with_second(0))
+                            .unwrap_or(now);
+                        if next <= now {
+                            next = next + chrono::Duration::days(1);
+                        }
+                        let dur = next.signed_duration_since(now);
+                        let secs = dur.num_seconds();
+                        if secs > 0 {
+                            let mut remaining = secs;
+                            while remaining > 0 && !cancel.load(Ordering::Relaxed) {
+                                let sleep_for = std::cmp::min(remaining, 60);
+                                thread::sleep(Duration::from_secs(sleep_for as u64));
+                                remaining -= sleep_for;
                             }
-                            let dur = next.signed_duration_since(now);
-                            let secs = dur.num_seconds();
-                            if secs > 0 {
-                                let mut remaining = secs;
-                                while remaining > 0 && !cancel.load(Ordering::Relaxed) {
-                                    let sleep_for = std::cmp::min(remaining, 60);
-                                    thread::sleep(Duration::from_secs(sleep_for as u64));
-                                    remaining -= sleep_for;
-                                }
-                            }
-                            if cancel.load(Ordering::Relaxed) { break; }
-                            inst.reset();
-                        } else { break; }
+                        }
+                        if cancel.load(Ordering::Relaxed) {
+                            break;
+                        }
+                        inst.reset();
+                    } else {
+                        break;
                     }
-                })
-        .ok();
+                }
+            })
+            .ok();
 
-    instance
+        instance
     }
 
     /// Reset the once state so the next Do() may execute the closure again.
@@ -118,7 +128,11 @@ impl RollingOnce {
                     let _ = std::fs::create_dir_all(parent);
                 }
                 // write to temp + rename for atomicity
-                if let Ok(tmp) = tempfile::NamedTempFile::new_in(self.marker.parent().unwrap_or_else(|| std::path::Path::new("."))) {
+                if let Ok(tmp) = tempfile::NamedTempFile::new_in(
+                    self.marker
+                        .parent()
+                        .unwrap_or_else(|| std::path::Path::new(".")),
+                ) {
                     let today = Local::now().format("%Y-%m-%d").to_string();
                     let _ = write!(tmp.as_file(), "{}", today);
                     let _ = tmp.persist(&self.marker);
@@ -151,7 +165,6 @@ impl RollingOnce {
         write!(f, "{}", today)?;
         Ok(())
     }
-
 }
 
 impl Drop for RollingOnce {
@@ -167,9 +180,9 @@ impl Drop for RollingOnce {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
     use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
     use std::thread;
+    use tempfile::tempdir;
 
     #[test]
     fn test_do_once_persists_and_reset() {
@@ -212,7 +225,9 @@ mod tests {
                 });
             }));
         }
-        for h in handles { let _ = h.join(); }
+        for h in handles {
+            let _ = h.join();
+        }
 
         // Only one thread should have incremented the counter
         assert_eq!(counter.load(AtomicOrdering::SeqCst), 1);

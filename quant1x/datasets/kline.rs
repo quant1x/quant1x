@@ -1,7 +1,7 @@
-use std::sync::Arc;
 use crate::cache::{self, DataAdapter, Kind};
 use crate::Timestamp;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct KLine {
@@ -31,7 +31,19 @@ pub struct KLine {
 
 impl KLine {
     pub fn headers() -> Vec<String> {
-        vec!["Date".into(), "Open".into(), "Close".into(), "High".into(), "Low".into(), "Volume".into(), "Amount".into(), "Up".into(), "Down".into(), "Datetime".into(), "AdjustmentCount".into()]
+        vec![
+            "Date".into(),
+            "Open".into(),
+            "Close".into(),
+            "High".into(),
+            "Low".into(),
+            "Volume".into(),
+            "Amount".into(),
+            "Up".into(),
+            "Down".into(),
+            "Datetime".into(),
+            "AdjustmentCount".into(),
+        ]
     }
 }
 
@@ -39,11 +51,21 @@ impl KLine {
 pub struct DataKLine;
 
 impl cache::Schema for DataKLine {
-    fn kind(&self) -> Kind { crate::cache::PLUGIN_MASK_BASE_DATA | 3 }
-    fn owner(&self) -> String { crate::cache::DEFAULT_DATA_PROVIDER.to_string() }
-    fn key(&self) -> String { "day".to_string() }
-    fn name(&self) -> String { "日K线".to_string() }
-    fn usage(&self) -> String { "日K线".to_string() }
+    fn kind(&self) -> Kind {
+        crate::cache::PLUGIN_MASK_BASE_DATA | 3
+    }
+    fn owner(&self) -> String {
+        crate::cache::DEFAULT_DATA_PROVIDER.to_string()
+    }
+    fn key(&self) -> String {
+        "day".to_string()
+    }
+    fn name(&self) -> String {
+        "日K线".to_string()
+    }
+    fn usage(&self) -> String {
+        "日K线".to_string()
+    }
 }
 
 impl DataAdapter for DataKLine {
@@ -64,7 +86,11 @@ impl DataAdapter for DataKLine {
         let path = std::path::Path::new(&filename);
         if let Some(parent) = path.parent() {
             if let Err(e) = std::fs::create_dir_all(parent) {
-                log::error!("[DataKLine] failed to create parent dir {:?}: {}", parent, e);
+                log::error!(
+                    "[DataKLine] failed to create parent dir {:?}: {}",
+                    parent,
+                    e
+                );
                 return;
             }
         }
@@ -79,7 +105,8 @@ impl DataAdapter for DataKLine {
         let mut klines_offset_days = MAX_KLINE_LOOKBACK_DAYS;
         let mut adjust_times = 0i32;
         // 默认起始日期：1990-12-19（市场首次上市日期）
-        let mut current_start_date = crate::Timestamp::pre_market_time(1990, 12, 19).unwrap_or(crate::Timestamp::zero());
+        let mut current_start_date =
+            crate::Timestamp::pre_market_time(1990, 12, 19).unwrap_or(crate::Timestamp::zero());
         if klines_length > 0 {
             if klines_offset_days > klines_length {
                 klines_offset_days = klines_length;
@@ -93,7 +120,9 @@ impl DataAdapter for DataKLine {
         }
 
         // 从当前时间确定结束日期（尽可能使用今日的盘前时间作为结束日期）
-        let current_end_date = crate::Timestamp::pre_market_time_from_current(&crate::Timestamp::now()).unwrap_or(crate::Timestamp::now());
+        let current_end_date =
+            crate::Timestamp::pre_market_time_from_current(&crate::Timestamp::now())
+                .unwrap_or(crate::Timestamp::now());
         // 构建日期范围
         let ts_range = crate::exchange::date_range(current_start_date, current_end_date, false);
         if ts_range.is_empty() {
@@ -105,7 +134,7 @@ impl DataAdapter for DataKLine {
         // 按日期范围分页从 level1 拉取数据（每页作为一个向量，保持页内顺序，之后再翻转页序以匹配 C++）
         let mut hs: Vec<Vec<crate::level1::SecurityBar>> = Vec::new();
         let step = SECURITY_BARS_MAX;
-    let mut start_idx: usize = 0;
+        let mut start_idx: usize = 0;
         while start_idx < total {
             let remaining = total - start_idx;
             let count = std::cmp::min(step, remaining) as u16;
@@ -124,7 +153,11 @@ impl DataAdapter for DataKLine {
                     start_idx = start_idx.saturating_add(count as usize);
                 }
                 None => {
-                    log::warn!("[DataKLine] fetch_security_bars returned None for {} start={}", code, start_idx);
+                    log::warn!(
+                        "[DataKLine] fetch_security_bars returned None for {} start={}",
+                        code,
+                        start_idx
+                    );
                     break;
                 }
             }
@@ -136,10 +169,14 @@ impl DataAdapter for DataKLine {
                 match std::fs::File::create(&filename) {
                     Ok(f) => {
                         let mut w = csv::Writer::from_writer(f);
-                        if let Err(e) = w.write_record(KLine::headers()) { log::error!("[DataKLine] write header failed: {}", e); }
+                        if let Err(e) = w.write_record(KLine::headers()) {
+                            log::error!("[DataKLine] write header failed: {}", e);
+                        }
                         let _ = w.flush();
                     }
-                    Err(e) => { log::error!("[DataKLine] create file {} failed: {}", filename, e); }
+                    Err(e) => {
+                        log::error!("[DataKLine] create file {} failed: {}", filename, e);
+                    }
                 }
             }
             return;
@@ -151,25 +188,27 @@ impl DataAdapter for DataKLine {
         let mut incremental_klines: Vec<KLine> = Vec::new();
         for page in hs.iter() {
             for row in page.iter() {
-            // 为 bar 日期构造盘前时间戳
-            let date_time = crate::Timestamp::pre_market_time(row.year, row.month as u32, row.day as u32).unwrap_or(crate::Timestamp::now());
-            if date_time < ts_range[0] || date_time > ts_range[total-1] {
-                continue;
-            }
-            let kx = KLine {
-                date: date_time.only_date(),
-                open: row.open,
-                close: row.close,
-                high: row.high,
-                low: row.low,
-                volume: row.vol * 100.0,
-                amount: row.amount,
-                up: row.up_count as i32,
-                down: row.down_count as i32,
-                datetime: row.datetime.clone(),
-                adjustment_count: 0,
-            };
-            incremental_klines.push(kx);
+                // 为 bar 日期构造盘前时间戳
+                let date_time =
+                    crate::Timestamp::pre_market_time(row.year, row.month as u32, row.day as u32)
+                        .unwrap_or(crate::Timestamp::now());
+                if date_time < ts_range[0] || date_time > ts_range[total - 1] {
+                    continue;
+                }
+                let kx = KLine {
+                    date: date_time.only_date(),
+                    open: row.open,
+                    close: row.close,
+                    high: row.high,
+                    low: row.low,
+                    volume: row.vol * 100.0,
+                    amount: row.amount,
+                    up: row.up_count as i32,
+                    down: row.down_count as i32,
+                    datetime: row.datetime.clone(),
+                    adjustment_count: 0,
+                };
+                incremental_klines.push(kx);
             }
         }
 
@@ -201,15 +240,35 @@ impl DataAdapter for DataKLine {
         match std::fs::File::create(&tmp) {
             Ok(f) => {
                 let mut w = csv::Writer::from_writer(f);
-                if let Err(e) = w.write_record(KLine::headers()) { log::error!("[DataKLine] write header failed: {}", e); }
+                if let Err(e) = w.write_record(KLine::headers()) {
+                    log::error!("[DataKLine] write header failed: {}", e);
+                }
                 for row in klines.iter() {
-                    let rec: Vec<String> = vec![row.date.clone(), row.open.to_string(), row.close.to_string(), row.high.to_string(), row.low.to_string(), row.volume.to_string(), row.amount.to_string(), row.up.to_string(), row.down.to_string(), row.datetime.clone(), row.adjustment_count.to_string()];
-                    if let Err(e) = w.write_record(rec) { log::error!("[DataKLine] write row failed: {}", e); }
+                    let rec: Vec<String> = vec![
+                        row.date.clone(),
+                        row.open.to_string(),
+                        row.close.to_string(),
+                        row.high.to_string(),
+                        row.low.to_string(),
+                        row.volume.to_string(),
+                        row.amount.to_string(),
+                        row.up.to_string(),
+                        row.down.to_string(),
+                        row.datetime.clone(),
+                        row.adjustment_count.to_string(),
+                    ];
+                    if let Err(e) = w.write_record(rec) {
+                        log::error!("[DataKLine] write row failed: {}", e);
+                    }
                 }
                 let _ = w.flush();
-                if let Err(e) = std::fs::rename(&tmp, &filename) { log::error!("[DataKLine] rename failed {} -> {}: {}", tmp, filename, e); }
+                if let Err(e) = std::fs::rename(&tmp, &filename) {
+                    log::error!("[DataKLine] rename failed {} -> {}: {}", tmp, filename, e);
+                }
             }
-            Err(e) => { log::error!("[DataKLine] create tmp {} failed: {}", tmp, e); }
+            Err(e) => {
+                log::error!("[DataKLine] create tmp {} failed: {}", tmp, e);
+            }
         }
     }
 }
@@ -222,9 +281,16 @@ fn read_kline_from_csv(filename: &str) -> Vec<KLine> {
         Ok(f) => {
             let mut rdr = csv::ReaderBuilder::new().has_headers(true).from_reader(f);
             // Deserialize all records into Vec<KLine> in one go; CSV+Serde maps headers -> struct fields
-            match rdr.deserialize::<KLine>().collect::<Result<Vec<KLine>, csv::Error>>() {
+            match rdr
+                .deserialize::<KLine>()
+                .collect::<Result<Vec<KLine>, csv::Error>>()
+            {
                 Ok(v) => klines = v,
-                Err(e) => log::error!("[DataKLine] failed to deserialize kline file {}: {}", filename, e),
+                Err(e) => log::error!(
+                    "[DataKLine] failed to deserialize kline file {}: {}",
+                    filename,
+                    e
+                ),
             }
         }
         Err(_) => { /* missing file -> return empty vector */ }
@@ -233,37 +299,59 @@ fn read_kline_from_csv(filename: &str) -> Vec<KLine> {
 }
 
 // 辅助函数：计算预除权（与 C++ 实现相似）
-fn calculate_pre_adjust(klines: &mut Vec<KLine>, start_date: crate::Timestamp, dividends: &Vec<crate::level1::xdxr::XdxrInfo>) {
-    if klines.is_empty() { return; }
+fn calculate_pre_adjust(
+    klines: &mut Vec<KLine>,
+    start_date: crate::Timestamp,
+    dividends: &Vec<crate::level1::xdxr::XdxrInfo>,
+) {
+    if klines.is_empty() {
+        return;
+    }
     let last_day = klines.last().unwrap().date.clone();
     let ts_last_day = crate::Timestamp::parse(&last_day).unwrap_or(crate::Timestamp::now());
     // 将该日期转换为该日的盘前时间
-    let ts_last_day = crate::Timestamp::pre_market_time_from_current(&ts_last_day).unwrap_or(ts_last_day);
+    let ts_last_day =
+        crate::Timestamp::pre_market_time_from_current(&ts_last_day).unwrap_or(ts_last_day);
     let last_day_next = crate::exchange::next_trading_day(ts_last_day).only_date();
     let start_date_only = start_date.only_date();
     // 筛选除权除息记录：满足 last_day_next >= x.Date 并且 x.Category == 1
-    let xdxr_infos: Vec<crate::level1::xdxr::XdxrInfo> = dividends.iter().filter(|x| {
-        if x.category as i32 != 1 { return false; }
-        if let Ok(dts) = crate::Timestamp::parse(&x.date) {
-            return last_day_next >= dts.only_date();
-        }
-        false
-    }).cloned().collect();
+    let xdxr_infos: Vec<crate::level1::xdxr::XdxrInfo> = dividends
+        .iter()
+        .filter(|x| {
+            if x.category as i32 != 1 {
+                return false;
+            }
+            if let Ok(dts) = crate::Timestamp::parse(&x.date) {
+                return last_day_next >= dts.only_date();
+            }
+            false
+        })
+        .cloned()
+        .collect();
     let mut _times = xdxr_infos.len();
     for info in xdxr_infos.iter() {
-        if info.date <= start_date_only { /* continue */ } else {
+        if info.date <= start_date_only { /* continue */
+        } else {
             let (m, a) = info.adjust_factor();
             let klines_size = klines.len();
             for i in 0..klines_size {
-                if klines[i].date >= info.date { break; }
+                if klines[i].date >= info.date {
+                    break;
+                }
                 klines[i].open = klines[i].open * m + a;
                 klines[i].close = klines[i].close * m + a;
                 klines[i].high = klines[i].high * m + a;
                 klines[i].low = klines[i].low * m + a;
                 // 使用 amount/volume 进行成交量的调整
-                let ap = if klines[i].volume != 0.0 { klines[i].amount / klines[i].volume } else { 0.0 };
+                let ap = if klines[i].volume != 0.0 {
+                    klines[i].amount / klines[i].volume
+                } else {
+                    0.0
+                };
                 let ap_adjusted = ap * m + a;
-                if ap_adjusted != 0.0 { klines[i].volume = klines[i].amount / ap_adjusted; }
+                if ap_adjusted != 0.0 {
+                    klines[i].volume = klines[i].amount / ap_adjusted;
+                }
                 klines[i].adjustment_count += 1;
             }
         }

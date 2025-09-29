@@ -40,9 +40,9 @@ use std::collections::HashMap;
 struct FPNode {
     item: String,
     count: usize,
-    parent: Option<usize>, // 父节点索引
+    parent: Option<usize>,            // 父节点索引
     children: HashMap<String, usize>, // 子节点映射
-    next: Option<usize>, // 相同项的链表
+    next: Option<usize>,              // 相同项的链表
 }
 
 impl FPNode {
@@ -158,7 +158,9 @@ impl FPGrowthMiner {
     /// # 参数
     /// * `min_support` - 最小支持度阈值 (0.0-1.0之间的小数)
     pub fn new(min_support: f64) -> Self {
-        Self { min_support_ratio: min_support }
+        Self {
+            min_support_ratio: min_support,
+        }
     }
 
     /// 从事务数据挖掘频繁模式
@@ -170,7 +172,8 @@ impl FPGrowthMiner {
     /// 频繁模式及其支持度计数的向量
     pub fn mine(&self, transactions: &[Vec<String>]) -> Vec<(Vec<String>, usize)> {
         let total_transactions = transactions.len();
-        let min_support_count = (self.min_support_ratio * total_transactions as f64).ceil() as usize;
+        let min_support_count =
+            (self.min_support_ratio * total_transactions as f64).ceil() as usize;
 
         // 统计项频
         let mut item_counts = HashMap::new();
@@ -194,14 +197,24 @@ impl FPGrowthMiner {
         for transaction in transactions {
             let mut sorted_transaction: Vec<String> = transaction
                 .iter()
-                .filter(|item| frequent_items.iter().any(|(freq_item, _)| freq_item == *item))
+                .filter(|item| {
+                    frequent_items
+                        .iter()
+                        .any(|(freq_item, _)| freq_item == *item)
+                })
                 .cloned()
                 .collect();
 
             // 按频繁项顺序排序
             sorted_transaction.sort_by(|a, b| {
-                let a_pos = frequent_items.iter().position(|(item, _)| item == a).unwrap_or(usize::MAX);
-                let b_pos = frequent_items.iter().position(|(item, _)| item == b).unwrap_or(usize::MAX);
+                let a_pos = frequent_items
+                    .iter()
+                    .position(|(item, _)| item == a)
+                    .unwrap_or(usize::MAX);
+                let b_pos = frequent_items
+                    .iter()
+                    .position(|(item, _)| item == b)
+                    .unwrap_or(usize::MAX);
                 a_pos.cmp(&b_pos)
             });
 
@@ -247,7 +260,10 @@ impl FPGrowthMiner {
     }
 
     /// 从条件模式基挖掘频繁模式（辅助方法）
-    fn mine_from_patterns(&self, conditional_patterns: &[(Vec<String>, usize)]) -> Vec<(Vec<String>, usize)> {
+    fn mine_from_patterns(
+        &self,
+        conditional_patterns: &[(Vec<String>, usize)],
+    ) -> Vec<(Vec<String>, usize)> {
         let mut patterns = Vec::new();
 
         // 转换为事务格式
@@ -261,10 +277,7 @@ impl FPGrowthMiner {
 
         // 合并计数
         for (pattern, _) in sub_patterns {
-            let total_count: usize = conditional_patterns
-                .iter()
-                .map(|(_, count)| *count)
-                .sum();
+            let total_count: usize = conditional_patterns.iter().map(|(_, count)| *count).sum();
 
             patterns.push((pattern, total_count));
         }
@@ -291,7 +304,12 @@ mod tests {
             vec!["牛奶".to_string(), "黄油".to_string()],
             vec!["面包".to_string(), "黄油".to_string()],
             vec!["牛奶".to_string(), "黄油".to_string()],
-            vec!["牛奶".to_string(), "面包".to_string(), "黄油".to_string(), "尿布".to_string()],
+            vec![
+                "牛奶".to_string(),
+                "面包".to_string(),
+                "黄油".to_string(),
+                "尿布".to_string(),
+            ],
             vec!["牛奶".to_string(), "面包".to_string(), "黄油".to_string()],
         ];
 
@@ -341,8 +359,10 @@ mod tests {
         let patterns_high = miner_high.mine(&transactions);
 
         // 较低支持度应该找到更多模式
-        assert!(patterns_low.len() >= patterns_high.len(),
-                "较低支持度应该找到更多或相等数量的模式");
+        assert!(
+            patterns_low.len() >= patterns_high.len(),
+            "较低支持度应该找到更多或相等数量的模式"
+        );
     }
 
     /// 测试空数据集
@@ -359,9 +379,7 @@ mod tests {
     #[test]
     fn test_single_transaction() {
         let miner = FPGrowthMiner::new(0.1);
-        let transactions = vec![
-            vec!["A".to_string(), "B".to_string(), "C".to_string()]
-        ];
+        let transactions = vec![vec!["A".to_string(), "B".to_string(), "C".to_string()]];
 
         let patterns = miner.mine(&transactions);
 

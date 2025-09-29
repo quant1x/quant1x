@@ -1,8 +1,8 @@
 use crate::timestamp::Timestamp;
-use once_cell::sync::Lazy;
-use std::sync::Mutex;
-use std::cmp::min;
 use chrono::Datelike;
+use once_cell::sync::Lazy;
+use std::cmp::min;
+use std::sync::Mutex;
 
 pub const MASK_CLOSED: u8 = 0x00;
 pub const MASK_ACTIVE: u8 = 0x01;
@@ -32,7 +32,11 @@ impl TimeRange {
         // C++ floors begin and ceils end
         let b = begin.floor();
         let e = end.ceil();
-        Self { begin: b, end: e, status }
+        Self {
+            begin: b,
+            end: e,
+            status,
+        }
     }
 
     pub fn in_range(&self, ts: Timestamp) -> Option<TimeStatus> {
@@ -43,12 +47,17 @@ impl TimeRange {
         }
     }
 
-    pub fn begin(&self) -> Timestamp { self.begin }
-    pub fn end(&self) -> Timestamp { self.end }
+    pub fn begin(&self) -> Timestamp {
+        self.begin
+    }
+    pub fn end(&self) -> Timestamp {
+        self.end
+    }
 
     pub fn minutes(&self, timestamp: Option<Timestamp>) -> i32 {
         let mut seconds: i64 = 0;
-        let in_status = self.status == (MASK_ACTIVE | MASK_ORDER | MASK_TRADING) || self.status == (MASK_CALL_AUCTION | MASK_CLOSING);
+        let in_status = self.status == (MASK_ACTIVE | MASK_ORDER | MASK_TRADING)
+            || self.status == (MASK_CALL_AUCTION | MASK_CLOSING);
         let mut ts_close_phase = self.end;
         if in_status {
             // if close phase, use floor
@@ -78,7 +87,11 @@ pub struct TradingSession {
 
 impl TradingSession {
     pub fn new(sessions: Vec<TimeRange>) -> Self {
-        let mut ts = Self { sessions, earliest_start: Timestamp::new(i64::MAX), latest_end: Timestamp::new(i64::MIN) };
+        let mut ts = Self {
+            sessions,
+            earliest_start: Timestamp::new(i64::MAX),
+            latest_end: Timestamp::new(i64::MIN),
+        };
         ts.update_time_bounds();
         ts
     }
@@ -92,8 +105,12 @@ impl TradingSession {
         self.earliest_start = Timestamp::new(i64::MAX);
         self.latest_end = Timestamp::new(i64::MIN);
         for s in &self.sessions {
-            if s.begin < self.earliest_start { self.earliest_start = s.begin }
-            if s.end > self.latest_end { self.latest_end = s.end }
+            if s.begin < self.earliest_start {
+                self.earliest_start = s.begin
+            }
+            if s.end > self.latest_end {
+                self.latest_end = s.end
+            }
         }
     }
 
@@ -103,8 +120,12 @@ impl TradingSession {
                 return status;
             }
         }
-        if ts < self.earliest_start { return MASK_ACTIVE; /* ExchangePreMarket */ }
-        if ts < self.latest_end { return MASK_ACTIVE | MASK_HALT; /* ExchangeHaltTrading */ }
+        if ts < self.earliest_start {
+            return MASK_ACTIVE; /* ExchangePreMarket */
+        }
+        if ts < self.latest_end {
+            return MASK_ACTIVE | MASK_HALT; /* ExchangeHaltTrading */
+        }
         MASK_CLOSED
     }
 
@@ -123,27 +144,48 @@ impl TradingSession {
 
 fn init_session() -> TradingSession {
     let now = Timestamp::midnight();
-    let tr1 = TimeRange::new(now.offset(9,15,0,0), now.offset(9,20,0,0), MASK_CALL_AUCTION | MASK_OPENING | MASK_ORDER);
-    let tr2 = TimeRange::new(now.offset(9,20,0,0), now.offset(9,25,0,0), MASK_CALL_AUCTION | MASK_OPENING);
-    let tr3 = TimeRange::new(now.offset(9,25,0,0), now.offset(9,29,0,0), MASK_HALT);
-    let tr4 = TimeRange::new(now.offset(9,30,0,0), now.offset(11,29,0,0), MASK_ACTIVE | MASK_ORDER | MASK_TRADING);
-    let tr5 = TimeRange::new(now.offset(13,0,0,0), now.offset(14,56,0,0), MASK_ACTIVE | MASK_ORDER | MASK_TRADING);
-    let tr6 = TimeRange::new(now.offset(14,57,0,0), now.offset(15,0,0,0), MASK_CALL_AUCTION | MASK_CLOSING);
-    TradingSession::new(vec![tr1,tr2,tr3,tr4,tr5,tr6])
+    let tr1 = TimeRange::new(
+        now.offset(9, 15, 0, 0),
+        now.offset(9, 20, 0, 0),
+        MASK_CALL_AUCTION | MASK_OPENING | MASK_ORDER,
+    );
+    let tr2 = TimeRange::new(
+        now.offset(9, 20, 0, 0),
+        now.offset(9, 25, 0, 0),
+        MASK_CALL_AUCTION | MASK_OPENING,
+    );
+    let tr3 = TimeRange::new(now.offset(9, 25, 0, 0), now.offset(9, 29, 0, 0), MASK_HALT);
+    let tr4 = TimeRange::new(
+        now.offset(9, 30, 0, 0),
+        now.offset(11, 29, 0, 0),
+        MASK_ACTIVE | MASK_ORDER | MASK_TRADING,
+    );
+    let tr5 = TimeRange::new(
+        now.offset(13, 0, 0, 0),
+        now.offset(14, 56, 0, 0),
+        MASK_ACTIVE | MASK_ORDER | MASK_TRADING,
+    );
+    let tr6 = TimeRange::new(
+        now.offset(14, 57, 0, 0),
+        now.offset(15, 0, 0, 0),
+        MASK_CALL_AUCTION | MASK_CLOSING,
+    );
+    TradingSession::new(vec![tr1, tr2, tr3, tr4, tr5, tr6])
 }
 
-static TS_TODAY_SESSION: Lazy<Mutex<TradingSession>> = Lazy::new(|| {
-    Mutex::new(init_session())
-});
+static TS_TODAY_SESSION: Lazy<Mutex<TradingSession>> = Lazy::new(|| Mutex::new(init_session()));
 
 // ts_today_init: approximate pre-market timestamp (today at pre-market hour)
 fn init_ts_today() -> Timestamp {
-    Timestamp::pre_market_time(Timestamp::now().to_datetime().year(), Timestamp::now().to_datetime().month(), Timestamp::now().to_datetime().day()).unwrap_or(Timestamp::now())
+    Timestamp::pre_market_time(
+        Timestamp::now().to_datetime().year(),
+        Timestamp::now().to_datetime().month(),
+        Timestamp::now().to_datetime().day(),
+    )
+    .unwrap_or(Timestamp::now())
 }
 
-static TS_TODAY_INIT: Lazy<Mutex<Timestamp>> = Lazy::new(|| {
-    Mutex::new(init_ts_today())
-});
+static TS_TODAY_INIT: Lazy<Mutex<Timestamp>> = Lazy::new(|| Mutex::new(init_ts_today()));
 
 #[derive(Debug, Clone)]
 pub struct RuntimeStatus {
@@ -157,7 +199,14 @@ pub struct RuntimeStatus {
 
 impl Default for RuntimeStatus {
     fn default() -> Self {
-        Self { before_last_trade_day: false, is_holiday: false, before_init_time: false, cache_after_init_time: false, update_in_real_time: false, status: MASK_CLOSED }
+        Self {
+            before_last_trade_day: false,
+            is_holiday: false,
+            before_init_time: false,
+            cache_after_init_time: false,
+            update_in_real_time: false,
+            status: MASK_CLOSED,
+        }
     }
 }
 
@@ -213,8 +262,14 @@ pub fn can_update_in_realtime(last_modified: Option<Timestamp>) -> (bool, TimeSt
 
 pub fn can_initialize(last_modified: Option<Timestamp>) -> bool {
     let rs = check_trading_timestamp(last_modified);
-    if rs.before_last_trade_day { return true }
-    if rs.is_holiday { return false }
-    if rs.before_init_time { return false }
+    if rs.before_last_trade_day {
+        return true;
+    }
+    if rs.is_holiday {
+        return false;
+    }
+    if rs.before_init_time {
+        return false;
+    }
     !rs.cache_after_init_time
 }

@@ -1,8 +1,8 @@
-use std::sync::Arc;
 use crate::cache::{self, DataAdapter, Kind};
-use crate::Timestamp;
-use crate::level1::{self};
 use crate::level1::transaction_data::TickTransaction;
+use crate::level1::{self};
+use crate::Timestamp;
+use std::sync::Arc;
 
 const OFFSET: u16 = 1800; // level1::tick_transaction_max
 
@@ -15,11 +15,21 @@ const HISTORICAL_TRANSACTION_LAST_TIME: &str = "15:00";
 pub struct DataTrans;
 
 impl cache::Schema for DataTrans {
-    fn kind(&self) -> Kind { crate::cache::PLUGIN_MASK_BASE_DATA | 4 }
-    fn owner(&self) -> String { crate::cache::DEFAULT_DATA_PROVIDER.to_string() }
-    fn key(&self) -> String { "trans".to_string() }
-    fn name(&self) -> String { "历史成交".to_string() }
-    fn usage(&self) -> String { "历史成交".to_string() }
+    fn kind(&self) -> Kind {
+        crate::cache::PLUGIN_MASK_BASE_DATA | 4
+    }
+    fn owner(&self) -> String {
+        crate::cache::DEFAULT_DATA_PROVIDER.to_string()
+    }
+    fn key(&self) -> String {
+        "trans".to_string()
+    }
+    fn name(&self) -> String {
+        "历史成交".to_string()
+    }
+    fn usage(&self) -> String {
+        "历史成交".to_string()
+    }
 }
 
 impl DataAdapter for DataTrans {
@@ -28,39 +38,63 @@ impl DataAdapter for DataTrans {
     fn update(&self, code: &str, date: Timestamp) {
         // Follow C++ CheckoutTransactionData behavior: read cache, fetch incremental pages
         let corrected = crate::exchange::correct_security_code(code);
-    let mut path = std::path::PathBuf::from(crate::config::default_cache_path());
-    path.push("trans");
-    // use directory per year and date: trans/YYYY/YYYY-MM-DD/<code>.csv
-    let date_str = date.only_date();
-    let year = if date_str.len() >= 4 { &date_str[..4] } else { "0000" };
-    path.push(year);
-    path.push(format!("{}", date_str));
-    if let Err(e) = std::fs::create_dir_all(&path) { log::error!("[DataTrans] create_dir_all failed: {}", e); return; }
-    path.push(format!("{}.csv", corrected));
-    let filename = path.to_string_lossy().to_string();
+        let mut path = std::path::PathBuf::from(crate::config::default_cache_path());
+        path.push("trans");
+        // use directory per year and date: trans/YYYY/YYYY-MM-DD/<code>.csv
+        let date_str = date.only_date();
+        let year = if date_str.len() >= 4 {
+            &date_str[..4]
+        } else {
+            "0000"
+        };
+        path.push(year);
+        path.push(format!("{}", date_str));
+        if let Err(e) = std::fs::create_dir_all(&path) {
+            log::error!("[DataTrans] create_dir_all failed: {}", e);
+            return;
+        }
+        path.push(format!("{}.csv", corrected));
+        let filename = path.to_string_lossy().to_string();
 
         // read existing cache if present
         let mut list: Vec<TickTransaction> = Vec::new();
         if std::path::Path::new(&filename).exists() {
             // try to read CSV; tolerate errors and treat as empty
-            if let Ok(mut rdr) = csv::ReaderBuilder::new().has_headers(true).from_path(&filename) {
+            if let Ok(mut rdr) = csv::ReaderBuilder::new()
+                .has_headers(true)
+                .from_path(&filename)
+            {
                 for result in rdr.records() {
                     if let Ok(rec) = result {
                         // fields: time,price,vol,num,amount,buyOrSell
                         let time = rec.get(0).unwrap_or("").to_string();
-                        let price = rec.get(1).and_then(|s| s.parse::<f64>().ok()).unwrap_or(0.0);
+                        let price = rec
+                            .get(1)
+                            .and_then(|s| s.parse::<f64>().ok())
+                            .unwrap_or(0.0);
                         let vol = rec.get(2).and_then(|s| s.parse::<i64>().ok()).unwrap_or(0);
                         let num = rec.get(3).and_then(|s| s.parse::<i64>().ok()).unwrap_or(0);
-                        let amount = rec.get(4).and_then(|s| s.parse::<f64>().ok()).unwrap_or(0.0);
-                        let buy_or_sell = rec.get(5).and_then(|s| s.parse::<i64>().ok()).unwrap_or(0);
-                        list.push(TickTransaction { time, price, vol, num, amount, buy_or_sell });
+                        let amount = rec
+                            .get(4)
+                            .and_then(|s| s.parse::<f64>().ok())
+                            .unwrap_or(0.0);
+                        let buy_or_sell =
+                            rec.get(5).and_then(|s| s.parse::<i64>().ok()).unwrap_or(0);
+                        list.push(TickTransaction {
+                            time,
+                            price,
+                            vol,
+                            num,
+                            amount,
+                            buy_or_sell,
+                        });
                     }
                 }
             }
         }
 
         // compute startTime from cache (if any)
-    let mut start_time = HISTORICAL_TRANSACTION_FIRST_TIME.to_string();
+        let mut start_time = HISTORICAL_TRANSACTION_FIRST_TIME.to_string();
         if !list.is_empty() {
             if let Some(last) = list.last() {
                 if last.time == HISTORICAL_TRANSACTION_LAST_TIME {
@@ -90,7 +124,8 @@ impl DataAdapter for DataTrans {
             list.truncate(cache_len - skip_count);
         }
 
-    let today_is_last = date.is_same_date(&crate::exchange::last_trading_day(crate::Timestamp::now()));
+        let today_is_last =
+            date.is_same_date(&crate::exchange::last_trading_day(crate::Timestamp::now()));
 
         let mut start: u16 = 0;
         let mut history: Vec<TickTransaction> = Vec::new();
@@ -101,7 +136,9 @@ impl DataAdapter for DataTrans {
             loop {
                 match level1::transaction_data::fetch_transaction_data(&corrected, start, OFFSET) {
                     Some(mut resp) => {
-                        if resp.count == 0 || resp.list.is_empty() { break; }
+                        if resp.count == 0 || resp.list.is_empty() {
+                            break;
+                        }
                         // C++ reverses each page and filters by start_time
                         let mut tmp: Vec<TickTransaction> = Vec::new();
                         resp.list.reverse();
@@ -112,19 +149,32 @@ impl DataAdapter for DataTrans {
                         }
                         tmp.reverse();
                         let size = tmp.len();
-                        if size > 0 { hs.push(tmp); }
-                        if (size as u16) < OFFSET { break; }
+                        if size > 0 {
+                            hs.push(tmp);
+                        }
+                        if (size as u16) < OFFSET {
+                            break;
+                        }
                         start = start.wrapping_add(OFFSET);
                     }
-                    None => { break; }
+                    None => {
+                        break;
+                    }
                 }
             }
         } else {
             // fetch HISTORY_TRANSACTION_DATA pages
             loop {
-                match crate::level1::transaction_history::fetch_history_transactions(&corrected, date.yyyymmdd(), start, OFFSET) {
+                match crate::level1::transaction_history::fetch_history_transactions(
+                    &corrected,
+                    date.yyyymmdd(),
+                    start,
+                    OFFSET,
+                ) {
                     Some(mut resp) => {
-                        if resp.count == 0 || resp.list.is_empty() { break; }
+                        if resp.count == 0 || resp.list.is_empty() {
+                            break;
+                        }
                         let mut tmp: Vec<TickTransaction> = Vec::new();
                         resp.list.reverse();
                         for td in resp.list.into_iter() {
@@ -134,11 +184,17 @@ impl DataAdapter for DataTrans {
                         }
                         tmp.reverse();
                         let size = tmp.len();
-                        if size > 0 { hs.push(tmp); }
-                        if (size as u16) < OFFSET { break; }
+                        if size > 0 {
+                            hs.push(tmp);
+                        }
+                        if (size as u16) < OFFSET {
+                            break;
+                        }
                         start = start.wrapping_add(OFFSET);
                     }
-                    None => { break; }
+                    None => {
+                        break;
+                    }
                 }
             }
         }
@@ -174,9 +230,13 @@ impl DataAdapter for DataTrans {
                     ]);
                 }
                 let _ = w.flush();
-                if let Err(e) = std::fs::rename(&tmp, &filename) { log::error!("[DataTrans] rename failed {} -> {}: {}", tmp, filename, e); }
+                if let Err(e) = std::fs::rename(&tmp, &filename) {
+                    log::error!("[DataTrans] rename failed {} -> {}: {}", tmp, filename, e);
+                }
             }
-            Err(e) => { log::error!("[DataTrans] create tmp {} failed: {}", tmp, e); }
+            Err(e) => {
+                log::error!("[DataTrans] create tmp {} failed: {}", tmp, e);
+            }
         }
     }
 }

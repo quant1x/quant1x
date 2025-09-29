@@ -18,8 +18,8 @@ pub fn datasets_init() {
 
 pub fn logger_set(_verbose: bool, _debug: bool) {
     // initialize log4rs to write logs to <cache>/logs/quant1x.log with rolling policy.
-    use std::path::PathBuf;
     use log::LevelFilter;
+    use std::path::PathBuf;
 
     let logs_dir = crate::config::get_logs_path();
     // ensure logs dir exists
@@ -37,7 +37,9 @@ pub fn logger_set(_verbose: bool, _debug: bool) {
 
     let pattern = "{d} {l} {t} - {m}\n";
     let app = match log4rs::append::file::FileAppender::builder()
-        .encoder(Box::new(log4rs::encode::pattern::PatternEncoder::new(pattern)))
+        .encoder(Box::new(log4rs::encode::pattern::PatternEncoder::new(
+            pattern,
+        )))
         .build(dated_log_path.clone())
     {
         Ok(a) => a,
@@ -52,8 +54,14 @@ pub fn logger_set(_verbose: bool, _debug: bool) {
     let appender = log4rs::config::Appender::builder().build("file", Box::new(app));
     config = config.appender(appender);
 
-    let level = if _debug { LevelFilter::Debug } else { LevelFilter::Info };
-    let root = log4rs::config::Root::builder().appender("file").build(level);
+    let level = if _debug {
+        LevelFilter::Debug
+    } else {
+        LevelFilter::Info
+    };
+    let root = log4rs::config::Root::builder()
+        .appender("file")
+        .build(level);
 
     match config.build(root) {
         Ok(cfg) => {
@@ -124,23 +132,55 @@ fn normalize_to_utf8(b: &[u8]) -> Vec<u8> {
 
         let mb_bytes = b;
         // MultiByteToWideChar(CP_OEMCP, ...) -> wide
-        let needed_wchars = winapi::um::stringapiset::MultiByteToWideChar(winapi::um::winnls::CP_OEMCP as u32, 0, mb_bytes.as_ptr() as *const c_char, mb_bytes.len() as i32, std::ptr::null_mut(), 0);
+        let needed_wchars = winapi::um::stringapiset::MultiByteToWideChar(
+            winapi::um::winnls::CP_OEMCP as u32,
+            0,
+            mb_bytes.as_ptr() as *const c_char,
+            mb_bytes.len() as i32,
+            std::ptr::null_mut(),
+            0,
+        );
         if needed_wchars <= 0 {
             return String::from_utf8_lossy(b).into_owned().into_bytes();
         }
         let mut wide: Vec<u16> = vec![0u16; needed_wchars as usize];
-        let got = winapi::um::stringapiset::MultiByteToWideChar(winapi::um::winnls::CP_OEMCP as u32, 0, mb_bytes.as_ptr() as *const c_char, mb_bytes.len() as i32, wide.as_mut_ptr(), needed_wchars);
+        let got = winapi::um::stringapiset::MultiByteToWideChar(
+            winapi::um::winnls::CP_OEMCP as u32,
+            0,
+            mb_bytes.as_ptr() as *const c_char,
+            mb_bytes.len() as i32,
+            wide.as_mut_ptr(),
+            needed_wchars,
+        );
         if got == 0 {
             return String::from_utf8_lossy(b).into_owned().into_bytes();
         }
 
         // WideCharToMultiByte(CP_UTF8, ...) -> UTF-8 bytes
-        let needed_utf8 = winapi::um::stringapiset::WideCharToMultiByte(winapi::um::winnls::CP_UTF8 as u32, 0, wide.as_ptr(), got, std::ptr::null_mut(), 0, std::ptr::null(), std::ptr::null_mut());
+        let needed_utf8 = winapi::um::stringapiset::WideCharToMultiByte(
+            winapi::um::winnls::CP_UTF8 as u32,
+            0,
+            wide.as_ptr(),
+            got,
+            std::ptr::null_mut(),
+            0,
+            std::ptr::null(),
+            std::ptr::null_mut(),
+        );
         if needed_utf8 <= 0 {
             return String::from_utf16_lossy(&wide[..got as usize]).into_bytes();
         }
         let mut out: Vec<u8> = vec![0u8; needed_utf8 as usize];
-        let wrote = winapi::um::stringapiset::WideCharToMultiByte(winapi::um::winnls::CP_UTF8 as u32, 0, wide.as_ptr(), got, out.as_mut_ptr() as *mut i8, needed_utf8, std::ptr::null(), std::ptr::null_mut());
+        let wrote = winapi::um::stringapiset::WideCharToMultiByte(
+            winapi::um::winnls::CP_UTF8 as u32,
+            0,
+            wide.as_ptr(),
+            got,
+            out.as_mut_ptr() as *mut i8,
+            needed_utf8,
+            std::ptr::null(),
+            std::ptr::null_mut(),
+        );
         if wrote == 0 {
             return String::from_utf16_lossy(&wide[..got as usize]).into_bytes();
         }
@@ -148,7 +188,12 @@ fn normalize_to_utf8(b: &[u8]) -> Vec<u8> {
     }
 }
 
-pub fn engine_daemon(action: &str, _pipe: bool, elevated_out: Option<&str>, elevated_pipe: Option<&str>) -> i32 {
+pub fn engine_daemon(
+    action: &str,
+    _pipe: bool,
+    elevated_out: Option<&str>,
+    elevated_pipe: Option<&str>,
+) -> i32 {
     // Default implementation: on non-Windows platforms we don't provide a
     // service manager; on Windows try to perform UAC elevation and relay
     // elevated child stdout/stderr back to the parent when `pipe` is set.
@@ -160,11 +205,11 @@ pub fn engine_daemon(action: &str, _pipe: bool, elevated_out: Option<&str>, elev
 
     #[cfg(windows)]
     {
-    use std::process::Command;
-    use std::io::{Read, Seek, SeekFrom, Write};
-        use std::time::Duration;
-        use std::thread::sleep;
         use std::env;
+        use std::io::{Read, Seek, SeekFrom, Write};
+        use std::process::Command;
+        use std::thread::sleep;
+        use std::time::Duration;
 
         // If user asked to 'run' directly, just run in-process if crate exposes a runner.
         if action == "run" {
@@ -180,17 +225,20 @@ pub fn engine_daemon(action: &str, _pipe: bool, elevated_out: Option<&str>, elev
             // or append to elevated_out file as fallback.
             use std::ffi::OsStr;
             use std::os::windows::ffi::OsStrExt;
+            use winapi::shared::minwindef::DWORD;
             use winapi::um::fileapi::{CreateFileW, WriteFile, OPEN_EXISTING};
             use winapi::um::handleapi::CloseHandle;
-            use winapi::um::winnt::GENERIC_WRITE;
             use winapi::um::winnt::FILE_ATTRIBUTE_NORMAL;
-            use winapi::shared::minwindef::DWORD;
+            use winapi::um::winnt::GENERIC_WRITE;
 
             // Helper to write bytes to pipe or fallback file
             let write_bytes = |bytes: &[u8]| -> Result<(), String> {
                 // Try pipe first
                 if let Some(pipe_name) = elevated_pipe {
-                    let wide: Vec<u16> = OsStr::new(pipe_name).encode_wide().chain(std::iter::once(0)).collect();
+                    let wide: Vec<u16> = OsStr::new(pipe_name)
+                        .encode_wide()
+                        .chain(std::iter::once(0))
+                        .collect();
                     // Try to open the pipe with short retries
                     let start = std::time::Instant::now();
                     let mut handle = std::ptr::null_mut();
@@ -214,7 +262,13 @@ pub fn engine_daemon(action: &str, _pipe: bool, elevated_out: Option<&str>, elev
                     if !handle.is_null() && handle as isize != -1 {
                         let mut written: DWORD = 0;
                         unsafe {
-                            let ok = WriteFile(handle, bytes.as_ptr() as *const _, bytes.len() as DWORD, &mut written as *mut _, std::ptr::null_mut());
+                            let ok = WriteFile(
+                                handle,
+                                bytes.as_ptr() as *const _,
+                                bytes.len() as DWORD,
+                                &mut written as *mut _,
+                                std::ptr::null_mut(),
+                            );
                             let _ = CloseHandle(handle as *mut _);
                             if ok == 0 {
                                 return Err("WriteFile failed".to_string());
@@ -226,8 +280,16 @@ pub fn engine_daemon(action: &str, _pipe: bool, elevated_out: Option<&str>, elev
 
                 // Fallback to file
                 if let Some(path) = elevated_out {
-                    let _ = std::fs::create_dir_all(std::path::Path::new(path).parent().unwrap_or(std::path::Path::new(".")));
-                    match std::fs::OpenOptions::new().create(true).append(true).open(path) {
+                    let _ = std::fs::create_dir_all(
+                        std::path::Path::new(path)
+                            .parent()
+                            .unwrap_or(std::path::Path::new(".")),
+                    );
+                    match std::fs::OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .open(path)
+                    {
                         Ok(mut f) => {
                             if let Err(e) = f.write_all(bytes) {
                                 return Err(format!("Failed writing to elevated-out file: {}", e));
@@ -258,7 +320,13 @@ pub fn engine_daemon(action: &str, _pipe: bool, elevated_out: Option<&str>, elev
                     // sc create <name> binPath= "<exe> service" DisplayName= "<display>" start= auto
                     let binarg = format!("binPath=\"{}\"", exe_path.display());
                     let disp = format!("DisplayName={}", SERVICE_DISPLAY_NAME);
-                    let output = Command::new("sc").arg("create").arg(SERVICE_NAME).arg(binarg).arg(disp).arg("start=auto").output();
+                    let output = Command::new("sc")
+                        .arg("create")
+                        .arg(SERVICE_NAME)
+                        .arg(binarg)
+                        .arg(disp)
+                        .arg("start=auto")
+                        .output();
                     let mut combined = Vec::new();
                     match output {
                         Ok(o) => {
@@ -266,14 +334,27 @@ pub fn engine_daemon(action: &str, _pipe: bool, elevated_out: Option<&str>, elev
                             combined.extend_from_slice(&o.stderr);
                         }
                         Err(e) => {
-                            combined.extend_from_slice(format!("failed to run sc create: {}\n", e).as_bytes());
+                            combined.extend_from_slice(
+                                format!("failed to run sc create: {}\n", e).as_bytes(),
+                            );
                         }
                     }
                     // set description
-                    let desc_out = Command::new("sc").arg("description").arg(SERVICE_NAME).arg(SERVICE_DESC).output();
+                    let desc_out = Command::new("sc")
+                        .arg("description")
+                        .arg(SERVICE_NAME)
+                        .arg(SERVICE_DESC)
+                        .output();
                     match desc_out {
-                        Ok(o) => { combined.extend_from_slice(&o.stdout); combined.extend_from_slice(&o.stderr); }
-                        Err(e) => { combined.extend_from_slice(format!("failed to run sc description: {}\n", e).as_bytes()); }
+                        Ok(o) => {
+                            combined.extend_from_slice(&o.stdout);
+                            combined.extend_from_slice(&o.stderr);
+                        }
+                        Err(e) => {
+                            combined.extend_from_slice(
+                                format!("failed to run sc description: {}\n", e).as_bytes(),
+                            );
+                        }
                     }
 
                     let _ = write_bytes(&normalize_to_utf8(&combined));
@@ -284,15 +365,25 @@ pub fn engine_daemon(action: &str, _pipe: bool, elevated_out: Option<&str>, elev
                     let output = Command::new("sc").arg("delete").arg(SERVICE_NAME).output();
                     let mut combined = Vec::new();
                     match output {
-                        Ok(o) => { combined.extend_from_slice(&o.stdout); combined.extend_from_slice(&o.stderr); }
-                        Err(e) => { combined.extend_from_slice(format!("failed to run sc delete: {}\n", e).as_bytes()); }
+                        Ok(o) => {
+                            combined.extend_from_slice(&o.stdout);
+                            combined.extend_from_slice(&o.stderr);
+                        }
+                        Err(e) => {
+                            combined.extend_from_slice(
+                                format!("failed to run sc delete: {}\n", e).as_bytes(),
+                            );
+                        }
                     }
                     let _ = write_bytes(&normalize_to_utf8(&combined));
                     return 0;
                 }
                 _ => {
                     // Unsupported elevated action: fall back to simple message
-                    let msg = format!("Elevated, but action '{}' not implemented in this shim.\n", action);
+                    let msg = format!(
+                        "Elevated, but action '{}' not implemented in this shim.\n",
+                        action
+                    );
                     let _ = write_bytes(msg.as_bytes());
                     return 1;
                 }
@@ -301,15 +392,29 @@ pub fn engine_daemon(action: &str, _pipe: bool, elevated_out: Option<&str>, elev
 
         // Not elevated: re-launch elevated and capture output via a named pipe (preferred) or fallback to temp file.
         // If an elevated_pipe name was supplied (from caller), use it; otherwise generate one.
-        let pipe_name = elevated_pipe.map(|s| s.to_string()).unwrap_or_else(|| format!(r"\\.\pipe\quant1x-{}-{}", std::process::id(), chrono::Local::now().timestamp()));
+        let pipe_name = elevated_pipe.map(|s| s.to_string()).unwrap_or_else(|| {
+            format!(
+                r"\\.\pipe\quant1x-{}-{}",
+                std::process::id(),
+                chrono::Local::now().timestamp()
+            )
+        });
 
         // Best-effort: check whether the target service appears installed before attempting `start`/`stop`.
         // We'll use the executable file stem as the service name candidate (e.g. 'stock').
         if action == "start" || action == "stop" || action == "status" {
             // Use compile-time SERVICE_NAME constant as the Windows service name.
             let svc_name = SERVICE_NAME;
-            let check_cmd = format!("Get-Service -Name '{}' -ErrorAction SilentlyContinue", svc_name);
-            if let Ok(out) = Command::new("powershell").arg("-NoProfile").arg("-Command").arg(check_cmd).output() {
+            let check_cmd = format!(
+                "Get-Service -Name '{}' -ErrorAction SilentlyContinue",
+                svc_name
+            );
+            if let Ok(out) = Command::new("powershell")
+                .arg("-NoProfile")
+                .arg("-Command")
+                .arg(check_cmd)
+                .output()
+            {
                 let stdout = String::from_utf8_lossy(&out.stdout).to_string();
                 if stdout.trim().is_empty() {
                     eprintln!("Service '{}' not found ({}). Please install the service before calling '{}'.", svc_name, SERVICE_DESC, action);
@@ -320,21 +425,26 @@ pub fn engine_daemon(action: &str, _pipe: bool, elevated_out: Option<&str>, elev
         }
 
         // Create a named pipe server in a background thread that will accept one client and stream data to stdout.
-    let server_name = pipe_name.clone();
+        let server_name = pipe_name.clone();
         let server_handle = std::thread::spawn(move || {
             use std::ffi::OsStr;
             use std::os::windows::ffi::OsStrExt;
+            use winapi::shared::minwindef::DWORD;
             use winapi::um::fileapi::ReadFile;
             use winapi::um::handleapi::CloseHandle;
-            use winapi::um::winbase::{PIPE_TYPE_BYTE, PIPE_READMODE_BYTE, PIPE_WAIT, PIPE_UNLIMITED_INSTANCES};
             use winapi::um::namedpipeapi::CreateNamedPipeW;
-            use winapi::um::winnt::{FILE_SHARE_READ, FILE_SHARE_WRITE};
-            use winapi::um::winnt::GENERIC_READ;
-            use winapi::shared::minwindef::DWORD;
             use winapi::um::winbase::PIPE_ACCESS_INBOUND;
+            use winapi::um::winbase::{
+                PIPE_READMODE_BYTE, PIPE_TYPE_BYTE, PIPE_UNLIMITED_INSTANCES, PIPE_WAIT,
+            };
+            use winapi::um::winnt::GENERIC_READ;
             use winapi::um::winnt::HANDLE as WinHandle;
+            use winapi::um::winnt::{FILE_SHARE_READ, FILE_SHARE_WRITE};
 
-            let wide: Vec<u16> = OsStr::new(&server_name).encode_wide().chain(std::iter::once(0)).collect();
+            let wide: Vec<u16> = OsStr::new(&server_name)
+                .encode_wide()
+                .chain(std::iter::once(0))
+                .collect();
 
             unsafe {
                 let handle: WinHandle = CreateNamedPipeW(
@@ -356,9 +466,9 @@ pub fn engine_daemon(action: &str, _pipe: bool, elevated_out: Option<&str>, elev
                 // Wait for a client to connect. ConnectNamedPipe will block until
                 // a client connects. If it returns failure, check whether the
                 // client already connected (ERROR_PIPE_CONNECTED) and continue.
-                use winapi::um::namedpipeapi::ConnectNamedPipe;
-                use winapi::um::errhandlingapi::GetLastError;
                 use winapi::shared::winerror::ERROR_PIPE_CONNECTED;
+                use winapi::um::errhandlingapi::GetLastError;
+                use winapi::um::namedpipeapi::ConnectNamedPipe;
 
                 let conn = ConnectNamedPipe(handle, std::ptr::null_mut());
                 if conn == 0 {
@@ -374,7 +484,13 @@ pub fn engine_daemon(action: &str, _pipe: bool, elevated_out: Option<&str>, elev
                 let mut buf = [0u8; 4096];
                 loop {
                     let mut read: DWORD = 0;
-                    let ok = ReadFile(handle, buf.as_mut_ptr() as *mut _, buf.len() as DWORD, &mut read as *mut _, std::ptr::null_mut());
+                    let ok = ReadFile(
+                        handle,
+                        buf.as_mut_ptr() as *mut _,
+                        buf.len() as DWORD,
+                        &mut read as *mut _,
+                        std::ptr::null_mut(),
+                    );
                     if ok != 0 && read > 0 {
                         let s = String::from_utf8_lossy(&buf[..read as usize]);
                         print!("{}", s);
@@ -411,13 +527,21 @@ pub fn engine_daemon(action: &str, _pipe: bool, elevated_out: Option<&str>, elev
         // Build -ArgumentList as a comma-separated list of quoted arguments
         let mut arg_items: Vec<String> = Vec::new();
         for a in args.iter().skip(1) {
-            arg_items.push(format!("\"{}\"", a.replace("\"","\\\"")));
+            arg_items.push(format!("\"{}\"", a.replace("\"", "\\\"")));
         }
         let arglist = arg_items.join(", ");
 
-    // Hide the spawned elevated window for a cleaner UX; the elevated child will communicate via the pipe.
-    let ps_cmd = format!("Start-Process -FilePath \"{}\" -ArgumentList {} -Verb RunAs -WindowStyle Hidden", exe.display(), arglist);
-        let spawn = Command::new("powershell").arg("-NoProfile").arg("-Command").arg(ps_cmd).spawn();
+        // Hide the spawned elevated window for a cleaner UX; the elevated child will communicate via the pipe.
+        let ps_cmd = format!(
+            "Start-Process -FilePath \"{}\" -ArgumentList {} -Verb RunAs -WindowStyle Hidden",
+            exe.display(),
+            arglist
+        );
+        let spawn = Command::new("powershell")
+            .arg("-NoProfile")
+            .arg("-Command")
+            .arg(ps_cmd)
+            .spawn();
 
         match spawn {
             Ok(mut child) => {
@@ -443,7 +567,11 @@ fn is_current_process_elevated() -> bool {
     // pulling in native Windows crates and keeps the shim lightweight.
     use std::process::Command;
     let check = r#"[bool](([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))"#;
-    let out = Command::new("powershell").arg("-NoProfile").arg("-Command").arg(check).output();
+    let out = Command::new("powershell")
+        .arg("-NoProfile")
+        .arg("-Command")
+        .arg(check)
+        .output();
     if let Ok(o) = out {
         if let Ok(s) = String::from_utf8(o.stdout) {
             return s.trim().eq_ignore_ascii_case("True");
@@ -451,7 +579,6 @@ fn is_current_process_elevated() -> bool {
     }
     false
 }
-
 
 // Library authors can extend with a function like:
 // pub fn try_run_subcommand(name: &str, matches: &clap::ArgMatches) -> Result<bool, Box<dyn std::error::Error>>
@@ -461,11 +588,16 @@ fn is_current_process_elevated() -> bool {
 /// A small built-in handler for a few top-level administrative commands.
 /// Currently supports:
 /// - "update": refresh calendar and/or server cache. Matches CLI flags `--calendar`, `--servers`, `--all`.
-pub fn try_run_subcommand(name: &str, matches: &clap::ArgMatches) -> Result<bool, Box<dyn std::error::Error>> {
-    if name != "update" { return Ok(false); }
+pub fn try_run_subcommand(
+    name: &str,
+    matches: &clap::ArgMatches,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    if name != "update" {
+        return Ok(false);
+    }
 
     use indicatif::{ProgressBar, ProgressStyle};
-    use std::time::{Instant, Duration};
+    use std::time::{Duration, Instant};
 
     // determine requested scopes
     let only_calendar = matches.get_flag("calendar");
@@ -483,8 +615,26 @@ pub fn try_run_subcommand(name: &str, matches: &clap::ArgMatches) -> Result<bool
     };
 
     // default behavior: if no flags/keys set, update all (base + features)
-    let do_calendar = if !only_calendar && !only_servers && !all && base_keys.is_empty() && features_keys.is_empty() { true } else { only_calendar || all || base_keys.iter().any(|k| k == "calendar") };
-    let do_servers = if !only_calendar && !only_servers && !all && base_keys.is_empty() && features_keys.is_empty() { true } else { only_servers || all || base_keys.iter().any(|k| k == "servers") };
+    let do_calendar = if !only_calendar
+        && !only_servers
+        && !all
+        && base_keys.is_empty()
+        && features_keys.is_empty()
+    {
+        true
+    } else {
+        only_calendar || all || base_keys.iter().any(|k| k == "calendar")
+    };
+    let do_servers = if !only_calendar
+        && !only_servers
+        && !all
+        && base_keys.is_empty()
+        && features_keys.is_empty()
+    {
+        true
+    } else {
+        only_servers || all || base_keys.iter().any(|k| k == "servers")
+    };
 
     if do_calendar {
         log::info!("Updating calendar cache...");
@@ -501,7 +651,11 @@ pub fn try_run_subcommand(name: &str, matches: &clap::ArgMatches) -> Result<bool
             let _ = std::fs::File::create(&cal_file);
         }
 
-        spinner.finish_with_message(format!("Calendar ensured at {} (elapsed {:?})", cal_file, start.elapsed()));
+        spinner.finish_with_message(format!(
+            "Calendar ensured at {} (elapsed {:?})",
+            cal_file,
+            start.elapsed()
+        ));
     }
 
     if do_servers {
@@ -510,7 +664,12 @@ pub fn try_run_subcommand(name: &str, matches: &clap::ArgMatches) -> Result<bool
         let servers = crate::level1::config::standard_server_list();
         let total = servers.len() as u64;
         let pb = ProgressBar::new(total);
-        pb.set_style(ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}")?.progress_chars("=> "));
+        pb.set_style(
+            ProgressStyle::with_template(
+                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}",
+            )?
+            .progress_chars("=> "),
+        );
 
         let mut found: Vec<crate::level1::config::ServerInfo> = Vec::new();
         use std::net::ToSocketAddrs;
@@ -533,7 +692,10 @@ pub fn try_run_subcommand(name: &str, matches: &clap::ArgMatches) -> Result<bool
             }
             pb.inc(1);
         }
-        pb.finish_with_message(format!("Probe completed, {} responsive servers", found.len()));
+        pb.finish_with_message(format!(
+            "Probe completed, {} responsive servers",
+            found.len()
+        ));
 
         if !found.is_empty() {
             // sort and trim similar to detect()
@@ -550,17 +712,29 @@ pub fn try_run_subcommand(name: &str, matches: &clap::ArgMatches) -> Result<bool
     // Base data updates (example keys: "xdxr", "calendar", "servers").
     // If the user supplied --base keys, update those; if no keys were supplied
     // and no other flags were given, default is to update all base keys.
-    let want_base = if all || (!all && base_keys.is_empty() && features_keys.is_empty()) { true } else { !base_keys.is_empty() };
+    let want_base = if all || (!all && base_keys.is_empty() && features_keys.is_empty()) {
+        true
+    } else {
+        !base_keys.is_empty()
+    };
     if want_base {
         // If the user specified base keys, select plugins with those keys; otherwise update all base data plugins
         if base_keys.is_empty() {
             // update all base adapters
-            let _count = crate::cache::update_all_mask(crate::cache::PLUGIN_MASK_BASE_DATA, None, crate::exchange::last_trading_day(crate::Timestamp::now()));
+            let _count = crate::cache::update_all_mask(
+                crate::cache::PLUGIN_MASK_BASE_DATA,
+                None,
+                crate::exchange::last_trading_day(crate::Timestamp::now()),
+            );
             log::info!("Updated {} base adapters", _count);
         } else {
             // update only named base adapters
             let ks: Vec<String> = base_keys.clone();
-            let _count = crate::cache::update_all_mask(crate::cache::PLUGIN_MASK_BASE_DATA, Some(&ks), crate::exchange::last_trading_day(crate::Timestamp::now()));
+            let _count = crate::cache::update_all_mask(
+                crate::cache::PLUGIN_MASK_BASE_DATA,
+                Some(&ks),
+                crate::exchange::last_trading_day(crate::Timestamp::now()),
+            );
             log::info!("Updated {} selected base adapters", _count);
         }
     }
