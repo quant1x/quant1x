@@ -1,6 +1,6 @@
 [package]
 name = "quant1x"
-version = "0.6.3"
+version = "0.6.4"
 edition = "2021"
 authors = ["Quant1X Team"]
 description = "Cross-language standard library for quantitative trading"
@@ -11,28 +11,13 @@ repository = "https://gitee.com/quant1x/quant1x"
 documentation = "https://gitee.com/quant1x/quant1x"
 
 
-# Prefer an explicit include whitelist. This is more reliable than trying to
-# exclude by extension because `cargo package` by default includes many
-# repository files; a whitelist ensures only the crate-relevant files are
-# packaged and uploaded to crates.io.
-include = [
-	"Cargo.toml",
-	"README.md",
-    "CHANGELOG.md",
-	"LICENSE",
-	"quant1x/**/*.rs",
-	"quant1x/*.rs",
-    "main.rs",
-	"examples/*.rs",
-	"examples/**/*.rs",
-	"tests/*.rs",
-    "tests/**/*.rs",
-    "docs/**/*.md",
-	"docs/README.md",
-]
-
+# Use `exclude` only. Having both `include` and `exclude` causes Cargo to
+# ignore `exclude`, which is why vcpkg_installed/ ended up in the publish
+# list previously. Ensure vcpkg_installed is excluded so those license files
+# won't be packaged.
 exclude = [
-    "third_party/**/*",
+    "third_party/**",
+    "vcpkg_installed/**",
 ]
 
 [lib]
