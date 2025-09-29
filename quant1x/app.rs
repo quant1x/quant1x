@@ -73,11 +73,385 @@ pub fn engine_init() {
     // no-op
 }
 
-pub fn engine_daemon(_action: &str, _pipe: bool) -> i32 {
-    // default: not implemented -> return failure
-    log::error!("engine_daemon not implemented in Rust library");
-    1
+// Application-level Windows service name. Set here (do not read from CLI or external config).
+// Change this constant to match the installed service name for your application.
+const SERVICE_NAME: &str = "quant1x-stock-rust";
+// Human-readable service description. Keep this in the application so installers
+// and admins can refer to it when creating the Windows service.
+const SERVICE_DESC: &str = "Quant1X background service for stock operations";
+// Human-friendly display name shown in Windows service manager.
+const SERVICE_DISPLAY_NAME: &str = "Quant1X Stock Service(Rust)";
+
+#[cfg(windows)]
+fn normalize_to_utf8(b: &[u8]) -> Vec<u8> {
+    // Detect common encodings and return UTF-8 bytes.
+    // 1) UTF-16LE with BOM
+    if b.len() >= 2 && b[0] == 0xFF && b[1] == 0xFE {
+        let mut u16s = Vec::with_capacity(b.len() / 2);
+        let mut i = 2; // skip BOM
+        while i + 1 < b.len() {
+            let lo = b[i] as u16;
+            let hi = b[i + 1] as u16;
+            u16s.push((hi << 8) | lo);
+            i += 2;
+        }
+        return String::from_utf16_lossy(&u16s).into_bytes();
+    }
+
+    // 2) Heuristic: many zero bytes -> likely UTF-16LE without BOM
+    let zeros = b.iter().filter(|&&x| x == 0).count();
+    if zeros * 2 > b.len() && b.len() > 2 {
+        let mut u16s = Vec::with_capacity(b.len() / 2);
+        let mut i = 0;
+        while i + 1 < b.len() {
+            let lo = b[i] as u16;
+            let hi = b[i + 1] as u16;
+            u16s.push((hi << 8) | lo);
+            i += 2;
+        }
+        return String::from_utf16_lossy(&u16s).into_bytes();
+    }
+
+    // 3) Try UTF-8
+    if let Ok(s) = std::str::from_utf8(b) {
+        return s.as_bytes().to_vec();
+    }
+
+    // 4) Fallback: OEM code page -> wide -> UTF-8 via Win32 APIs
+    unsafe {
+        // Use winapi functions directly to avoid adding new deps.
+        use std::os::raw::c_char;
+
+        let mb_bytes = b;
+        // MultiByteToWideChar(CP_OEMCP, ...) -> wide
+        let needed_wchars = winapi::um::stringapiset::MultiByteToWideChar(winapi::um::winnls::CP_OEMCP as u32, 0, mb_bytes.as_ptr() as *const c_char, mb_bytes.len() as i32, std::ptr::null_mut(), 0);
+        if needed_wchars <= 0 {
+            return String::from_utf8_lossy(b).into_owned().into_bytes();
+        }
+        let mut wide: Vec<u16> = vec![0u16; needed_wchars as usize];
+        let got = winapi::um::stringapiset::MultiByteToWideChar(winapi::um::winnls::CP_OEMCP as u32, 0, mb_bytes.as_ptr() as *const c_char, mb_bytes.len() as i32, wide.as_mut_ptr(), needed_wchars);
+        if got == 0 {
+            return String::from_utf8_lossy(b).into_owned().into_bytes();
+        }
+
+        // WideCharToMultiByte(CP_UTF8, ...) -> UTF-8 bytes
+        let needed_utf8 = winapi::um::stringapiset::WideCharToMultiByte(winapi::um::winnls::CP_UTF8 as u32, 0, wide.as_ptr(), got, std::ptr::null_mut(), 0, std::ptr::null(), std::ptr::null_mut());
+        if needed_utf8 <= 0 {
+            return String::from_utf16_lossy(&wide[..got as usize]).into_bytes();
+        }
+        let mut out: Vec<u8> = vec![0u8; needed_utf8 as usize];
+        let wrote = winapi::um::stringapiset::WideCharToMultiByte(winapi::um::winnls::CP_UTF8 as u32, 0, wide.as_ptr(), got, out.as_mut_ptr() as *mut i8, needed_utf8, std::ptr::null(), std::ptr::null_mut());
+        if wrote == 0 {
+            return String::from_utf16_lossy(&wide[..got as usize]).into_bytes();
+        }
+        return out;
+    }
 }
+
+pub fn engine_daemon(action: &str, _pipe: bool, elevated_out: Option<&str>, elevated_pipe: Option<&str>) -> i32 {
+    // Default implementation: on non-Windows platforms we don't provide a
+    // service manager; on Windows try to perform UAC elevation and relay
+    // elevated child stdout/stderr back to the parent when `pipe` is set.
+    #[cfg(not(windows))]
+    {
+        log::error!("engine_daemon not implemented in Rust library (non-Windows)");
+        return 1;
+    }
+
+    #[cfg(windows)]
+    {
+    use std::process::Command;
+    use std::io::{Read, Seek, SeekFrom, Write};
+        use std::time::Duration;
+        use std::thread::sleep;
+        use std::env;
+
+        // If user asked to 'run' directly, just run in-process if crate exposes a runner.
+        if action == "run" {
+            log::info!("service run requested; no in-process runner provided in this build");
+            return 1;
+        }
+
+        // For install/uninstall/start/stop/status we typically need elevation.
+        // If already elevated, call into crate-provided implementations.
+        if is_current_process_elevated() {
+            // Elevated child mode: perform the requested action (install/uninstall)
+            // and write command output back to the parent via named pipe (preferred)
+            // or append to elevated_out file as fallback.
+            use std::ffi::OsStr;
+            use std::os::windows::ffi::OsStrExt;
+            use winapi::um::fileapi::{CreateFileW, WriteFile, OPEN_EXISTING};
+            use winapi::um::handleapi::CloseHandle;
+            use winapi::um::winnt::GENERIC_WRITE;
+            use winapi::um::winnt::FILE_ATTRIBUTE_NORMAL;
+            use winapi::shared::minwindef::DWORD;
+
+            // Helper to write bytes to pipe or fallback file
+            let write_bytes = |bytes: &[u8]| -> Result<(), String> {
+                // Try pipe first
+                if let Some(pipe_name) = elevated_pipe {
+                    let wide: Vec<u16> = OsStr::new(pipe_name).encode_wide().chain(std::iter::once(0)).collect();
+                    // Try to open the pipe with short retries
+                    let start = std::time::Instant::now();
+                    let mut handle = std::ptr::null_mut();
+                    while start.elapsed() < std::time::Duration::from_secs(5) {
+                        unsafe {
+                            handle = CreateFileW(
+                                wide.as_ptr(),
+                                GENERIC_WRITE,
+                                0,
+                                std::ptr::null_mut(),
+                                OPEN_EXISTING,
+                                FILE_ATTRIBUTE_NORMAL,
+                                std::ptr::null_mut(),
+                            );
+                        }
+                        if !handle.is_null() && handle as isize != -1 {
+                            break;
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(200));
+                    }
+                    if !handle.is_null() && handle as isize != -1 {
+                        let mut written: DWORD = 0;
+                        unsafe {
+                            let ok = WriteFile(handle, bytes.as_ptr() as *const _, bytes.len() as DWORD, &mut written as *mut _, std::ptr::null_mut());
+                            let _ = CloseHandle(handle as *mut _);
+                            if ok == 0 {
+                                return Err("WriteFile failed".to_string());
+                            }
+                        }
+                        return Ok(());
+                    }
+                }
+
+                // Fallback to file
+                if let Some(path) = elevated_out {
+                    let _ = std::fs::create_dir_all(std::path::Path::new(path).parent().unwrap_or(std::path::Path::new(".")));
+                    match std::fs::OpenOptions::new().create(true).append(true).open(path) {
+                        Ok(mut f) => {
+                            if let Err(e) = f.write_all(bytes) {
+                                return Err(format!("Failed writing to elevated-out file: {}", e));
+                            }
+                            let _ = f.flush();
+                            return Ok(());
+                        }
+                        Err(e) => return Err(format!("Failed to open elevated-out file: {}", e)),
+                    }
+                }
+
+                Err("No pipe or elevated-out available".to_string())
+            };
+
+            // Determine exe path for service binary
+            let exe_path = match env::current_exe() {
+                Ok(p) => p,
+                Err(e) => {
+                    let msg = format!("failed to determine executable path: {}\n", e);
+                    let _ = write_bytes(msg.as_bytes());
+                    return 1;
+                }
+            };
+
+            // Run action-specific commands
+            match action {
+                "install" => {
+                    // sc create <name> binPath= "<exe> service" DisplayName= "<display>" start= auto
+                    let binarg = format!("binPath=\"{}\"", exe_path.display());
+                    let disp = format!("DisplayName={}", SERVICE_DISPLAY_NAME);
+                    let output = Command::new("sc").arg("create").arg(SERVICE_NAME).arg(binarg).arg(disp).arg("start=auto").output();
+                    let mut combined = Vec::new();
+                    match output {
+                        Ok(o) => {
+                            combined.extend_from_slice(&o.stdout);
+                            combined.extend_from_slice(&o.stderr);
+                        }
+                        Err(e) => {
+                            combined.extend_from_slice(format!("failed to run sc create: {}\n", e).as_bytes());
+                        }
+                    }
+                    // set description
+                    let desc_out = Command::new("sc").arg("description").arg(SERVICE_NAME).arg(SERVICE_DESC).output();
+                    match desc_out {
+                        Ok(o) => { combined.extend_from_slice(&o.stdout); combined.extend_from_slice(&o.stderr); }
+                        Err(e) => { combined.extend_from_slice(format!("failed to run sc description: {}\n", e).as_bytes()); }
+                    }
+
+                    let _ = write_bytes(&normalize_to_utf8(&combined));
+                    return 0;
+                }
+                "uninstall" => {
+                    // sc delete <name>
+                    let output = Command::new("sc").arg("delete").arg(SERVICE_NAME).output();
+                    let mut combined = Vec::new();
+                    match output {
+                        Ok(o) => { combined.extend_from_slice(&o.stdout); combined.extend_from_slice(&o.stderr); }
+                        Err(e) => { combined.extend_from_slice(format!("failed to run sc delete: {}\n", e).as_bytes()); }
+                    }
+                    let _ = write_bytes(&normalize_to_utf8(&combined));
+                    return 0;
+                }
+                _ => {
+                    // Unsupported elevated action: fall back to simple message
+                    let msg = format!("Elevated, but action '{}' not implemented in this shim.\n", action);
+                    let _ = write_bytes(msg.as_bytes());
+                    return 1;
+                }
+            }
+        }
+
+        // Not elevated: re-launch elevated and capture output via a named pipe (preferred) or fallback to temp file.
+        // If an elevated_pipe name was supplied (from caller), use it; otherwise generate one.
+        let pipe_name = elevated_pipe.map(|s| s.to_string()).unwrap_or_else(|| format!(r"\\.\pipe\quant1x-{}-{}", std::process::id(), chrono::Local::now().timestamp()));
+
+        // Best-effort: check whether the target service appears installed before attempting `start`/`stop`.
+        // We'll use the executable file stem as the service name candidate (e.g. 'stock').
+        if action == "start" || action == "stop" || action == "status" {
+            // Use compile-time SERVICE_NAME constant as the Windows service name.
+            let svc_name = SERVICE_NAME;
+            let check_cmd = format!("Get-Service -Name '{}' -ErrorAction SilentlyContinue", svc_name);
+            if let Ok(out) = Command::new("powershell").arg("-NoProfile").arg("-Command").arg(check_cmd).output() {
+                let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+                if stdout.trim().is_empty() {
+                    eprintln!("Service '{}' not found ({}). Please install the service before calling '{}'.", svc_name, SERVICE_DESC, action);
+                    eprintln!("Hint: use sc.exe create <{}> binPath= \"<path-to-exe>\" DisplayName= \"{}\"", svc_name, SERVICE_DISPLAY_NAME);
+                    return 1;
+                }
+            }
+        }
+
+        // Create a named pipe server in a background thread that will accept one client and stream data to stdout.
+    let server_name = pipe_name.clone();
+        let server_handle = std::thread::spawn(move || {
+            use std::ffi::OsStr;
+            use std::os::windows::ffi::OsStrExt;
+            use winapi::um::fileapi::ReadFile;
+            use winapi::um::handleapi::CloseHandle;
+            use winapi::um::winbase::{PIPE_TYPE_BYTE, PIPE_READMODE_BYTE, PIPE_WAIT, PIPE_UNLIMITED_INSTANCES};
+            use winapi::um::namedpipeapi::CreateNamedPipeW;
+            use winapi::um::winnt::{FILE_SHARE_READ, FILE_SHARE_WRITE};
+            use winapi::um::winnt::GENERIC_READ;
+            use winapi::shared::minwindef::DWORD;
+            use winapi::um::winbase::PIPE_ACCESS_INBOUND;
+            use winapi::um::winnt::HANDLE as WinHandle;
+
+            let wide: Vec<u16> = OsStr::new(&server_name).encode_wide().chain(std::iter::once(0)).collect();
+
+            unsafe {
+                let handle: WinHandle = CreateNamedPipeW(
+                    wide.as_ptr(),
+                    PIPE_ACCESS_INBOUND,
+                    PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
+                    PIPE_UNLIMITED_INSTANCES,
+                    4096,
+                    4096,
+                    0,
+                    std::ptr::null_mut(),
+                );
+
+                if handle == winapi::um::handleapi::INVALID_HANDLE_VALUE as WinHandle {
+                    log::error!("CreateNamedPipeW failed for {}", server_name);
+                    return;
+                }
+
+                // Wait for a client to connect. ConnectNamedPipe will block until
+                // a client connects. If it returns failure, check whether the
+                // client already connected (ERROR_PIPE_CONNECTED) and continue.
+                use winapi::um::namedpipeapi::ConnectNamedPipe;
+                use winapi::um::errhandlingapi::GetLastError;
+                use winapi::shared::winerror::ERROR_PIPE_CONNECTED;
+
+                let conn = ConnectNamedPipe(handle, std::ptr::null_mut());
+                if conn == 0 {
+                    let err = GetLastError();
+                    if err != ERROR_PIPE_CONNECTED {
+                        log::error!("ConnectNamedPipe failed for {}: error {}", server_name, err);
+                        let _ = CloseHandle(handle as *mut _);
+                        return;
+                    }
+                    // else: ERROR_PIPE_CONNECTED means client already connected; proceed
+                }
+
+                let mut buf = [0u8; 4096];
+                loop {
+                    let mut read: DWORD = 0;
+                    let ok = ReadFile(handle, buf.as_mut_ptr() as *mut _, buf.len() as DWORD, &mut read as *mut _, std::ptr::null_mut());
+                    if ok != 0 && read > 0 {
+                        let s = String::from_utf8_lossy(&buf[..read as usize]);
+                        print!("{}", s);
+                    } else {
+                        break;
+                    }
+                }
+
+                let _ = CloseHandle(handle as *mut _);
+            }
+        });
+
+        // If the elevated child connects back by pipe (when it runs elevated), the child should open the pipe and write logs.
+        // We now launch the elevated process and let the server thread accept the connection and print data.
+
+        // Build args: original args plus marker --elevated-pipe <pipename>
+        let mut args: Vec<String> = env::args().collect();
+        // append action if not present
+        if !args.iter().any(|a| a == "service") {
+            args.push("service".to_string());
+            args.push(action.to_string());
+        }
+        args.push("--elevated-pipe".to_string());
+        args.push(pipe_name.clone());
+
+        // Compose argument list for Start-Process
+        let exe = match env::current_exe() {
+            Ok(p) => p,
+            Err(e) => {
+                eprintln!("failed to determine executable path: {}", e);
+                return 1;
+            }
+        };
+        // Build -ArgumentList as a comma-separated list of quoted arguments
+        let mut arg_items: Vec<String> = Vec::new();
+        for a in args.iter().skip(1) {
+            arg_items.push(format!("\"{}\"", a.replace("\"","\\\"")));
+        }
+        let arglist = arg_items.join(", ");
+
+    // Hide the spawned elevated window for a cleaner UX; the elevated child will communicate via the pipe.
+    let ps_cmd = format!("Start-Process -FilePath \"{}\" -ArgumentList {} -Verb RunAs -WindowStyle Hidden", exe.display(), arglist);
+        let spawn = Command::new("powershell").arg("-NoProfile").arg("-Command").arg(ps_cmd).spawn();
+
+        match spawn {
+            Ok(mut child) => {
+                // Wait for helper to be launched; join the server thread when done.
+                if let Ok(_) = child.wait() {
+                    // child returned quickly (likely failure or Start-Process returned after launching)
+                }
+                // Wait for server thread to finish reading (it will exit on EOF)
+                let _ = server_handle.join();
+                return 0;
+            }
+            Err(e) => {
+                log::error!("Failed to Spawn UAC helper: {}", e);
+                return 1;
+            }
+        }
+    }
+}
+
+#[cfg(windows)]
+fn is_current_process_elevated() -> bool {
+    // Use PowerShell to ask whether current process is elevated. This avoids
+    // pulling in native Windows crates and keeps the shim lightweight.
+    use std::process::Command;
+    let check = r#"[bool](([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))"#;
+    let out = Command::new("powershell").arg("-NoProfile").arg("-Command").arg(check).output();
+    if let Ok(o) = out {
+        if let Ok(s) = String::from_utf8(o.stdout) {
+            return s.trim().eq_ignore_ascii_case("True");
+        }
+    }
+    false
+}
+
 
 // Library authors can extend with a function like:
 // pub fn try_run_subcommand(name: &str, matches: &clap::ArgMatches) -> Result<bool, Box<dyn std::error::Error>>

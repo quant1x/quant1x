@@ -22,7 +22,9 @@ fn main() {
     let service_sub = Command::new("service")
         .about("Manage the service.")
         .arg(Arg::new("action").value_parser(["install","uninstall","start","stop","status","run"]).required(true))
-        .arg(Arg::new("pipe").long("pipe").action(ArgAction::SetTrue));
+        .arg(Arg::new("pipe").long("pipe").action(ArgAction::SetTrue))
+        .arg(Arg::new("elevated-out").long("elevated-out").num_args(1))
+        .arg(Arg::new("elevated-pipe").long("elevated-pipe").num_args(1));
 
     let update_sub = Command::new("update")
         .about("Update cached data (base / features)")
@@ -78,7 +80,9 @@ fn main() {
             // call engine::daemon(service_matches) if available
             let action = subm.get_one::<String>("action").map(|s| s.as_str()).unwrap_or("");
             let pipe = subm.get_flag("pipe");
-            let code = call_engine_daemon(action, pipe);
+            let elevated_out = subm.get_one::<String>("elevated-out").map(|s| s.to_string());
+            let elevated_pipe = subm.get_one::<String>("elevated-pipe").map(|s| s.to_string());
+            let code = call_engine_daemon(action, pipe, elevated_out.as_deref(), elevated_pipe.as_deref());
             std::process::exit(code);
         }
     }
@@ -143,8 +147,8 @@ fn call_engine_init() -> Result<(), String> {
     Ok(())
 }
 
-fn call_engine_daemon(action: &str, pipe: bool) -> i32 {
-    quant1x::engine_daemon(action, pipe)
+fn call_engine_daemon(action: &str, pipe: bool, elevated_out: Option<&str>, elevated_pipe: Option<&str>) -> i32 {
+    quant1x::engine_daemon(action, pipe, elevated_out, elevated_pipe)
 }
 
 mod lib_bridge {
