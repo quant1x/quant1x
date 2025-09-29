@@ -161,8 +161,8 @@ mod block_meta;
 mod company_category;
 mod company_content;
 mod minute_time;
-mod transaction_data;
-mod transaction_history;
+pub mod transaction_data;
+pub mod transaction_history;
 mod client;
 
 pub use hello1::*;

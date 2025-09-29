@@ -69,3 +69,93 @@ impl TransactionResponse {
 		}
 	}
 }
+
+// Public helper that sends a TRANSACTION_DATA request and parses the response
+pub fn fetch_transaction_data(security_code: &str, start: u16, count: u16) -> Option<TransactionResponse> {
+	// Build request header + payload similar to C++ TransactionRequest
+	#[derive(Debug)]
+	struct TransactionRequest {
+		zip_flag: u8,
+		seq_id: u32,
+		packet_type: u8,
+		pkg_len1: u16,
+		pkg_len2: u16,
+		method: u16,
+
+		market: u16,
+		code: [u8; 6],
+		start: u16,
+		count: u16,
+	}
+
+	impl TransactionRequest {
+		fn new(security_code: &str, start: u16, count: u16) -> Self {
+			let (market_u8, _flag, pure) = crate::exchange::detect_market(security_code);
+			let mut code = [0u8; 6];
+			let sym = pure.as_bytes();
+			let copy_len = std::cmp::min(sym.len(), 6);
+			code[..copy_len].copy_from_slice(&sym[..copy_len]);
+
+			TransactionRequest {
+				zip_flag: 0x0C,
+				seq_id: super::sequence_id(),
+				packet_type: 0x00,
+				pkg_len1: 0,
+				pkg_len2: 0,
+				method: 0x0fc5, // TRANSACTION_DATA
+				market: market_u8 as u16,
+				code,
+				start,
+				count,
+			}
+		}
+
+		fn serialize(&mut self) -> Vec<u8> {
+			// payload: Market(u16) + Code[6] + Start(u16) + Count(u16) -> 2+6+2+2 = 12
+			// PkgLen fields in C++ for TransactionRequest are set to: 2(method) + 2(market) + 6(code) + 2(start) + 2(count) = 14
+			self.pkg_len1 = 2u16 + 2u16 + 6u16 + 2u16 + 2u16; // method(2) + payload
+			self.pkg_len2 = self.pkg_len1;
+
+			let mut header = crate::std::BinaryStream::new();
+			header.push_u8(self.zip_flag);
+			header.push_u32(self.seq_id);
+			header.push_u8(self.packet_type);
+			header.push_u16(self.pkg_len1);
+			header.push_u16(self.pkg_len2);
+			header.push_u16(self.method);
+
+			let mut stream = crate::std::BinaryStream::new();
+			stream.push_u16(self.market);
+			stream.push_byte_array(&self.code);
+			stream.push_u16(self.start);
+			stream.push_u16(self.count);
+
+			let mut buf = header.data().clone();
+			let data = stream.data();
+			buf.extend_from_slice(data);
+			buf
+		}
+	}
+
+	match crate::level1::client::client() {
+		Ok(mut pooled) => {
+			let mut req = TransactionRequest::new(security_code, start, count);
+			let req_buf = req.serialize();
+			match crate::level1::process_request(pooled.stream(), req_buf.as_slice()) {
+				Ok(body) => {
+					let mut resp = TransactionResponse::new(req.market as i32, &String::from_utf8_lossy(&req.code));
+					resp.deserialize(&body);
+					Some(resp)
+				}
+				Err(e) => {
+					log::error!("level1 process_request error for transaction_data {}: {}", security_code, e);
+					None
+				}
+			}
+		}
+		Err(e) => {
+			log::error!("failed to acquire level1 client for transaction_data {}: {}", security_code, e);
+			None
+		}
+	}
+}
