@@ -19,6 +19,12 @@
 //! let parsed = Timestamp::parse("2022-06-15 14:30:45").unwrap();
 //! ```
 
+// Use mimalloc as the global allocator for improved allocation performance
+use mimalloc::MiMalloc;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
+
 // 直接导出 timestamp 模块的所有公共项 - 扁平化架构
 pub use crate::timestamp::*;
 
