@@ -3,10 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.102] - 2025-09-29
+### Changed
+- 增加quant1x证书
+
 ## [0.6.101] - 2025-09-29
 ### Changed
 - 调整文档, 明确目前只支持level1行情数据
 - 更新rust版本号为0.6.1
+- update changelog
 
 ## [0.6.100] - 2025-09-29
 ### Changed
@@ -728,7 +733,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.101...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.102...HEAD
+[0.6.102]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.101...v0.6.102
 [0.6.101]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.100...v0.6.101
 [0.6.100]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.99...v0.6.100
 [0.6.99]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.98...v0.6.99
