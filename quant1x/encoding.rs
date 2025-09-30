@@ -56,7 +56,7 @@ mod tests {
         // "煤炭" in GBK bytes
         let gbk_bytes: [u8; 6] = [0xC3, 0xF6, 0xD3, 0xF6, 0x7C, 0x31];
         // append a trailing newline-like 0x0a
-    let v = gbk_bytes.to_vec();
+        let v = gbk_bytes.to_vec();
         // ensure it behaves (this is synthetic; real test could include a full GBK line)
         let out = decode_line_bytes(&v);
         // we won't assert exact expected text here because constructing real GBK inlined is brittle
