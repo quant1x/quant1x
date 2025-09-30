@@ -62,6 +62,10 @@ pub use crate::pandas::*;
 mod encoding;
 pub use crate::encoding::*;
 
+// ringbuffer module (MPMC ring buffer)
+pub mod ringbuffer;
+pub use crate::ringbuffer::*;
+
 // crate-level internal configuration module (used by exchange/calendar and tests)
 pub mod config;
 // small application-level shims for main.rs to call; these are no-op fallbacks
