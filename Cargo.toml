@@ -1,6 +1,6 @@
 [package]
 name = "quant1x"
-version = "0.6.7"
+version = "0.6.8"
 edition = "2021"
 authors = ["Quant1X Team"]
 description = "Cross-language standard library for quantitative trading"
