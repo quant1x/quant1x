@@ -1,6 +1,6 @@
 
 
-// Standalone Vyukov bounded MPMC queue (library variant - no main) with alignment and backoff
+// 独立的 Vyukov 有界 MPMC 队列（库变体 - 无 main），带对齐和退避策略
 use std::cell::UnsafeCell;
 use std::mem::MaybeUninit;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -87,7 +87,7 @@ impl<T> Queue<T> {
                     continue;
                 }
             } else if seq < pos {
-                // full
+                // 队列已满
                 return Err(());
             } else {
                 Self::backoff_spin(&mut backoff);
@@ -126,6 +126,7 @@ impl<T> Queue<T> {
     }
 
     pub fn close(&self) {
+        // 将 closed 标志置位以表明队列已关闭
         self.closed.store(1, Ordering::Release);
     }
 }

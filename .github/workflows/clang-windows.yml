@@ -1,0 +1,50 @@
+name: clang-build-and-run
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-run-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install LLVM (choco)
+        run: choco install llvm -y
+      - name: Show VS and clang
+        run: |
+          "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath || true
+          clang++ --version
+      - name: Build with clang-cl
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
+          clang-cl /std:c++20 /O2 /MD /Fe:quant1x\\ringbuffer\\vyukov_runner_clangcl.exe quant1x\\ringbuffer\\vyukov_runner.cpp
+      - name: Run runner
+        run: quant1x\ringbuffer\vyukov_runner_clangcl.exe
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ringbuffer-artifacts
+          path: |
+            quant1x/ringbuffer/*.s
+            quant1x/ringbuffer/*.csv
+
+  build-and-run-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install clang
+        run: sudo apt-get update && sudo apt-get install -y clang
+      - name: Build with clang++
+        run: clang++ -std=c++20 -O3 -march=native quant1x/ringbuffer/vyukov_runner.cpp -o quant1x/ringbuffer/vyukov_runner_clang
+      - name: Run runner
+        run: ./quant1x/ringbuffer/vyukov_runner_clang
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ringbuffer-artifacts-ubuntu
+          path: |
+            quant1x/ringbuffer/*.s
+            quant1x/ringbuffer/*.csv

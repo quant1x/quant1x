@@ -1,15 +1,14 @@
 #![cfg(feature = "vyukov")]
 
-// Feature-gated tests for a Vyukov-style bounded MPMC queue implementation.
-// These tests are written TDD-style: they assume a `crate::ringbuffer::vyukov::Queue<T>`
-// implementation will be provided later. They will not be compiled/run unless
-// the `vyukov` Cargo feature is enabled.
+// 针对 Vyukov 风格有界 MPMC 队列实现的特性门控测试。
+// 这些测试以 TDD 风格编写：假设将会提供 `crate::ringbuffer::vyukov::Queue<T>`
+// 的实现。除非启用 `vyukov` Cargo 特性，否则这些测试不会被编译/运行。
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 use std::thread;
 
-// Note: Expected API of the Vyukov implementation (to be implemented later):
+// 注意：期望的 Vyukov 实现 API（将来实现）：
 // pub mod vyukov {
 //     pub struct Queue<T> { .. }
 //     impl<T> Queue<T> {
@@ -22,7 +21,7 @@ use std::thread;
 
 #[test]
 fn vyukov_basic() {
-    // Basic functionality smoke test (enqueue/dequeue ordering)
+    // 基本功能的冒烟测试（入队/出队顺序）
     use crate::ringbuffer::vyukov::Queue as VQueue;
 
     let q = VQueue::<i32>::new(4);
@@ -52,7 +51,7 @@ fn vyukov_mpmc_performance() {
 
     let start = Instant::now();
 
-    // Spawn producers
+    // 启动生产者线程
     let mut producers = Vec::with_capacity(NUM_PRODUCERS);
     for id in 0..NUM_PRODUCERS {
         let q_clone = q.clone();
@@ -70,7 +69,7 @@ fn vyukov_mpmc_performance() {
         }));
     }
 
-    // Consumers
+    // 消费者线程
     let consumed = Arc::new(AtomicI64::new(0));
     let mut consumers = Vec::with_capacity(NUM_CONSUMERS);
     for _ in 0..NUM_CONSUMERS {

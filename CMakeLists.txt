@@ -523,6 +523,7 @@ set(quant1x-headers
 
     # 数据处理功能 quant1x/data
     learn/fpgrowth/fp_growth.h
+    quant1x/ringbuffer/vyukov.hpp
 )
 
 set(quant1x-sources
