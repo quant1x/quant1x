@@ -3,11 +3,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.107] - 2025-09-30
+### Changed
+- 删除不完善的timestamp文档
+- 新增log4rs的yaml格式配置文件
+- 新增分钟级别k线, 默认关闭, 打开的方式是quant1x.yaml中配置data.cache.kline, 按照pandas的freq的规则设置key，value为布尔值true
+
 ## [0.6.106] - 2025-09-30
 ### Changed
 - rust下一个版本0.6.6
 - 内存管理使用mimalloc
 - rust代码格式化
+- update changelog
 
 ## [0.6.105] - 2025-09-29
 ### Changed
@@ -756,7 +763,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.106...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.107...HEAD
+[0.6.107]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.106...v0.6.107
 [0.6.106]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.105...v0.6.106
 [0.6.105]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.104...v0.6.105
 [0.6.104]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.103...v0.6.104
