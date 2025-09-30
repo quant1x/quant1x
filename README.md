@@ -3,16 +3,17 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://isocpp.org/)
 [![Go](https://img.shields.io/badge/Go-1.25-blue.svg)](https://golang.org/)
-[![Rust](https://img.shields.io/badge/Rust-1.88+-orange.svg)](https://www.rust-lang.org/)
+[![Rust](https://img.shields.io/badge/Rust-1.90+-orange.svg)](https://www.rust-lang.org/)
 [![Python](https://img.shields.io/badge/Python-3.12+-yellow.svg)](https://www.python.org/)
 [![CMake](https://img.shields.io/badge/CMake-3.30+-green.svg)](https://cmake.org/)
 ![tag](https://img.shields.io/github/tag/quant1x/quant1x.svg?style=flat)
+![Crates.io](https://img.shields.io/crates/d/quant1x.svg)
 
 Quant1X 是一个多语言量化交易框架，支持 C++、Go、Rust、Python，提供完整的量化交易解决方案，包括数据处理、策略开发、回测引擎、实时交易等功能。
 
 ## ✨ 特性
 
-- **多语言支持**：C++20、Go 1.25、Rust 1.88+、Python 3.12+
+- **多语言支持**：C++20、Go 1.25、Rust 1.90+、Python 3.12+
 - **高性能**：优化的算法和数据结构，支持 SIMD 指令集
 - **模块化设计**：可插拔的组件架构，易于扩展
 - **实时数据**：支持 Level1 市场数据
@@ -34,7 +35,7 @@ Quant1X 是一个多语言量化交易框架，支持 C++、Go、Rust、Python�
 |------|----------|----------|
 | Python | 3.12+ | 3.12.x |
 | Go | 1.25+ | 1.25.x |
-| Rust | 1.88+ | 1.88+ (2024) |
+| Rust | 1.88+ | 1.90+ (2021) |
 | C++ | C++20 | GCC 14.3+/Clang 18+/MSVC 14.3+ |
 
 ## 🚀 快速开始
