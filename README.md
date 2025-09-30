@@ -45,7 +45,7 @@ Quant1X 是一个多语言量化交易框架，支持 C++、Go、Rust、Python�
 ## 1.1 默认均为64位操作系统
 | python | golang | rust       | c++                         |
 |:-------|:-------|:-----------|:----------------------------|
-| 3.12.x | 1.25.x | 1.88+/2024 | gcc14.3+/clang18+/msvc14.3+ |
+| 3.12.x | 1.25.x | 1.90+/2021 | gcc14.3+/clang18+/msvc14.3+ |
 
 ## 1.2 环境安装推荐使用brew
 安装brew时需要注意避免使用root权限 
@@ -67,7 +67,7 @@ pyenv versions
 ```text
   system
   3.8.16
-* 3.10.10 (set by /Users/${USERNAME}/.pyenv/version)
+* 3.12.9 (set by /Users/${USERNAME}/.pyenv/version)
 ```
 ### 2.1.2 查看可安装的版本
 ```shell
