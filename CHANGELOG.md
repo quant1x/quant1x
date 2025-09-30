@@ -3,11 +3,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.115] - 2025-10-01
+### Changed
+- 删除废弃的js测试工具
+
 ## [0.6.114] - 2025-10-01
 ### Changed
 - 测试工具转移到项目根路径下tools
 - 演示类代码转移到exemples
 - rust下一个版本号0.6.10
+- update changelog
 
 ## [0.6.113] - 2025-10-01
 ### Changed
@@ -810,7 +815,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.114...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.115...HEAD
+[0.6.115]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.114...v0.6.115
 [0.6.114]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.113...v0.6.114
 [0.6.113]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.112...v0.6.113
 [0.6.112]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.111...v0.6.112
