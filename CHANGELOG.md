@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.111] - 2025-09-30
+### Changed
+- 修复网络数据可能存在包不完整的情况，修复分钟级别K线的开始日期没矫正导致的除权除息以及level1协议参数造成逻辑上的越界问题
+
 ## [0.6.110] - 2025-09-30
 ### Changed
 - 修正rust版本要求，上下文一致1.90+
+- update changelog
 
 ## [0.6.109] - 2025-09-30
 ### Changed
@@ -779,7 +784,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.110...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.111...HEAD
+[0.6.111]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.110...v0.6.111
 [0.6.110]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.109...v0.6.110
 [0.6.109]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.108...v0.6.109
 [0.6.108]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.107...v0.6.108
