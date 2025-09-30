@@ -1,6 +1,7 @@
 use super::sequence_id;
 use crate::std::BinaryStream;
 use crate::level1::commands::*;
+use std::panic;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -171,71 +172,74 @@ impl SecurityBarsResponse {
     pub fn deserialize(&mut self, data: &[u8]) {
         self.count = 0;
         self.list.clear();
-        if data.len() < 2 {
-            return;
-        }
         let mut bs = BinaryStream::from_vec(data.to_vec());
-        self.count = bs.get_u16();
-        self.list.reserve(self.count as usize);
+        let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+            self.count = bs.get_u16();
+            self.list.reserve(self.count as usize);
 
-        let mut pre_diff_base: i64 = 0;
-        for _ in 0..self.count {
-            let mut e = SecurityBar::new();
+            let mut pre_diff_base: i64 = 0;
+            for _ in 0..self.count {
+                let mut e = SecurityBar::new();
 
-            // decode date/time depending on category
-            if (self.category as i32) < 4 || self.category == 7 || self.category == 8 {
-                let zipday = bs.get_u16() as u32;
-                let tminutes = bs.get_u16();
-                let (y, m, d, hh, mm) =
-                    super::get_datetime_from_u32(self.category as i32, zipday, tminutes);
-                e.year = y;
-                e.month = m;
-                e.day = d;
-                e.hour = hh;
-                e.minute = mm;
-            } else {
-                let zipday = bs.get_u32();
-                let (y, m, d, hh, mm) =
-                    super::get_datetime_from_u32(self.category as i32, zipday, 0);
-                e.year = y;
-                e.month = m;
-                e.day = d;
-                e.hour = hh;
-                e.minute = mm;
+                // decode date/time depending on category
+                if (self.category as i32) < 4 || self.category == 7 || self.category == 8 {
+                    let zipday = bs.get_u16() as u32;
+                    let tminutes = bs.get_u16();
+                    let (y, m, d, hh, mm) =
+                        super::get_datetime_from_u32(self.category as i32, zipday, tminutes);
+                    e.year = y;
+                    e.month = m;
+                    e.day = d;
+                    e.hour = hh;
+                    e.minute = mm;
+                } else {
+                    let zipday = bs.get_u32();
+                    let (y, m, d, hh, mm) =
+                        super::get_datetime_from_u32(self.category as i32, zipday, 0);
+                    e.year = y;
+                    e.month = m;
+                    e.day = d;
+                    e.hour = hh;
+                    e.minute = mm;
+                }
+                e.datetime = format!(
+                    "{:04}-{:02}-{:02} {:02}:{:02}:00",
+                    e.year, e.month, e.day, e.hour, e.minute
+                );
+
+                // price diffs (varint encoded)
+                let mut price_open_diff = bs.varint_decode();
+                let price_close_diff = bs.varint_decode();
+                let price_high_diff = bs.varint_decode();
+                let price_low_diff = bs.varint_decode();
+
+                let ivol = bs.get_u32();
+                e.vol = super::int_to_float64(ivol);
+
+                let dbvol = bs.get_u32();
+                e.amount = super::int_to_float64(dbvol);
+
+                // compute prices: values are divided by 1000.0 per C++ implementation
+                e.open = (price_open_diff + pre_diff_base) as f64 / 1000.0;
+                price_open_diff += pre_diff_base;
+
+                e.close = (price_open_diff + price_close_diff) as f64 / 1000.0;
+                e.high = (price_open_diff + price_high_diff) as f64 / 1000.0;
+                e.low = (price_open_diff + price_low_diff) as f64 / 1000.0;
+
+                pre_diff_base = price_open_diff + price_close_diff;
+
+                if self.is_index {
+                    e.up_count = bs.get_u16();
+                    e.down_count = bs.get_u16();
+                }
+
+                self.list.push(e);
             }
-            e.datetime = format!(
-                "{:04}-{:02}-{:02} {:02}:{:02}:00",
-                e.year, e.month, e.day, e.hour, e.minute
-            );
-
-            // price diffs (varint encoded)
-            let mut price_open_diff = bs.varint_decode();
-            let price_close_diff = bs.varint_decode();
-            let price_high_diff = bs.varint_decode();
-            let price_low_diff = bs.varint_decode();
-
-            let ivol = bs.get_u32();
-            e.vol = super::int_to_float64(ivol);
-
-            let dbvol = bs.get_u32();
-            e.amount = super::int_to_float64(dbvol);
-
-            // compute prices: values are divided by 1000.0 per C++ implementation
-            e.open = (price_open_diff + pre_diff_base) as f64 / 1000.0;
-            price_open_diff += pre_diff_base;
-
-            e.close = (price_open_diff + price_close_diff) as f64 / 1000.0;
-            e.high = (price_open_diff + price_high_diff) as f64 / 1000.0;
-            e.low = (price_open_diff + price_low_diff) as f64 / 1000.0;
-
-            pre_diff_base = price_open_diff + price_close_diff;
-
-            if self.is_index {
-                e.up_count = bs.get_u16();
-                e.down_count = bs.get_u16();
-            }
-
-            self.list.push(e);
+        }));
+        if let Err(_) = result {
+            log::warn!("insufficient data for {} bars, parsed {} successfully", self.count, self.list.len());
+            self.count = self.list.len() as u16;
         }
     }
 

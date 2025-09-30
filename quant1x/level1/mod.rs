@@ -102,7 +102,7 @@ pub fn unzip(body: Vec<u8>, unzipped_size: usize) -> std::io::Result<Vec<u8>> {
 /// body bytes. This mirrors the C++ `level1::process()` unzip semantics.
 pub fn process_request(stream: &mut MioTcpStream, req_buf: &[u8]) -> std::io::Result<Vec<u8>> {
     // Log outgoing request bytes for protocol debugging
-    log::info!(
+    log::debug!(
         "level1::process_request - sending request ({} bytes): {}",
         req_buf.len(),
         hex::encode(req_buf)
@@ -132,7 +132,7 @@ pub fn process_request(stream: &mut MioTcpStream, req_buf: &[u8]) -> std::io::Re
     let zip_size = bs.get_u16() as usize;
     let unzip_size = bs.get_u16() as usize;
 
-    log::info!("level1::process_request - parsed header: I1={}, ZipFlag={}, SeqID={}, I2={}, Method=0x{:04x}, ZipSize={}, UnZipSize={}",
+    log::debug!("level1::process_request - parsed header: I1={}, ZipFlag={}, SeqID={}, I2={}, Method=0x{:04x}, ZipSize={}, UnZipSize={}",
               i1, zip_flag, seq_id, i2, method, zip_size, unzip_size);
 
     if zip_size == 0 {
@@ -161,8 +161,8 @@ pub fn process_request(stream: &mut MioTcpStream, req_buf: &[u8]) -> std::io::Re
 
     Ok(final_body)
 }
-mod block_info;
-mod block_meta;
+pub mod block_info;
+pub mod block_meta;
 mod client;
 mod commands;
 mod company_category;
@@ -189,6 +189,8 @@ pub use hello2::*;
 pub use security_bars::*;
 pub use xdxr::*;
 pub use commands::*;
+pub use block_info::*;
+pub use block_meta::*;
 
 #[cfg(test)]
 mod tests {

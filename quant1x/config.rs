@@ -232,6 +232,21 @@ pub fn get_kline_filename(code: &str, forward: bool) -> String {
     path.to_string_lossy().to_string()
 }
 
+/// Return the full filename for a kline cache file for a specific frequency.
+/// Mirrors C++ get_kline_filename_ex(code, freq) which places files under <cache>/<freq>/<subpath>/<code>.csv
+pub fn get_kline_filename_ex(code: &str, freq: &str) -> String {
+    if code.len() != 8 {
+        log::error!("invalid security code length (expected 8): {}", code);
+        return String::new();
+    }
+    let mut path = std::path::PathBuf::from(get_kline_path(freq));
+    let sub = &code[..code.len() - 3];
+    path.push(sub);
+    path.push(format!("{}.csv", code));
+    //print!("{}", path.to_string_lossy().to_string());
+    path.to_string_lossy().to_string()
+}
+
 /// Return the full filename for a minute KLine cache file for `code`.
 /// We'll mirror a simple layout under <cache>/minutes/<prefix>/<code>.csv similar to other helpers.
 /// Return the full filename for a minute KLine cache file for `code` and `cache_date`.
@@ -251,20 +266,6 @@ pub fn get_minute_filename(code: &str, cache_date: &str) -> String {
     let mut path = std::path::PathBuf::from(get_minute_path());
     path.push(year);
     path.push(date);
-    path.push(format!("{}.csv", code));
-    path.to_string_lossy().to_string()
-}
-
-/// Return the full filename for a kline cache file for a specific frequency.
-/// Mirrors C++ get_kline_filename_ex(code, freq) which places files under <cache>/<freq>/<subpath>/<code>.csv
-pub fn get_kline_filename_ex(code: &str, freq: &str) -> String {
-    if code.len() != 8 {
-        log::error!("invalid security code length (expected 8): {}", code);
-        return String::new();
-    }
-    let sub = cache_id_path(code);
-    let mut path = std::path::PathBuf::from(get_kline_path(freq));
-    path.push(sub);
     path.push(format!("{}.csv", code));
     path.to_string_lossy().to_string()
 }
@@ -340,11 +341,11 @@ pub fn get_minute_kline_config() -> MinuteKLineConfig {
 /// We mirror the C++ behavior by looking for a bundled resources/meta directory inside
 /// the crate workspace; fall back to <cache>/resources/meta if not present.
 pub fn get_block_path() -> String {
-    // fallback to cache-based resources/meta
+    // Return the meta path (where block/sector metadata lives). Ensure the
+    // directory exists when possible and return the path as a string. This
+    // mirrors the original behavior: block metadata files live under the
+    // user's meta directory returned by `get_meta_path()`.
     let p2 = std::path::PathBuf::from(get_meta_path());
-    //p2.push("resources");
-    //p2.push("meta");
-    // ensure directory exists when possible
     let _ = std::fs::create_dir_all(&p2);
     p2.to_string_lossy().to_string()
 }

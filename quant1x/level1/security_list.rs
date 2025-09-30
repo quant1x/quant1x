@@ -89,6 +89,15 @@ impl SecurityListResponse {
             return;
         }
         self.count = bs.get_u16();
+        if self.count == 0 {
+            return;
+        }
+        // Rough estimate: each security needs at least ~25 bytes
+        let min_required = 2 + (self.count as usize) * 25;
+        if data.len() < min_required {
+            log::warn!("insufficient data for {} securities: data len {}, min required {}", self.count, data.len(), min_required);
+            return;
+        }
 
         for _ in 0..self.count {
             // Code: 6 bytes string (ASCII numeric code in protocol) - no GBK decoding

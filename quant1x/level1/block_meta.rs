@@ -1,5 +1,8 @@
 use super::BinaryStream;
 
+// BLOCK_CHUNKS_SIZE must match the C++ constant (0x7530 == 30000)
+pub const BLOCK_CHUNKS_SIZE: u32 = 0x7530;
+
 #[derive(Debug, Clone)]
 pub struct BlockMeta {
     pub size: u32,

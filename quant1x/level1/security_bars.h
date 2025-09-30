@@ -3,6 +3,7 @@
 #define QUANT1X_LEVEL1_SECURITY_BARS_H 1
 
 #include <quant1x/level1/protocol.h>
+#include <stdexcept>
 
 // ==============================
 // K线

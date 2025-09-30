@@ -1,7 +1,7 @@
 use mio::net::TcpStream as MioTcpStream;
 use std::net::SocketAddr;
 use std::str::FromStr;
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Duration;
 
 use super::{
@@ -25,7 +25,7 @@ impl ProtocolHandler {
         // Hello1
         let mut req1 = Hello1Request::new();
         let req_buf1 = req1.serialize();
-        log::info!(
+        log::debug!(
             "ProtocolHandler::handshake -> sending Hello1 ({} bytes): {}",
             req_buf1.len(),
             hex::encode(&req_buf1)
@@ -43,7 +43,7 @@ impl ProtocolHandler {
                 );
                 let mut resp1 = Hello1Response::new();
                 resp1.deserialize(&body1);
-                log::info!(
+                log::debug!(
                     "ProtocolHandler::handshake Hello1 parsed info: {}",
                     resp1.info
                 );
@@ -65,7 +65,7 @@ impl ProtocolHandler {
         // Hello2
         let mut req2 = Hello2Request::new();
         let req_buf2 = req2.serialize();
-        log::info!(
+        log::debug!(
             "ProtocolHandler::handshake -> sending Hello2 ({} bytes): {}",
             req_buf2.len(),
             hex::encode(&req_buf2)
@@ -83,7 +83,7 @@ impl ProtocolHandler {
                 );
                 let mut resp2 = Hello2Response::new();
                 resp2.deserialize(&body2);
-                log::info!(
+                log::debug!(
                     "ProtocolHandler::handshake Hello2 parsed info: {}",
                     resp2.info
                 );
@@ -136,7 +136,7 @@ pub fn client() -> std::io::Result<crate::net::PooledConnection<ProtocolHandler>
             // 1) Try loading cached servers from the crate meta `server.bin` (C++ parity)
             let mut seeded = false;
             if let Some(servers) = crate::level1::config::load_cached_servers() {
-                log::info!("level1: loaded {} cached servers", servers.len());
+                log::debug!("level1: loaded {} cached servers", servers.len());
                 for s in servers.iter() {
                     if let Ok(addr) = SocketAddr::from_str(&s.addr()) {
                         let _ = mgr.add_endpoint(addr, 2);
@@ -147,9 +147,9 @@ pub fn client() -> std::io::Result<crate::net::PooledConnection<ProtocolHandler>
 
             // 2) Fallback: run detection and seed endpoints, then save cache
             if !seeded {
-                log::info!("level1: no cached servers, running detect()");
+                log::debug!("level1: no cached servers, running detect()");
                 let detected = crate::level1::config::detect(100, 8, 500);
-                log::info!("level1: detect() returned {} servers", detected.len());
+                log::debug!("level1: detect() returned {} servers", detected.len());
                 if !detected.is_empty() {
                     for s in detected.iter() {
                         if let Ok(addr) = SocketAddr::from_str(&s.addr()) {
@@ -160,7 +160,7 @@ pub fn client() -> std::io::Result<crate::net::PooledConnection<ProtocolHandler>
                     crate::level1::config::save_cached_servers(&detected);
                 }
             } else {
-                log::info!("level1: using cached servers for pool seeding");
+                log::debug!("level1: using cached servers for pool seeding");
             }
 
             let handler = Arc::new(ProtocolHandler {});

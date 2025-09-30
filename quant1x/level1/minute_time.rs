@@ -138,6 +138,15 @@ impl MinuteTimeResponse {
         }
         let mut bs = BinaryStream::from_vec(data.to_vec());
         self.count = bs.get_u16();
+        if self.count == 0 {
+            return;
+        }
+        // Rough estimate: header 6 bytes + each minute ~3 bytes (3 varints)
+        let min_required = 6 + (self.count as usize) * 3;
+        if data.len() < min_required {
+            log::warn!("insufficient data for {} minute times: data len {}, min required {}", self.count, data.len(), min_required);
+            return;
+        }
         self.list.reserve(self.count as usize);
         let base_unit = super::default_base_unit(self.market_, &self.code_);
         let _is_index = super::assert_index_by_market_and_code(self.market_, &self.code_);

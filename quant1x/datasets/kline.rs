@@ -129,6 +129,7 @@ impl DataAdapter for DataKLine {
             log::debug!("[DataKLine] empty date range for {}", code);
             return;
         }
+
         let total = ts_range.len();
 
         // 按日期范围分页从 level1 拉取数据（每页作为一个向量，保持页内顺序，之后再翻转页序以匹配 C++）
@@ -163,24 +164,10 @@ impl DataAdapter for DataKLine {
             }
         }
 
-        // 如果没有获取到任何页，则回退为仅写入表头的文件创建/重写（与之前行为一致）
-        if hs.is_empty() {
-            if !path.exists() {
-                match std::fs::File::create(&filename) {
-                    Ok(f) => {
-                        let mut w = csv::Writer::from_writer(f);
-                        if let Err(e) = w.write_record(KLine::headers()) {
-                            log::error!("[DataKLine] write header failed: {}", e);
-                        }
-                        let _ = w.flush();
-                    }
-                    Err(e) => {
-                        log::error!("[DataKLine] create file {} failed: {}", filename, e);
-                    }
-                }
-            }
-            return;
-        }
+        // // 如果没有获取到任何页，则不保存CSV（空列表不保存，包括表头）
+        // if hs.is_empty() {
+        //     return;
+        // }
         // C++ 会将分页结果反转为时间升序；保留每页内的顺序，只 reverse 外层 pages
         hs.reverse();
 
@@ -236,6 +223,10 @@ impl DataAdapter for DataKLine {
         }
 
         // 持久化保存
+        if klines.is_empty() {
+            // 空列表不保存CSV，包括表头
+            return;
+        }
         let tmp = format!("{}.tmp", filename);
         match std::fs::File::create(&tmp) {
             Ok(f) => {

@@ -6,6 +6,7 @@
 #include <quant1x/level1/security_quote.h>
 #include <quant1x/exchange/code.h>
 #include <ostream>
+#include <stdexcept>
 
 // ==============================
 // 分笔成交记录(Tick-by-Tick Transaction)
@@ -112,28 +113,33 @@ namespace level1 {
             auto baseUnit = defaultBaseUnit(market_, code_);
             auto isIndex = exchange::AssertIndexByMarketAndCode(static_cast<exchange::MarketType>(market_), std::string(code_));
             i64 lastPrice = 0;
-            for(int i = 0; i < Count; ++i) {
-                TickTransaction e{};
-                u16 seconds = bs.get_u16();
-                auto h = seconds / 60;
-                auto m = seconds % 60;
-                e.time = fmt::format("{:02d}:{:02d}", h, m);
-                i64 rawPrice = bs.varint_decode();
-                e.vol = bs.varint_decode();
-                e.num = bs.varint_decode();
-                e.buyOrSell = bs.varint_decode();
-                lastPrice += rawPrice;
-                e.price = f64(lastPrice)/baseUnit;
-                if(isIndex) {
-                    auto amount = e.vol * 100;
-                    e.amount = f64(amount);
-                    e.vol = i64(e.amount / e.price);
-                } else {
-                    e.vol *= 100;
-                    e.amount = f64(e.vol) * e.price;
+            try {
+                for(int i = 0; i < Count; ++i) {
+                    TickTransaction e{};
+                    u16 seconds = bs.get_u16();
+                    auto h = seconds / 60;
+                    auto m = seconds % 60;
+                    e.time = fmt::format("{:02d}:{:02d}", h, m);
+                    i64 rawPrice = bs.varint_decode();
+                    e.vol = bs.varint_decode();
+                    e.num = bs.varint_decode();
+                    e.buyOrSell = bs.varint_decode();
+                    lastPrice += rawPrice;
+                    e.price = f64(lastPrice)/baseUnit;
+                    if(isIndex) {
+                        auto amount = e.vol * 100;
+                        e.amount = f64(amount);
+                        e.vol = i64(e.amount / e.price);
+                    } else {
+                        e.vol *= 100;
+                        e.amount = f64(e.vol) * e.price;
+                    }
+                    auto _ = bs.varint_decode();
+                    List.emplace_back(e);
                 }
-                auto _ = bs.varint_decode();
-                List.emplace_back(e);
+            } catch(const std::out_of_range&) {
+                spdlog::warn("[TransactionResponse] insufficient data for {} transactions, parsed {} successfully", Count, List.size());
+                Count = List.size();
             }
         }
 

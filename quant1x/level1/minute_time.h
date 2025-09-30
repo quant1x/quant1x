@@ -3,6 +3,7 @@
 #define QUANT1X_LEVEL1_MINUTE_TIME_H 1
 
 #include <quant1x/level1/protocol.h>
+#include <stdexcept>
 
 // ==============================
 // 分时数据(历史), 当日分时数据和历史分时数据没区别, 只是命令字不同, 且ETF数据不准确
@@ -94,16 +95,21 @@ namespace level1 {
             auto isIndex = exchange::AssertIndexByMarketAndCode(static_cast<exchange::MarketType>(market_), std::string(code_));
             i64 lastPrice = 0;
             bs.skip(4); // 历史分笔成交记录, 跳过4个字节
-            for(int i = 0; i < Count; ++i) {
-                MinuteTime e{};
-                i64 rawPrice = bs.varint_decode();
-                i64 reversed1 = bs.varint_decode();
-                (void)reversed1;
-                i64 vol = bs.varint_decode();
-                e.Vol = vol;
-                lastPrice += rawPrice;
-                e.Price = f32(lastPrice)/f32(baseUnit);
-                List.emplace_back(e);
+            try {
+                for(int i = 0; i < Count; ++i) {
+                    MinuteTime e{};
+                    i64 rawPrice = bs.varint_decode();
+                    i64 reversed1 = bs.varint_decode();
+                    (void)reversed1;
+                    i64 vol = bs.varint_decode();
+                    e.Vol = vol;
+                    lastPrice += rawPrice;
+                    e.Price = f32(lastPrice)/f32(baseUnit);
+                    List.emplace_back(e);
+                }
+            } catch(const std::out_of_range&) {
+                spdlog::warn("[HistoryMinuteTimeResponse] insufficient data for {} minute times, parsed {} successfully", Count, List.size());
+                Count = List.size();
             }
         }
 

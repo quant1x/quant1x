@@ -147,6 +147,14 @@ impl DataAdapter for DataMinuteKLine {
             log::debug!("[DataMinuteKLine] empty date range for {}", code);
             return;
         }
+        log::info!(
+            "[DataMinuteKLine] updating {} from {} to {} ({} days) with period {} minutes",
+            code,
+            current_start_date.only_date(),
+            current_end_date.only_date(),
+            ts_range.len(),
+            period
+        );
         // Align behavior with C++: limit total number of minute entries by u16 max (65535)
         // and convert days -> minute entries using `number_of_day` (minutes-per-day / period)
         let max_entries: usize = 65535;
@@ -158,10 +166,16 @@ impl DataAdapter for DataMinuteKLine {
             return;
         }
         let total = days * number_of_day;
-        // update start/end to the clipped range (C++ uses ts[0]..ts[days_-1])
-        current_start_date = ts_range[0];
-        current_end_date = ts_range[days - 1];
-
+        // 从后往前取days的交易日期
+        current_start_date = ts_range[total_days - days];
+        current_end_date = ts_range[total_days - 1];
+        log::info!(
+            "[DataMinuteKLine] fetching {} days from {} to {} ({} entries)",
+            days,
+            current_start_date.only_date(),
+            current_end_date.only_date(),
+            total
+        );
         // fetch pages from level1 using minute category (9 is day in C++ for KLine; for minute we use 1..8 categories depending on minute freq)
         // C++ used category '9' for day; for minute categories it's typically 1..8. We'll use category 1 here as minute bars
         let mut hs: Vec<Vec<crate::level1::SecurityBar>> = Vec::new();
@@ -170,7 +184,7 @@ impl DataAdapter for DataMinuteKLine {
         while start_idx < total {
             let remaining = total - start_idx;
             let count = std::cmp::min(step, remaining) as u16;
-            match crate::level1::fetch_security_bars(code, kline_type, 1, start_idx as u32, count) {
+            match crate::level1::fetch_security_bars(code, kline_type, 0, start_idx as u32, count) {
                 Some(resp) => {
                     if resp.list.is_empty() {
                         break;
@@ -193,20 +207,7 @@ impl DataAdapter for DataMinuteKLine {
         }
 
         if hs.is_empty() {
-            if !path.exists() {
-                match std::fs::File::create(&filename) {
-                    Ok(f) => {
-                        let mut w = csv::Writer::from_writer(f);
-                        if let Err(e) = w.write_record(MinuteKLine::headers()) {
-                            log::error!("[DataMinuteKLine] write header failed: {}", e);
-                        }
-                        let _ = w.flush();
-                    }
-                    Err(e) => {
-                        log::error!("[DataMinuteKLine] create file {} failed: {}", filename, e);
-                    }
-                }
-            }
+            // 空列表不保存CSV，包括表头
             return;
         }
 
@@ -260,6 +261,10 @@ impl DataAdapter for DataMinuteKLine {
         }
 
         // persist
+        if klines.is_empty() {
+            // 空列表不保存CSV，包括表头
+            return;
+        }
         let tmp = format!("{}.tmp", filename);
         match std::fs::File::create(&tmp) {
             Ok(f) => {
@@ -381,4 +386,18 @@ fn calculate_pre_adjust(
 pub fn init() {
     let plugin = Arc::new(DataMinuteKLine) as Arc<dyn DataAdapter>;
     cache::register(plugin);
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_read_kline_from_csv() {
+        let adapter = DataMinuteKLine;
+        let code = "sh510050";
+        let date = Timestamp::now();
+        adapter.update(code, date);
+    }
 }

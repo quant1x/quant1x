@@ -190,13 +190,14 @@ namespace datasets {
             auto current_trading_date = exchange::timestamp::now().pre_market_time();
             spdlog::debug("[dataset::MinuteKLine] [{}]: from {} to {}", code, current_start_date.only_date(), current_trading_date.only_date());
             auto ts = exchange::date_range(current_start_date, current_trading_date);
+            auto total_days = ts.size();
             auto max_ = 65535;
-            auto total = int(ts.size());
+            auto total = int(total_days);
             auto max_days = max_/numberOfDay;
             auto days_ = std::min(max_days, total);
             total = days_ * numberOfDay;
-            current_start_date = ts[0];
-            auto current_end_date = ts[days_-1];
+            current_start_date = ts[total_days - days_];
+            auto current_end_date = ts[total_days - 1];
             spdlog::debug("[dataset::MinuteKLine] [{}]: from {} to {}", code, current_start_date.only_date(), current_end_date.only_date());
             u16 step = level1::security_bars_max;
             u16 start = 0;

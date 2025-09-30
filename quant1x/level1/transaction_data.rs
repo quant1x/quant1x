@@ -51,6 +51,15 @@ impl TransactionResponse {
         }
         let mut bs = BinaryStream::from_vec(data.to_vec());
         self.count = bs.get_u16();
+        if self.count == 0 {
+            return;
+        }
+        // Rough estimate: each transaction needs at least ~5 bytes (u16 + 4 varints)
+        let min_required = 2 + (self.count as usize) * 5;
+        if data.len() < min_required {
+            log::warn!("insufficient data for {} transactions: data len {}, min required {}", self.count, data.len(), min_required);
+            return;
+        }
         self.list.reserve(self.count as usize);
         let base_unit = super::default_base_unit(self.market_, &self.code_);
         let is_index = super::assert_index_by_market_and_code(self.market_, &self.code_);

@@ -3,6 +3,7 @@
 use super::sequence_id;
 use crate::std::BinaryStream;
 use crate::Timestamp;
+use std::panic;
 use hex;
 use std::collections::{HashMap, VecDeque};
 use crate::level1::commands::*;
@@ -268,14 +269,12 @@ impl SecurityQuoteResponse {
     pub fn deserialize(&mut self, data: &[u8]) {
         self.count = 0;
         self.list.clear();
-        if data.len() < 4 {
-            return;
-        }
         let mut bs = BinaryStream::from_vec(data.to_vec());
-        bs.skip(2);
-        self.count = bs.get_u16();
-        self.list.reserve(self.count as usize);
-        for _ in 0..self.count {
+        let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
+            bs.skip(2);
+            self.count = bs.get_u16();
+            self.list.reserve(self.count as usize);
+            for _ in 0..self.count {
             let mut ele = SecurityQuote::new();
             ele.market = bs.get_u8();
             ele.code = bs.get_string(6);
@@ -388,6 +387,11 @@ impl SecurityQuoteResponse {
 
             ele.time_stamp = now_ts.to_string_with_layout("%Y%m%d%H%M%S%.3f");
             self.list.push(ele);
+            }
+        }));
+        if let Err(_) = result {
+            log::warn!("insufficient data for {} quotes, parsed {} successfully", self.count, self.list.len());
+            self.count = self.list.len() as u16;
         }
     }
 }

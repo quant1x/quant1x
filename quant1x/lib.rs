@@ -58,6 +58,10 @@ pub use crate::runtime::*;
 mod pandas;
 pub use crate::pandas::*;
 
+// encoding helpers (GBK/UTF-8 detection and decode)
+mod encoding;
+pub use crate::encoding::*;
+
 // crate-level internal configuration module (used by exchange/calendar and tests)
 pub mod config;
 // small application-level shims for main.rs to call; these are no-op fallbacks
@@ -67,7 +71,7 @@ pub use crate::app::*;
 // Level1 protocol bindings (partial, header-only equivalents)
 mod level1;
 pub use crate::level1::*;
-mod exchange;
+pub mod exchange;
 pub use crate::exchange::*;
 // cache adapter module (port of C++ engine::adapter)
 mod cache;

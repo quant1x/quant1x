@@ -33,7 +33,7 @@ impl BlockInfoRequest {
             pkg_len2: 0,
             method: BLOCK_DATA, // StdCommand::BLOCK_DATA
             start: offset,
-            size: 0x10000, // BLOCK_CHUNKS_SIZE in C++ (approx); C++ uses BLOCK_CHUNKS_SIZE constant
+            size: crate::level1::block_meta::BLOCK_CHUNKS_SIZE,
             block_filename: buf,
         }
     }

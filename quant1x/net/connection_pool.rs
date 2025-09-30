@@ -58,6 +58,8 @@ pub struct TcpConnectionPool<H: NetworkHandler> {
     max: usize,
     endpoint_manager: Arc<crate::net::endpoint::EndpointManager>,
     idle: Mutex<VecDeque<Connection>>,
+    active: Mutex<usize>,
+    acquire_lock: Mutex<()>,
 }
 
 impl<H: NetworkHandler> TcpConnectionPool<H> {
@@ -72,6 +74,8 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
             max,
             endpoint_manager: Arc::clone(&endpoint_manager),
             idle: Mutex::new(VecDeque::new()),
+            active: Mutex::new(0),
+            acquire_lock: Mutex::new(()),
         });
 
         // Pre-warm: attempt to create `min` connections and place into idle queue.
@@ -193,6 +197,7 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
 
     /// Acquire a connection using the endpoint manager (round-robin / available).
     pub fn acquire(self: &Arc<Self>) -> std::io::Result<PooledConnection<H>> {
+        let _lock = self.acquire_lock.lock().unwrap();
         // Try to pop an idle connection first
         if let Some(mut conn) = self.idle.lock().unwrap().pop_front() {
             conn.last_used = Instant::now();
@@ -220,6 +225,17 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
             endpoint,
             timeout
         );
+        // Check max connections
+        {
+            let mut active = self.active.lock().unwrap();
+            if *active >= self.max {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "Max connections reached",
+                ));
+            }
+            *active += 1;
+        }
         let std_stream = StdTcpStream::connect_timeout(&endpoint, timeout)?;
         std_stream.set_nodelay(true)?;
         // set read/write timeouts so handshake and subsequent process_request reads time out
@@ -233,6 +249,9 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
             Ok(()) => log::info!("connection_pool: handshake succeeded for {}", endpoint),
             Err(e) => {
                 log::error!("connection_pool: handshake failed for {}: {}", endpoint, e);
+                // Decrement active on failure
+                let mut active = self.active.lock().unwrap();
+                *active = active.saturating_sub(1);
                 return Err(e);
             }
         }
@@ -288,6 +307,10 @@ impl<H: NetworkHandler> Drop for PooledConnection<H> {
     fn drop(&mut self) {
         if let Some(conn) = self.conn.take() {
             self.pool.release(conn);
+        } else {
+            // If no conn, it means connection creation failed, decrement active
+            let mut active = self.pool.active.lock().unwrap();
+            *active = active.saturating_sub(1);
         }
     }
 }

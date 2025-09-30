@@ -47,6 +47,8 @@ log4rs = "1.3"
 env_logger = "0.10"
 csv = "1.2"
 mimalloc = "0.1"
+ unicode-normalization = "0.1"
+strsim = "0.10"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["shellapi", "processthreadsapi", "winbase", "handleapi", "minwinbase", "synchapi", "errhandlingapi", "winuser", "winnls", "stringapiset"] }
@@ -61,4 +63,19 @@ mockito = "1.0"
 [[bin]]
 name = "stock"
 path = "main.rs"
+
+# inspect_blocks tool removed - block listing is loaded automatically at runtime
+
+[[bin]]
+name = "run_sync"
+path = "quant1x/tools/run_sync.rs"
+
+
+[[bin]]
+name = "print_meta_path"
+path = "quant1x/tools/print_meta_path.rs"
+
+[[bin]]
+name = "clean_meta_blocks"
+path = "quant1x/tools/clean_meta_blocks.rs"
 
