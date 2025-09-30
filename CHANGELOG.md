@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.114] - 2025-10-01
+### Changed
+- 测试工具转移到项目根路径下tools
+- 演示类代码转移到exemples
+- rust下一个版本号0.6.10
+
 ## [0.6.113] - 2025-10-01
 ### Changed
 - 缓存一个版本
@@ -11,6 +17,7 @@ All notable changes to this project will be documented in this file.
 1. 改成使用 std::byte storage[]（从 aligned_storage 改为 byte-array），并使用 std::launder，这影响了如何对内存读写与类型别名进行优化与内联（不同编译器处理此类写法的 codegen 有差异）。
 2. 添加了异常安全 rollback（在构造失败时回滚 enqueue_pos_/slot.seq），并在函数上标注了 noexcept(...) 条件，这可能让编译器为异常路径插入额外栈/原子操作或限制某些优化（尤其是 GCC 在当前版本上对条件 noexcept + 异常捕获/回滚的交互优化可能更保守）。
 3. backoff_spin 更激进/可变，这有利于减少 busy-wait，但会改变时序与测量（不大可能直接造成 GCC 性能降这么多，但会影响热点在运行时的竞争特征）。
+- update changelog
 
 ## [0.6.112] - 2025-09-30
 ### Changed
@@ -803,7 +810,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.113...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.114...HEAD
+[0.6.114]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.113...v0.6.114
 [0.6.113]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.112...v0.6.113
 [0.6.112]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.111...v0.6.112
 [0.6.111]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.110...v0.6.111
