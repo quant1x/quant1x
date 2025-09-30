@@ -60,6 +60,6 @@ mod tests {
         // ensure it behaves (this is synthetic; real test could include a full GBK line)
         let out = decode_line_bytes(&v);
         // we won't assert exact expected text here because constructing real GBK inlined is brittle
-        assert!(out.len() >= 0);
+        assert!(!out.is_empty());
     }
 }
