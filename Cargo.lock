@@ -1586,7 +1586,7 @@ dependencies = [
 
 [[package]]
 name = "quant1x"
-version = "0.6.9"
+version = "0.6.10"
 dependencies = [
  "chrono",
  "clap 4.5.48",
