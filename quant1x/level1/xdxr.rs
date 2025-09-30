@@ -1,5 +1,6 @@
 use super::BinaryStream;
 use serde::{Deserialize, Serialize};
+use crate::level1::commands::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct XdxrInfoRequest {
@@ -31,7 +32,7 @@ impl XdxrInfoRequest {
             packet_type: 0x01,
             pkg_len1: 0,
             pkg_len2: 0,
-            method: 0x000f,
+            method: XDXR_INFO,
             market,
             code,
             padding: hex::decode("0100").unwrap_or_default(),

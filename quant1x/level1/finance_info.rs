@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use crate::std::BinaryStream;
+use crate::level1::commands::*;
 
 // ...existing code...
 #[derive(Debug, Clone)]
@@ -21,7 +22,7 @@ impl FinanceInfoRequest {
             packet_type: 0x01,
             pkg_len1: 0,
             pkg_len2: 0,
-            method: 0x0010,
+            method: FINANCE_INFO,
         }
     }
     pub fn serialize(&mut self) -> Vec<u8> {

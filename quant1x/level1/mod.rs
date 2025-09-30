@@ -164,6 +164,7 @@ pub fn process_request(stream: &mut MioTcpStream, req_buf: &[u8]) -> std::io::Re
 mod block_info;
 mod block_meta;
 mod client;
+mod commands;
 mod company_category;
 mod company_content;
 pub mod config;
@@ -187,6 +188,7 @@ pub use hello1::*;
 pub use hello2::*;
 pub use security_bars::*;
 pub use xdxr::*;
+pub use commands::*;
 
 #[cfg(test)]
 mod tests {

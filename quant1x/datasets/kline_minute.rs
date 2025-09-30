@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct KLine {
+pub struct MinuteKLine {
     #[serde(rename = "Date")]
     pub date: String,
     #[serde(rename = "Open")]
@@ -29,7 +29,7 @@ pub struct KLine {
     pub adjustment_count: i32,
 }
 
-impl KLine {
+impl MinuteKLine {
     pub fn headers() -> Vec<String> {
         vec![
             "Date".into(),
@@ -48,105 +48,134 @@ impl KLine {
 }
 
 #[derive(Debug)]
-pub struct DataKLine;
+pub struct DataMinuteKLine;
 
-impl cache::Schema for DataKLine {
+impl cache::Schema for DataMinuteKLine {
     fn kind(&self) -> Kind {
-        crate::datasets::BaseKLine
+        crate::datasets::BaseMinuteKLine
     }
     fn owner(&self) -> String {
         crate::cache::DEFAULT_DATA_PROVIDER.to_string()
     }
     fn key(&self) -> String {
-        "day".to_string()
+        "min".to_string()
     }
     fn name(&self) -> String {
-        "日K线".to_string()
+        "分钟K线".to_string()
     }
     fn usage(&self) -> String {
-        "日K线".to_string()
+        "分钟K线".to_string()
     }
 }
 
-impl DataAdapter for DataKLine {
+impl DataAdapter for DataMinuteKLine {
     fn print(&self, _code: &str, _dates: &[Timestamp]) {}
 
     fn update(&self, code: &str, _date: Timestamp) {
-        // 尝试从 level1 获取日线数据；若无法获取则降级为本地缓存（仅写入表头）的行为。
-        // 构建与 C++ 等效的 kline 文件名。
-        // 使用集中式的 config helper 构建 kline 缓存文件路径（与 C++ 保持一致）。
-        let filename = crate::config::get_kline_filename(code, true);
+    // Read minute kline config (must mirror C++ datasets::get_minute_kline_config)
+    let mkc = crate::config::get_minute_kline_config();
+    if !mkc.enabled {
+        log::debug!("[DataMinuteKLine] minute kline not enabled in config");
+        return;
+    }
+    // build minute filename using normalized frequency from config
+    let filename = crate::config::get_kline_filename_ex(code, &mkc.frequency);
         if filename.is_empty() {
-            log::error!("[DataKLine] cannot build kline filename for {}", code);
+            log::error!("[DataMinuteKLine] cannot build minute filename for {}", code);
             return;
         }
-        log::debug!("[DataKLine] cache filename: {}", filename);
+        log::debug!("[DataMinuteKLine] cache filename: {}", filename);
 
-        // 确保父目录存在
+        // ensure parent dir
         let path = std::path::Path::new(&filename);
         if let Some(parent) = path.parent() {
             if let Err(e) = std::fs::create_dir_all(parent) {
                 log::error!(
-                    "[DataKLine] failed to create parent dir {:?}: {}",
+                    "[DataMinuteKLine] failed to create parent dir {:?}: {}",
                     parent,
                     e
                 );
                 return;
             }
         }
-        // 遵循 C++ 的逻辑：分页步长（security_bars_max）、回溯天数、合并及除权预处理
+
+        // constants mirroring C++
         const MAX_KLINE_LOOKBACK_DAYS: usize = 1;
         const SECURITY_BARS_MAX: usize = 800;
+        const CN_DEFAULT_TOTALFZNUM: usize = 240; // default trading minutes in a day
 
-        // 先加载已有缓存（若存在），以确定起始日期和调整次数（与 C++ 保持一致）
+        // load existing cache
         let cache_filename = filename.clone();
-        let cache_klines: Vec<KLine> = read_kline_from_csv(&cache_filename);
+        let cache_klines: Vec<MinuteKLine> = read_minute_kline_from_csv(&cache_filename);
         let klines_length = cache_klines.len();
-        let mut klines_offset_days = MAX_KLINE_LOOKBACK_DAYS;
+        // derive period and kline type from configuration
+        let period = if mkc.minutes > 0 { mkc.minutes } else { 1 };
+        let mut number_of_day = CN_DEFAULT_TOTALFZNUM / period;
+        if number_of_day == 0 {
+            number_of_day = 1;
+        }
+        // map period -> level1 category (mirror C++ switch)
+        let kline_type: u16 = match period {
+            5 => 0,   // _5MIN
+            15 => 1,  // _15MIN
+            30 => 2,  // _30MIN
+            60 => 3,  // _1HOUR
+            _ => 8,   // _1MIN (default)
+        };
+
+        let mut klines_offset = MAX_KLINE_LOOKBACK_DAYS * number_of_day;
         let mut adjust_times = 0i32;
-        // 默认起始日期：1990-12-19（市场首次上市日期）
         let mut current_start_date =
             crate::Timestamp::pre_market_time(1990, 12, 19).unwrap_or(crate::Timestamp::zero());
         if klines_length > 0 {
-            if klines_offset_days > klines_length {
-                klines_offset_days = klines_length;
+            if klines_offset > klines_length {
+                klines_offset = klines_length;
             }
-            let kline = &cache_klines[klines_length - klines_offset_days];
-            // parse date back to Timestamp
+            let kline = &cache_klines[klines_length - klines_offset];
             if let Ok(ts) = crate::Timestamp::parse(&kline.date) {
                 current_start_date = ts;
             }
             adjust_times = kline.adjustment_count;
         }
 
-        // 从当前时间确定结束日期（尽可能使用今日的盘前时间作为结束日期）
-        let current_end_date =
+        // build date range from start to today's pre-market
+        let mut current_end_date =
             crate::Timestamp::pre_market_time_from_current(&crate::Timestamp::now())
                 .unwrap_or(crate::Timestamp::now());
-        // 构建日期范围
         let ts_range = crate::exchange::date_range(current_start_date, current_end_date, false);
         if ts_range.is_empty() {
-            log::debug!("[DataKLine] empty date range for {}", code);
+            log::debug!("[DataMinuteKLine] empty date range for {}", code);
             return;
         }
-        let total = ts_range.len();
+        // Align behavior with C++: limit total number of minute entries by u16 max (65535)
+        // and convert days -> minute entries using `number_of_day` (minutes-per-day / period)
+        let max_entries: usize = 65535;
+        let total_days = ts_range.len();
+        let max_days = if number_of_day > 0 { max_entries / number_of_day } else { total_days };
+        let days = std::cmp::min(max_days, total_days);
+        if days == 0 {
+            log::debug!("[DataMinuteKLine] empty date range for {}", code);
+            return;
+        }
+        let total = days * number_of_day;
+        // update start/end to the clipped range (C++ uses ts[0]..ts[days_-1])
+        current_start_date = ts_range[0];
+        current_end_date = ts_range[days - 1];
 
-        // 按日期范围分页从 level1 拉取数据（每页作为一个向量，保持页内顺序，之后再翻转页序以匹配 C++）
+        // fetch pages from level1 using minute category (9 is day in C++ for KLine; for minute we use 1..8 categories depending on minute freq)
+        // C++ used category '9' for day; for minute categories it's typically 1..8. We'll use category 1 here as minute bars
         let mut hs: Vec<Vec<crate::level1::SecurityBar>> = Vec::new();
         let step = SECURITY_BARS_MAX;
         let mut start_idx: usize = 0;
         while start_idx < total {
             let remaining = total - start_idx;
             let count = std::cmp::min(step, remaining) as u16;
-            // 注意：fetch_security_bars 接受 start 为 u32，count 为 u16；C++ 基于日期索引使用 start/count
-            match crate::level1::fetch_security_bars(code, 9, 1, start_idx as u32, count) {
+            match crate::level1::fetch_security_bars(code, kline_type, 1, start_idx as u32, count) {
                 Some(resp) => {
                     if resp.list.is_empty() {
                         break;
                     }
-                    // 直接把整页 push 进去，保留每页内部的顺序
                     hs.push(resp.list);
-                    // if server returned less than requested count, stop
                     if (resp.count as usize) < count as usize {
                         break;
                     }
@@ -154,7 +183,7 @@ impl DataAdapter for DataKLine {
                 }
                 None => {
                     log::warn!(
-                        "[DataKLine] fetch_security_bars returned None for {} start={}",
+                        "[DataMinuteKLine] fetch_security_bars returned None for {} start={}",
                         code,
                         start_idx
                     );
@@ -163,39 +192,36 @@ impl DataAdapter for DataKLine {
             }
         }
 
-        // 如果没有获取到任何页，则回退为仅写入表头的文件创建/重写（与之前行为一致）
         if hs.is_empty() {
             if !path.exists() {
                 match std::fs::File::create(&filename) {
                     Ok(f) => {
                         let mut w = csv::Writer::from_writer(f);
-                        if let Err(e) = w.write_record(KLine::headers()) {
-                            log::error!("[DataKLine] write header failed: {}", e);
+                        if let Err(e) = w.write_record(MinuteKLine::headers()) {
+                            log::error!("[DataMinuteKLine] write header failed: {}", e);
                         }
                         let _ = w.flush();
                     }
                     Err(e) => {
-                        log::error!("[DataKLine] create file {} failed: {}", filename, e);
+                        log::error!("[DataMinuteKLine] create file {} failed: {}", filename, e);
                     }
                 }
             }
             return;
         }
-        // C++ 会将分页结果反转为时间升序；保留每页内的顺序，只 reverse 外层 pages
+
+        // reverse pages to ascending time (C++ behavior)
         hs.reverse();
 
-        // 根据抓取到的 pages 并按日期范围筛选，构建增量 K 线列表（按页内顺序迭代）
-        let mut incremental_klines: Vec<KLine> = Vec::new();
+        let mut incremental_klines: Vec<MinuteKLine> = Vec::new();
         for page in hs.iter() {
             for row in page.iter() {
-                // 为 bar 日期构造盘前时间戳
-                let date_time =
-                    crate::Timestamp::pre_market_time(row.year, row.month as u32, row.day as u32)
-                        .unwrap_or(crate::Timestamp::now());
-                if date_time < ts_range[0] || date_time > ts_range[total - 1] {
+                let date_time = crate::Timestamp::pre_market_time(row.year, row.month as u32, row.day as u32)
+                    .unwrap_or(crate::Timestamp::now());
+                if date_time < current_start_date || date_time > current_end_date {
                     continue;
                 }
-                let kx = KLine {
+                let kx = MinuteKLine {
                     date: date_time.only_date(),
                     open: row.open,
                     close: row.close,
@@ -212,18 +238,16 @@ impl DataAdapter for DataKLine {
             }
         }
 
-        // 判断是否仅针对最新抓取的那一部分需要做预除权调整
         let is_fresh_fetch_require_adjustment = adjust_times == 1;
-        // 仅从本地缓存加载除权除息数据（与 C++ 行为一致）
         let dividends = crate::datasets::xdxr::load_xdxr(code);
         if is_fresh_fetch_require_adjustment {
-            calculate_pre_adjust(&mut incremental_klines, ts_range[0], &dividends);
+            calculate_pre_adjust(&mut incremental_klines, current_start_date, &dividends);
         }
 
-        // 按照 C++ 的合并逻辑合并缓存与增量数据
-        let mut klines: Vec<KLine> = Vec::new();
-        if klines_length > klines_offset_days {
-            klines.extend_from_slice(&cache_klines[..(klines_length - klines_offset_days)]);
+        // merge cache and incremental
+        let mut klines: Vec<MinuteKLine> = Vec::new();
+        if klines_length > klines_offset {
+            klines.extend_from_slice(&cache_klines[..(klines_length - klines_offset)]);
         }
         if klines.is_empty() {
             klines = incremental_klines.clone();
@@ -232,16 +256,16 @@ impl DataAdapter for DataKLine {
         }
 
         if !is_fresh_fetch_require_adjustment {
-            calculate_pre_adjust(&mut klines, ts_range[0], &dividends);
+            calculate_pre_adjust(&mut klines, current_start_date, &dividends);
         }
 
-        // 持久化保存
+        // persist
         let tmp = format!("{}.tmp", filename);
         match std::fs::File::create(&tmp) {
             Ok(f) => {
                 let mut w = csv::Writer::from_writer(f);
-                if let Err(e) = w.write_record(KLine::headers()) {
-                    log::error!("[DataKLine] write header failed: {}", e);
+                if let Err(e) = w.write_record(MinuteKLine::headers()) {
+                    log::error!("[DataMinuteKLine] write header failed: {}", e);
                 }
                 for row in klines.iter() {
                     let rec: Vec<String> = vec![
@@ -258,49 +282,47 @@ impl DataAdapter for DataKLine {
                         row.adjustment_count.to_string(),
                     ];
                     if let Err(e) = w.write_record(rec) {
-                        log::error!("[DataKLine] write row failed: {}", e);
+                        log::error!("[DataMinuteKLine] write row failed: {}", e);
                     }
                 }
                 let _ = w.flush();
                 if let Err(e) = std::fs::rename(&tmp, &filename) {
-                    log::error!("[DataKLine] rename failed {} -> {}: {}", tmp, filename, e);
+                    log::error!("[DataMinuteKLine] rename failed {} -> {}: {}", tmp, filename, e);
                 }
             }
             Err(e) => {
-                log::error!("[DataKLine] create tmp {} failed: {}", tmp, e);
+                log::error!("[DataMinuteKLine] create tmp {} failed: {}", tmp, e);
             }
         }
     }
 }
 
-// 辅助函数：从 CSV 读取 K 线，功能类似 C++ 的 read_kline_from_csv
-fn read_kline_from_csv(filename: &str) -> Vec<KLine> {
-    // 使用基于 Serde 的 CSV 反序列化，使字段名可自动与表头匹配。
-    let mut klines: Vec<KLine> = Vec::new();
+// read minute CSV
+fn read_minute_kline_from_csv(filename: &str) -> Vec<MinuteKLine> {
+    let mut klines: Vec<MinuteKLine> = Vec::new();
     match std::fs::File::open(filename) {
         Ok(f) => {
             let mut rdr = csv::ReaderBuilder::new().has_headers(true).from_reader(f);
-            // Deserialize all records into Vec<KLine> in one go; CSV+Serde maps headers -> struct fields
             match rdr
-                .deserialize::<KLine>()
-                .collect::<Result<Vec<KLine>, csv::Error>>()
+                .deserialize::<MinuteKLine>()
+                .collect::<Result<Vec<MinuteKLine>, csv::Error>>()
             {
                 Ok(v) => klines = v,
                 Err(e) => log::error!(
-                    "[DataKLine] failed to deserialize kline file {}: {}",
+                    "[DataMinuteKLine] failed to deserialize minute file {}: {}",
                     filename,
                     e
                 ),
             }
         }
-        Err(_) => { /* missing file -> return empty vector */ }
+        Err(_) => {}
     }
     klines
 }
 
-// 辅助函数：计算预除权（与 C++ 实现相似）
+// calculate pre-adjustment for minute klines (reuse same algorithm as day KLine)
 fn calculate_pre_adjust(
-    klines: &mut Vec<KLine>,
+    klines: &mut Vec<MinuteKLine>,
     start_date: crate::Timestamp,
     dividends: &Vec<crate::level1::xdxr::XdxrInfo>,
 ) {
@@ -309,12 +331,11 @@ fn calculate_pre_adjust(
     }
     let last_day = klines.last().unwrap().date.clone();
     let ts_last_day = crate::Timestamp::parse(&last_day).unwrap_or(crate::Timestamp::now());
-    // 将该日期转换为该日的盘前时间
     let ts_last_day =
         crate::Timestamp::pre_market_time_from_current(&ts_last_day).unwrap_or(ts_last_day);
     let last_day_next = crate::exchange::next_trading_day(ts_last_day).only_date();
     let start_date_only = start_date.only_date();
-    // 筛选除权除息记录：满足 last_day_next >= x.Date 并且 x.Category == 1
+
     let xdxr_infos: Vec<crate::level1::xdxr::XdxrInfo> = dividends
         .iter()
         .filter(|x| {
@@ -328,51 +349,36 @@ fn calculate_pre_adjust(
         })
         .cloned()
         .collect();
-    let mut _times = xdxr_infos.len();
+
     for info in xdxr_infos.iter() {
-        if info.date <= start_date_only { /* continue */
-        } else {
-            let (m, a) = info.adjust_factor();
-            let klines_size = klines.len();
-            for i in 0..klines_size {
-                if klines[i].date >= info.date {
-                    break;
-                }
-                klines[i].open = klines[i].open * m + a;
-                klines[i].close = klines[i].close * m + a;
-                klines[i].high = klines[i].high * m + a;
-                klines[i].low = klines[i].low * m + a;
-                // 使用 amount/volume 进行成交量的调整
-                let ap = if klines[i].volume != 0.0 {
-                    klines[i].amount / klines[i].volume
-                } else {
-                    0.0
-                };
-                let ap_adjusted = ap * m + a;
-                if ap_adjusted != 0.0 {
-                    klines[i].volume = klines[i].amount / ap_adjusted;
-                }
-                klines[i].adjustment_count += 1;
-            }
+        if info.date <= start_date_only {
+            continue;
         }
-        _times -= 1;
+        let (m, a) = info.adjust_factor();
+        let klines_size = klines.len();
+        for i in 0..klines_size {
+            if klines[i].date >= info.date {
+                break;
+            }
+            klines[i].open = klines[i].open * m + a;
+            klines[i].close = klines[i].close * m + a;
+            klines[i].high = klines[i].high * m + a;
+            klines[i].low = klines[i].low * m + a;
+            let ap = if klines[i].volume != 0.0 {
+                klines[i].amount / klines[i].volume
+            } else {
+                0.0
+            };
+            let ap_adjusted = ap * m + a;
+            if ap_adjusted != 0.0 {
+                klines[i].volume = klines[i].amount / ap_adjusted;
+            }
+            klines[i].adjustment_count += 1;
+        }
     }
 }
 
 pub fn init() {
-    let plugin = Arc::new(DataKLine) as Arc<dyn DataAdapter>;
+    let plugin = Arc::new(DataMinuteKLine) as Arc<dyn DataAdapter>;
     cache::register(plugin);
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_read_kline_from_csv() {
-        let adapter = DataKLine;
-        let code = "sh510050";
-        let date = Timestamp::now();
-        adapter.update(code, date);
-    }
 }

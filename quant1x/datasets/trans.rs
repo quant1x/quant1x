@@ -16,7 +16,7 @@ pub struct DataTrans;
 
 impl cache::Schema for DataTrans {
     fn kind(&self) -> Kind {
-        crate::cache::PLUGIN_MASK_BASE_DATA | 4
+        crate::datasets::BaseTransaction
     }
     fn owner(&self) -> String {
         crate::cache::DEFAULT_DATA_PROVIDER.to_string()

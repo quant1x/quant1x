@@ -232,6 +232,110 @@ pub fn get_kline_filename(code: &str, forward: bool) -> String {
     path.to_string_lossy().to_string()
 }
 
+/// Return the full filename for a minute KLine cache file for `code`.
+/// We'll mirror a simple layout under <cache>/minutes/<prefix>/<code>.csv similar to other helpers.
+/// Return the full filename for a minute KLine cache file for `code` and `cache_date`.
+/// Mirrors C++ get_minute_filename(code, cache_date) which expects `cache_date` in YYYYMMDD
+pub fn get_minute_filename(code: &str, cache_date: &str) -> String {
+    if code.len() != 8 {
+        log::error!("invalid security code length (expected 8): {}", code);
+        return String::new();
+    }
+    if cache_date.len() != 8 {
+        log::error!("invalid cache_date format for minute filename: {}", cache_date);
+        return String::new();
+    }
+    let year = &cache_date[0..4];
+    // remove any '-' just in case
+    let date = cache_date.replace('-', "");
+    let mut path = std::path::PathBuf::from(get_minute_path());
+    path.push(year);
+    path.push(date);
+    path.push(format!("{}.csv", code));
+    path.to_string_lossy().to_string()
+}
+
+/// Return the full filename for a kline cache file for a specific frequency.
+/// Mirrors C++ get_kline_filename_ex(code, freq) which places files under <cache>/<freq>/<subpath>/<code>.csv
+pub fn get_kline_filename_ex(code: &str, freq: &str) -> String {
+    if code.len() != 8 {
+        log::error!("invalid security code length (expected 8): {}", code);
+        return String::new();
+    }
+    let sub = cache_id_path(code);
+    let mut path = std::path::PathBuf::from(get_kline_path(freq));
+    path.push(sub);
+    path.push(format!("{}.csv", code));
+    path.to_string_lossy().to_string()
+}
+
+// Minute KLine configuration (mirror C++ config::MinuteKLineConfig)
+#[derive(Debug, Clone)]
+pub struct MinuteKLineConfig {
+    pub frequency: String,
+    pub minutes: usize,
+    pub enabled: bool,
+}
+
+impl Default for MinuteKLineConfig {
+    fn default() -> Self {
+        Self {
+            frequency: "1min".to_string(),
+            minutes: 1,
+            enabled: false,
+        }
+    }
+}
+
+/// Read minute kline configuration from global yaml data (data.cache.kline)
+/// Mirrors C++ datasets::get_minute_kline_config which requires exactly one entry
+pub fn get_minute_kline_config() -> MinuteKLineConfig {
+    let mut cfg = MinuteKLineConfig::default();
+    if let Some(yaml) = &global_config().data {
+        // navigate to data.cache.kline map if present
+        if let Some(cache) = yaml.get("data").and_then(|d| d.get("cache")) {
+            if let Some(kline_map) = cache.get("kline") {
+                if let Some(mapping) = kline_map.as_mapping() {
+                    if mapping.len() != 1 {
+                        // More robust: do not panic if the YAML is unexpected.
+                        // Log a warning and return the default (disabled) config so
+                        // the caller will skip minute updates instead of crashing.
+                        log::warn!(
+                            "kline config expected exactly one entry but found {}: disabling minute kline",
+                            mapping.len()
+                        );
+                        return cfg;
+                    }
+                    // take the single key/value
+                    if let Some((k, v)) = mapping.iter().next() {
+                        if let Some(key_str) = k.as_str() {
+                            cfg.frequency = key_str.to_string();
+                        }
+                        if let Some(enabled) = v.as_bool() {
+                            cfg.enabled = enabled;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // parse minutes from frequency using pandas::parse_frequency (implemented in pandas module)
+    if cfg.enabled {
+        match crate::pandas::parse_frequency(&cfg.frequency) {
+            Ok((minutes, freq_norm)) => {
+                cfg.minutes = minutes as usize;
+                cfg.frequency = freq_norm;
+            }
+            Err(e) => {
+                log::error!("failed to parse minute frequency '{}': {}", cfg.frequency, e);
+                // keep defaults but mark disabled to avoid accidental fetches
+                cfg.enabled = false;
+            }
+        }
+    }
+    cfg
+}
+
 /// Return the path where block/sector metadata files (tdxzs.cfg, tdxhy.cfg, etc.) are located.
 /// We mirror the C++ behavior by looking for a bundled resources/meta directory inside
 /// the crate workspace; fall back to <cache>/resources/meta if not present.

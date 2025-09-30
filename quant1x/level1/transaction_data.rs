@@ -1,4 +1,5 @@
 use crate::std::BinaryStream;
+use crate::level1::commands::*;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -120,7 +121,7 @@ pub fn fetch_transaction_data(
                 packet_type: 0x00,
                 pkg_len1: 0,
                 pkg_len2: 0,
-                method: 0x0fc5, // TRANSACTION_DATA
+                method: TRANSACTION_DATA, // TRANSACTION_DATA
                 market: market_u8 as u16,
                 code,
                 start,

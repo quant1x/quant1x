@@ -2,6 +2,7 @@ use super::sequence_id;
 use crate::level1::int_to_float64;
 use crate::std::BinaryStream;
 use encoding_rs::GBK;
+use crate::level1::commands::*;
 
 // Request builder for SECURITY_LIST
 #[allow(dead_code)]
@@ -25,7 +26,7 @@ impl SecurityListRequest {
             packet_type: 0x01,
             pkg_len1: 0,
             pkg_len2: 0,
-            method: 0x0450,
+            method: SECURITY_LIST,
             market,
             start,
         }

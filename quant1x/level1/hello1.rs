@@ -1,6 +1,7 @@
 use super::sequence_id;
 use super::BinaryStream;
 use encoding_rs::GBK;
+use crate::level1::commands::*;
 
 #[derive(Debug, Clone)]
 pub struct Hello1Request {
@@ -21,7 +22,7 @@ impl Hello1Request {
             packet_type: 0x01,
             pkg_len1: 0,
             pkg_len2: 0,
-            method: 0x000d, // LOGIN1
+            method: LOGIN1,
             padding: hex::decode("01").unwrap_or_default(),
         }
     }

@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use super::sequence_id;
 use super::BinaryStream;
+use crate::level1::commands::*;
 
 // Request builder for BLOCK_DATA
 #[allow(dead_code)]
@@ -30,7 +31,7 @@ impl BlockInfoRequest {
             packet_type: 0x01,
             pkg_len1: 0,
             pkg_len2: 0,
-            method: 0x0520, // StdCommand::BLOCK_DATA
+            method: BLOCK_DATA, // StdCommand::BLOCK_DATA
             start: offset,
             size: 0x10000, // BLOCK_CHUNKS_SIZE in C++ (approx); C++ uses BLOCK_CHUNKS_SIZE constant
             block_filename: buf,

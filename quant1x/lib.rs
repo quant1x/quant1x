@@ -54,6 +54,10 @@ pub use crate::std::*;
 mod runtime;
 pub use crate::runtime::*;
 
+// pandas utilities (frequency parsing)
+mod pandas;
+pub use crate::pandas::*;
+
 // crate-level internal configuration module (used by exchange/calendar and tests)
 pub mod config;
 // small application-level shims for main.rs to call; these are no-op fallbacks

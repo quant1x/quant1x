@@ -1,5 +1,6 @@
 use super::sequence_id;
 use super::BinaryStream;
+use crate::level1::commands::*;
 
 #[derive(Debug, Clone)]
 pub struct HeartbeatRequest {
@@ -19,7 +20,7 @@ impl HeartbeatRequest {
             packet_type: 0x02,
             pkg_len1: 0,
             pkg_len2: 0,
-            method: 0x0004,
+            method: HEARTBEAT,
         }
     }
     pub fn serialize(&mut self) -> Vec<u8> {

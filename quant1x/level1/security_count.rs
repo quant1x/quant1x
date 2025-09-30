@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use super::sequence_id;
 use crate::std::BinaryStream;
+use crate::level1::commands::*;
 
 // Request builder for SECURITY_COUNT
 #[allow(dead_code)]
@@ -23,7 +24,7 @@ impl SecurityCountRequest {
             packet_type: 0x01,
             pkg_len1: 0,
             pkg_len2: 0,
-            method: 0x0451, // StdCommand::SECURITY_COUNT in C++
+            method: SECURITY_COUNT, // StdCommand::SECURITY_COUNT in C++
             market,
         }
     }

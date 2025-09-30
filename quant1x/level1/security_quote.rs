@@ -5,6 +5,7 @@ use crate::std::BinaryStream;
 use crate::Timestamp;
 use hex;
 use std::collections::{HashMap, VecDeque};
+use crate::level1::commands::*;
 
 #[derive(Debug, Clone)]
 pub enum TradeState {
@@ -131,7 +132,7 @@ impl SecurityQuoteRequest {
             packet_type: 0x01,
             pkg_len1: 0,
             pkg_len2: 0,
-            method: 0x053e,
+            method: SECURITY_QUOTES_OLD,
             padding: hex::decode("0500000000000000").unwrap_or_default(),
             list,
         }

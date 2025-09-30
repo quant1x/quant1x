@@ -1,5 +1,6 @@
 use super::sequence_id;
 use super::BinaryStream;
+use crate::level1::commands::*;
 use encoding_rs::GBK;
 
 #[derive(Debug, Clone)]
@@ -21,7 +22,7 @@ impl Hello2Request {
             packet_type: 0x01,
             pkg_len1: 0,
             pkg_len2: 0,
-            method: 0x0fdb, // LOGIN2
+            method: LOGIN2, // LOGIN2
             padding: hex::decode("d5d0c9ccd6a4a8af0000008fc22540130000d500c9ccbdf0d7ea00000002")
                 .unwrap_or_default(),
         }

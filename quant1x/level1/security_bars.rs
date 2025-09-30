@@ -1,5 +1,6 @@
 use super::sequence_id;
 use crate::std::BinaryStream;
+use crate::level1::commands::*;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -21,7 +22,7 @@ impl SecurityBarsRequest {
             packet_type: 0x00,
             pkg_len1: 0,
             pkg_len2: 0,
-            method: 0x052d,
+            method: SECURITY_BARS,
             padding: [0u8; 10],
         }
     }

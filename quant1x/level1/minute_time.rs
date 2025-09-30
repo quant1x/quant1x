@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use super::sequence_id;
 use crate::std::BinaryStream;
+use crate::level1::commands::*;
 
 // Request builder for HISTORY_MINUTE_DATA
 #[allow(dead_code)]
@@ -31,7 +32,7 @@ impl HistoryMinuteTimeRequest {
             packet_type: 0x00,
             pkg_len1: 0,
             pkg_len2: 0,
-            method: 0x0521, // StdCommand::HISTORY_MINUTE_DATA
+            method: HISTORY_MINUTE_DATA,
             date,
             market,
             code,

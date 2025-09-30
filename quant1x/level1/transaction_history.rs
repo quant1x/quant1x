@@ -1,6 +1,7 @@
 use super::sequence_id;
 use crate::level1::transaction_data::TickTransaction;
 use crate::std::BinaryStream;
+use crate::level1::commands::*;
 
 // Request builder for HISTORY_TRANSACTION_DATA (aligns with C++ HistoryTransactionRequest)
 #[allow(dead_code)]
@@ -34,7 +35,7 @@ impl HistoryTransactionRequest {
             packet_type: 0x00,
             pkg_len1: 0,
             pkg_len2: 0,
-            method: 0x0fb5, // StdCommand::HISTORY_TRANSACTION_DATA
+            method: HISTORY_TRANSACTION_DATA,
             date,
             market: market_u8 as u16, // cast to u16 to match C++
             code,
