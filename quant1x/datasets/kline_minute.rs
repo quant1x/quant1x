@@ -184,7 +184,7 @@ impl DataAdapter for DataMinuteKLine {
         while start_idx < total {
             let remaining = total - start_idx;
             let count = std::cmp::min(step, remaining) as u16;
-            match crate::level1::fetch_security_bars(code, kline_type, 0, start_idx as u32, count) {
+            match crate::level1::fetch_security_bars(code, kline_type, 1, start_idx as u32, count) {
                 Some(resp) => {
                     if resp.list.is_empty() {
                         break;

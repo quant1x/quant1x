@@ -36,7 +36,7 @@ impl SecurityBarsRequest {
         category: u16,
         start: u16,
         count: u16,
-        i_field: u16,
+        frequency: u16,
     ) -> (Self, Vec<u8>, bool) {
         let req = SecurityBarsRequest::new();
         // prepare payload using BinaryStream
@@ -53,8 +53,8 @@ impl SecurityBarsRequest {
         payload_bs.push_byte_array(&code_arr);
         // category (u16)
         payload_bs.push_u16(category);
-        // I field (provided)
-        payload_bs.push_u16(i_field);
+        // I field (provided), 实际为频率, 默认1
+        payload_bs.push_u16(frequency);
         // start (u16)
         payload_bs.push_u16(start);
         // count (u16)
@@ -249,13 +249,13 @@ impl SecurityBarsResponse {
     pub fn fetch_security_bars(
         code: &str,
         category: u16,
-        i: u16,
+        frequency: u16,
         start: u32,
         count: u16,
     ) -> Option<SecurityBarsResponse> {
         // Build request header and payload using with_params (C++-like constructor behavior)
         let (mut req, payload_bytes, is_index) =
-            SecurityBarsRequest::with_params(code, category, start as u16, count, i);
+            SecurityBarsRequest::with_params(code, category, start as u16, count, frequency);
         let req_bytes = req.serialize(&payload_bytes);
 
         // perform network exchange
@@ -294,9 +294,9 @@ impl SecurityBarsResponse {
 pub fn fetch_security_bars(
     code: &str,
     category: u16,
-    i: u16,
+    frequency: u16,
     start: u32,
     count: u16,
 ) -> Option<SecurityBarsResponse> {
-    SecurityBarsResponse::fetch_security_bars(code, category, i, start, count)
+    SecurityBarsResponse::fetch_security_bars(code, category, frequency, start, count)
 }
