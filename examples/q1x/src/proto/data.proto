@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package data;
+
+// 价格线
+message Line {
+  int32 price = 1; // 价格, 单位分
+  double buy = 2; // 买入, 成交量, 单位股
+  double sell = 3; // 卖出, 成交量, 单位股
+}
+
+// 每日筹码分布统计
+message Chips {
+  string date = 1; // 日期
+  repeated Line dist = 2; // 价格线
+}
+
+// 所有历史筹码分布的列表, 一天一条记录
+message ChipDistribution {
+  repeated Chips list = 1;
+}
