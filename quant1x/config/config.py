@@ -76,7 +76,7 @@ class Quant1XConfig:
         self.__home_path = system.homedir()
         self.__config_filename = get_quant1x_config_filename()
         self.__config = load_config(self.__config_filename)
-        slef.__work_keyword = get_quant1x_work_keyword()
+        self.__work_keyword = get_quant1x_work_keyword()
 
         # 初始化路径
         self.__default_main_path = os.path.join(self.__home_path, f'.{self.__work_keyword}')
