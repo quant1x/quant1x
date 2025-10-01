@@ -3,9 +3,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.116] - 2025-10-01
+### Changed
+- 删除废弃的代码
+- 修改函数签名, 入参data不符合日期的定义
+- 调整capnp的测试缓存文件路径, 这个路径需要按照实际调整，这里仅仅是为了去掉q2x的关键字
+- c++原文档合并到项目的readme中, 不在独立的展示c++的文档
+- 头文件扩展名修改为h
+- 将主应用程序名修改为q1x，q1x可以作为quant1x的缩写, 但是q2x就不合适了，没有2x这样语义
+
 ## [0.6.115] - 2025-10-01
 ### Changed
 - 删除废弃的js测试工具
+- update changelog
 
 ## [0.6.114] - 2025-10-01
 ### Changed
@@ -815,7 +825,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.115...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.116...HEAD
+[0.6.116]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.115...v0.6.116
 [0.6.115]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.114...v0.6.115
 [0.6.114]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.113...v0.6.114
 [0.6.113]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.112...v0.6.113
