@@ -4,7 +4,7 @@
 #include <vector>
 #include <atomic>
 #include <chrono>
-#include "../ringbuffer/vyukov.hpp"
+#include "../quant1x/ringbuffer/vyukov.h"
 
 using namespace quant1x::ringbuffer;
 
