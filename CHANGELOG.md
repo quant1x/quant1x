@@ -3,6 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.117] - 2025-10-01
+### Changed
+- 修复头文件扩展名的问题
+- 调整测试工具的路径
+- 明确k线协议中参数I其实是frequency频率，或者step步长，运行在指定k线类型的前提下按
+frequency聚合k线
+- runtime：添加基于 tokio 的 AsyncScheduler 与 core 全局绑定；清理 scheduler.rs 中警告
+- 新增异步调度器模块
+
 ## [0.6.116] - 2025-10-01
 ### Changed
 - 删除废弃的代码
@@ -11,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - c++原文档合并到项目的readme中, 不在独立的展示c++的文档
 - 头文件扩展名修改为h
 - 将主应用程序名修改为q1x，q1x可以作为quant1x的缩写, 但是q2x就不合适了，没有2x这样语义
+- update changelog
 
 ## [0.6.115] - 2025-10-01
 ### Changed
@@ -825,7 +835,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.116...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.117...HEAD
+[0.6.117]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.116...v0.6.117
 [0.6.116]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.115...v0.6.116
 [0.6.115]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.114...v0.6.115
 [0.6.114]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.113...v0.6.114
