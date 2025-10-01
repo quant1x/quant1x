@@ -3,9 +3,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.120] - 2025-10-01
+### Changed
+- 修复头文件路径
+- 补充关键注释
+- rust下一个版本0.6.11
+
 ## [0.6.119] - 2025-10-01
 ### Changed
 - 将RingBuffer归于runtime
+- update changelog
 
 ## [0.6.118] - 2025-10-01
 ### Changed
@@ -855,7 +862,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.119...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.120...HEAD
+[0.6.120]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.119...v0.6.120
 [0.6.119]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.118...v0.6.119
 [0.6.118]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.117...v0.6.118
 [0.6.117]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.116...v0.6.117
