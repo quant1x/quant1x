@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.119] - 2025-10-01
+### Changed
+- 将RingBuffer归于runtime
+
 ## [0.6.118] - 2025-10-01
 ### Changed
 - 新增mio网络服务端和客户端的demo
@@ -16,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - 新增rust MuZero代码
 - 新增rust cnn代码
 - 新增chips rust代码
+- update changelog
 
 ## [0.6.117] - 2025-10-01
 ### Changed
@@ -850,7 +855,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.118...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.119...HEAD
+[0.6.119]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.118...v0.6.119
 [0.6.118]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.117...v0.6.118
 [0.6.117]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.116...v0.6.117
 [0.6.116]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.115...v0.6.116
