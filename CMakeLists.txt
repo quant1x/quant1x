@@ -378,6 +378,7 @@ set(quant1x-headers
     quant1x/runtime/once.h
     quant1x/runtime/core.h
     quant1x/runtime/scheduler.h
+    quant1x/runtime/ringbuffer.h
     
 
     # i/o 相关
@@ -523,7 +524,6 @@ set(quant1x-headers
 
     # 数据处理功能 quant1x/data
     learn/fpgrowth/fp_growth.h
-    quant1x/ringbuffer/vyukov.h
 )
 
 set(quant1x-sources
