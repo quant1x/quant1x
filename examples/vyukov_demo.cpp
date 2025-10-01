@@ -4,15 +4,15 @@
 #include <vector>
 #include <atomic>
 #include <chrono>
-#include "../quant1x/ringbuffer/vyukov.h"
+#include "../quant1x/runtime/ringbuffer.h"
 
-using namespace quant1x::ringbuffer;
+using namespace runtime::ringbuffer;
 
 int main() {
     const size_t producers = 4;
     const size_t consumers = 4;
     const size_t items_per_producer = 100000;
-    VyukovMPMC<uint64_t> q(1024);
+    queue<uint64_t> q(1024);
 
     std::atomic<size_t> produced{0};
     std::atomic<size_t> consumed{0};
