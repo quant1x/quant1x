@@ -10,7 +10,23 @@
 """
 import os
 import yaml
+import dotenv
+from yarg import get
 from quant1x import system
+
+# 加载环境变量
+dotenv.load_dotenv()
+
+def get_quant1x_work_keyword() -> str:
+    """
+    获取quant1x工作目录的关键词
+    :return:
+    """
+    quant1x_work = 'quant1x'
+    quant1x_work_env = system.env('QUANT1X_WORK')
+    if len(quant1x_work_env) > 0:
+        quant1x_work = quant1x_work_env
+    return quant1x_work
 
 def get_quant1x_config_filename() -> str:
     """
@@ -22,10 +38,7 @@ def get_quant1x_config_filename() -> str:
     yaml_filename = os.path.join('~', 'runtime', 'etc', default_config_filename)
     yaml_filename = os.path.expanduser(yaml_filename)
     user_home = system.homedir()
-    quant1x_work = 'quant1x'
-    quant1x_work_env = system.env('QUANT1X_WORK')
-    if len(quant1x_work_env) > 0:
-        quant1x_work = quant1x_work_env
+    quant1x_work = get_quant1x_work_keyword()
     if not os.path.isfile(yaml_filename):
         quant1x_root = os.path.join(user_home, f'.{quant1x_work}')
         yaml_filename = os.path.join(quant1x_root, default_config_filename)
@@ -63,9 +76,10 @@ class Quant1XConfig:
         self.__home_path = system.homedir()
         self.__config_filename = get_quant1x_config_filename()
         self.__config = load_config(self.__config_filename)
+        slef.__work_keyword = get_quant1x_work_keyword()
 
         # 初始化路径
-        self.__default_main_path = os.path.join(self.__home_path, '.quant1x')
+        self.__default_main_path = os.path.join(self.__home_path, f'.{self.__work_keyword}')
 
         self.meta_path = os.path.join(self.__default_main_path, 'meta')
         """str: 元数据路径"""
