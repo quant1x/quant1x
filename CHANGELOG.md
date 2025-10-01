@@ -3,6 +3,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.118] - 2025-10-01
+### Changed
+- 新增mio网络服务端和客户端的demo
+- 新增rust cron测试代码
+- 新增rust 筹码分析代码
+- 新增rust hook测试代码
+- 迁移早期的rust的engine代码
+- 新增早期rust stock代码
+- 新增rust早期的q1x代码
+- 补充q1x rust代码
+- 新增rust MuZero代码
+- 新增rust cnn代码
+- 新增chips rust代码
+
 ## [0.6.117] - 2025-10-01
 ### Changed
 - 修复头文件扩展名的问题
@@ -11,6 +25,7 @@ All notable changes to this project will be documented in this file.
 frequency聚合k线
 - runtime：添加基于 tokio 的 AsyncScheduler 与 core 全局绑定；清理 scheduler.rs 中警告
 - 新增异步调度器模块
+- update changelog
 
 ## [0.6.116] - 2025-10-01
 ### Changed
@@ -835,7 +850,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.117...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.118...HEAD
+[0.6.118]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.117...v0.6.118
 [0.6.117]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.116...v0.6.117
 [0.6.116]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.115...v0.6.116
 [0.6.115]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.114...v0.6.115
