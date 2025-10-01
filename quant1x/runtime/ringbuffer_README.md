@@ -67,9 +67,13 @@ python quant1x/ringbuffer/plot_perf.py
 
 - 性能波动可能由系统调度、CPU 频率、电源策略、编译器标志（`RUSTFLAGS`）、链接器与运行时差异引起；建议在受控环境（空闲系统、固定 CPU 亲和性、电源性能模式）下重复测量以获得更稳健结果。
 
-## 下一步（可选）
+## 统计摘要
 
-- 我可以把数据文件（如 `perf_samples_200.csv`）和生成的图片合并到一个更完整的报告中，或在同一图上对比不同编译选项的结果；如果需要，请告诉我要对比的配置（例如：`target-cpu=native`、`codegen-units=1`、启/不启 LTO）。
-
-
-请回复是否需要我把 `g++` 的替代实现加入仓库（条件编译），或把当前的对比报告作为 PR 注释提交。
+- 样本数: 200
+- 平均 (mean): 43631329.56 ops/sec
+- 中位数 (median): 43546578.56 ops/sec
+- 标准差 (stddev): 3429885.57 ops/sec
+- 最小值: 34444256.28 ops/sec
+- 最大值: 54202867.78 ops/sec
+- 25th percentile: 41269013.63 ops/sec
+- 75th percentile: 45642871.44 ops/sec

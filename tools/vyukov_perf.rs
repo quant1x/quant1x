@@ -4,7 +4,7 @@ use std::thread;
 use std::time::Instant;
 use std::sync::atomic::Ordering;
 
-use quant1x::ringbuffer::vyukov::Queue as VQueue;
+use quant1x::runtime::ringbuffer::Queue as VQueue;
 
 fn run_perf() -> f64 {
     const SIZE: usize = 65536;

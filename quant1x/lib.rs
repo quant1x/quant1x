@@ -62,8 +62,8 @@ mod encoding;
 pub use crate::encoding::*;
 
 // ringbuffer module (MPMC ring buffer)
-pub mod ringbuffer;
-pub use crate::ringbuffer::*;
+//pub mod ringbuffer;
+//pub use crate::ringbuffer::*;
 
 // crate-level internal configuration module (used by exchange/calendar and tests)
 pub mod config;

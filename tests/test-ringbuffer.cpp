@@ -1,6 +1,4 @@
-// vyukov_runner.cpp
 // 运行多个 Vyukov MPMC 工作负载采样，并将每次运行的 ops/sec 写入 CSV。
-
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -8,16 +6,16 @@
 #include <atomic>
 #include <chrono>
 #include <string>
-#include "vyukov.hpp"
+#include <quant1x/runtime/ringbuffer.h>
 
-using namespace quant1x::ringbuffer;
+using namespace runtime::ringbuffer;
 
 int main() {
     const size_t producers = 4;
     const size_t consumers = 4;
     const size_t items_per_producer = 1000000; // 1M
     const int samples = 10;
-    const std::string out_path = "D:/projects/quant1x/quant1x/quant1x/ringbuffer/cpp_perf_samples.csv";
+    const std::string out_path = "cpp_perf_samples.csv";
 
     std::ofstream ofs(out_path, std::ofstream::out | std::ofstream::trunc);
     if (!ofs) {
@@ -27,7 +25,7 @@ int main() {
     ofs << "ops_per_sec" << std::endl;
 
     for (int s = 0; s < samples; ++s) {
-        VyukovMPMC<uint64_t> q(1024*8);
+        queue<uint64_t> q(1024*8);
         std::atomic<size_t> produced{0};
         std::atomic<size_t> consumed{0};
 

@@ -1,4 +1,4 @@
-use quant1x::ringbuffer::vyukov::Queue as VQueue;
+use quant1x::runtime::ringbuffer::Queue as VQueue;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 use std::thread;

@@ -38,12 +38,12 @@
 #  define ATTR_ALWAYS_INLINE_HOT inline __attribute__((always_inline, hot))
 #endif
 
-namespace quant1x::ringbuffer {
+namespace runtime::ringbuffer {
 
 template<typename T>
-class VyukovMPMC {
+class queue {
 public:
-    explicit VyukovMPMC(size_t capacity) {
+    explicit queue(size_t capacity) {
         if (capacity == 0) {
             throw std::invalid_argument("Queue capacity must be at least 1");
         }
@@ -60,12 +60,12 @@ public:
     }
 
     // 禁止拷贝/移动以防止意外复制
-    VyukovMPMC(const VyukovMPMC&) = delete;
-    VyukovMPMC& operator=(const VyukovMPMC&) = delete;
-    VyukovMPMC(VyukovMPMC&&) = delete;
-    VyukovMPMC& operator=(VyukovMPMC&&) = delete;
+    queue(const queue&) = delete;
+    queue& operator=(const queue&) = delete;
+    queue(queue&&) = delete;
+    queue& operator=(queue&&) = delete;
 
-    ~VyukovMPMC() noexcept {
+    ~queue() noexcept {
         close();
 
         // 线程安全的析构：清空剩余元素
@@ -277,4 +277,4 @@ private:
     }
 };
 
-}  // namespace quant1x::ringbuffer
+}  // namespace runtime::ringbuffer

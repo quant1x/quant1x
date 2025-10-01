@@ -118,6 +118,9 @@ add_catch2_executable(tdd-cron.cpp)
 # 网络测试
 add_catch2_executable(tdd-http.cpp)
 
+# 基础组件测试
+add_app_executable(test-ringbuffer.cpp)
+
 # 测试缓存
 add_catch2_executable(tdd-calendar.cpp)
 add_catch2_executable(test-calender.cpp)
@@ -172,3 +175,4 @@ add_catch2_executable(tdd-patterns-wave-release.cpp)
 
 # FP growth测试
 add_catch2_executable(test_fp_growth.cpp)
+
