@@ -63,7 +63,7 @@ criterion = "0.4"
 # temporarily added during an attempt to integrate tokio-cron-scheduler.
 
 [[bin]]
-name = "stock"
+name = "q1x"
 path = "main.rs"
 
 [[bin]]

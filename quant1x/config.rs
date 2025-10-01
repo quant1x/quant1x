@@ -36,7 +36,7 @@ fn expand_homedir(path: &str) -> Option<PathBuf> {
 }
 
 fn default_data_path() -> String {
-    "~/.q2x-rust".to_string()
+    "~/.q1x-rust".to_string()
 }
 
 fn lazy_init() -> BaseConfig {

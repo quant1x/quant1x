@@ -18,7 +18,7 @@ namespace service {
 
     namespace {
         ServiceConfig g_api_service_config;
-        const std::string g_mac_launch_service_name = "com.quant1x.q2x.service";
+    const std::string g_mac_launch_service_name = "com.quant1x.q1x.service";
     }  // namespace
 
     // 获取当前可执行文件路径
@@ -86,7 +86,7 @@ namespace service {
     // 获取日志目录路径
     std::string get_log_dir() {
         std::string user = get_current_username();
-        return "/Users/" + user + "/.q2x/logs/";
+    return "/Users/" + user + "/.q1x/logs/";
     }
 
     // 初始化日志系统
@@ -99,7 +99,7 @@ namespace service {
             mkdir(log_dir.c_str(), 0755);
         }
 
-        auto logger = spdlog::basic_logger_mt("q2x_logger", log_dir + "q2x.log");
+    auto logger = spdlog::basic_logger_mt("q1x_logger", log_dir + "q1x.log");
         logger->set_level(spdlog::level::debug);
         logger->flush_on(spdlog::level::debug);
 
@@ -226,7 +226,7 @@ namespace service {
 
     // 检查 launchd 服务是否正在运行
     std::pair<std::string, bool> check_service_running(const std::string& service_name) {
-        // 构建命令：launchctl list com.quant1x.q2x.service
+    // 构建命令：launchctl list com.quant1x.q1x.service
         std::string cmd = "launchctl list " + service_name;
 
         // 使用 popen 执行命令并读取输出
@@ -271,7 +271,7 @@ namespace service {
         //     return;
         // }
 
-        //std::string cmd = "launchctl list com.quant1x.q2x.service";
+    //std::string cmd = "launchctl list com.quant1x.q1x.service";
         //system(cmd.c_str());
         auto [status, running] = check_service_running(g_mac_launch_service_name);
         std::cout << status << std::endl;

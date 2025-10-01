@@ -92,7 +92,7 @@ pub fn get_calendar_filename() -> String {
     config::get_calendar_filename()
 }
 
-/// Public wrapper to return the meta directory path (eg. ~/.q2x-rust/meta)
+/// Public wrapper to return the meta directory path (eg. ~/.q1x-rust/meta)
 pub fn get_meta_path() -> String {
     config::get_meta_path()
 }

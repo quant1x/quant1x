@@ -83,12 +83,12 @@ pub fn engine_init() {
 
 // Application-level Windows service name. Set here (do not read from CLI or external config).
 // Change this constant to match the installed service name for your application.
-const SERVICE_NAME: &str = "quant1x-stock-rust";
+const SERVICE_NAME: &str = "quant1x-rust";
 // Human-readable service description. Keep this in the application so installers
 // and admins can refer to it when creating the Windows service.
-const SERVICE_DESC: &str = "Quant1X background service for stock operations";
+const SERVICE_DESC: &str = "Quant1X background service for q1x operations";
 // Human-friendly display name shown in Windows service manager.
-const SERVICE_DISPLAY_NAME: &str = "Quant1X Stock Service(Rust)";
+const SERVICE_DISPLAY_NAME: &str = "Quant1X Service(Rust)";
 
 #[cfg(windows)]
 fn normalize_to_utf8(b: &[u8]) -> Vec<u8> {

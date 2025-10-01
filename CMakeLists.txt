@@ -830,10 +830,10 @@ configure_file(
     "${CMAKE_BINARY_DIR}/include/private/build-info.h"
 )
 
-add_executable(q2x
+add_executable(q1x
     main.cpp
 )
-target_include_directories(q2x
+target_include_directories(q1x
     SYSTEM        # 关键选项：标记为系统头文件路径
     PUBLIC       # 仅当前目标可见（或 PUBLIC/INTERFACE）
     ${CMAKE_SOURCE_DIR}/include  # 头文件目录
@@ -841,7 +841,7 @@ target_include_directories(q2x
     ${CMAKE_BINARY_DIR}/include  # 私有头文件
 )
 
-target_link_libraries(q2x PRIVATE quant1x)
+target_link_libraries(q1x PRIVATE quant1x)
 
 # 设置安装路径变量
 include(GNUInstallDirs)
@@ -947,7 +947,7 @@ install(FILES
     DESTINATION lib/cmake/quant1x
 )
 
-install(TARGETS q2x
+install(TARGETS q1x
     DESTINATION bin)
 # 单元测试
 add_subdirectory(tests)

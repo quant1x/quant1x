@@ -16,7 +16,7 @@ namespace config {
     namespace fs = std::filesystem;
 
     // 默认的数据路径
-    constexpr const char *const defaultQuant1xDataPath = "~/.q2x";
+    constexpr const char *const defaultQuant1xDataPath = "~/.q1x";
 
     // 懒加载标志
     std::once_flag global_cache_once;

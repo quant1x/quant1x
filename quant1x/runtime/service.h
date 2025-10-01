@@ -8,8 +8,8 @@ namespace service {
 
     // 服务配置
     struct ServiceConfig {
-        std::string service_name = "Quant1X-Q2X";
-        std::string display_name = "Quant1X V2.0(C++)";
+    std::string service_name = "quant1x-cpp";
+    std::string display_name = "Quant1X Service(C++)";
         std::string description  = "Quant1X C++版本的数据服务";
     };
 

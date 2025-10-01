@@ -192,7 +192,236 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 # 更新到最新版本
 rustup update
 ```
+
+## Rust: 构建与运行 `q1x` 二进制
+
+本仓库在 `Cargo.toml` 中声明了一个名为 `q1x` 的可执行二进制（路径为 `main.rs`）。下面是构建与常见运行示例：
+
+- 在开发模式下构建：
+
+```sh
+cargo build --bin q1x
+```
+
+- 在发布/生产模式下构建（优化）：
+
+```sh
+cargo build --release --bin q1x
+```
+
+- 运行并查看帮助信息：
+
+```sh
+# 打印程序帮助（包含子命令和选项）
+cargo run --bin q1x -- --help
+```
+
+- 常见子命令示例（基于项目根 `main.rs` 中使用的 clap 定义）：
+
+```sh
+# 管理服务（install/uninstall/start/stop/status/run）
+cargo run --bin q1x -- service install
+cargo run --bin q1x -- service start
+
+# 更新缓存数据（calendar / servers / all / base / features）
+cargo run --bin q1x -- update --all
+cargo run --bin q1x -- update --calendar
+```
+
+### 直接示例：从已构建二进制查看帮助
+
+你也可以直接运行已构建的二进制查看实际帮助文本，例如：
+
+```powershell
+# Debug 二进制
+.\target\debug\q1x.exe --help
+
+# Release 二进制
+.\target\release\q1x.exe --help
+```
+
+下面是我在本地运行 `target/release/q1x.exe --help` 捕获到的输出（供参考）：
+
+```text
+quant1x - Rust edition
+--------------------------------------------------------------------------------
+         Version : 0.6.10
+        Author : Quant1X Team
+--------------------------------------------------------------------------------
+
+
+Usage: q1x.exe [OPTIONS] [COMMAND]
+
+Commands:
+  service  Manage the service.
+  update   Update cached data (base / features)
+  help     Print this message or the help of the given subcommand(s)
+
+Options:
+    --version
+      Print build version information and exit
+
+    --verbose
+      显示日志信息到终端
+
+    --debug
+      打开日志的调试模式
+
+  -h, --help
+      Print help (see a summary with '-h')
+```
+
+说明与注意事项：
+
+- `stock` 二进制是一个可与库（crate）协同工作的前端：它会尝试调用库中暴露的初始化与子命令钩子（如 `quant1x::global_init`, `quant1x::datasets_init`, `quant1x::engine_daemon` 等）。如果你直接从源码运行，确保启用了需要的 feature 或在编译时链接到库中实现这些函数的 crate。
+- 在 Windows 上，可以通过 `service` 子命令与提升参数（`--pipe`, `--elevated-out`, `--elevated-pipe`）交互以支持以服务/守护进程模式运行。具体行为由 `engine::daemon` 的实现决定。
+- 若打算在 CI 或部署中使用，请优先使用 `--release` 构建并根据目标平台交叉编译或在对应平台上构建以避免 -march/native 引入不可移植的指令集。
+
+如果需要，我可以：
+
+- 为 `stock` 添加示例配置和 systemd/Windows service 安装脚本。
+- 在 README 中加入更详细的运行参数说明（基于库中 `engine::daemon` 的实现）。
+
 # 5. c/c++ 开发环境
+
+本项目的 C/C++ 代码以 C++20 为目标，强烈建议在开发/构建阶段使用较新的编译器和现代构建工具以获得最佳性能与可维护性。
+
+推荐工具链与版本
+
+- 编译器：GCC 14.3+ / Clang 18+ / MSVC (Visual Studio 2022)（MSVC 工具集 14.3+）
+- CMake：3.30+（建议最新版）
+- 构建器：Ninja（推荐）或 Make/MSBuild
+- 包管理：vcpkg 或 Conan（可选，但用于管理第三方依赖非常有用）
+
+常用依赖（示例）
+
+- OpenSSL（网络/加密）
+- protobuf（序列化）
+- fmt / spdlog（格式化与日志）
+
+Linux/macOS 快速安装（示例）
+
+- Ubuntu / Debian:
+
+  - sudo apt update && sudo apt install -y build-essential cmake ninja-build clang pkg-config
+  - 若使用 vcpkg，请参考 vcpkg 文档进行安装。
+
+- macOS (Homebrew):
+
+  - brew install cmake ninja llvm vcpkg
+
+Windows（Visual Studio）
+
+- 推荐安装 Visual Studio 2022 + Desktop development with C++，并从 “x64 本机工具命令提示符” 或者 VS 开发者 PowerShell 构建。
+- 使用 vcpkg 管理依赖（示例：vcpkg integrate install），并在 CMake 调用中传递 `-DCMAKE_TOOLCHAIN_FILE=<vcpkg-root>/scripts/buildsystems/vcpkg.cmake`。
+
+构建示例（以仓库根目录为例）
+
+- 使用 Ninja + Clang/GCC（跨平台推荐）：
+
+  - mkdir -p build && cd build
+  - cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 ..
+  - cmake --build . --config Release
+
+- 使用 Visual Studio（Windows）：
+
+  - mkdir build && cd build
+  - cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release ..
+  - cmake --build . --config Release
+
+建议的编译选项（可在 CMakeLists 或构建命令中添加）
+
+- Release 编译：-O3 -DNDEBUG
+- 可选：启用 LTO（Link Time Optimization）与目标特定指令集：-march=native（仅在目标机测试时启用）
+- 针对跨平台性能调优：保持内存对齐、禁用不必要的异常展开（视模块而定）、使用合适的预取/缓存策略
+
+关于性能与编译器选择（说明）
+
+- 在本项目的微基准中，LLVM/Clang 与 MSVC 在某些并发热点代码上生成的汇编与性能通常优于某些 GCC 版本；若追求最高性能，建议在 CI 中使用 clang 或 MSVC 做对比测试。
+- 但为保证广泛兼容性，请在主 CI 流水线中测试所有目标编译器（GCC / Clang / MSVC）。
+
+调试与分析工具
+
+- 使用 sanitizers（AddressSanitizer, ThreadSanitizer）在调试构建中快速捕获内存/线程错误：在 CMake 中开启 -DSANITIZE_ADDRESS=ON（项目支持时）。
+- 使用 perf / VTune / Windows Performance Analyzer 进行性能剖析。
+
+依赖管理（vcpkg 简短示例）
+
+- 克隆并引导 vcpkg：
+
+  ```sh
+  git clone https://github.com/microsoft/vcpkg.git
+  ./vcpkg/bootstrap-vcpkg.sh  # Linux/macOS
+  .\vcpkg\bootstrap-vcpkg.bat  # Windows (PowerShell/CMD)
+  ```
+
+- 在 CMake 调用中添加 toolchain 文件：
+
+  ```sh
+  cmake -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake ..
+  ```
+
+平台特定注意事项
+
+- Windows：注意选择 x64 构建，使用 vcpkg 的 triplet（例如 `x64-windows`）来安装二进制依赖。
+- Linux：若在容器/CI 中构建，尽量固定基础镜像以保证可重复构建（例如 `ubuntu:22.04`）。
+- macOS：使用 Homebrew 管理依赖，并注意 Apple Clang 与 LLVM Clang 之间的小差别。
+
+如果你希望我为项目添加一个方便的 CMake 构建示例（例如 top-level `build` 脚本和 CI job 示例），我可以继续创建并把它加入仓库。
+
+附加：C++ 具体构建与测试示例
+
+依赖安装（protobuf/其他）示例：
+
+- protobuf 推荐使用 3.21.11（高版本可能依赖 abseil，引入额外复杂性）：
+
+  ```sh
+  # 下载并解压源码
+  wget https://gh-proxy.com/github.com/protocolbuffers/protobuf/releases/download/v21.11/protobuf-cpp-3.21.11.zip
+  unzip protobuf-cpp-3.21.11.zip && cd protobuf-3.21.11
+  mkdir build && cd build
+  cmake -DCMAKE_INSTALL_PREFIX=$HOME/runtime -Dprotobuf_BUILD_TESTS=OFF -G "Unix Makefiles" ../
+  make -j$(nproc) && make install
+  ```
+
+- Windows (MSVC) 编译示例：
+
+  ```ps1
+  mkdir build; cd build
+  cmake -DCMAKE_INSTALL_PREFIX=d:/runtime -G "Visual Studio 17 2022" -A x64 ..
+  cmake --build . --config Release
+  ```
+
+其它依赖安装（vcpkg 举例）:
+
+```sh
+vcpkg install yaml-cpp zlib asio xtensor mimalloc spdlog fmt duktape benchmark catch2 flatbuffers capnproto
+```
+
+项目快速编译（Debug 示例）：
+
+```sh
+cmake -DCMAKE_BUILD_TYPE=Debug -G Ninja -S . -B cmake-build-debug
+cmake --build cmake-build-debug --target q1x -j 18
+```
+
+安装主程序示例：
+
+```sh
+ninja -C cmake-build-debug install
+```
+
+运行测试（ctest）：
+
+```sh
+ctest --test-dir cmake-build-debug --output-on-failure
+```
+
+运行示例程序：
+
+```sh
+./cmake-build-debug/bin/q1x --help
+```
 
 ## 🤝 贡献
 

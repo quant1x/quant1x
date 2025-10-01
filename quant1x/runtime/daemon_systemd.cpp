@@ -245,7 +245,7 @@ namespace service {
         std::string username = pw ? pw->pw_name : "unknown";
 
         // 日志路径：放在用户目录下，避免权限问题
-        std::string log_path = "/home/" + username + "/logs/q2x/";
+    std::string log_path = "/home/" + username + "/logs/q1x/";
 
         // 创建日志目录（如果不存在）
         struct stat st{};
@@ -254,7 +254,7 @@ namespace service {
         }
 
         // 初始化日志系统（文件日志）
-        auto file_logger = spdlog::basic_logger_mt("file_logger", log_path + "q2x.log");
+    auto file_logger = spdlog::basic_logger_mt("file_logger", log_path + "q1x.log");
         file_logger->set_level(spdlog::level::debug);
         file_logger->flush_on(spdlog::level::debug);  // 每次都刷新，避免缓冲区延迟
 
@@ -263,7 +263,7 @@ namespace service {
         // console_logger->set_level(spdlog::level::info);
 
         // 示例日志
-        file_logger->info("[*] 守护进程已启动");
+    file_logger->info("[*] 守护进程已启动");
         // console_logger->info("[*] 守护进程已启动");
         runtime::logger_set(false, config::is_debug());
 
