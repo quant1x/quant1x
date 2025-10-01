@@ -68,11 +68,11 @@ path = "main.rs"
 
 [[bin]]
 name = "vyukov_perf"
-path = "quant1x/tools/vyukov_perf.rs"
+path = "tools/vyukov_perf.rs"
 
 [[bin]]
 name = "vyukov_runner"
-path = "quant1x/tools/vyukov_runner.rs"
+path = "tools/vyukov_runner.rs"
 
 
 [features]
