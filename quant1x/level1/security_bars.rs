@@ -1,6 +1,7 @@
 use super::sequence_id;
 use crate::std::BinaryStream;
 use crate::level1::commands::*;
+use crate::level1::protocol::{Request, Response};
 use std::panic;
 
 #[allow(dead_code)]
@@ -78,9 +79,10 @@ impl SecurityBarsRequest {
     ) -> (Self, Vec<u8>, bool) {
         SecurityBarsRequest::with_params(security_code, category, start, count, 1u16)
     }
-    // Serialize the full request header and append the provided payload bytes.
-    // This method updates PkgLen fields based on payload length to ensure header parity with C++.
-    pub fn serialize(&mut self, payload: &[u8]) -> Vec<u8> {
+}
+
+impl Request for SecurityBarsRequest {
+    fn encode(&mut self, payload: &[u8]) -> Vec<u8> {
         // PkgLen = 2 + payload length (matches C++ PkgLen1 = 2 + sizeof(SecurityBarsParameter) + padding.size())
         let payload_len = payload.len() as u16;
         self.pkg_len1 = 2u16 + payload_len;
@@ -169,7 +171,59 @@ impl SecurityBarsResponse {
         }
     }
 
-    pub fn deserialize(&mut self, data: &[u8]) {
+    // High-level helper: fetch security bars for a code with given category/start/count using the
+    // level1 client. This wraps the SecurityBarsRequest/Response lifecycle and returns the parsed
+    // SecurityBarsResponse on success.
+    pub fn fetch_security_bars(
+        code: &str,
+        category: u16,
+        frequency: u16,
+        start: u32,
+        count: u16,
+    ) -> Option<SecurityBarsResponse> {
+        log::info!("fetch_security_bars called: code={}, category={}, frequency={}, start={}, count={}",
+            code, category, frequency, start, count);
+
+        // Build request header and payload using with_params (C++-like constructor behavior)
+        let (mut req, payload_bytes, is_index) =
+            SecurityBarsRequest::with_params(code, category, start as u16, count, frequency);
+
+        log::info!("Built request with payload size: {}, is_index: {}", payload_bytes.len(), is_index);
+
+        // perform network exchange using the new process function
+        match crate::level1::client::client() {
+            Ok(mut pooled) => {
+                log::info!("Acquired level1 client successfully");
+                let mut resp = SecurityBarsResponse::new_with(is_index, category);
+                match crate::level1::protocol::process(pooled.stream(), &mut req, &payload_bytes, &mut resp) {
+                    Ok(()) => {
+                        log::info!("Protocol process succeeded, got {} bars", resp.list.len());
+                        Some(resp)
+                    }
+                    Err(e) => {
+                        log::error!(
+                            "level1 fetch_security_bars process error for {}: {}",
+                            code,
+                            e
+                        );
+                        None
+                    }
+                }
+            }
+            Err(e) => {
+                log::error!(
+                    "failed to acquire level1 client for fetch_security_bars {}: {}",
+                    code,
+                    e
+                );
+                None
+            }
+        }
+    }
+}
+
+impl Response for SecurityBarsResponse {
+    fn decode(&mut self, data: &[u8]) {
         self.count = 0;
         self.list.clear();
         let mut bs = BinaryStream::from_vec(data.to_vec());
@@ -240,51 +294,6 @@ impl SecurityBarsResponse {
         if let Err(_) = result {
             log::warn!("insufficient data for {} bars, parsed {} successfully", self.count, self.list.len());
             self.count = self.list.len() as u16;
-        }
-    }
-
-    // High-level helper: fetch security bars for a code with given category/start/count using the
-    // level1 client. This wraps the SecurityBarsRequest/Response lifecycle and returns the parsed
-    // SecurityBarsResponse on success.
-    pub fn fetch_security_bars(
-        code: &str,
-        category: u16,
-        frequency: u16,
-        start: u32,
-        count: u16,
-    ) -> Option<SecurityBarsResponse> {
-        // Build request header and payload using with_params (C++-like constructor behavior)
-        let (mut req, payload_bytes, is_index) =
-            SecurityBarsRequest::with_params(code, category, start as u16, count, frequency);
-        let req_bytes = req.serialize(&payload_bytes);
-
-        // perform network exchange
-        match crate::level1::client::client() {
-            Ok(mut pooled) => {
-                match crate::level1::process_request(pooled.stream(), req_bytes.as_slice()) {
-                    Ok(body) => {
-                        let mut resp = SecurityBarsResponse::new_with(is_index, category);
-                        resp.deserialize(&body);
-                        Some(resp)
-                    }
-                    Err(e) => {
-                        log::error!(
-                            "level1 fetch_security_bars process_request error for {}: {}",
-                            code,
-                            e
-                        );
-                        None
-                    }
-                }
-            }
-            Err(e) => {
-                log::error!(
-                    "failed to acquire level1 client for fetch_security_bars {}: {}",
-                    code,
-                    e
-                );
-                None
-            }
         }
     }
 }

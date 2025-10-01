@@ -115,12 +115,12 @@ impl DataAdapter for DataMinuteKLine {
             number_of_day = 1;
         }
         // map period -> level1 category (mirror C++ switch)
-        let kline_type: u16 = match period {
-            5 => 0,   // _5MIN
-            15 => 1,  // _15MIN
-            30 => 2,  // _30MIN
-            60 => 3,  // _1HOUR
-            _ => 8,   // _1MIN (default)
+        let kline_type: crate::level1::KLineType = match period {
+            5 => crate::level1::KLineType::_5Min,
+            15 => crate::level1::KLineType::_15Min,
+            30 => crate::level1::KLineType::_30Min,
+            60 => crate::level1::KLineType::_1Hour,
+            _ => crate::level1::KLineType::_1Min, // default
         };
 
         let mut klines_offset = MAX_KLINE_LOOKBACK_DAYS * number_of_day;
@@ -184,20 +184,17 @@ impl DataAdapter for DataMinuteKLine {
         while start_idx < total {
             let remaining = total - start_idx;
             let count = std::cmp::min(step, remaining) as u16;
-            match crate::level1::fetch_security_bars(code, kline_type, 1, start_idx as u32, count) {
-                Some(resp) => {
-                    if resp.list.is_empty() {
-                        break;
-                    }
-                    hs.push(resp.list);
-                    if (resp.count as usize) < count as usize {
+            match crate::datasets::kline_raw::fetch_kline(code, start_idx as u16, count, kline_type) {
+                reply if !reply.is_empty() => {
+                    hs.push(reply);
+                    if hs.last().unwrap().len() < count as usize {
                         break;
                     }
                     start_idx = start_idx.saturating_add(count as usize);
                 }
-                None => {
+                _ => {
                     log::warn!(
-                        "[DataMinuteKLine] fetch_security_bars returned None for {} start={}",
+                        "[DataMinuteKLine] fetch_kline returned empty for {} start={}",
                         code,
                         start_idx
                     );

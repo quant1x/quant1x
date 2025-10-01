@@ -1,5 +1,6 @@
 use super::sequence_id;
 use crate::level1::security_bars::SecurityBarsResponse;
+use crate::level1::protocol::Response;
 use crate::std::BinaryStream;
 use crate::level1::commands::*;
 
@@ -56,6 +57,6 @@ impl IndexBarsResponse {
     }
 
     pub fn deserialize(&mut self, data: &[u8]) {
-        self.inner.deserialize(data);
+        self.inner.decode(data);
     }
 }

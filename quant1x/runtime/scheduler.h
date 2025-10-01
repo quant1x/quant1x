@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_STD_SCHEDULER_H
-#define QUANT1X_STD_SCHEDULER_H 1
+#ifndef QUANT1X_RUNTIME_SCHEDULER_H
+#define QUANT1X_RUNTIME_SCHEDULER_H 1
 
 #include <quant1x/runtime/core.h>
 #include <croncpp.h>
@@ -80,4 +80,4 @@ private:
     void scheduler_loop();
 };
 
-#endif  // QUANT1X_STD_SCHEDULER_H
+#endif  // QUANT1X_RUNTIME_SCHEDULER_H

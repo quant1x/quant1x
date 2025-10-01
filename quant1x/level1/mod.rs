@@ -5,12 +5,33 @@ use std::io::Read;
 use std::io::Write;
 use std::sync::atomic::{AtomicU32, Ordering};
 
+// Import Response trait for decode method
+use crate::level1::protocol::Response;
+
 // Global sequence id to mimic C++ SequenceId()
 static SEQ_ID: AtomicU32 = AtomicU32::new(0);
 
 pub fn sequence_id() -> u32 {
     // Pre-increment semantics: ++seq
     SEQ_ID.fetch_add(1, Ordering::SeqCst).wrapping_add(1)
+}
+
+// K线类型 (mimicking C++ level1::KLineType)
+#[repr(u8)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum KLineType {
+    _5Min = 0,     // 5分钟K线
+    _15Min = 1,    // 15分钟K线
+    _30Min = 2,    // 30分钟K线
+    _1Hour = 3,    // 1小时K线
+    Daily = 4,     // 日K线
+    Weekly = 5,    // 周K线
+    Monthly = 6,   // 月K线
+    Exhq1Min = 7,  // 扩展市场1分钟
+    _1Min = 8,     // 普通1分钟K线
+    RiK = 9,       // 日K线(同DAILY)
+    _3Month = 10,  // 季K线
+    Yearly = 11,   // 年K线
 }
 
 // helper: mimic level1::helpers::GetDatetimeFromUint32
@@ -174,6 +195,7 @@ mod hello1;
 mod hello2;
 mod index_bars;
 mod minute_time;
+pub mod protocol;
 mod security_bars;
 mod security_count;
 pub mod security_list;
@@ -201,6 +223,7 @@ mod tests {
     use super::security_quote::*;
     use super::transaction_data::*;
     use super::xdxr::*;
+    use crate::level1::protocol::Response;
     use hex;
 
     #[test]
@@ -304,7 +327,7 @@ mod tests {
         let buf = hex::decode(hex).unwrap();
         // C++ tests create SecurityBarsResponse(false, 9) for this sample (category 9 = RI_K)
         let mut resp = SecurityBarsResponse::new_with(false, 9);
-        resp.deserialize(&buf);
+        resp.decode(&buf);
         // basic sanity: either count is zero or list length matches count; prefer non-empty list for this sample
         assert_eq!(resp.count as usize, resp.list.len());
         assert!(resp.list.len() > 0 || resp.count == 0);

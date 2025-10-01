@@ -1,6 +1,6 @@
 #pragma once
-#ifndef API_OS_SERVICE_H
-#define API_OS_SERVICE_H 1
+#ifndef API_RUNTIME_SERVICE_H
+#define API_RUNTIME_SERVICE_H 1
 
 #include <string>
 
@@ -27,4 +27,4 @@ namespace service {
     void run_daemon();
 }
 
-#endif //API_OS_SERVICE_H
+#endif //API_RUNTIME_SERVICE_H

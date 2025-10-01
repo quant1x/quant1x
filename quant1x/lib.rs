@@ -51,8 +51,7 @@ mod std;
 pub use crate::std::*;
 
 // runtime helpers (rust translation of runtime utilities)
-mod runtime;
-pub use crate::runtime::*;
+pub mod runtime;
 
 // pandas utilities (frequency parsing)
 mod pandas;

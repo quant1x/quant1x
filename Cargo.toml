@@ -49,6 +49,8 @@ csv = "1.2"
 mimalloc = "0.1"
 unicode-normalization = "0.1"
 strsim = "0.10"
+tokio = { version = "1.0", features = ["full"] }
+cron = "0.12"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["shellapi", "processthreadsapi", "winbase", "handleapi", "minwinbase", "synchapi", "errhandlingapi", "winuser", "winnls", "stringapiset"] }

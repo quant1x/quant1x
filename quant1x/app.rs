@@ -739,5 +739,35 @@ pub fn try_run_subcommand(
         }
     }
 
+    // Feature data updates (example keys: "kline", etc.).
+    // If the user supplied --features keys, update those; if no keys were supplied
+    // and no other flags were given, default is to update all feature data.
+    let want_features = if all || (!all && base_keys.is_empty() && features_keys.is_empty()) {
+        true
+    } else {
+        !features_keys.is_empty()
+    };
+    if want_features {
+        // If the user specified feature keys, select plugins with those keys; otherwise update all feature data plugins
+        if features_keys.is_empty() {
+            // update all feature adapters
+            let _count = crate::cache::update_all_mask(
+                crate::cache::PLUGIN_MASK_FEATURE,
+                None,
+                crate::exchange::last_trading_day(crate::Timestamp::now()),
+            );
+            log::info!("Updated {} feature adapters", _count);
+        } else {
+            // update only named feature adapters
+            let ks: Vec<String> = features_keys.clone();
+            let _count = crate::cache::update_all_mask(
+                crate::cache::PLUGIN_MASK_FEATURE,
+                Some(&ks),
+                crate::exchange::last_trading_day(crate::Timestamp::now()),
+            );
+            log::info!("Updated {} selected feature adapters", _count);
+        }
+    }
+
     Ok(true)
 }
