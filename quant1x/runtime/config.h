@@ -116,7 +116,7 @@ namespace config {
     std::string top10_holders_filename(const std::string& code, const std::string& date);
 
     // 财报报告数据文件名
-    std::string reports_filename(const std::string& data);
+    std::string reports_filename(const std::string& date);
 
     // 获取qmt缓存路径
     std::string get_qmt_cache_path();
