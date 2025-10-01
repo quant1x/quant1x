@@ -1,14 +1,14 @@
-// vyukov.hpp
 // Vyukov 有界 MPMC 队列的 C++17 头文件单文件移植（模板）
-// 实现备注：
-// - 使用每个槽的序号（per-slot sequence）和原子性入队/出队索引
-// - 槽按 64 字节对齐以减少伪共享
-// - 提供 try_push / try_pop 语义（非阻塞：满/空时返回 false）
-// - 包含 close() 方法，消费者可以观察到队列已关闭
-// - 修复项：线程安全的析构、异常安全性、内存泄漏
-// - 优化项：更好的 C++17 用法，改进的退避策略
-
+// 实现说明（中文）：
+// - 基于每个槽位的序号（per-slot sequence）以及原子性的入队/出队索引实现无锁并发
+// - 槽按 64 字节对齐以最小化伪共享（false sharing）带来的性能下降
+// - 提供非阻塞的 try_push / try_pop 语义：满/空时立即返回 false
+// - 提供 close() 方法，供消费者观察队列关闭并在耗尽数据后退出
+// - 待修复/注意：析构的线程安全性、异常安全性与潜在内存泄漏需要在使用时注意
+// - 可优化之处：利用更现代的 C++17 特性、改进退避策略以提升不同平台上的性能
 #pragma once
+#ifndef QUANT1X_RUNTIME_RINGBUFFER_H
+#define QUANT1X_RUNTIME_RINGBUFFER_H 1
 
 #include <atomic>
 #include <cstddef>
@@ -31,7 +31,8 @@
 #include <thread>
 #include <chrono>
 
-// Cross-compiler attribute: prefer force-inline/hot on GCC/Clang, and __forceinline on MSVC.
+// 跨编译器的属性宏：在 GCC/Clang 上使用 always_inline/hot，以期望代码内联和热路径优化；
+// 在 MSVC 上使用 __forceinline。
 #if defined(_MSC_VER)
 #  define ATTR_ALWAYS_INLINE_HOT __forceinline
 #else
@@ -156,10 +157,15 @@ private:
         alignas(alignof(T)) std::byte storage[sizeof(T)]{};
     };
 
+    // 槽位数组，长度为 capacity（向上取整到 2 的幂），每个槽按 64 字节对齐
     std::unique_ptr<Slot[]> buffer_;
+    // 用于将序号映射为数组索引的掩码（mask = capacity - 1）
     size_t mask_;
+    // 生产者游标（下一个待写入序号），按缓存行对齐以减少伪共享
     alignas(64) std::atomic<size_t> enqueue_pos_{0};
+    // 消费者游标（下一个待读取序号），按缓存行对齐以减少伪共享
     alignas(64) std::atomic<size_t> dequeue_pos_{0};
+    // 关闭标志（true 表示队列已关闭），消费者可据此在空队列时退出
     std::atomic<bool> closed_{false};
 
 #if defined(__GNUG__)
@@ -278,3 +284,5 @@ private:
 };
 
 }  // namespace runtime::ringbuffer
+
+#endif  // QUANT1X_RUNTIME_RINGBUFFER_H

@@ -1,8 +1,8 @@
-// Package ringbuffer provides a high-performance, lock-free MPMC (Multi-Producer Multi-Consumer) ring buffer implementation.
-// It uses atomic operations and spin-waiting for efficient concurrent access, suitable for high-throughput scenarios.
-// The buffer size must be a power of two for optimal performance.
+// Package ringbuffer 提供了高性能、无锁的 MPMC（多生产者多消费者）环形缓冲区实现。
+// 它使用原子操作和自旋等待以实现高并发下的高效访问，适用于高吞吐场景。
+// 为获得最优性能，缓冲区大小应为二的幂。
 //
-// Example usage:
+// 示例用法：
 //
 //	rb, err := ringbuffer.New[int](1024)
 //	if err != nil {
@@ -40,13 +40,13 @@ var (
 	ErrClosed      = errors.New("ring buffer closed")
 )
 
-// Slot represents a single slot in the ring buffer
+// Slot 表示环形缓冲区中的单个槽位
 type Slot[T any] struct {
 	data unsafe.Pointer // 数据存储
 	flag uint32         // 状态标志 (0: empty, 1: writing, 2: readable)
 }
 
-// RingBuffer represents the MPMC ring buffer
+// RingBuffer 表示 MPMC 环形缓冲区
 type RingBuffer[T any] struct {
 	slots       []Slot[T] // 使用槽位数组存储数据
 	size        uint32
@@ -57,7 +57,7 @@ type RingBuffer[T any] struct {
 	pool        sync.Pool // 对象池，用于复用 T 的包装对象
 }
 
-// New creates a new MPMC ring buffer
+// New 创建并返回一个新的 MPMC 环形缓冲区
 func New[T any](size uint32) (*RingBuffer[T], error) {
 	if size == 0 || (size&(size-1)) != 0 {
 		return nil, ErrInvalidSize
@@ -79,7 +79,7 @@ func New[T any](size uint32) (*RingBuffer[T], error) {
 	return rb, nil
 }
 
-// spinWait 自旋等待，使用指数退避
+// spinWait 自旋等待，使用指数退避以减少忙等带来的开销
 func spinWait(retries *int32) {
 	r := atomic.AddInt32(retries, 1)
 	switch {
@@ -93,10 +93,10 @@ func spinWait(retries *int32) {
 	}
 }
 
-// Write writes data into the ring buffer by a producer.
+// Write 由生产者向环形缓冲区写入数据。
 //
-// It explicitly boxes the value on the heap to ensure the pointer remains valid,
-// avoiding reliance on compiler escape analysis for safety.
+// 为确保写入的数据指针在堆上有效，该实现将值装箱（在对象池中获取对象并写入），
+// 避免依赖编译器的逃逸分析带来的不确定性。
 func (rb *RingBuffer[T]) Write(value T) error {
 	if atomic.LoadUint32(&rb.closed) == 1 {
 		return errors.New("queue closed")
@@ -145,7 +145,7 @@ func (rb *RingBuffer[T]) Write(value T) error {
 	}
 }
 
-// Read reads data from the ring buffer by a consumer
+// Read 由消费者从环形缓冲区读取数据
 func (rb *RingBuffer[T]) Read() (T, error) {
 	var zero T
 	var retries int32 = 0 // ✅ 引入重试计数
@@ -199,34 +199,34 @@ func (rb *RingBuffer[T]) Read() (T, error) {
 	}
 }
 
-// Len returns the current number of elements in the buffer
+// Len 返回缓冲区中当前元素的数量
 func (rb *RingBuffer[T]) Len() int {
 	prod := atomic.LoadUint32(&rb.producerPos)
 	cons := atomic.LoadUint32(&rb.consumerPos)
 	return int(prod - cons)
 }
 
-// Cap returns the capacity of the buffer
+// Cap 返回缓冲区的容量
 func (rb *RingBuffer[T]) Cap() int {
 	return int(rb.size)
 }
 
-// IsEmpty returns true if the buffer is empty
+// IsEmpty 当缓冲区为空时返回 true
 func (rb *RingBuffer[T]) IsEmpty() bool {
 	return rb.Len() == 0
 }
 
-// IsFull returns true if the buffer is full
+// IsFull 当缓冲区已满时返回 true
 func (rb *RingBuffer[T]) IsFull() bool {
 	return rb.Len() == int(rb.size)
 }
 
-// Close closes the ring buffer
+// Close 关闭环形缓冲区（设置关闭标志），写入方将被拒绝写入
 func (rb *RingBuffer[T]) Close() {
 	atomic.StoreUint32(&rb.closed, 1)
 }
 
-// WaitForClose blocks until all data has been consumed after closing
+// WaitForClose 在关闭后阻塞直到所有数据被消费完成
 func (rb *RingBuffer[T]) WaitForClose() {
 	for !rb.IsEmpty() {
 		runtime.Gosched()
