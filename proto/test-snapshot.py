@@ -7,7 +7,7 @@ schema = capnp.load('snapshot.capnp')
 QuoteList = schema.QuoteList
 
 # 打开 C++ 写入的二进制文件
-file_path = r"D:\projects\quant1x\q2x\cmake-build-debug\quote_list.capnp"
+file_path = r"D:\projects\quant1x\q1x\cmake-build-debug\quote_list.capnp"
 
 with open(file_path, "rb") as f:
     # 解析为 QuoteList 根对象
