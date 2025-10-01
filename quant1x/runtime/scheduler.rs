@@ -1,3 +1,40 @@
+//! 异步调度器模块
+//!
+//! 该模块提供一个轻量的 cron 风格调度器 `AsyncScheduler`，用于在运行时调度周期性任务。
+//!
+//! 设计要点：
+//! - 使用 `tokio` 运行时异步执行调度循环；
+//! - 支持通过 cron 表达式（`cron::Schedule`）注册周期性任务；
+//! - 对于 cron 任务，调度器维护 `cron_running` 标志来避免同一任务的重入；当上一次仍在运行时，调度器会记录 `skipped_running`；
+//! - 提供统计信息 `SchedulerStats`，用于观测调度器的行为（调度次数、执行次数、跳过次数等）。
+//!
+//! 注意事项：
+//! - 任务回调是同步闭包 `Fn()`，如果回调是长时间运行的阻塞操作，建议在回调内部将真正的工作交给异步任务或线程池处理，以避免阻塞调度循环；
+//! - 测试中为简化逻辑会直接操作内部状态（如将 `cron_running` 标记为 true），但生产代码不应这样做；
+//!
+//! 示例：
+//! ```no_run
+//! use quant1x::runtime::AsyncScheduler;
+//! use std::sync::Arc;
+//! use std::sync::atomic::{AtomicU32, Ordering};
+//! use tokio::time::sleep;
+//! use std::time::Duration;
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!     let scheduler = AsyncScheduler::new();
+//!     let counter = Arc::new(AtomicU32::new(0));
+//!     let c = counter.clone();
+//!     let _id = scheduler.schedule_cron("tick".to_string(), "* * * * * *", move || {
+//!         c.fetch_add(1, Ordering::Relaxed);
+//!     }).await.unwrap();
+//!     // 运行一段时间
+//!     sleep(Duration::from_secs(3)).await;
+//!     scheduler.stop().await;
+//!     println!("stats: {:?}", scheduler.get_stats().await);
+//! }
+//! ```
+
 use std::collections::BinaryHeap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -424,7 +461,7 @@ mod tests {
 
         // 每秒执行一次的任务
         let counter_clone = counter.clone();
-    let _id = scheduler.schedule_cron(
+        let _id = scheduler.schedule_cron(
             "test_task".to_string(),
             "* * * * * *", // 每秒
             move || {
@@ -476,5 +513,68 @@ mod tests {
 
         assert!(count >= 1); // 至少执行了一次
         assert_eq!(stats.canceled, 1);
+    }
+
+    #[tokio::test]
+    async fn test_scheduler_skip_long_running() {
+        let scheduler = AsyncScheduler::new();
+        let counter = Arc::new(AtomicU32::new(0));
+
+
+        // 任务运行时间比调度间隔长（1.5s > 1s）。我们在第一个执行把
+        // `cron_running` 置为 true 后注入额外的调度项，这会触发 skipped_running。
+        let counter_clone = counter.clone();
+        let id = scheduler.schedule_cron(
+            "long_task".to_string(),
+            "* * * * * *",
+            move || {
+                // increment so we still record an execution if it runs
+                counter_clone.fetch_add(1, Ordering::Relaxed);
+            }
+        ).await.unwrap();
+
+        // 直接将 cron_running 标记为 true，模拟正在运行的任务；
+        // 之后注入一个立即运行的调度项，会被 execute_cron_task_internal 发现并计为 skipped_running
+        {
+            let mut ct = scheduler.cron_tasks.lock().await;
+            if let Some(ctask) = ct.get_mut(&id) {
+                ctask.cron_running = true;
+            }
+        }
+
+        // 注入一个立即可运行的调度项，和 cron 任务使用相同的 id，这会触发 skipped_running
+        {
+            let now = Utc::now();
+            let injected = ScheduledTask::new(
+                now,
+                Arc::new(|| {}),
+                id,
+                "injected".to_string(),
+            );
+            let mut tq = scheduler.task_queue.lock().await;
+            tq.push(injected);
+            // 通知调度器检查队列
+            scheduler.notify.notify_one();
+        }
+
+        // 等待足够时间让注入的项被处理，并轮询 stats.skipped_running 直到为正或超时
+        let mut waited = 0u64;
+        let mut skipped = 0u64;
+        while waited < 3000 {
+            let s = scheduler.get_stats().await;
+            if s.skipped_running > 0 {
+                skipped = s.skipped_running;
+                break;
+            }
+            sleep(Duration::from_millis(50)).await;
+            waited += 50;
+        }
+
+        scheduler.stop().await;
+
+    let stats = scheduler.get_stats().await;
+
+    // 验证至少有一次因为前次仍在运行而被跳过
+    assert!(stats.skipped_running >= 1 || skipped >= 1, "expected skipped_running >= 1, got {}", stats.skipped_running);
     }
 }
