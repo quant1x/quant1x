@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.122] - 2025-10-02
+### Changed
+- 修订python类self拼写的问题
+
 ## [0.6.121] - 2025-10-02
 ### Changed
 - 修订用于python加载本地缓存数据的QUANT1X_WORK关键字的机制
+- update changelog
 
 ## [0.6.120] - 2025-10-01
 ### Changed
@@ -867,7 +872,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.121...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.122...HEAD
+[0.6.122]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.121...v0.6.122
 [0.6.121]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.120...v0.6.121
 [0.6.120]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.119...v0.6.120
 [0.6.119]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.118...v0.6.119
