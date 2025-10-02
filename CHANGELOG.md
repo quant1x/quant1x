@@ -3,11 +3,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.124] - 2025-10-03
+### Changed
+- 修订依赖库列表布局
+
 ## [0.6.123] - 2025-10-03
 ### Changed
 - 修正ringbuffer路径
 - 删除废弃的代码日志
 - 调整numpy和numba的版本号，匹配numpy2.3.0
+- update changelog
 
 ## [0.6.122] - 2025-10-02
 ### Changed
@@ -879,7 +884,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.123...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.124...HEAD
+[0.6.124]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.123...v0.6.124
 [0.6.123]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.122...v0.6.123
 [0.6.122]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.121...v0.6.122
 [0.6.121]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.120...v0.6.121
