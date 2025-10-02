@@ -16,8 +16,6 @@ namespace ta {
     public:
         //=== 构造函数组 ===//
         explicit Series(std::span<T> data) : data_(data) {}
-        //explicit Series(std::vector<T>& vec) : data_(vec) {}
-        //explicit Series(xt::xarray<T>& arr) : data_(arr.data()(), arr.size()) {}
         explicit Series(std::vector<T>& vec)
             : data_(vec.data(), vec.size()) {}
 

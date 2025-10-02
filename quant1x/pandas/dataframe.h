@@ -269,7 +269,6 @@ private:
         }
         static ColumnVariant empty;
         return empty; // 返回空variant
-        //throw std::runtime_error("Type mismatch for column '" + name + "'. ");
     }
 
     // 辅助函数：不区分大小写的字符串比较
