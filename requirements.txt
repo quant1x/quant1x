@@ -9,7 +9,7 @@ icecream~=2.1.5
 # 3. configure
 PyYAML~=6.0.2
 # 4. num & dataframe
-numpy~=2.2.6
+numpy~=2.3.0
 pandas~=2.3.0
 # 5. git
 gitpython~=3.1.44
@@ -31,5 +31,5 @@ matplotlib~=3.10.1
 scipy~=1.16.0
 caerus~=1.0.1
 joblib~=1.5.1
-numba~=0.61.2
+numba~=0.62.1
 inflection~=0.5.1
