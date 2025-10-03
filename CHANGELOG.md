@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.127] - 2025-10-03
+### Changed
+- 调整ringbuffer路径
+
 ## [0.6.126] - 2025-10-03
 ### Changed
 - 调整ringbuffer基准测试的引用路径
@@ -10,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - 提供基础版本的配置文件，说明各版本的配置文件路径
 - 新增json到struct映射的c++模板工具
 - 调整encoding测试用例源文件名，json新增自动反射编解码功能
+- update changelog
 
 ## [0.6.125] - 2025-10-03
 ### Changed
@@ -898,7 +903,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.126...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.127...HEAD
+[0.6.127]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.126...v0.6.127
 [0.6.126]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.125...v0.6.126
 [0.6.125]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.124...v0.6.125
 [0.6.124]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.123...v0.6.124
