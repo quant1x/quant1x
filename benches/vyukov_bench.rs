@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 use std::thread;
 
-use quant1x::ringbuffer::ringbuffer::Queue as VQueue;
+use quant1x::runtime::ringbuffer::Queue as VQueue;
 
 fn run_vyukov_once() -> f64 {
     const SIZE: usize = 65536;
