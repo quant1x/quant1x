@@ -2,7 +2,7 @@ use std::sync::{Arc, atomic::{AtomicI64, Ordering}};
 use std::thread;
 use std::time::Instant;
 
-use quant1x::ringbuffer::ringbuffer::Queue;
+use quant1x::runtime::ringbuffer::Queue;
 
 fn main() {
     // small demo values so it runs quickly
