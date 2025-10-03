@@ -3,10 +3,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.131] - 2025-10-04
+### Changed
+- 调整测试yaml配置文件解析功能, msvc编译不通过
+- 修复msvc编译yaml解析工具失败的问题, examples引用yaml-cpp方式不对
+
 ## [0.6.130] - 2025-10-04
 ### Changed
 - 屏蔽进度条的锁, 进度条本身就是线程安全
 - 消除未使用变量的告警
+- update changelog
 
 ## [0.6.129] - 2025-10-03
 ### Changed
@@ -924,7 +930,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.130...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.131...HEAD
+[0.6.131]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.130...v0.6.131
 [0.6.130]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.129...v0.6.130
 [0.6.129]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.128...v0.6.129
 [0.6.128]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.127...v0.6.128
