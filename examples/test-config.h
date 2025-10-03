@@ -101,7 +101,7 @@ struct Data {
     struct Snapshot { int concurrency = 0; } snapshot;
 };
 
-struct Config {
+struct TestConfig {
     std::string basedir;
     bool debug = false;
     Trader trader;
