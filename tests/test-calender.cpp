@@ -366,6 +366,10 @@ public:
         r.clear();
         e = o = 0;
 
+        // Use d_mask and f_mask to avoid -Wunused-private-field being treated as an error
+        (void)d_mask;
+        (void)f_mask;
+
         auto u = w({12, 6});
         s      = 63 ^ static_cast<int>(u[1]);
         branch_type = static_cast<int>(u[0]);  // 保存分支值
