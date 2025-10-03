@@ -3,9 +3,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.128] - 2025-10-03
+### Changed
+- 优化yaml配置文件解析方式
+- 调整编译选项，gcc暂时还是使用-O2编译
+- 消除msvc ULONG类型转换告警的问题
+- 修复quant1x依赖项不能获取属性的问题
+- 屏蔽重复的C++编译选项
+- 新增默认开启mimalloc
+
 ## [0.6.127] - 2025-10-03
 ### Changed
 - 调整ringbuffer路径
+- update changelog
 
 ## [0.6.126] - 2025-10-03
 ### Changed
@@ -903,7 +913,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.127...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.128...HEAD
+[0.6.128]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.127...v0.6.128
 [0.6.127]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.126...v0.6.127
 [0.6.126]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.125...v0.6.126
 [0.6.125]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.124...v0.6.125
