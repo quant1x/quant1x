@@ -177,14 +177,22 @@ if (MSVC)
         target_compile_options(global_compile_options INTERFACE /O2 /Gy /GF /GS)
     endif ()
 else ()
+    # Apply optimization flags per-config so Debug doesn't receive -O2.
+    # Prefer generator-expressions which work with single- and multi-config generators.
     if (WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        # windows环境下llvm-clang编译打开-O2无法输出详细的调用栈
-    elseif (APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    else ()
-        target_compile_options(global_compile_options INTERFACE -O2)
-    endif ()
+        # windows clang: avoid aggressive optimizations for better stack traces in Debug;
+        # still honor the per-config policy below.
+    endif()
+    target_compile_options(global_compile_options INTERFACE
+        $<$<CONFIG:Debug>:-O2 -g -fno-omit-frame-pointer>
+        $<$<CONFIG:Release>:-O2>
+        $<$<CONFIG:RelWithDebInfo>:-O2 -g>
+        $<$<CONFIG:MinSizeRel>:-Os>
+    )
+
+    # Machine/tuning flags (left unconditionally; remove if you want pure -O0 Debug builds)
     target_compile_options(global_compile_options INTERFACE -m64 -march=native -mtune=native -fstack-protector-strong)
-    # 启用 function/data sections
+    # Enable function/data sections for link-time GC
     target_compile_options(global_compile_options INTERFACE -ffunction-sections -fdata-sections)
 endif ()
 
