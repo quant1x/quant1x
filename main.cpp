@@ -1,8 +1,12 @@
 #include <quant1x/quant1x.h>
+#include <sstream>
 #include <quant1x/command.h>
 #include <quant1x/datasets.h>
 #include <private/build-info.h>
 #include <quant1x/runtime/config.h>
+#if HAVE_MIMALLOC
+#include <mimalloc.h>
+#endif
 
 static std::string build_version_info() {
     std::ostringstream oss;
@@ -36,6 +40,43 @@ static std::string build_version_info() {
         oss << EXE_LINKER_FLAGS_RELEASE << "\n";
     }
     oss << "Target Compile Options : " << TARGET_COMPILE_OPTIONS << "\n";
+//     // --- mimalloc status (compile-time conservative check) ---
+// #ifdef DEPENDENCY_MIMALLOC
+//     oss << "--------------------------------------------------------------------------------\n";
+//     oss << "        mimalloc dependency: " << DEPENDENCY_MIMALLOC << "\n";
+// #else
+//     oss << "--------------------------------------------------------------------------------\n";
+//     oss << "        mimalloc dependency: (not configured)\n";
+// #endif
+// #if HAVE_MIMALLOC
+//     oss << "        mimalloc mode : " << MIMALLOC_MODE << "\n";
+// #if defined(MI_OVERRIDE)
+//     oss << "  new/delete routed to mimalloc: yes (global override)\n";
+// #elif defined(MI_OVERRIDE_NEW_DELETE)
+//     oss << "  new/delete routed to mimalloc: yes (new/delete override)\n";
+// #else
+//     oss << "  new/delete routed to mimalloc: no (mimalloc present but not configured to override new/delete)\n";
+// #endif
+// #else
+//     oss << "        mimalloc mode : (not enabled)\n";
+//     oss << "  new/delete routed to mimalloc: no\n";
+// #endif
+//     // Runtime proof: print mimalloc stats and exercise operator new/delete.
+// #if HAVE_MIMALLOC
+//     oss << "\n[mimalloc-runtime-check] printing stats (initial) to stdout\n";
+//     mi_stats_print(NULL);
+//     try {
+//         char *p = new char[1 << 20]; // 1 MiB
+//         (void)p[0];
+//         delete [] p;
+//     } catch(...) {
+//         // ignore
+//     }
+//     oss << "[mimalloc-runtime-check] printing stats (after new/delete) to stdout\n";
+//     mi_stats_print(NULL);
+// #else
+//     oss << "[mimalloc-runtime-check] mimalloc not available at build time (HAVE_MIMALLOC=0)\n";
+// #endif
     return oss.str();
 }
 

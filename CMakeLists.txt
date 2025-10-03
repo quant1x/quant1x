@@ -243,7 +243,7 @@ include(cmake/network.cmake)
 # mimalloc
 # Allow selecting how mimalloc is enabled project-wide. Defaults keep the
 # previous behavior (override C++ new/delete only).
-option(ENABLE_MIMALLOC "Enable mimalloc support" ON)
+option(ENABLE_MIMALLOC "Enable mimalloc support" OFF)
 set(MIMALLOC_MODE "new_delete" CACHE STRING "mimalloc mode: new_delete or global")
 set_property(CACHE MIMALLOC_MODE PROPERTY STRINGS "new_delete" "global")
 
@@ -672,7 +672,12 @@ set(quant1x-sources
 # If mimalloc is enabled and we're using the C++ new/delete override mode,
 # compile a tiny TU that includes the mimalloc new/delete header so the
 # operator overrides are emitted into the library and linked into executables.
-if(ENABLE_MIMALLOC AND MIMALLOC_MODE STREQUAL "new_delete")
+if(ENABLE_MIMALLOC)
+    # Always compile the anchor TU when mimalloc is enabled. The TU is
+    # safe to compile in both modes because it only includes
+    # <mimalloc-new-delete.h> when the corresponding compile-time macros
+    # are defined. This guarantees the anchor symbol
+    # `quant1x_mimalloc_force_symbol` exists for link-time forcing.
     list(APPEND quant1x-sources quant1x/platform/mimalloc_force.cpp)
 endif()
 
@@ -885,6 +890,14 @@ set(CMAKE_IMPORT_LIBRARY_PREFIX "")
 set_target_properties(quant1x PROPERTIES OUTPUT_NAME "quant1x" PREFIX "")
 
 # Generate build-info.h from build-info.h.in
+if(ENABLE_MIMALLOC)
+    set(HAVE_MIMALLOC 1)
+else()
+    set(HAVE_MIMALLOC 0)
+endif()
+
+set(MIMALLOC_MODE "${MIMALLOC_MODE}")
+
 configure_file(
     "${CMAKE_SOURCE_DIR}/quant1x/build-info.h.in"
     "${CMAKE_BINARY_DIR}/include/private/build-info.h"
@@ -908,8 +921,21 @@ target_link_libraries(q1x PRIVATE quant1x)
 # possible on Windows (prefer static target if available).
 if(ENABLE_MIMALLOC AND MIMALLOC_MODE STREQUAL "global")
     # prefer static target when available (vcpkg provides mimalloc-static)
+    # Prefer the static target when available. Also define MI_OVERRIDE so
+    # mimalloc will attempt to override the C allocator at runtime.
     target_link_libraries(q1x PRIVATE $<IF:$<TARGET_EXISTS:mimalloc-static>,mimalloc-static,mimalloc>)
+    target_compile_definitions(q1x PRIVATE $<$<STREQUAL:${MIMALLOC_MODE},global>:MI_OVERRIDE=1>)
     message(STATUS "q1x: linking mimalloc into executable to enable global override")
+
+    # On MSVC we need to force the linker to pull the mimalloc object that
+    # performs early initialization. We use the anchor symbol emitted by
+    # quant1x/platform/mimalloc_force.cpp and force its inclusion via
+    # /INCLUDE:quant1x_mimalloc_force_symbol. This helps ensure mimalloc's
+    # redirect code runs before CRT setup.
+    if(MSVC)
+        # Use a link option that is only applied on MSVC
+        target_link_options(q1x PRIVATE "/INCLUDE:quant1x_mimalloc_force_symbol")
+    endif()
 endif()
 
 
