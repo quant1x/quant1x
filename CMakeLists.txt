@@ -783,11 +783,36 @@ message(STATUS "                                   GTest : v${GTest_VERSION}")
 #message(STATUS "继承的宏定义: ${quant1x_defs}")
 
 # 检查编译器选项
-get_target_property(compile_includes global_compile_options INTERFACE_INCLUDE_DIRECTORIES)
-get_target_property(compile_libs     global_compile_options INTERFACE_LINK_LIBRARIES)
-get_target_property(compile_defines  global_compile_options INTERFACE_COMPILE_DEFINITIONS)
+## Query the `quant1x` target so we see the aggregated includes/libs/defines
+## (global_compile_options typically only carries compile flags/options).
+get_target_property(compile_includes quant1x INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(compile_libs     quant1x INTERFACE_LINK_LIBRARIES)
+get_target_property(compile_defines  quant1x INTERFACE_COMPILE_DEFINITIONS)
 get_target_property(compile_options  global_compile_options INTERFACE_COMPILE_OPTIONS)
 get_target_property(link_options     global_compile_options INTERFACE_LINK_OPTIONS)
+
+# If `quant1x` has no INTERFACE_COMPILE_DEFINITIONS, collect from common
+# providers (third_libs, global_compile_options) and any local definitions.
+if(compile_defines STREQUAL "compile_defines-NOTFOUND" OR "${compile_defines}" STREQUAL "")
+    set(_collected_defs "")
+    get_target_property(_third_defs third_libs INTERFACE_COMPILE_DEFINITIONS)
+    if(NOT _third_defs STREQUAL "_third_defs-NOTFOUND")
+        list(APPEND _collected_defs ${_third_defs})
+    endif()
+    get_target_property(_global_defs global_compile_options INTERFACE_COMPILE_DEFINITIONS)
+    if(NOT _global_defs STREQUAL "_global_defs-NOTFOUND")
+        list(APPEND _collected_defs ${_global_defs})
+    endif()
+    # Also include any non-interface compile definitions attached directly to quant1x
+    get_target_property(_local_defs quant1x COMPILE_DEFINITIONS)
+    if(NOT _local_defs STREQUAL "_local_defs-NOTFOUND")
+        list(APPEND _collected_defs ${_local_defs})
+    endif()
+    list(REMOVE_DUPLICATES _collected_defs)
+    if(_collected_defs)
+        string(REPLACE ";" ";" compile_defines "${_collected_defs}")
+    endif()
+endif()
 
 message(STATUS "quant1x (C)Includes: ${compile_includes}")
 message(STATUS "quant1x (C)    Libs: ${compile_libs}")
@@ -951,3 +976,5 @@ install(TARGETS q1x
     DESTINATION bin)
 # 单元测试
 add_subdirectory(tests)
+# 演示代码
+add_subdirectory(examples)
