@@ -163,7 +163,7 @@ namespace cache {
             };
             std::vector<ThreadResult> thread_results(num_threads);
             std::atomic<size_t> processed_codes = 0;
-            std::mutex progress_mutex;
+            //std::mutex progress_mutex;
 
             // 线程处理函数
             auto process_batch = [&](/*const std::stop_token& stoken, */size_t thread_idx, size_t start, size_t end) {
