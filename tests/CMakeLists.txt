@@ -125,6 +125,8 @@ add_app_executable(test-ringbuffer.cpp)
 add_catch2_executable(tdd-encoding-csv.cpp)
 add_catch2_executable(tdd-encoding-json.cpp)
 
+add_catch2_executable(tdd-yaml-deserialize.cpp)
+
 # 测试缓存
 add_catch2_executable(tdd-calendar.cpp)
 add_catch2_executable(test-calender.cpp)
