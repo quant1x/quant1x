@@ -163,7 +163,13 @@ namespace affinity {
 
 #ifdef _WIN32
         // Windows NUMA拓扑发现
-        ULONG highest_node_number;
+    #ifdef _MSC_VER
+    #pragma warning(push)
+    // suppress narrowing conversion warnings (e.g. C4244) in this OS API handling block
+    #pragma warning(disable:4244)
+    #endif
+
+    ULONG highest_node_number;
         if (!GetNumaHighestNodeNumber(&highest_node_number)) {
             ec = std::error_code(GetLastError(), std::system_category());
             return topology;
@@ -196,7 +202,9 @@ namespace affinity {
             }
         }
         topology.is_numa_available = true;
-
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 #elif defined(__linux__)
         // Linux NUMA拓扑发现
         if (numa_available() == -1) {
