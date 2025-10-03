@@ -241,14 +241,42 @@ message(STATUS "================== 底层 工具库 ==================")
 include(cmake/network.cmake)
 
 # mimalloc
-find_package(mimalloc CONFIG REQUIRED)
-target_link_libraries(third_libs INTERFACE $<IF:$<TARGET_EXISTS:mimalloc-static>,mimalloc-static,mimalloc>)
-target_compile_definitions(third_libs INTERFACE
-   #MI_OVERRIDE=1
-   MI_OVERRIDE_NEW_DELETE=1  # 让mimalloc只重载operator new/delete
-   MI_INTERPOSE=0            # 禁用拦截标准库函数
-)
-echo_lib_version(mimalloc ${mimalloc_VERSION})
+# Allow selecting how mimalloc is enabled project-wide. Defaults keep the
+# previous behavior (override C++ new/delete only).
+option(ENABLE_MIMALLOC "Enable mimalloc support" ON)
+set(MIMALLOC_MODE "new_delete" CACHE STRING "mimalloc mode: new_delete or global")
+set_property(CACHE MIMALLOC_MODE PROPERTY STRINGS "new_delete" "global")
+
+# Optional tiny test program to validate mimalloc at runtime. Off by default.
+option(ENABLE_MIMALLOC_CHECK "Build small mimalloc_check executable that prints mimalloc stats" OFF)
+
+if(ENABLE_MIMALLOC)
+    find_package(mimalloc CONFIG REQUIRED)
+    # prefer static target when available (vcpkg provides mimalloc-static)
+    target_link_libraries(third_libs INTERFACE $<IF:$<TARGET_EXISTS:mimalloc-static>,mimalloc-static,mimalloc>)
+
+    if(MIMALLOC_MODE STREQUAL "global")
+        # Global override: override the C allocation functions (malloc/free/etc.).
+        # Note: on Windows/dynamic builds additional steps may be required
+        # (see README / mimalloc docs). Use with care for ABI compatibility.
+        target_compile_definitions(third_libs INTERFACE
+            MI_OVERRIDE=1
+        )
+        message(STATUS "mimalloc: enabling global C allocator override (MI_OVERRIDE=1)")
+    else()
+        # Default: only override C++ operator new/delete and avoid interposing
+        # other allocation functions (matches historical project behavior).
+        target_compile_definitions(third_libs INTERFACE
+           MI_OVERRIDE_NEW_DELETE=1  # 让mimalloc只重载operator new/delete
+           MI_INTERPOSE=0            # 禁用拦截标准库函数
+        )
+        message(STATUS "mimalloc: enabling C++ new/delete override (MI_OVERRIDE_NEW_DELETE=1, MI_INTERPOSE=0)")
+    endif()
+
+    echo_lib_version(mimalloc ${mimalloc_VERSION})
+else()
+    message(STATUS "mimalloc support disabled (ENABLE_MIMALLOC=OFF)")
+endif()
 
 # spdlog
 include(cmake/spdlog.cmake)
@@ -641,6 +669,13 @@ set(quant1x-sources
     learn/fpgrowth/fp_growth.cpp
 )
 
+# If mimalloc is enabled and we're using the C++ new/delete override mode,
+# compile a tiny TU that includes the mimalloc new/delete header so the
+# operator overrides are emitted into the library and linked into executables.
+if(ENABLE_MIMALLOC AND MIMALLOC_MODE STREQUAL "new_delete")
+    list(APPEND quant1x-sources quant1x/platform/mimalloc_force.cpp)
+endif()
+
 if (WIN32)
     list(APPEND quant1x-sources quant1x/runtime/daemon_service.cpp)
 elseif (APPLE)
@@ -867,6 +902,28 @@ target_include_directories(q1x
 )
 
 target_link_libraries(q1x PRIVATE quant1x)
+
+# If user requested global mimalloc (override C allocator), link mimalloc
+# directly into the q1x executable to ensure it is initialized as early as
+# possible on Windows (prefer static target if available).
+if(ENABLE_MIMALLOC AND MIMALLOC_MODE STREQUAL "global")
+    # prefer static target when available (vcpkg provides mimalloc-static)
+    target_link_libraries(q1x PRIVATE $<IF:$<TARGET_EXISTS:mimalloc-static>,mimalloc-static,mimalloc>)
+    message(STATUS "q1x: linking mimalloc into executable to enable global override")
+endif()
+
+
+# Add optional mimalloc_check utility to validate runtime behavior
+if(EXISTS "${CMAKE_SOURCE_DIR}/tools/mimalloc_check.cpp" AND ENABLE_MIMALLOC_CHECK)
+    add_executable(mimalloc_check tools/mimalloc_check.cpp)
+    target_include_directories(mimalloc_check PRIVATE ${CMAKE_SOURCE_DIR})
+    if(ENABLE_MIMALLOC)
+        # link mimalloc into the check binary so it can exercise the allocator
+        target_link_libraries(mimalloc_check PRIVATE $<IF:$<TARGET_EXISTS:mimalloc-static>,mimalloc-static,mimalloc>)
+        target_compile_definitions(mimalloc_check PRIVATE $<$<STREQUAL:${MIMALLOC_MODE},global>:MI_OVERRIDE=1>)
+    endif()
+    message(STATUS "mimalloc_check: added (ENABLE_MIMALLOC_CHECK=ON). Build with --target mimalloc_check")
+endif()
 
 # 设置安装路径变量
 include(GNUInstallDirs)
