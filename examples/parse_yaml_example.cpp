@@ -1,14 +1,11 @@
-#include <spdlog/spdlog.h>
-#include <yaml-cpp/yaml.h>
-
+// 相对包含路径：从 examples 目录到 header 的相对路径
+#include "../quant1x/encoding/yaml.h"
+#include "test-config.h"
 #include <fstream> // 添加此头文件
 #include <iostream>
 #include <string>
 #include <vector>
-
-// 相对包含路径：从 examples 目录到 header 的相对路径
-#include "../quant1x/encoding/yaml.h"
-#include "test-config.h"
+#include <spdlog/spdlog.h>
 
 int main(int argc, char **argv) {
     const std::string path = (argc > 1) ? argv[1] : "examples/quant1x.yaml";
