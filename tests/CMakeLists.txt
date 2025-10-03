@@ -121,6 +121,10 @@ add_catch2_executable(tdd-http.cpp)
 # 基础组件测试
 add_app_executable(test-ringbuffer.cpp)
 
+# 编解码测试
+add_catch2_executable(tdd-encoding-csv.cpp)
+add_catch2_executable(tdd-encoding-json.cpp)
+
 # 测试缓存
 add_catch2_executable(tdd-calendar.cpp)
 add_catch2_executable(test-calender.cpp)
@@ -163,6 +167,7 @@ add_catch2_executable(tdd-klines.cpp)
 add_catch2_executable(tdd-notices.cpp)
 add_catch2_executable(tdd-safety-score.cpp)
 add_catch2_executable(tdd-margin-trading.cpp)
+add_catch2_executable(tdd-f10-capital.cpp)
 
 # 筹码分布
 add_catch2_executable(tdd-chips.cpp)
