@@ -1,0 +1,100 @@
+basedir: d:\quant1x\data2 # 数据存储目录
+debug: false # 是否调试模式运行
+trader:
+  account_id: 888XXXXXXX    # 资金账号
+  proxy_url: http://192.168.50.158:18168/qmt # miniQMT Proxy地址, pip install quant1x-trader
+  order_path: d:\quant1x\data2\qmt # 订单路径
+  stamp_duty_rate_for_buy: 0.0000 # 买入印花税率
+  stamp_duty_rate_for_sell: 0.0010 # 卖出印花税率
+  transfer_rate: 0.0006 # 过户费
+  commission_rate: 0.00025 # 佣金率
+  commission_min: 5.0000 # 佣金最低
+  position_ratio: 1.0000 # 买入总占比
+  keep_cash: 1000.00 # 预留备用金
+  buy_amount_max: 250000.00 # 最大可买金额
+  buy_amount_min: 1000.00 # 最小可买金额
+  strategies:
+    - id: 0
+      name: 0号策略
+      auto: true
+      flag: head
+      time: 09:27:00~09:50:00 # 交易时间段
+      weight: 0.5
+      total: 2
+      price_cage_ratio: 0.00                # 价格笼子比例
+      minimum_price_fluctuation_unit: 0.06  # 价格最小变动单位
+      fee_max: 50000.00
+      fee_min: 20000.00
+      #sectors: ["880847","880785","880884","880887","880880","880818"] # 行业龙头880847, 近期多板880785, 最近异动880884, 户数减少880887, 近期强势880880, 通达信热股880818
+      sectors: 
+        - "-880881" # 近期弱势
+        #- "-880865" # 近期新高
+        #- "-880861" # 连续亏损
+        #- "-880882" # 久不分红
+      ignore_margin_trading: false # 是否剔除两融
+      holding_period: 1
+      sell_strategy: 861
+      rules:
+        sectors_filter: true
+        sectors_top_n: 10
+        stock_top_n_in_sector: 10
+        gap_down: false
+        ignore_rule_group: [10] # 需要忽略的规则组
+        capital: 0.3~50
+        price: 2.00~30.00                     # 股价范围
+        open_turn_z: 2.00~200.00              # 换手z范围
+        #open_change_rate: -3.00~4.50          # 开盘涨幅
+        open_quantity_ratio: 1.50~100.00      # 开盘量比
+        volume_ratio: 0.382~2.800             # 成交量放大比例
+        check_safety_score: false             # 是否检查安全分
+    - id: 117
+      name: 一刀切卖出
+      auto: false
+      flag: sell
+      time: "09:55:00~09:55:59,10:55:00~10:55:59,11:25:00~11:25:59" # 交易时间段
+      total: 0 # 卖出策略中股票总是为0, 视为全部卖出
+      take_profit_ratio: 15  # 止盈比例
+      stop_loss_ratio: -2 #止损比例
+    - id: 861
+      name: 不持股
+      auto: true
+      flag: sell
+      time: "09:28:00~09:28:59,09:55:00~09:55:59,10:55:00~10:55:59,11:28:00~11:28:59" # 交易时间段
+      total: 0 # 卖出策略中股票总是为0, 视为全部卖出
+      take_profit_ratio: 15  # 止盈比例
+      stop_loss_ratio: -2 #止损比例
+  ask_time: 09:50:00~14:59:30    # 卖出时段
+  tick_time: "09:39:00-14:56:30" # 盘中买入时段
+runtime:
+  crontab:
+    realtime_kline:
+      enable: false
+    sell_117:
+      enable: false
+      trigger: '@every 1s'
+    sell_861:
+      enable: true
+      trigger: '@every 5s'
+data:
+  concurrency: # 并发控制, 默认5个线程
+    default: 5
+    xdxr: 8
+    day_raw: 2
+    day: 2
+    trans: 2
+  cache:
+    kline: # K线
+      5min: false # 1分钟K线
+    chips:
+      index_enabled: false
+  trans: # 历史成交
+    begin_date: "2023-10-01" # 成交数据开始日期
+  feature:                   # 特征
+    tendency: 0              # 策略是趋势主导还是股价主导
+    wave:                    # 波浪
+      fields:                # 波浪-字段
+        peak: "close"        # 波浪-字段-波峰, 默认收盘价close
+        valley: "close"      # 波浪-字段-波谷, 默认收盘价close
+      periods: 89            # 波浪-K线周期, 默认89天
+  snapshot:                  # 快照
+    concurrency: 2           # 快照-并发数为2

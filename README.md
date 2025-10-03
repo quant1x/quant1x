@@ -48,8 +48,30 @@ Quant1X 是一个多语言量化交易框架，支持 C++、Go、Rust、Python�
 | 3.12.x | 1.25.x | 1.90+/2021 | gcc14.3+/clang18+/msvc14.3+ |
 
 ## 1.2 环境安装推荐使用brew
-安装brew时需要注意避免使用root权限 
+安装brew时需要注意避免使用root权限
 
+## 1.3 安装quant1x配置文件
+- 示例的配置文件路径 examples/quant1x.yaml, 需要将配置文件拷贝到用户目录下
+- 配置信息分交易、策略和数据三个部分，可以自定义缓存路径
+
+### 1.3.1 go语言版本是目前比较稳定的生产版本, 配置文件目录名因为历史原因使用了全拼接的quant1x路径, 支持~/runtime/etc/quant1x.yaml
+```shell
+cp examples/quant1x.yaml ~/.quant1x/quant1x.yaml
+```
+
+### 1.3.2 c++语言版本是具备跨平台的生产能力, 目录名为~/.q1x/
+```shell
+cp examples/quant1x.yaml ~/.q1x/quant1x.yaml
+```
+
+### 1.3.3 rust版本以C++版本为基础，尽可能1:1还原c++的业务逻辑，目录名为~/.q1x-rust/
+```shell
+cp examples/quant1x.yaml ~/.q1x-rust/quant1x.yaml
+```
+
+### 1.3.4 python版本没有直接的二进制数据，只提供基于go/c++/rust的数据导出功能
+- 数据源，默认是go版本的配置文件
+- 数据源切换, 多语言版本的数据源切换，需要在开发环境的目录配置.env或环境变量，环境变量名QUANT1X_WORK, 值为c++对应q1x，rust对应q1x-rust, 不包含符号点“.”
 
 # 2. python
 
