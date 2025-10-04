@@ -1,12 +1,15 @@
 #include <quant1x/quant1x.h>
 #include <sstream>
+#include "user/no0.h"
+#include "user/strategy-no0.h"
 #include <quant1x/command.h>
 #include <quant1x/datasets.h>
 #include <private/build-info.h>
 #include <quant1x/runtime/config.h>
-#if HAVE_MIMALLOC
-#include <mimalloc.h>
-#endif
+#include <quant1x/cache.h>
+// #if HAVE_MIMALLOC
+// #include <mimalloc.h>
+// #endif
 
 static std::string build_version_info() {
     std::ostringstream oss;
@@ -151,8 +154,15 @@ int main(const int argc, const char *const argv[]) {
     }
     // 设置日志信息
     runtime::logger_set(verbose, debug);
-    quant1x::engine::init([]{
+    quant1x::engine::init([] {
         std::cout << "这里执行定制的初始化工作" << std::endl;
+        // 注册1号特征
+        cache::Register(std::make_unique<DataNo0>());
+        // 注册策略
+        StrategyManager& manager = StrategyManager::Instance();
+        StrategyPtr s0 = std::make_shared<No0Strategy>();
+        manager.Register(s0);
+        
     });
 
     if(program.is_subcommand_used("service")) {

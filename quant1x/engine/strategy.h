@@ -72,10 +72,12 @@ struct ResultInfo {
 class Filterable {
 public:
     virtual ~Filterable() = default;
-    virtual q1x::error Filter(const config::StrategyParameter &parameter, const Snapshot::Reader &snapshot) const {
-        return q1x::make_error_code(0, "no problem");
+    virtual quant1x::error Filter(const config::StrategyParameter &parameter, const Snapshot::Reader &snapshot) const {
+        (void)parameter;
+        (void)snapshot;
+        return quant1x::make_error_code(0, "no problem");
     }
-    virtual q1x::error Filter(const config::StrategyParameter &parameter,
+    virtual quant1x::error Filter(const config::StrategyParameter &parameter,
                               const level1::SecurityQuote     &snapshot) const = 0;
 };
 
@@ -85,7 +87,10 @@ public:
 class Sortable {
 public:
     virtual ~Sortable() = default;
-    virtual SortedStatus Sort(std::vector<Snapshot> &snapshots) const { return SortedStatus::SortNotRequired; }
+    virtual SortedStatus Sort(std::vector<Snapshot> &snapshots) const {
+        (void)snapshots;
+        return SortedStatus::SortNotRequired;
+    }
 };
 
 // 交易方向枚举
@@ -106,8 +111,7 @@ public:
     virtual void Evaluate(const SecurityCode &code, ResultInfo &result) const = 0;
     // 增量计算评估
     virtual void Evaluate(const SecurityCode &code, ResultInfo &result, const Snapshot::Reader &snapshot) const = 0;
-    virtual void
-    Evaluate(const SecurityCode &code, ResultInfo &result, const level1::SecurityQuote &snapshot) const = 0;
+    virtual void Evaluate(const SecurityCode &code, ResultInfo &result, const level1::SecurityQuote &snapshot) const = 0;
     // 更新指标数据（如均线）
     virtual void updateIndicators(const SecurityCode &code) = 0;
 

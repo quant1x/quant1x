@@ -701,6 +701,12 @@ else ()
     message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
 endif ()
 
+# 添加测试策略
+list(APPEND quant1x-headers user/no0.h)
+list(APPEND quant1x-sources user/no0.cpp)
+list(APPEND quant1x-headers user/strategy-no0.h)
+list(APPEND quant1x-sources user/strategy-no0.cpp)
+
 # 检查编译器选项
 get_target_property(_include_dirs third_libs INTERFACE_INCLUDE_DIRECTORIES)
 get_target_property(_library_dirs third_libs INTERFACE_LIBRARY_DIRECTORIES)
