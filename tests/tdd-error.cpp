@@ -5,11 +5,11 @@
 #include <memory>
 
 TEST_CASE("error-code", "[except]") {
-    auto ec = q1x::make_error_code(1, "xxx");
+    auto ec = quant1x::make_error_code(1, "xxx");
     std::cout << ec.message() << std::endl;
 }
 
 TEST_CASE("error-code-2", "[except]") {
-    q1x::error err(404, "File not found: /path/to/missing.txt");
+    quant1x::error err(404, "File not found: /path/to/missing.txt");
     std::cout << err.message() << std::endl;
 }
