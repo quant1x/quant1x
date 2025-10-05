@@ -1,15 +1,15 @@
-#include <quant1x/factors/share-holder.h>
-
-#include <quant1x/std/time.h>
-#include <quant1x/exchange.h>
-
 #include <cpr/cpr.h>
-#include <nlohmann/json.hpp>
-#include <filesystem>
 #include <quant1x/encoding/csv.h>
 #include <quant1x/encoding/json.h>
+#include <quant1x/exchange.h>
+#include <quant1x/factors/share-holder.h>
+#include <quant1x/std/time.h>
 
-using json = nlohmann::json;
+#include <cstdint>
+#include <filesystem>
+#include <nlohmann/json.hpp>
+
+using json   = nlohmann::json;
 namespace fs = std::filesystem;
 
 namespace dfcf {
@@ -28,20 +28,20 @@ namespace dfcf {
                 std::string ORG_CODE;
                 std::string END_DATE;
                 std::string HOLDER_NAME;
-                int64_t HOLD_NUM;
-                double FREE_HOLDNUM_RATIO;
+                int64_t     HOLD_NUM;
+                double      FREE_HOLDNUM_RATIO;
                 std::string HOLD_NUM_CHANGE;
-                double CHANGE_RATIO;
+                double      CHANGE_RATIO;
                 std::string IS_HOLDORG;
-                int HOLDER_RANK;
+                int         HOLDER_RANK;
                 std::string SECURITY_NAME_ABBR;
                 std::string HOLDER_CODE;
                 std::string SECURITY_TYPE_CODE;
                 std::string HOLDER_STATE;
-                double HOLDER_MARKET_CAP;
-                double HOLD_RATIO;
+                double      HOLDER_MARKET_CAP;
+                double      HOLD_RATIO;
                 std::string HOLD_CHANGE;
-                double HOLD_RATIO_CHANGE;
+                double      HOLD_RATIO_CHANGE;
                 std::string HOLDER_TYPE;
                 std::string SHARES_TYPE;
                 std::string UPDATE_DATE;
@@ -57,19 +57,19 @@ namespace dfcf {
                 std::string COOPERATION_HOLDER_MARK;
                 std::string MXID;
                 std::string LISTING_STATE;
-                int XZCHANGE;
+                int64_t     XZCHANGE;
                 std::string NEW_CHANGE_RATIO;
             };
             std::vector<Data> data;
-            int count;
+            int               count;
         } result;
-        bool success{};
+        bool        success{};
         std::string message;
-        int code{};
+        int         code{};
     };
 
     // JSON 反序列化
-    void from_json(const json& j, RawStockHolder::Result::Data& d) {
+    void from_json(const json &j, RawStockHolder::Result::Data &d) {
         // 字符串类型（自动处理null）
         encoding::unsafe_json::get_string(j, "SECUCODE", d.SECUCODE);
         encoding::unsafe_json::get_string(j, "SECURITY_CODE", d.SECURITY_CODE);
@@ -107,13 +107,13 @@ namespace dfcf {
         encoding::unsafe_json::get_number(j, "HOLDER_MARKET_CAP", d.HOLDER_MARKET_CAP, 0.0);
         encoding::unsafe_json::get_number(j, "HOLD_RATIO", d.HOLD_RATIO, 0.0);
         encoding::unsafe_json::get_number(j, "HOLD_RATIO_CHANGE", d.HOLD_RATIO_CHANGE, 0.0);
-        encoding::unsafe_json::get_number(j, "XZCHANGE", d.XZCHANGE, 0);
+        encoding::unsafe_json::get_number(j, "XZCHANGE", d.XZCHANGE, int64_t(0));
 
         // 布尔类型（特殊处理字符串/数字/布尔混合情况）
         encoding::unsafe_json::get_string(j, "IS_HOLDORG", d.IS_HOLDORG, "");
     }
 
-    void from_json(const json& j, RawStockHolder::Result& r) {
+    void from_json(const json &j, RawStockHolder::Result &r) {
         encoding::unsafe_json::get_number(j, "pages", r.pages, 0);
         encoding::unsafe_json::get_number(j, "count", r.count, 0);
 
@@ -126,7 +126,7 @@ namespace dfcf {
         }
     }
 
-    void from_json(const json& j, RawStockHolder& r) {
+    void from_json(const json &j, RawStockHolder &r) {
         encoding::unsafe_json::get_string(j, "version", r.version);
         encoding::unsafe_json::get_string(j, "message", r.message);
         encoding::unsafe_json::get_bool(j, "success", r.success, false);
@@ -139,66 +139,64 @@ namespace dfcf {
         }
     }
 
-
     // 前十大流通股东 https://data.eastmoney.com/gdfx/stock/600115.html
-    std::vector<CirculatingShareholder> ShareHolder(const std::string& securityCode, const std::string& date, int diff = 0) {
+    std::vector<CirculatingShareholder>
+    ShareHolder(const std::string &securityCode, const std::string &date, int diff = 0) {
         std::vector<CirculatingShareholder> list;
 
-        auto [x1, x2, code] = exchange::DetectMarket(securityCode);
+        auto [x1, x2, code]        = exchange::DetectMarket(securityCode);
         std::string quarterEndDate = exchange::timestamp(date).only_date();
 
         auto [y1, y2, qEnd] = api::GetQuarterByDate(date, diff);
-        quarterEndDate = exchange::timestamp(qEnd).only_date();
+        quarterEndDate      = exchange::timestamp(qEnd).only_date();
 
-        cpr::Parameters params{
-            {"sortColumns", "HOLDER_RANK"},
-            {"sortTypes", "1"},
-            {"pageSize", "10"},
-            {"pageNumber", "1"},
-            {"reportName", "RPT_F10_EH_FREEHOLDERS"},
-            {"columns", "ALL"},
-            {"source", "WEB"},
-            {"client", "WEB"},
-            {"filter", "(SECURITY_CODE=\"" + code + "\")(END_DATE='" + quarterEndDate + "')"}
-        };
+        cpr::Parameters params{{"sortColumns", "HOLDER_RANK"},
+                               {"sortTypes", "1"},
+                               {"pageSize", "10"},
+                               {"pageNumber", "1"},
+                               {"reportName", "RPT_F10_EH_FREEHOLDERS"},
+                               {"columns", "ALL"},
+                               {"source", "WEB"},
+                               {"client", "WEB"},
+                               {"filter", "(SECURITY_CODE=\"" + code + "\")(END_DATE='" + quarterEndDate + "')"}};
 
-        std::string url = urlTop10ShareHolder + "?" + params.GetContent(cpr::CurlHolder());
-        auto response = cpr::Get(cpr::Url{url});
+        std::string url      = urlTop10ShareHolder + "?" + params.GetContent(cpr::CurlHolder());
+        auto        response = cpr::Get(cpr::Url{url});
 
         if (response.status_code != 200) {
             return list;
         }
 
         try {
-            json rawJson = json::parse(response.text);
-            RawStockHolder raw = rawJson.get<RawStockHolder>();
+            json           rawJson = json::parse(response.text);
+            RawStockHolder raw     = rawJson.get<RawStockHolder>();
 
             if (!raw.success || raw.result.count == 0 || raw.result.data.empty()) {
                 return list;
             }
 
-            for (const auto& v : raw.result.data) {
+            for (const auto &v : raw.result.data) {
                 CirculatingShareholder shareholder{
-                    v.SECUCODE,             // SecurityCode
-                    v.SECURITY_NAME_ABBR,   // SecurityName
-                    exchange::timestamp(v.END_DATE).only_date(),    // EndDate
-                    exchange::timestamp(v.UPDATE_DATE).only_date(), // UpdateDate
-                    v.HOLDER_NEWTYPE,       // HolderType
-                    v.HOLDER_NAME,          // HolderName
-                    v.IS_HOLDORG,           // IsHoldOrg
-                    v.HOLDER_RANK,          // HolderRank
-                    static_cast<int>(v.HOLD_NUM), // HoldNum
-                    v.FREE_HOLDNUM_RATIO,   // FreeHoldNumRatio
-                    v.XZCHANGE,             // HoldNumChange
-                    v.HOLDNUM_CHANGE_NAME,  // HoldChangeName
-                    0,                      // HoldChangeState (set below)
-                    v.CHANGE_RATIO,         // HoldChangeRatio
-                    v.HOLD_RATIO,           // HoldRatio
-                    v.HOLD_RATIO_CHANGE     // HoldRatioChange
+                    v.SECUCODE,                                      // SecurityCode
+                    v.SECURITY_NAME_ABBR,                            // SecurityName
+                    exchange::timestamp(v.END_DATE).only_date(),     // EndDate
+                    exchange::timestamp(v.UPDATE_DATE).only_date(),  // UpdateDate
+                    v.HOLDER_NEWTYPE,                                // HolderType
+                    v.HOLDER_NAME,                                   // HolderName
+                    v.IS_HOLDORG,                                    // IsHoldOrg
+                    v.HOLDER_RANK,                                   // HolderRank
+                    v.HOLD_NUM,                                      // HoldNum
+                    v.FREE_HOLDNUM_RATIO,                            // FreeHoldNumRatio
+                    v.XZCHANGE,                                      // HoldNumChange
+                    v.HOLDNUM_CHANGE_NAME,                           // HoldChangeName
+                    0,                                               // HoldChangeState (set below)
+                    v.CHANGE_RATIO,                                  // HoldChangeRatio
+                    v.HOLD_RATIO,                                    // HoldRatio
+                    v.HOLD_RATIO_CHANGE                              // HoldRatioChange
                 };
 
                 // 修订证券代码
-                auto [_, mflag, mcode] = exchange::DetectMarket(shareholder.SecurityCode);
+                auto [_, mflag, mcode]   = exchange::DetectMarket(shareholder.SecurityCode);
                 shareholder.SecurityCode = mflag + mcode;
 
                 // HoldChangeState
@@ -212,7 +210,8 @@ namespace dfcf {
                     shareholder.HoldChangeState = HoldNumUnChanged;
                 } else {
                     shareholder.HoldChangeState = HoldNumUnknownChanges;
-                    std::string warning = v.SECURITY_NAME_ABBR + ": " + v.SECUCODE + ", 变化状态未知: " + v.HOLDNUM_CHANGE_NAME;
+                    std::string warning         = v.SECURITY_NAME_ABBR + ": " + v.SECUCODE +
+                                          ", 变化状态未知: " + v.HOLDNUM_CHANGE_NAME;
                     spdlog::warn("[share-holder] WARNING: {}", warning);
                 }
 
@@ -220,10 +219,10 @@ namespace dfcf {
             }
 
             // Sort by HolderRank
-            std::sort(list.begin(), list.end(), [](const CirculatingShareholder& a, const CirculatingShareholder& b) {
+            std::sort(list.begin(), list.end(), [](const CirculatingShareholder &a, const CirculatingShareholder &b) {
                 return a.HolderRank < b.HolderRank;
             });
-        } catch (const std::exception& e) {
+        } catch (const std::exception &e) {
             spdlog::error("[share-holder] Error parsing shareholder data: {}", e.what());
         }
 
@@ -231,14 +230,15 @@ namespace dfcf {
     }
 
     // cacheShareHolder 获取流动股东数据
-    std::vector<CirculatingShareholder> cacheShareHolder(const std::string& securityCode, const std::string& date, int diff = 1) {
+    std::vector<CirculatingShareholder>
+    cacheShareHolder(const std::string &securityCode, const std::string &date, int diff = 1) {
         std::vector<CirculatingShareholder> list;
 
-        auto [x1, x2, last] = api::GetQuarterByDate(date, diff);
+        auto [x1, x2, last]  = api::GetQuarterByDate(date, diff);
         std::string filename = config::top10_holders_filename(securityCode, last);
-        if (fs::exists(filename)){
+        if (fs::exists(filename)) {
             list = encoding::csv::csv_to_slices<CirculatingShareholder>(filename);
-            if(!list.empty()) {
+            if (!list.empty()) {
                 return list;
             }
         }
@@ -253,7 +253,8 @@ namespace dfcf {
     }
 
     // GetCacheShareHolder 获取流动股东数据
-    std::vector<CirculatingShareholder> GetCacheShareHolder(const std::string& securityCode, const std::string& date, int diff) {
+    std::vector<CirculatingShareholder>
+    GetCacheShareHolder(const std::string &securityCode, const std::string &date, int diff) {
         std::vector<CirculatingShareholder> list;
 
         for (; diff < 4; diff++) {
@@ -268,4 +269,4 @@ namespace dfcf {
         return list;
     }
 
-} // namespace dfcf
+}  // namespace dfcf
