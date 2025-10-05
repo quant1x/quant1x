@@ -2,12 +2,12 @@
 #ifndef QUANT1X_BACKTEST_H
 #define QUANT1X_BACKTEST_H 1
 
-#include <quant1x/std/api.h>
 #include <quant1x/backtest/order.h>
 #include <quant1x/backtest/position.h>
 #include <quant1x/backtest/trade.h>
 #include <quant1x/datasets/kline.h>
 #include <quant1x/engine/strategy.h>
+#include <quant1x/std/api.h>
 
 // 使用时间点别名简化代码
 using TimePoint = std::chrono::system_clock::time_point;
@@ -30,15 +30,25 @@ namespace backtest {
         double                   max_drawdown;           // 最大回撤
         double                   win_rate;               // 胜率
         double                   profit_loss_ratio;      // 盈亏比
-        size_t                   total_trades;           // 总交易次数
-        size_t                   winning_trades;         // 盈利交易次数
-        size_t                   losing_trades;          // 亏损交易次数
-        double                   avg_profit;             // 平均盈利
-        double                   avg_loss;               // 平均亏损
-        std::vector<double>      equity_curve;           // 资金曲线
-        double                   floating_pnl;           // 最终浮动盈亏
-        size_t                   unsettled_positions;    // 未平仓头寸数量
-        std::vector<std::string> unsettled_symbols;      // 未平仓标的
+    // 语义说明：
+    //  - trade_events_count: 原子级别的成交事件数（每笔成交/fill），等于 backtest_data.trades.size()
+    //  - closed_roundtrips: 按完整回合统计的“已平仓回合数”（round-trip），即只有当一个开仓被完全平掉时计数
+    size_t                   trade_events_count;     // 成交事件数（每笔 fill）
+    size_t                   closed_roundtrips;      // 已平仓回合数（round-trip）
+    size_t                   total_trades;           // 兼容旧名：等同于 closed_roundtrips
+    size_t                   winning_trades;         // 盈利回合数
+    size_t                   losing_trades;          // 亏损回合数
+    size_t                   closed_trades;          // 兼容字段：等同于 closed_roundtrips（保留旧名以兼容现有代码/日志）
+        size_t                   covered_days;           // 在回测范围内有持仓的天数（按日计）
+        double                   coverage_days_rate;     // 日级覆盖率（有仓位的天数 / 总交易日数，百分比）
+        double                   coverage_bars_rate;     // Bar/日内级覆盖率（有仓位的Bar数 / 总Bar数，百分比）
+        double                   coverage_rate;        // 兼容字段：默认赋值为日级覆盖率（保留旧名以兼容现有代码/日志）
+        double                   avg_profit;           // 平均盈利
+        double                   avg_loss;             // 平均亏损
+        std::vector<double>      equity_curve;         // 资金曲线
+        double                   floating_pnl;         // 最终浮动盈亏
+        size_t                   unsettled_positions;  // 未平仓头寸数量
+        std::vector<std::string> unsettled_symbols;    // 未平仓标的
     };
 
     // 回测配置数据结构
@@ -52,6 +62,7 @@ namespace backtest {
         double      slippage_rate        = 0;      // 滑点率
         bool        enable_short_selling = false;  // 是否允许卖空
         int         leverage             = 0;      // 杠杆倍数
+        bool        verbose              = false;  // 是否输出详细日志（回测内部使用）
     };
 
     // 主回测数据结构
@@ -102,6 +113,12 @@ namespace backtest {
         void printResults() const;
 
         void calculateResults();
+        // 计算按 round-trip 的交易统计（供测试使用）
+        // 该函数会从 backtest_data.trades 中重建 round-trip 并填充 result 中相关字段
+        void computeRoundTripStats();
+        // 纯函数辅助：请使用 free function `backtest::computeRoundTripStatsFromTrades`（见 backtest/stats.h）
+        // Test helper: allow unit tests to inject trades into the engine for isolated testing
+        void setTradesForTest(const std::vector<Trade> &trades);
     };
 
 }  // namespace backtest

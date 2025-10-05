@@ -181,6 +181,16 @@ add_catch2_executable(tdd-waves.cpp)
 add_catch2_executable(tdd-linear-regression.cpp)
 add_catch2_executable(tdd-patterns-wave-release.cpp)
 
+# 回测框架测试
+add_catch2_executable(tdd-backtest-release.cpp)
+
+# round-trip matching unit test
+add_catch2_executable(tdd-backtest-roundtrip.cpp)
+
+# additional round-trip edge cases
+add_catch2_executable(tdd-backtest-roundtrip-extra.cpp)
+add_catch2_executable(tdd-backtest-result-compat.cpp)
+
 # FP growth测试
 add_catch2_executable(test_fp_growth.cpp)
 

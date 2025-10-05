@@ -46,7 +46,16 @@ namespace backtest {
     // 每日持仓状态
     struct DailyPositionStatus {
         std::string                     timestamp;
-        std::unordered_map<std::string, Position> positions;
+        // 为了减少拷贝开销，日结只保留持仓摘要而非整张持仓表
+        struct PositionSummary {
+            std::string    symbol;
+            TradeDirection direction;
+            double         quantity;
+            double         avg_price;
+            double         unrealized_pnl;
+        };
+
+        std::vector<PositionSummary>    positions;
         Account                         account;
 
         // 序列化方法
@@ -56,8 +65,8 @@ namespace backtest {
             oss << "Account Equity: " << account.current_capital << "\n";
             oss << "Positions:\n";
 
-            for (const auto &[symbol, pos] : positions) {
-                oss << "  " << symbol << ": " << (pos.direction == TradeDirection::LONG ? "LONG" : "SHORT") << " "
+            for (const auto &pos : positions) {
+                oss << "  " << pos.symbol << ": " << (pos.direction == TradeDirection::LONG ? "LONG" : "SHORT") << " "
                     << pos.quantity << " @ " << pos.avg_price << " (Unrealized PnL: " << pos.unrealized_pnl << ")\n";
             }
 
