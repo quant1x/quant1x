@@ -1,11 +1,11 @@
 // 独立的 Vyukov 有界 MPMC 队列（库变体 - 无 main），带对齐和退避策略
 use std::cell::UnsafeCell;
+use std::hint;
 use std::mem::MaybeUninit;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-use std::hint;
 
 /// 单个槽位（缓存行对齐）
 ///
@@ -27,13 +27,27 @@ struct AlignedAtomicUsize(AtomicUsize);
 
 impl AlignedAtomicUsize {
     /// 创建一个新的对齐原子值
-    fn new(v: usize) -> Self { AlignedAtomicUsize(AtomicUsize::new(v)) }
+    fn new(v: usize) -> Self {
+        AlignedAtomicUsize(AtomicUsize::new(v))
+    }
     /// 读取原子值（使用给定的内存顺序）
-    fn load(&self, o: Ordering) -> usize { self.0.load(o) }
+    fn load(&self, o: Ordering) -> usize {
+        self.0.load(o)
+    }
     /// 存储原子值（使用给定的内存顺序）
-    fn store(&self, v: usize, o: Ordering) { self.0.store(v, o) }
+    fn store(&self, v: usize, o: Ordering) {
+        self.0.store(v, o)
+    }
     /// CAS 操作（比较并交换）
-    fn compare_exchange(&self, a: usize, b: usize, s: Ordering, f: Ordering) -> Result<usize, usize> { self.0.compare_exchange(a, b, s, f) }
+    fn compare_exchange(
+        &self,
+        a: usize,
+        b: usize,
+        s: Ordering,
+        f: Ordering,
+    ) -> Result<usize, usize> {
+        self.0.compare_exchange(a, b, s, f)
+    }
 }
 
 /// Vyukov 有界 MPMC 队列（多生产者，多消费者），容量为 2 的幂
@@ -113,9 +127,15 @@ impl<T> Queue<T> {
             let slot = &self.buffer[index];
             let seq = slot.seq.load(Ordering::Acquire);
             if seq == pos {
-                if self.enqueue_pos.compare_exchange(pos, pos + 1, Ordering::SeqCst, Ordering::Relaxed).is_ok() {
+                if self
+                    .enqueue_pos
+                    .compare_exchange(pos, pos + 1, Ordering::SeqCst, Ordering::Relaxed)
+                    .is_ok()
+                {
                     // 将值写入槽位（直接写入未初始化的内存），随后更新序列号为可读状态
-                    unsafe { (*slot.data.get()).write(value); }
+                    unsafe {
+                        (*slot.data.get()).write(value);
+                    }
                     slot.seq.store(pos + 1, Ordering::Release);
                     return Ok(());
                 } else {
@@ -143,7 +163,11 @@ impl<T> Queue<T> {
             let slot = &self.buffer[index];
             let seq = slot.seq.load(Ordering::Acquire);
             if seq == pos + 1 {
-                if self.dequeue_pos.compare_exchange(pos, pos + 1, Ordering::SeqCst, Ordering::Relaxed).is_ok() {
+                if self
+                    .dequeue_pos
+                    .compare_exchange(pos, pos + 1, Ordering::SeqCst, Ordering::Relaxed)
+                    .is_ok()
+                {
                     let val = unsafe { (*slot.data.get()).assume_init_read() };
                     slot.seq.store(pos + self.mask + 1, Ordering::Release);
                     return Ok(val);
@@ -201,7 +225,9 @@ mod tests {
                 let base = (id as i64) * PER;
                 for i in 0..PER {
                     loop {
-                        if q2.push(base + i).is_ok() { break; }
+                        if q2.push(base + i).is_ok() {
+                            break;
+                        }
                         std::thread::yield_now();
                     }
                 }
@@ -212,20 +238,27 @@ mod tests {
         for _ in 0..NUM_CONS {
             let q2 = q.clone();
             let c = consumed.clone();
-            consumers.push(std::thread::spawn(move || {
-                loop {
-                    match q2.pop() {
-                        Ok(_v) => { c.fetch_add(1, Ordering::Relaxed); }
-                        Err(_) => break,
+            consumers.push(std::thread::spawn(move || loop {
+                match q2.pop() {
+                    Ok(_v) => {
+                        c.fetch_add(1, Ordering::Relaxed);
                     }
+                    Err(_) => break,
                 }
             }));
         }
 
-        for p in producers { p.join().unwrap(); }
+        for p in producers {
+            p.join().unwrap();
+        }
         q.close();
-        for c in consumers { c.join().unwrap(); }
-        assert_eq!(consumed.load(Ordering::Relaxed), (NUM_PROD as usize) * (PER as usize));
+        for c in consumers {
+            c.join().unwrap();
+        }
+        assert_eq!(
+            consumed.load(Ordering::Relaxed),
+            (NUM_PROD as usize) * (PER as usize)
+        );
     }
 
     // Heavy performance/stress test matching Go TestMPMCPerformance scale.
@@ -252,7 +285,9 @@ mod tests {
                 let base = (id as i64) * DATA_PER_PRODUCER;
                 for i in 0..DATA_PER_PRODUCER {
                     loop {
-                        if q2.push(base + i).is_ok() { break; }
+                        if q2.push(base + i).is_ok() {
+                            break;
+                        }
                         std::thread::yield_now();
                     }
                 }
@@ -264,19 +299,23 @@ mod tests {
         for _ in 0..NUM_CONSUMERS {
             let q2 = q.clone();
             let c2 = consumed.clone();
-            consumers.push(std::thread::spawn(move || {
-                loop {
-                    match q2.pop() {
-                        Ok(_) => { c2.fetch_add(1, Ordering::Relaxed); }
-                        Err(_) => break,
+            consumers.push(std::thread::spawn(move || loop {
+                match q2.pop() {
+                    Ok(_) => {
+                        c2.fetch_add(1, Ordering::Relaxed);
                     }
+                    Err(_) => break,
                 }
             }));
         }
 
-        for p in producers { p.join().unwrap(); }
+        for p in producers {
+            p.join().unwrap();
+        }
         q.close();
-        for c in consumers { c.join().unwrap(); }
+        for c in consumers {
+            c.join().unwrap();
+        }
 
         let elapsed = start.elapsed();
         let got = consumed.load(Ordering::Relaxed);

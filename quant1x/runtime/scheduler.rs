@@ -35,17 +35,17 @@
 //! }
 //! ```
 
+use chrono::{DateTime, Utc};
+use cron::Schedule;
+use log::{debug, error, info, warn};
 use std::collections::BinaryHeap;
+use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
-use chrono::{DateTime, Utc};
 use tokio::sync::{Mutex, Notify};
 use tokio::task;
 use tokio::time::{sleep_until, Instant};
-use cron::Schedule;
-use std::str::FromStr;
-use log::{debug, error, info, warn};
-use std::collections::HashMap;
 
 /// 任务ID类型
 pub type TaskId = i64;
@@ -71,7 +71,12 @@ struct ScheduledTask {
 }
 
 impl ScheduledTask {
-    fn new(next_run: DateTime<Utc>, task: Arc<dyn Fn() + Send + Sync>, id: TaskId, name: String) -> Self {
+    fn new(
+        next_run: DateTime<Utc>,
+        task: Arc<dyn Fn() + Send + Sync>,
+        id: TaskId,
+        name: String,
+    ) -> Self {
         Self {
             next_run,
             task,
@@ -98,7 +103,10 @@ impl PartialOrd for ScheduledTask {
 impl Ord for ScheduledTask {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         // 反转比较，使最早的任务排在前面（最小堆）
-        other.next_run.cmp(&self.next_run).then_with(|| self.id.cmp(&other.id))
+        other
+            .next_run
+            .cmp(&self.next_run)
+            .then_with(|| self.id.cmp(&other.id))
     }
 }
 
@@ -177,10 +185,12 @@ impl AsyncScheduler {
         }
 
         let schedule = Schedule::from_str(cron_expr)?;
-        let id = self.next_id.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let id = self
+            .next_id
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
         let task = Arc::new(task);
-    let cron_task = CronTask::new(cron_expr.to_string(), task.clone());
+        let cron_task = CronTask::new(cron_expr.to_string(), task.clone());
 
         // 计算下次运行时间
         let now = Utc::now();
@@ -191,24 +201,19 @@ impl AsyncScheduler {
             cron_tasks.insert(id, cron_task);
         }
 
-            let _tq = self.task_queue.clone();
-            let _ct_map = self.cron_tasks.clone();
-            let _stats_arc = self.stats.clone();
-            let _running_arc = self.running.clone();
-            let _notify_arc = self.notify.clone();
+        let _tq = self.task_queue.clone();
+        let _ct_map = self.cron_tasks.clone();
+        let _stats_arc = self.stats.clone();
+        let _running_arc = self.running.clone();
+        let _notify_arc = self.notify.clone();
 
         // prepare separate clones to avoid moving `name` into closure
-            let _closure_name = name.clone();
-            let _scheduled_name = name.clone();
+        let _closure_name = name.clone();
+        let _scheduled_name = name.clone();
 
         // scheduled_task.task is a no-op; actual cron execution/rescheduling will be
         // handled in the scheduler loop when it detects a cron task by id.
-        let scheduled_task = ScheduledTask::new(
-            next_run,
-            Arc::new(|| {}),
-            id,
-            name.clone(),
-        );
+        let scheduled_task = ScheduledTask::new(next_run, Arc::new(|| {}), id, name.clone());
 
         {
             let mut task_queue = self.task_queue.lock().await;
@@ -238,7 +243,10 @@ impl AsyncScheduler {
 
     /// 停止调度器
     pub async fn stop(&self) {
-        if !self.running.swap(false, std::sync::atomic::Ordering::Relaxed) {
+        if !self
+            .running
+            .swap(false, std::sync::atomic::Ordering::Relaxed)
+        {
             return;
         }
 
@@ -287,7 +295,9 @@ impl AsyncScheduler {
 
                 if now < top_task.next_run {
                     // 计算等待时间
-                    let duration = (top_task.next_run - now).to_std().unwrap_or(Duration::from_secs(0));
+                    let duration = (top_task.next_run - now)
+                        .to_std()
+                        .unwrap_or(Duration::from_secs(0));
                     let deadline = Instant::now() + duration;
 
                     drop(task_queue);
@@ -310,7 +320,10 @@ impl AsyncScheduler {
                 let cron_tasks = cron_tasks.lock().await;
                 if let Some(cron_task) = cron_tasks.get(&task_to_run.id) {
                     if cron_task.canceled {
-                        debug!("跳过取消任务 id={}, name={}", task_to_run.id, task_to_run.name);
+                        debug!(
+                            "跳过取消任务 id={}, name={}",
+                            task_to_run.id, task_to_run.name
+                        );
                         let mut stats = stats.lock().await;
                         stats.skipped_cancel += 1;
                         continue;
@@ -334,7 +347,16 @@ impl AsyncScheduler {
                 let id = task_to_run.id;
                 let name = task_to_run.name.clone();
                 task::spawn(async move {
-                    execute_cron_task_internal(ct_clone, tq_clone, stats_clone, running_clone, notify_clone, id, name).await;
+                    execute_cron_task_internal(
+                        ct_clone,
+                        tq_clone,
+                        stats_clone,
+                        running_clone,
+                        notify_clone,
+                        id,
+                        name,
+                    )
+                    .await;
                 });
             } else {
                 let task = task_to_run.task.clone();
@@ -346,7 +368,6 @@ impl AsyncScheduler {
 
         info!("scheduler_loop...stop");
     }
-
 }
 
 /// Internal helper to execute a cron task and reschedule it
@@ -420,12 +441,7 @@ async fn execute_cron_task_internal(
     let now = Utc::now();
     if let Some(next_run) = schedule.after(&now).next() {
         let scheduled_name = name.clone();
-        let scheduled_task = ScheduledTask::new(
-            next_run,
-            Arc::new(|| {}),
-            id,
-            scheduled_name,
-        );
+        let scheduled_task = ScheduledTask::new(next_run, Arc::new(|| {}), id, scheduled_name);
 
         let mut tq = task_queue.lock().await;
         tq.push(scheduled_task);
@@ -443,7 +459,8 @@ impl Drop for AsyncScheduler {
     fn drop(&mut self) {
         // 注意：这里不能是 async 的，所以我们只是设置标志
         // 实际的清理应该由用户调用 stop() 来完成
-        self.running.store(false, std::sync::atomic::Ordering::Relaxed);
+        self.running
+            .store(false, std::sync::atomic::Ordering::Relaxed);
         self.notify.notify_one();
     }
 }
@@ -461,13 +478,16 @@ mod tests {
 
         // 每秒执行一次的任务
         let counter_clone = counter.clone();
-        let _id = scheduler.schedule_cron(
-            "test_task".to_string(),
-            "* * * * * *", // 每秒
-            move || {
-                counter_clone.fetch_add(1, Ordering::Relaxed);
-            }
-        ).await.unwrap();
+        let _id = scheduler
+            .schedule_cron(
+                "test_task".to_string(),
+                "* * * * * *", // 每秒
+                move || {
+                    counter_clone.fetch_add(1, Ordering::Relaxed);
+                },
+            )
+            .await
+            .unwrap();
 
         // 等待几秒
         sleep(Duration::from_secs(3)).await;
@@ -489,13 +509,12 @@ mod tests {
         let counter = Arc::new(AtomicU32::new(0));
 
         let counter_clone = counter.clone();
-        let id = scheduler.schedule_cron(
-            "test_task".to_string(),
-            "* * * * * *",
-            move || {
+        let id = scheduler
+            .schedule_cron("test_task".to_string(), "* * * * * *", move || {
                 counter_clone.fetch_add(1, Ordering::Relaxed);
-            }
-        ).await.unwrap();
+            })
+            .await
+            .unwrap();
 
         // 等待1秒让任务执行几次
         sleep(Duration::from_secs(1)).await;
@@ -520,18 +539,16 @@ mod tests {
         let scheduler = AsyncScheduler::new();
         let counter = Arc::new(AtomicU32::new(0));
 
-
         // 任务运行时间比调度间隔长（1.5s > 1s）。我们在第一个执行把
         // `cron_running` 置为 true 后注入额外的调度项，这会触发 skipped_running。
         let counter_clone = counter.clone();
-        let id = scheduler.schedule_cron(
-            "long_task".to_string(),
-            "* * * * * *",
-            move || {
+        let id = scheduler
+            .schedule_cron("long_task".to_string(), "* * * * * *", move || {
                 // increment so we still record an execution if it runs
                 counter_clone.fetch_add(1, Ordering::Relaxed);
-            }
-        ).await.unwrap();
+            })
+            .await
+            .unwrap();
 
         // 直接将 cron_running 标记为 true，模拟正在运行的任务；
         // 之后注入一个立即运行的调度项，会被 execute_cron_task_internal 发现并计为 skipped_running
@@ -545,12 +562,7 @@ mod tests {
         // 注入一个立即可运行的调度项，和 cron 任务使用相同的 id，这会触发 skipped_running
         {
             let now = Utc::now();
-            let injected = ScheduledTask::new(
-                now,
-                Arc::new(|| {}),
-                id,
-                "injected".to_string(),
-            );
+            let injected = ScheduledTask::new(now, Arc::new(|| {}), id, "injected".to_string());
             let mut tq = scheduler.task_queue.lock().await;
             tq.push(injected);
             // 通知调度器检查队列
@@ -572,9 +584,13 @@ mod tests {
 
         scheduler.stop().await;
 
-    let stats = scheduler.get_stats().await;
+        let stats = scheduler.get_stats().await;
 
-    // 验证至少有一次因为前次仍在运行而被跳过
-    assert!(stats.skipped_running >= 1 || skipped >= 1, "expected skipped_running >= 1, got {}", stats.skipped_running);
+        // 验证至少有一次因为前次仍在运行而被跳过
+        assert!(
+            stats.skipped_running >= 1 || skipped >= 1,
+            "expected skipped_running >= 1, got {}",
+            stats.skipped_running
+        );
     }
 }
