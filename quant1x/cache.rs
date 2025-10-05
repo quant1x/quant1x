@@ -15,7 +15,7 @@ pub const PLUGIN_MASK_STRATEGY: Kind = 0x3000_0000_0000_0000;
 
 pub const DEFAULT_DATA_PROVIDER: &str = "engine";
 
-/// Schema describing a plugin
+/// 描述插件的 Schema
 pub trait Schema: Send + Sync + Debug {
     fn kind(&self) -> Kind;
     fn owner(&self) -> String;
@@ -24,21 +24,21 @@ pub trait Schema: Send + Sync + Debug {
     fn usage(&self) -> String;
 }
 
-/// DataAdapter trait mirrors C++ DataAdapter (Schema + Update/Print)
+/// DataAdapter 特征：对应 C++ 中的 DataAdapter（包含 Schema + Update/Print）
 pub trait DataAdapter: Schema + Send + Sync {
     fn print(&self, code: &str, dates: &[Timestamp]);
     fn update(&self, code: &str, date: Timestamp);
-    /// Optional hook: return a boxed FeatureAdapter clone if this adapter is a FeatureAdapter.
-    /// Default implementation returns None; feature adapters should override and return Some(clone).
+    /// 可选钩子：如果该适配器是 FeatureAdapter，则返回其 boxed 克隆。
+    /// 默认实现返回 None；feature 适配器应重写并返回 Some(clone)。
     fn as_feature_clone(&self) -> Option<Box<dyn FeatureAdapter>> {
         None
     }
 }
 
-/// FeatureAdapter provides filename and aggregation helpers
+/// FeatureAdapter 提供文件名和聚合相关的辅助方法
 pub trait FeatureAdapter: DataAdapter {
     fn filename_for(&self, timestamp: Timestamp) -> String {
-        // Default implementation mirrors C++ FeatureAdapter::Filename
+        // 默认实现与 C++ 的 FeatureAdapter::Filename 等价
         let key = self.key();
         let pos = key.find('/');
         let (cache_path, actual_key) = if let Some(p) = pos {
@@ -62,11 +62,11 @@ pub trait FeatureAdapter: DataAdapter {
     fn values(&self) -> Vec<String>;
 }
 
-// Global registry
+// 全局插件注册表
 static PLUGIN_MAP: Lazy<Mutex<BTreeMap<Kind, Arc<dyn DataAdapter>>>> =
     Lazy::new(|| Mutex::new(BTreeMap::new()));
 
-/// Register a plugin; panics if already registered (mirrors ErrAlreadyExists)
+/// 注册插件；如果已存在则 panic（等同于 ErrAlreadyExists 行为）
 pub fn register(plugin: Arc<dyn DataAdapter>) {
     let kind = plugin.kind();
     let mut map = PLUGIN_MAP.lock().unwrap();
@@ -76,13 +76,13 @@ pub fn register(plugin: Arc<dyn DataAdapter>) {
     map.insert(kind, plugin);
 }
 
-/// Get a plugin by kind (exact match)
+/// 按 kind 获取插件（精确匹配）
 pub fn get_data_adapter(kind: Kind) -> Option<Arc<dyn DataAdapter>> {
     let map = PLUGIN_MAP.lock().unwrap();
     map.get(&kind).cloned()
 }
 
-/// Return all plugins matching mask (if mask==0 return all)
+/// 返回与 mask 匹配的所有插件（mask==0 时返回全部）
 pub fn plugins(mask: Kind) -> Vec<Arc<dyn DataAdapter>> {
     let map = PLUGIN_MAP.lock().unwrap();
     let mut result: Vec<Arc<dyn DataAdapter>> = Vec::new();
@@ -94,7 +94,7 @@ pub fn plugins(mask: Kind) -> Vec<Arc<dyn DataAdapter>> {
     result
 }
 
-/// Return plugins whose Key() is in keywords and which match plugin_type mask
+/// 返回 key 在 keywords 中且匹配 plugin_type mask 的插件
 pub fn plugins_with_name(plugin_type: Kind, keywords: &[String]) -> Vec<Arc<dyn DataAdapter>> {
     if keywords.is_empty() {
         return Vec::new();
@@ -118,10 +118,9 @@ pub fn plugins_with_name(plugin_type: Kind, keywords: &[String]) -> Vec<Arc<dyn 
     candidates.into_iter().map(|(_, p)| p).collect()
 }
 
-/// Update a list of adapters in order. Each adapter decides how to update its data.
-/// Feature adapters (those returning Some from `as_feature_clone`) will be initialized and
-/// executed in parallel across codes; their results will be aggregated and written to a
-/// per-adapter cache filename using the adapter-provided headers/values.
+/// 按顺序更新给定的适配器列表。每个适配器决定其数据如何更新。
+/// Feature 适配器（即 `as_feature_clone` 返回 Some 的适配器）会基于 codes 并行执行，
+/// 其结果将被汇总并写入适配器指定的缓存文件（使用适配器提供的 headers/values）。
 pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Timestamp) -> usize {
     use indicatif::{ProgressBar, ProgressStyle};
 
@@ -130,18 +129,18 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
         log::warn!("No codes found for update");
     }
 
-    // concurrency default
+    // 并发度默认值
     let default_concurrency = std::thread::available_parallelism()
         .map(|n| n.get())
         .unwrap_or(4);
 
     let mut processed_adapters = 0usize;
 
-    // Ensure base adapters run before feature adapters: partition into two groups
+    // 确保 base 适配器先于 feature 适配器运行：将其划分为两组
     let mut base_adapters: Vec<Arc<dyn DataAdapter>> = Vec::new();
     let mut feature_adapters: Vec<Arc<dyn DataAdapter>> = Vec::new();
     for adapter in adapters.iter() {
-        // classify by whether adapter exposes a FeatureAdapter clone
+        // 根据适配器是否暴露 FeatureAdapter 克隆进行分类
         if adapter.as_feature_clone().is_some() {
             feature_adapters.push(adapter.clone());
         } else {
@@ -159,25 +158,25 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
         let module_name = format!("{}({})", adapter.key(), kind);
         log::info!("[update] plugin={}, start", module_name);
 
-        // show a progress bar for codes
+        // 为 codes 显示进度条
         let pb = ProgressBar::new(all_codes.len() as u64);
         pb.set_style(
             ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] {pos}/{len} {msg}")
                 .unwrap(),
         );
 
-        // detect feature adapter
+        // 检测是否为 feature 适配器
         if let Some(feature_prototype) = adapter.as_feature_clone() {
-            // initialize feature with feature_date
+            // 使用 feature_date 初始化 feature 实例
             feature_prototype.init(feature_date);
             let cache_filename = feature_prototype.filename_for(feature_date);
 
-            // prepare results container shared across threads
+            // 准备跨线程共享的结果容器
             use std::sync::{Arc as StdArc, Mutex as StdMutex};
             let results: StdArc<StdMutex<Vec<(String, Vec<String>)>>> =
                 StdArc::new(StdMutex::new(Vec::new()));
 
-            // partition codes
+            // 划分 codes（分块以供线程处理）
             let num_threads = std::cmp::min(default_concurrency, 8);
             let codes = all_codes.clone();
             let chunk_size = (codes.len() + num_threads - 1) / num_threads;
@@ -196,9 +195,9 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
 
                 let handle = std::thread::spawn(move || {
                     for code in codes_slice.into_iter() {
-                        // clone a per-code feature instance
+                        // 为每个代码克隆一个 feature 实例
                         if let Some(feature_instance) = adapter_clone.as_feature_clone() {
-                            // do the update
+                            // 执行更新
                             feature_instance.update(&code, feature_date);
                             let vals = feature_instance.values();
                             if !vals.is_empty() {
@@ -206,7 +205,7 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
                                 guard.push((code.clone(), vals));
                             }
                         } else {
-                            // shouldn't happen - adapter was recognized as feature above
+                            // 不应发生 - 上面已判断为 feature 适配器
                         }
                         pb_clone.inc(1);
                     }

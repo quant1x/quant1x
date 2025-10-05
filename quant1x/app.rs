@@ -1,14 +1,13 @@
-// Small shim module providing application-level entrypoints used by src/main.rs.
-// These are intentionally minimal and non-intrusive: they provide no-op fallbacks
-// which higher-level Rust implementations can override by providing fuller
-// implementations in this crate.
+// 小型适配模块，为 `src/main.rs` 提供应用级入口点。
+// 这些实现有意保持最小且非侵入：提供 no-op 回退实现，
+// 上层的 Rust 实现可在本 crate 中提供更完整的实现来覆盖它们。
 
 pub fn global_init() {
-    // no-op
+    // 空实现（占位）
 }
 
 pub fn datasets_init() {
-    // Initialize datasets and register adapters implemented in Rust
+    // 初始化数据集并注册 Rust 实现的适配器
     if let Err(e) = std::panic::catch_unwind(|| {
         crate::datasets::init();
     }) {
@@ -17,12 +16,12 @@ pub fn datasets_init() {
 }
 
 pub fn logger_set(_verbose: bool, _debug: bool) {
-    // initialize log4rs to write logs to <cache>/logs/quant1x.log with rolling policy.
+    // 初始化 log4rs，将日志写入 <cache>/logs/quant1x.log，并使用滚动策略。
     use log::LevelFilter;
     use std::path::PathBuf;
 
     let logs_dir = crate::config::get_logs_path();
-    // ensure logs dir exists
+    // 确保日志目录存在
     if let Err(e) = std::fs::create_dir_all(&logs_dir) {
         log::error!("Failed to create logs dir {}: {}", logs_dir, e);
     }
@@ -30,7 +29,7 @@ pub fn logger_set(_verbose: bool, _debug: bool) {
     let mut log_path = PathBuf::from(&logs_dir);
     log_path.push("quant1x.log");
 
-    // Use a date-stamped logfile name so each day produces a separate file.
+    // 使用带日期的日志文件名，使每个日期生成独立日志文件。
     let date = chrono::Local::now().format("%Y-%m-%d").to_string();
     let mut dated_log_path = PathBuf::from(&logs_dir);
     dated_log_path.push(format!("quant1x-{}.log", date));
@@ -81,19 +80,18 @@ pub fn engine_init() {
     // no-op
 }
 
-// Application-level Windows service name. Set here (do not read from CLI or external config).
-// Change this constant to match the installed service name for your application.
+// 应用级的 Windows 服务名。在此处设置（不要从 CLI 或外部配置读取）。
+// 如需匹配已安装的服务，请修改此常量。
 const SERVICE_NAME: &str = "quant1x-rust";
-// Human-readable service description. Keep this in the application so installers
-// and admins can refer to it when creating the Windows service.
+// 面向用户的服务描述。将其保留在应用中以便安装程序和管理员在创建服务时参考。
 const SERVICE_DESC: &str = "Quant1X background service for q1x operations";
-// Human-friendly display name shown in Windows service manager.
+// 在 Windows 服务管理器中显示的人类友好名称。
 const SERVICE_DISPLAY_NAME: &str = "Quant1X Service(Rust)";
 
 #[cfg(windows)]
 fn normalize_to_utf8(b: &[u8]) -> Vec<u8> {
-    // Detect common encodings and return UTF-8 bytes.
-    // 1) UTF-16LE with BOM
+    // 检测常见编码并返回 UTF-8 字节。
+    // 1) 带 BOM 的 UTF-16LE
     if b.len() >= 2 && b[0] == 0xFF && b[1] == 0xFE {
         let mut u16s = Vec::with_capacity(b.len() / 2);
         let mut i = 2; // skip BOM
@@ -106,7 +104,7 @@ fn normalize_to_utf8(b: &[u8]) -> Vec<u8> {
         return String::from_utf16_lossy(&u16s).into_bytes();
     }
 
-    // 2) Heuristic: many zero bytes -> likely UTF-16LE without BOM
+    // 2) 启发式判断：大量的零字节 -> 很可能是无 BOM 的 UTF-16LE
     let zeros = b.iter().filter(|&&x| x == 0).count();
     if zeros * 2 > b.len() && b.len() > 2 {
         let mut u16s = Vec::with_capacity(b.len() / 2);
@@ -120,12 +118,12 @@ fn normalize_to_utf8(b: &[u8]) -> Vec<u8> {
         return String::from_utf16_lossy(&u16s).into_bytes();
     }
 
-    // 3) Try UTF-8
+    // 3) 尝试 UTF-8
     if let Ok(s) = std::str::from_utf8(b) {
         return s.as_bytes().to_vec();
     }
 
-    // 4) Fallback: OEM code page -> wide -> UTF-8 via Win32 APIs
+    // 4) 回退方案：OEM 代码页 -> wide -> 通过 Win32 API 转为 UTF-8
     unsafe {
         // Use winapi functions directly to avoid adding new deps.
         use std::os::raw::c_char;
@@ -194,9 +192,8 @@ pub fn engine_daemon(
     elevated_out: Option<&str>,
     elevated_pipe: Option<&str>,
 ) -> i32 {
-    // Default implementation: on non-Windows platforms we don't provide a
-    // service manager; on Windows try to perform UAC elevation and relay
-    // elevated child stdout/stderr back to the parent when `pipe` is set.
+    // 默认实现：在非 Windows 平台上不提供 service 管理器；
+    // 在 Windows 上尝试进行 UAC 提升，并在 `pipe` 设置时将提升后子进程的 stdout/stderr 回传给父进程。
     #[cfg(not(windows))]
     {
         log::error!("engine_daemon not implemented in Rust library (non-Windows)");
@@ -211,18 +208,17 @@ pub fn engine_daemon(
         use std::thread::sleep;
         use std::time::Duration;
 
-        // If user asked to 'run' directly, just run in-process if crate exposes a runner.
+        // 如果用户请求直接 'run'，则在进程内运行（如果 crate 提供 runner）。
         if action == "run" {
             log::info!("service run requested; no in-process runner provided in this build");
             return 1;
         }
 
-        // For install/uninstall/start/stop/status we typically need elevation.
-        // If already elevated, call into crate-provided implementations.
+        // 对于 install/uninstall/start/stop/status 等操作通常需要提权。
+        // 如果当前已经具有提权权限，则调用 crate 提供的实现。
         if is_current_process_elevated() {
-            // Elevated child mode: perform the requested action (install/uninstall)
-            // and write command output back to the parent via named pipe (preferred)
-            // or append to elevated_out file as fallback.
+            // 提权子进程模式：执行请求的操作（install/uninstall），
+            // 并将命令输出通过命名管道回写给父进程（优先），或作为回退写入 elevated_out 文件。
             use std::ffi::OsStr;
             use std::os::windows::ffi::OsStrExt;
             use winapi::shared::minwindef::DWORD;
@@ -400,8 +396,8 @@ pub fn engine_daemon(
             )
         });
 
-        // Best-effort: check whether the target service appears installed before attempting `start`/`stop`.
-        // We'll use the executable file stem as the service name candidate (e.g. 'stock').
+        // 尽力检查目标服务在尝试 `start`/`stop` 之前是否已安装。
+        // 我们将使用可执行文件的文件名作为服务名候选（例如 'stock'）。
         if action == "start" || action == "stop" || action == "status" {
             // Use compile-time SERVICE_NAME constant as the Windows service name.
             let svc_name = SERVICE_NAME;
@@ -424,7 +420,7 @@ pub fn engine_daemon(
             }
         }
 
-        // Create a named pipe server in a background thread that will accept one client and stream data to stdout.
+        // 在后台线程中创建一个命名管道服务端，接收一个客户端并将数据流打印到 stdout。
         let server_name = pipe_name.clone();
         let server_handle = std::thread::spawn(move || {
             use std::ffi::OsStr;
@@ -463,9 +459,8 @@ pub fn engine_daemon(
                     return;
                 }
 
-                // Wait for a client to connect. ConnectNamedPipe will block until
-                // a client connects. If it returns failure, check whether the
-                // client already connected (ERROR_PIPE_CONNECTED) and continue.
+                // 等待客户端连接。ConnectNamedPipe 会阻塞直到客户端连接。
+                // 如返回失败，则检查是否为客户端已连接（ERROR_PIPE_CONNECTED），若是则继续处理。
                 use winapi::shared::winerror::ERROR_PIPE_CONNECTED;
                 use winapi::um::errhandlingapi::GetLastError;
                 use winapi::um::namedpipeapi::ConnectNamedPipe;
@@ -503,10 +498,10 @@ pub fn engine_daemon(
             }
         });
 
-        // If the elevated child connects back by pipe (when it runs elevated), the child should open the pipe and write logs.
-        // We now launch the elevated process and let the server thread accept the connection and print data.
+        // 如果提升后的子进程通过管道回连（以提升方式运行），子进程应打开该管道并写入日志。
+        // 现在我们启动提升进程，服务端线程将接受连接并打印数据。
 
-        // Build args: original args plus marker --elevated-pipe <pipename>
+        // 构建参数：在原参数基础上附加标记 --elevated-pipe <pipename>
         let mut args: Vec<String> = env::args().collect();
         // append action if not present
         if !args.iter().any(|a| a == "service") {
@@ -516,7 +511,7 @@ pub fn engine_daemon(
         args.push("--elevated-pipe".to_string());
         args.push(pipe_name.clone());
 
-        // Compose argument list for Start-Process
+        // 为 Start-Process 组合参数列表
         let exe = match env::current_exe() {
             Ok(p) => p,
             Err(e) => {
@@ -531,7 +526,7 @@ pub fn engine_daemon(
         }
         let arglist = arg_items.join(", ");
 
-        // Hide the spawned elevated window for a cleaner UX; the elevated child will communicate via the pipe.
+        // 隐藏被启动的提升窗口以获得更简洁的用户体验；提升后的子进程将通过管道通信。
         let ps_cmd = format!(
             "Start-Process -FilePath \"{}\" -ArgumentList {} -Verb RunAs -WindowStyle Hidden",
             exe.display(),
@@ -563,8 +558,7 @@ pub fn engine_daemon(
 
 #[cfg(windows)]
 fn is_current_process_elevated() -> bool {
-    // Use PowerShell to ask whether current process is elevated. This avoids
-    // pulling in native Windows crates and keeps the shim lightweight.
+    // 使用 PowerShell 检查当前进程是否具有提升权限。这避免引入原生 Windows crate，保持此适配层轻量。
     use std::process::Command;
     let check = r#"[bool](([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))"#;
     let out = Command::new("powershell")
@@ -580,14 +574,14 @@ fn is_current_process_elevated() -> bool {
     false
 }
 
-// Library authors can extend with a function like:
+// 库作者可以实现如下函数以扩展功能：
 // pub fn try_run_subcommand(name: &str, matches: &clap::ArgMatches) -> Result<bool, Box<dyn std::error::Error>>
-// If provided, src/main.rs will call it via the crate public API. We don't implement
-// it here to avoid pulling clap into the library surface.
+// 如果提供了该函数，`src/main.rs` 将通过 crate 的公共 API 调用它。我们在此未实现该函数，
+// 以避免将 clap 泄露到库的公共接口中。
 
-/// A small built-in handler for a few top-level administrative commands.
-/// Currently supports:
-/// - "update": refresh calendar and/or server cache. Matches CLI flags `--calendar`, `--servers`, `--all`.
+/// 一个内置的简易处理器，用于处理若干顶层管理命令。
+/// 当前支持：
+/// - "update"：刷新日历和/或服务器缓存。对应 CLI 标志 `--calendar`、`--servers`、`--all`。
 pub fn try_run_subcommand(
     name: &str,
     matches: &clap::ArgMatches,
@@ -599,7 +593,7 @@ pub fn try_run_subcommand(
     use indicatif::{ProgressBar, ProgressStyle};
     use std::time::{Duration, Instant};
 
-    // determine requested scopes
+    // 确定请求的更新范围
     let only_calendar = matches.get_flag("calendar");
     let only_servers = matches.get_flag("servers");
     let all = matches.get_flag("all");
@@ -614,7 +608,7 @@ pub fn try_run_subcommand(
         None => Vec::new(),
     };
 
-    // default behavior: if no flags/keys set, update all (base + features)
+    // 默认行为：若未设置任何标志或 key，更新所有（base + features）
     let do_calendar = if !only_calendar
         && !only_servers
         && !all
@@ -637,15 +631,14 @@ pub fn try_run_subcommand(
     };
 
     if do_calendar {
-        log::info!("Updating calendar cache...");
+        log::info!("正在更新日历缓存...");
         let spinner = ProgressBar::new_spinner();
         spinner.set_style(ProgressStyle::with_template("{spinner} {msg}").unwrap());
         spinner.enable_steady_tick(Duration::from_millis(80));
         spinner.set_message("Downloading/updating calendar...");
 
         let start = Instant::now();
-        // Ensure calendar cache file exists (placeholder). If a real calendar
-        // downloader is available in the crate it should replace this logic.
+        // 确保日历缓存文件存在（占位逻辑）。如果 crate 中提供了真实的日历下载器，应替换该逻辑。
         let cal_file = crate::get_calendar_filename();
         if !std::path::Path::new(&cal_file).exists() {
             let _ = std::fs::File::create(&cal_file);
@@ -659,8 +652,8 @@ pub fn try_run_subcommand(
     }
 
     if do_servers {
-        log::info!("Detecting level1 servers (network probe)...");
-        // We'll show a progress bar while probing the standard server list
+        log::info!("正在探测 level1 服务器（网络探测）...");
+        // 在探测标准服务器列表时显示进度条
         let servers = crate::level1::config::standard_server_list();
         let total = servers.len() as u64;
         let pb = ProgressBar::new(total);
