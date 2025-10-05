@@ -22,26 +22,26 @@ namespace backtest {
 
     // 回测结果数据结构
     struct BacktestResult {
-        double                   total_return;           // 总收益率
-        double                   annualized_return;      // 年化收益率
-        double                   annualized_volatility;  // 年化波动率
-        double                   sharpe_ratio;           // 夏普比率
-        double                   sortino_ratio;          // 索提诺比率
-        double                   max_drawdown;           // 最大回撤
-        double                   win_rate;               // 胜率
-        double                   profit_loss_ratio;      // 盈亏比
-    // 语义说明：
-    //  - trade_events_count: 原子级别的成交事件数（每笔成交/fill），等于 backtest_data.trades.size()
-    //  - closed_roundtrips: 按完整回合统计的“已平仓回合数”（round-trip），即只有当一个开仓被完全平掉时计数
-    size_t                   trade_events_count;     // 成交事件数（每笔 fill）
-    size_t                   closed_roundtrips;      // 已平仓回合数（round-trip）
-    size_t                   total_trades;           // 兼容旧名：等同于 closed_roundtrips
-    size_t                   winning_trades;         // 盈利回合数
-    size_t                   losing_trades;          // 亏损回合数
-    size_t                   closed_trades;          // 兼容字段：等同于 closed_roundtrips（保留旧名以兼容现有代码/日志）
-        size_t                   covered_days;           // 在回测范围内有持仓的天数（按日计）
-        double                   coverage_days_rate;     // 日级覆盖率（有仓位的天数 / 总交易日数，百分比）
-        double                   coverage_bars_rate;     // Bar/日内级覆盖率（有仓位的Bar数 / 总Bar数，百分比）
+        double total_return;           // 总收益率
+        double annualized_return;      // 年化收益率
+        double annualized_volatility;  // 年化波动率
+        double sharpe_ratio;           // 夏普比率
+        double sortino_ratio;          // 索提诺比率
+        double max_drawdown;           // 最大回撤
+        double win_rate;               // 胜率
+        double profit_loss_ratio;      // 盈亏比
+        // 语义说明：
+        //  - trade_events_count: 原子级别的成交事件数（每笔成交/fill），等于 backtest_data.trades.size()
+        //  - closed_roundtrips: 按完整回合统计的“已平仓回合数”（round-trip），即只有当一个开仓被完全平掉时计数
+        size_t                   trade_events_count;  // 成交事件数（每笔 fill）
+        size_t                   closed_roundtrips;   // 已平仓回合数（round-trip）
+        size_t                   total_trades;        // 兼容旧名：等同于 closed_roundtrips
+        size_t                   winning_trades;      // 盈利回合数
+        size_t                   losing_trades;       // 亏损回合数
+        size_t                   closed_trades;  // 兼容字段：等同于 closed_roundtrips（保留旧名以兼容现有代码/日志）
+        size_t                   covered_days;   // 在回测范围内有持仓的天数（按日计）
+        double                   coverage_days_rate;   // 日级覆盖率（有仓位的天数 / 总交易日数，百分比）
+        double                   coverage_bars_rate;   // Bar/日内级覆盖率（有仓位的Bar数 / 总Bar数，百分比）
         double                   coverage_rate;        // 兼容字段：默认赋值为日级覆盖率（保留旧名以兼容现有代码/日志）
         double                   avg_profit;           // 平均盈利
         double                   avg_loss;             // 平均亏损

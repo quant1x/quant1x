@@ -604,7 +604,6 @@ set(quant1x-sources
     # 回测
     quant1x/backtest/backtest.cpp
     quant1x/backtest/position.cpp
-    quant1x/backtest/engine.cpp
     quant1x/backtest/order.cpp
     quant1x/backtest/stats.cpp
     quant1x/backtest/trade.cpp
