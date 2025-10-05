@@ -31,7 +31,7 @@ public:
 // 封装 throw 的宏（自动注入文件名和行号）
 #define THROW_EXCEPTION(msg) throw BaseException(msg, __FILE__, __LINE__)
 
-namespace q1x {
+namespace quant1x {
 
     class error : public std::error_code {
     public:
@@ -52,6 +52,6 @@ namespace q1x {
     inline error make_error_code(int err_code, std::string message) {
         return error(err_code, std::move(message));
     }
-}  // namespace q1x
+}  // namespace quant1x
 
 #endif //QUANT1X_STD_EXCEPT_H

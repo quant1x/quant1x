@@ -624,8 +624,9 @@ private:
         }
         backtest_data.result.max_drawdown = max_drawdown;
 
-        // 计算交易统计(简化)
-        backtest_data.result.total_trades = backtest_data.trades.size();
+    // 计算交易统计(简化)
+    // 原子成交事件数（每笔 fill）
+    backtest_data.result.trade_events_count = backtest_data.trades.size();
         // ... 其他统计指标可以类似计算
     }
 
@@ -650,7 +651,8 @@ void printResults(const BacktestResult& result) {
     std::cout << "年化波动率: " << result.annualized_volatility << "%\n";
     std::cout << "夏普比率: " << result.sharpe_ratio << "\n";
     std::cout << "最大回撤: " << result.max_drawdown << "%\n";
-    std::cout << "总交易次数: " << result.total_trades << "\n";
+    std::cout << "总成交事件数: " << result.trade_events_count << "\n";
+    std::cout << "总回合数(已平仓): " << result.total_trades << "\n";
 }
 
 TEST_CASE("back-test-v0", "[strategy]") {

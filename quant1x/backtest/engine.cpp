@@ -1,4 +1,11 @@
 #include <quant1x/backtest/backtest.h>
+#include <quant1x/backtest/stats.h>
+
+#include <cmath>
+#include <ctime>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
 
 namespace backtest {
 
@@ -56,7 +63,7 @@ namespace backtest {
             // 卖出可以零股（但建议整手）
             order.quantity = getPositionQuantity(code);
         }
-        //order.quantity    = calculatePositionSize(bar.Close);
+        // order.quantity    = calculatePositionSize(bar.Close);
         order.create_time = bar.Datetime;
         order.update_time = bar.Datetime;
         order.status      = OrderStatus::PENDING;
@@ -93,14 +100,23 @@ namespace backtest {
         DailyPositionStatus status;
         status.timestamp = bar.Datetime;
 
-        //  包含浮动盈亏的账户快照
-        Account snap = backtest_data.account;
-        for (const auto &[symbol, pos] : position_manager.getPositions()) {
+        //  包含浮动盈亏的账户快照（避免频繁拷贝positions map）
+        Account     snap      = backtest_data.account;
+        const auto &positions = position_manager.getPositions();
+        status.positions.reserve(positions.size());
+        for (const auto &p : positions) {
+            const auto &pos = p.second;
             snap.current_capital += pos.unrealized_pnl;
+            DailyPositionStatus::PositionSummary ps;
+            ps.symbol         = p.first;
+            ps.direction      = pos.direction;
+            ps.quantity       = pos.quantity;
+            ps.avg_price      = pos.avg_price;
+            ps.unrealized_pnl = pos.unrealized_pnl;
+            status.positions.push_back(std::move(ps));
         }
-        status.account   = snap;
-        status.positions = position_manager.getPositions();
-        backtest_data.daily_status.push_back(status);
+        status.account = snap;
+        backtest_data.daily_status.emplace_back(std::move(status));
     }
 
     // 计算回测结果
@@ -111,28 +127,123 @@ namespace backtest {
         const auto &equity_curve = backtest_data.result.equity_curve;
 
         // 计算总收益率
-        double initial                    = backtest_data.account.initial_capital;
-        double final                      = equity_curve.back();
-        backtest_data.result.total_return = (final - initial) / initial * 100.0;
+        double initial = backtest_data.account.initial_capital;
+        double final   = equity_curve.empty() ? initial : equity_curve.back();
+        if (initial == 0.0) {
+            backtest_data.result.total_return = 0.0;
+        } else {
+            backtest_data.result.total_return = (final - initial) / initial * 100.0;
+        }
 
-        // 计算年化收益率(简化计算)
-        size_t num_days = equity_curve.size();
-        double years    = double(num_days) / 252.0;
-        backtest_data.result.annualized_return = (pow(1.0 + backtest_data.result.total_return / 100.0, 1.0 / years) - 1.0) * 100.0;
+        // 计算年化收益率：使用实际记录的交易日数（daily_status）来估算年化，避免用 equity_curve.size() 导致的异常放大
+        double annualized           = 0.0;
+        double total_return_decimal = 0.0;
+        if (initial > 0.0) {
+            total_return_decimal = (final / initial) - 1.0;
+        }
+
+        // 交易日数：以每日结算记录为准
+        size_t trading_days = backtest_data.daily_status.size();
+
+        // 尝试基于实际的日历天数来计算年化（更稳健），fallback 到交易日/252 计法
+        double years        = 0.0;
+        double elapsed_days = 0.0;
+
+        // 调试日志：打印用于年化计算的中间值，便于排查异常年化收益
+        spdlog::debug("calculateResults: initial={}, final={}, trading_days={}, equity_curve_size={}",
+                      initial,
+                      final,
+                      trading_days,
+                      equity_curve.size());
+
+        if (trading_days >= 2) {
+            // daily_status.timestamp 格式为 "YYYY-MM-DD HH:MM:SS"，取前10位日期部分
+            try {
+                std::string        first_date_str = backtest_data.daily_status.front().timestamp.substr(0, 10);
+                std::string        last_date_str  = backtest_data.daily_status.back().timestamp.substr(0, 10);
+                std::tm            tm1{};
+                std::tm            tm2{};
+                std::istringstream ss1(first_date_str);
+                std::istringstream ss2(last_date_str);
+                ss1 >> std::get_time(&tm1, "%Y-%m-%d");
+                ss2 >> std::get_time(&tm2, "%Y-%m-%d");
+                tm1.tm_hour = tm1.tm_min = tm1.tm_sec = 0;
+                tm2.tm_hour = tm2.tm_min = tm2.tm_sec = 0;
+                std::time_t t1                        = std::mktime(&tm1);
+                std::time_t t2                        = std::mktime(&tm2);
+                if (t1 != -1 && t2 != -1 && t2 >= t1) {
+                    elapsed_days = std::difftime(t2, t1) / 86400.0;
+                    years        = elapsed_days / 365.25;
+                }
+                spdlog::debug("calculateResults: first_date={}, last_date={}, elapsed_days={}, years={}",
+                              first_date_str,
+                              last_date_str,
+                              elapsed_days,
+                              years);
+            } catch (...) {
+                spdlog::warn("calculateResults: 无法解析日期，回退到交易日计数作为年化基准");
+                years = (trading_days > 0) ? (static_cast<double>(trading_days) / 252.0) : 0.0;
+            }
+        } else {
+            years = (trading_days > 0) ? (static_cast<double>(trading_days) / 252.0) : 0.0;
+        }
+
+        spdlog::debug("calculateResults: total_return_decimal={}, years={} ", total_return_decimal, years);
+
+        if (trading_days <= 1 || initial <= 0.0) {
+            // 无法年化（只有1日或更少），将年化收益设为总收益（不年化）以避免夸大
+            spdlog::warn("calculateResults: 交易日过少（{}），不进行年化，直接返回总收益率作为年化近似", trading_days);
+            annualized = total_return_decimal;
+        } else if (years <= 0.0) {
+            // 无法计算有效年份（例如日期解析失败），回退到交易日/252的方法
+            double fallback_years = static_cast<double>(trading_days) / 252.0;
+            spdlog::warn("calculateResults: 无法基于日历天数计算年份，使用交易日退化年数={}进行年化", fallback_years);
+            if (fallback_years > 0.0 && std::isfinite(total_return_decimal) && (1.0 + total_return_decimal) > 0.0) {
+                annualized = std::pow(1.0 + total_return_decimal, 1.0 / fallback_years) - 1.0;
+            } else {
+                annualized = 0.0;
+            }
+        } else if (years < 0.0833333) {  // 小于约1个月 (1/12年)
+            // 时间窗口过短，年化会极度放大。为避免误导，保持不年化并输出告警。
+            spdlog::warn("calculateResults: 回测时间窗口过短（{:.1f}天），跳过年化以避免夸大结果", elapsed_days);
+            annualized = total_return_decimal;
+        } else {
+            // 正常计算 CAGR
+            if (std::isfinite(total_return_decimal) && (1.0 + total_return_decimal) > 0.0) {
+                annualized = std::pow(1.0 + total_return_decimal, 1.0 / years) - 1.0;
+            } else {
+                annualized = 0.0;
+            }
+        }
+        // 转为百分比
+        backtest_data.result.annualized_return = annualized * 100.0;
 
         // 计算夏普比率
         std::vector<double> daily_returns;
+        daily_returns.reserve((equity_curve.size() > 0) ? (equity_curve.size() - 1) : 0);
         for (size_t i = 1; i < equity_curve.size(); ++i) {
-            double ret = (equity_curve[i] - equity_curve[i - 1]) / equity_curve[i - 1];
-            daily_returns.push_back(ret);
+            double prev = equity_curve[i - 1];
+            if (prev == 0.0) {
+                daily_returns.push_back(0.0);
+            } else {
+                double ret = (equity_curve[i] - prev) / prev;
+                daily_returns.push_back(ret);
+            }
         }
 
-        double mean_return = std::accumulate(daily_returns.begin(), daily_returns.end(), 0.0) / daily_returns.size();
-        double sq_sum      = std::inner_product(daily_returns.begin(), daily_returns.end(), daily_returns.begin(), 0.0);
-        double stdev       = std::sqrt(sq_sum / daily_returns.size() - mean_return * mean_return);
+        if (!daily_returns.empty()) {
+            double sum         = std::accumulate(daily_returns.begin(), daily_returns.end(), 0.0);
+            double mean_return = sum / static_cast<double>(daily_returns.size());
+            double sq_sum = std::inner_product(daily_returns.begin(), daily_returns.end(), daily_returns.begin(), 0.0);
+            double variance = sq_sum / static_cast<double>(daily_returns.size()) - mean_return * mean_return;
+            double stdev    = (variance > 0.0) ? std::sqrt(variance) : 0.0;
 
-        backtest_data.result.annualized_volatility = stdev * sqrt(252) * 100.0;
-        backtest_data.result.sharpe_ratio          = mean_return / stdev * sqrt(252);
+            backtest_data.result.annualized_volatility = stdev * std::sqrt(252.0) * 100.0;
+            backtest_data.result.sharpe_ratio          = (stdev > 0.0) ? (mean_return / stdev * std::sqrt(252.0)) : 0.0;
+        } else {
+            backtest_data.result.annualized_volatility = 0.0;
+            backtest_data.result.sharpe_ratio          = 0.0;
+        }
 
         // 计算最大回撤
         double peak         = initial;
@@ -148,74 +259,38 @@ namespace backtest {
         }
         backtest_data.result.max_drawdown = max_drawdown;
 
-        // 计算交易统计
-        backtest_data.result.total_trades = backtest_data.trades.size();
+        // // 计算交易统计：按完整回合（round-trip）统计已平仓回合数，支持部分成交（multi-fill）
+        // // 思路：对每个品种维护 FIFO 的开仓队列（每次买入产生一个 OpenLot），卖出（平仓）时按 FIFO 抵消开仓，
+        // //      仅当一个 OpenLot 被完全抵消（其剩余数量变为0）时，计为一个已完成的 round-trip。
+        // size_t closed_roundtrips = 0;
+        // size_t winning_roundtrips = 0;
+        // double total_profit = 0.0;
+        // double total_loss = 0.0;
 
-        // 计算胜率和盈亏比
-        int    winning_trades = 0;
-        double total_profit   = 0.0;
-        double total_loss     = 0.0;
+        // 使用独立函数计算 round-trip 统计
+        computeRoundTripStats();
 
-        for (const auto &trade : backtest_data.trades) {
-            // 假设只有平仓交易才产生盈亏
-            if (trade.direction == TradeDirection::FLAT) {
-                // 查找该笔成交关联的订单
-                auto it = std::find_if(backtest_data.orders.begin(),
-                                       backtest_data.orders.end(),
-                                       [&trade](const Order &ord) { return ord.order_id == trade.order_id; });
-                if (it != backtest_data.orders.end()) {
-                    // 计算盈亏
-                    double entry_price = it->price;
-                    double exit_price  = trade.price;
-                    double quantity    = trade.quantity;
-
-                    // 如果是做多单
-                    if (it->direction == TradeDirection::LONG) {
-                        double pnl = (exit_price - entry_price) * quantity;
-                        if (pnl > 0) {
-                            winning_trades++;
-                            total_profit += pnl;
-                        } else {
-                            total_loss += std::abs(pnl);
-                        }
-                    } else if (it->direction == TradeDirection::SHORT) {
-                        // 如果是做空单（可选）
-                        double pnl = (entry_price - exit_price) * quantity;
-                        if (pnl > 0) {
-                            winning_trades++;
-                            total_profit += pnl;
-                        } else {
-                            total_loss += std::abs(pnl);
-                        }
-                    }
-                }
-            }
+        // 计算基于 daily_status 的日级覆盖率
+        size_t covered_days = 0;
+        for (const auto &d : backtest_data.daily_status) {
+            if (!d.positions.empty())
+                ++covered_days;
         }
-
-        // 统计结果
-        backtest_data.result.winning_trades = winning_trades;
-        backtest_data.result.losing_trades  = backtest_data.trades.size() - winning_trades;
-        backtest_data.result.win_rate       = winning_trades * 100.0 /
-                                              (backtest_data.trades.empty() ? 1.00 : double(backtest_data.trades.size()));
-
-        // 计算平均盈利/亏损
-        backtest_data.result.avg_profit = winning_trades > 0 ? total_profit / winning_trades : 0.0;
-        backtest_data.result.avg_loss   = (backtest_data.result.losing_trades > 0)
-                                          ? total_loss / double(backtest_data.result.losing_trades)
-                                          : 0.0;
-
-        // 盈亏比 = 平均盈利 / 平均亏损
-        backtest_data.result.profit_loss_ratio = (backtest_data.result.avg_loss != 0)
-                                                 ? backtest_data.result.avg_profit / backtest_data.result.avg_loss
-                                                 : 0.0;
+        backtest_data.result.covered_days = covered_days;
+        backtest_data.result.coverage_days_rate =
+            backtest_data.daily_status.empty()
+                ? 0.0
+                : (static_cast<double>(covered_days) / static_cast<double>(backtest_data.daily_status.size()) * 100.0);
+        // 兼容字段，保持旧名返回日级覆盖率
+        backtest_data.result.coverage_rate = backtest_data.result.coverage_days_rate;
 
         // 统计未平仓头寸
         backtest_data.result.unsettled_positions = position_manager.getPositions().size();
         backtest_data.result.floating_pnl        = 0.0;
 
-        for (const auto &[symbol, pos] : position_manager.getPositions()) {
-            backtest_data.result.unsettled_symbols.push_back(symbol);
-            backtest_data.result.floating_pnl += pos.unrealized_pnl;
+        for (const auto &p : position_manager.getPositions()) {
+            backtest_data.result.unsettled_symbols.push_back(p.first);
+            backtest_data.result.floating_pnl += p.second.unrealized_pnl;
         }
 
         // 在计算总收益率前添加
@@ -247,8 +322,13 @@ namespace backtest {
                 backtest_data.result.unsettled_symbols.push_back(symbol);
 
                 // 打印日志
-                spdlog::debug("[未平仓] {} 方向:{} 数量:{} 成本价:{} 结算价:{} 盈亏:{}", symbol, (position.direction == TradeDirection::LONG ? "多头" : "空头"),
-                          position.quantity, position.avg_price, last_price, position.unrealized_pnl);
+                spdlog::debug("[未平仓] {} 方向:{} 数量:{} 成本价:{} 结算价:{} 盈亏:{}",
+                              symbol,
+                              (position.direction == TradeDirection::LONG ? "多头" : "空头"),
+                              position.quantity,
+                              position.avg_price,
+                              last_price,
+                              position.unrealized_pnl);
             }
         } else {
             spdlog::debug("没有未平仓头寸需要结算");
@@ -267,14 +347,19 @@ namespace backtest {
             // 多头：(现价 - 成本价)*数量
             // 空头：(成本价 - 现价)*数量
             double pnl = (position.direction == TradeDirection::LONG)
-                         ? (last_price - position.avg_price) * position.quantity
-                         : (position.avg_price - last_price) * position.quantity;
+                             ? (last_price - position.avg_price) * position.quantity
+                             : (position.avg_price - last_price) * position.quantity;
 
             position.unrealized_pnl = pnl;
             total_pnl += pnl;
 
             // 记录日志（生产环境可降低为DEBUG级别）
-            spdlog::debug("[结算] {} 持仓量:{} 成本价:{} 结算价:{} 盈亏:{}", symbol, position.quantity, position.avg_price, last_price, pnl);
+            spdlog::debug("[结算] {} 持仓量:{} 成本价:{} 结算价:{} 盈亏:{}",
+                          symbol,
+                          position.quantity,
+                          position.avg_price,
+                          last_price,
+                          pnl);
         }
 
         return total_pnl;
@@ -283,21 +368,53 @@ namespace backtest {
     // 运行回测
     void BacktestEngine::run(const std::string &code) {
         strategy_->reset();
+        std::cout << "[BacktestEngine::run] calling updateIndicators for " << code << "\n";
         strategy_->updateIndicators(code);
-        int max_periods = 10;
+        std::cout << "[BacktestEngine::run] market_data size=" << strategy_->market_data().size() << " for " << code
+                  << "\n";
+        auto const &market_data = strategy_->market_data();
 
-        auto const & market_data = strategy_->market_data();
+        // If user provided a start/end date in BacktestConfig, filter the market_data
+        // so the engine only iterates bars within [start_date, end_date].
+        std::vector<datasets::KLine> filtered_market_data;
+        if (backtest_data.config.start_time.time_since_epoch().count() != 0 &&
+            backtest_data.config.end_time.time_since_epoch().count() != 0) {
+            // Convert TimePoint -> exchange::timestamp for date-only comparisons
+            exchange::timestamp ts_start(backtest_data.config.start_time);
+            exchange::timestamp ts_end(backtest_data.config.end_time);
+            std::string         start_date = ts_start.only_date();
+            std::string         end_date   = ts_end.only_date();
+            for (const auto &b : market_data) {
+                if (b.Date >= start_date && b.Date <= end_date) {
+                    filtered_market_data.push_back(b);
+                }
+            }
+        } else {
+            filtered_market_data.assign(market_data.begin(), market_data.end());
+        }
 
-        for (size_t i = market_data.size() - max_periods; i < market_data.size(); ++i) {
-            const auto &bar = market_data[i];
+        // 预分配，避免频繁扩容
+        backtest_data.result.equity_curve.clear();
+        backtest_data.result.equity_curve.reserve(filtered_market_data.size());
+        backtest_data.daily_status.clear();
+        backtest_data.daily_status.reserve(filtered_market_data.size());
+        size_t bars_with_positions = 0;
+
+        // Process the available (and possibly filtered) market data
+        for (size_t i = 0; i < filtered_market_data.size(); ++i) {
+            const auto &bar = filtered_market_data[i];
 
             // 调试：打印当前处理日期
-            //spdlog::debug("处理日期: {}", bar.Datetime);
+            // spdlog::debug("处理日期: {}", bar.Datetime);
             // 更新持仓市值
             position_manager.updatePositions(code, bar);
             // 生成信号
             TradeDirection signal = strategy_->generateSignal(i);
-            spdlog::warn("{} {}, signal:{}", bar.Datetime, code, magic_enum::enum_name(signal));
+            if (backtest_data.config.verbose) {
+                spdlog::warn("{} {}, signal:{}", bar.Datetime, code, magic_enum::enum_name(signal));
+                std::cout << "[BacktestEngine::run] " << code << " idx=" << i << " signal=" << static_cast<int>(signal)
+                          << "\n";
+            }
             if (signal == TradeDirection::HOLD) {
                 continue;
             }
@@ -306,15 +423,18 @@ namespace backtest {
                 if (signal == TradeDirection::SHORT) {
                     if (!position_manager.hasPosition(code)) {
                         // 没有持仓，禁止卖出
-                        spdlog::warn("{} {}, signal:{}, 没有持仓，禁止卖出", bar.Datetime, code, magic_enum::enum_name(signal));
+                        spdlog::warn(
+                            "{} {}, signal:{}, 没有持仓，禁止卖出", bar.Datetime, code, magic_enum::enum_name(signal));
                         continue;
                     }
                 }
                 // 执行交易
                 Order order = createOrder(code, bar, signal);
-                spdlog::warn("{} order: {}, message={}", code, order.quantity, order.message);
-                if(order.status == OrderStatus::REJECTED || order.quantity == 0) {
-                    spdlog::warn("{} {}, signal:{}, 订单被拒绝", bar.Datetime, code, magic_enum::enum_name(signal));
+                if (backtest_data.config.verbose)
+                    spdlog::warn("{} order: {}, message={}", code, order.quantity, order.message);
+                if (order.status == OrderStatus::REJECTED || order.quantity == 0) {
+                    if (backtest_data.config.verbose)
+                        spdlog::warn("{} {}, signal:{}, 订单被拒绝", bar.Datetime, code, magic_enum::enum_name(signal));
                     continue;
                 }
                 backtest_data.orders.push_back(order);
@@ -323,39 +443,70 @@ namespace backtest {
                 backtest_data.trades.push_back(trade);
 
                 // 调试：打印交易详情
-                spdlog::warn("执行交易: {} {}股 @{}  当前持仓量: {}", (trade.direction == TradeDirection::LONG ? "买入" : "卖出"),
-                             trade.quantity, trade.price, position_manager.getPositionQuantity(code));
+                if (backtest_data.config.verbose)
+                    spdlog::warn("执行交易: {} {}股 @{}  当前持仓量: {}",
+                                 (trade.direction == TradeDirection::LONG ? "买入" : "卖出"),
+                                 trade.quantity,
+                                 trade.price,
+                                 position_manager.getPositionQuantity(code));
 
                 // 处理持仓变化
                 position_manager.processTrade(trade);
             }
 
             // 调试：打印每日持仓状态
-            //spdlog::debug("日期结束持仓: {}股", position_manager.getPositionQuantity(code));
+            // spdlog::debug("日期结束持仓: {}股", position_manager.getPositionQuantity(code));
             // 记录每日状态
-            backtest_data.result.equity_curve.push_back(backtest_data.account.current_capital + position_manager.calculateTotalFloatingPnL(bar.Close));
+            backtest_data.result.equity_curve.push_back(backtest_data.account.current_capital +
+                                                        position_manager.calculateTotalFloatingPnL(bar.Close));
             recordDailyStatus(bar);
+            // 记录本Bar是否存在任何持仓（用于覆盖率计算）
+            if (!position_manager.getPositions().empty()) {
+                ++bars_with_positions;
+            }
         }
-        //spdlog::warn("trade number:{}", backtest_data.trades.size());
+        // spdlog::warn("trade number:{}", backtest_data.trades.size());
 
         // 添加回测结束处理
         if (!market_data.empty()) {
             finalizeBacktest(code, market_data.back());
         }
+        // 日内/Bar级覆盖率（保留供调试/扩展使用）
+        if (!filtered_market_data.empty()) {
+            // 存储为 bar 级覆盖率（百分比）
+            backtest_data.result.coverage_bars_rate = static_cast<double>(bars_with_positions) /
+                                                      static_cast<double>(filtered_market_data.size()) * 100.0;
+        } else {
+            backtest_data.result.coverage_bars_rate = 0.0;
+        }
+
         calculateResults();  // 重新计算绩效
     }
 
     // 获取回测数据
-    const BacktestData& BacktestEngine::getBacktestData() const {
+    const BacktestData &BacktestEngine::getBacktestData() const {
         return backtest_data;
     }
 
+    // Test helper: assign trades directly (used by unit tests)
+    void BacktestEngine::setTradesForTest(const std::vector<Trade> &trades) {
+        backtest_data.trades = trades;
+    }
+
+    // 从 trades 中重建 round-trip 统计（FIFO 开仓匹配），处理部分成交
+    void BacktestEngine::computeRoundTripStats() {
+    // Delegate to the pure helper to allow reuse in tests
+    backtest::computeRoundTripStatsFromTrades(backtest_data.trades, backtest_data.result);
+    }
+
+    
+
     // 打印回测结果
     void BacktestEngine::printResults() const {
-        const auto &result = backtest_data.result;
+        const auto   &result = backtest_data.result;
         io::CSVWriter out("acc.csv");
         out.write_row("amount");
-        for(auto const &v : result.equity_curve) {
+        for (auto const &v : result.equity_curve) {
             out.write_row(v);
         }
 
@@ -366,9 +517,16 @@ namespace backtest {
         std::cout << "年化波动率: " << result.annualized_volatility << "%\n";
         std::cout << "夏普比率: " << result.sharpe_ratio << "\n";
         std::cout << "最大回撤: " << result.max_drawdown << "%\n";
-        std::cout << "总交易次数: " << result.total_trades << "\n";
+    // 区分两个概念：
+    //  - 总成交事件数: backtest_data.trades.size()（每一笔成交/fill）
+    //  - 总回合数(已平仓): result.total_trades（按完整 round-trip 统计的已闭合回合数）
+    std::cout << "总成交事件数: " << backtest_data.trades.size() << "\n";
+    std::cout << "总回合数(已平仓): " << result.total_trades << "\n";
         std::cout << "胜率: " << result.win_rate << "%\n";
         std::cout << "盈亏比: " << result.profit_loss_ratio << "\n";
+        std::cout << "覆盖天数(有持仓的日数): " << result.covered_days << "\n";
+        std::cout << "日级覆盖率: " << result.coverage_days_rate << "%\n";
+        std::cout << "Bar级覆盖率: " << result.coverage_bars_rate << "%\n";
     }
 
-} // namespace backtest
+}  // namespace backtest

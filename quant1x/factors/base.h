@@ -104,7 +104,7 @@ namespace factors {
 
     constexpr auto FeatureF10                       = baseFeature + 1;  // 特征数据-基本面
     constexpr auto FeatureHistory                   = baseFeature + 2;  // 特征数据-历史
-    constexpr auto FeatureNo1                       = baseFeature + 3;  // 特征数据-1号策略
+    constexpr auto FeatureNo0                       = baseFeature + 3;  // 特征数据-0号策略
     constexpr auto FeatureMisc                      = baseFeature + 4;  // 特征数据-Misc
     constexpr auto FeatureBreaksThroughBox          = baseFeature + 5;  // 特征数据-box
     constexpr auto FeatureKLineShap                 = baseFeature + 6;  // 特征数据-K线形态等
