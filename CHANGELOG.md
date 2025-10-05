@@ -3,10 +3,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.132] - 2025-10-05
+### Changed
+- !1 backtest: implement FIFO round-trip stats, add stats helper and compat…
+* backtest: implement FIFO round-trip stats, add stats helper and compat…
+* 新增0号演示性策略(C++)
+* 调整错误码的命名空间
+- 调整backtest代码结构
+
 ## [0.6.131] - 2025-10-04
 ### Changed
 - 调整测试yaml配置文件解析功能, msvc编译不通过
 - 修复msvc编译yaml解析工具失败的问题, examples引用yaml-cpp方式不对
+- update changelog
 
 ## [0.6.130] - 2025-10-04
 ### Changed
@@ -930,7 +939,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.131...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.132...HEAD
+[0.6.132]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.131...v0.6.132
 [0.6.131]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.130...v0.6.131
 [0.6.130]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.129...v0.6.130
 [0.6.129]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.128...v0.6.129
