@@ -1,18 +1,19 @@
-#include <quant1x/runtime/service.h>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <cstdlib>
-#include <unistd.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <cstdio>
 #include <pwd.h>
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/basic_file_sink.h>
 #include <quant1x/runtime/core.h>
+#include <quant1x/runtime/service.h>
+#include <signal.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/spdlog.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include <cstdio>
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 namespace service {
     namespace {
@@ -21,7 +22,7 @@ namespace service {
 
     // 获取当前可执行文件路径
     std::string get_self_executable_path() {
-        char result[PATH_MAX];
+        char    result[PATH_MAX];
         ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
         if (count != -1) {
             return std::string(result, count);
@@ -31,18 +32,18 @@ namespace service {
 
     // 获取当前用户名
     std::string get_current_username() {
-        const char* sudo_user = std::getenv("SUDO_USER");
+        const char *sudo_user = std::getenv("SUDO_USER");
         if (sudo_user) {
             return std::string(sudo_user);
         }
 
-        const char* user = std::getenv("USER");
+        const char *user = std::getenv("USER");
         if (user) {
             return std::string(user);
         }
 
-        uid_t uid = getuid();
-        struct passwd *pw = getpwuid(uid);
+        uid_t          uid = getuid();
+        struct passwd *pw  = getpwuid(uid);
         if (pw) {
             return std::string(pw->pw_name);
         }
@@ -69,9 +70,9 @@ namespace service {
         }
 
         std::vector<std::string> args = {"sudo", self_path, "service", choice};
-        std::vector<char*> c_args;
-        for (auto& arg : args)
-            c_args.push_back(const_cast<char*>(arg.c_str()));
+        std::vector<char *>      c_args;
+        for (auto &arg : args)
+            c_args.push_back(const_cast<char *>(arg.c_str()));
         c_args.push_back(nullptr);
 
         execvp("sudo", c_args.data());
@@ -158,7 +159,7 @@ namespace service {
         }
 
         const std::string service_name = g_api_service_config.service_name;
-        std::string cmd = "systemctl start " + service_name + ".service";
+        std::string       cmd          = "systemctl start " + service_name + ".service";
         system(cmd.c_str());
         spdlog::info("[+] 服务已启动: {}", service_name);
     }
@@ -170,7 +171,7 @@ namespace service {
         }
 
         const std::string service_name = g_api_service_config.service_name;
-        std::string cmd = "systemctl stop " + service_name + ".service";
+        std::string       cmd          = "systemctl stop " + service_name + ".service";
         system(cmd.c_str());
         spdlog::info("[+] 服务已停止: {}", service_name);
     }
@@ -182,70 +183,70 @@ namespace service {
         }
 
         const std::string service_name = g_api_service_config.service_name;
-        std::string cmd = "systemctl status " + service_name + ".service";
+        std::string       cmd          = "systemctl status " + service_name + ".service";
         system(cmd.c_str());
     }
 
     // 守护进程主逻辑（带日志）
     void run_daemon() {
-//        // 第一次 fork：创建子进程，父进程退出
-//        pid_t pid = fork();
-//        if (pid < 0) {
-//            std::cerr << "[-] 第一次 fork 失败" << std::endl;
-//            exit(EXIT_FAILURE);
-//        }
-//        if (pid > 0) {
-//            exit(EXIT_SUCCESS);  // 父进程退出
-//        }
-//
-//        // 创建新会话
-//        pid_t sid = setsid();
-//        if (sid < 0) {
-//            std::cerr << "[-] setsid 失败" << std::endl;
-//            exit(EXIT_FAILURE);
-//        }
-//
-//        // 忽略挂断信号
-//        signal(SIGCHLD, SIG_IGN);
-//        signal(SIGHUP, SIG_IGN);
-//
-//        // 第二次 fork：确保不会重新获得控制终端
-//        pid = fork();
-//        if (pid < 0) {
-//            std::cerr << "[-] 第二次 fork 失败" << std::endl;
-//            exit(EXIT_FAILURE);
-//        }
-//        if (pid > 0) {
-//            exit(EXIT_SUCCESS);  // 子进程退出
-//        }
-//
-//        // 设置 umask
-//        umask(0);
-//
-//        // 切换工作目录到根目录或用户目录
-//        chdir("/");
-//
-//        // 关闭标准输入输出
-//        close(STDIN_FILENO);
-//        close(STDOUT_FILENO);
-//        close(STDERR_FILENO);
-//
-//        // 重定向 stdin/stdout/stderr 到 /dev/null
-//        int dev_null_fd = open("/dev/null", O_RDWR);
-//        if (dev_null_fd != -1) {
-//            dup2(dev_null_fd, STDIN_FILENO);
-//            dup2(dev_null_fd, STDOUT_FILENO);
-//            dup2(dev_null_fd, STDERR_FILENO);
-//            close(dev_null_fd);
-//        }
+        //        // 第一次 fork：创建子进程，父进程退出
+        //        pid_t pid = fork();
+        //        if (pid < 0) {
+        //            std::cerr << "[-] 第一次 fork 失败" << std::endl;
+        //            exit(EXIT_FAILURE);
+        //        }
+        //        if (pid > 0) {
+        //            exit(EXIT_SUCCESS);  // 父进程退出
+        //        }
+        //
+        //        // 创建新会话
+        //        pid_t sid = setsid();
+        //        if (sid < 0) {
+        //            std::cerr << "[-] setsid 失败" << std::endl;
+        //            exit(EXIT_FAILURE);
+        //        }
+        //
+        //        // 忽略挂断信号
+        //        signal(SIGCHLD, SIG_IGN);
+        //        signal(SIGHUP, SIG_IGN);
+        //
+        //        // 第二次 fork：确保不会重新获得控制终端
+        //        pid = fork();
+        //        if (pid < 0) {
+        //            std::cerr << "[-] 第二次 fork 失败" << std::endl;
+        //            exit(EXIT_FAILURE);
+        //        }
+        //        if (pid > 0) {
+        //            exit(EXIT_SUCCESS);  // 子进程退出
+        //        }
+        //
+        //        // 设置 umask
+        //        umask(0);
+        //
+        //        // 切换工作目录到根目录或用户目录
+        //        chdir("/");
+        //
+        //        // 关闭标准输入输出
+        //        close(STDIN_FILENO);
+        //        close(STDOUT_FILENO);
+        //        close(STDERR_FILENO);
+        //
+        //        // 重定向 stdin/stdout/stderr 到 /dev/null
+        //        int dev_null_fd = open("/dev/null", O_RDWR);
+        //        if (dev_null_fd != -1) {
+        //            dup2(dev_null_fd, STDIN_FILENO);
+        //            dup2(dev_null_fd, STDOUT_FILENO);
+        //            dup2(dev_null_fd, STDERR_FILENO);
+        //            close(dev_null_fd);
+        //        }
 
         // 获取当前用户名（用于日志路径）
-        uid_t uid = getuid();
-        struct passwd *pw = getpwuid(uid);
-        std::string username = pw ? pw->pw_name : "unknown";
+        uid_t          uid      = getuid();
+        struct passwd *pw       = getpwuid(uid);
+        std::string    username = pw ? pw->pw_name : "unknown";
 
         // 日志路径：放在用户目录下，避免权限问题
-    std::string log_path = "/home/" + username + "/logs/q1x/";
+        std::string log_path = "/home/" + username + "/logs/q1x/";
 
         // 创建日志目录（如果不存在）
         struct stat st{};
@@ -254,7 +255,7 @@ namespace service {
         }
 
         // 初始化日志系统（文件日志）
-    auto file_logger = spdlog::basic_logger_mt("file_logger", log_path + "q1x.log");
+        auto file_logger = spdlog::basic_logger_mt("file_logger", log_path + "q1x.log");
         file_logger->set_level(spdlog::level::debug);
         file_logger->flush_on(spdlog::level::debug);  // 每次都刷新，避免缓冲区延迟
 
@@ -263,10 +264,10 @@ namespace service {
         // console_logger->set_level(spdlog::level::info);
 
         // 示例日志
-    file_logger->info("[*] 守护进程已启动");
+        file_logger->info("[*] 守护进程已启动");
         // console_logger->info("[*] 守护进程已启动");
         runtime::logger_set(false, config::is_debug());
 
         runtime::wait_for_exit();
     }
-}
+}  // namespace service

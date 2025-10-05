@@ -1,29 +1,30 @@
-#include <quant1x/runtime/service.h>
-#include <mach-o/dyld.h>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <cstdlib>
-#include <unistd.h>
-#include <sys/types.h>
-#include <pwd.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <dirent.h>
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/basic_file_sink.h>
+#include <fcntl.h>
+#include <mach-o/dyld.h>
+#include <pwd.h>
 #include <quant1x/runtime/core.h>
+#include <quant1x/runtime/service.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/spdlog.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 namespace service {
 
     namespace {
-        ServiceConfig g_api_service_config;
-    const std::string g_mac_launch_service_name = "com.quant1x.q1x.service";
+        ServiceConfig     g_api_service_config;
+        const std::string g_mac_launch_service_name = "com.quant1x.q1x.service";
     }  // namespace
 
     // 获取当前可执行文件路径
     std::string get_self_executable_path() {
-        char result[PATH_MAX];
+        char     result[PATH_MAX];
         uint32_t size = sizeof(result);
         if (_NSGetExecutablePath(result, &size) == 0) {
             return std::string(result);
@@ -33,13 +34,13 @@ namespace service {
 
     // 获取当前用户名
     std::string get_current_username() {
-        const char* user = std::getenv("USER");
+        const char *user = std::getenv("USER");
         if (user) {
             return std::string(user);
         }
 
-        uid_t uid = getuid();
-        struct passwd *pw = getpwuid(uid);
+        uid_t          uid = getuid();
+        struct passwd *pw  = getpwuid(uid);
         if (pw) {
             return std::string(pw->pw_name);
         }
@@ -66,9 +67,9 @@ namespace service {
         }
 
         std::vector<std::string> args = {"sudo", self_path, "service", choice};
-        std::vector<char*> c_args;
-        for (auto& arg : args)
-            c_args.push_back(const_cast<char*>(arg.c_str()));
+        std::vector<char *>      c_args;
+        for (auto &arg : args)
+            c_args.push_back(const_cast<char *>(arg.c_str()));
         c_args.push_back(nullptr);
 
         execvp("sudo", c_args.data());
@@ -80,13 +81,13 @@ namespace service {
     // 获取 plist 文件路径
     std::string get_plist_path() {
         std::string user = get_current_username();
-        return "/Users/" + user + "/Library/LaunchAgents/" + g_mac_launch_service_name +".plist";
+        return "/Users/" + user + "/Library/LaunchAgents/" + g_mac_launch_service_name + ".plist";
     }
 
     // 获取日志目录路径
     std::string get_log_dir() {
         std::string user = get_current_username();
-    return "/Users/" + user + "/.q1x/logs/";
+        return "/Users/" + user + "/.q1x/logs/";
     }
 
     // 初始化日志系统
@@ -99,7 +100,7 @@ namespace service {
             mkdir(log_dir.c_str(), 0755);
         }
 
-    auto logger = spdlog::basic_logger_mt("q1x_logger", log_dir + "q1x.log");
+        auto logger = spdlog::basic_logger_mt("q1x_logger", log_dir + "q1x.log");
         logger->set_level(spdlog::level::debug);
         logger->flush_on(spdlog::level::debug);
 
@@ -134,11 +135,13 @@ namespace service {
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>)"<< g_mac_launch_service_name <<R"(</string>
+    <string>)"
+             << g_mac_launch_service_name << R"(</string>
 
     <key>ProgramArguments</key>
     <array>
-        <string>)" << executable_path << R"(</string>
+        <string>)"
+             << executable_path << R"(</string>
         <string>service</string>
         <string>run</string>
     </array>
@@ -153,10 +156,12 @@ namespace service {
     <string>/usr/local/var</string>
 
     <key>StandardOutPath</key>
-    <string>/usr/local/var/log/)"<< g_mac_launch_service_name <<R"(.log</string>
+    <string>/usr/local/var/log/)"
+             << g_mac_launch_service_name << R"(.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/usr/local/var/log/)"<< g_mac_launch_service_name <<R"(.err</string>
+    <string>/usr/local/var/log/)"
+             << g_mac_launch_service_name << R"(.err</string>
 </dict>
 </plist>
 )";
@@ -183,7 +188,7 @@ namespace service {
 
         std::string plist_path = get_plist_path();
 
-        std::string cmd_stop = "launchctl stop " + g_mac_launch_service_name;
+        std::string cmd_stop   = "launchctl stop " + g_mac_launch_service_name;
         std::string cmd_remove = "launchctl remove " + g_mac_launch_service_name;
 
         system(cmd_stop.c_str());
@@ -225,14 +230,14 @@ namespace service {
     }
 
     // 检查 launchd 服务是否正在运行
-    std::pair<std::string, bool> check_service_running(const std::string& service_name) {
-    // 构建命令：launchctl list com.quant1x.q1x.service
+    std::pair<std::string, bool> check_service_running(const std::string &service_name) {
+        // 构建命令：launchctl list com.quant1x.q1x.service
         std::string cmd = "launchctl list " + service_name;
 
         // 使用 popen 执行命令并读取输出
         std::array<char, 128> buffer;
-        std::string result;
-        FILE* pipe = popen(cmd.c_str(), "r");
+        std::string           result;
+        FILE                 *pipe = popen(cmd.c_str(), "r");
         if (!pipe) {
             std::cerr << "Failed to run command" << std::endl;
             return {"Error executing command", false};
@@ -255,7 +260,7 @@ namespace service {
         }
 
         // 提取 PID（格式如 "PID" = 1234;）
-        std::regex pid_regex(R"(\"PID\" = ([0-9]+);)");
+        std::regex  pid_regex(R"(\"PID\" = ([0-9]+);)");
         std::smatch match;
         if (std::regex_search(result, match, pid_regex) && match.size() > 1) {
             std::string pid = match[1].str();
@@ -271,8 +276,8 @@ namespace service {
         //     return;
         // }
 
-    //std::string cmd = "launchctl list com.quant1x.q1x.service";
-        //system(cmd.c_str());
+        // std::string cmd = "launchctl list com.quant1x.q1x.service";
+        // system(cmd.c_str());
         auto [status, running] = check_service_running(g_mac_launch_service_name);
         std::cout << status << std::endl;
     }
@@ -284,8 +289,8 @@ namespace service {
 
         spdlog::info("[*] 守护进程已启动");
 
-        runtime::logger_set(false, true); // 示例设置日志器
-        runtime::wait_for_exit();         // 主循环或等待退出信号
+        runtime::logger_set(false, true);  // 示例设置日志器
+        runtime::wait_for_exit();          // 主循环或等待退出信号
     }
 
-}
+}  // namespace service
