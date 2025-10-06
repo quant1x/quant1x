@@ -3,7 +3,6 @@
 use crate::std::BinaryStream;
 use crate::level1::commands::*;
 
-// ...existing code...
 #[derive(Debug, Clone)]
 pub struct FinanceInfoRequest {
     pub zip_flag: u8,
