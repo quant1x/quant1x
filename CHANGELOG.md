@@ -3,10 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.135] - 2025-10-06
+### Changed
+- 删除废弃的注释
+
 ## [0.6.134] - 2025-10-06
 ### Changed
 - 格式化c++代码
 - 格式化并修正部分注释
+- update changelog
 
 ## [0.6.133] - 2025-10-05
 ### Changed
@@ -952,7 +957,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.134...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.135...HEAD
+[0.6.135]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.134...v0.6.135
 [0.6.134]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.133...v0.6.134
 [0.6.133]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.132...v0.6.133
 [0.6.132]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.131...v0.6.132
