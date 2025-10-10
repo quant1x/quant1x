@@ -15,7 +15,9 @@ pub fn decode_line_bytes(raw: &[u8]) -> String {
     }
 
     // UTF-8 attempt
-    let utf8_s = std::str::from_utf8(&line).map(|s| s.to_string()).unwrap_or_default();
+    let utf8_s = std::str::from_utf8(&line)
+        .map(|s| s.to_string())
+        .unwrap_or_default();
     // GBK attempt
     let (gbk_cow, _, _) = GBK.decode(&line);
     let gbk_s = gbk_cow.to_string();

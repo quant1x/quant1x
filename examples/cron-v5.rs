@@ -12,9 +12,7 @@ impl LocalCronScheduler {
         let runtime = tokio::runtime::Runtime::new().unwrap();
 
         // 初始化调度器
-        let scheduler = runtime.block_on(async {
-            JobScheduler::new().await.unwrap()
-        });
+        let scheduler = runtime.block_on(async { JobScheduler::new().await.unwrap() });
         let scheduler = Arc::new(scheduler);
 
         // 启动调度器线程
@@ -35,13 +33,13 @@ impl LocalCronScheduler {
         F: Fn() + Send + Sync + 'static,
     {
         // 直接创建Job并设置时区
-        let job = Job::new_tz(cron_expr.to_string(), chrono::Local,move |_uuid, _lock| {
+        let job = Job::new_tz(cron_expr.to_string(), chrono::Local, move |_uuid, _lock| {
             job();
-        }).unwrap();
+        })
+        .unwrap();
         // 使用运行时处理异步添加
-        self.runtime.block_on(async {
-            self.scheduler.add(job).await.unwrap()
-        });
+        self.runtime
+            .block_on(async { self.scheduler.add(job).await.unwrap() });
     }
 }
 

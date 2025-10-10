@@ -1,8 +1,8 @@
 use super::sequence_id;
-use crate::level1::security_bars::SecurityBarsResponse;
-use crate::level1::protocol::Response;
-use crate::std::BinaryStream;
 use crate::level1::commands::*;
+use crate::level1::protocol::Response;
+use crate::level1::security_bars::SecurityBarsResponse;
+use crate::std::BinaryStream;
 
 #[derive(Debug, Clone)]
 pub struct IndexBarsRequest {
@@ -22,7 +22,7 @@ impl IndexBarsRequest {
             packet_type: 0x01,
             pkg_len1: 0,
             pkg_len2: 0,
-                method: INDEX_BARS,
+            method: INDEX_BARS,
         }
     }
     pub fn serialize(&mut self) -> Vec<u8> {

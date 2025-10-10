@@ -19,7 +19,9 @@ pub fn parse_frequency(freq: &str) -> Result<(i64, String), String> {
     let n: i64 = if i == 0 {
         1
     } else {
-        frequency[..i].parse::<i64>().map_err(|e| format!("invalid number in freq: {}", e))?
+        frequency[..i]
+            .parse::<i64>()
+            .map_err(|e| format!("invalid number in freq: {}", e))?
     };
     let unit = frequency[i..].to_string();
     if unit.is_empty() {

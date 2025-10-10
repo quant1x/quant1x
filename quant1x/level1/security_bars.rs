@@ -1,7 +1,7 @@
 use super::sequence_id;
-use crate::std::BinaryStream;
 use crate::level1::commands::*;
 use crate::level1::protocol::{Request, Response};
+use crate::std::BinaryStream;
 use std::panic;
 
 #[allow(dead_code)]
@@ -181,21 +181,36 @@ impl SecurityBarsResponse {
         start: u32,
         count: u16,
     ) -> Option<SecurityBarsResponse> {
-        log::info!("fetch_security_bars called: code={}, category={}, frequency={}, start={}, count={}",
-            code, category, frequency, start, count);
+        log::info!(
+            "fetch_security_bars called: code={}, category={}, frequency={}, start={}, count={}",
+            code,
+            category,
+            frequency,
+            start,
+            count
+        );
 
         // Build request header and payload using with_params (C++-like constructor behavior)
         let (mut req, payload_bytes, is_index) =
             SecurityBarsRequest::with_params(code, category, start as u16, count, frequency);
 
-        log::info!("Built request with payload size: {}, is_index: {}", payload_bytes.len(), is_index);
+        log::info!(
+            "Built request with payload size: {}, is_index: {}",
+            payload_bytes.len(),
+            is_index
+        );
 
         // perform network exchange using the new process function
         match crate::level1::client::client() {
             Ok(mut pooled) => {
                 log::info!("Acquired level1 client successfully");
                 let mut resp = SecurityBarsResponse::new_with(is_index, category);
-                match crate::level1::protocol::process(pooled.stream(), &mut req, &payload_bytes, &mut resp) {
+                match crate::level1::protocol::process(
+                    pooled.stream(),
+                    &mut req,
+                    &payload_bytes,
+                    &mut resp,
+                ) {
                     Ok(()) => {
                         log::info!("Protocol process succeeded, got {} bars", resp.list.len());
                         Some(resp)
@@ -292,7 +307,11 @@ impl Response for SecurityBarsResponse {
             }
         }));
         if let Err(_) = result {
-            log::warn!("insufficient data for {} bars, parsed {} successfully", self.count, self.list.len());
+            log::warn!(
+                "insufficient data for {} bars, parsed {} successfully",
+                self.count,
+                self.list.len()
+            );
             self.count = self.list.len() as u16;
         }
     }

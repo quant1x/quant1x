@@ -1,8 +1,8 @@
 // Thin performance driver that uses the library's Vyukov queue implementation.
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
-use std::sync::atomic::Ordering;
 
 use quant1x::runtime::ringbuffer::Queue as VQueue;
 
@@ -23,7 +23,9 @@ fn run_perf() -> f64 {
             let base = (id as i64) * DATA_PER_PRODUCER;
             for i in 0..DATA_PER_PRODUCER {
                 loop {
-                    if q_clone.push(base + i).is_ok() { break; }
+                    if q_clone.push(base + i).is_ok() {
+                        break;
+                    }
                     thread::yield_now();
                 }
             }
@@ -35,19 +37,23 @@ fn run_perf() -> f64 {
     for _ in 0..NUM_CONSUMERS {
         let q_clone = q.clone();
         let consumed_clone = consumed.clone();
-        consumers.push(thread::spawn(move || {
-            loop {
-                match q_clone.pop() {
-                    Ok(_v) => { consumed_clone.fetch_add(1, Ordering::Relaxed); }
-                    Err(_) => break,
+        consumers.push(thread::spawn(move || loop {
+            match q_clone.pop() {
+                Ok(_v) => {
+                    consumed_clone.fetch_add(1, Ordering::Relaxed);
                 }
+                Err(_) => break,
             }
         }));
     }
 
-    for p in producers { p.join().unwrap(); }
+    for p in producers {
+        p.join().unwrap();
+    }
     q.close();
-    for c in consumers { c.join().unwrap(); }
+    for c in consumers {
+        c.join().unwrap();
+    }
 
     let elapsed = start.elapsed();
     let got = consumed.load(Ordering::Relaxed);
@@ -72,5 +78,3 @@ mod test_driver {
         println!("[ignored test] Vyukov MPMC ops/sec = {}", ops);
     }
 }
-
-

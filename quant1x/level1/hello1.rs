@@ -1,7 +1,7 @@
 use super::sequence_id;
 use super::BinaryStream;
-use encoding_rs::GBK;
 use crate::level1::commands::*;
+use encoding_rs::GBK;
 
 #[derive(Debug, Clone)]
 pub struct Hello1Request {

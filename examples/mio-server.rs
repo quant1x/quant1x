@@ -29,7 +29,8 @@ fn main() -> io::Result<()> {
 
     let addr = "0.0.0.0:7878".parse().unwrap();
     let mut listener = TcpListener::bind(addr)?;
-    poll.registry().register(&mut listener, SERVER_TOKEN, Interest::READABLE)?;
+    poll.registry()
+        .register(&mut listener, SERVER_TOKEN, Interest::READABLE)?;
 
     let mut connections = HashMap::new();
     let mut next_token = Token(1);
@@ -139,8 +140,7 @@ fn main() -> io::Result<()> {
                         if is_closed {
                             // 关键修改：使用 finish_and_clear 清除进度条
                             connection.progress_bar.finish_and_clear();
-                            poll.registry()
-                                .deregister(connection.stream.as_mut())?;
+                            poll.registry().deregister(connection.stream.as_mut())?;
                             connections.remove(&token);
                         }
                     }

@@ -20,18 +20,18 @@ pub fn sequence_id() -> u32 {
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KLineType {
-    _5Min = 0,     // 5分钟K线
-    _15Min = 1,    // 15分钟K线
-    _30Min = 2,    // 30分钟K线
-    _1Hour = 3,    // 1小时K线
-    Daily = 4,     // 日K线
-    Weekly = 5,    // 周K线
-    Monthly = 6,   // 月K线
-    Exhq1Min = 7,  // 扩展市场1分钟
-    _1Min = 8,     // 普通1分钟K线
-    RiK = 9,       // 日K线(同DAILY)
-    _3Month = 10,  // 季K线
-    Yearly = 11,   // 年K线
+    _5Min = 0,    // 5分钟K线
+    _15Min = 1,   // 15分钟K线
+    _30Min = 2,   // 30分钟K线
+    _1Hour = 3,   // 1小时K线
+    Daily = 4,    // 日K线
+    Weekly = 5,   // 周K线
+    Monthly = 6,  // 月K线
+    Exhq1Min = 7, // 扩展市场1分钟
+    _1Min = 8,    // 普通1分钟K线
+    RiK = 9,      // 日K线(同DAILY)
+    _3Month = 10, // 季K线
+    Yearly = 11,  // 年K线
 }
 
 // helper: mimic level1::helpers::GetDatetimeFromUint32
@@ -204,15 +204,15 @@ pub mod transaction_data;
 pub mod transaction_history;
 pub mod xdxr;
 
+pub use block_info::*;
+pub use block_meta::*;
 pub use client::*;
+pub use commands::*;
 pub use heartbeat::*;
 pub use hello1::*;
 pub use hello2::*;
 pub use security_bars::*;
 pub use xdxr::*;
-pub use commands::*;
-pub use block_info::*;
-pub use block_meta::*;
 
 #[cfg(test)]
 mod tests {

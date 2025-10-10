@@ -1,4 +1,7 @@
-use std::sync::{Arc, atomic::{AtomicI64, Ordering}};
+use std::sync::{
+    atomic::{AtomicI64, Ordering},
+    Arc,
+};
 use std::thread;
 use std::time::Instant;
 
@@ -25,7 +28,9 @@ fn main() {
             let base = (id as i64) * PER_PRODUCER;
             for i in 0..PER_PRODUCER {
                 loop {
-                    if qp.push(base + i).is_ok() { break; }
+                    if qp.push(base + i).is_ok() {
+                        break;
+                    }
                     thread::yield_now();
                 }
             }
@@ -37,19 +42,23 @@ fn main() {
     for _ in 0..NUM_CONSUMERS {
         let qc = q.clone();
         let c = consumed.clone();
-        consumers.push(thread::spawn(move || {
-            loop {
-                match qc.pop() {
-                    Ok(_v) => { c.fetch_add(1, Ordering::Relaxed); }
-                    Err(_) => break,
+        consumers.push(thread::spawn(move || loop {
+            match qc.pop() {
+                Ok(_v) => {
+                    c.fetch_add(1, Ordering::Relaxed);
                 }
+                Err(_) => break,
             }
         }));
     }
 
-    for p in producers { p.join().unwrap(); }
+    for p in producers {
+        p.join().unwrap();
+    }
     q.close();
-    for c in consumers { c.join().unwrap(); }
+    for c in consumers {
+        c.join().unwrap();
+    }
 
     let elapsed = start.elapsed();
     let got = consumed.load(Ordering::Relaxed);

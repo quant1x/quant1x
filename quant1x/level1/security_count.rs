@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use super::sequence_id;
-use crate::std::BinaryStream;
 use crate::level1::commands::*;
+use crate::std::BinaryStream;
 
 // Request builder for SECURITY_COUNT
 #[allow(dead_code)]

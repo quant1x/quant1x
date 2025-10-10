@@ -21,9 +21,8 @@ enum ConnectState {
     /// 已连接
     StateConnected,
     /// 在读
-    StateRead
+    StateRead,
 }
-
 
 struct Connection {
     stream: Option<TcpStream>,
@@ -220,7 +219,10 @@ fn main() -> io::Result<()> {
 
                 // 处理连接关闭
                 if is_closed {
-                    println!("[{}] Connection lost, retry count: {}", token.0, conn.retries);
+                    println!(
+                        "[{}] Connection lost, retry count: {}",
+                        token.0, conn.retries
+                    );
                     conn.stream = None;
                     conn.connecting = false;
                     conn.retries = conn.retries.saturating_add(1);

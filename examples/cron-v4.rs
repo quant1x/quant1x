@@ -33,19 +33,21 @@ impl TaskScheduler {
         let interval = Duration::from_secs(interval_seconds);
 
         // 发送任务到处理线程
-        self.sender.send(Box::new(move || {
-            let task_clone = task.clone();
-            let interval_clone = interval.clone();
+        self.sender
+            .send(Box::new(move || {
+                let task_clone = task.clone();
+                let interval_clone = interval.clone();
 
-            // 在Tokio运行时中执行定时任务
-            tokio::spawn(async move {
-                let mut timer = time::interval(interval_clone);
-                loop {
-                    timer.tick().await;
-                    task_clone();
-                }
-            });
-        })).unwrap();
+                // 在Tokio运行时中执行定时任务
+                tokio::spawn(async move {
+                    let mut timer = time::interval(interval_clone);
+                    loop {
+                        timer.tick().await;
+                        task_clone();
+                    }
+                });
+            }))
+            .unwrap();
     }
 }
 
@@ -56,7 +58,6 @@ where
 {
     (task)();
 }
-
 
 fn main() {
     let scheduler = TaskScheduler::new();

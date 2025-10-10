@@ -2,14 +2,15 @@
 #ifndef QUANT1X_NETWORK_IO_CONNECTION_POOL_H
 #define QUANT1X_NETWORK_IO_CONNECTION_POOL_H 1
 
+#include <queue>
+#include <shared_mutex>
+#include <utility>
+
 #include "quant1x/net/endpoint.h"
 #include "quant1x/net/operation_handler.h"
 #include "quant1x/runtime/core.h"
-#include "quant1x/std/util.h"
 #include "quant1x/std/except.h"
-#include <shared_mutex>
-#include <utility>
-#include <queue>
+#include "quant1x/std/util.h"
 
 /**
  * @brief RAII管理的TCP连接包装类
@@ -23,11 +24,8 @@ public:
      * @param socket 已建立的TCP socket连接
      * @param endpoint 该连接对应的远程端点
      */
-    Connection(asio::ip::tcp::socket socket,
-               asio::ip::tcp::endpoint endpoint)
-            : socket_(std::move(socket)),
-              endpoint_(std::move(endpoint))
-    {
+    Connection(asio::ip::tcp::socket socket, asio::ip::tcp::endpoint endpoint)
+        : socket_(std::move(socket)), endpoint_(std::move(endpoint)) {
         if (!socket_.is_open()) {
             throw std::invalid_argument("Socket must be connected");
         }
@@ -37,31 +35,25 @@ public:
      * @brief 析构函数 - 自动关闭socket连接
      * @note 不会释放Endpoint资源(由连接池管理)
      */
-    ~Connection() {
-        close();
-    }
+    ~Connection() { close(); }
 
     // 禁用拷贝和移动
-    Connection(const Connection&) = delete;
-    Connection& operator=(const Connection&) = delete;
-    Connection(Connection&&) = delete;
-    Connection& operator=(Connection&&) = delete;
+    Connection(const Connection &)            = delete;
+    Connection &operator=(const Connection &) = delete;
+    Connection(Connection &&)                 = delete;
+    Connection &operator=(Connection &&)      = delete;
 
     /**
      * @brief 获取底层socket引用(非线程安全)
      * @return 可读写的socket引用
      */
-    asio::ip::tcp::socket& socket() noexcept {
-        return socket_;
-    }
+    asio::ip::tcp::socket &socket() noexcept { return socket_; }
 
     /**
      * @brief 获取连接的远程端点
      * @return 端点常量引用
      */
-    [[nodiscard]] const asio::ip::tcp::endpoint& endpoint() const noexcept {
-        return endpoint_;
-    }
+    [[nodiscard]] const asio::ip::tcp::endpoint &endpoint() const noexcept { return endpoint_; }
 
     /**
      * @brief 显式关闭连接
@@ -79,13 +71,11 @@ public:
     /**
      * @brief 检查连接是否仍然打开
      */
-    [[nodiscard]] bool isOpen() const noexcept {
-        return socket_.is_open();
-    }
+    [[nodiscard]] bool isOpen() const noexcept { return socket_.is_open(); }
 
 private:
-    asio::ip::tcp::socket socket_;           ///< 底层TCP socket
-    const asio::ip::tcp::endpoint endpoint_; ///< 连接的远程端点
+    asio::ip::tcp::socket         socket_;    ///< 底层TCP socket
+    const asio::ip::tcp::endpoint endpoint_;  ///< 连接的远程端点
 };
 
 /**
@@ -100,16 +90,14 @@ public:
      * @param max_connections 最大连接数
      * @param network_handler 网络操作处理器
      */
-    TcpConnectionPool(size_t min_connections,
-                      size_t max_connections,
-                      std::shared_ptr<Handler> network_handler)
-            : min_connections_(min_connections),
-              max_connections_(max_connections),
-              endpoint_weight_(1),
-              network_handler_(std::move(network_handler)),
-              endpoint_manager_(std::make_shared<EndpointManager>()),
-              io_context_(std::make_shared<asio::io_context>()),
-              work_guard_(asio::make_work_guard(*io_context_)) {
+    TcpConnectionPool(size_t min_connections, size_t max_connections, std::shared_ptr<Handler> network_handler)
+        : min_connections_(min_connections)
+        , max_connections_(max_connections)
+        , endpoint_weight_(1)
+        , network_handler_(std::move(network_handler))
+        , endpoint_manager_(std::make_shared<EndpointManager>())
+        , io_context_(std::make_shared<asio::io_context>())
+        , work_guard_(asio::make_work_guard(*io_context_)) {
         // 参数校验
         if (min_connections_ > max_connections_) {
             throw std::invalid_argument("min_connections cannot be greater than max_connections");
@@ -122,32 +110,35 @@ public:
             throw std::invalid_argument("network_handler cannot be null");
         }
 
-        spdlog::info("[connection pool] min_connections={}, max_connections={}, endpoint_weight={}", min_connections_, max_connections_, endpoint_weight_);
+        spdlog::debug("[connection pool] min_connections={}, max_connections={}, endpoint_weight={}",
+                      min_connections_,
+                      max_connections_,
+                      endpoint_weight_);
 
         // 创建IO上下文线程池
-        int num_threads = 2; // 使用 2 个线程
+        int num_threads = 2;  // 使用 2 个线程
         for (int i = 0; i < num_threads; ++i) {
             io_threads_.emplace_back([this, i]() {
                 // 自动绑定到最优CPU
                 std::error_code ec{};
-                if(affinity::bind_current_thread_to_optimal_cpu(ec)) {
-                    spdlog::info("thread[{}] affinity, ok", i);
+                if (affinity::bind_current_thread_to_optimal_cpu(ec)) {
+                    spdlog::debug("thread[{}] affinity, ok", i);
                 } else {
                     // 亲和性的错误是可以忽略的
                     spdlog::warn("Thread {} affinity with exception: [{}:{}]", i, ec.value(), ec.message());
                 }
                 u64 thread_id = util::get_thread_id(std::this_thread::get_id());
-                spdlog::info("Thread {} started (ID: {})", i, thread_id);
+                spdlog::debug("Thread {} started (ID: {})", i, thread_id);
 
                 try {
-                    io_context_->run(); // 运行事件循环
+                    io_context_->run();  // 运行事件循环
                     spdlog::info("Thread {} finished normally (ID: {})", i, thread_id);
-                } catch (const std::exception& e) {
+                } catch (const std::exception &e) {
                     spdlog::error("Thread {} exited with exception: {} (ID: {})", i, e.what(), thread_id);
                 }
             });
             // 确保线程已启动(可选)
-            //std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            // std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
 
         start();
@@ -159,13 +150,13 @@ public:
     ~TcpConnectionPool() {
         spdlog::warn("正在关闭连接池...");
         stop();
-        //endpoint_manager_.reset();
-        //network_handler_.reset();
-        //io_context_.reset();
+        // endpoint_manager_.reset();
+        // network_handler_.reset();
+        // io_context_.reset();
         spdlog::warn("正在关闭线程池...");
         try {
             // 等待所有线程完成
-            for (auto &t: io_threads_) {
+            for (auto &t : io_threads_) {
                 if (!t.joinable()) {
                     spdlog::warn("发现不可 join 的线程对象");
                     continue;
@@ -193,7 +184,7 @@ public:
         spdlog::warn("正在关闭线程池...OK");
         spdlog::warn("正在关闭连接池...OK");
     }
-    
+
     /**
      * @brief 添加一个端点到端点管理器
      *
@@ -219,19 +210,19 @@ public:
 
     /**
      * @brief 从连接池获取一个可用连接或创建新连接
-     * 
+     *
      * 该方法首先尝试从空闲连接池获取可用连接，如果没有可用连接则创建新连接。
      * 返回的连接对象使用自定义删除器，当连接不再使用时自动归还到连接池。
-     * 
+     *
      * @return std::unique_ptr<Connection, std::function<void(Connection*)>> 带有自动归还功能的连接指针
      * @throws std::runtime_error 当没有可用端点或连接超时时抛出
      * @throws std::system_error 当系统级连接错误发生时抛出
      * @throws std::exception 当握手失败或其他连接错误发生时抛出
-     * 
+     *
      * @note 返回的连接对象会在析构时自动调用release()方法归还到连接池
      * @warning 调用者必须确保在连接使用期间io_context和endpoint_manager保持有效
      */
-    std::unique_ptr<Connection, std::function<void(Connection*)>> acquire() {
+    std::unique_ptr<Connection, std::function<void(Connection *)>> acquire() {
         // 1. 首先尝试从空闲连接池获取
         std::unique_ptr<Connection> raw_conn;
         {
@@ -269,8 +260,7 @@ public:
                 // 带超时的异步连接
                 std::future<void> connect_future = socket.async_connect(endpoint, asio::use_future);
 
-                if (connect_future.wait_for(network_handler_->timeout()) ==
-                    std::future_status::timeout) {
+                if (connect_future.wait_for(network_handler_->timeout()) == std::future_status::timeout) {
                     socket.close();
                     endpoint_manager_->releaseEndpoint(endpoint);
                     spdlog::error("Connection timeout to {}:{}", endpoint.address().to_string(), endpoint.port());
@@ -289,13 +279,15 @@ public:
                 // 2.4 创建连接对象
                 raw_conn = std::make_unique<Connection>(std::move(socket), endpoint);
                 spdlog::debug("Created new connection (ID: {})", reinterpret_cast<uintptr_t>(raw_conn.get()));
-            } catch (const std::system_error& e) {
-                if (socket.is_open()) socket.close();
+            } catch (const std::system_error &e) {
+                if (socket.is_open())
+                    socket.close();
                 endpoint_manager_->releaseEndpoint(endpoint);
                 spdlog::error("System error while connecting: {} (code: {})", e.what(), e.code().value());
                 throw;
-            } catch (const std::exception& e) {
-                if (socket.is_open()) socket.close();
+            } catch (const std::exception &e) {
+                if (socket.is_open())
+                    socket.close();
                 endpoint_manager_->releaseEndpoint(endpoint);
                 spdlog::error("Error while connecting: {}", e.what());
                 throw;
@@ -303,24 +295,21 @@ public:
         }
 
         // 3. 创建自动归还包装器
-        auto deleter = [this](Connection* conn) {
+        auto deleter = [this](Connection *conn) {
             if (conn) {
                 try {
                     spdlog::debug("Auto-release connection (ID: {})", reinterpret_cast<uintptr_t>(conn));
                     // 复用returnConnection实现
                     this->release(std::unique_ptr<Connection>(conn));
                     spdlog::debug("Auto-released connection (ID: {})", reinterpret_cast<uintptr_t>(conn));
-                } catch (const std::exception& e) {
+                } catch (const std::exception &e) {
                     spdlog::error("Error during auto-release: {}", e.what());
                 }
             }
         };
         active_connection_count_++;
         // 4. 返回带有自定义删除器的unique_ptr
-        return std::unique_ptr<Connection, decltype(deleter)>(
-                raw_conn.release(),
-                deleter
-        );
+        return std::unique_ptr<Connection, decltype(deleter)>(raw_conn.release(), deleter);
     }
 
     /**
@@ -344,22 +333,28 @@ public:
         const auto conn_id = reinterpret_cast<uintptr_t>(conn.get());
         spdlog::debug("Returning connection (ID: {})", conn_id);
 
-        // 1. 归还Endpoint到管理器
-        endpoint_manager_->releaseEndpoint(conn->endpoint());
+        // NOTE: Do NOT release the Endpoint when returning the connection to
+        // the idle pool. The Endpoint allocation must remain reserved for
+        // this connection while it is idle. Releasing the endpoint here can
+        // cause the same fastest endpoint to be allocated to new connections
+        // while existing idle connections still hold sockets to it, which
+        // violates the endpoint's max-connections semantics.
+        // The endpoint will be released when the connection is actually
+        // closed (see closeConnection) or when an error/exception occurs.
 
-//        // 2. 检查连接健康状态
-//        bool is_healthy = false;
-//        try {
-//            is_healthy = network_handler_->keepalive(conn->socket());
-//        } catch (const std::exception& e) {
-//            spdlog::warn("Health check failed for connection {}: {}", conn_id, e.what());
-//        }
+        //        // 2. 检查连接健康状态
+        //        bool is_healthy = false;
+        //        try {
+        //            is_healthy = network_handler_->keepalive(conn->socket());
+        //        } catch (const std::exception& e) {
+        //            spdlog::warn("Health check failed for connection {}: {}", conn_id, e.what());
+        //        }
 
         std::lock_guard<std::mutex> lock(connections_mutex_);
-            idle_connections_.push_back(std::move(conn));
-            idle_connection_count_++;
-            active_connection_count_--;
-            spdlog::debug("Connection {} returned to pool", conn_id);
+        idle_connections_.push_back(std::move(conn));
+        idle_connection_count_++;
+        active_connection_count_--;
+        spdlog::debug("Connection {} returned to pool", conn_id);
     }
 
     /**
@@ -400,7 +395,7 @@ public:
         running_ = true;
         startHeartbeatTimer();
     }
-    
+
     /**
      * @brief 停止服务运行
      *
@@ -420,42 +415,38 @@ public:
 
         closeAllConnections();
 
-        asio::post(*io_context_, [this]() {
-            asio::dispatch(*io_context_, [this]() {
-                io_context_->poll();
-            });
-        });
+        asio::post(*io_context_, [this]() { asio::dispatch(*io_context_, [this]() { io_context_->poll(); }); });
 
         io_context_->stop();
     }
 
-    [[nodiscard]] std::pair<size_t, size_t> getEndpointStats(const std::string& host, unsigned short port) const {
+    [[nodiscard]] std::pair<size_t, size_t> getEndpointStats(const std::string &host, unsigned short port) const {
         try {
-            asio::ip::address addr = asio::ip::make_address(host);
+            asio::ip::address       addr = asio::ip::make_address(host);
             asio::ip::tcp::endpoint ep(addr, port);
             return endpoint_manager_->getEndpointStats(ep);
-        } catch (const std::exception& e) {
+        } catch (const std::exception &e) {
             throw std::runtime_error(std::string("Invalid endpoint: ") + e.what());
         }
     }
 
 private:
-    std::vector<std::thread> io_threads_;                      ///< IO上下文运行线程
-    std::atomic<bool> running_{false};                         ///< 连接池运行状态
-    std::mutex connections_mutex_;
-    std::deque<std::unique_ptr<Connection>> idle_connections_; ///< 空闲连接
-    size_t idle_connection_count_{0};                          ///< 空闲连接数量(动态统计)
-    size_t active_connection_count_{0};                        ///< 活跃连接数量(动态统计)
+    std::vector<std::thread>                io_threads_;      ///< IO上下文运行线程
+    std::atomic<bool>                       running_{false};  ///< 连接池运行状态
+    std::mutex                              connections_mutex_;
+    std::deque<std::unique_ptr<Connection>> idle_connections_;            ///< 空闲连接
+    size_t                                  idle_connection_count_{0};    ///< 空闲连接数量(动态统计)
+    size_t                                  active_connection_count_{0};  ///< 活跃连接数量(动态统计)
 
-    const size_t min_connections_;  ///< 最小连接数
-    const size_t max_connections_;  ///< 最大连接数
-    const size_t endpoint_weight_;  ///< endpoint权重
-    std::shared_ptr<Handler> network_handler_;  ///< 网络操作处理器
-    std::shared_ptr<EndpointManager> endpoint_manager_;  ///< endpoint管理器
-    std::shared_ptr<asio::io_context> io_context_;  ///< IO上下文
-    asio::executor_work_guard<asio::io_context::executor_type> work_guard_;  ///< 保持IO上下文运行
-    std::unique_ptr<asio::steady_timer> heartbeat_timer_;  ///< 心跳定时器
-    
+    const size_t                                               min_connections_;   ///< 最小连接数
+    const size_t                                               max_connections_;   ///< 最大连接数
+    const size_t                                               endpoint_weight_;   ///< endpoint权重
+    std::shared_ptr<Handler>                                   network_handler_;   ///< 网络操作处理器
+    std::shared_ptr<EndpointManager>                           endpoint_manager_;  ///< endpoint管理器
+    std::shared_ptr<asio::io_context>                          io_context_;        ///< IO上下文
+    asio::executor_work_guard<asio::io_context::executor_type> work_guard_;        ///< 保持IO上下文运行
+    std::unique_ptr<asio::steady_timer>                        heartbeat_timer_;   ///< 心跳定时器
+
     /**
      * @brief 启动心跳定时器，定期检查连接状态
      *
@@ -481,7 +472,7 @@ private:
             try_create_connections();
         });
     }
-    
+
     /**
      * @brief 检查并清理空闲连接池中的无效连接
      *
@@ -509,7 +500,7 @@ private:
                                                }),
                                 idle_connections_.end());
     }
-    
+
     /**
      * @brief 尝试创建新的连接以维持最小连接数
      *
@@ -523,21 +514,21 @@ private:
         // 如果活跃的连接数不足最小连接数, 则主动创建
         int max_retries = 10;  // 最大重试次数
         int retry_count = 0;
-        while(active_connection_count_+idle_connection_count_ < min_connections_ && retry_count < max_retries) {
+        while (active_connection_count_ + idle_connection_count_ < min_connections_ && retry_count < max_retries) {
             size_t available = endpoint_manager_->getAvailableResources();
             if (available == 0) {
                 spdlog::warn("endpoint资源不足, 无法创建新的连接, (retry {}/{})", retry_count, max_retries);
-                std::this_thread::sleep_for(std::chrono::milliseconds(100)); // 等待一段时间后重试
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));  // 等待一段时间后重试
                 ++retry_count;
                 continue;
             } else {
                 try {
                     auto conn = acquire();
-                    ++retry_count; // 成功获取连接后重置重试计数
+                    ++retry_count;  // 成功获取连接后重置重试计数
                     spdlog::debug("补充1个连接, endpoint={}", conn->endpoint());
-                } catch (const std::exception& e) {
+                } catch (const std::exception &e) {
                     spdlog::error("Error acquiring new connection: {}", e.what());
-                    break; // 捕获异常后退出循环
+                    break;  // 捕获异常后退出循环
                 }
             }
         }
@@ -563,4 +554,4 @@ private:
     }
 };
 
-#endif //QUANT1X_NETWORK_IO_CONNECTION_POOL_H
+#endif  // QUANT1X_NETWORK_IO_CONNECTION_POOL_H

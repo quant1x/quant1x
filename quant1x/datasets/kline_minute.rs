@@ -72,16 +72,19 @@ impl DataAdapter for DataMinuteKLine {
     fn print(&self, _code: &str, _dates: &[Timestamp]) {}
 
     fn update(&self, code: &str, _date: Timestamp) {
-    // Read minute kline config (must mirror C++ datasets::get_minute_kline_config)
-    let mkc = crate::config::get_minute_kline_config();
-    if !mkc.enabled {
-        log::debug!("[DataMinuteKLine] minute kline not enabled in config");
-        return;
-    }
-    // build minute filename using normalized frequency from config
-    let filename = crate::config::get_kline_filename_ex(code, &mkc.frequency);
+        // Read minute kline config (must mirror C++ datasets::get_minute_kline_config)
+        let mkc = crate::config::get_minute_kline_config();
+        if !mkc.enabled {
+            log::debug!("[DataMinuteKLine] minute kline not enabled in config");
+            return;
+        }
+        // build minute filename using normalized frequency from config
+        let filename = crate::config::get_kline_filename_ex(code, &mkc.frequency);
         if filename.is_empty() {
-            log::error!("[DataMinuteKLine] cannot build minute filename for {}", code);
+            log::error!(
+                "[DataMinuteKLine] cannot build minute filename for {}",
+                code
+            );
             return;
         }
         log::debug!("[DataMinuteKLine] cache filename: {}", filename);
@@ -125,16 +128,29 @@ impl DataAdapter for DataMinuteKLine {
 
         let mut klines_offset = MAX_KLINE_LOOKBACK_DAYS * number_of_day;
         let mut adjust_times = 0i32;
+        // default very old date if no cache
         let mut current_start_date =
             crate::Timestamp::pre_market_time(1990, 12, 19).unwrap_or(crate::Timestamp::zero());
         if klines_length > 0 {
             if klines_offset > klines_length {
                 klines_offset = klines_length;
             }
-            let kline = &cache_klines[klines_length - klines_offset];
-            if let Ok(ts) = crate::Timestamp::parse(&kline.date) {
-                current_start_date = ts;
+            // Avoid relying on per-row datetime field (may be unreliable). Instead compute
+            // the start date by stepping back N trading days from today, where N is the
+            // number of whole trading days represented by klines_offset.
+            let back_days = if number_of_day > 0 {
+                klines_offset / number_of_day
+            } else {
+                0
+            };
+            let mut ts = crate::Timestamp::pre_market_time_from_current(&crate::Timestamp::now())
+                .unwrap_or(crate::Timestamp::now());
+            for _ in 0..back_days {
+                ts = crate::exchange::prev_trading_day(ts);
             }
+            current_start_date = ts;
+            // preserve adjustment count from the cached boundary row
+            let kline = &cache_klines[klines_length - klines_offset];
             adjust_times = kline.adjustment_count;
         }
 
@@ -159,7 +175,11 @@ impl DataAdapter for DataMinuteKLine {
         // and convert days -> minute entries using `number_of_day` (minutes-per-day / period)
         let max_entries: usize = 65535;
         let total_days = ts_range.len();
-        let max_days = if number_of_day > 0 { max_entries / number_of_day } else { total_days };
+        let max_days = if number_of_day > 0 {
+            max_entries / number_of_day
+        } else {
+            total_days
+        };
         let days = std::cmp::min(max_days, total_days);
         if days == 0 {
             log::debug!("[DataMinuteKLine] empty date range for {}", code);
@@ -184,7 +204,17 @@ impl DataAdapter for DataMinuteKLine {
         while start_idx < total {
             let remaining = total - start_idx;
             let count = std::cmp::min(step, remaining) as u16;
-            match crate::datasets::kline_raw::fetch_kline(code, start_idx as u16, count, kline_type) {
+            // Minimal observability: log request parameters before fetching a page
+            log::info!(
+                "[DataMinuteKLine] fetch request: code={} kline_type={:?} start_idx={} count={} total={}",
+                code,
+                kline_type,
+                start_idx,
+                count,
+                total
+            );
+            match crate::datasets::kline_raw::fetch_kline(code, start_idx as u16, count, kline_type)
+            {
                 reply if !reply.is_empty() => {
                     hs.push(reply);
                     if hs.last().unwrap().len() < count as usize {
@@ -214,8 +244,9 @@ impl DataAdapter for DataMinuteKLine {
         let mut incremental_klines: Vec<MinuteKLine> = Vec::new();
         for page in hs.iter() {
             for row in page.iter() {
-                let date_time = crate::Timestamp::pre_market_time(row.year, row.month as u32, row.day as u32)
-                    .unwrap_or(crate::Timestamp::now());
+                let date_time =
+                    crate::Timestamp::pre_market_time(row.year, row.month as u32, row.day as u32)
+                        .unwrap_or(crate::Timestamp::now());
                 if date_time < current_start_date || date_time > current_end_date {
                     continue;
                 }
@@ -289,7 +320,12 @@ impl DataAdapter for DataMinuteKLine {
                 }
                 let _ = w.flush();
                 if let Err(e) = std::fs::rename(&tmp, &filename) {
-                    log::error!("[DataMinuteKLine] rename failed {} -> {}: {}", tmp, filename, e);
+                    log::error!(
+                        "[DataMinuteKLine] rename failed {} -> {}: {}",
+                        tmp,
+                        filename,
+                        e
+                    );
                 }
             }
             Err(e) => {
@@ -384,7 +420,6 @@ pub fn init() {
     let plugin = Arc::new(DataMinuteKLine) as Arc<dyn DataAdapter>;
     cache::register(plugin);
 }
-
 
 #[cfg(test)]
 mod tests {

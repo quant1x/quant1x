@@ -1,7 +1,7 @@
 use super::sequence_id;
+use crate::level1::commands::*;
 use crate::level1::transaction_data::TickTransaction;
 use crate::std::BinaryStream;
-use crate::level1::commands::*;
 
 // Request builder for HISTORY_TRANSACTION_DATA (aligns with C++ HistoryTransactionRequest)
 #[allow(dead_code)]
@@ -146,7 +146,12 @@ impl TransactionHistoryResponse {
         // Rough estimate: header 6 bytes + each transaction ~5 bytes (u16 + 5 varints)
         let min_required = 6 + (self.count as usize) * 5;
         if data.len() < min_required {
-            log::warn!("insufficient data for {} historical transactions: data len {}, min required {}", self.count, data.len(), min_required);
+            log::warn!(
+                "insufficient data for {} historical transactions: data len {}, min required {}",
+                self.count,
+                data.len(),
+                min_required
+            );
             return;
         }
         self.list.reserve(self.count as usize);

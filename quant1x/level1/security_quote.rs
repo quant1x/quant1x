@@ -1,12 +1,12 @@
 #![allow(dead_code)]
 
 use super::sequence_id;
+use crate::level1::commands::*;
 use crate::std::BinaryStream;
 use crate::Timestamp;
-use std::panic;
 use hex;
 use std::collections::{HashMap, VecDeque};
-use crate::level1::commands::*;
+use std::panic;
 
 #[derive(Debug, Clone)]
 pub enum TradeState {
@@ -275,122 +275,126 @@ impl SecurityQuoteResponse {
             self.count = bs.get_u16();
             self.list.reserve(self.count as usize);
             for _ in 0..self.count {
-            let mut ele = SecurityQuote::new();
-            ele.market = bs.get_u8();
-            ele.code = bs.get_string(6);
-            let base_unit = super::default_base_unit(ele.market as i32, &ele.code);
-            ele.active1 = bs.get_u16();
+                let mut ele = SecurityQuote::new();
+                ele.market = bs.get_u8();
+                ele.code = bs.get_string(6);
+                let base_unit = super::default_base_unit(ele.market as i32, &ele.code);
+                ele.active1 = bs.get_u16();
 
-            let price_base = bs.varint_decode();
-            ele.price = (price_base as f64) / base_unit;
-            let tmp = bs.varint_decode();
-            ele.last_close = ((price_base + tmp) as f64) / base_unit;
-            ele.open = ((price_base + bs.varint_decode()) as f64) / base_unit;
-            ele.high = ((price_base + bs.varint_decode()) as f64) / base_unit;
-            ele.low = ((price_base + bs.varint_decode()) as f64) / base_unit;
+                let price_base = bs.varint_decode();
+                ele.price = (price_base as f64) / base_unit;
+                let tmp = bs.varint_decode();
+                ele.last_close = ((price_base + tmp) as f64) / base_unit;
+                ele.open = ((price_base + bs.varint_decode()) as f64) / base_unit;
+                ele.high = ((price_base + bs.varint_decode()) as f64) / base_unit;
+                ele.low = ((price_base + bs.varint_decode()) as f64) / base_unit;
 
-            ele.server_time = {
-                let rb0 = bs.varint_decode();
-                if rb0 > 0 {
-                    format_time(rb0)
-                } else {
-                    "0".to_string()
-                }
-            };
-            ele.reversed5 = bs.varint_decode();
-
-            ele.vol = bs.varint_decode();
-            ele.vol *= 100;
-            ele.cur_vol = bs.varint_decode();
-            let raw_amount = bs.get_u32();
-            ele.amount = super::int_to_float64(raw_amount);
-
-            ele.s_vol = bs.varint_decode();
-            ele.b_vol = bs.varint_decode();
-
-            ele.index_open_amount = bs.varint_decode() * 100;
-            ele.stock_open_amount = bs.varint_decode() * 100;
-
-            let is_index_or_block =
-                super::assert_index_by_market_and_code(ele.market as i32, &ele.code);
-            let tmp_open_volume = if is_index_or_block {
-                if ele.open != 0.0 {
-                    ((ele.index_open_amount as f64) / ele.open).round()
-                } else {
-                    0.0
-                }
-            } else {
-                if ele.open != 0.0 {
-                    ((ele.stock_open_amount as f64) / ele.open).round()
-                } else {
-                    0.0
-                }
-            };
-            if tmp_open_volume.is_nan() {
-                ele.open_volume = 0;
-            } else {
-                ele.open_volume = tmp_open_volume as i64;
-            }
-
-            for l in 0..5 {
-                let bid_price = ((bs.varint_decode() + price_base) as f64) / base_unit;
-                let ask_price = ((bs.varint_decode() + price_base) as f64) / base_unit;
-                let bid_vol = bs.varint_decode();
-                let ask_vol = bs.varint_decode();
-                ele.bid[l] = bid_price;
-                ele.ask[l] = ask_price;
-                ele.bid_vol[l] = bid_vol;
-                ele.ask_vol[l] = ask_vol;
-            }
-
-            ele.reversed4 = bs.get_u16();
-            ele.reversed5 = bs.varint_decode();
-            ele.reversed6 = bs.varint_decode();
-            ele.reversed7 = bs.varint_decode();
-            ele.reversed8 = bs.varint_decode();
-
-            let rev9 = bs.get_i16();
-            ele.rate = (rev9 as f64) / 100.0;
-            ele.active2 = bs.get_u16();
-
-            // Determine trade state
-            if ele.last_close == 0.0 && ele.open == 0.0 {
-                ele.state = TradeState::Delisting;
-            } else if ele.open != 0.0 {
-                ele.state = TradeState::Normal;
-            } else {
-                ele.state = TradeState::Suspend;
-            }
-
-            if is_index_or_block {
-                ele.index_open_amount = ele.bid_vol[0]; // indexUp
-                ele.index_open_amount = ele.bid_vol[1]; // indexUpLimit (approx)
-            }
-
-            // determine current session status using exchange session logic
-            let now_ts = Timestamp::now();
-            let (_update_rt, status) = crate::exchange::can_update_in_realtime(Some(now_ts));
-            // closing call auction phase => MASK_CALL_AUCTION | MASK_CLOSING
-            let in_closing = (status & crate::exchange::MASK_CALL_AUCTION) != 0
-                && (status & crate::exchange::MASK_CLOSING) != 0;
-            if in_closing {
-                if is_index_or_block {
-                    if ele.price != 0.0 {
-                        ele.close_volume = ((ele.cur_vol * 100) as f64 / ele.price) as i64;
+                ele.server_time = {
+                    let rb0 = bs.varint_decode();
+                    if rb0 > 0 {
+                        format_time(rb0)
                     } else {
-                        ele.close_volume = 0;
+                        "0".to_string()
+                    }
+                };
+                ele.reversed5 = bs.varint_decode();
+
+                ele.vol = bs.varint_decode();
+                ele.vol *= 100;
+                ele.cur_vol = bs.varint_decode();
+                let raw_amount = bs.get_u32();
+                ele.amount = super::int_to_float64(raw_amount);
+
+                ele.s_vol = bs.varint_decode();
+                ele.b_vol = bs.varint_decode();
+
+                ele.index_open_amount = bs.varint_decode() * 100;
+                ele.stock_open_amount = bs.varint_decode() * 100;
+
+                let is_index_or_block =
+                    super::assert_index_by_market_and_code(ele.market as i32, &ele.code);
+                let tmp_open_volume = if is_index_or_block {
+                    if ele.open != 0.0 {
+                        ((ele.index_open_amount as f64) / ele.open).round()
+                    } else {
+                        0.0
                     }
                 } else {
-                    ele.close_volume = ele.cur_vol * 100;
+                    if ele.open != 0.0 {
+                        ((ele.stock_open_amount as f64) / ele.open).round()
+                    } else {
+                        0.0
+                    }
+                };
+                if tmp_open_volume.is_nan() {
+                    ele.open_volume = 0;
+                } else {
+                    ele.open_volume = tmp_open_volume as i64;
                 }
-            }
 
-            ele.time_stamp = now_ts.to_string_with_layout("%Y%m%d%H%M%S%.3f");
-            self.list.push(ele);
+                for l in 0..5 {
+                    let bid_price = ((bs.varint_decode() + price_base) as f64) / base_unit;
+                    let ask_price = ((bs.varint_decode() + price_base) as f64) / base_unit;
+                    let bid_vol = bs.varint_decode();
+                    let ask_vol = bs.varint_decode();
+                    ele.bid[l] = bid_price;
+                    ele.ask[l] = ask_price;
+                    ele.bid_vol[l] = bid_vol;
+                    ele.ask_vol[l] = ask_vol;
+                }
+
+                ele.reversed4 = bs.get_u16();
+                ele.reversed5 = bs.varint_decode();
+                ele.reversed6 = bs.varint_decode();
+                ele.reversed7 = bs.varint_decode();
+                ele.reversed8 = bs.varint_decode();
+
+                let rev9 = bs.get_i16();
+                ele.rate = (rev9 as f64) / 100.0;
+                ele.active2 = bs.get_u16();
+
+                // Determine trade state
+                if ele.last_close == 0.0 && ele.open == 0.0 {
+                    ele.state = TradeState::Delisting;
+                } else if ele.open != 0.0 {
+                    ele.state = TradeState::Normal;
+                } else {
+                    ele.state = TradeState::Suspend;
+                }
+
+                if is_index_or_block {
+                    ele.index_open_amount = ele.bid_vol[0]; // indexUp
+                    ele.index_open_amount = ele.bid_vol[1]; // indexUpLimit (approx)
+                }
+
+                // determine current session status using exchange session logic
+                let now_ts = Timestamp::now();
+                let (_update_rt, status) = crate::exchange::can_update_in_realtime(Some(now_ts));
+                // closing call auction phase => MASK_CALL_AUCTION | MASK_CLOSING
+                let in_closing = (status & crate::exchange::MASK_CALL_AUCTION) != 0
+                    && (status & crate::exchange::MASK_CLOSING) != 0;
+                if in_closing {
+                    if is_index_or_block {
+                        if ele.price != 0.0 {
+                            ele.close_volume = ((ele.cur_vol * 100) as f64 / ele.price) as i64;
+                        } else {
+                            ele.close_volume = 0;
+                        }
+                    } else {
+                        ele.close_volume = ele.cur_vol * 100;
+                    }
+                }
+
+                ele.time_stamp = now_ts.to_string_with_layout("%Y%m%d%H%M%S%.3f");
+                self.list.push(ele);
             }
         }));
         if let Err(_) = result {
-            log::warn!("insufficient data for {} quotes, parsed {} successfully", self.count, self.list.len());
+            log::warn!(
+                "insufficient data for {} quotes, parsed {} successfully",
+                self.count,
+                self.list.len()
+            );
             self.count = self.list.len() as u16;
         }
     }

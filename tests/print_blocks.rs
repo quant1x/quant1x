@@ -10,7 +10,14 @@ fn print_blocks_from_meta() {
     let list = quant1x::sync_block_files();
     println!("sync_block_files returned {} blocks", list.len());
     for b in list.iter().take(200) {
-        println!("code={} name={} tp={} num={} block={} constituents={}",
-            b.code, b.name, b.tp, b.num, b.block, b.constituent_stocks.len());
+        println!(
+            "code={} name={} tp={} num={} block={} constituents={}",
+            b.code,
+            b.name,
+            b.tp,
+            b.num,
+            b.block,
+            b.constituent_stocks.len()
+        );
     }
 }

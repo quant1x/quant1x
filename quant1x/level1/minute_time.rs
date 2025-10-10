@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use super::sequence_id;
-use crate::std::BinaryStream;
 use crate::level1::commands::*;
+use crate::std::BinaryStream;
 
 // Request builder for HISTORY_MINUTE_DATA
 #[allow(dead_code)]
@@ -144,7 +144,12 @@ impl MinuteTimeResponse {
         // Rough estimate: header 6 bytes + each minute ~3 bytes (3 varints)
         let min_required = 6 + (self.count as usize) * 3;
         if data.len() < min_required {
-            log::warn!("insufficient data for {} minute times: data len {}, min required {}", self.count, data.len(), min_required);
+            log::warn!(
+                "insufficient data for {} minute times: data len {}, min required {}",
+                self.count,
+                data.len(),
+                min_required
+            );
             return;
         }
         self.list.reserve(self.count as usize);

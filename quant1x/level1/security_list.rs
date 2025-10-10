@@ -1,8 +1,8 @@
 use super::sequence_id;
+use crate::level1::commands::*;
 use crate::level1::int_to_float64;
 use crate::std::BinaryStream;
 use encoding_rs::GBK;
-use crate::level1::commands::*;
 
 // Request builder for SECURITY_LIST
 #[allow(dead_code)]
@@ -95,7 +95,12 @@ impl SecurityListResponse {
         // Rough estimate: each security needs at least ~25 bytes
         let min_required = 2 + (self.count as usize) * 25;
         if data.len() < min_required {
-            log::warn!("insufficient data for {} securities: data len {}, min required {}", self.count, data.len(), min_required);
+            log::warn!(
+                "insufficient data for {} securities: data len {}, min required {}",
+                self.count,
+                data.len(),
+                min_required
+            );
             return;
         }
 

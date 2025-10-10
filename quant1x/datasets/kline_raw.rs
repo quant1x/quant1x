@@ -18,7 +18,12 @@ mod detail {
         match level1::fetch_security_bars(code, kline_type as u16, 1, start as u32, count) {
             Some(response) => response.list,
             None => {
-                log::warn!("[datasets::kline_raw] fetch_kline failed for {} start={} count={}", code, start, count);
+                log::warn!(
+                    "[datasets::kline_raw] fetch_kline failed for {} start={} count={}",
+                    code,
+                    start,
+                    count
+                );
                 Vec::new()
             }
         }

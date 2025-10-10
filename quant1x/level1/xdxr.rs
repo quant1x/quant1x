@@ -1,6 +1,6 @@
 use super::BinaryStream;
-use serde::{Deserialize, Serialize};
 use crate::level1::commands::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct XdxrInfoRequest {

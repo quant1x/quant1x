@@ -1,6 +1,6 @@
-use std::sync::{Arc, Mutex, Condvar};
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 
 pub struct Runtime {

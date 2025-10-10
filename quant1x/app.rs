@@ -18,6 +18,7 @@ pub fn datasets_init() {
 pub fn logger_set(_verbose: bool, _debug: bool) {
     // 初始化 log4rs，将日志写入 <cache>/logs/quant1x.log，并使用滚动策略。
     use log::LevelFilter;
+    use log4rs::filter::threshold::ThresholdFilter;
     use std::path::PathBuf;
 
     let logs_dir = crate::config::get_logs_path();
@@ -32,9 +33,9 @@ pub fn logger_set(_verbose: bool, _debug: bool) {
     // 使用带日期的日志文件名，使每个日期生成独立日志文件。
     let date = chrono::Local::now().format("%Y-%m-%d").to_string();
     let mut dated_log_path = PathBuf::from(&logs_dir);
-    dated_log_path.push(format!("quant1x-{}.log", date));
+    dated_log_path.push(format!("quant1x-info-{}.log", date));
 
-    let pattern = "{d} {l} {t} - {m}\n";
+    let pattern = "{d(%Y-%m-%d %H:%M:%S%.3f)} {l} {t} - {m}\n";
     let app = match log4rs::append::file::FileAppender::builder()
         .encoder(Box::new(log4rs::encode::pattern::PatternEncoder::new(
             pattern,
@@ -53,6 +54,28 @@ pub fn logger_set(_verbose: bool, _debug: bool) {
     let appender = log4rs::config::Appender::builder().build("file", Box::new(app));
     config = config.appender(appender);
 
+    // Add an error-only file appender (Error and above). This keeps errors in the
+    // main log as well but also writes them to a dedicated file for easy inspection.
+    let mut err_log_path = PathBuf::from(&logs_dir);
+    err_log_path.push(format!("quant1x-error-{}.log", date));
+    let err_app = match log4rs::append::file::FileAppender::builder()
+        .encoder(Box::new(log4rs::encode::pattern::PatternEncoder::new(
+            pattern,
+        )))
+        .build(err_log_path.clone())
+    {
+        Ok(a) => a,
+        Err(e) => {
+            log::error!("Failed to build error FileAppender: {}", e);
+            let _ = env_logger::try_init();
+            return;
+        }
+    };
+    let err_appender = log4rs::config::Appender::builder()
+        .filter(Box::new(ThresholdFilter::new(LevelFilter::Error)))
+        .build("error_file", Box::new(err_app));
+    config = config.appender(err_appender);
+
     let level = if _debug {
         LevelFilter::Debug
     } else {
@@ -60,6 +83,7 @@ pub fn logger_set(_verbose: bool, _debug: bool) {
     };
     let root = log4rs::config::Root::builder()
         .appender("file")
+        .appender("error_file")
         .build(level);
 
     match config.build(root) {

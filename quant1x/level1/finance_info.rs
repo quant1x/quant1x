@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-use crate::std::BinaryStream;
 use crate::level1::commands::*;
+use crate::std::BinaryStream;
 
 #[derive(Debug, Clone)]
 pub struct FinanceInfoRequest {

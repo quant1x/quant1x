@@ -1,13 +1,16 @@
+use q1x::{self};
 use std::env;
 use std::io::Error;
-use q1x::{self};
 
-use signal_hook::{consts::{SIGINT, SIGTERM}, low_level};
+use log::{error, info};
+use signal_hook::{
+    consts::{SIGINT, SIGTERM},
+    low_level,
+};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-use log::{info, error};
 
 fn main() -> Result<(), Error> {
     // 打印当前工作目录

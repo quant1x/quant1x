@@ -1,6 +1,6 @@
 use quant1x::runtime::ringbuffer::Queue as VQueue;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
+use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
 
@@ -22,7 +22,9 @@ fn run_vyukov_once() -> f64 {
             let base = (id as i64) * DATA_PER_PRODUCER;
             for i in 0..DATA_PER_PRODUCER {
                 loop {
-                    if q2.push(base + i).is_ok() { break; }
+                    if q2.push(base + i).is_ok() {
+                        break;
+                    }
                     thread::yield_now();
                 }
             }
@@ -35,19 +37,23 @@ fn run_vyukov_once() -> f64 {
     for _ in 0..NUM_CONSUMERS {
         let q2 = q.clone();
         let c2 = consumed.clone();
-        consumers.push(thread::spawn(move || {
-            loop {
-                match q2.pop() {
-                    Ok(_) => { c2.fetch_add(1, Ordering::Relaxed); }
-                    Err(_) => break,
+        consumers.push(thread::spawn(move || loop {
+            match q2.pop() {
+                Ok(_) => {
+                    c2.fetch_add(1, Ordering::Relaxed);
                 }
+                Err(_) => break,
             }
         }));
     }
 
-    for p in producers { p.join().unwrap(); }
+    for p in producers {
+        p.join().unwrap();
+    }
     q.close();
-    for c in consumers { c.join().unwrap(); }
+    for c in consumers {
+        c.join().unwrap();
+    }
 
     let elapsed = start.elapsed();
     let got = consumed.load(Ordering::Relaxed);

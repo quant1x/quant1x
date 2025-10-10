@@ -19,7 +19,10 @@ pub fn process<R: Request, S: Response>(
     payload: &[u8],
     response: &mut S,
 ) -> std::io::Result<()> {
-    log::info!("Protocol process called with payload size: {}", payload.len());
+    log::info!(
+        "Protocol process called with payload size: {}",
+        payload.len()
+    );
 
     // 编码请求
     let req_bytes = request.encode(payload);

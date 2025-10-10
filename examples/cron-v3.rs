@@ -1,6 +1,6 @@
-use job_scheduler::{JobScheduler, Job};
-use std::time::Duration;
 use chrono::Local;
+use job_scheduler::{Job, JobScheduler};
+use std::time::Duration;
 
 fn main() {
     let mut sched = JobScheduler::new();

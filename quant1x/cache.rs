@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::fmt::Debug;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Condvar, Mutex};
 
 use crate::Timestamp;
 
@@ -129,10 +129,7 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
         log::warn!("No codes found for update");
     }
 
-    // 并发度默认值
-    let default_concurrency = std::thread::available_parallelism()
-        .map(|n| n.get())
-        .unwrap_or(4);
+    // 并发度默认值由每个 adapter 的配置决定（quant1x.yaml 中的 data.concurrency）
 
     let mut processed_adapters = 0usize;
 
@@ -151,6 +148,65 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
     let ordered_iter = base_adapters
         .into_iter()
         .chain(feature_adapters.into_iter());
+
+    // Determine a global concurrency limit based on level1 pool maximum connections.
+    let pool_max = crate::level1::pool_max_connections().unwrap_or(
+        std::thread::available_parallelism()
+            .map(|n| n.get())
+            .unwrap_or(4),
+    );
+
+    // Simple counting semaphore to bound concurrent network operations across all worker threads.
+    #[derive(Debug)]
+    struct SimpleSemaphore {
+        mutex: Mutex<usize>,
+        cvar: Condvar,
+        max: usize,
+    }
+
+    impl SimpleSemaphore {
+        fn new(max: usize) -> Self {
+            Self {
+                mutex: Mutex::new(0),
+                cvar: Condvar::new(),
+                max,
+            }
+        }
+
+        fn acquire(&self) {
+            let mut g = self.mutex.lock().unwrap();
+            while *g >= self.max {
+                g = self.cvar.wait(g).unwrap();
+            }
+            *g += 1;
+        }
+
+        fn release(&self) {
+            let mut g = self.mutex.lock().unwrap();
+            *g = g.saturating_sub(1);
+            self.cvar.notify_one();
+        }
+
+        fn guard(self: &Arc<Self>) -> SemGuard {
+            self.acquire();
+            SemGuard {
+                sem: Arc::clone(self),
+            }
+        }
+    }
+
+    #[derive(Clone)]
+    struct SemGuard {
+        sem: Arc<SimpleSemaphore>,
+    }
+
+    impl Drop for SemGuard {
+        fn drop(&mut self) {
+            self.sem.release();
+        }
+    }
+
+    let sem = Arc::new(SimpleSemaphore::new(pool_max));
 
     for adapter in ordered_iter {
         processed_adapters += 1;
@@ -177,7 +233,11 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
                 StdArc::new(StdMutex::new(Vec::new()));
 
             // 划分 codes（分块以供线程处理）
-            let num_threads = std::cmp::min(default_concurrency, 8);
+            let mut num_threads = crate::config::get_concurrency_for(&adapter.key());
+            // Ensure business thread count does not exceed level1 pool capacity
+            if num_threads == 0 || num_threads > pool_max {
+                num_threads = pool_max.max(1);
+            }
             let codes = all_codes.clone();
             let chunk_size = (codes.len() + num_threads - 1) / num_threads;
             let mut handles = Vec::new();
@@ -193,10 +253,13 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
                 let results_clone = results.clone();
                 let pb_clone = pb.clone();
 
+                let sem_clone = sem.clone();
                 let handle = std::thread::spawn(move || {
                     for code in codes_slice.into_iter() {
                         // 为每个代码克隆一个 feature 实例
                         if let Some(feature_instance) = adapter_clone.as_feature_clone() {
+                            // Acquire global semaphore before network/update work
+                            let _g = sem_clone.guard();
                             // 执行更新
                             feature_instance.update(&code, feature_date);
                             let vals = feature_instance.values();
@@ -204,6 +267,7 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
                                 let mut guard = results_clone.lock().unwrap();
                                 guard.push((code.clone(), vals));
                             }
+                            // `_g` dropped here, releasing semaphore
                         } else {
                             // 不应发生 - 上面已判断为 feature 适配器
                         }
@@ -265,7 +329,11 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
         } else {
             // base adapter: process codes potentially concurrently
             let codes = all_codes.clone();
-            let num_threads = std::cmp::min(default_concurrency, 8);
+            let mut num_threads = crate::config::get_concurrency_for(&adapter.key());
+            // Ensure business thread count does not exceed level1 pool capacity
+            if num_threads == 0 || num_threads > pool_max {
+                num_threads = pool_max.max(1);
+            }
             let chunk_size = (codes.len() + num_threads - 1) / num_threads;
             let mut handles = Vec::new();
             for t in 0..num_threads {
@@ -277,9 +345,12 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
                 let slice = codes[start..end].to_vec();
                 let adapter_clone = adapter.clone();
                 let pb_clone = pb.clone();
+                let sem_clone = sem.clone();
                 let handle = std::thread::spawn(move || {
                     for code in slice.into_iter() {
+                        let _g = sem_clone.guard();
                         adapter_clone.update(&code, feature_date);
+                        // `_g` released here
                         pb_clone.inc(1);
                     }
                 });

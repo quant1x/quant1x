@@ -242,7 +242,7 @@ mod lib_bridge {
 
     // 如果存在，转发到 crate 提供的实现。crate 在其 app 模块中导出 `quant1x::try_run_subcommand`。
     pub fn try_run_subcommand(name: &str, matches: &ArgMatches) -> Result<bool, Box<dyn Error>> {
-    // 如果可用，则调用 quant1x::try_run_subcommand
+        // 如果可用，则调用 quant1x::try_run_subcommand
         quant1x::try_run_subcommand(name, matches)
     }
 }

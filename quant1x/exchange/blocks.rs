@@ -1,11 +1,11 @@
+use crate::std::BinaryStream;
 use once_cell::sync::Lazy;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::sync::Mutex;
-use crate::std::BinaryStream;
-use unicode_normalization::UnicodeNormalization;
 use strsim::levenshtein;
+use unicode_normalization::UnicodeNormalization;
 
 #[derive(Clone, Debug)]
 pub struct BlockInfo {
@@ -41,7 +41,9 @@ fn decode_line_bytes(raw: &[u8]) -> String {
     }
 
     // UTF-8 attempt
-    let utf8_s = std::str::from_utf8(&line).map(|s| s.to_string()).unwrap_or_default();
+    let utf8_s = std::str::from_utf8(&line)
+        .map(|s| s.to_string())
+        .unwrap_or_default();
     // GBK attempt
     let (gbk_cow, _, _) = encoding_rs::GBK.decode(&line);
     let gbk_s = gbk_cow.to_string();
@@ -60,7 +62,11 @@ fn decode_line_bytes(raw: &[u8]) -> String {
 
     let utf8_han = count_han(&utf8_s);
     let gbk_han = count_han(&gbk_s);
-    if gbk_han > utf8_han { gbk_s.trim().to_string() } else { utf8_s.trim().to_string() }
+    if gbk_han > utf8_han {
+        gbk_s.trim().to_string()
+    } else {
+        utf8_s.trim().to_string()
+    }
 }
 
 fn read_config_file(fname: &str) -> Vec<BlockInfo> {
@@ -68,7 +74,10 @@ fn read_config_file(fname: &str) -> Vec<BlockInfo> {
     let mut out: Vec<BlockInfo> = Vec::new();
     let mut path = default_block_path();
     path.push(fname);
-    log::debug!("blocks: attempting to read config file: {}", path.to_string_lossy());
+    log::debug!(
+        "blocks: attempting to read config file: {}",
+        path.to_string_lossy()
+    );
     if !path.exists() {
         log::warn!("blocks: config file not found: {}", path.to_string_lossy());
         return out;
@@ -77,11 +86,20 @@ fn read_config_file(fname: &str) -> Vec<BlockInfo> {
         let mut reader = BufReader::new(f);
         let mut linebuf: Vec<u8> = Vec::new();
         while let Ok(n) = reader.read_until(b'\n', &mut linebuf) {
-            if n == 0 { break; }
+            if n == 0 {
+                break;
+            }
             // trim trailing LF and optional CR
-            if linebuf.last() == Some(&b'\n') { linebuf.pop(); }
-            if linebuf.last() == Some(&b'\r') { linebuf.pop(); }
-            if linebuf.is_empty() { linebuf.clear(); continue; }
+            if linebuf.last() == Some(&b'\n') {
+                linebuf.pop();
+            }
+            if linebuf.last() == Some(&b'\r') {
+                linebuf.pop();
+            }
+            if linebuf.is_empty() {
+                linebuf.clear();
+                continue;
+            }
             let line_slice = &linebuf[..];
             // To match C++ behavior exactly, decode each config line using GBK
             // and preserve the decoded content verbatim (do not trim) so that
@@ -89,7 +107,10 @@ fn read_config_file(fname: &str) -> Vec<BlockInfo> {
             // semantics.
             let (decoded_cow, _, _) = encoding_rs::GBK.decode(line_slice);
             let s = decoded_cow.to_string();
-            if s.is_empty() { linebuf.clear(); continue; }
+            if s.is_empty() {
+                linebuf.clear();
+                continue;
+            }
             let parts: Vec<&str> = s.split('|').collect();
             if parts.len() >= 6 {
                 if let Ok(tp) = parts[2].parse::<u16>() {
@@ -142,29 +163,48 @@ fn load_industry_blocks() -> Vec<(i32, String, String, String, String, String)> 
         let mut reader = BufReader::new(f);
         let mut linebuf: Vec<u8> = Vec::new();
         while let Ok(n) = reader.read_until(b'\n', &mut linebuf) {
-            if n == 0 { break; }
-            if linebuf.last() == Some(&b'\n') { linebuf.pop(); }
-            if linebuf.last() == Some(&b'\r') { linebuf.pop(); }
-            if linebuf.is_empty() { linebuf.clear(); continue; }
+            if n == 0 {
+                break;
+            }
+            if linebuf.last() == Some(&b'\n') {
+                linebuf.pop();
+            }
+            if linebuf.last() == Some(&b'\r') {
+                linebuf.pop();
+            }
+            if linebuf.is_empty() {
+                linebuf.clear();
+                continue;
+            }
             let line_slice = &linebuf[..];
             let (decoded_cow, _, _) = encoding_rs::GBK.decode(line_slice);
             let s = decoded_cow.to_string();
-            if s.is_empty() { linebuf.clear(); continue; }
+            if s.is_empty() {
+                linebuf.clear();
+                continue;
+            }
             let parts: Vec<&str> = s.split('|').collect();
             if parts.len() >= 3 {
                 if let Ok(market) = parts[0].parse::<i32>() {
                     // C++ ignores BeiJing market entries when loading industry blocks
                     if market == crate::exchange::MARKET_BEIJING as i32 {
-                        linebuf.clear(); continue;
+                        linebuf.clear();
+                        continue;
                     }
                     let code = crate::exchange::correct_security_code(parts[1]);
                     let block = parts[2].to_string();
-                    let block5 = if block.len() >= 5 { block[..5].to_string() } else { block.clone() };
+                    let block5 = if block.len() >= 5 {
+                        block[..5].to_string()
+                    } else {
+                        block.clone()
+                    };
                     let mut xblock = String::new();
                     let mut xblock5 = String::new();
                     if parts.len() >= 6 {
                         xblock5 = parts[5].to_string();
-                        if xblock5.len() >= 6 { xblock = xblock5[..5].to_string(); }
+                        if xblock5.len() >= 6 {
+                            xblock = xblock5[..5].to_string();
+                        }
                     }
                     out.push((market, code, block, block5, xblock, xblock5));
                 }
@@ -202,7 +242,10 @@ fn parse_and_generate_block_file() -> Vec<BlockInfo> {
     // NOTE: removed embedded .inc -> .cfg export. Files are expected to be
     // present under the configured block path (get_block_path()).
     let mut block_infos = load_index_block_infos();
-    log::debug!("blocks: loaded {} index block entries from tdxzs files", block_infos.len());
+    log::debug!(
+        "blocks: loaded {} index block entries from tdxzs files",
+        block_infos.len()
+    );
     let mut block2name = std::collections::HashMap::new();
     for b in block_infos.iter() {
         block2name.insert(b.block.clone(), b.name.clone());
@@ -212,24 +255,28 @@ fn parse_and_generate_block_file() -> Vec<BlockInfo> {
     // use literal filenames (the C++ names are in level1/block_meta.h but the
     // Rust module is private). These match the C++ constants.
     let bks = ["block.dat", "block_gn.dat", "block_fg.dat", "block_zs.dat"];
-    let mut name2block: std::collections::HashMap<String, BlockInfo> = std::collections::HashMap::new();
+    let mut name2block: std::collections::HashMap<String, BlockInfo> =
+        std::collections::HashMap::new();
     for filename in bks.iter() {
         // ensure the raw block file exists locally; attempt download from level1 server if missing
         let mut path = default_block_path();
         path.push(filename);
         if !path.exists() {
-            log::info!("blocks: raw file {} not found locally, attempting download", filename);
+            log::info!(
+                "blocks: raw file {} not found locally, attempting download",
+                filename
+            );
             if !download_block_file(filename) {
                 log::warn!("blocks: failed to download {}", filename);
                 continue;
             }
         }
         let parsed = parse_block_raw_data(filename);
-    // debug removed: parsed entries from raw block file
+        // debug removed: parsed entries from raw block file
         if parsed.is_empty() {
             continue;
         }
-    for bk in parsed.into_iter() {
+        for bk in parsed.into_iter() {
             // C++ behavior: initialize blockName with parsed.name and then
             // try to map that name via block2name. Do not prefer parsed.block
             // (the C++ code looks up block2Name using the parsed name).
@@ -252,9 +299,13 @@ fn parse_and_generate_block_file() -> Vec<BlockInfo> {
         if let Some(_info) = name2block.get(&bn) {
             let mut list: Vec<String> = Vec::new();
             for symbol in &_info.constituent_stocks {
-                if symbol.len() < 5 { continue; }
+                if symbol.len() < 5 {
+                    continue;
+                }
                 let (market_id, prefix, _x2) = crate::exchange::detect_market(symbol);
-                if market_id == crate::exchange::MARKET_BEIJING { continue; }
+                if market_id == crate::exchange::MARKET_BEIJING {
+                    continue;
+                }
                 list.push(format!("{}{}", prefix, symbol));
             }
             block_info.num = _info.num;
@@ -294,7 +345,11 @@ fn download_block_file(fname: &str) -> bool {
                 );
 
                 if resp.size == 0 || resp.data.is_empty() {
-                    log::warn!("blocks: empty chunk received for {} offset {}", fname, offset);
+                    log::warn!(
+                        "blocks: empty chunk received for {} offset {}",
+                        fname,
+                        offset
+                    );
                     break;
                 }
 
@@ -325,7 +380,11 @@ fn download_block_file(fname: &str) -> bool {
                 offset = offset.saturating_add(resp.size);
             }
             None => {
-                log::error!("blocks: level1 fetch returned error for {} offset {}", fname, offset);
+                log::error!(
+                    "blocks: level1 fetch returned error for {} offset {}",
+                    fname,
+                    offset
+                );
                 return false;
             }
         }
@@ -345,7 +404,11 @@ fn download_block_file(fname: &str) -> bool {
     path.push(fname);
     match std::fs::write(&path, &total) {
         Ok(_) => {
-            log::info!("blocks: saved {} ({} bytes)", path.to_string_lossy(), total.len());
+            log::info!(
+                "blocks: saved {} ({} bytes)",
+                path.to_string_lossy(),
+                total.len()
+            );
             true
         }
         Err(e) => {
@@ -359,9 +422,15 @@ fn parse_block_raw_data(fname: &str) -> Vec<BlockInfo> {
     let mut out = Vec::new();
     let mut path = default_block_path();
     path.push(fname);
-    log::debug!("blocks: attempting to parse raw block file: {}", path.to_string_lossy());
+    log::debug!(
+        "blocks: attempting to parse raw block file: {}",
+        path.to_string_lossy()
+    );
     if !path.exists() {
-        log::warn!("blocks: raw block file not found: {}", path.to_string_lossy());
+        log::warn!(
+            "blocks: raw block file not found: {}",
+            path.to_string_lossy()
+        );
         return out;
     }
     let data = match std::fs::read(&path) {
@@ -389,14 +458,14 @@ fn parse_block_raw_data(fname: &str) -> Vec<BlockInfo> {
             break;
         }
         bs.get_byte_array(&mut tmp1);
-    // name: first 9 bytes; C++ forms a std::string from these raw bytes then
-    // runs gbk_to_utf8 on that string. To match that exactly, decode the raw
-    // 9 bytes using GBK (do not first run UTF-8 lossy conversion).
-    let raw_name_bytes = &tmp1[..9];
-    // find NUL within the 9 bytes to trim, but keep the raw bytes for GBK decode
-    let name_nul = raw_name_bytes.iter().position(|&b| b == 0).unwrap_or(9);
-    let (gbk_cow, _, _) = encoding_rs::GBK.decode(&raw_name_bytes[..name_nul]);
-    let name = gbk_cow.to_string().trim().to_string();
+        // name: first 9 bytes; C++ forms a std::string from these raw bytes then
+        // runs gbk_to_utf8 on that string. To match that exactly, decode the raw
+        // 9 bytes using GBK (do not first run UTF-8 lossy conversion).
+        let raw_name_bytes = &tmp1[..9];
+        // find NUL within the 9 bytes to trim, but keep the raw bytes for GBK decode
+        let name_nul = raw_name_bytes.iter().position(|&b| b == 0).unwrap_or(9);
+        let (gbk_cow, _, _) = encoding_rs::GBK.decode(&raw_name_bytes[..name_nul]);
+        let name = gbk_cow.to_string().trim().to_string();
         // record raw hex of the name bytes (for diagnostics)
         let raw_name_hex = raw_name_bytes[..name_nul]
             .iter()

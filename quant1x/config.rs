@@ -1,24 +1,36 @@
 #![allow(dead_code)]
 use serde::{Deserialize, Serialize};
-use serde_yaml::Value as YamlValue;
+use serde_yaml;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
-/// Crate-level configuration and runtime paths.
+/// Application configuration (single type for both base paths and typed data).
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct BaseConfig {
+pub struct AppConfig {
+    // computed at startup (not from YAML)
+    #[serde(skip)]
     pub home_dir: String,
+    #[serde(skip)]
     pub filename: String,
+
+    // from YAML: mapped from `basedir`
+    #[serde(default, rename = "basedir")]
     pub cache_dir: String,
+
+    #[serde(default)]
     pub logs_dir: String,
+
+    // from YAML: mapped from `debug`
+    #[serde(default, rename = "debug")]
     pub running_in_debug: bool,
-    /// raw YAML data (optional)
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub data: Option<YamlValue>,
+
+    // typed `data` subsection parsed from YAML at startup
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub data: Option<DataSection>,
 }
 
-static GLOBAL_CONFIG: OnceLock<BaseConfig> = OnceLock::new();
+static CONFIG: OnceLock<AppConfig> = OnceLock::new();
 
 fn expand_homedir(path: &str) -> Option<PathBuf> {
     // prefer the crate-level homedir helper which mirrors C++ precedence
@@ -39,8 +51,8 @@ fn default_data_path() -> String {
     "~/.q1x-rust".to_string()
 }
 
-fn lazy_init() -> BaseConfig {
-    let mut cfg = BaseConfig::default();
+fn lazy_init() -> AppConfig {
+    let mut cfg = AppConfig::default();
     // init path
     let default_home = default_data_path();
     if let Some(home) = expand_homedir(&default_home) {
@@ -55,23 +67,26 @@ fn lazy_init() -> BaseConfig {
         cfg.home_dir = home.to_string_lossy().to_string();
         cfg.filename = config_file.to_string_lossy().to_string();
 
-        // try read yaml
+        // try read yaml and parse via a single typed root struct (no Value/node access)
         match fs::read_to_string(&cfg.filename) {
-            Ok(s) => match serde_yaml::from_str::<YamlValue>(&s) {
-                Ok(yaml) => {
-                    cfg.running_in_debug =
-                        yaml.get("debug").and_then(|v| v.as_bool()).unwrap_or(false);
-                    cfg.cache_dir = yaml
-                        .get("basedir")
-                        .and_then(|v| v.as_str())
-                        .map(|s| {
-                            // expand relative to home if starts with ~
-                            expand_homedir(s)
-                                .map(|p| p.to_string_lossy().to_string())
-                                .unwrap_or_else(|| cfg.home_dir.clone())
-                        })
-                        .unwrap_or_else(|| cfg.home_dir.clone());
-                    cfg.data = Some(yaml);
+            Ok(s) => match serde_yaml::from_str::<AppConfig>(&s) {
+                Ok(mut parsed) => {
+                    // merge computed values: home_dir and filename come from expanded home
+                    parsed.home_dir = cfg.home_dir.clone();
+                    parsed.filename = cfg.filename.clone();
+                    // if cache_dir from YAML is relative, expand
+                    parsed.cache_dir = if parsed.cache_dir.is_empty() {
+                        cfg.home_dir.clone()
+                    } else {
+                        expand_homedir(&parsed.cache_dir)
+                            .map(|p| p.to_string_lossy().to_string())
+                            .unwrap_or_else(|| cfg.home_dir.clone())
+                    };
+                    // logs_dir default
+                    if parsed.logs_dir.is_empty() {
+                        parsed.logs_dir = format!("{}/logs", parsed.cache_dir);
+                    }
+                    cfg = parsed;
                 }
                 Err(e) => {
                     log::warn!("failed to parse config yaml {}: {}", cfg.filename, e);
@@ -98,9 +113,26 @@ fn lazy_init() -> BaseConfig {
     cfg
 }
 
-/// Get a reference to global BaseConfig, initialize lazily.
-pub fn global_config() -> &'static BaseConfig {
-    GLOBAL_CONFIG.get_or_init(|| lazy_init())
+/// Get a reference to global AppConfig, initialize lazily.
+pub fn global_config() -> &'static AppConfig {
+    CONFIG.get_or_init(|| lazy_init())
+}
+
+// Typed application-level configuration parsed once at startup.
+use std::collections::HashMap;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DataSection {
+    #[serde(default)]
+    pub concurrency: Option<HashMap<String, usize>>,
+    #[serde(default)]
+    pub cache: Option<CacheSection>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CacheSection {
+    #[serde(default)]
+    pub kline: Option<HashMap<String, bool>>,
 }
 
 /// Return the path to the config filename (quant1x.yaml) after lazy init.
@@ -257,7 +289,10 @@ pub fn get_minute_filename(code: &str, cache_date: &str) -> String {
         return String::new();
     }
     if cache_date.len() != 8 {
-        log::error!("invalid cache_date format for minute filename: {}", cache_date);
+        log::error!(
+            "invalid cache_date format for minute filename: {}",
+            cache_date
+        );
         return String::new();
     }
     let year = &cache_date[0..4];
@@ -292,30 +327,22 @@ impl Default for MinuteKLineConfig {
 /// Mirrors C++ datasets::get_minute_kline_config which requires exactly one entry
 pub fn get_minute_kline_config() -> MinuteKLineConfig {
     let mut cfg = MinuteKLineConfig::default();
-    if let Some(yaml) = &global_config().data {
-        // navigate to data.cache.kline map if present
-        if let Some(cache) = yaml.get("data").and_then(|d| d.get("cache")) {
-            if let Some(kline_map) = cache.get("kline") {
-                if let Some(mapping) = kline_map.as_mapping() {
-                    if mapping.len() != 1 {
-                        // More robust: do not panic if the YAML is unexpected.
-                        // Log a warning and return the default (disabled) config so
-                        // the caller will skip minute updates instead of crashing.
-                        log::warn!(
-                            "kline config expected exactly one entry but found {}: disabling minute kline",
-                            mapping.len()
-                        );
-                        return cfg;
-                    }
-                    // take the single key/value
-                    if let Some((k, v)) = mapping.iter().next() {
-                        if let Some(key_str) = k.as_str() {
-                            cfg.frequency = key_str.to_string();
-                        }
-                        if let Some(enabled) = v.as_bool() {
-                            cfg.enabled = enabled;
-                        }
-                    }
+    // Prefer typed config (parsed at startup). This makes config handling
+    // single-entry and less error-prone. If typed config is present, use
+    // data.cache.kline and pick the first entry (if multiple exist) while
+    // logging a warning. Otherwise fall back to legacy YAML logic but still
+    // pick the first entry instead of panicking or disabling by default.
+    if let Some(typed) = &global_config().data {
+        if let Some(kmap) = &typed.cache.as_ref().and_then(|c| c.kline.as_ref()) {
+            if !kmap.is_empty() {
+                if kmap.len() > 1 {
+                    log::warn!(
+                        "typed config: multiple kline entries found, selecting the first one"
+                    );
+                }
+                if let Some((k, v)) = kmap.iter().next() {
+                    cfg.frequency = k.clone();
+                    cfg.enabled = *v;
                 }
             }
         }
@@ -328,7 +355,11 @@ pub fn get_minute_kline_config() -> MinuteKLineConfig {
                 cfg.frequency = freq_norm;
             }
             Err(e) => {
-                log::error!("failed to parse minute frequency '{}': {}", cfg.frequency, e);
+                log::error!(
+                    "failed to parse minute frequency '{}': {}",
+                    cfg.frequency,
+                    e
+                );
                 // keep defaults but mark disabled to avoid accidental fetches
                 cfg.enabled = false;
             }
@@ -336,6 +367,48 @@ pub fn get_minute_kline_config() -> MinuteKLineConfig {
     }
     cfg
 }
+
+/// Return concurrency for a specific data module/adapter key.
+///
+/// Looks up YAML at `data.concurrency.<key>` then `data.concurrency.default`.
+/// Falls back to detected parallelism and caps at 8 to preserve prior behavior.
+pub fn get_concurrency_for(key: &str) -> usize {
+    // Read from typed config parsed at startup (TYPED_CONFIG). If not present
+    // or no matching key, fall back to detected parallelism.
+    if let Some(typed) = &global_config().data {
+        if let Some(map) = &typed.concurrency {
+            if let Some(v) = map.get(key) {
+                let mut result = std::cmp::min(*v as usize, 8);
+                if let Some(max) = crate::level1::pool_max_connections() {
+                    result = std::cmp::min(result, max);
+                }
+                return result;
+            }
+            if let Some(v) = map.get("default") {
+                let mut result = std::cmp::min(*v as usize, 8);
+                if let Some(max) = crate::level1::pool_max_connections() {
+                    result = std::cmp::min(result, max);
+                }
+                return result;
+            }
+        }
+    }
+
+    // fallback to detected parallelism, cap to 8
+    let default = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(4);
+    let mut result = std::cmp::min(default, 8);
+    if let Some(max) = crate::level1::pool_max_connections() {
+        result = std::cmp::min(result, max);
+    }
+    result
+}
+
+// Note: runtime hot-reload and ad-hoc YAML caching were removed.
+// Configuration is parsed once (typed) via serde into `AppConfig` and stored
+// in `TYPED_CONFIG`. Callers should use `get_concurrency_for` which reads
+// from the typed config and falls back to sensible defaults.
 
 /// Return the path where block/sector metadata files (tdxzs.cfg, tdxhy.cfg, etc.) are located.
 /// We mirror the C++ behavior by looking for a bundled resources/meta directory inside

@@ -1,5 +1,5 @@
-use crate::std::BinaryStream;
 use crate::level1::commands::*;
+use crate::std::BinaryStream;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -57,7 +57,12 @@ impl TransactionResponse {
         // Rough estimate: each transaction needs at least ~5 bytes (u16 + 4 varints)
         let min_required = 2 + (self.count as usize) * 5;
         if data.len() < min_required {
-            log::warn!("insufficient data for {} transactions: data len {}, min required {}", self.count, data.len(), min_required);
+            log::warn!(
+                "insufficient data for {} transactions: data len {}, min required {}",
+                self.count,
+                data.len(),
+                min_required
+            );
             return;
         }
         self.list.reserve(self.count as usize);

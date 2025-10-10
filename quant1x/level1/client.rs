@@ -171,6 +171,11 @@ pub fn client() -> std::io::Result<crate::net::PooledConnection<ProtocolHandler>
     pool.acquire()
 }
 
+/// If the global pool has been initialized, return its configured max connections.
+pub fn pool_max_connections() -> Option<usize> {
+    CONNECTION_POOL.get().map(|p| p.max_connections())
+}
+
 // Implement the Net handler trait so the connection pool can use our handshake/keepalive
 impl crate::net::NetworkHandler for ProtocolHandler {
     fn handshake(&self, stream: &mut mio::net::TcpStream) -> std::io::Result<()> {

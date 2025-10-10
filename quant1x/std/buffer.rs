@@ -27,8 +27,14 @@ impl BinaryStream {
     }
 
     fn check_available(&self, required: usize) {
-        if required > self.buffer.len() || self.offset > self.buffer.len().saturating_sub(required) {
-            panic!("Insufficient data in buffer: buffer_len={}, offset={}, required={}", self.buffer.len(), self.offset, required);
+        if required > self.buffer.len() || self.offset > self.buffer.len().saturating_sub(required)
+        {
+            panic!(
+                "Insufficient data in buffer: buffer_len={}, offset={}, required={}",
+                self.buffer.len(),
+                self.offset,
+                required
+            );
         }
     }
 

@@ -27,7 +27,12 @@ fn main() {
     let dates = data::exchange::trade_date_range(begin_date, end_date);
     println!("dates: {:?}", dates);
     let count = dates.len();
-    println!("修复 {}个交易日 筹码分布 {} => {}: ", count, dates[0], dates[count-1]);
+    println!(
+        "修复 {}个交易日 筹码分布 {} => {}: ",
+        count,
+        dates[0],
+        dates[count - 1]
+    );
     let code = "600600";
     let sc = symbol::correct_security_code(code);
     // 初始化多进度条管理器
@@ -71,7 +76,7 @@ fn main() {
         let mut csv_reader = ReaderBuilder::new()
             .has_headers(true) // 根据 CSV 是否有标题调整
             .from_reader(progress_reader);
-        let mut trans : Vec<data::datasets::HistoricalTrade> = Vec::new();
+        let mut trans: Vec<data::datasets::HistoricalTrade> = Vec::new();
         // 逐行处理 CSV
         for row in csv_reader.deserialize() {
             let record: data::datasets::HistoricalTrade = match row {

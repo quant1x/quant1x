@@ -1,9 +1,9 @@
 use q1x::base::runtime;
 //#[tokio::main]
 fn main() {
-    runtime::register_shutdown_hook(|| { {
+    runtime::register_shutdown_hook(|| {
         println!("test close function...");
-    }});
+    });
     runtime::add_task("*/5 * * * * *", || {
         println!("test open function-5s...");
     });

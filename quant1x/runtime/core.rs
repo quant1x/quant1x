@@ -13,7 +13,11 @@ pub fn init_global_scheduler() -> Arc<AsyncScheduler> {
 
 /// Schedule a cron task on the global scheduler.
 /// Returns the task id on success.
-pub async fn add_task<F>(name: &str, cron_expr: &str, task: F) -> Result<TaskId, Box<dyn std::error::Error + Send + Sync>>
+pub async fn add_task<F>(
+    name: &str,
+    cron_expr: &str,
+    task: F,
+) -> Result<TaskId, Box<dyn std::error::Error + Send + Sync>>
 where
     F: Fn() + Send + Sync + 'static,
 {
