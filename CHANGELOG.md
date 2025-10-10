@@ -3,9 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.136] - 2025-10-10
+### Changed
+- 删除废弃的代码
+- 优化tcp连接池，修复endpoint活跃数的bug，release时不应该归还endpoint，减少活跃数
+
 ## [0.6.135] - 2025-10-06
 ### Changed
 - 删除废弃的注释
+- update changelog
 
 ## [0.6.134] - 2025-10-06
 ### Changed
@@ -957,7 +963,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.135...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.136...HEAD
+[0.6.136]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.135...v0.6.136
 [0.6.135]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.134...v0.6.135
 [0.6.134]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.133...v0.6.134
 [0.6.133]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.132...v0.6.133
