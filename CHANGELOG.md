@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.138] - 2025-10-10
+### Changed
+- 新增tail工具, 可安装
+
 ## [0.6.137] - 2025-10-10
 ### Changed
 - 新增隐形价差的计算及单元测试
+- update changelog
 
 ## [0.6.136] - 2025-10-10
 ### Changed
@@ -968,7 +973,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.137...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.138...HEAD
+[0.6.138]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.137...v0.6.138
 [0.6.137]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.136...v0.6.137
 [0.6.136]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.135...v0.6.136
 [0.6.135]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.134...v0.6.135
