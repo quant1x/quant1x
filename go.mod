@@ -8,12 +8,13 @@ require (
 	gitee.com/quant1x/gotdx v1.26.12
 	gitee.com/quant1x/gox v1.25.1
 	gitee.com/quant1x/num v0.7.9
+	gitee.com/quant1x/pkg v0.8.3
+	github.com/spf13/cobra v1.10.1
 )
 
 require (
 	gitee.com/quant1x/asio v1.1.5 // indirect
 	gitee.com/quant1x/pandas v1.6.7 // indirect
-	gitee.com/quant1x/pkg v0.8.3 // indirect
 	github.com/bits-and-blooms/bitset v1.24.0 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/fatih/color v1.18.0 // indirect
@@ -28,7 +29,6 @@ require (
 	github.com/petermattis/goid v0.0.0-20250904145737-900bdf8bb490 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sevlyar/go-daemon v0.1.6 // indirect
-	github.com/spf13/cobra v1.10.1 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
