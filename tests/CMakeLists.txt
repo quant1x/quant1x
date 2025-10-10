@@ -139,6 +139,7 @@ add_catch2_executable(tdd-level1-encoding.cpp)
 
 # ta 测试
 add_gtest_executable(tdd-ta.cpp)
+add_gtest_executable(test_security_quote_implicit_spread.cpp)
 add_catch2_executable(tdd-formula.cpp)
 add_catch2_executable(tdd-rolling.cpp)
 add_catch2_executable(tdd-series.cpp)

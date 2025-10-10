@@ -26,6 +26,29 @@ namespace level1 {
         i64 vol;
     };
 
+    // 隐形价差分级与阈值 (百分比, 例如 0.05 表示 0.05%)
+    enum class SpreadLevel : u8 {
+        VERY_LOW = 0,
+        LOW,
+        MEDIUM,
+        HIGH,
+        VERY_HIGH
+    };
+
+    // 默认阈值（百分比）
+    /**
+     * 默认阈值（百分比）说明：
+     * - SPREAD_PCT_VERY_LOW: 极低（pct < 0.05）表示市场非常活跃，适合高频/短期策略。
+     * - SPREAD_PCT_LOW: 低（0.05 ≤ pct < 0.2）表示流动性良好，常规交易可用。
+     * - SPREAD_PCT_MEDIUM: 中等（0.2 ≤ pct < 0.8）表示流动性下降，应谨慎交易。
+     * - SPREAD_PCT_HIGH: 高（0.8 ≤ pct < 2.0）表示显著流动性问题，通常触发风控。
+     * 注意：implicitSpreadPct() 返回百分比形式（例如 0.05 表示 0.05%）。
+     */
+    inline constexpr f64 SPREAD_PCT_VERY_LOW = 0.05;   // < 0.05%
+    inline constexpr f64 SPREAD_PCT_LOW = 0.2;         // 0.05% - 0.2%
+    inline constexpr f64 SPREAD_PCT_MEDIUM = 0.8;      // 0.2% - 0.8%
+    inline constexpr f64 SPREAD_PCT_HIGH = 2.0;        // 0.8% - 2.0%
+
     struct StockInfo {
         u8 market = 0;
         std::string code;
@@ -187,6 +210,64 @@ namespace level1 {
 
         // 时间戳
         std::string timeStamp;  // 本地时间戳(格式:YYYYMMDDHHMMSSmmm)
+
+        /**
+         * @brief 计算隐形价差（单位：价格）
+         *
+         * 使用常见的有效价差定义：effective spread = 2 * |trade_price - midpoint(bid1, ask1)|
+         * 说明：
+         * - 当存在有效的买一/卖一报价时，优先使用上述公式；
+         * - 如果成交价不可用（price <= 0 或 NaN），退回到报盘价差(ask1 - bid1)；
+         * - 若均不可用，则返回 0.0。
+         */
+        inline f64 implicitSpread() const {
+            // 如果没有有效的报价，返回0
+            if (std::isnan(price) || price <= 0.0) {
+                if (ask1 > 0.0 && bid1 > 0.0) {
+                    return ask1 - bid1; // 报盘价差作为回退
+                }
+                return 0.0;
+            }
+            if (ask1 > 0.0 && bid1 > 0.0) {
+                f64 mid = (ask1 + bid1) / 2.0;
+                return 2.0 * std::fabs(price - mid);
+            }
+            // 没有有效的委买卖，尝试返回报盘价差
+            if (ask1 > 0.0 && bid1 > 0.0) {
+                return ask1 - bid1;
+            }
+            return 0.0;
+        }
+
+        /**
+         * @brief 计算隐形价差占比（%）
+         *
+         * 使用 midpoint 作为基准计算百分比： implicitSpread / midpoint * 100
+         * 如果 midpoint 不可用，则以昨收(lastClose)回退；若仍不可用，返回 0.
+         */
+        inline f64 implicitSpreadPct() const {
+            if (ask1 > 0.0 && bid1 > 0.0) {
+                f64 mid = (ask1 + bid1) / 2.0;
+                f64 s = implicitSpread();
+                if (mid > 0.0) {
+                    return s / mid * 100.0;
+                }
+            }
+            if (lastClose > 0.0) {
+                f64 s = implicitSpread();
+                return s / lastClose * 100.0;
+            }
+            return 0.0;
+        }
+
+        inline SpreadLevel implicitSpreadLevel() const {
+            f64 pct = implicitSpreadPct();
+            if (pct < SPREAD_PCT_VERY_LOW) return SpreadLevel::VERY_LOW;
+            if (pct < SPREAD_PCT_LOW) return SpreadLevel::LOW;
+            if (pct < SPREAD_PCT_MEDIUM) return SpreadLevel::MEDIUM;
+            if (pct < SPREAD_PCT_HIGH) return SpreadLevel::HIGH;
+            return SpreadLevel::VERY_HIGH;
+        }
 
         friend std::ostream &operator<<(std::ostream &os, const SecurityQuote &quote) {
             std::cout << std::dec;

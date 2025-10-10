@@ -16,6 +16,94 @@ pub enum TradeState {
     Ipo,
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EPS: f64 = 1e-12;
+
+    #[test]
+    fn trade_price_and_bid_ask_present() {
+        let mut q = SecurityQuote::new();
+        q.price = 10.5;
+        q.bid[0] = 10.4;
+        q.ask[0] = 10.6;
+
+        assert!((q.implicit_spread() - 0.0).abs() < EPS);
+        assert!((q.implicit_spread_pct() - 0.0).abs() < EPS);
+    }
+
+    #[test]
+    fn trade_price_off_mid() {
+        let mut q = SecurityQuote::new();
+        q.price = 10.55;
+        q.bid[0] = 10.4;
+        q.ask[0] = 10.6;
+
+        let s = q.implicit_spread();
+        assert!((s - 0.1).abs() < EPS);
+        let pct = q.implicit_spread_pct();
+        assert!((pct - (0.1 / 10.5 * 100.0)).abs() < 1e-10);
+    }
+
+    #[test]
+    fn no_trade_price_use_onbook() {
+        let mut q = SecurityQuote::new();
+        q.price = 0.0;
+        q.bid[0] = 5.0;
+        q.ask[0] = 5.2;
+
+        let s = q.implicit_spread();
+        assert!((s - 0.2).abs() < EPS);
+        let pct = q.implicit_spread_pct();
+        assert!((pct - (0.2 / 5.1 * 100.0)).abs() < 1e-10);
+    }
+
+    #[test]
+    fn no_bid_ask_no_price() {
+        let mut q = SecurityQuote::new();
+        q.price = 0.0;
+        q.bid[0] = 0.0;
+        q.ask[0] = 0.0;
+        q.last_close = 0.0;
+
+        assert!((q.implicit_spread() - 0.0).abs() < EPS);
+        assert!((q.implicit_spread_pct() - 0.0).abs() < EPS);
+    }
+
+    #[test]
+    fn fallback_to_last_close_percent() {
+        let mut q = SecurityQuote::new();
+        q.price = 0.0;
+        q.bid[0] = 0.0;
+        q.ask[0] = 0.0;
+        q.last_close = 20.0;
+
+        assert!((q.implicit_spread() - 0.0).abs() < EPS);
+        assert!((q.implicit_spread_pct() - 0.0).abs() < EPS);
+    }
+
+    #[test]
+    fn nan_price() {
+        let mut q = SecurityQuote::new();
+        q.price = f64::NAN;
+        q.bid[0] = 3.0;
+        q.ask[0] = 3.5;
+
+        assert!((q.implicit_spread() - 0.5).abs() < EPS);
+    }
+
+    #[test]
+    fn spread_level_classification() {
+        let mut q = SecurityQuote::new();
+        q.price = 10.0;
+        q.bid[0] = 9.995; // mid ~ 9.9975 => spread = 2 * |10 - 9.9975| = 0.005 => pct ~ 0.05%
+        q.ask[0] = 10.0;
+        let lvl = q.implicit_spread_level();
+        assert!(matches!(lvl, SpreadLevel::VeryLow | SpreadLevel::Low));
+    }
+}
+
 /// Minimal StockInfo mirroring the C++ `level1::StockInfo { int market; std::string code; }`
 #[derive(Debug, Clone)]
 pub struct StockInfo {
@@ -58,6 +146,21 @@ pub struct SecurityQuote {
     pub state: TradeState,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SpreadLevel {
+    VeryLow,
+    Low,
+    Medium,
+    High,
+    VeryHigh,
+}
+
+// 默认阈值（百分比）
+pub const SPREAD_PCT_VERY_LOW: f64 = 0.05; // < 0.05%
+pub const SPREAD_PCT_LOW: f64 = 0.2;       // 0.05% - 0.2%
+pub const SPREAD_PCT_MEDIUM: f64 = 0.8;    // 0.2% - 0.8%
+pub const SPREAD_PCT_HIGH: f64 = 2.0;      // 0.8% - 2.0%
+
 impl SecurityQuote {
     pub fn new() -> Self {
         Self {
@@ -92,6 +195,62 @@ impl SecurityQuote {
             active2: 0,
             time_stamp: String::new(),
             state: TradeState::Normal,
+        }
+    }
+
+    /// 计算隐形价差（价格单位）
+    /// 使用常见定义：effective spread = 2 * |trade_price - midpoint(bid1, ask1)|
+    /// 回退：若 price 不可用或 <= 0，则使用在盘价差 (ask1 - bid1)；若也不可用则返回 0.0
+    pub fn implicit_spread(&self) -> f64 {
+        // 如果交易价格不可用，回退到在盘价差
+        if self.price.is_nan() || self.price <= 0.0 {
+            if self.ask[0] > 0.0 && self.bid[0] > 0.0 {
+                return self.ask[0] - self.bid[0];
+            }
+            return 0.0;
+        }
+
+        if self.ask[0] > 0.0 && self.bid[0] > 0.0 {
+            let mid = (self.ask[0] + self.bid[0]) / 2.0;
+            2.0 * (self.price - mid).abs()
+        } else if self.ask[0] > 0.0 && self.bid[0] > 0.0 {
+            // 冗余分支以防万一
+            self.ask[0] - self.bid[0]
+        } else {
+            0.0
+        }
+    }
+
+    /// 计算隐形价差占比（%）
+    /// 使用 midpoint 作为基准： implicit_spread / midpoint * 100
+    /// 若 midpoint 不可用则回退至 last_close；若仍不可用返回 0.
+    pub fn implicit_spread_pct(&self) -> f64 {
+        if self.ask[0] > 0.0 && self.bid[0] > 0.0 {
+            let mid = (self.ask[0] + self.bid[0]) / 2.0;
+            let s = self.implicit_spread();
+            if mid > 0.0 {
+                return s / mid * 100.0;
+            }
+        }
+        if self.last_close > 0.0 {
+            let s = self.implicit_spread();
+            return s / self.last_close * 100.0;
+        }
+        0.0
+    }
+
+    pub fn implicit_spread_level(&self) -> SpreadLevel {
+        let pct = self.implicit_spread_pct();
+        if pct < SPREAD_PCT_VERY_LOW {
+            SpreadLevel::VeryLow
+        } else if pct < SPREAD_PCT_LOW {
+            SpreadLevel::Low
+        } else if pct < SPREAD_PCT_MEDIUM {
+            SpreadLevel::Medium
+        } else if pct < SPREAD_PCT_HIGH {
+            SpreadLevel::High
+        } else {
+            SpreadLevel::VeryHigh
         }
     }
 }
