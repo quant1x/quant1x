@@ -37,12 +37,12 @@ namespace level1 {
 
     // 默认阈值（百分比）
     /**
-     * 默认阈值（百分比）说明：
+     * 默认阈值（百分比）说明: 
      * - SPREAD_PCT_VERY_LOW: 极低（pct < 0.05）表示市场非常活跃，适合高频/短期策略。
      * - SPREAD_PCT_LOW: 低（0.05 ≤ pct < 0.2）表示流动性良好，常规交易可用。
      * - SPREAD_PCT_MEDIUM: 中等（0.2 ≤ pct < 0.8）表示流动性下降，应谨慎交易。
      * - SPREAD_PCT_HIGH: 高（0.8 ≤ pct < 2.0）表示显著流动性问题，通常触发风控。
-     * 注意：implicitSpreadPct() 返回百分比形式（例如 0.05 表示 0.05%）。
+     * 注意: implicitSpreadPct() 返回百分比形式（例如 0.05 表示 0.05%）。
      */
     inline constexpr f64 SPREAD_PCT_VERY_LOW = 0.05;   // < 0.05%
     inline constexpr f64 SPREAD_PCT_LOW = 0.2;         // 0.05% - 0.2%
@@ -153,15 +153,15 @@ namespace level1 {
         i64 reversedBytes1;     // 保留字段
 
         // 量能信息
-        i64 vol;                // 总成交量(单位：手)
+        i64 vol;                // 总成交量(单位: 手)
         i64 curVol;             // 当前成交量(个股-股数/板块-成交额)
-        f64 amount;             // 总成交额(单位：元)
+        f64 amount;             // 总成交额(单位: 元)
         i64 sVol;               // 内盘成交量(个股有效)
         i64 bVol;               // 外盘成交量(个股有效)
 
         // 集合竞价信息
-        i64 indexOpenAmount;    // 指数开盘竞价金额(单位：元)
-        i64 stockOpenAmount;    // 个股开盘竞价金额(单位：元)
+        i64 indexOpenAmount;    // 指数开盘竞价金额(单位: 元)
+        i64 stockOpenAmount;    // 个股开盘竞价金额(单位: 元)
         i64 openVolume;         // 开盘量(集合竞价成交量)
         i64 closeVolume;        // 收盘量(收盘集合竞价成交量)
 
@@ -212,10 +212,10 @@ namespace level1 {
         std::string timeStamp;  // 本地时间戳(格式:YYYYMMDDHHMMSSmmm)
 
         /**
-         * @brief 计算隐形价差（单位：价格）
+         * @brief 计算隐形价差（单位: 价格）
          *
-         * 使用常见的有效价差定义：effective spread = 2 * |trade_price - midpoint(bid1, ask1)|
-         * 说明：
+         * 使用常见的有效价差定义: effective spread = 2 * |trade_price - midpoint(bid1, ask1)|
+         * 说明: 
          * - 当存在有效的买一/卖一报价时，优先使用上述公式；
          * - 如果成交价不可用（price <= 0 或 NaN），退回到报盘价差(ask1 - bid1)；
          * - 若均不可用，则返回 0.0。
@@ -242,7 +242,7 @@ namespace level1 {
         /**
          * @brief 计算隐形价差占比（%）
          *
-         * 使用 midpoint 作为基准计算百分比： implicitSpread / midpoint * 100
+         * 使用 midpoint 作为基准计算百分比:  implicitSpread / midpoint * 100
          * 如果 midpoint 不可用，则以昨收(lastClose)回退；若仍不可用，返回 0.
          */
         inline f64 implicitSpreadPct() const {

@@ -59,7 +59,7 @@ namespace level1 {
             case StdCommand::SECURITY_LIST:
                 return "L1:SECURITY_LIST";
                 //case StdCommand::INDEX_BARS:
-                //  return "L1:INDEX_BARS";       // 注意：与SECURITY_BARS值相同
+                //  return "L1:INDEX_BARS";       // 注意: 与SECURITY_BARS值相同
             case StdCommand::SECURITY_BARS:
                 return "L1:SECURITY_BARS";    // 需确认协议设计是否冲突
             case StdCommand::SECURITY_QUOTES_OLD:
@@ -258,7 +258,7 @@ namespace level1 {
             std::vector<u8> un = unzip(body_buffer, response.UnZipSize);
             body_buffer = un;
         }
-        spdlog::debug("[{}]Recv response buff：{}", cmd, strings::bytesToHex(body_buffer));
+        spdlog::debug("[{}]Recv response buff: {}", cmd, strings::bytesToHex(body_buffer));
         response.deserialize(body_buffer);
         spdlog::debug("[{}]Recv response body: {}", cmd, response.toString());
     }

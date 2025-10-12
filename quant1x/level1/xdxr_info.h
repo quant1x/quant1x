@@ -13,7 +13,7 @@
 namespace level1 {
 
     // XDXR类型映射表
-    // 键：类型编号，值：类型描述
+    // 键: 类型编号，值: 类型描述
     const std::map<int, std::string> XDXR_CATEGORY_MAPPING = {
             {1,  "除权除息"},
             {2,  "送配股上市"},
@@ -142,7 +142,7 @@ namespace level1 {
         }
 
         // 判断是否是股本变化
-        // 返回：true表示是股本变化，false表示不是
+        // 返回: true表示是股本变化，false表示不是
         [[nodiscard]] bool IsCapitalChange() const {
             switch (Category) {
                 case 1:
@@ -160,7 +160,7 @@ namespace level1 {
         }
 
         // 生成复权计算函数
-        // 返回：计算复权价格的函数对象
+        // 返回: 计算复权价格的函数对象
         [[nodiscard]] std::function<f64(f64)> Adjust() const {
             f64 songZhuangu = SongZhuanGu;
             f64 peiGu = PeiGu;

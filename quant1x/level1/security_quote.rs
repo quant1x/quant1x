@@ -199,8 +199,8 @@ impl SecurityQuote {
     }
 
     /// 计算隐形价差（价格单位）
-    /// 使用常见定义：effective spread = 2 * |trade_price - midpoint(bid1, ask1)|
-    /// 回退：若 price 不可用或 <= 0，则使用在盘价差 (ask1 - bid1)；若也不可用则返回 0.0
+    /// 使用常见定义: effective spread = 2 * |trade_price - midpoint(bid1, ask1)|
+    /// 回退: 若 price 不可用或 <= 0，则使用在盘价差 (ask1 - bid1)；若也不可用则返回 0.0
     pub fn implicit_spread(&self) -> f64 {
         // 如果交易价格不可用，回退到在盘价差
         if self.price.is_nan() || self.price <= 0.0 {
@@ -222,7 +222,7 @@ impl SecurityQuote {
     }
 
     /// 计算隐形价差占比（%）
-    /// 使用 midpoint 作为基准： implicit_spread / midpoint * 100
+    /// 使用 midpoint 作为基准:  implicit_spread / midpoint * 100
     /// 若 midpoint 不可用则回退至 last_close；若仍不可用返回 0.
     pub fn implicit_spread_pct(&self) -> f64 {
         if self.ask[0] > 0.0 && self.bid[0] > 0.0 {
