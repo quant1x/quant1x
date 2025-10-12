@@ -62,7 +62,7 @@ public:
 };
 
 TEST_CASE("v1", "[linear-regression]") {
-    // 示例数据：y ≈ 2x + 1
+    // 示例数据: y ≈ 2x + 1
     vector<double> X = {1, 2, 3, 4, 5};
     vector<double> Y = {3, 5, 7, 9, 11};
 
@@ -70,7 +70,7 @@ TEST_CASE("v1", "[linear-regression]") {
     model.fit(X, Y);
 
     auto [w, b] = model.get_params();
-    cout << "训练完成，模型参数：" << endl;
+    cout << "训练完成，模型参数: " << endl;
     cout << "w = " << w << ", b = " << b << endl;
 
     // 测试预测
