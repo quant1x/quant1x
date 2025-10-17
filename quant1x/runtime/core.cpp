@@ -12,10 +12,18 @@
 #include <signal.h>
 #endif
 
+#include <quant1x/io/file.h>
 #include <quant1x/runtime/crash.h>
 #include <quant1x/runtime/scheduler.h>
 #include <quant1x/std/except.h>
-#include <quant1x/io/file.h>
+// router sink for per-level file routing
+#include <quant1x/log/router_sink.h>
+
+#include <filesystem>
+// rotating file sink
+#include <spdlog/sinks/rotating_file_sink.h>
+// daily file sink
+#include <spdlog/sinks/daily_file_sink.h>
 
 namespace runtime {
     std::atomic<bool> global_quit_flag(false);  // 全局退出标志
@@ -105,7 +113,8 @@ namespace runtime {
                 spdlog::error("全局捕获 - 标准异常: {} (type: {})", e.what(), typeid(e).name());
                 // 对于system_error可以记录更多信息
                 if (auto se = dynamic_cast<const std::system_error *>(&e)) {
-                    spdlog::error("全局捕获 - Error code: {}, category: {}", se->code().value(), se->code().category().name());
+                    spdlog::error(
+                        "全局捕获 - Error code: {}, category: {}", se->code().value(), se->code().category().name());
                 }
             } catch (...) {  // 未知异常;
                 spdlog::error("全局捕获 - 未知异常");
@@ -125,14 +134,42 @@ namespace runtime {
 
         // 注册全部组件
         void init_all_components() {
-            // auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-            auto file_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(
+            // make sure logs directory exists
+            try {
+                std::filesystem::create_directories(config::get_logs_path());
+            } catch (...) {
+                // best-effort; fall back to letting spdlog fail if path unusable
+            }
+
+            // Build a first-match router that writes each level into its own daily file
+            auto router = std::make_shared<quant1x::log::FirstMatchRouterSink>();
+
+            // use daily files (rotate every day) — keep false for truncate=false
+            auto info_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(
                 config::get_logs_path() + "/info.log", 0, 0, false);
-            // 组合多个 sink 到一个 logger 中
-            std::vector<spdlog::sink_ptr> sinks{file_sink};
+            auto debug_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(
+                config::get_logs_path() + "/debug.log", 0, 0, false);
+            auto warn_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(
+                config::get_logs_path() + "/warn.log", 0, 0, false);
+            auto err_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(
+                config::get_logs_path() + "/error.log", 0, 0, false);
+            auto critical_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(
+                config::get_logs_path() + "/critical.log", 0, 0, false);
+            auto trace_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(
+                config::get_logs_path() + "/trace.log", 0, 0, false);
+
+            router->add_exact_route(spdlog::level::info, info_sink);
+            router->add_exact_route(spdlog::level::debug, debug_sink);
+            router->add_exact_route(spdlog::level::warn, warn_sink);
+            router->add_exact_route(spdlog::level::err, err_sink);
+            router->add_exact_route(spdlog::level::critical, critical_sink);
+            router->set_fallback_sink(trace_sink);
+
             std::string application_name = io::executable_name();
-            auto combined_logger = std::make_shared<spdlog::logger>(application_name, begin(sinks), end(sinks));
-            // 将组合后的 logger 设置为全局默认
+            auto        combined_logger  = std::make_shared<spdlog::logger>(application_name, router);
+            // default to INFO level; logger_set(debug=true) will raise it to DEBUG
+            combined_logger->set_level(spdlog::level::info);
+            // register as default logger
             spdlog::set_default_logger(combined_logger);
 
             // 现在可以直接使用 spdlog::info(), spdlog::error() 等
@@ -154,7 +191,7 @@ namespace runtime {
         // 设置控制台输出和输入代码页为UTF-8
         SetConsoleOutputCP(CP_UTF8);
         SetConsoleCP(CP_UTF8);
-        //std::locale::global(std::locale(".65001"));
+        // std::locale::global(std::locale(".65001"));
 #endif
     }
 
@@ -182,7 +219,7 @@ namespace runtime {
     }
 
     // 追加一个任务到全局任务调度器
-    task_id add_task(const std::string&name, const std::string &cron_expr, std::function<void()> task) {
+    task_id add_task(const std::string &name, const std::string &cron_expr, std::function<void()> task) {
         global_init();
         auto id = global_scheduler()->schedule_cron(name, cron_expr, std::move(task));
         return id;
@@ -201,7 +238,7 @@ namespace runtime {
         spdlog::default_logger()->flush();
         spdlog::shutdown();
         _exit(0);
-        //std::exit(0);
+        // std::exit(0);
     }
 
     // 等待结束信号, 守护进程使用
