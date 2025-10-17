@@ -414,6 +414,7 @@ set(quant1x-headers
     quant1x/io/csv-writer.h
     quant1x/io/file.h
     quant1x/io/http.h
+    quant1x/log/router_sink.h
 
     # 编码相关
     quant1x/encoding/iconv.h
@@ -573,6 +574,7 @@ set(quant1x-sources
     # i/o 相关
     quant1x/io/file.cpp
     quant1x/io/http.cpp
+    quant1x/log/router_sink.cpp
 
     # 编码相关
     quant1x/encoding/iconv.cpp
