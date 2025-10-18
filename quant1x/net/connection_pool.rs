@@ -1,5 +1,5 @@
 use std::collections::VecDeque;
-use std::net::SocketAddr;
+use std::net::{Shutdown, SocketAddr};
 use std::sync::{Arc, Mutex, Weak};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -17,7 +17,7 @@ pub trait NetworkHandler: Send + Sync + 'static {
         Ok(true)
     }
     fn timeout(&self) -> Duration {
-        Duration::from_secs(5)
+        Duration::from_secs(10)
     }
     fn check_interval(&self) -> Duration {
         Duration::from_secs(5)
@@ -48,6 +48,14 @@ impl Connection {
     pub fn addr(&self) -> SocketAddr {
         self.addr
     }
+
+    pub fn close(&mut self) {
+        if let Err(e) = self.stream.shutdown(Shutdown::Both) {
+            if e.kind() != std::io::ErrorKind::NotConnected {
+                log::debug!("connection_pool: shutdown error for {}: {}", self.addr, e);
+            }
+        }
+    }
 }
 
 /// The Mio-based TCP connection pool. This is a simplified port of the C++
@@ -58,9 +66,8 @@ pub struct TcpConnectionPool<H: NetworkHandler> {
     max: usize,
     endpoint_manager: Arc<crate::net::endpoint::EndpointManager>,
     idle: Mutex<VecDeque<Connection>>,
-    // Number of currently active (established + pooled) connections
+    // Number of currently active (checked-out) connections
     active: Mutex<usize>,
-    acquire_lock: Mutex<()>,
 }
 
 impl<H: NetworkHandler> TcpConnectionPool<H> {
@@ -76,7 +83,6 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
             endpoint_manager: Arc::clone(&endpoint_manager),
             idle: Mutex::new(VecDeque::new()),
             active: Mutex::new(0),
-            acquire_lock: Mutex::new(()),
         });
 
         // Pre-warm: attempt to create `min` connections and place into idle queue.
@@ -113,6 +119,15 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
                                     idle.push_back(Connection::new(stream, ep));
                                 }
                                 Err(e) => {
+                                    if let Err(shutdown_err) = stream.shutdown(Shutdown::Both) {
+                                        if shutdown_err.kind() != std::io::ErrorKind::NotConnected {
+                                            log::debug!(
+                                                "connection_pool: pre-warm shutdown error for {}: {}",
+                                                ep,
+                                                shutdown_err
+                                            );
+                                        }
+                                    }
                                     log::warn!(
                                         "connection_pool: pre-warm handshake failed for {}: {}",
                                         ep,
@@ -178,6 +193,7 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
                         }
                         _ => {
                             // dead or error => release endpoint slot and drop
+                            conn.close();
                             pool_arc.endpoint_manager.release_endpoint(conn.addr);
                         }
                     }
@@ -203,148 +219,151 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
 
     /// Acquire a connection using the endpoint manager (round-robin / available).
     pub fn acquire(self: &Arc<Self>) -> std::io::Result<PooledConnection<H>> {
-        let _lock = self.acquire_lock.lock().unwrap();
-        // Enforce pool-level maximum: if already at max, fail early.
-        {
-            let active = self.active.lock().unwrap();
-            if *active >= self.max {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Max connections reached",
-                ));
-            }
-        }
-        // Try to pop an idle connection first
-        if let Some(mut conn) = self.idle.lock().unwrap().pop_front() {
-            conn.last_used = Instant::now();
-            // Mark as active (reuse path) like C++ increments active on return
-            let mut active = self.active.lock().unwrap();
-            *active += 1;
-            return Ok(PooledConnection {
-                pool: Arc::clone(self),
-                conn: Some(conn),
-            });
-        }
-
-        // Before attempting to allocate a new endpoint, it's possible that a
-        // previously in-use connection was returned to the idle queue while
-        // we were waiting — try popping idle again.
-        if let Some(mut conn) = self.idle.lock().unwrap().pop_front() {
-            conn.last_used = Instant::now();
-            // Mark as active for reuse path
-            let mut active = self.active.lock().unwrap();
-            *active += 1;
-            return Ok(PooledConnection {
-                pool: Arc::clone(self),
-                conn: Some(conn),
-            });
-        }
-
-        // Retry loop: acquire endpoint -> connect -> handshake. On failure,
-        // mark endpoint failed for a cooldown and try another endpoint.
-        let mut attempts = 0usize;
-        let max_attempts = 5usize;
+        const WAIT_INTERVAL_MS: u64 = 50;
+        const MAX_CONNECT_ATTEMPTS: usize = 5;
+        let wait_interval = Duration::from_millis(WAIT_INTERVAL_MS);
         let cooldown = Duration::from_secs(30);
-        while attempts < max_attempts {
-            attempts += 1;
-            let endpoint = match self.endpoint_manager.acquire_endpoint() {
-                Some(ep) => ep,
-                None => {
-                    return Err(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        "No available endpoints",
-                    ))
-                }
-            };
 
-            let timeout = self.handler.timeout();
-            log::debug!(
-                "connection_pool: acquire connecting to {} with timeout {:?} (attempt {}/{})",
-                endpoint,
-                timeout,
-                attempts,
-                max_attempts
-            );
+        let mut connect_attempts = 0usize;
 
-            match StdTcpStream::connect_timeout(&endpoint, timeout) {
-                Ok(std_stream) => {
-                    let _ = std_stream.set_nodelay(true);
-                    let _ = std_stream.set_read_timeout(Some(timeout));
-                    let _ = std_stream.set_write_timeout(Some(timeout));
-                    let mut stream = TcpStream::from_std(std_stream);
-                    log::debug!("connection_pool: running handshake for {}", endpoint);
-                    match self.handler.handshake(&mut stream) {
-                        Ok(()) => {
-                            log::debug!("connection_pool: handshake succeeded for {}", endpoint);
-                            let mut active = self.active.lock().unwrap();
-                            *active += 1;
-                            let conn = Connection::new(stream, endpoint);
-                            return Ok(PooledConnection {
-                                pool: Arc::clone(self),
-                                conn: Some(conn),
-                            });
-                        }
-                        Err(e) => {
-                            log::error!(
-                                "connection_pool: handshake failed for {}: {}",
-                                endpoint,
-                                e
-                            );
-                            self.endpoint_manager.mark_failed(endpoint, cooldown);
-                            self.endpoint_manager.release_endpoint(endpoint);
-                            if attempts >= max_attempts {
-                                return Err(e);
-                            }
-                            // otherwise try next endpoint
-                            continue;
-                        }
-                    }
-                }
-                Err(e) => {
-                    log::error!("connection_pool: connect failed for {}: {}", endpoint, e);
-                    self.endpoint_manager.mark_failed(endpoint, cooldown);
-                    self.endpoint_manager.release_endpoint(endpoint);
-                    if attempts >= max_attempts {
-                        return Err(e);
-                    }
+        loop {
+            if let Some(conn) = self.try_take_idle() {
+                return Ok(conn);
+            }
+
+            {
+                let active = self.active.lock().unwrap();
+                if *active >= self.max {
+                    log::trace!(
+                        "connection_pool: waiting for free slot (active={} max={})",
+                        *active,
+                        self.max
+                    );
+                    drop(active);
+                    thread::sleep(wait_interval);
                     continue;
                 }
             }
-        }
 
-        Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "Failed to acquire connection after retries",
-        ))
+            match self.endpoint_manager.acquire_endpoint() {
+                Some(endpoint) => {
+                    connect_attempts += 1;
+                    log::debug!(
+                        "connection_pool: acquire connecting to {} (attempt {}/{})",
+                        endpoint,
+                        connect_attempts,
+                        MAX_CONNECT_ATTEMPTS
+                    );
+
+                    match self.establish_connection(endpoint, cooldown) {
+                        Ok(conn) => return Ok(conn),
+                        Err(e) => {
+                            if connect_attempts >= MAX_CONNECT_ATTEMPTS {
+                                return Err(e);
+                            }
+                            thread::sleep(wait_interval);
+                        }
+                    }
+                }
+                None => {
+                    log::trace!("connection_pool: no endpoints currently available, waiting");
+                    thread::sleep(wait_interval);
+                }
+            }
+        }
+    }
+
+    fn try_take_idle(self: &Arc<Self>) -> Option<PooledConnection<H>> {
+        let maybe_conn = {
+            let mut idle = self.idle.lock().unwrap();
+            idle.pop_front()
+        };
+
+        if let Some(mut conn) = maybe_conn {
+            conn.last_used = Instant::now();
+            {
+                let mut active = self.active.lock().unwrap();
+                *active += 1;
+            }
+            Some(PooledConnection {
+                pool: Arc::clone(self),
+                conn: Some(conn),
+            })
+        } else {
+            None
+        }
+    }
+
+    fn establish_connection(
+        self: &Arc<Self>,
+        endpoint: SocketAddr,
+        cooldown: Duration,
+    ) -> std::io::Result<PooledConnection<H>> {
+        let timeout = self.handler.timeout();
+        match StdTcpStream::connect_timeout(&endpoint, timeout) {
+            Ok(std_stream) => {
+                let _ = std_stream.set_nodelay(true);
+                let _ = std_stream.set_read_timeout(Some(timeout));
+                let _ = std_stream.set_write_timeout(Some(timeout));
+                let mut stream = TcpStream::from_std(std_stream);
+                log::debug!("connection_pool: running handshake for {}", endpoint);
+                match self.handler.handshake(&mut stream) {
+                    Ok(()) => {
+                        log::debug!("connection_pool: handshake succeeded for {}", endpoint);
+                        {
+                            let mut active = self.active.lock().unwrap();
+                            *active += 1;
+                        }
+                        let conn = Connection::new(stream, endpoint);
+                        Ok(PooledConnection {
+                            pool: Arc::clone(self),
+                            conn: Some(conn),
+                        })
+                    }
+                    Err(e) => {
+                        if let Err(shutdown_err) = stream.shutdown(Shutdown::Both) {
+                            if shutdown_err.kind() != std::io::ErrorKind::NotConnected {
+                                log::debug!(
+                                    "connection_pool: handshake shutdown error for {}: {}",
+                                    endpoint,
+                                    shutdown_err
+                                );
+                            }
+                        }
+                        log::error!("connection_pool: handshake failed for {}: {}", endpoint, e);
+                        self.endpoint_manager.mark_failed(endpoint, cooldown);
+                        self.endpoint_manager.release_endpoint(endpoint);
+                        Err(e)
+                    }
+                }
+            }
+            Err(e) => {
+                log::error!("connection_pool: connect failed for {}: {}", endpoint, e);
+                self.endpoint_manager.mark_failed(endpoint, cooldown);
+                self.endpoint_manager.release_endpoint(endpoint);
+                Err(e)
+            }
+        }
     }
 
     fn release(&self, mut conn: Connection) {
         conn.last_used = Instant::now();
-        // When returning a connection to idle, keep its endpoint reservation.
-        // Only when a connection is actually closed should the endpoint be
-        // released back to the EndpointManager. This prevents multiple active
-        // allocations to the same fastest endpoint when idle connections exist.
-        let mut idle = self.idle.lock().unwrap();
-        if idle.len() < self.max {
+        // Match the C++ release behavior: always return the connection to the
+        // idle queue while keeping the endpoint allocation reserved. The
+        // endpoint is only released when the connection is explicitly closed
+        // or deemed unhealthy.
+        {
+            let mut idle = self.idle.lock().unwrap();
             log::debug!(
                 "connection_pool: returning connection to idle for {}",
                 conn.addr
             );
             idle.push_back(conn);
-            // decrement active (in-use) count — the endpoint remains reserved
-            let mut active = self.active.lock().unwrap();
-            *active = active.saturating_sub(1);
-        } else {
-            // Pool full: drop connection and release endpoint slot
-            log::debug!(
-                "connection_pool: dropping connection for {} because pool full",
-                conn.addr
-            );
-            // release endpoint since connection is being dropped
-            self.endpoint_manager.release_endpoint(conn.addr);
-            // decrement active since connection is dropped
-            let mut active = self.active.lock().unwrap();
-            *active = active.saturating_sub(1);
+        }
+
+        let mut active = self.active.lock().unwrap();
+        if *active > 0 {
+            *active -= 1;
         }
     }
 
@@ -359,7 +378,11 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
 
     /// Return the configured maximum number of connections for this pool.
     pub fn max_connections(&self) -> usize {
-        self.max
+        let endpoint_count = self.endpoint_manager.get_all_endpoints().len();
+        if endpoint_count == 0 {
+            return self.max;
+        }
+        std::cmp::min(self.max, endpoint_count)
     }
 }
 
