@@ -3,6 +3,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.142] - 2025-10-19
+### Changed
+- rust版本按级别拆分成不同的日志文件
+- 删除git子模块
+- 格式化代码
+- 合并rust版本的协议命令字
+- 去掉mod.rs中的函数，将mod作为纯粹的模块聚合功能
+- tcp连接池增加重试功能
+- 优化协议编解码
+
 ## [0.6.141] - 2025-10-18
 ### Changed
 - 转换部分代码中全角符号为半角
@@ -10,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - 新增按日志级别拆分日志
 - 调整按日轮转
 - 日志文件惰性生成
+- update changelog
 
 ## [0.6.140] - 2025-10-12
 ### Changed
@@ -992,7 +1003,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.141...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.142...HEAD
+[0.6.142]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.141...v0.6.142
 [0.6.141]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.140...v0.6.141
 [0.6.140]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.139...v0.6.140
 [0.6.139]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.138...v0.6.139
