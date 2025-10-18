@@ -2,12 +2,12 @@
 #ifndef QUANT1X_LEVEL1_PROTOCOL_H
 #define QUANT1X_LEVEL1_PROTOCOL_H 1
 
+#include <quant1x/encoding/iconv.h>
+#include <quant1x/level1/helpers.h>
 #include <quant1x/net/connection_pool.h>
 #include <quant1x/std/api.h>
-#include <quant1x/std/util.h>
-#include <quant1x/encoding/iconv.h>
 #include <quant1x/std/buffer.h>
-#include <quant1x/level1/helpers.h>
+#include <quant1x/std/util.h>
 
 namespace level1 {
 
@@ -58,10 +58,10 @@ namespace level1 {
                 return "L1:SECURITY_COUNT";
             case StdCommand::SECURITY_LIST:
                 return "L1:SECURITY_LIST";
-                //case StdCommand::INDEX_BARS:
-                //  return "L1:INDEX_BARS";       // 注意: 与SECURITY_BARS值相同
+                // case StdCommand::INDEX_BARS:
+                //   return "L1:INDEX_BARS";       // 注意: 与SECURITY_BARS值相同
             case StdCommand::SECURITY_BARS:
-                return "L1:SECURITY_BARS";    // 需确认协议设计是否冲突
+                return "L1:SECURITY_BARS";  // 需确认协议设计是否冲突
             case StdCommand::SECURITY_QUOTES_OLD:
                 return "L1:SECURITY_QUOTES_OLD";
             case StdCommand::SECURITY_QUOTES_NEW:
@@ -95,22 +95,18 @@ namespace level1 {
 
     // 压缩标志位处理 (使用constexpr)
     namespace ZlibFlag {
-        constexpr u8 Compressed = 0x10;    // 压缩标志位
-        constexpr u8 NotZipped = 0x0C;    // 未压缩
-        constexpr u8 Zipped = Compressed | NotZipped; // 0x1C
-    }
+        constexpr u8 Compressed = 0x10;                    // 压缩标志位
+        constexpr u8 NotZipped  = 0x0C;                    // 未压缩
+        constexpr u8 Zipped     = Compressed | NotZipped;  // 0x1C
+    }  // namespace ZlibFlag
 
-    std::vector<uint8_t> unzip(const std::vector<uint8_t>& buf, uint32_t unzip_size);
+    std::vector<uint8_t> unzip(const std::vector<uint8_t> &buf, uint32_t unzip_size);
 
     template <typename Derived>
     struct header {
-        std::string command() {
-            return static_cast<Derived *>(this)->commandImpl();
-        }
+        std::string command() { return static_cast<Derived *>(this)->commandImpl(); }
 
-        [[nodiscard]] std::string headerString() const {
-            return static_cast<Derived *>(this)->headerStringImpl();
-        }
+        [[nodiscard]] std::string headerString() const { return static_cast<Derived *>(this)->headerStringImpl(); }
 
         friend std::ostream &operator<<(std::ostream &os, const header &obj) {
             os << obj.headerString();
@@ -121,28 +117,22 @@ namespace level1 {
     /// 网络协议
 #pragma pack(push, 1)  // 确保1字节对齐
 
-    template<typename Derived>
+    template <typename Derived>
     struct RequestHeader : public header<Derived> {
-        u8  ZipFlag;    // 压缩标志
-        u32 SeqID;      // 请求编号
-        u8  PacketType; // 包类型
-        u16 PkgLen1;    // 消息体长度1
-        u16 PkgLen2;    // 消息体长度2
-        u16 Method;     // 请求方法
+        u8  ZipFlag;     // 压缩标志
+        u32 SeqID;       // 请求编号
+        u8  PacketType;  // 包类型
+        u16 PkgLen1;     // 消息体长度1
+        u16 PkgLen2;     // 消息体长度2
+        u16 Method;      // 请求方法
 
         RequestHeader() : ZipFlag(0), SeqID(0), PacketType(0), PkgLen1(0), PkgLen2(0), Method(0) {}
 
-        std::string commandImpl() {
-            return commandToString(Method);
-        }
+        std::string commandImpl() { return commandToString(Method); }
 
-        std::vector<u8> serialize() {
-            return static_cast<Derived *>(this)->serializeImpl();
-        }
+        std::vector<u8> serialize() { return static_cast<Derived *>(this)->serializeImpl(); }
 
-        std::string toString() {
-            return static_cast<Derived *>(this)->toStringImpl();
-        }
+        std::string toString() { return static_cast<Derived *>(this)->toStringImpl(); }
 
         std::vector<u8> headerSerialize() {
             spdlog::debug("RequestHeader");
@@ -157,71 +147,76 @@ namespace level1 {
         }
 
         [[nodiscard]] std::string headerStringImpl() const {
-            return fmt::format("RequestHeader{{ZipFlag:{}, SeqID:{}, PacketType:{}, PkgLen1:{}, PkgLen2:{}, Method:{:#06x}}}", ZipFlag, SeqID, PacketType, PkgLen1, PkgLen2, Method);
+            return fmt::format(
+                "RequestHeader{{ZipFlag:{}, SeqID:{}, PacketType:{}, PkgLen1:{}, PkgLen2:{}, Method:{:#06x}}}",
+                ZipFlag,
+                SeqID,
+                PacketType,
+                PkgLen1,
+                PkgLen2,
+                Method);
         }
-
     };
 
-    template<typename Derived>
+    template <typename Derived>
     struct ResponseHeader : public header<Derived> {
-        u32 I1;        // 对应Go的uint32
-        u8 ZipFlag;    // ZipFlag
-        u32 SeqID;     // 请求编号
-        u8 I2;         // 对应Go的uint8
-        u16 Method;    // 命令字
-        u16 ZipSize;   // 长度
-        u16 UnZipSize; // 未压缩长度
+        u32 I1;         // 对应Go的uint32
+        u8  ZipFlag;    // ZipFlag
+        u32 SeqID;      // 请求编号
+        u8  I2;         // 对应Go的uint8
+        u16 Method;     // 命令字
+        u16 ZipSize;    // 长度
+        u16 UnZipSize;  // 未压缩长度
 
         ResponseHeader() {
-            I1 = 0;
-            ZipFlag = 0;
-            SeqID = 0;
-            I2 = 0;
-            Method = 0;
-            ZipSize = 0;
+            I1        = 0;
+            ZipFlag   = 0;
+            SeqID     = 0;
+            I2        = 0;
+            Method    = 0;
+            ZipSize   = 0;
             UnZipSize = 0;
         }
 
-        std::string commandImpl() {
-            return commandToString(Method);
-        }
+        std::string commandImpl() { return commandToString(Method); }
 
-        void deserialize(const std::vector<u8> &data) {
-            static_cast<Derived *>(this)->deserializeImpl(data);
-        }
+        void deserialize(const std::vector<u8> &data) { static_cast<Derived *>(this)->deserializeImpl(data); }
 
-        std::string toString() {
-            return static_cast<Derived *>(this)->toStringImpl();
-        }
+        std::string toString() { return static_cast<Derived *>(this)->toStringImpl(); }
 
         void headerDeserialize(const std::vector<u8> &data) {
             BinaryStream stream(data);
-            I1 = stream.get_u32();
-            ZipFlag = stream.get_u8();
-            SeqID = stream.get_u32();
-            I2 = stream.get_u8();
-            Method = stream.get_u16();
-            ZipSize = stream.get_u16();
+            I1        = stream.get_u32();
+            ZipFlag   = stream.get_u8();
+            SeqID     = stream.get_u32();
+            I2        = stream.get_u8();
+            Method    = stream.get_u16();
+            ZipSize   = stream.get_u16();
             UnZipSize = stream.get_u16();
         }
 
         [[nodiscard]] std::string headerStringImpl() const {
             return fmt::format(
-                    "ResponseHeader{{I1:{}, ZipFlag:{} SeqID:{}, I2:{}, Method:{}, ZipSize:{}, UnZipSize:{}}}",
-                    I1, ZipFlag, SeqID, I2,
-                    commandToString(Method), ZipSize, UnZipSize);
+                "ResponseHeader{{I1:{}, ZipFlag:{} SeqID:{}, I2:{}, Method:{}, ZipSize:{}, UnZipSize:{}}}",
+                I1,
+                ZipFlag,
+                SeqID,
+                I2,
+                commandToString(Method),
+                ZipSize,
+                UnZipSize);
         }
     };
 #pragma pack(pop)  // 恢复默认对齐方式
 
-    constexpr auto request_header_length = 0x0c;
+    constexpr auto request_header_length  = 0x0c;
     constexpr auto response_header_length = 0x10;
 
     // 模板化的 process 函数
     template <typename RequestType, typename ResponseType>
     void process(asio::ip::tcp::socket &socket, RequestType &request, ResponseType &response) {
-        std::string cmd = request.command();
-        auto req_buf = request.serialize();
+        std::string cmd     = request.command();
+        auto        req_buf = request.serialize();
         spdlog::debug("[{}]Send buffer: {}", cmd, strings::bytesToHex(req_buf));
         spdlog::debug("[{}]Send request: {}", cmd, request.toString());
         size_t n = asio::write(socket, asio::buffer(req_buf.data(), req_buf.size()));
@@ -239,11 +234,11 @@ namespace level1 {
         hdr_response_buf.resize(hdr_response_length);
         spdlog::debug("[{}]Recv -4", cmd);
         spdlog::debug("[{}]Recv buffer: {}", cmd, strings::bytesToHex(hdr_response_buf));
-        //auto pkg_response_hdr = cista::unchecked_deserialize<tdx::StdResponseHeader>(hdr_response_buf);
-        //StdResponseHeader pkg_response_hdr;
-        //ResponseHeader<ResponseType> &pkg_response_hdr = dynamic_cast<ResponseHeader<ResponseType>&>(response);
-        //pkg_response_hdr.ResponseHeader<ResponseType>::headerDeserialize(hdr_response_buf);
-        //response.ResponseHeader<ResponseType>::headerDeserialize(hdr_response_buf);
+        // auto pkg_response_hdr = cista::unchecked_deserialize<tdx::StdResponseHeader>(hdr_response_buf);
+        // StdResponseHeader pkg_response_hdr;
+        // ResponseHeader<ResponseType> &pkg_response_hdr = dynamic_cast<ResponseHeader<ResponseType>&>(response);
+        // pkg_response_hdr.ResponseHeader<ResponseType>::headerDeserialize(hdr_response_buf);
+        // response.ResponseHeader<ResponseType>::headerDeserialize(hdr_response_buf);
         response.headerDeserialize(hdr_response_buf);
         // 处理接收到的数据
         spdlog::debug("[{}]Recv response head: {}", cmd, response.headerStringImpl());
@@ -256,11 +251,11 @@ namespace level1 {
         body_buffer.resize(body_received);
         if (response.ZipSize != response.UnZipSize) {
             std::vector<u8> un = unzip(body_buffer, response.UnZipSize);
-            body_buffer = un;
+            body_buffer        = un;
         }
         spdlog::debug("[{}]Recv response buff: {}", cmd, strings::bytesToHex(body_buffer));
         response.deserialize(body_buffer);
         spdlog::debug("[{}]Recv response body: {}", cmd, response.toString());
     }
-}
-#endif //QUANT1X_LEVEL1_PROTOCOL_H
+}  // namespace level1
+#endif  // QUANT1X_LEVEL1_PROTOCOL_H
