@@ -18,6 +18,8 @@
 #include <quant1x/std/except.h>
 // router sink for per-level file routing
 #include <quant1x/log/router_sink.h>
+// lazy daily sink wrapper (creates files on first write)
+#include <quant1x/log/lazy_daily_sink.h>
 
 #include <filesystem>
 // rotating file sink
@@ -144,19 +146,14 @@ namespace runtime {
             // Build a first-match router that writes each level into its own daily file
             auto router = std::make_shared<quant1x::log::FirstMatchRouterSink>();
 
-            // use daily files (rotate every day) — keep false for truncate=false
-            auto info_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(
-                config::get_logs_path() + "/info.log", 0, 0, false);
-            auto debug_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(
-                config::get_logs_path() + "/debug.log", 0, 0, false);
-            auto warn_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(
-                config::get_logs_path() + "/warn.log", 0, 0, false);
-            auto err_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(
-                config::get_logs_path() + "/error.log", 0, 0, false);
-            auto critical_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(
-                config::get_logs_path() + "/critical.log", 0, 0, false);
-            auto trace_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(
-                config::get_logs_path() + "/trace.log", 0, 0, false);
+            // use lazy daily files (rotate every day) — keep false for truncate=false
+            using quant1x::log::make_lazy_daily_sink;
+            auto info_sink = make_lazy_daily_sink(config::get_logs_path() + "/info.log", 0, 0, false);
+            auto debug_sink = make_lazy_daily_sink(config::get_logs_path() + "/debug.log", 0, 0, false);
+            auto warn_sink = make_lazy_daily_sink(config::get_logs_path() + "/warn.log", 0, 0, false);
+            auto err_sink = make_lazy_daily_sink(config::get_logs_path() + "/error.log", 0, 0, false);
+            auto critical_sink = make_lazy_daily_sink(config::get_logs_path() + "/critical.log", 0, 0, false);
+            auto trace_sink = make_lazy_daily_sink(config::get_logs_path() + "/trace.log", 0, 0, false);
 
             router->add_exact_route(spdlog::level::info, info_sink);
             router->add_exact_route(spdlog::level::debug, debug_sink);

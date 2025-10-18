@@ -114,6 +114,7 @@ add_catch2_executable(tdd-config.cpp)
 
 # io测试
 add_catch2_executable(tdd-logger-dist.cpp)
+add_catch2_executable(tdd-lazy-log.cpp)
 
 # cron测试
 add_catch2_executable(tdd-cron.cpp)
