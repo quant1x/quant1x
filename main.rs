@@ -23,6 +23,9 @@ fn build_version_info() -> String {
 }
 
 fn main() {
+    // Initialize logger
+    quant1x::app::logger_set(false, false);
+
     let program_name = std::env::current_exe()
         .ok()
         .and_then(|p| p.file_name().map(|n| n.to_string_lossy().to_string()))

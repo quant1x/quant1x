@@ -16,10 +16,29 @@ pub fn datasets_init() {
 }
 
 pub fn logger_set(_verbose: bool, _debug: bool) {
-    // 初始化 log4rs，将日志写入 <cache>/logs/quant1x.log，并使用滚动策略。
+    // 初始化 log4rs，按级别拆分日志文件，并使用按天轮转的滚动策略。
     use log::LevelFilter;
     use log4rs::filter::threshold::ThresholdFilter;
     use std::path::PathBuf;
+
+    // 自定义 EqualFilter，用于精确级别匹配，避免重复写入
+    use log4rs::filter::{Filter, Response};
+    use log::Level;
+
+    #[derive(Debug)]
+    struct EqualFilter {
+        level: Level,
+    }
+
+    impl Filter for EqualFilter {
+        fn filter(&self, record: &log::Record) -> Response {
+            if record.level() == self.level {
+                Response::Accept
+            } else {
+                Response::Reject
+            }
+        }
+    }
 
     let logs_dir = crate::config::get_logs_path();
     // 确保日志目录存在
@@ -27,64 +46,47 @@ pub fn logger_set(_verbose: bool, _debug: bool) {
         log::error!("Failed to create logs dir {}: {}", logs_dir, e);
     }
 
-    let mut log_path = PathBuf::from(&logs_dir);
-    log_path.push("quant1x.log");
-
-    // 使用带日期的日志文件名，使每个日期生成独立日志文件。
+    // 使用带日期的日志文件名，使每个日期生成独立日志文件，按级别拆分。
     let date = chrono::Local::now().format("%Y-%m-%d").to_string();
-    let mut dated_log_path = PathBuf::from(&logs_dir);
-    dated_log_path.push(format!("quant1x-info-{}.log", date));
 
     let pattern = "{d(%Y-%m-%d %H:%M:%S%.3f)} {l} {t} - {m}\n";
-    let app = match log4rs::append::file::FileAppender::builder()
-        .encoder(Box::new(log4rs::encode::pattern::PatternEncoder::new(
-            pattern,
-        )))
-        .build(dated_log_path.clone())
-    {
-        Ok(a) => a,
-        Err(e) => {
-            log::error!("Failed to build FileAppender: {}", e);
-            let _ = env_logger::try_init();
-            return;
-        }
-    };
-
     let mut config = log4rs::config::Config::builder();
-    let appender = log4rs::config::Appender::builder().build("file", Box::new(app));
-    config = config.appender(appender);
 
-    // Add an error-only file appender (Error and above). This keeps errors in the
-    // main log as well but also writes them to a dedicated file for easy inspection.
-    let mut err_log_path = PathBuf::from(&logs_dir);
-    err_log_path.push(format!("quant1x-error-{}.log", date));
-    let err_app = match log4rs::append::file::FileAppender::builder()
-        .encoder(Box::new(log4rs::encode::pattern::PatternEncoder::new(
-            pattern,
-        )))
-        .build(err_log_path.clone())
-    {
-        Ok(a) => a,
-        Err(e) => {
-            log::error!("Failed to build error FileAppender: {}", e);
-            let _ = env_logger::try_init();
-            return;
-        }
-    };
-    let err_appender = log4rs::config::Appender::builder()
-        .filter(Box::new(ThresholdFilter::new(LevelFilter::Error)))
-        .build("error_file", Box::new(err_app));
-    config = config.appender(err_appender);
+    // 为每个级别创建文件 appender，按级别拆分
+    let levels = vec![
+        ("trace", LevelFilter::Trace, Level::Trace),
+        ("debug", LevelFilter::Debug, Level::Debug),
+        ("info", LevelFilter::Info, Level::Info),
+        ("warn", LevelFilter::Warn, Level::Warn),
+        ("error", LevelFilter::Error, Level::Error),
+    ];
 
-    let level = if _debug {
-        LevelFilter::Debug
-    } else {
-        LevelFilter::Info
-    };
+    for (level_name, _level_filter, level) in levels {
+        let dated_log_path = format!("{}/quant1x-{}-{}.log", logs_dir, level_name, date);
+        let app = match log4rs::append::file::FileAppender::builder()
+            .encoder(Box::new(log4rs::encode::pattern::PatternEncoder::new(pattern)))
+            .build(dated_log_path)
+        {
+            Ok(a) => a,
+            Err(e) => {
+                log::error!("Failed to build FileAppender for {}: {}", level_name, e);
+                let _ = env_logger::try_init();
+                return;
+            }
+        };
+        let appender = log4rs::config::Appender::builder()
+            .filter(Box::new(EqualFilter { level }))
+            .build(level_name, Box::new(app));
+        config = config.appender(appender);
+    }
+
     let root = log4rs::config::Root::builder()
-        .appender("file")
-        .appender("error_file")
-        .build(level);
+        .appender("trace")
+        .appender("debug")
+        .appender("info")
+        .appender("warn")
+        .appender("error")
+        .build(LevelFilter::Trace);
 
     match config.build(root) {
         Ok(cfg) => {

@@ -68,7 +68,7 @@ pub use crate::encoding::*;
 // crate-level internal configuration module (used by exchange/calendar and tests)
 pub mod config;
 // small application-level shims for main.rs to call; these are no-op fallbacks
-mod app;
+pub mod app;
 pub use crate::app::*;
 
 // Level1 protocol bindings (partial, header-only equivalents)
