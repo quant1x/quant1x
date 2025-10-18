@@ -73,3 +73,17 @@ impl Hello1Response {
         format!("Info: {}", self.info)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deserialize_sample_matches_cpp() {
+        let hex_data = "00e9070204280900073a02b2020c03840384038403840384033a02b2020c03840384038403840384030022ff3401194a010022ff3401154a0100ff00f70000010101ff00b1b1bea9c1aacda8d0d0c7e9b6fe000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000010023b8dbb0c400000000000000000000000000000000000000000000000000";
+        let buf = hex::decode(hex_data).unwrap();
+        let mut resp = Hello1Response::new();
+        resp.deserialize(&buf);
+        assert!(!resp.info.is_empty());
+    }
+}

@@ -1,9 +1,14 @@
+use mio::net::TcpStream as MioTcpStream;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::net::{TcpStream, ToSocketAddrs};
+use std::net::{Shutdown, TcpStream as StdTcpStream, ToSocketAddrs};
 use std::path::PathBuf;
 use std::thread;
 use std::time::{Duration, Instant};
+
+pub const MAX_CONNECTIONS: usize = 10;
+pub const MAX_ELAPSED_TIME_MS: i64 = 100;
+pub const DEFAULT_CONNECT_TIMEOUT_MS: i32 = 1000;
 
 /// ServerInfo mirrors the C++ struct used by the level1 client detection logic.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1027,7 +1032,7 @@ pub fn standard_server_list() -> Vec<ServerInfo> {
 /// the level1 protocol handshake — it's a fast network probe to choose responsive endpoints.
 pub fn detect(
     elapsed_time: i64,
-    conn_limit: i32,
+    conn_limit: usize,
     connect_timeout_milliseconds: i32,
 ) -> Vec<ServerInfo> {
     let servers = standard_server_list();
@@ -1048,8 +1053,11 @@ pub fn detect(
         let start = i * servers_per_thread;
         let end = std::cmp::min(start + servers_per_thread, n);
         let elapsed_time = elapsed_time;
+        let conn_cap = std::cmp::min(conn_limit, MAX_CONNECTIONS);
         let timeout = Duration::from_millis(connect_timeout_milliseconds as u64);
         handles.push(thread::spawn(move || {
+            use super::client::ProtocolHandler;
+
             let mut found: Vec<ServerInfo> = Vec::new();
             for j in start..end {
                 if j >= slice.len() {
@@ -1057,24 +1065,52 @@ pub fn detect(
                 }
                 let s = &slice[j];
                 let addr_str = s.addr();
-                // Resolve and connect with timeout
                 if let Ok(mut addrs) = (&addr_str[..]).to_socket_addrs() {
                     if let Some(sock) = addrs.find(|_| true) {
                         let start_time = Instant::now();
-                        let res = TcpStream::connect_timeout(&sock, timeout);
-                        if let Ok(stream) = res {
-                            let duration = start_time.elapsed();
-                            let mut si = s.clone();
-                            si.latency_ms = duration.as_millis() as i64;
-                            // only accept servers faster than elapsed_time
-                            if si.latency_ms as i64 <= elapsed_time {
-                                // close immediately
-                                let _ = stream.shutdown(std::net::Shutdown::Both);
-                                found.push(si);
+                        match StdTcpStream::connect_timeout(&sock, timeout) {
+                            Ok(std_stream) => {
+                                let _ = std_stream.set_nodelay(true);
+                                let _ = std_stream.set_read_timeout(Some(timeout));
+                                let _ = std_stream.set_write_timeout(Some(timeout));
+
+                                let mut stream = MioTcpStream::from_std(std_stream);
+                                match ProtocolHandler::handshake(&mut stream) {
+                                    Ok(true) => {
+                                        let duration = start_time.elapsed();
+                                        let mut si = s.clone();
+                                        si.latency_ms = duration.as_millis() as i64;
+                                        if si.latency_ms < elapsed_time {
+                                            let _ = stream.shutdown(Shutdown::Both);
+                                            found.push(si);
+                                        } else {
+                                            let _ = stream.shutdown(Shutdown::Both);
+                                        }
+                                    }
+                                    Ok(false) => {
+                                        let _ = stream.shutdown(Shutdown::Both);
+                                    }
+                                    Err(e) => {
+                                        log::debug!(
+                                            "detected server handshake failed for {}: {}",
+                                            addr_str,
+                                            e
+                                        );
+                                        let _ = stream.shutdown(Shutdown::Both);
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                log::debug!("connect_timeout failed for {}: {}", addr_str, e);
                             }
                         }
                     }
                 }
+            }
+            // retain per-thread results sorted later; cap applied after join
+            if conn_cap < found.len() {
+                found.sort_by_key(|s| s.latency_ms);
+                found.truncate(conn_cap);
             }
             found
         }));
@@ -1089,6 +1125,6 @@ pub fn detect(
 
     // sort by latency and trim to conn_limit
     results.sort_by_key(|s| s.latency_ms);
-    let limit = std::cmp::min(results.len(), conn_limit as usize);
+    let limit = std::cmp::min(results.len(), std::cmp::min(conn_limit, MAX_CONNECTIONS));
     results.into_iter().take(limit).collect()
 }

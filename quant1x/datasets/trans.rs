@@ -1,5 +1,6 @@
 use crate::cache::{self, DataAdapter, Kind};
-use crate::level1::transaction_data::TickTransaction;
+use crate::level1::protocol;
+use crate::level1::transaction_data::{TickTransaction, TransactionRequest, TransactionResponse};
 use crate::level1::{self};
 use crate::Timestamp;
 use std::sync::Arc;
@@ -131,10 +132,42 @@ impl DataAdapter for DataTrans {
         let mut history: Vec<TickTransaction> = Vec::new();
         let mut hs: Vec<Vec<TickTransaction>> = Vec::new();
 
+        fn fetch_transaction_page(
+            security_code: &str,
+            start: u16,
+            count: u16,
+        ) -> Option<TransactionResponse> {
+            match crate::level1::client() {
+                Ok(mut pooled) => {
+                    let mut request = TransactionRequest::new(security_code, start, count);
+                    let mut response = TransactionResponse::new_from_request(&request);
+                    match protocol::process(pooled.stream(), &mut request, &mut response) {
+                        Ok(_) => Some(response),
+                        Err(e) => {
+                            log::error!(
+                                "level1 protocol::process error for transaction_data {}: {}",
+                                security_code,
+                                e
+                            );
+                            None
+                        }
+                    }
+                }
+                Err(e) => {
+                    log::error!(
+                        "failed to acquire level1 client for transaction_data {}: {}",
+                        security_code,
+                        e
+                    );
+                    None
+                }
+            }
+        }
+
         if today_is_last {
             // fetch TRANSACTION_DATA pages
             loop {
-                match level1::transaction_data::fetch_transaction_data(&corrected, start, OFFSET) {
+                match fetch_transaction_page(&corrected, start, OFFSET) {
                     Some(mut resp) => {
                         if resp.count == 0 || resp.list.is_empty() {
                             break;

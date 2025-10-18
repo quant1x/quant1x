@@ -1,4 +1,5 @@
 use crate::cache::{self, DataAdapter, Kind};
+use crate::level1::KLineType;
 use crate::Timestamp;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -139,23 +140,27 @@ impl DataAdapter for DataKLine {
         while start_idx < total {
             let remaining = total - start_idx;
             let count = std::cmp::min(step, remaining) as u16;
-            // 注意：fetch_security_bars 接受 start 为 u32，count 为 u16；C++ 基于日期索引使用 start/count
-            match crate::level1::fetch_security_bars(code, 9, 1, start_idx as u32, count) {
+            // 注意：start 使用日期索引，datasets 层直接调度 SecurityBars 请求
+            match crate::datasets::kline_raw::fetch_kline(
+                code,
+                start_idx as u32,
+                count,
+                KLineType::RiK,
+            ) {
                 Some(resp) => {
+                    let response_count = resp.count as usize;
                     if resp.list.is_empty() {
                         break;
                     }
-                    // 直接把整页 push 进去，保留每页内部的顺序
                     hs.push(resp.list);
-                    // if server returned less than requested count, stop
-                    if (resp.count as usize) < count as usize {
+                    if response_count < count as usize {
                         break;
                     }
                     start_idx = start_idx.saturating_add(count as usize);
                 }
                 None => {
                     log::warn!(
-                        "[DataKLine] fetch_security_bars returned None for {} start={}",
+                        "[DataKLine] fetch_kline returned None for {} start={}",
                         code,
                         start_idx
                     );

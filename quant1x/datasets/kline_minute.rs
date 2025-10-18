@@ -213,11 +213,12 @@ impl DataAdapter for DataMinuteKLine {
                 count,
                 total
             );
-            match crate::datasets::kline_raw::fetch_kline(code, start_idx as u16, count, kline_type)
+            match crate::datasets::kline_raw::fetch_kline(code, start_idx as u32, count, kline_type)
             {
-                reply if !reply.is_empty() => {
-                    hs.push(reply);
-                    if hs.last().unwrap().len() < count as usize {
+                Some(resp) if !resp.list.is_empty() => {
+                    let response_len = resp.list.len();
+                    hs.push(resp.list);
+                    if response_len < count as usize {
                         break;
                     }
                     start_idx = start_idx.saturating_add(count as usize);
@@ -428,7 +429,7 @@ mod tests {
     #[test]
     fn test_read_kline_from_csv() {
         let adapter = DataMinuteKLine;
-        let code = "sh510050";
+        let code = "sh603682";
         let date = Timestamp::now();
         adapter.update(code, date);
     }

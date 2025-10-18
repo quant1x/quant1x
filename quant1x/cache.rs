@@ -150,11 +150,19 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
         .chain(feature_adapters.into_iter());
 
     // Determine a global concurrency limit based on level1 pool maximum connections.
-    let pool_max = crate::level1::pool_max_connections().unwrap_or(
-        std::thread::available_parallelism()
-            .map(|n| n.get())
-            .unwrap_or(4),
-    );
+    let pool_max = {
+        if let Some(limit) = crate::level1::pool_max_connections() {
+            limit
+        } else {
+            let fallback = std::cmp::min(crate::level1::config::MAX_CONNECTIONS.max(1), 5);
+            log::info!(
+                "[cache] level1 pool not initialized; falling back to concurrency limit {}",
+                fallback
+            );
+            fallback
+        }
+    }
+    .max(1);
 
     // Simple counting semaphore to bound concurrent network operations across all worker threads.
     #[derive(Debug)]
@@ -221,6 +229,13 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
                 .unwrap(),
         );
 
+        log::info!(
+            "[cache] adapter {} using pool_max={} threads limit={}",
+            module_name,
+            pool_max,
+            pool_max
+        );
+
         // 检测是否为 feature 适配器
         if let Some(feature_prototype) = adapter.as_feature_clone() {
             // 使用 feature_date 初始化 feature 实例
@@ -239,6 +254,12 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
                 num_threads = pool_max.max(1);
             }
             let codes = all_codes.clone();
+            log::info!(
+                "[cache] adapter {} feature threads={} (requested vs capped)",
+                module_name,
+                num_threads
+            );
+
             let chunk_size = (codes.len() + num_threads - 1) / num_threads;
             let mut handles = Vec::new();
 
@@ -334,6 +355,12 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
             if num_threads == 0 || num_threads > pool_max {
                 num_threads = pool_max.max(1);
             }
+            log::info!(
+                "[cache] adapter {} base threads={} (requested vs capped)",
+                module_name,
+                num_threads
+            );
+
             let chunk_size = (codes.len() + num_threads - 1) / num_threads;
             let mut handles = Vec::new();
             for t in 0..num_threads {

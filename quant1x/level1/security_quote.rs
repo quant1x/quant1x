@@ -16,94 +16,6 @@ pub enum TradeState {
     Ipo,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    const EPS: f64 = 1e-12;
-
-    #[test]
-    fn trade_price_and_bid_ask_present() {
-        let mut q = SecurityQuote::new();
-        q.price = 10.5;
-        q.bid[0] = 10.4;
-        q.ask[0] = 10.6;
-
-        assert!((q.implicit_spread() - 0.0).abs() < EPS);
-        assert!((q.implicit_spread_pct() - 0.0).abs() < EPS);
-    }
-
-    #[test]
-    fn trade_price_off_mid() {
-        let mut q = SecurityQuote::new();
-        q.price = 10.55;
-        q.bid[0] = 10.4;
-        q.ask[0] = 10.6;
-
-        let s = q.implicit_spread();
-        assert!((s - 0.1).abs() < EPS);
-        let pct = q.implicit_spread_pct();
-        assert!((pct - (0.1 / 10.5 * 100.0)).abs() < 1e-10);
-    }
-
-    #[test]
-    fn no_trade_price_use_onbook() {
-        let mut q = SecurityQuote::new();
-        q.price = 0.0;
-        q.bid[0] = 5.0;
-        q.ask[0] = 5.2;
-
-        let s = q.implicit_spread();
-        assert!((s - 0.2).abs() < EPS);
-        let pct = q.implicit_spread_pct();
-        assert!((pct - (0.2 / 5.1 * 100.0)).abs() < 1e-10);
-    }
-
-    #[test]
-    fn no_bid_ask_no_price() {
-        let mut q = SecurityQuote::new();
-        q.price = 0.0;
-        q.bid[0] = 0.0;
-        q.ask[0] = 0.0;
-        q.last_close = 0.0;
-
-        assert!((q.implicit_spread() - 0.0).abs() < EPS);
-        assert!((q.implicit_spread_pct() - 0.0).abs() < EPS);
-    }
-
-    #[test]
-    fn fallback_to_last_close_percent() {
-        let mut q = SecurityQuote::new();
-        q.price = 0.0;
-        q.bid[0] = 0.0;
-        q.ask[0] = 0.0;
-        q.last_close = 20.0;
-
-        assert!((q.implicit_spread() - 0.0).abs() < EPS);
-        assert!((q.implicit_spread_pct() - 0.0).abs() < EPS);
-    }
-
-    #[test]
-    fn nan_price() {
-        let mut q = SecurityQuote::new();
-        q.price = f64::NAN;
-        q.bid[0] = 3.0;
-        q.ask[0] = 3.5;
-
-        assert!((q.implicit_spread() - 0.5).abs() < EPS);
-    }
-
-    #[test]
-    fn spread_level_classification() {
-        let mut q = SecurityQuote::new();
-        q.price = 10.0;
-        q.bid[0] = 9.995; // mid ~ 9.9975 => spread = 2 * |10 - 9.9975| = 0.005 => pct ~ 0.05%
-        q.ask[0] = 10.0;
-        let lvl = q.implicit_spread_level();
-        assert!(matches!(lvl, SpreadLevel::VeryLow | SpreadLevel::Low));
-    }
-}
-
 /// Minimal StockInfo mirroring the C++ `level1::StockInfo { int market; std::string code; }`
 #[derive(Debug, Clone)]
 pub struct StockInfo {
@@ -157,9 +69,9 @@ pub enum SpreadLevel {
 
 // 默认阈值（百分比）
 pub const SPREAD_PCT_VERY_LOW: f64 = 0.05; // < 0.05%
-pub const SPREAD_PCT_LOW: f64 = 0.2;       // 0.05% - 0.2%
-pub const SPREAD_PCT_MEDIUM: f64 = 0.8;    // 0.2% - 0.8%
-pub const SPREAD_PCT_HIGH: f64 = 2.0;      // 0.8% - 2.0%
+pub const SPREAD_PCT_LOW: f64 = 0.2; // 0.05% - 0.2%
+pub const SPREAD_PCT_MEDIUM: f64 = 0.8; // 0.2% - 0.8%
+pub const SPREAD_PCT_HIGH: f64 = 2.0; // 0.8% - 2.0%
 
 impl SecurityQuote {
     pub fn new() -> Self {
@@ -615,5 +527,128 @@ impl SecurityQuoteResponse {
             log::error!("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
         }
         debug_assert!(remains.is_empty());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EPS: f64 = 1e-12;
+
+    #[test]
+    fn trade_price_and_bid_ask_present() {
+        let mut q = SecurityQuote::new();
+        q.price = 10.5;
+        q.bid[0] = 10.4;
+        q.ask[0] = 10.6;
+
+        assert!((q.implicit_spread() - 0.0).abs() < EPS);
+        assert!((q.implicit_spread_pct() - 0.0).abs() < EPS);
+    }
+
+    #[test]
+    fn trade_price_off_mid() {
+        let mut q = SecurityQuote::new();
+        q.price = 10.55;
+        q.bid[0] = 10.4;
+        q.ask[0] = 10.6;
+
+        let s = q.implicit_spread();
+        assert!((s - 0.1).abs() < EPS);
+        let pct = q.implicit_spread_pct();
+        assert!((pct - (0.1 / 10.5 * 100.0)).abs() < 1e-10);
+    }
+
+    #[test]
+    fn no_trade_price_use_onbook() {
+        let mut q = SecurityQuote::new();
+        q.price = 0.0;
+        q.bid[0] = 5.0;
+        q.ask[0] = 5.2;
+
+        let s = q.implicit_spread();
+        assert!((s - 0.2).abs() < EPS);
+        let pct = q.implicit_spread_pct();
+        assert!((pct - (0.2 / 5.1 * 100.0)).abs() < 1e-10);
+    }
+
+    #[test]
+    fn no_bid_ask_no_price() {
+        let mut q = SecurityQuote::new();
+        q.price = 0.0;
+        q.bid[0] = 0.0;
+        q.ask[0] = 0.0;
+        q.last_close = 0.0;
+
+        assert!((q.implicit_spread() - 0.0).abs() < EPS);
+        assert!((q.implicit_spread_pct() - 0.0).abs() < EPS);
+    }
+
+    #[test]
+    fn fallback_to_last_close_percent() {
+        let mut q = SecurityQuote::new();
+        q.price = 0.0;
+        q.bid[0] = 0.0;
+        q.ask[0] = 0.0;
+        q.last_close = 20.0;
+
+        assert!((q.implicit_spread() - 0.0).abs() < EPS);
+        assert!((q.implicit_spread_pct() - 0.0).abs() < EPS);
+    }
+
+    #[test]
+    fn nan_price() {
+        let mut q = SecurityQuote::new();
+        q.price = f64::NAN;
+        q.bid[0] = 3.0;
+        q.ask[0] = 3.5;
+
+        assert!((q.implicit_spread() - 0.5).abs() < EPS);
+    }
+
+    #[test]
+    fn spread_level_classification() {
+        let mut q = SecurityQuote::new();
+        q.price = 10.0;
+        q.bid[0] = 9.995; // mid ~ 9.9975 => spread = 2 * |10 - 9.9975| = 0.005 => pct ~ 0.05%
+        q.ask[0] = 10.0;
+        let lvl = q.implicit_spread_level();
+        assert!(matches!(lvl, SpreadLevel::VeryLow | SpreadLevel::Low));
+    }
+
+    #[test]
+    fn deserialize_sample_matches_cpp_behavior() {
+        let hex_data = "01030600013030303030318912bbb226e14cc95000db5e92a8a50e0b9391c8f704004b012a539687c49e02998a84d902808af743e748aaf5e11c009514940f969ae4029d8a06329301b88bc0d60100a211b50a00000000000000000200000000000d00000001363030313035940dbb0738041f00aa80a70efb07ac929001ab8e01d487104ea8f545849d4a00a09d10fb07000095db14fb070100a36cfb0702008e11fb0703009914fb070400ac2e1605000000000000940d013838303635368c12b3f615b62b9e13af66f344a699910e0198d9b31a96bb5b081d5b5103009ac3d20600f3f615ebf315262cf3f615f3f6150003f3f615f3f6150000f3f615ae81f9020000f2f61500262c02000000000000000000013838303336378f128ef80a9406dd078613c615b79c9c0e06ad82d9119dd8036e70385005009cfbaf01f614cef80ac6f50a238601cef80acef80a0005cef80acef80a0000cef80a918b520000c8f80af614238601020000000000010000000135313030353041128429797901c0019ca9878f01b3f102919af521971ffd8e09508e95d30e8385a2130081040001950bbe23410290d20193b70342038ea901bc584304aa06b12b44051f9f7354040000000008004112013630303833390000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d000000";
+        let buf = hex::decode(hex_data).unwrap();
+        let mut resp = SecurityQuoteResponse::new();
+        resp.deserialize(&buf);
+        assert_eq!(resp.count as usize, resp.list.len());
+    }
+
+    #[test]
+    fn verify_delisted_updates_state() {
+        let mut resp = SecurityQuoteResponse::new();
+        let mut sq = SecurityQuote::new();
+        sq.market = 1;
+        sq.code = "600839".to_string();
+        sq.last_close = 0.0;
+        sq.open = 0.0;
+        sq.state = TradeState::Delisting;
+        resp.list.push(sq);
+        resp.count = resp.list.len() as u16;
+
+        let mut maps: std::collections::HashMap<String, StockInfo> =
+            std::collections::HashMap::new();
+        maps.insert(
+            "sh600839".to_string(),
+            StockInfo {
+                market: 1,
+                code: "600839".to_string(),
+            },
+        );
+
+        resp.verify_delisted_securities(&mut maps);
+        assert!(matches!(resp.list[0].state, TradeState::Ipo));
     }
 }

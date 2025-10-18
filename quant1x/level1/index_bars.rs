@@ -57,6 +57,6 @@ impl IndexBarsResponse {
     }
 
     pub fn deserialize(&mut self, data: &[u8]) {
-        self.inner.decode(data);
+        self.inner.deserialize(data);
     }
 }

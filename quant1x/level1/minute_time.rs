@@ -1,21 +1,16 @@
 #![allow(dead_code)]
 use super::sequence_id;
-use crate::level1::commands::*;
+use crate::level1::protocol::{self, commands, Request, RequestHeader, Response, ResponseHeader};
 use crate::std::BinaryStream;
 
 // Request builder for HISTORY_MINUTE_DATA
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct HistoryMinuteTimeRequest {
-    pub zip_flag: u8,
-    pub seq_id: u32,
-    pub packet_type: u8,
-    pub pkg_len1: u16,
-    pub pkg_len2: u16,
-    pub method: u16,
-    pub date: u32,
-    pub market: u8,
-    pub code: [u8; 6],
+    header: RequestHeader,
+    date: u32,
+    market: u8,
+    code: [u8; 6],
 }
 
 impl HistoryMinuteTimeRequest {
@@ -26,61 +21,79 @@ impl HistoryMinuteTimeRequest {
         let copy_len = std::cmp::min(sym.len(), 6);
         code[..copy_len].copy_from_slice(&sym[..copy_len]);
 
+        let mut header = RequestHeader::new();
+        header.zip_flag = 0x0C;
+        header.seq_id = sequence_id();
+        header.packet_type = 0x00;
+        header.method = commands::HISTORY_MINUTE_DATA;
+
         HistoryMinuteTimeRequest {
-            zip_flag: 0x0C,
-            seq_id: sequence_id(),
-            packet_type: 0x00,
-            pkg_len1: 0,
-            pkg_len2: 0,
-            method: HISTORY_MINUTE_DATA,
+            header,
             date,
             market,
             code,
         }
     }
 
-    pub fn serialize(&mut self) -> Vec<u8> {
-        // payload Date(u32) + Market(u8) + Code[6] -> 4+1+6 = 11
-        self.pkg_len1 = 2u16 + 4u16 + 1u16 + 6u16;
-        self.pkg_len2 = self.pkg_len1;
+    pub fn date(&self) -> u32 {
+        self.date
+    }
 
-        let mut header = BinaryStream::new();
-        header.push_u8(self.zip_flag);
-        header.push_u32(self.seq_id);
-        header.push_u8(self.packet_type);
-        header.push_u16(self.pkg_len1);
-        header.push_u16(self.pkg_len2);
-        header.push_u16(self.method);
+    pub fn market(&self) -> u8 {
+        self.market
+    }
 
-        let mut stream = BinaryStream::new();
-        stream.push_u32(self.date);
-        stream.push_u8(self.market);
-        stream.push_byte_array(&self.code);
+    pub fn code(&self) -> &[u8; 6] {
+        &self.code
+    }
 
-        let mut buf = header.data().clone();
-        let data = stream.data();
-        buf.extend_from_slice(data);
-        buf
+    pub fn code_string(&self) -> String {
+        let nul_pos = self
+            .code
+            .iter()
+            .position(|&b| b == 0)
+            .unwrap_or(self.code.len());
+        String::from_utf8_lossy(&self.code[..nul_pos]).into_owned()
+    }
+}
+
+impl Request for HistoryMinuteTimeRequest {
+    fn header(&self) -> &RequestHeader {
+        &self.header
+    }
+
+    fn header_mut(&mut self) -> &mut RequestHeader {
+        &mut self.header
+    }
+
+    fn serialize_payload(&mut self) -> Vec<u8> {
+        let mut payload = BinaryStream::new();
+        payload.push_u32(self.date);
+        payload.push_u8(self.market);
+        payload.push_byte_array(&self.code);
+        payload.data().clone()
+    }
+
+    fn payload_string(&self) -> String {
+        format!(
+            "{{Date:{}, Market:{}, Code:{}}}",
+            self.date,
+            self.market,
+            self.code_string()
+        )
     }
 }
 
 pub fn fetch_history_minute_time(security_code: &str, date: u32) -> Option<MinuteTimeResponse> {
     match crate::level1::client::client() {
         Ok(mut pooled) => {
-            let mut req = HistoryMinuteTimeRequest::new(security_code, date);
-            let req_buf = req.serialize();
-            match crate::level1::process_request(pooled.stream(), req_buf.as_slice()) {
-                Ok(body) => {
-                    let mut resp = MinuteTimeResponse::new(
-                        req.market as i32,
-                        &String::from_utf8_lossy(&req.code),
-                    );
-                    resp.deserialize(&body);
-                    Some(resp)
-                }
+            let mut request = HistoryMinuteTimeRequest::new(security_code, date);
+            let mut response = MinuteTimeResponse::new_from_request(&request);
+            match protocol::process(pooled.stream(), &mut request, &mut response) {
+                Ok(_) => Some(response),
                 Err(e) => {
                     log::error!(
-                        "level1 process_request error for history_minute_time {} date {}: {}",
+                        "level1 protocol::process error for history_minute_time {} date {}: {}",
                         security_code,
                         date,
                         e
@@ -115,6 +128,7 @@ impl MinuteTime {
 
 #[derive(Debug, Clone)]
 pub struct MinuteTimeResponse {
+    header: ResponseHeader,
     pub count: u16,
     pub list: Vec<MinuteTime>,
     pub market_: i32,
@@ -125,6 +139,7 @@ pub struct MinuteTimeResponse {
 impl MinuteTimeResponse {
     pub fn new(market: i32, code: &str) -> Self {
         Self {
+            header: ResponseHeader::new(),
             count: 0,
             list: Vec::new(),
             market_: market,
@@ -132,16 +147,38 @@ impl MinuteTimeResponse {
         }
     }
 
-    pub fn deserialize(&mut self, data: &[u8]) {
+    pub fn new_from_request(req: &HistoryMinuteTimeRequest) -> Self {
+        Self::new(req.market() as i32, &req.code_string())
+    }
+
+    fn clear(&mut self) {
+        self.list.clear();
+        self.count = 0;
+    }
+}
+
+impl Response for MinuteTimeResponse {
+    fn header(&self) -> &ResponseHeader {
+        &self.header
+    }
+
+    fn header_mut(&mut self) -> &mut ResponseHeader {
+        &mut self.header
+    }
+
+    fn deserialize_body(&mut self, data: &[u8]) {
+        self.clear();
+
         if data.len() < 2 {
             return;
         }
+
         let mut bs = BinaryStream::from_vec(data.to_vec());
         self.count = bs.get_u16();
         if self.count == 0 {
             return;
         }
-        // Rough estimate: header 6 bytes + each minute ~3 bytes (3 varints)
+
         let min_required = 6 + (self.count as usize) * 3;
         if data.len() < min_required {
             log::warn!(
@@ -150,23 +187,31 @@ impl MinuteTimeResponse {
                 data.len(),
                 min_required
             );
+            self.count = 0;
             return;
         }
+
         self.list.reserve(self.count as usize);
         let base_unit = super::default_base_unit(self.market_, &self.code_);
         let _is_index = super::assert_index_by_market_and_code(self.market_, &self.code_);
         let mut last_price: i64 = 0;
-        // skip 4 bytes as C++ does for history minute header
         bs.skip(4);
         for _ in 0..self.count {
-            let mut e = MinuteTime::new();
+            let mut entry = MinuteTime::new();
             let raw_price = bs.varint_decode();
-            let _reversed1 = bs.varint_decode(); // ignored
+            let _ignored = bs.varint_decode();
             let vol = bs.varint_decode();
-            e.vol = vol;
+            entry.vol = vol;
             last_price += raw_price;
-            e.price = (last_price as f32) / (base_unit as f32);
-            self.list.push(e);
+            entry.price = (last_price as f32) / (base_unit as f32);
+            self.list.push(entry);
         }
+    }
+
+    fn body_string(&self) -> String {
+        format!(
+            "{{Count:{}, Market:{}, Code:{}}}",
+            self.count, self.market_, self.code_
+        )
     }
 }

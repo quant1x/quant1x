@@ -52,3 +52,17 @@ impl HeartbeatResponse {
         self.info = bs.get_string(10);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deserialize_sample_populates_info() {
+        let hex_data = "48656172742d486562696f726974";
+        let buf = hex::decode(hex_data).unwrap();
+        let mut resp = HeartbeatResponse::new();
+        resp.deserialize(&buf);
+        assert!(!resp.info.is_empty());
+    }
+}

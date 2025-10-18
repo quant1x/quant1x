@@ -22,8 +22,8 @@ pub fn logger_set(_verbose: bool, _debug: bool) {
     use std::path::PathBuf;
 
     // 自定义 EqualFilter，用于精确级别匹配，避免重复写入
-    use log4rs::filter::{Filter, Response};
     use log::Level;
+    use log4rs::filter::{Filter, Response};
 
     #[derive(Debug)]
     struct EqualFilter {
@@ -64,7 +64,9 @@ pub fn logger_set(_verbose: bool, _debug: bool) {
     for (level_name, _level_filter, level) in levels {
         let dated_log_path = format!("{}/quant1x-{}-{}.log", logs_dir, level_name, date);
         let app = match log4rs::append::file::FileAppender::builder()
-            .encoder(Box::new(log4rs::encode::pattern::PatternEncoder::new(pattern)))
+            .encoder(Box::new(log4rs::encode::pattern::PatternEncoder::new(
+                pattern,
+            )))
             .build(dated_log_path)
         {
             Ok(a) => a,
@@ -678,53 +680,33 @@ pub fn try_run_subcommand(
     }
 
     if do_servers {
-        log::info!("正在探测 level1 服务器（网络探测）...");
-        // 在探测标准服务器列表时显示进度条
-        let servers = crate::level1::config::standard_server_list();
-        let total = servers.len() as u64;
-        let pb = ProgressBar::new(total);
-        pb.set_style(
-            ProgressStyle::with_template(
-                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}",
-            )?
-            .progress_chars("=> "),
+        log::info!("正在探测 level1 服务器（握手探测）...");
+        let start = Instant::now();
+        let detected = crate::level1::config::detect(
+            crate::level1::config::MAX_ELAPSED_TIME_MS,
+            crate::level1::config::MAX_CONNECTIONS,
+            crate::level1::config::DEFAULT_CONNECT_TIMEOUT_MS,
         );
 
-        let mut found: Vec<crate::level1::config::ServerInfo> = Vec::new();
-        use std::net::ToSocketAddrs;
-        for s in servers.into_iter() {
-            pb.set_message(s.desc.clone());
-            // Try to connect with a short timeout to measure reachability
-            let start = Instant::now();
-            let addr = s.addr();
-            let timeout = std::time::Duration::from_millis(250);
-            if let Ok(mut addrs) = addr.to_socket_addrs() {
-                if let Some(sock) = addrs.find(|_| true) {
-                    if let Ok(res) = std::net::TcpStream::connect_timeout(&sock, timeout) {
-                        let latency = start.elapsed().as_millis() as i64;
-                        let mut si = s.clone();
-                        si.latency_ms = latency;
-                        let _ = res.shutdown(std::net::Shutdown::Both);
-                        found.push(si);
-                    }
-                }
-            }
-            pb.inc(1);
-        }
-        pb.finish_with_message(format!(
-            "Probe completed, {} responsive servers",
-            found.len()
-        ));
-
-        if !found.is_empty() {
-            // sort and trim similar to detect()
-            found.sort_by_key(|s| s.latency_ms);
-            let limit = std::cmp::min(found.len(), 8);
-            let saved = found.into_iter().take(limit).collect::<Vec<_>>();
-            crate::level1::config::save_cached_servers(&saved);
-            log::info!("Saved {} best servers to cache.", saved.len());
+        if detected.is_empty() {
+            log::warn!("未探测到可用服务器。");
         } else {
-            log::info!("No responsive servers discovered.");
+            for srv in detected.iter() {
+                log::info!(
+                    "{} {} => {}:{} ({} ms)",
+                    srv.name,
+                    srv.desc,
+                    srv.host,
+                    srv.port,
+                    srv.latency_ms
+                );
+            }
+            crate::level1::config::save_cached_servers(&detected);
+            log::info!(
+                "Saved {} servers to cache (elapsed {:?}).",
+                detected.len(),
+                start.elapsed()
+            );
         }
     }
 

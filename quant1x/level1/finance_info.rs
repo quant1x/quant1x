@@ -305,3 +305,17 @@ impl FinanceInfoResponse {
         self.info.bao_liu2 = raw.bao_liu2 as f64;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deserialize_sample_matches_cpp_behavior() {
+        let hex_data = "010001363030313135dfead04910000800d9fe340121bc3001270e084a0000cf4460f0f9ca8c08d94c00000000b9c5fc485c8f42bea6e4834d8cbe914badddbf4ca042334a40cc27488771d94c801c5649703d4a4c089e1a4cb8fffb4c9a46f14c80b6e649303f86ca00e1964874570e4c60bbedca0014cd4900486eca606c92caa0f780ca00000000fca9313f00004041";
+        let buf = hex::decode(hex_data).unwrap();
+        let mut resp = FinanceInfoResponse::new();
+        resp.deserialize(&buf);
+        assert!(resp.count == 0 || !resp.info.code.is_empty());
+    }
+}

@@ -130,41 +130,67 @@ static CONNECTION_POOL: OnceLock<Arc<crate::net::TcpConnectionPool<ProtocolHandl
 pub fn client() -> std::io::Result<crate::net::PooledConnection<ProtocolHandler>> {
     let pool = CONNECTION_POOL
         .get_or_init(|| {
-            // Build an endpoint manager and optionally seed from env
-            let mgr = Arc::new(crate::net::endpoint::EndpointManager::new());
+            let endpoint_manager = Arc::new(crate::net::endpoint::EndpointManager::new());
 
-            // 1) Try loading cached servers from the crate meta `server.bin` (C++ parity)
-            let mut seeded = false;
-            if let Some(servers) = crate::level1::config::load_cached_servers() {
-                log::debug!("level1: loaded {} cached servers", servers.len());
-                for s in servers.iter() {
-                    if let Ok(addr) = SocketAddr::from_str(&s.addr()) {
-                        let _ = mgr.add_endpoint(addr, 2);
-                        seeded = true;
-                    }
+            // gather server list, prefer cached and fall back to detection
+            let mut servers: Vec<crate::level1::config::ServerInfo> = Vec::new();
+            if let Some(cached) = crate::level1::config::load_cached_servers() {
+                if !cached.is_empty() {
+                    log::debug!("level1: loaded {} cached servers", cached.len());
+                    servers = cached;
                 }
             }
 
-            // 2) Fallback: run detection and seed endpoints, then save cache
-            if !seeded {
+            if servers.is_empty() {
                 log::debug!("level1: no cached servers, running detect()");
-                let detected = crate::level1::config::detect(100, 8, 500);
+                let detected = crate::level1::config::detect(
+                    crate::level1::config::MAX_ELAPSED_TIME_MS,
+                    crate::level1::config::MAX_CONNECTIONS,
+                    crate::level1::config::DEFAULT_CONNECT_TIMEOUT_MS,
+                );
                 log::debug!("level1: detect() returned {} servers", detected.len());
                 if !detected.is_empty() {
-                    for s in detected.iter() {
-                        if let Ok(addr) = SocketAddr::from_str(&s.addr()) {
-                            let _ = mgr.add_endpoint(addr, 2);
-                        }
-                    }
-                    // best-effort save
                     crate::level1::config::save_cached_servers(&detected);
                 }
+                servers = detected;
             } else {
                 log::debug!("level1: using cached servers for pool seeding");
             }
 
+            if servers.is_empty() {
+                log::warn!("level1: detection produced no servers, falling back to standard list");
+                servers = crate::level1::config::standard_server_list();
+            }
+
+            // seed endpoint manager before constructing pool so pre-warm can reuse them
+            for s in servers.iter() {
+                match SocketAddr::from_str(&s.addr()) {
+                    Ok(addr) => {
+                        let _ = endpoint_manager.add_endpoint(addr, 1);
+                    }
+                    Err(e) => {
+                        log::warn!("level1: invalid server addr {}: {}", s.addr(), e);
+                    }
+                }
+            }
+
+            let server_count = servers.len();
+            if server_count == 0 {
+                // standard list should not be empty, but guard anyway
+                log::error!("level1: no servers available for connection pool initialization");
+                panic!("level1: server list empty");
+            }
+
+            let pool_max =
+                std::cmp::min(crate::level1::config::MAX_CONNECTIONS, server_count.max(1));
+            log::debug!(
+                "level1: initializing pool with max_connections={} (servers={})",
+                pool_max,
+                server_count
+            );
+
             let handler = Arc::new(ProtocolHandler {});
-            crate::net::TcpConnectionPool::new(1, 10, handler, mgr)
+            crate::net::TcpConnectionPool::new(1, pool_max, handler, endpoint_manager)
         })
         .clone();
 
@@ -194,7 +220,7 @@ impl crate::net::NetworkHandler for ProtocolHandler {
     }
 
     fn timeout(&self) -> Duration {
-        Duration::from_secs(5)
+        Duration::from_secs(10)
     }
     fn check_interval(&self) -> Duration {
         Duration::from_secs(5)
