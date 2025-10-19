@@ -231,7 +231,7 @@ namespace runtime {
     // 一般性退出, 包括正常退出和异常
     void shutdown() {
         global_init();
-        spdlog::warn("刷新日志");
+        spdlog::info("刷新日志");
         spdlog::default_logger()->flush();
         spdlog::shutdown();
         _exit(0);
