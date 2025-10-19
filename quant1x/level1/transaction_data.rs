@@ -147,18 +147,18 @@ impl Response for TransactionResponse {
         &mut self.header
     }
 
-    fn deserialize_body(&mut self, data: &[u8]) {
+    fn deserialize_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
         self.list.clear();
         self.count = 0;
 
         if data.len() < 2 {
-            return;
+            return Ok(());
         }
 
         let mut bs = BinaryStream::from_vec(data.to_vec());
-        self.count = bs.get_u16();
+        self.count = bs.get_u16()?;
         if self.count == 0 {
-            return;
+            return Ok(());
         }
 
         let min_required = 2 + (self.count as usize) * 5;
@@ -170,24 +170,25 @@ impl Response for TransactionResponse {
                 min_required
             );
             self.count = 0;
-            return;
+            return Ok(());
         }
 
         self.list.reserve(self.count as usize);
         let base_unit = super::default_base_unit(self.market_, &self.code_);
-        let is_index = crate::exchange::assert_index_by_market_and_code(self.market_ as u8, &self.code_);
+        let is_index =
+            crate::exchange::assert_index_by_market_and_code(self.market_ as u8, &self.code_);
         let mut last_price: i64 = 0;
 
         for _ in 0..self.count {
             let mut entry = TickTransaction::new();
-            let seconds = bs.get_u16();
+            let seconds = bs.get_u16()?;
             let h = seconds / 60;
             let m = seconds % 60;
             entry.time = format!("{:02}:{:02}", h, m);
-            let raw_price = bs.varint_decode();
-            entry.vol = bs.varint_decode();
-            entry.num = bs.varint_decode();
-            entry.buy_or_sell = bs.varint_decode();
+            let raw_price = bs.varint_decode()?;
+            entry.vol = bs.varint_decode()?;
+            entry.num = bs.varint_decode()?;
+            entry.buy_or_sell = bs.varint_decode()?;
             last_price += raw_price;
             entry.price = (last_price as f64) / base_unit;
 
@@ -204,9 +205,10 @@ impl Response for TransactionResponse {
                 entry.amount = (entry.vol as f64) * entry.price;
             }
 
-            let _skip = bs.varint_decode();
+            let _skip = bs.varint_decode()?;
             self.list.push(entry);
         }
+        Ok(())
     }
 
     fn body_string(&self) -> String {

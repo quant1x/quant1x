@@ -65,10 +65,7 @@ impl SecurityBarsRequest {
         let copy_len = std::cmp::min(sym.len(), code_bytes.len());
         code_bytes[..copy_len].copy_from_slice(&sym[..copy_len]);
 
-        let is_index = crate::exchange::assert_index_by_market_and_code(
-            market_id,
-            pure.as_str(),
-        );
+        let is_index = crate::exchange::assert_index_by_market_and_code(market_id, pure.as_str());
 
         SecurityBarsRequest {
             header,
@@ -216,9 +213,9 @@ impl Response for SecurityBarsResponse {
         &mut self.header
     }
 
-    fn deserialize_body(&mut self, data: &[u8]) {
+    fn deserialize_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
         let mut bs = BinaryStream::from_vec(data.to_vec());
-        self.count = bs.get_u16();
+        self.count = bs.get_u16()?;
         self.list.clear();
         self.list.reserve(self.count as usize);
 
@@ -227,8 +224,8 @@ impl Response for SecurityBarsResponse {
             let mut e = SecurityBar::new();
 
             if (self.category as i32) < 4 || self.category == 7 || self.category == 8 {
-                let zipday = bs.get_u16() as u32;
-                let tminutes = bs.get_u16();
+                let zipday = bs.get_u16()? as u32;
+                let tminutes = bs.get_u16()?;
                 let (y, m, d, hh, mm) =
                     super::get_datetime_from_u32(self.category as i32, zipday, tminutes);
                 e.year = y;
@@ -237,7 +234,7 @@ impl Response for SecurityBarsResponse {
                 e.hour = hh;
                 e.minute = mm;
             } else {
-                let zipday = bs.get_u32();
+                let zipday = bs.get_u32()?;
                 let (y, m, d, hh, mm) =
                     super::get_datetime_from_u32(self.category as i32, zipday, 0);
                 e.year = y;
@@ -251,15 +248,15 @@ impl Response for SecurityBarsResponse {
                 e.year, e.month, e.day, e.hour, e.minute
             );
 
-            let mut price_open_diff = bs.varint_decode();
-            let price_close_diff = bs.varint_decode();
-            let price_high_diff = bs.varint_decode();
-            let price_low_diff = bs.varint_decode();
+            let mut price_open_diff = bs.varint_decode()?;
+            let price_close_diff = bs.varint_decode()?;
+            let price_high_diff = bs.varint_decode()?;
+            let price_low_diff = bs.varint_decode()?;
 
-            let ivol = bs.get_u32();
+            let ivol = bs.get_u32()?;
             e.vol = super::int_to_float64(ivol);
 
-            let dbvol = bs.get_u32();
+            let dbvol = bs.get_u32()?;
             e.amount = super::int_to_float64(dbvol);
 
             e.open = (price_open_diff + pre_diff_base) as f64 / 1000.0;
@@ -272,12 +269,13 @@ impl Response for SecurityBarsResponse {
             pre_diff_base = price_open_diff + price_close_diff;
 
             if self.is_index {
-                e.up_count = bs.get_u16();
-                e.down_count = bs.get_u16();
+                e.up_count = bs.get_u16()?;
+                e.down_count = bs.get_u16()?;
             }
 
             self.list.push(e);
         }
+        Ok(())
     }
 
     fn body_string(&self) -> String {
@@ -299,7 +297,7 @@ mod tests {
         let hex_data = "05002bff3401a52910134982d4834e07eb2f4f2eff340102060e4a8a70db4dca40934e2fff3401440a0f4aef5a734e3b6c234f30ff340141191f515cd8094f6d64ba4f31ff34014d102c4398098b4e44b03c4f";
         let buf = hex::decode(hex_data).unwrap();
         let mut resp = SecurityBarsResponse::new_with(false, 9);
-        resp.deserialize(&buf);
+        let _ = resp.deserialize(&buf);
         assert_eq!(resp.count as usize, resp.list.len());
         assert!(resp.list.len() > 0 || resp.count == 0);
     }

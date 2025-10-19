@@ -233,7 +233,7 @@ fn industry_constituent_stock_list(
     list
 }
 
-fn parse_and_generate_block_file() -> Vec<BlockInfo> {
+fn parse_and_generate_block_file() -> Result<Vec<BlockInfo>, String> {
     // Ensure embedded cfg resources are exported to the meta/block path like C++ does.
     // C++ writes resources_meta_block_files contents into <meta>/tdx*.cfg when missing.
     // We approximate that by extracting bytes from the C-style .inc files under
@@ -271,7 +271,7 @@ fn parse_and_generate_block_file() -> Vec<BlockInfo> {
                 continue;
             }
         }
-        let parsed = parse_block_raw_data(filename);
+        let parsed = parse_block_raw_data(filename)?;
         // debug removed: parsed entries from raw block file
         if parsed.is_empty() {
             continue;
@@ -323,7 +323,7 @@ fn parse_and_generate_block_file() -> Vec<BlockInfo> {
     // remove any entries without constituents (C++ filters these out)
     block_infos.retain(|b| !b.constituent_stocks.is_empty());
 
-    block_infos
+    Ok(block_infos)
 }
 
 fn download_block_file(fname: &str) -> bool {
@@ -418,7 +418,7 @@ fn download_block_file(fname: &str) -> bool {
     }
 }
 
-fn parse_block_raw_data(fname: &str) -> Vec<BlockInfo> {
+fn parse_block_raw_data(fname: &str) -> Result<Vec<BlockInfo>, String> {
     let mut out = Vec::new();
     let mut path = default_block_path();
     path.push(fname);
@@ -431,33 +431,33 @@ fn parse_block_raw_data(fname: &str) -> Vec<BlockInfo> {
             "blocks: raw block file not found: {}",
             path.to_string_lossy()
         );
-        return out;
+        return Ok(out);
     }
     let data = match std::fs::read(&path) {
         Ok(d) => d,
         Err(e) => {
             log::error!("blocks: failed to read {}: {}", path.to_string_lossy(), e);
-            return out;
+            return Ok(out);
         }
     };
     if data.len() < 4 {
-        return out;
+        return Ok(out);
     }
     let mut bs = BinaryStream::from_vec(data);
     // mirror C++: skip header bytes
     bs.skip(384);
     // read u16 count (ensure enough bytes available)
     if bs.position() + 2 > bs.data().len() {
-        return out;
+        return Ok(out);
     }
-    let count = bs.get_u16() as usize;
+    let count = bs.get_u16()? as usize;
     for _ in 0..count {
         // tmpBuf1[2813]
         let mut tmp1 = vec![0u8; 2813];
         if bs.position() + tmp1.len() > bs.data().len() {
             break;
         }
-        bs.get_byte_array(&mut tmp1);
+        bs.get_byte_array(&mut tmp1)?;
         // name: first 9 bytes; C++ forms a std::string from these raw bytes then
         // runs gbk_to_utf8 on that string. To match that exactly, decode the raw
         // 9 bytes using GBK (do not first run UTF-8 lossy conversion).
@@ -479,14 +479,14 @@ fn parse_block_raw_data(fname: &str) -> Vec<BlockInfo> {
         if bs1.position() + 4 > bs1.data().len() {
             break;
         }
-        let num = bs1.get_u16();
-        let tp = bs1.get_u16();
+        let num = bs1.get_u16()?;
+        let tp = bs1.get_u16()?;
         // tmpBuf2[400*7] comes from tmp1 (embedded inside tmpBuf1) per C++ layout
         let mut tmp2 = vec![0u8; 400 * 7];
         if bs1.position() + tmp2.len() > bs1.data().len() {
             break;
         }
-        bs1.get_byte_array(&mut tmp2);
+        bs1.get_byte_array(&mut tmp2)?;
         let mut bs2 = BinaryStream::from_vec(tmp2.clone());
         let mut constituents = Vec::new();
         // guard against malformed num > available slots
@@ -494,7 +494,7 @@ fn parse_block_raw_data(fname: &str) -> Vec<BlockInfo> {
         let to_read = std::cmp::min(num as usize, available);
         for _j in 0..to_read {
             // each symbol fixed 7 bytes
-            let sym = bs2.get_string(7);
+            let sym = bs2.get_string(7)?;
             constituents.push(sym);
         }
         out.push(BlockInfo {
@@ -507,11 +507,17 @@ fn parse_block_raw_data(fname: &str) -> Vec<BlockInfo> {
             raw_name_hex: Some(raw_name_hex),
         });
     }
-    out
+    Ok(out)
 }
 
 pub fn sync_block_files() -> Vec<BlockInfo> {
-    let list = parse_and_generate_block_file();
+    let list = match parse_and_generate_block_file() {
+        Ok(l) => l,
+        Err(e) => {
+            log::error!("blocks: failed to parse/generate block files: {}", e);
+            return Vec::new();
+        }
+    };
     let mut guard_list = GLOBAL_SECTOR_LIST.lock().unwrap();
     let mut guard_map = GLOBAL_SECTOR_MAP.lock().unwrap();
     guard_list.clear();

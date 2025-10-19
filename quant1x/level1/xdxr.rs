@@ -149,10 +149,10 @@ impl XdxrInfoResponse {
             list: Vec::new(),
         }
     }
-    pub fn deserialize(&mut self, body: &[u8]) {
+    pub fn deserialize(&mut self, body: &[u8]) -> Result<(), crate::std::DeserializeError> {
         let mut bs = BinaryStream::from_vec(body.to_vec());
         bs.skip(9);
-        self.count = bs.get_u16();
+        self.count = bs.get_u16()?;
         // each entry uses 1+6+1+4+1+16 = 29 bytes
         let remaining = if body.len() > bs.position() {
             body.len() - bs.position()
@@ -163,13 +163,13 @@ impl XdxrInfoResponse {
         let max_entries = remaining / entry_size;
         let to_read = std::cmp::min(self.count as usize, max_entries);
         for _ in 0..to_read {
-            let _market = bs.get_u8();
-            let code = bs.get_string(6);
-            let _unk = bs.get_u8();
-            let date = bs.get_u32();
-            let category = bs.get_u8();
+            let _market = bs.get_u8()?;
+            let code = bs.get_string(6)?;
+            let _unk = bs.get_u8()?;
+            let date = bs.get_u32()?;
+            let category = bs.get_u8()?;
             let mut data = [0u8; 16];
-            bs.get_byte_array(&mut data);
+            bs.get_byte_array(&mut data)?;
 
             let (y, m, d, _hh, _mm) = super::get_datetime_from_u32(9 as i32, date, 0);
             let mut info = XdxrInfo {
@@ -192,34 +192,35 @@ impl XdxrInfoResponse {
             let mut tmp = BinaryStream::from_vec(data.to_vec());
             match category as i32 {
                 1 => {
-                    info.fenhong = tmp.get_f32();
-                    info.peigu_jia = tmp.get_f32();
-                    info.songzhuan = tmp.get_f32();
-                    info.peigu = tmp.get_f32();
+                    info.fenhong = tmp.get_f32()?;
+                    info.peigu_jia = tmp.get_f32()?;
+                    info.songzhuan = tmp.get_f32()?;
+                    info.peigu = tmp.get_f32()?;
                 }
                 11 | 12 => {
                     tmp.skip(8);
-                    info.suogu = tmp.get_f32();
+                    info.suogu = tmp.get_f32()?;
                 }
                 13 | 14 => {
-                    info.xingquan_jia = tmp.get_f32();
+                    info.xingquan_jia = tmp.get_f32()?;
                     tmp.skip(8);
-                    info.fenshu = tmp.get_f32();
+                    info.fenshu = tmp.get_f32()?;
                 }
                 _ => {
-                    let v1 = tmp.get_u32();
+                    let v1 = tmp.get_u32()?;
                     info.qian_liutong = super::int_to_float64(v1);
-                    let v2 = tmp.get_u32();
+                    let v2 = tmp.get_u32()?;
                     info.qian_zonggu = super::int_to_float64(v2);
-                    let v3 = tmp.get_u32();
+                    let v3 = tmp.get_u32()?;
                     info.hou_liutong = super::int_to_float64(v3);
-                    let v4 = tmp.get_u32();
+                    let v4 = tmp.get_u32()?;
                     info.hou_zonggu = super::int_to_float64(v4);
                 }
             }
 
             self.list.push(info);
         }
+        Ok(())
     }
 }
 
@@ -235,10 +236,15 @@ pub fn fetch_xdxr(code: &str) -> Option<XdxrInfoResponse> {
             let mut req = XdxrInfoRequest::new(code);
             let req_buf = XdxrInfoRequest::serialize(&mut req);
             // process_request does the write/read and optional unzip
-            match crate::level1::process_request(pooled.stream(), req_buf.as_slice()) {
+            match crate::level1::process_request(pooled.stream(), req_buf.as_slice())
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+            {
                 Ok(body) => {
                     let mut resp = XdxrInfoResponse::new();
-                    resp.deserialize(&body);
+                    if let Err(e) = resp.deserialize(&body) {
+                        log::error!("level1::xdxr - deserialize error for {}: {}", code, e);
+                        return None;
+                    }
                     // Log response summary to help observation/diagnostics
                     log::info!("level1::xdxr - code={} count={}", code, resp.count);
                     for (i, it) in resp.list.iter().enumerate() {
@@ -248,7 +254,11 @@ pub fn fetch_xdxr(code: &str) -> Option<XdxrInfoResponse> {
                     Some(resp)
                 }
                 Err(e) => {
-                    log::error!("level1 process_request error for {}: {}", code, e);
+                    log::error!(
+                        "level1 process_request error for {}: {}",
+                        code,
+                        e.to_string()
+                    );
                     None
                 }
             }

@@ -61,13 +61,14 @@ impl SecurityCountResponse {
     pub fn new() -> Self {
         Self { count: 0 }
     }
-    pub fn deserialize(&mut self, data: &[u8]) {
+    pub fn deserialize(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
         if data.len() < 2 {
-            return;
+            return Ok(());
         }
         let mut bs = BinaryStream::from_vec(data.to_vec());
-        let c = bs.get_u16();
+        let c = bs.get_u16()?;
         self.count = c as usize;
+        Ok(())
     }
 }
 
@@ -77,10 +78,19 @@ pub fn fetch_security_count(market: u16) -> Option<SecurityCountResponse> {
         Ok(mut pooled) => {
             let mut req = SecurityCountRequest::new(market);
             let req_buf = req.serialize();
-            match crate::level1::process_request(pooled.stream(), req_buf.as_slice()) {
+            match crate::level1::process_request(pooled.stream(), req_buf.as_slice())
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+            {
                 Ok(body) => {
                     let mut resp = SecurityCountResponse::new();
-                    resp.deserialize(&body);
+                    if let Err(e) = resp.deserialize(&body) {
+                        log::error!(
+                            "level1::security_count - deserialize error for market={} : {}",
+                            market,
+                            e
+                        );
+                        return None;
+                    }
                     log::info!(
                         "level1::security_count - market={} count={}",
                         market,
@@ -92,7 +102,7 @@ pub fn fetch_security_count(market: u16) -> Option<SecurityCountResponse> {
                     log::error!(
                         "level1 process_request error for security_count market={}: {}",
                         market,
-                        e
+                        e.to_string()
                     );
                     None
                 }

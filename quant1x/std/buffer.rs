@@ -26,15 +26,16 @@ impl BinaryStream {
         }
     }
 
-    fn check_available(&self, required: usize) {
+    fn check_available(&self, required: usize) -> Result<(), crate::std::DeserializeError> {
+        let available = self.buffer.len().saturating_sub(self.offset);
         if required > self.buffer.len() || self.offset > self.buffer.len().saturating_sub(required)
         {
-            panic!(
-                "Insufficient data in buffer: buffer_len={}, offset={}, required={}",
-                self.buffer.len(),
-                self.offset,
-                required
-            );
+            Err(crate::std::DeserializeError::Truncated {
+                needed: required,
+                available,
+            })
+        } else {
+            Ok(())
         }
     }
 
@@ -87,68 +88,69 @@ impl BinaryStream {
     }
 
     // primitive reads
-    pub fn get_u8(&mut self) -> u8 {
-        self.check_available(1);
+    pub fn get_u8(&mut self) -> Result<u8, crate::std::DeserializeError> {
+        self.check_available(1)?;
         let v = self.buffer[self.offset];
         self.offset += 1;
-        v
+        Ok(v)
     }
-    pub fn get_i8(&mut self) -> i8 {
-        self.get_u8() as i8
+    pub fn get_i8(&mut self) -> Result<i8, crate::std::DeserializeError> {
+        Ok(self.get_u8()? as i8)
     }
 
-    pub fn get_u16(&mut self) -> u16 {
-        self.check_available(2);
+    pub fn get_u16(&mut self) -> Result<u16, crate::std::DeserializeError> {
+        self.check_available(2)?;
         let b: [u8; 2] = self.buffer[self.offset..self.offset + 2]
             .try_into()
             .unwrap();
         self.offset += 2;
-        u16::from_le_bytes(b)
+        Ok(u16::from_le_bytes(b))
     }
-    pub fn get_i16(&mut self) -> i16 {
-        self.get_u16() as i16
+    pub fn get_i16(&mut self) -> Result<i16, crate::std::DeserializeError> {
+        Ok(self.get_u16()? as i16)
     }
 
-    pub fn get_u32(&mut self) -> u32 {
-        self.check_available(4);
+    pub fn get_u32(&mut self) -> Result<u32, crate::std::DeserializeError> {
+        self.check_available(4)?;
         let b: [u8; 4] = self.buffer[self.offset..self.offset + 4]
             .try_into()
             .unwrap();
         self.offset += 4;
-        u32::from_le_bytes(b)
+        Ok(u32::from_le_bytes(b))
     }
-    pub fn get_i32(&mut self) -> i32 {
-        self.get_u32() as i32
+    pub fn get_i32(&mut self) -> Result<i32, crate::std::DeserializeError> {
+        Ok(self.get_u32()? as i32)
     }
 
-    pub fn get_u64(&mut self) -> u64 {
-        self.check_available(8);
+    pub fn get_u64(&mut self) -> Result<u64, crate::std::DeserializeError> {
+        self.check_available(8)?;
         let b: [u8; 8] = self.buffer[self.offset..self.offset + 8]
             .try_into()
             .unwrap();
         self.offset += 8;
-        u64::from_le_bytes(b)
+        Ok(u64::from_le_bytes(b))
     }
-    pub fn get_i64(&mut self) -> i64 {
-        self.get_u64() as i64
+    pub fn get_i64(&mut self) -> Result<i64, crate::std::DeserializeError> {
+        Ok(self.get_u64()? as i64)
     }
 
-    pub fn get_f32(&mut self) -> f32 {
-        f32::from_bits(self.get_u32())
+    pub fn get_f32(&mut self) -> Result<f32, crate::std::DeserializeError> {
+        Ok(f32::from_bits(self.get_u32()?))
     }
-    pub fn get_f64(&mut self) -> f64 {
-        f64::from_bits(self.get_u64())
+    pub fn get_f64(&mut self) -> Result<f64, crate::std::DeserializeError> {
+        Ok(f64::from_bits(self.get_u64()?))
     }
 
     // byte array ops
     pub fn push_byte_array(&mut self, data: &[u8]) {
         self.push_bytes(data);
     }
-    pub fn get_byte_array(&mut self, out: &mut [u8]) {
+    pub fn get_byte_array(&mut self, out: &mut [u8]) -> Result<(), crate::std::DeserializeError> {
         let n = out.len();
-        self.check_available(n);
+        self.check_available(n)?;
         out.copy_from_slice(&self.buffer[self.offset..self.offset + n]);
         self.offset += n;
+        Ok(())
     }
 
     // length-prefixed string (u32 length)
@@ -157,30 +159,34 @@ impl BinaryStream {
         self.push_u32(len);
         self.push_byte_array(s.as_bytes());
     }
-    pub fn get_length_prefixed_string(&mut self) -> String {
-        let len = self.get_u32() as usize;
-        self.check_available(len);
-        let s = String::from_utf8(self.buffer[self.offset..self.offset + len].to_vec()).unwrap();
+    pub fn get_length_prefixed_string(&mut self) -> Result<String, crate::std::DeserializeError> {
+        let len = self.get_u32()? as usize;
+        self.check_available(len)?;
+        let s = String::from_utf8(self.buffer[self.offset..self.offset + len].to_vec())
+            .map_err(|_| crate::std::DeserializeError::InvalidUtf8)?;
         self.offset += len;
-        s
+        Ok(s)
     }
 
     // raw string with fixed len (truncate at first NUL)
-    pub fn get_string(&mut self, len: usize) -> String {
-        self.check_available(len);
+    pub fn get_string(&mut self, len: usize) -> Result<String, crate::std::DeserializeError> {
+        self.check_available(len)?;
         let slice = &self.buffer[self.offset..self.offset + len];
         let nul_pos = slice.iter().position(|&b| b == 0).unwrap_or(len);
         // tolerate non-UTF8 by using a lossy conversion (matches C++ std::string behavior)
         let s = String::from_utf8_lossy(&slice[..nul_pos]).into_owned();
         self.offset += len;
-        s
+        Ok(s)
     }
 
     // varint decoding (same format as C++ version)
-    pub fn varint_decode(&mut self) -> i64 {
+    pub fn varint_decode(&mut self) -> Result<i64, crate::std::DeserializeError> {
         let mut pos = self.offset;
         if pos >= self.buffer.len() {
-            panic!("Insufficient data in buffer for varint");
+            return Err(crate::std::DeserializeError::Truncated {
+                needed: 1,
+                available: 0,
+            });
         }
         let mut byte = self.buffer[pos];
         pos += 1;
@@ -189,7 +195,10 @@ impl BinaryStream {
         let mut shift: u32 = 6;
         while (byte & 0x80) != 0 {
             if pos >= self.buffer.len() {
-                panic!("Insufficient data in buffer during varint decoding");
+                return Err(crate::std::DeserializeError::Truncated {
+                    needed: pos.saturating_add(1) - self.offset,
+                    available: self.buffer.len().saturating_sub(self.offset),
+                });
             }
             byte = self.buffer[pos];
             pos += 1;
@@ -205,11 +214,7 @@ impl BinaryStream {
         } else {
             data as i64
         };
-        if sign {
-            -signed
-        } else {
-            signed
-        }
+        Ok(if sign { -signed } else { signed })
     }
 
     // utilities
@@ -250,17 +255,17 @@ mod tests {
         s.push_f64(-2.71828);
 
         s.seek(0);
-        assert_eq!(s.get_i8(), -5);
-        assert_eq!(s.get_u8(), 250);
-        assert_eq!(s.get_i16(), -300);
-        assert_eq!(s.get_u16(), 60000);
-        assert_eq!(s.get_i32(), -70000);
-        assert_eq!(s.get_u32(), 4000000000);
-        assert_eq!(s.get_i64(), -900000000000);
-        assert_eq!(s.get_u64(), 9000000000000);
-        let f = s.get_f32();
+        assert_eq!(s.get_i8().unwrap(), -5);
+        assert_eq!(s.get_u8().unwrap(), 250);
+        assert_eq!(s.get_i16().unwrap(), -300);
+        assert_eq!(s.get_u16().unwrap(), 60000);
+        assert_eq!(s.get_i32().unwrap(), -70000);
+        assert_eq!(s.get_u32().unwrap(), 4000000000);
+        assert_eq!(s.get_i64().unwrap(), -900000000000);
+        assert_eq!(s.get_u64().unwrap(), 9000000000000);
+        let f = s.get_f32().unwrap();
         assert!((f - 3.14).abs() < 1e-6);
-        let d = s.get_f64();
+        let d = s.get_f64().unwrap();
         assert!((d + 2.71828).abs() < 1e-12);
     }
 
@@ -277,9 +282,9 @@ mod tests {
         s.push_u8(0x02);
 
         s.seek(0);
-        assert_eq!(s.varint_decode(), 5);
-        assert_eq!(s.varint_decode(), -3);
+        assert_eq!(s.varint_decode().unwrap(), 5);
+        assert_eq!(s.varint_decode().unwrap(), -3);
         // first byte payload = 1, second byte contributes at shift 6 -> 2<<6 == 128
-        assert_eq!(s.varint_decode(), 129);
+        assert_eq!(s.varint_decode().unwrap(), 129);
     }
 }

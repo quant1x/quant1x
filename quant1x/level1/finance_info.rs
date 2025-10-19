@@ -161,47 +161,47 @@ struct RawFinanceInfo {
     bao_liu2: f32,
 }
 impl RawFinanceInfo {
-    fn decode(bs: &mut BinaryStream) -> Self {
-        let market = bs.get_u8();
+    fn decode(bs: &mut BinaryStream) -> Result<Self, crate::std::DeserializeError> {
+        let market = bs.get_u8()?;
         let mut code = [0u8; 6];
-        bs.get_byte_array(&mut code);
-        let liu_tong_gu_ben = bs.get_f32();
-        let province = bs.get_u16();
-        let industry = bs.get_u16();
-        let updated_date = bs.get_u32();
-        let ipo_date = bs.get_u32();
-        let zong_gu_ben = bs.get_f32();
-        let guo_jia_gu = bs.get_f32();
-        let fa_qi_ren_fa_ren_gu = bs.get_f32();
-        let fa_ren_gu = bs.get_f32();
-        let b_gu = bs.get_f32();
-        let h_gu = bs.get_f32();
-        let zhi_gong_gu = bs.get_f32();
-        let zong_zi_chan = bs.get_f32();
-        let liu_dong_zi_chan = bs.get_f32();
-        let gu_ding_zi_chan = bs.get_f32();
-        let wu_xing_zi_chan = bs.get_f32();
-        let gu_dong_ren_shu = bs.get_f32();
-        let liu_dong_fu_zhai = bs.get_f32();
-        let chang_qi_fu_zhai = bs.get_f32();
-        let zi_ben_gong_ji_jin = bs.get_f32();
-        let jing_zi_chan = bs.get_f32();
-        let zhu_ying_shou_ru = bs.get_f32();
-        let zhu_ying_li_run = bs.get_f32();
-        let ying_shou_zhang_kuan = bs.get_f32();
-        let ying_ye_li_run = bs.get_f32();
-        let tou_zi_shou_yu = bs.get_f32();
-        let jing_ying_xian_jin_liu = bs.get_f32();
-        let zong_xian_jin_liu = bs.get_f32();
-        let cun_huo = bs.get_f32();
-        let li_run_zong_he = bs.get_f32();
-        let shui_hou_li_run = bs.get_f32();
-        let jing_li_run = bs.get_f32();
-        let wei_fen_li_run = bs.get_f32();
-        let bao_liu1 = bs.get_f32();
-        let bao_liu2 = bs.get_f32();
+        bs.get_byte_array(&mut code)?;
+        let liu_tong_gu_ben = bs.get_f32()?;
+        let province = bs.get_u16()?;
+        let industry = bs.get_u16()?;
+        let updated_date = bs.get_u32()?;
+        let ipo_date = bs.get_u32()?;
+        let zong_gu_ben = bs.get_f32()?;
+        let guo_jia_gu = bs.get_f32()?;
+        let fa_qi_ren_fa_ren_gu = bs.get_f32()?;
+        let fa_ren_gu = bs.get_f32()?;
+        let b_gu = bs.get_f32()?;
+        let h_gu = bs.get_f32()?;
+        let zhi_gong_gu = bs.get_f32()?;
+        let zong_zi_chan = bs.get_f32()?;
+        let liu_dong_zi_chan = bs.get_f32()?;
+        let gu_ding_zi_chan = bs.get_f32()?;
+        let wu_xing_zi_chan = bs.get_f32()?;
+        let gu_dong_ren_shu = bs.get_f32()?;
+        let liu_dong_fu_zhai = bs.get_f32()?;
+        let chang_qi_fu_zhai = bs.get_f32()?;
+        let zi_ben_gong_ji_jin = bs.get_f32()?;
+        let jing_zi_chan = bs.get_f32()?;
+        let zhu_ying_shou_ru = bs.get_f32()?;
+        let zhu_ying_li_run = bs.get_f32()?;
+        let ying_shou_zhang_kuan = bs.get_f32()?;
+        let ying_ye_li_run = bs.get_f32()?;
+        let tou_zi_shou_yu = bs.get_f32()?;
+        let jing_ying_xian_jin_liu = bs.get_f32()?;
+        let zong_xian_jin_liu = bs.get_f32()?;
+        let cun_huo = bs.get_f32()?;
+        let li_run_zong_he = bs.get_f32()?;
+        let shui_hou_li_run = bs.get_f32()?;
+        let jing_li_run = bs.get_f32()?;
+        let wei_fen_li_run = bs.get_f32()?;
+        let bao_liu1 = bs.get_f32()?;
+        let bao_liu2 = bs.get_f32()?;
 
-        RawFinanceInfo {
+        Ok(RawFinanceInfo {
             market,
             code,
             liu_tong_gu_ben,
@@ -239,7 +239,7 @@ impl RawFinanceInfo {
             wei_fen_li_run,
             bao_liu1,
             bao_liu2,
-        }
+        })
     }
 }
 
@@ -258,13 +258,13 @@ impl FinanceInfoResponse {
         }
     }
 
-    pub fn deserialize(&mut self, body: &[u8]) {
+    pub fn deserialize(&mut self, body: &[u8]) -> Result<(), crate::std::DeserializeError> {
         let mut bs = BinaryStream::from_vec(body.to_vec());
-        self.count = bs.get_u16();
+        self.count = bs.get_u16()?;
         if self.count == 0 {
-            return;
+            return Ok(());
         }
-        let raw = RawFinanceInfo::decode(&mut bs);
+        let raw = RawFinanceInfo::decode(&mut bs)?;
         let base_unit: f64 = 10000.0;
         let code = String::from_utf8_lossy(&raw.code).into_owned();
         self.info.code = code.clone();
@@ -303,6 +303,7 @@ impl FinanceInfoResponse {
         self.info.wei_fen_li_run = (raw.wei_fen_li_run as f64) * base_unit;
         self.info.mei_gu_jing_zi_chan = (raw.bao_liu1 as f64) * base_unit;
         self.info.bao_liu2 = raw.bao_liu2 as f64;
+        Ok(())
     }
 }
 
@@ -315,7 +316,7 @@ mod tests {
         let hex_data = "010001363030313135dfead04910000800d9fe340121bc3001270e084a0000cf4460f0f9ca8c08d94c00000000b9c5fc485c8f42bea6e4834d8cbe914badddbf4ca042334a40cc27488771d94c801c5649703d4a4c089e1a4cb8fffb4c9a46f14c80b6e649303f86ca00e1964874570e4c60bbedca0014cd4900486eca606c92caa0f780ca00000000fca9313f00004041";
         let buf = hex::decode(hex_data).unwrap();
         let mut resp = FinanceInfoResponse::new();
-        resp.deserialize(&buf);
+        resp.deserialize(&buf).unwrap();
         assert!(resp.count == 0 || !resp.info.code.is_empty());
     }
 }

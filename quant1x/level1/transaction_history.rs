@@ -172,18 +172,18 @@ impl Response for TransactionHistoryResponse {
         &mut self.header
     }
 
-    fn deserialize_body(&mut self, data: &[u8]) {
+    fn deserialize_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
         self.list.clear();
         self.count = 0;
 
         if data.len() < 2 {
-            return;
+            return Ok(());
         }
 
         let mut bs = BinaryStream::from_vec(data.to_vec());
-        self.count = bs.get_u16();
+        self.count = bs.get_u16()?;
         if self.count == 0 {
-            return;
+            return Ok(());
         }
 
         // Rough estimate: header 6 bytes + each transaction ~5 bytes (u16 + 5 varints)
@@ -196,25 +196,26 @@ impl Response for TransactionHistoryResponse {
                 min_required
             );
             self.count = 0;
-            return;
+            return Ok(());
         }
 
         self.list.reserve(self.count as usize);
         let base_unit = super::default_base_unit(self.market_, &self.code_);
-        let is_index = crate::exchange::assert_index_by_market_and_code(self.market_ as u8, &self.code_);
+        let is_index =
+            crate::exchange::assert_index_by_market_and_code(self.market_ as u8, &self.code_);
         let mut last_price: i64 = 0;
         // skip 4 bytes as in C++ implementation
         bs.skip(4);
         for _ in 0..self.count {
             let mut e = TickTransaction::new();
-            let minutes = bs.get_u16();
+            let minutes = bs.get_u16()?;
             let h = minutes / 60;
             let m = minutes % 60;
             e.time = format!("{:02}:{:02}", h, m);
-            let raw_price = bs.varint_decode();
-            e.vol = bs.varint_decode();
+            let raw_price = bs.varint_decode()?;
+            e.vol = bs.varint_decode()?;
             // historical tick has no num field in C++ version
-            e.buy_or_sell = bs.varint_decode();
+            e.buy_or_sell = bs.varint_decode()?;
             last_price += raw_price;
             e.price = (last_price as f64) / base_unit;
             if is_index {
@@ -229,9 +230,10 @@ impl Response for TransactionHistoryResponse {
                 e.vol *= 100;
                 e.amount = (e.vol as f64) * e.price;
             }
-            let _skip = bs.varint_decode();
+            let _skip = bs.varint_decode()?;
             self.list.push(e);
         }
+        Ok(())
     }
 
     fn body_string(&self) -> String {

@@ -47,9 +47,10 @@ impl HeartbeatResponse {
             info: String::new(),
         }
     }
-    pub fn deserialize(&mut self, data: &[u8]) {
+    pub fn deserialize(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
         let mut bs = BinaryStream::from_vec(data.to_vec());
-        self.info = bs.get_string(10);
+        self.info = bs.get_string(10)?;
+        Ok(())
     }
 }
 
@@ -62,7 +63,7 @@ mod tests {
         let hex_data = "48656172742d486562696f726974";
         let buf = hex::decode(hex_data).unwrap();
         let mut resp = HeartbeatResponse::new();
-        resp.deserialize(&buf);
+        resp.deserialize(&buf).unwrap();
         assert!(!resp.info.is_empty());
     }
 }

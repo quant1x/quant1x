@@ -59,7 +59,7 @@ impl Hello1Response {
         }
     }
 
-    pub fn deserialize(&mut self, data: &[u8]) {
+    pub fn deserialize(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
         let offset = 68usize;
         if data.len() >= offset {
             let info_bytes = &data[offset..];
@@ -67,6 +67,7 @@ impl Hello1Response {
             let (cow, _, _) = GBK.decode(info_bytes);
             self.info = cow.into_owned();
         }
+        Ok(())
     }
 
     pub fn to_string(&self) -> String {
@@ -83,7 +84,7 @@ mod tests {
         let hex_data = "00e9070204280900073a02b2020c03840384038403840384033a02b2020c03840384038403840384030022ff3401194a010022ff3401154a0100ff00f70000010101ff00b1b1bea9c1aacda8d0d0c7e9b6fe000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000010023b8dbb0c400000000000000000000000000000000000000000000000000";
         let buf = hex::decode(hex_data).unwrap();
         let mut resp = Hello1Response::new();
-        resp.deserialize(&buf);
+        resp.deserialize(&buf).expect("deserialize error");
         assert!(!resp.info.is_empty());
     }
 }

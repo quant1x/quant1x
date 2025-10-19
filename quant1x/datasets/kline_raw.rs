@@ -27,7 +27,9 @@ pub fn fetch_kline(
         match level1::client() {
             Ok(mut pooled) => {
                 let mut resp = level1::SecurityBarsResponse::new_with(is_index, category);
-                match level1::protocol::process(pooled.stream(), &mut req, &mut resp) {
+                match level1::protocol::process(pooled.stream(), &mut req, &mut resp)
+                    .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))
+                {
                     Ok(()) => {
                         if resp.list.is_empty() {
                             log::warn!(

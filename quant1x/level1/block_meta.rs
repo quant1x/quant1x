@@ -35,9 +35,10 @@ impl BlockMetaResponse {
     }
     pub fn deserialize(&mut self, data: &[u8]) {
         let mut bs = BinaryStream::from_vec(data.to_vec());
-        self.meta.size = bs.get_u32();
-        self.meta.c1 = bs.get_u8();
-        bs.get_byte_array(&mut self.meta.hash_value);
-        self.meta.c2 = bs.get_u8();
+        self.meta.size = bs.get_u32().expect("buffer error");
+        self.meta.c1 = bs.get_u8().expect("buffer error");
+        bs.get_byte_array(&mut self.meta.hash_value)
+            .expect("buffer error");
+        self.meta.c2 = bs.get_u8().expect("buffer error");
     }
 }

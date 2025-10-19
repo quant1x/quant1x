@@ -56,7 +56,7 @@ impl IndexBarsResponse {
         }
     }
 
-    pub fn deserialize(&mut self, data: &[u8]) {
-        self.inner.deserialize(data);
+    pub fn deserialize(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+        self.inner.deserialize(data)
     }
 }

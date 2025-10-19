@@ -96,16 +96,16 @@ impl Response for SecurityListResponse {
         &mut self.header
     }
 
-    fn deserialize_body(&mut self, data: &[u8]) {
+    fn deserialize_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
         self.count = 0;
         self.list.clear();
         let mut bs = BinaryStream::from_vec(data.to_vec());
         if bs.data().len().saturating_sub(bs.position()) < 2 {
-            return;
+            return Ok(());
         }
-        self.count = bs.get_u16();
+        self.count = bs.get_u16()?;
         if self.count == 0 {
-            return;
+            return Ok(());
         }
         let min_required = 2 + (self.count as usize) * 25;
         if data.len() < min_required {
@@ -116,24 +116,24 @@ impl Response for SecurityListResponse {
                 min_required
             );
             self.count = 0;
-            return;
+            return Ok(());
         }
 
         for _ in 0..self.count {
-            let code = bs.get_string(6);
-            let vol_unit = bs.get_u16();
+            let code = bs.get_string(6)?;
+            let vol_unit = bs.get_u16()?;
             let mut name_buf = [0u8; 8];
-            bs.get_byte_array(&mut name_buf);
+            bs.get_byte_array(&mut name_buf)?;
             let name_nul = name_buf.iter().position(|&b| b == 0).unwrap_or(8);
             let (name_cow, _, _) = GBK.decode(&name_buf[..name_nul]);
             let name = name_cow.into_owned();
             let mut _rev1 = [0u8; 4];
-            bs.get_byte_array(&mut _rev1);
-            let decimal_point = bs.get_u8();
-            let tmp = bs.get_u32();
+            bs.get_byte_array(&mut _rev1)?;
+            let decimal_point = bs.get_u8()?;
+            let tmp = bs.get_u32()?;
             let pre_close = int_to_float64(tmp);
             let mut _rev2 = [0u8; 4];
-            bs.get_byte_array(&mut _rev2);
+            bs.get_byte_array(&mut _rev2)?;
 
             self.list.push(Security {
                 code,
@@ -143,6 +143,7 @@ impl Response for SecurityListResponse {
                 pre_close,
             });
         }
+        Ok(())
     }
 
     fn body_string(&self) -> String {

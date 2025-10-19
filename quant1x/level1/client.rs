@@ -30,7 +30,9 @@ impl ProtocolHandler {
             req_buf1.len(),
             hex::encode(&req_buf1)
         );
-        match crate::level1::process_request(stream, &req_buf1) {
+        match crate::level1::process_request(stream, &req_buf1)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+        {
             Ok(body1) => {
                 log::debug!(
                     "ProtocolHandler::handshake <- received Hello1 body ({} bytes): {}",
@@ -42,7 +44,7 @@ impl ProtocolHandler {
                     }
                 );
                 let mut resp1 = Hello1Response::new();
-                resp1.deserialize(&body1);
+                resp1.deserialize(&body1).expect("deserialize error");
                 log::debug!(
                     "ProtocolHandler::handshake Hello1 parsed info: {}",
                     resp1.info
@@ -70,7 +72,9 @@ impl ProtocolHandler {
             req_buf2.len(),
             hex::encode(&req_buf2)
         );
-        match crate::level1::process_request(stream, &req_buf2) {
+        match crate::level1::process_request(stream, &req_buf2)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+        {
             Ok(body2) => {
                 log::debug!(
                     "ProtocolHandler::handshake <- received Hello2 body ({} bytes): {}",
@@ -82,7 +86,9 @@ impl ProtocolHandler {
                     }
                 );
                 let mut resp2 = Hello2Response::new();
-                resp2.deserialize(&body2);
+                resp2
+                    .deserialize(&body2)
+                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
                 log::debug!(
                     "ProtocolHandler::handshake Hello2 parsed info: {}",
                     resp2.info
@@ -105,13 +111,104 @@ impl ProtocolHandler {
         Ok(true)
     }
 
-    /// Send a heartbeat request and parse the response
     pub fn keepalive(stream: &mut MioTcpStream) -> std::io::Result<bool> {
         let mut req = HeartbeatRequest::new();
         let req_buf = req.serialize();
-        let body = crate::level1::process_request(stream, &req_buf)?;
+        let body = crate::level1::process_request(stream, &req_buf)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
         let mut resp = HeartbeatResponse::new();
-        resp.deserialize(&body);
+        resp.deserialize(&body)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        Ok(true)
+    }
+
+    /// Blocking handshake using std::net::TcpStream. This honors std read/write timeouts
+    /// and is intended to be used before converting the stream into a mio::TcpStream.
+    pub fn handshake_std(stream: &mut std::net::TcpStream) -> std::io::Result<bool> {
+        // Hello1
+        let mut req1 = Hello1Request::new();
+        let req_buf1 = req1.serialize();
+        log::debug!(
+            "ProtocolHandler::handshake_std -> sending Hello1 ({} bytes): {}",
+            req_buf1.len(),
+            hex::encode(&req_buf1)
+        );
+        match crate::level1::process_request_std(stream, &req_buf1)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+        {
+            Ok(body1) => {
+                log::debug!(
+                    "ProtocolHandler::handshake_std <- received Hello1 body ({} bytes): {}",
+                    body1.len(),
+                    if body1.len() > 128 {
+                        hex::encode(&body1[..128]) + "..."
+                    } else {
+                        hex::encode(&body1)
+                    }
+                );
+                let mut resp1 = Hello1Response::new();
+                resp1.deserialize(&body1).expect("deserialize error");
+                log::debug!(
+                    "ProtocolHandler::handshake_std Hello1 parsed info: {}",
+                    resp1.info
+                );
+                if resp1.info.trim().is_empty() {
+                    log::error!("ProtocolHandler::handshake_std Hello1 validation failed: empty info");
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        "Hello1 response invalid or empty",
+                    ));
+                }
+            }
+            Err(e) => {
+                log::error!("ProtocolHandler::handshake_std Hello1 failed: {}", e);
+                return Err(e);
+            }
+        }
+
+        // Hello2
+        let mut req2 = Hello2Request::new();
+        let req_buf2 = req2.serialize();
+        log::debug!(
+            "ProtocolHandler::handshake_std -> sending Hello2 ({} bytes): {}",
+            req_buf2.len(),
+            hex::encode(&req_buf2)
+        );
+        match crate::level1::process_request_std(stream, &req_buf2)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+        {
+            Ok(body2) => {
+                log::debug!(
+                    "ProtocolHandler::handshake_std <- received Hello2 body ({} bytes): {}",
+                    body2.len(),
+                    if body2.len() > 128 {
+                        hex::encode(&body2[..128]) + "..."
+                    } else {
+                        hex::encode(&body2)
+                    }
+                );
+                let mut resp2 = Hello2Response::new();
+                resp2
+                    .deserialize(&body2)
+                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+                log::debug!(
+                    "ProtocolHandler::handshake_std Hello2 parsed info: {}",
+                    resp2.info
+                );
+                if resp2.info.trim().is_empty() {
+                    log::error!("ProtocolHandler::handshake_std Hello2 validation failed: empty info");
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        "Hello2 response invalid or empty",
+                    ));
+                }
+            }
+            Err(e) => {
+                log::error!("ProtocolHandler::handshake_std Hello2 failed: {}", e);
+                return Err(e);
+            }
+        }
+
         Ok(true)
     }
 }

@@ -40,68 +40,79 @@ pub fn logger_set(_verbose: bool, _debug: bool) {
         }
     }
 
-    let logs_dir = crate::config::get_logs_path();
-    // 确保日志目录存在
-    if let Err(e) = std::fs::create_dir_all(&logs_dir) {
-        log::error!("Failed to create logs dir {}: {}", logs_dir, e);
-    }
+    use std::sync::Once;
 
-    // 使用带日期的日志文件名，使每个日期生成独立日志文件，按级别拆分。
-    let date = chrono::Local::now().format("%Y-%m-%d").to_string();
+    static INIT: Once = Once::new();
 
-    let pattern = "{d(%Y-%m-%d %H:%M:%S%.3f)} {l} {t} - {m}\n";
-    let mut config = log4rs::config::Config::builder();
-
-    // 为每个级别创建文件 appender，按级别拆分
-    let levels = vec![
-        ("trace", LevelFilter::Trace, Level::Trace),
-        ("debug", LevelFilter::Debug, Level::Debug),
-        ("info", LevelFilter::Info, Level::Info),
-        ("warn", LevelFilter::Warn, Level::Warn),
-        ("error", LevelFilter::Error, Level::Error),
-    ];
-
-    for (level_name, _level_filter, level) in levels {
-        let dated_log_path = format!("{}/{}_{}.log", logs_dir, level_name, date);
-        let app = match log4rs::append::file::FileAppender::builder()
-            .encoder(Box::new(log4rs::encode::pattern::PatternEncoder::new(
-                pattern,
-            )))
-            .build(dated_log_path)
-        {
-            Ok(a) => a,
-            Err(e) => {
-                log::error!("Failed to build FileAppender for {}: {}", level_name, e);
-                let _ = env_logger::try_init();
-                return;
-            }
-        };
-        let appender = log4rs::config::Appender::builder()
-            .filter(Box::new(EqualFilter { level }))
-            .build(level_name, Box::new(app));
-        config = config.appender(appender);
-    }
-
-    let root = log4rs::config::Root::builder()
-        .appender("trace")
-        .appender("debug")
-        .appender("info")
-        .appender("warn")
-        .appender("error")
-        .build(LevelFilter::Trace);
-
-    match config.build(root) {
-        Ok(cfg) => {
-            if let Err(e) = log4rs::init_config(cfg) {
-                log::error!("Failed to initialize log4rs: {}", e);
-                let _ = env_logger::try_init();
-            }
-        }
-        Err(e) => {
-            log::error!("Failed to build log4rs config: {}", e);
+    // Run initialization only once per process. Use stderr for reporting init errors
+    // because logging may not yet be configured (or may already be configured by
+    // the embedding application).
+    INIT.call_once(|| {
+        let logs_dir = crate::config::get_logs_path();
+        // Ensure logs directory exists; report to stderr on failure.
+        if let Err(e) = std::fs::create_dir_all(&logs_dir) {
+            eprintln!("Failed to create logs dir {}: {}", logs_dir, e);
+            // fall back to env_logger; ignore its error
             let _ = env_logger::try_init();
+            return;
         }
-    }
+
+        // Use date-based filenames so each day creates separate files.
+        let date = chrono::Local::now().format("%Y-%m-%d").to_string();
+
+        let pattern = "{d(%Y-%m-%d %H:%M:%S%.3f)} {l} {t} - {m}\n";
+        let mut config = log4rs::config::Config::builder();
+
+        // Create a file appender for each level, splitting by level.
+        let levels = vec![
+            ("trace", LevelFilter::Trace, Level::Trace),
+            ("debug", LevelFilter::Debug, Level::Debug),
+            ("info", LevelFilter::Info, Level::Info),
+            ("warn", LevelFilter::Warn, Level::Warn),
+            ("error", LevelFilter::Error, Level::Error),
+        ];
+
+        for (level_name, _level_filter, level) in levels {
+            let dated_log_path = format!("{}/{}_{}.log", logs_dir, level_name, date);
+            let app = match log4rs::append::file::FileAppender::builder()
+                .encoder(Box::new(log4rs::encode::pattern::PatternEncoder::new(pattern)))
+                .build(dated_log_path)
+            {
+                Ok(a) => a,
+                Err(e) => {
+                    eprintln!("Failed to build FileAppender for {}: {}", level_name, e);
+                    let _ = env_logger::try_init();
+                    return;
+                }
+            };
+            let appender = log4rs::config::Appender::builder()
+                .filter(Box::new(EqualFilter { level }))
+                .build(level_name, Box::new(app));
+            config = config.appender(appender);
+        }
+
+        let root = log4rs::config::Root::builder()
+            .appender("trace")
+            .appender("debug")
+            .appender("info")
+            .appender("warn")
+            .appender("error")
+            .build(LevelFilter::Info);
+
+        match config.build(root) {
+            Ok(cfg) => {
+                if let Err(e) = log4rs::init_config(cfg) {
+                    // If another logger is already initialized, just fall back silently.
+                    eprintln!("Failed to initialize log4rs: {}", e);
+                    let _ = env_logger::try_init();
+                }
+            }
+            Err(e) => {
+                eprintln!("Failed to build log4rs config: {}", e);
+                let _ = env_logger::try_init();
+            }
+        }
+    });
 }
 
 pub fn engine_init() {
@@ -666,15 +677,18 @@ pub fn try_run_subcommand(
         spinner.set_message("Downloading/updating calendar...");
 
         let start = Instant::now();
-        // 确保日历缓存文件存在（占位逻辑）。如果 crate 中提供了真实的日历下载器，应替换该逻辑。
-        let cal_file = crate::get_calendar_filename();
-        if !std::path::Path::new(&cal_file).exists() {
-            let _ = std::fs::File::create(&cal_file);
+        // Ensure calendar cache exists and trigger any necessary lazy loading.
+        if let Err(e) = crate::exchange::calendar::ensure_calendar_cache() {
+            spinner.finish_with_message(format!(
+                "Failed to ensure calendar cache: {} (path {})",
+                e,
+                crate::config::get_calendar_filename()
+            ));
         }
 
         spinner.finish_with_message(format!(
             "Calendar ensured at {} (elapsed {:?})",
-            cal_file,
+            crate::config::get_calendar_filename(),
             start.elapsed()
         ));
     }

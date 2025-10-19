@@ -80,7 +80,7 @@ pub fn fetch_block_info(filename: &str, offset: u32) -> Option<BlockInfoResponse
                         "level1 process_request error for block_info {} offset {}: {}",
                         filename,
                         offset,
-                        e
+                        e.to_string()
                     );
                     None
                 }
@@ -113,7 +113,7 @@ impl BlockInfoResponse {
     }
     pub fn deserialize(&mut self, body: &[u8]) {
         let mut bs = BinaryStream::from_vec(body.to_vec());
-        self.size = bs.get_u32();
+        self.size = bs.get_u32().expect("buffer error");
         if self.size > 0 {
             let pos = bs.position();
             let remain = bs.data();

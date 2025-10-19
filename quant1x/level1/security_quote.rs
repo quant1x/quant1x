@@ -276,7 +276,13 @@ pub fn fetch_security_quote(codes: &[String]) -> Option<SecurityQuoteResponse> {
             match crate::level1::process_request(pooled.stream(), req_buf.as_slice()) {
                 Ok(body) => {
                     let mut resp = SecurityQuoteResponse::new();
-                    resp.deserialize(&body);
+                    if let Err(e) = resp.deserialize(&body) {
+                        log::error!(
+                            "level1::security_quote - deserialize error: {}",
+                            e.to_string()
+                        );
+                        return None;
+                    }
                     resp.verify_delisted_securities(&mut code_map);
                     log::info!(
                         "level1::security_quote - requested={} received_count={}",
@@ -337,137 +343,128 @@ impl SecurityQuoteResponse {
         }
     }
 
-    pub fn deserialize(&mut self, data: &[u8]) {
+    pub fn deserialize(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
         self.count = 0;
         self.list.clear();
         let mut bs = BinaryStream::from_vec(data.to_vec());
-        let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
-            bs.skip(2);
-            self.count = bs.get_u16();
-            self.list.reserve(self.count as usize);
-            for _ in 0..self.count {
-                let mut ele = SecurityQuote::new();
-                ele.market = bs.get_u8();
-                ele.code = bs.get_string(6);
-                let base_unit = super::default_base_unit(ele.market as i32, &ele.code);
-                ele.active1 = bs.get_u16();
+        bs.skip(2);
+        self.count = bs.get_u16()?;
+        self.list.reserve(self.count as usize);
+        for _ in 0..self.count {
+            let mut ele = SecurityQuote::new();
+            ele.market = bs.get_u8()?;
+            ele.code = bs.get_string(6)?;
+            let base_unit = super::default_base_unit(ele.market as i32, &ele.code);
+            ele.active1 = bs.get_u16()?;
 
-                let price_base = bs.varint_decode();
-                ele.price = (price_base as f64) / base_unit;
-                let tmp = bs.varint_decode();
-                ele.last_close = ((price_base + tmp) as f64) / base_unit;
-                ele.open = ((price_base + bs.varint_decode()) as f64) / base_unit;
-                ele.high = ((price_base + bs.varint_decode()) as f64) / base_unit;
-                ele.low = ((price_base + bs.varint_decode()) as f64) / base_unit;
+            let price_base = bs.varint_decode()?;
+            ele.price = (price_base as f64) / base_unit;
+            let tmp = bs.varint_decode()?;
+            ele.last_close = ((price_base + tmp) as f64) / base_unit;
+            ele.open = ((price_base + bs.varint_decode()?) as f64) / base_unit;
+            ele.high = ((price_base + bs.varint_decode()?) as f64) / base_unit;
+            ele.low = ((price_base + bs.varint_decode()?) as f64) / base_unit;
 
-                ele.server_time = {
-                    let rb0 = bs.varint_decode();
-                    if rb0 > 0 {
-                        format_time(rb0)
-                    } else {
-                        "0".to_string()
-                    }
-                };
-                ele.reversed5 = bs.varint_decode();
-
-                ele.vol = bs.varint_decode();
-                ele.vol *= 100;
-                ele.cur_vol = bs.varint_decode();
-                let raw_amount = bs.get_u32();
-                ele.amount = super::int_to_float64(raw_amount);
-
-                ele.s_vol = bs.varint_decode();
-                ele.b_vol = bs.varint_decode();
-
-                ele.index_open_amount = bs.varint_decode() * 100;
-                ele.stock_open_amount = bs.varint_decode() * 100;
-
-                let is_index_or_block =
-                    crate::exchange::assert_index_by_market_and_code(ele.market, &ele.code);
-                let tmp_open_volume = if is_index_or_block {
-                    if ele.open != 0.0 {
-                        ((ele.index_open_amount as f64) / ele.open).round()
-                    } else {
-                        0.0
-                    }
+            ele.server_time = {
+                let rb0 = bs.varint_decode()?;
+                if rb0 > 0 {
+                    format_time(rb0)
                 } else {
-                    if ele.open != 0.0 {
-                        ((ele.stock_open_amount as f64) / ele.open).round()
-                    } else {
-                        0.0
-                    }
-                };
-                if tmp_open_volume.is_nan() {
-                    ele.open_volume = 0;
+                    "0".to_string()
+                }
+            };
+            ele.reversed5 = bs.varint_decode()?;
+
+            ele.vol = bs.varint_decode()?;
+            ele.vol *= 100;
+            ele.cur_vol = bs.varint_decode()?;
+            let raw_amount = bs.get_u32()?;
+            ele.amount = super::int_to_float64(raw_amount);
+
+            ele.s_vol = bs.varint_decode()?;
+            ele.b_vol = bs.varint_decode()?;
+
+            ele.index_open_amount = bs.varint_decode()? * 100;
+            ele.stock_open_amount = bs.varint_decode()? * 100;
+
+            let is_index_or_block =
+                crate::exchange::assert_index_by_market_and_code(ele.market, &ele.code);
+            let tmp_open_volume = if is_index_or_block {
+                if ele.open != 0.0 {
+                    ((ele.index_open_amount as f64) / ele.open).round()
                 } else {
-                    ele.open_volume = tmp_open_volume as i64;
+                    0.0
                 }
-
-                for l in 0..5 {
-                    let bid_price = ((bs.varint_decode() + price_base) as f64) / base_unit;
-                    let ask_price = ((bs.varint_decode() + price_base) as f64) / base_unit;
-                    let bid_vol = bs.varint_decode();
-                    let ask_vol = bs.varint_decode();
-                    ele.bid[l] = bid_price;
-                    ele.ask[l] = ask_price;
-                    ele.bid_vol[l] = bid_vol;
-                    ele.ask_vol[l] = ask_vol;
-                }
-
-                ele.reversed4 = bs.get_u16();
-                ele.reversed5 = bs.varint_decode();
-                ele.reversed6 = bs.varint_decode();
-                ele.reversed7 = bs.varint_decode();
-                ele.reversed8 = bs.varint_decode();
-
-                let rev9 = bs.get_i16();
-                ele.rate = (rev9 as f64) / 100.0;
-                ele.active2 = bs.get_u16();
-
-                // Determine trade state
-                if ele.last_close == 0.0 && ele.open == 0.0 {
-                    ele.state = TradeState::Delisting;
-                } else if ele.open != 0.0 {
-                    ele.state = TradeState::Normal;
+            } else {
+                if ele.open != 0.0 {
+                    ((ele.stock_open_amount as f64) / ele.open).round()
                 } else {
-                    ele.state = TradeState::Suspend;
+                    0.0
                 }
-
-                if is_index_or_block {
-                    ele.index_open_amount = ele.bid_vol[0]; // indexUp
-                    ele.index_open_amount = ele.bid_vol[1]; // indexUpLimit (approx)
-                }
-
-                // determine current session status using exchange session logic
-                let now_ts = Timestamp::now();
-                let (_update_rt, status) = crate::exchange::can_update_in_realtime(Some(now_ts));
-                // closing call auction phase => MASK_CALL_AUCTION | MASK_CLOSING
-                let in_closing = (status & crate::exchange::MASK_CALL_AUCTION) != 0
-                    && (status & crate::exchange::MASK_CLOSING) != 0;
-                if in_closing {
-                    if is_index_or_block {
-                        if ele.price != 0.0 {
-                            ele.close_volume = ((ele.cur_vol * 100) as f64 / ele.price) as i64;
-                        } else {
-                            ele.close_volume = 0;
-                        }
-                    } else {
-                        ele.close_volume = ele.cur_vol * 100;
-                    }
-                }
-
-                ele.time_stamp = now_ts.to_string_with_layout("%Y%m%d%H%M%S%.3f");
-                self.list.push(ele);
+            };
+            if tmp_open_volume.is_nan() {
+                ele.open_volume = 0;
+            } else {
+                ele.open_volume = tmp_open_volume as i64;
             }
-        }));
-        if let Err(_) = result {
-            log::warn!(
-                "insufficient data for {} quotes, parsed {} successfully",
-                self.count,
-                self.list.len()
-            );
-            self.count = self.list.len() as u16;
+
+            for l in 0..5 {
+                let bid_price = ((bs.varint_decode()? + price_base) as f64) / base_unit;
+                let ask_price = ((bs.varint_decode()? + price_base) as f64) / base_unit;
+                let bid_vol = bs.varint_decode()?;
+                let ask_vol = bs.varint_decode()?;
+                ele.bid[l] = bid_price;
+                ele.ask[l] = ask_price;
+                ele.bid_vol[l] = bid_vol;
+                ele.ask_vol[l] = ask_vol;
+            }
+
+            ele.reversed4 = bs.get_u16()?;
+            ele.reversed5 = bs.varint_decode()?;
+            ele.reversed6 = bs.varint_decode()?;
+            ele.reversed7 = bs.varint_decode()?;
+            ele.reversed8 = bs.varint_decode()?;
+
+            let rev9 = bs.get_i16()?;
+            ele.rate = (rev9 as f64) / 100.0;
+            ele.active2 = bs.get_u16()?;
+
+            // Determine trade state
+            if ele.last_close == 0.0 && ele.open == 0.0 {
+                ele.state = TradeState::Delisting;
+            } else if ele.open != 0.0 {
+                ele.state = TradeState::Normal;
+            } else {
+                ele.state = TradeState::Suspend;
+            }
+
+            if is_index_or_block {
+                ele.index_open_amount = ele.bid_vol[0]; // indexUp
+                ele.index_open_amount = ele.bid_vol[1]; // indexUpLimit (approx)
+            }
+
+            // determine current session status using exchange session logic
+            let now_ts = Timestamp::now();
+            let (_update_rt, status) = crate::exchange::can_update_in_realtime(Some(now_ts));
+            // closing call auction phase => MASK_CALL_AUCTION | MASK_CLOSING
+            let in_closing = (status & crate::exchange::MASK_CALL_AUCTION) != 0
+                && (status & crate::exchange::MASK_CLOSING) != 0;
+            if in_closing {
+                if is_index_or_block {
+                    if ele.price != 0.0 {
+                        ele.close_volume = ((ele.cur_vol * 100) as f64 / ele.price) as i64;
+                    } else {
+                        ele.close_volume = 0;
+                    }
+                } else {
+                    ele.close_volume = ele.cur_vol * 100;
+                }
+            }
+
+            ele.time_stamp = now_ts.to_string_with_layout("%Y%m%d%H%M%S%.3f");
+            self.list.push(ele);
         }
+        Ok(())
     }
 }
 
@@ -622,7 +619,7 @@ mod tests {
         let hex_data = "01030600013030303030318912bbb226e14cc95000db5e92a8a50e0b9391c8f704004b012a539687c49e02998a84d902808af743e748aaf5e11c009514940f969ae4029d8a06329301b88bc0d60100a211b50a00000000000000000200000000000d00000001363030313035940dbb0738041f00aa80a70efb07ac929001ab8e01d487104ea8f545849d4a00a09d10fb07000095db14fb070100a36cfb0702008e11fb0703009914fb070400ac2e1605000000000000940d013838303635368c12b3f615b62b9e13af66f344a699910e0198d9b31a96bb5b081d5b5103009ac3d20600f3f615ebf315262cf3f615f3f6150003f3f615f3f6150000f3f615ae81f9020000f2f61500262c02000000000000000000013838303336378f128ef80a9406dd078613c615b79c9c0e06ad82d9119dd8036e70385005009cfbaf01f614cef80ac6f50a238601cef80acef80a0005cef80acef80a0000cef80a918b520000c8f80af614238601020000000000010000000135313030353041128429797901c0019ca9878f01b3f102919af521971ffd8e09508e95d30e8385a2130081040001950bbe23410290d20193b70342038ea901bc584304aa06b12b44051f9f7354040000000008004112013630303833390000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d000000";
         let buf = hex::decode(hex_data).unwrap();
         let mut resp = SecurityQuoteResponse::new();
-        resp.deserialize(&buf);
+        resp.deserialize(&buf).unwrap();
         assert_eq!(resp.count as usize, resp.list.len());
     }
 

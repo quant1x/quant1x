@@ -166,17 +166,17 @@ impl Response for MinuteTimeResponse {
         &mut self.header
     }
 
-    fn deserialize_body(&mut self, data: &[u8]) {
+    fn deserialize_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
         self.clear();
 
         if data.len() < 2 {
-            return;
+            return Ok(());
         }
 
         let mut bs = BinaryStream::from_vec(data.to_vec());
-        self.count = bs.get_u16();
+        self.count = bs.get_u16()?;
         if self.count == 0 {
-            return;
+            return Ok(());
         }
 
         let min_required = 6 + (self.count as usize) * 3;
@@ -188,24 +188,26 @@ impl Response for MinuteTimeResponse {
                 min_required
             );
             self.count = 0;
-            return;
+            return Ok(());
         }
 
         self.list.reserve(self.count as usize);
         let base_unit = super::default_base_unit(self.market_, &self.code_);
-        let _is_index = crate::exchange::assert_index_by_market_and_code(self.market_ as u8, &self.code_);
+        let _is_index =
+            crate::exchange::assert_index_by_market_and_code(self.market_ as u8, &self.code_);
         let mut last_price: i64 = 0;
         bs.skip(4);
         for _ in 0..self.count {
             let mut entry = MinuteTime::new();
-            let raw_price = bs.varint_decode();
-            let _ignored = bs.varint_decode();
-            let vol = bs.varint_decode();
+            let raw_price = bs.varint_decode()?;
+            let _ignored = bs.varint_decode()?;
+            let vol = bs.varint_decode()?;
             entry.vol = vol;
             last_price += raw_price;
             entry.price = (last_price as f32) / (base_unit as f32);
             self.list.push(entry);
         }
+        Ok(())
     }
 
     fn body_string(&self) -> String {

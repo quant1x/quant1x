@@ -53,11 +53,12 @@ impl Hello2Response {
             info: String::new(),
         }
     }
-    pub fn deserialize(&mut self, data: &[u8]) {
+    pub fn deserialize(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
         let offset = 58usize;
         if data.len() >= offset {
             let (cow, _, _) = GBK.decode(&data[offset..]);
             self.info = cow.into_owned();
         }
+        Ok(())
     }
 }

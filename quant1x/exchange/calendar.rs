@@ -239,6 +239,25 @@ pub fn get_calendar_list() -> Vec<String> {
     GLOBAL_CALENDAR_STRINGS.lock().unwrap().clone()
 }
 
+/// Ensure calendar cache exists on disk and trigger a load if needed.
+/// This is a small public helper intended for callers like `app::try_run_subcommand`
+/// that need to ensure the calendar cache file is present before showing progress.
+use std::error::Error;
+
+pub fn ensure_calendar_cache() -> Result<(), Box<dyn Error>> {
+    let path = default_calendar_path();
+    if !path.exists() {
+        // best-effort: create parent and empty file so callers can show a path
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::File::create(&path)?;
+    }
+    // schedule lazy load (will be a no-op if already loaded and up-to-date)
+    lazy_load_calendar();
+    Ok(())
+}
+
 pub fn last_trading_day(date: Timestamp) -> Timestamp {
     lazy_load_calendar();
     {
