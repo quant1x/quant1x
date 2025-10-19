@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.145] - 2025-10-19
+### Changed
+- 进程结束刷新日志改为info级别
+
 ## [0.6.144] - 2025-10-19
 ### Changed
 - 优化加固rust连接池
+- update changelog
 
 ## [0.6.143] - 2025-10-19
 ### Changed
@@ -1015,7 +1020,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.144...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.145...HEAD
+[0.6.145]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.144...v0.6.145
 [0.6.144]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.143...v0.6.144
 [0.6.143]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.142...v0.6.143
 [0.6.142]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.141...v0.6.142
