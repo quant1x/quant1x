@@ -1,4 +1,4 @@
-// Thin performance driver that uses the library's Vyukov queue implementation.
+// 使用库中 Vyukov 队列实现的轻量性能驱动。
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::thread;

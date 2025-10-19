@@ -1,7 +1,7 @@
 use quant1x::CalendarDecoder;
 use serde_json::Value;
 
-// Unit-like integration tests for the CalendarDecoder API
+// 面向 CalendarDecoder API 的单元式集成测试
 
 #[test]
 fn branch_info_and_decode_json_for_sample() {
@@ -11,7 +11,7 @@ fn branch_info_and_decode_json_for_sample() {
     let mut dec = CalendarDecoder::new("");
     dec.decode_base64(encoded);
 
-    // branch_info should report branch 139 for this sample
+    // 对于此示例，branch_info 应返回分支 139
     let (b, s) = dec.branch_info();
     assert_eq!(b, 139, "expected branch 139 for sample");
     assert!(s <= 1, "s should be <= 1 for sample");
@@ -19,7 +19,7 @@ fn branch_info_and_decode_json_for_sample() {
     // decode_json should produce a JSON array
     let v: Value = dec.decode_json();
     match v {
-        Value::Array(_) => {}
+        Value::Array(_) => {} 
         other => panic!("expected array from decode_json, got: {:?}", other),
     }
 }
@@ -51,7 +51,7 @@ fn branch_info_after_header_done_reports_set_values() {
     // simulate header parsed
     dec.set_branch(200, 0);
     dec.header_done = true;
-    let (b, s) = dec.branch_info();
+    let (b, s) = dec.branch_info(); 
     assert_eq!(b, 200);
     assert_eq!(s, 0);
 }
@@ -62,7 +62,7 @@ fn t_branch_returns_empty_when_s_ge_1() {
     dec.set_branch(1479, 1); // s >= 1 triggers early return
     dec.header_done = true;
     let out = dec.t_branch();
-    assert!(out.is_empty(), "t_branch should return empty when s >= 1");
+        assert!(out.is_empty(), "t_branch should return empty when s >= 1"); 
 }
 
 #[test]
@@ -71,7 +71,7 @@ fn s_branch_returns_empty_when_s_ge_1() {
     dec.set_branch(200, 1);
     dec.header_done = true;
     let out = dec.s_branch();
-    assert!(out.is_empty(), "s_branch should return empty when s >= 1");
+    assert!(out.is_empty(), "s_branch should return empty when s >= 1"); 
 }
 
 #[test]
@@ -80,7 +80,7 @@ fn mi_run_returns_empty_when_s_ge_1() {
     dec.set_branch(197, 1);
     dec.header_done = true;
     let out = dec.mi_run();
-    assert!(out.is_empty(), "mi_run should return empty when s >= 1");
+    assert!(out.is_empty(), "mi_run should return empty when s >= 1"); 
 }
 
 #[test]
@@ -89,7 +89,7 @@ fn k_list_and_intraday_s_guards() {
     dec.set_branch(139, 2);
     dec.header_done = true;
     let kl = dec.k_list();
-    assert!(kl.is_empty(), "k_list should be empty when s > 1");
+    assert!(kl.is_empty(), "k_list should be empty when s > 1"); 
 
     dec.set_branch(139, 3);
     dec.header_done = true;
@@ -104,7 +104,7 @@ fn invalid_base64_produces_expected_branch_info() {
     dec.decode_base64("@@@@");
     let (b, s) = dec.branch_info();
     // with all-zero indices, w(&[12,6]) yields zeros -> branch 0 and s = 63 ^ 0 = 63
-    assert_eq!(b, 0);
+    assert_eq!(b, 0); 
     assert_eq!(s, 63);
 }
 
@@ -115,7 +115,7 @@ fn decode_json_for_mi_run_empty_returns_empty_array() {
     dec.header_done = true;
     let v = dec.decode_json();
     match v {
-        serde_json::Value::Array(a) => assert!(a.is_empty()),
+            serde_json::Value::Array(a) => assert!(a.is_empty()), 
         _ => panic!("expected array"),
     }
 }
@@ -140,7 +140,7 @@ fn k_list_target_zero_returns_empty() {
     // without any encoded target data, k_list should be empty
     let kl = dec.k_list();
     // current implementation yields at least one date in this scenario
-    assert!(
+        assert!( 
         !kl.is_empty(),
         "k_list should produce at least one date when target_date is zero with no encoded data"
     );
@@ -152,5 +152,5 @@ fn decode_base64_with_mixed_invalid_chars() {
     dec.decode_base64("!!##$$%%^^&&");
     // indices should be present but likely all zeros -> decode should be empty
     let out = dec.decode();
-    assert!(out.is_empty(), "decode of invalid base64 should be empty");
+        assert!(out.is_empty(), "decode of invalid base64 should be empty"); 
 }

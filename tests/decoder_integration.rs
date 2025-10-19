@@ -9,13 +9,13 @@ fn sample_decodes_and_reports_branch() {
     dec.decode_base64(encoded);
 
     let bi = dec.branch_info();
-    // sample is known to be branch 139 (k_list/date-list)
+    // 该示例已知属于分支 139（k_list/日期列表）
     assert_eq!(bi.0, 139);
-    // s should be <= 1 for this sample
+    // 对于此示例，s 应 <= 1
     assert!(bi.1 <= 1);
 
     let v: Value = dec.decode_json();
-    // ensure we get an array back
+    // 确保返回的是数组
     match v {
         Value::Array(_) => (),
         _ => panic!("expected JSON array from decode_json"),
