@@ -26,23 +26,25 @@ pub fn fetch_kline(
     for attempt in 0..=MAX_RETRIES {
         match level1::client() {
             Ok(mut pooled) => {
+                let endpoint = pooled.addr();
                 let mut resp = level1::SecurityBarsResponse::new_with(is_index, category);
                 match level1::protocol::process(pooled.stream(), &mut req, &mut resp)
                     .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))
                 {
                     Ok(()) => {
-                        if resp.list.is_empty() {
-                            log::warn!(
-                                "[datasets::kline_raw] empty response for {} start={} count={} cat={} zip={} unzip={} resp_count={}",
-                                code,
-                                start,
-                                count,
-                                category,
-                                resp.header().zip_size,
-                                resp.header().unzip_size,
-                                resp.count
-                            );
-                        }
+                            if resp.list.is_empty() {
+                                log::warn!(
+                                    "[datasets::kline_raw] empty response from {} for {} start={} count={} cat={} zip={} unzip={} resp_count={}",
+                                    endpoint,
+                                    code,
+                                    start,
+                                    count,
+                                    category,
+                                    resp.header().zip_size,
+                                    resp.header().unzip_size,
+                                    resp.count
+                                );
+                            }
                         return Some(resp);
                     }
                     Err(e) => {
@@ -57,7 +59,8 @@ pub fn fetch_kline(
 
                         if is_connection_error && attempt < MAX_RETRIES {
                             log::warn!(
-                                "[datasets::kline_raw] connection error for {} start={} count={} (attempt {}/{}): {}",
+                                "[datasets::kline_raw] connection error to {} for {} start={} count={} (attempt {}/{}): {}",
+                                endpoint,
                                 code,
                                 start,
                                 count,
@@ -69,8 +72,9 @@ pub fn fetch_kline(
                             continue;
                         } else {
                             log::error!(
-                                "[datasets::kline_raw] process failed for {} start={} count={}: {}",
+                                "[datasets::kline_raw] process failed for {} from {} start={} count={}: {}",
                                 code,
+                                endpoint,
                                 start,
                                 count,
                                 e
