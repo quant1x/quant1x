@@ -3,10 +3,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.147] - 2025-10-19
+### Changed
+- 修订网络超时
+- 调整测试的证券代码
+- 细化kline数据为空时的日志
+
 ## [0.6.146] - 2025-10-19
 ### Changed
 - rust版本新增反序列化错判枚举
 - rust协议接口统一反序列化失败或异常返回错误枚举
+- update changelog
 
 ## [0.6.145] - 2025-10-19
 ### Changed
@@ -1026,7 +1033,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.146...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.147...HEAD
+[0.6.147]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.146...v0.6.147
 [0.6.146]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.145...v0.6.146
 [0.6.145]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.144...v0.6.145
 [0.6.144]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.143...v0.6.144
