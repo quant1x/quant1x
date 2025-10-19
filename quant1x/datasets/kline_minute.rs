@@ -429,7 +429,7 @@ mod tests {
     #[test]
     fn test_read_kline_from_csv() {
         let adapter = DataMinuteKLine;
-        let code = "sh603682";
+        let code = "sz300144";
         let date = Timestamp::now();
         adapter.update(code, date);
     }
