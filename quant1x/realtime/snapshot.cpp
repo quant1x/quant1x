@@ -176,7 +176,11 @@ namespace realtime {
                     spdlog::error("服务器网络不稳定, 稍后重试");
                     return;
                 }
-                level1::process(conn->socket(), request, response);
+                auto err = level1::process(conn->socket(), request, response);
+                if (err) {
+                    spdlog::error("Process error: {}", err.message());
+                    return;
+                }
                 response.verify_delisted_securities(maps);
                 for (int j = 0; j < response.count; ++j) {
                     const auto &raw = response.list[j];

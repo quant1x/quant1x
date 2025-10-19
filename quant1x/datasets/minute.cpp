@@ -49,7 +49,10 @@ namespace datasets {
             auto [id, _, symbol] = exchange::DetectMarket(code);
             level1::HistoryMinuteTimeRequest request(code, date.yyyymmdd());
             level1::HistoryMinuteTimeResponse response(id, symbol.c_str());
-            level1::process(conn->socket(), request, response);
+            auto err = level1::process(conn->socket(), request, response);
+            if (err) {
+                throw std::runtime_error(fmt::format("Process error: {}", err.message()));
+            }
             if (response.Count) {
                 save_minutes(code, date, response.List);
             }

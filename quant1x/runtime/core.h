@@ -2,9 +2,9 @@
 #ifndef Q1X_RUNTIME_CORE_H
 #define Q1X_RUNTIME_CORE_H 1
 
-#include "quant1x/std/api.h"
-#include "quant1x/io/logger.h"
-#include "quant1x/runtime/config.h"
+#include <quant1x/std/api.h>
+#include <quant1x/io/logger.h>
+#include <quant1x/runtime/config.h>
 
 namespace runtime {
     using task_id = int64_t;

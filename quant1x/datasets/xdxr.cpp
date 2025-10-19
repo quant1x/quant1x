@@ -70,7 +70,10 @@ namespace datasets {
             auto conn = level1::client();
             level1::XdxrInfoRequest request(code);
             level1::XdxrInfoResponse response;
-            level1::process(conn->socket(), request, response);
+            auto err = level1::process(conn->socket(), request, response);
+            if (err) {
+                throw std::runtime_error(fmt::format("Process error: {}", err.message()));
+            }
             if (response.Count) {
                 save_xdxr(code, date, response.List);
             }

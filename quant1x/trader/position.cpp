@@ -142,7 +142,11 @@ namespace trader {
                 level1::SecurityQuoteRequest request(codes);
                 level1::SecurityQuoteResponse response;
                 auto conn = level1::client();
-                level1::process(conn->socket(), request, response);
+                auto err = level1::process(conn->socket(), request, response);
+                if (err) {
+                    spdlog::error("Process error: {}", err.message());
+                    continue;
+                }
                 response.verify_delisted_securities(maps);
             } catch (...) {
                 //

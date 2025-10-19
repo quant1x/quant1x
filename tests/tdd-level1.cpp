@@ -47,7 +47,8 @@ TEST_CASE("heartbeat", "[level1]") {
     auto conn = level1::client();
     level1::HeartbeatRequest req;
     level1::HeartbeatResponse resp;
-    level1::process(conn->socket(), req, resp);
+    auto err = level1::process(conn->socket(), req, resp);
+    REQUIRE(!err);
 }
 
 // 心跳
@@ -56,7 +57,8 @@ TEST_CASE("heartbeat-tpl", "[level1]") {
     auto conn = level1::client();
     level1::HeartbeatRequest req;
     level1::HeartbeatResponse resp;
-    level1::process(conn->socket(), req, resp);
+    auto err = level1::process(conn->socket(), req, resp);
+    REQUIRE(!err);
 }
 
 //
@@ -83,7 +85,8 @@ TEST_CASE("xdxr-network", "[level1]") {
     level1::XdxrInfoResponse response;
     //level1::client.add_endpoint(defualt_endpoint);
     auto conn = level1::client();
-    level1::process(conn->socket(), request, response);
+    auto err = level1::process(conn->socket(), request, response);
+    REQUIRE(!err);
     for(int i = 0; i < response.Count; i ++) {
         auto e = &response.List[i];
         std::cout << *e << std::endl;
@@ -109,7 +112,8 @@ TEST_CASE("finance-info-network", "[level1]") {
     spdlog::debug(request.toString());
     level1::FinanceResponse response{};
     auto conn = level1::client();
-    level1::process(conn->socket(), request, response);
+    auto err = level1::process(conn->socket(), request, response);
+    REQUIRE(!err);
     spdlog::debug(response.toString());
 }
 
@@ -120,7 +124,8 @@ TEST_CASE("security-count", "[level1]") {
     level1::SecurityCountResponse response;
     //level1::client.add_endpoint(defualt_endpoint);
     auto conn = level1::client();
-    level1::process(conn->socket(), request, response);
+    auto err = level1::process(conn->socket(), request, response);
+    REQUIRE(!err);
     spdlog::debug(response.toString());
 }
 
@@ -162,7 +167,8 @@ TEST_CASE("security-quote-network", "[level1]") {
     level1::SecurityQuoteResponse response;
     //level1::client.add_endpoint(defualt_endpoint);
     auto conn = level1::client();
-    level1::process(conn->socket(), request, response);
+    auto err = level1::process(conn->socket(), request, response);
+    REQUIRE(!err);
     response.verify_delisted_securities(maps);
     spdlog::debug(response.toString());
 }
@@ -181,7 +187,8 @@ TEST_CASE("transaction-network", "[level1]") {
     level1::TransactionResponse response(1, "600010");
     //level1::client.add_endpoint(defualt_endpoint);
     auto conn = level1::client();
-    level1::process(conn->socket(), request, response);
+    auto err = level1::process(conn->socket(), request, response);
+    REQUIRE(!err);
     spdlog::debug(response.toString());
 }
 
@@ -199,7 +206,8 @@ TEST_CASE("history-transaction-network", "[level1]") {
     level1::HistoryTransactionResponse response(1, "600010");
     //level1::client.add_endpoint(defualt_endpoint);
     auto conn = level1::client();
-    level1::process(conn->socket(), request, response);
+    auto err = level1::process(conn->socket(), request, response);
+    REQUIRE(!err);
     spdlog::debug(response.toString());
 }
 
@@ -208,7 +216,8 @@ TEST_CASE("minutetime-network", "[level1]") {
     level1::HistoryMinuteTimeRequest request("510050", 20250512);
     level1::HistoryMinuteTimeResponse response(1, "510050");
     auto conn = level1::client();
-    level1::process(conn->socket(), request, response);
+    auto err = level1::process(conn->socket(), request, response);
+    REQUIRE(!err);
     spdlog::debug(response.toString());
 }
 
@@ -226,7 +235,8 @@ TEST_CASE("kline-network-stock", "[level1]") {
     spdlog::debug(request.toString());
     level1::SecurityBarsResponse response(request.isIndex, 9);
     auto conn = level1::client();
-    level1::process(conn->socket(), request, response);
+    auto err = level1::process(conn->socket(), request, response);
+    REQUIRE(!err);
     spdlog::debug(response.toString());
 }
 
@@ -236,7 +246,8 @@ TEST_CASE("block-network-meta", "[level1]") {
     spdlog::debug(request.toString());
     level1::BlockMetaResponse response;
     auto conn = level1::client();
-    level1::process(conn->socket(), request, response);
+    auto err = level1::process(conn->socket(), request, response);
+    REQUIRE(!err);
     spdlog::debug(response.toString());
 }
 
@@ -246,7 +257,8 @@ TEST_CASE("block-network-info", "[level1]") {
     spdlog::debug(request.toString());
     level1::BlockInfoResponse response;
     auto conn = level1::client();
-    level1::process(conn->socket(), request, response);
+    auto err = level1::process(conn->socket(), request, response);
+    REQUIRE(!err);
     spdlog::debug(response.toString());
 }
 

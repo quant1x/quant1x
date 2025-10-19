@@ -114,7 +114,10 @@ namespace datasets {
                     level1::TransactionRequest request(correctedCode, start, offset);
                     level1::TransactionResponse response(marketId, pureCode.c_str());
                     auto conn = level1::client();
-                    level1::process(conn->socket(), request, response);
+                    auto err = level1::process(conn->socket(), request, response);
+                    if (err) {
+                        throw std::runtime_error(fmt::format("Process error: {}", err.message()));
+                    }
 
                     if (response.Count == 0 || response.List.empty()) {
                         break;
@@ -150,7 +153,10 @@ namespace datasets {
                     level1::HistoryTransactionRequest request(correctedCode, u32Date, start, offset);
                     level1::HistoryTransactionResponse response(marketId, pureCode.c_str());
                     auto conn = level1::client();
-                    level1::process(conn->socket(), request, response);
+                    auto err = level1::process(conn->socket(), request, response);
+                    if (err) {
+                        throw std::runtime_error(fmt::format("Process error: {}", err.message()));
+                    }
 
                     if (response.Count == 0 || response.List.empty()) {
                         break;

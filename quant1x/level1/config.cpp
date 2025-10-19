@@ -1,6 +1,7 @@
 #include <quant1x/level1/config.h>
 #include <quant1x/level1/hello1.h>
 #include <quant1x/level1/hello2.h>
+#include <quant1x/net/base.h>
 
 namespace level1 {
     // 标准行情服务器列表
@@ -217,59 +218,56 @@ namespace level1 {
 
             for (size_t i = start; i < end; ++i) {
                 const auto& v = StandardServerList[i];
-                spdlog::debug("{}={}:{}", v.Name, v.Host, v.Port);
+                spdlog::debug("[Server Detection] Testing {} - {}:{} (Port {})", v.Name, v.Host, v.Port, v.Port);
 
                 try {
-                    asio::ip::tcp::socket socket(io_context);
+                    // 解析地址
                     asio::ip::tcp::resolver resolver(io_context);
                     auto endpoints = resolver.resolve(v.Host, std::format("{}", v.Port));
                     auto endpoint = endpoints.begin()->endpoint();
 
-                    auto start_time = std::chrono::high_resolution_clock::now();
+                    // 创建socket并连接
+                    asio::ip::tcp::socket socket(io_context);
+                    socket.open(asio::ip::tcp::v4());
+                    socket.set_option(asio::socket_base::reuse_address(true));
+                    socket.set_option(asio::ip::tcp::no_delay(true));
+                    socket.bind(asio::ip::tcp::endpoint(asio::ip::tcp::v4(), 0));
 
-                    // 连接服务器
-                    try {
-                        socket.open(asio::ip::tcp::v4());
-                        socket.set_option(asio::socket_base::reuse_address(true));
-                        socket.set_option(asio::ip::tcp::no_delay(true));
-                        socket.bind(asio::ip::tcp::endpoint(asio::ip::tcp::v4(), 0));
-
-                        // 带超时的异步连接
-                        std::future<void> connect_future = socket.async_connect(endpoint, asio::use_future);
-                        if (connect_future.wait_for(std::chrono::milliseconds(connect_timeout_milliseconds)) == std::future_status::timeout) {
-                            socket.close();
-                            spdlog::error("Connection timeout to {}:{}", endpoint.address().to_string(), endpoint.port());
-                            throw std::runtime_error("Connection timeout");
-                        }
-                        connect_future.get();
-                    } catch (const std::system_error& e) {
-                        if (socket.is_open()) socket.close();
-                        spdlog::error("System error while connecting: {} (code: {})", e.what(), e.code().value());
-                        throw;
-                    } catch (const std::exception& e) {
-                        if (socket.is_open()) socket.close();
-                        spdlog::error("Error while connecting: {}", e.what());
-                        throw;
+                    // 带超时的异步连接
+                    std::future<void> connect_future = socket.async_connect(endpoint, asio::use_future);
+                    if (connect_future.wait_for(std::chrono::milliseconds(connect_timeout_milliseconds)) == std::future_status::timeout) {
+                        spdlog::error("[Server Detection] Connection timeout after {}ms to {}:{} - skipping server", connect_timeout_milliseconds, endpoint.address().to_string(), endpoint.port());
+                        continue; // 跳过这个服务器
                     }
+                    connect_future.get();
 
-                    spdlog::debug("Connected to server");
+                    spdlog::debug("[Server Detection] Successfully connected to {}:{}", endpoint.address().to_string(), endpoint.port());
+
+                    // 使用RAII包装器管理socket生命周期
+                    net::SocketGuard socket_guard(std::move(socket));
+                    auto start_time = std::chrono::high_resolution_clock::now();
 
                     // 协议握手
                     level1::Hello1Request reqHello1;
                     level1::Hello1Response respHello1;
-                    level1::process(socket, reqHello1, respHello1);
+                    auto err1 = level1::process(socket_guard.socket(), reqHello1, respHello1);
+                    if (err1) {
+                        spdlog::error("[Server Detection] Level1 protocol handshake phase 1 failed with {} - skipping server", err1.message());
+                        continue; // 跳过这个服务器
+                    }
 
                     level1::Hello2Request reqHello2;
                     level1::Hello2Response respHello2;
-                    level1::process(socket, reqHello2, respHello2);
+                    auto err2 = level1::process(socket_guard.socket(), reqHello2, respHello2);
+                    if (err2) {
+                        spdlog::error("[Server Detection] Level1 protocol handshake phase 2 failed with {} - skipping server", err2.message());
+                        continue; // 跳过这个服务器
+                    }
 
                     auto end_time = std::chrono::high_resolution_clock::now();
                     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
 
-                    socket.shutdown(asio::ip::tcp::socket::shutdown_both);
-                    socket.close();
-
-                    spdlog::debug("cross time={}", duration);
+                    spdlog::debug("[Server Detection] Round-trip latency: {}ms for {}:{}", duration, v.Host, v.Port);
 
                     if (duration < elapsed_time) {
                         ServerInfo srv = v;
@@ -278,8 +276,10 @@ namespace level1 {
                         std::lock_guard<std::mutex> lock(results_mutex);
                         best_ips.emplace_back(srv);
                     }
-                } catch (const std::exception &e) {
-                    spdlog::error("Error: {}", e.what());
+                } catch (const std::system_error& e) {
+                    spdlog::error("[Server Detection] System error during connection to {}:{} - {} (Error code: {})", v.Host, v.Port, e.what(), e.code().value());
+                } catch (const std::exception& e) {
+                    spdlog::error("[Server Detection] Unexpected error during server test {}:{} - {}", v.Host, v.Port, e.what());
                 }
             }
 
@@ -310,10 +310,10 @@ namespace level1 {
             return a.latency_ms < b.latency_ms;
         });
 
-        // 输出结果
+        // 输出检测结果
         for (size_t i = 0; i < best_ips.size(); i++) {
             auto &v = best_ips[i];
-            spdlog::debug("{}: {}={}:{}, crossTime={}", i, v.Name, v.Host, v.Port, v.latency_ms);
+            spdlog::debug("[Server Detection] Rank #{}: {} ({}:{}) - Latency: {}ms", i + 1, v.Name, v.Host, v.Port, v.latency_ms);
         }
 
         auto length = std::min(best_ips.size(), static_cast<size_t>(conn_limit));

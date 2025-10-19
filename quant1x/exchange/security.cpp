@@ -52,7 +52,10 @@ namespace exchange {
                         level1::SecurityListRequest reqSecurityList((int) marketId, start);
                         level1::SecurityListResponse respSecurityList;
                         auto conn = level1::client();
-                        level1::process(conn->socket(), reqSecurityList, respSecurityList);
+                        auto err = level1::process(conn->socket(), reqSecurityList, respSecurityList);
+                        if (err) {
+                            throw std::runtime_error(fmt::format("Process error: {}", err.message()));
+                        }
                         if (!respSecurityList.List.empty()) {
                             //allSecurity.insert(allSecurity.end(), respSecurityList.List.begin(), respSecurityList.List.end());
                             for(int i = 0; i < respSecurityList.Count; ++i) {

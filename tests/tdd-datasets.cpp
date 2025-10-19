@@ -387,7 +387,11 @@ std::vector<level1::SecurityBar> fetch(const std::string &code, u16 start, u16 c
         auto category = level1::KLineType::RI_K;
         level1::SecurityBarsRequest request(code, category, start, count);
         level1::SecurityBarsResponse response(request.isIndex, category);
-        level1::process(conn->socket(), request, response);
+        auto err = level1::process(conn->socket(), request, response);
+        if (err) {
+            spdlog::error("Process error: {}", err.message());
+            return {};
+        }
         return response.List;
     } catch (const std::exception &e) {  // 其他标准异常
         spdlog::error("全局捕获 - 标准异常: {} (type: {})", e.what(), typeid(e).name());

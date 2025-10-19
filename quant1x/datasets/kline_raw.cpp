@@ -10,7 +10,10 @@ namespace datasets {
                 //constexpr auto category = kline_type;
                 level1::SecurityBarsRequest request(code, kline_type, start, count);
                 level1::SecurityBarsResponse response(request.isIndex, kline_type);
-                level1::process(conn->socket(), request, response);
+                auto err = level1::process(conn->socket(), request, response);
+                if (err) {
+                    throw std::runtime_error(fmt::format("Process error: {}", err.message()));
+                }
                 return response.List;
             } catch (const std::exception &e) {  // 其他标准异常
                 spdlog::error("[dataset::KLine] - 标准异常: {} (type: {})", e.what(), typeid(e).name());

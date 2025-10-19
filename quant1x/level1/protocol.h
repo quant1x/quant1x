@@ -7,6 +7,7 @@
 #include <quant1x/net/connection_pool.h>
 #include <quant1x/std/api.h>
 #include <quant1x/std/buffer.h>
+#include <quant1x/std/except.h>
 #include <quant1x/std/util.h>
 
 namespace level1 {
@@ -214,23 +215,26 @@ namespace level1 {
 
     // 模板化的 process 函数
     template <typename RequestType, typename ResponseType>
-    void process(asio::ip::tcp::socket &socket, RequestType &request, ResponseType &response) {
+    quant1x::error process(asio::ip::tcp::socket &socket, RequestType &request, ResponseType &response) {
         std::string cmd     = request.command();
         auto        req_buf = request.serialize();
         spdlog::debug("[{}]Send buffer: {}", cmd, strings::bytesToHex(req_buf));
         spdlog::debug("[{}]Send request: {}", cmd, request.toString());
-        size_t n = asio::write(socket, asio::buffer(req_buf.data(), req_buf.size()));
+        asio::error_code ec;
+        size_t n = asio::write(socket, asio::buffer(req_buf.data(), req_buf.size()), ec);
         spdlog::debug("[{}]Send request: {} bytes.", cmd, n);
-        if (n == 0) {
-            // 同步方法, 发送返回0, 是异常
-            return;
+        if (ec) {
+            return quant1x::make_error_code(ec.value(), ec.message());
         }
         spdlog::debug("[{}]Recv -1", cmd);
         // 读取响应的消息头
         std::vector<u8> hdr_response_buf(response_header_length);
         spdlog::debug("[{}]Recv -2", cmd);
-        size_t hdr_response_length = asio::read(socket, asio::buffer(hdr_response_buf));
+        size_t hdr_response_length = asio::read(socket, asio::buffer(hdr_response_buf), ec);
         spdlog::debug("[{}]Recv -3", cmd);
+        if (ec) {
+            return quant1x::make_error_code(ec.value(), ec.message());
+        }
         hdr_response_buf.resize(hdr_response_length);
         spdlog::debug("[{}]Recv -4", cmd);
         spdlog::debug("[{}]Recv buffer: {}", cmd, strings::bytesToHex(hdr_response_buf));
@@ -243,11 +247,14 @@ namespace level1 {
         // 处理接收到的数据
         spdlog::debug("[{}]Recv response head: {}", cmd, response.headerStringImpl());
         if (response.ZipSize == 0) {
-            return;
+            return quant1x::make_error_code(0, "success");
         }
         std::vector<u8> body_buffer(response.ZipSize);
         spdlog::debug("[{}]Recv response body_buffer.size() = {}", cmd, body_buffer.size());
-        size_t body_received = asio::read(socket, asio::buffer(body_buffer, body_buffer.size()));
+        size_t body_received = asio::read(socket, asio::buffer(body_buffer, body_buffer.size()), ec);
+        if (ec) {
+            return quant1x::make_error_code(ec.value(), ec.message());
+        }
         body_buffer.resize(body_received);
         if (response.ZipSize != response.UnZipSize) {
             std::vector<u8> un = unzip(body_buffer, response.UnZipSize);
@@ -256,6 +263,7 @@ namespace level1 {
         spdlog::debug("[{}]Recv response buff: {}", cmd, strings::bytesToHex(body_buffer));
         response.deserialize(body_buffer);
         spdlog::debug("[{}]Recv response body: {}", cmd, response.toString());
+        return quant1x::make_error_code(0, "success");
     }
 }  // namespace level1
 #endif  // QUANT1X_LEVEL1_PROTOCOL_H

@@ -34,6 +34,25 @@ namespace net {
     inline std::string address(const asio::ip::tcp::endpoint& ep) {
         return fmt::format("{}:{}", ep.address().to_string(), ep.port());
     }
+
+    // Socket RAII包装器，确保正确关闭
+    class SocketGuard {
+    public:
+        explicit SocketGuard(asio::ip::tcp::socket&& socket) : socket_(std::move(socket)) {}
+        ~SocketGuard() {
+            if (socket_.is_open()) {
+                try {
+                    socket_.shutdown(asio::ip::tcp::socket::shutdown_both);
+                    socket_.close();
+                } catch (...) {
+                    // 忽略关闭时的异常
+                }
+            }
+        }
+        asio::ip::tcp::socket& socket() { return socket_; }
+    private:
+        asio::ip::tcp::socket socket_;
+    };
 }
 
 #endif //QUANT1X_NETWORK_IO_BASE_H
