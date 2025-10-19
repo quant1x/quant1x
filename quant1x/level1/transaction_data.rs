@@ -175,7 +175,7 @@ impl Response for TransactionResponse {
 
         self.list.reserve(self.count as usize);
         let base_unit = super::default_base_unit(self.market_, &self.code_);
-        let is_index = super::assert_index_by_market_and_code(self.market_, &self.code_);
+        let is_index = crate::exchange::assert_index_by_market_and_code(self.market_ as u8, &self.code_);
         let mut last_price: i64 = 0;
 
         for _ in 0..self.count {

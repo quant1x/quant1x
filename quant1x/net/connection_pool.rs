@@ -7,8 +7,7 @@ use std::time::{Duration, Instant};
 use mio::net::TcpStream;
 use std::net::TcpStream as StdTcpStream;
 
-/// Trait that the user of the connection pool should implement to perform
-/// protocol-specific work: handshake and keepalive checks.
+/// 用户应该实现的连接池特征，用于执行协议特定的工作：握手和保活检查。
 pub trait NetworkHandler: Send + Sync + 'static {
     fn handshake(&self, _stream: &mut TcpStream) -> std::io::Result<()> {
         Ok(())
@@ -24,8 +23,7 @@ pub trait NetworkHandler: Send + Sync + 'static {
     }
 }
 
-/// A pooled connection wrapper. The pool owns connections and returns a
-/// guard that will return the connection to the pool when dropped.
+/// 池化连接包装器。池拥有连接，并在丢弃时返回连接到池的守卫。
 pub struct Connection {
     stream: TcpStream,
     addr: SocketAddr,
@@ -58,15 +56,13 @@ impl Connection {
     }
 }
 
-/// The Mio-based TCP connection pool. This is a simplified port of the C++
-/// TcpConnectionPool semantics: acquire returns a connection which is
-/// automatically returned on Drop.
+/// 基于 Mio 的 TCP 连接池。这是 C++ TcpConnectionPool 语义的简化端口：acquire 返回一个连接，该连接在 Drop 时自动返回。
 pub struct TcpConnectionPool<H: NetworkHandler> {
     handler: Arc<H>,
     max: usize,
     endpoint_manager: Arc<crate::net::endpoint::EndpointManager>,
     idle: Mutex<VecDeque<Connection>>,
-    // Number of currently active (checked-out) connections
+    // 当前活跃（已检出）连接的数量
     active: Mutex<usize>,
 }
 
@@ -85,13 +81,12 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
             active: Mutex::new(0),
         });
 
-        // Pre-warm: attempt to create `min` connections and place into idle queue.
-        // Failures are ignored (network may be unavailable at startup).
+        // 预热：尝试创建 `min` 个连接并放入空闲队列。
+        // 失败被忽略（启动时网络可能不可用）。
         if min > 0 {
             for _ in 0..min {
                 if let Some(ep) = pool.endpoint_manager.acquire_endpoint() {
-                    // Use connect_timeout with a short pre-warm timeout so startup
-                    // doesn't block for long when endpoints are unreachable.
+                    // 使用短的预热超时时间调用 connect_timeout，这样当端点不可达时启动不会阻塞太久。
                     let timeout = std::time::Duration::from_millis(500);
                     log::debug!(
                         "connection_pool: pre-warm trying to connect to {} (timeout {:?})",
@@ -101,20 +96,19 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
                     match StdTcpStream::connect_timeout(&ep, timeout) {
                         Ok(std_stream) => {
                             let _ = std_stream.set_nodelay(true);
-                            // set read/write timeouts to avoid blocking indefinitely
+                            // 设置读/写超时以避免无限阻塞
                             let _ = std_stream.set_read_timeout(Some(timeout));
                             let _ = std_stream.set_write_timeout(Some(timeout));
-                            // Convert to mio TcpStream
+                            // 转换为 mio TcpStream
                             let mut stream = TcpStream::from_std(std_stream);
-                            // run handshake but ignore errors during pre-warm
+                            // 运行握手，但在预热期间忽略错误
                             match pool.handler.handshake(&mut stream) {
                                 Ok(()) => {
                                     log::debug!(
                                         "connection_pool: pre-warm handshake ok for {}",
                                         ep
                                     );
-                                    // lock only when pushing back into idle to avoid
-                                    // holding the idle mutex while performing network ops
+                                    // 仅在推回空闲队列时锁定，以避免在执行网络操作时持有空闲互斥锁
                                     let mut idle = pool.idle.lock().unwrap();
                                     idle.push_back(Connection::new(stream, ep));
                                 }
@@ -139,7 +133,7 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
                         }
                         Err(e) => {
                             log::warn!("connection_pool: pre-warm connect to {} failed: {}", ep, e);
-                            // if connect failed, release endpoint slot
+                            // 如果连接失败，释放端点槽位
                             pool.endpoint_manager.release_endpoint(ep);
                         }
                     }
@@ -149,25 +143,21 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
             }
         }
 
-        // Spawn a background heartbeat thread which periodically checks idle
-        // connections by calling the handler's keepalive. Use a Weak reference
-        // so the thread will exit once the pool is dropped.
+        // 生成一个后台心跳线程，该线程定期通过调用处理器的 keepalive 来检查空闲连接。使用 Weak 引用，这样一旦池被丢弃，线程就会退出。
         let weak_pool: Weak<TcpConnectionPool<H>> = Arc::downgrade(&pool);
         thread::spawn(move || {
             loop {
-                // Attempt to upgrade; if pool is gone, exit the thread.
+                // 尝试升级；如果池不存在，退出线程。
                 let pool_arc = match weak_pool.upgrade() {
                     Some(p) => p,
                     None => break,
                 };
 
-                // Sleep according to handler's preferred interval. If the pool
-                // is dropped while sleeping, the next upgrade will fail and exit.
+                // 根据处理器的首选间隔睡眠。如果池在睡眠期间被丢弃，下次升级将失败并退出。
                 let interval = pool_arc.handler.check_interval();
                 thread::sleep(interval);
 
-                // Drain idle connections quickly while holding the lock, then
-                // perform keepalive operations without holding the mutex.
+                // 在持有锁的同时快速排出空闲连接，然后在不持有互斥锁的情况下执行保活操作。
                 let mut drained: Vec<Connection> = Vec::new();
                 {
                     let mut idle = pool_arc.idle.lock().unwrap();
@@ -180,10 +170,7 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
                     continue;
                 }
 
-                // For each drained connection, run keepalive. If keepalive
-                // succeeds and returns true, the connection is still healthy
-                // and will be returned to the idle queue. Otherwise it will
-                // be dropped.
+                // 对于每个排出的连接，运行保活。如果保活成功并返回 true，则连接仍然健康，并将返回到空闲队列。否则将被丢弃。
                 let mut survivors: Vec<Connection> = Vec::with_capacity(drained.len());
                 for mut conn in drained {
                     match pool_arc.handler.keepalive(conn.stream()) {
@@ -192,21 +179,21 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
                             survivors.push(conn);
                         }
                         _ => {
-                            // dead or error => release endpoint slot and drop
+                            // 死连接或错误 => 释放端点槽位并丢弃
                             conn.close();
                             pool_arc.endpoint_manager.release_endpoint(conn.addr);
                         }
                     }
                 }
 
-                // Push survivors back into the idle queue (respecting max)
+                // 将幸存者推回空闲队列（尊重最大值）
                 if !survivors.is_empty() {
                     let mut idle = pool_arc.idle.lock().unwrap();
                     for conn in survivors {
                         if idle.len() < pool_arc.max {
                             idle.push_back(conn);
                         } else {
-                            // pool is full — drop extra
+                            // 池已满 — 丢弃多余的
                             break;
                         }
                     }
@@ -217,7 +204,7 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
         pool
     }
 
-    /// Acquire a connection using the endpoint manager (round-robin / available).
+    /// 使用端点管理器获取连接（轮询 / 可用）。
     pub fn acquire(self: &Arc<Self>) -> std::io::Result<PooledConnection<H>> {
         const WAIT_INTERVAL_MS: u64 = 50;
         const MAX_CONNECT_ATTEMPTS: usize = 5;
@@ -348,10 +335,7 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
 
     fn release(&self, mut conn: Connection) {
         conn.last_used = Instant::now();
-        // Match the C++ release behavior: always return the connection to the
-        // idle queue while keeping the endpoint allocation reserved. The
-        // endpoint is only released when the connection is explicitly closed
-        // or deemed unhealthy.
+        // 匹配 C++ release 行为：始终将连接返回到空闲队列，同时保留端点分配。端点仅在连接被显式关闭或被视为不健康时才被释放。
         {
             let mut idle = self.idle.lock().unwrap();
             log::debug!(
@@ -367,7 +351,7 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
         }
     }
 
-    /// Add an endpoint to the manager
+    /// 向管理器添加端点
     pub fn add_endpoint(&self, addr: SocketAddr, max_connections: usize) -> bool {
         self.endpoint_manager.add_endpoint(addr, max_connections)
     }
@@ -376,7 +360,7 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
         self.endpoint_manager.get_endpoint_stats(addr)
     }
 
-    /// Return the configured maximum number of connections for this pool.
+    /// 返回此池的配置最大连接数。
     pub fn max_connections(&self) -> usize {
         let endpoint_count = self.endpoint_manager.get_all_endpoints().len();
         if endpoint_count == 0 {
@@ -386,7 +370,7 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
     }
 }
 
-/// RAII guard that returns the connection to the pool when dropped.
+/// RAII 守卫，在丢弃时将连接返回到池。
 pub struct PooledConnection<H: NetworkHandler> {
     pool: Arc<TcpConnectionPool<H>>,
     conn: Option<Connection>,
@@ -406,10 +390,10 @@ impl<H: NetworkHandler> Drop for PooledConnection<H> {
         if let Some(conn) = self.conn.take() {
             self.pool.release(conn);
         } else {
-            // If no conn, it means connection creation failed, decrement active
+            // 如果没有连接，意味着连接创建失败，减少活跃数
             let mut active = self.pool.active.lock().unwrap();
             *active = active.saturating_sub(1);
-            // No Condvar present to notify; removed waiting semantics to match C++ flow.
+            // 没有 Condvar 来通知；移除了等待语义以匹配 C++ 流程。
         }
     }
 }
@@ -441,21 +425,20 @@ mod tests {
     #[test]
     fn test_endpoint_manager_basic() {
         let mgr = crate::net::endpoint::EndpointManager::new();
-        // add_endpoint expects a concrete port; cannot add 0 here, so we test add/remove semantics
-        // by creating a listener to get an assigned port.
+        // add_endpoint 需要一个具体的端口；这里不能添加 0，所以我们通过创建一个监听器来获取分配的端口来测试添加/删除语义。
         let listener = TcpListener::bind(("127.0.0.1", 0)).expect("bind");
         let addr = listener.local_addr().unwrap();
         assert!(mgr.add_endpoint(addr, 2));
         assert!(mgr.get_all_endpoints().contains(&addr));
-        // acquire twice should succeed
+        // 获取两次应该成功
         let a1 = mgr.acquire_endpoint();
         let a2 = mgr.acquire_endpoint();
         assert!(a1.is_some());
         assert!(a2.is_some());
-        // third should fail as max_connections == 2
+        // 第三次应该失败，因为 max_connections == 2
         let a3 = mgr.acquire_endpoint();
         assert!(a3.is_none());
-        // release one and acquire again
+        // 释放一个并再次获取
         mgr.release_endpoint(a1.unwrap());
         let a4 = mgr.acquire_endpoint();
         assert!(a4.is_some());
@@ -466,17 +449,17 @@ mod tests {
 
     #[test]
     fn test_connection_pool_with_local_server() {
-        // Start a local TCP listener to accept connections
+        // 启动一个本地 TCP 监听器来接受连接
         let listener = TcpListener::bind(("127.0.0.1", 0)).expect("bind");
         let addr = listener.local_addr().unwrap();
 
-        // Keep accepted streams alive so server side doesn't close immediately
+        // 保持接受的流存活，这样服务器端不会立即关闭
         let accepted: Arc<Mutex<Vec<StdTcpStream>>> = Arc::new(Mutex::new(Vec::new()));
         let accepted_clone = Arc::clone(&accepted);
         thread::spawn(move || {
             for _ in 0..10 {
                 if let Ok((stream, _)) = listener.accept() {
-                    // hold the stream
+                    // 保持流
                     accepted_clone.lock().unwrap().push(stream);
                 }
             }
@@ -488,27 +471,30 @@ mod tests {
         let handler = Arc::new(TestHandler {});
         let pool = TcpConnectionPool::new(1, 2, handler, Arc::new(mgr));
 
-        // Acquire one connection
+        // 获取一个连接
         let conn = pool.acquire().expect("acquire 1");
         assert_eq!(conn.addr(), addr);
-        // Drop to return to pool
+        // 丢弃以返回到池
         drop(conn);
 
-        // Acquire up to max
+        // 获取到最大值
         let c1 = pool.acquire().expect("acquire c1");
         let c2 = pool.acquire().expect("acquire c2");
 
-        // third should fail (max_connections == 2)
+        // 第三次应该失败（max_connections == 2）
         let res = pool.acquire();
         assert!(res.is_err());
 
         drop(c1);
         drop(c2);
 
-        // allow some time for heartbeat to run (check_interval is small)
+        // 允许一些时间让心跳运行（check_interval 很小）
         thread::sleep(Duration::from_millis(200));
 
-        // Clean up accepted streams so accept thread can finish
+                // 允许一些时间让心跳运行（check_interval 很小）
+        thread::sleep(Duration::from_millis(200));
+
+        // 清理接受的流，以便接受线程可以完成
         accepted.lock().unwrap().clear();
     }
 }

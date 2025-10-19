@@ -1,5 +1,7 @@
 use crate::level1;
 use crate::level1::protocol::Response;
+use std::thread;
+use std::time::Duration;
 
 // 日线最小容错回溯(偏移)天数
 pub const MAX_KLINE_LOOKBACK_DAYS: usize = 1;
@@ -18,44 +20,86 @@ pub fn fetch_kline(
         level1::SecurityBarsRequest::with_frequency(code, category, start_u16, count, frequency);
     let is_index = req.is_index();
 
-    match level1::client() {
-        Ok(mut pooled) => {
-            let mut resp = level1::SecurityBarsResponse::new_with(is_index, category);
-            match level1::protocol::process(pooled.stream(), &mut req, &mut resp) {
-                Ok(()) => {
-                    if resp.list.is_empty() {
-                        log::warn!(
-                            "[datasets::kline_raw] empty response for {} start={} count={} cat={} zip={} unzip={} resp_count={}",
-                            code,
-                            start,
-                            count,
-                            category,
-                            resp.header().zip_size,
-                            resp.header().unzip_size,
-                            resp.count
-                        );
+    const MAX_RETRIES: usize = 3;
+    const RETRY_DELAY_MS: u64 = 1000;
+
+    for attempt in 0..=MAX_RETRIES {
+        match level1::client() {
+            Ok(mut pooled) => {
+                let mut resp = level1::SecurityBarsResponse::new_with(is_index, category);
+                match level1::protocol::process(pooled.stream(), &mut req, &mut resp) {
+                    Ok(()) => {
+                        if resp.list.is_empty() {
+                            log::warn!(
+                                "[datasets::kline_raw] empty response for {} start={} count={} cat={} zip={} unzip={} resp_count={}",
+                                code,
+                                start,
+                                count,
+                                category,
+                                resp.header().zip_size,
+                                resp.header().unzip_size,
+                                resp.count
+                            );
+                        }
+                        return Some(resp);
                     }
-                    Some(resp)
+                    Err(e) => {
+                        // 检查是否是连接相关错误，如果是则重试
+                        let is_connection_error = e.kind() == std::io::ErrorKind::TimedOut
+                            || e.kind() == std::io::ErrorKind::ConnectionRefused
+                            || e.kind() == std::io::ErrorKind::ConnectionReset
+                            || e.kind() == std::io::ErrorKind::ConnectionAborted
+                            || e.raw_os_error() == Some(10060)  // WSAETIMEDOUT
+                            || e.raw_os_error() == Some(10061)  // WSAECONNREFUSED
+                            || e.raw_os_error() == Some(10054); // WSAECONNRESET
+
+                        if is_connection_error && attempt < MAX_RETRIES {
+                            log::warn!(
+                                "[datasets::kline_raw] connection error for {} start={} count={} (attempt {}/{}): {}",
+                                code,
+                                start,
+                                count,
+                                attempt + 1,
+                                MAX_RETRIES + 1,
+                                e
+                            );
+                            thread::sleep(Duration::from_millis(RETRY_DELAY_MS));
+                            continue;
+                        } else {
+                            log::error!(
+                                "[datasets::kline_raw] process failed for {} start={} count={}: {}",
+                                code,
+                                start,
+                                count,
+                                e
+                            );
+                            return None;
+                        }
+                    }
                 }
-                Err(e) => {
-                    log::error!(
-                        "[datasets::kline_raw] process failed for {} start={} count={}: {}",
+            }
+            Err(e) => {
+                if attempt < MAX_RETRIES {
+                    log::warn!(
+                        "[datasets::kline_raw] failed to acquire level1 client for {} (attempt {}/{}): {}",
                         code,
-                        start,
-                        count,
+                        attempt + 1,
+                        MAX_RETRIES + 1,
                         e
                     );
-                    None
+                    thread::sleep(Duration::from_millis(RETRY_DELAY_MS));
+                    continue;
+                } else {
+                    log::error!(
+                        "[datasets::kline_raw] failed to acquire level1 client for {}: {}",
+                        code,
+                        e
+                    );
+                    return None;
                 }
             }
         }
-        Err(e) => {
-            log::error!(
-                "[datasets::kline_raw] failed to acquire level1 client for {}: {}",
-                code,
-                e
-            );
-            None
-        }
     }
+
+    None
 }

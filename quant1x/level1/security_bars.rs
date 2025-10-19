@@ -65,8 +65,8 @@ impl SecurityBarsRequest {
         let copy_len = std::cmp::min(sym.len(), code_bytes.len());
         code_bytes[..copy_len].copy_from_slice(&sym[..copy_len]);
 
-        let is_index = crate::level1::helpers::assert_index_by_market_and_code(
-            market_id as i32,
+        let is_index = crate::exchange::assert_index_by_market_and_code(
+            market_id,
             pure.as_str(),
         );
 

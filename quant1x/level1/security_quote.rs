@@ -383,7 +383,7 @@ impl SecurityQuoteResponse {
                 ele.stock_open_amount = bs.varint_decode() * 100;
 
                 let is_index_or_block =
-                    super::assert_index_by_market_and_code(ele.market as i32, &ele.code);
+                    crate::exchange::assert_index_by_market_and_code(ele.market, &ele.code);
                 let tmp_open_volume = if is_index_or_block {
                     if ele.open != 0.0 {
                         ((ele.index_open_amount as f64) / ele.open).round()
