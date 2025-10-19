@@ -10,7 +10,7 @@ pub const MAX_CONNECTIONS: usize = 10;
 pub const MAX_ELAPSED_TIME_MS: i64 = 100;
 pub const DEFAULT_CONNECT_TIMEOUT_MS: i32 = 1000;
 
-/// ServerInfo mirrors the C++ struct used by the level1 client detection logic.
+/// ServerInfo 与 C++ 中用于 level1 客户端检测逻辑的结构体相对应。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerInfo {
     pub name: String,
@@ -26,8 +26,8 @@ impl ServerInfo {
     }
 }
 
-/// Default cached server filename. Match C++ implementation which stores the
-/// detected server list in the crate meta path as `server.bin`.
+/// 默认的缓存服务器文件名。与 C++ 实现相同：检测到的服务器列表会存储在
+/// crate 的 meta 路径下，文件名为 `server.bin`。
 fn default_config_path() -> Option<PathBuf> {
     // Use crate config's meta path (parity with C++)
     let meta = crate::config::get_meta_path();
@@ -42,7 +42,7 @@ fn default_config_path() -> Option<PathBuf> {
     Some(p)
 }
 
-/// Load cached server list from the crate meta `server.bin` (if present).
+/// 从 crate 的 meta 中加载缓存的服务器列表（如果存在 `server.bin`）。
 pub fn load_cached_servers() -> Option<Vec<ServerInfo>> {
     if let Some(path) = default_config_path() {
         if path.exists() {
@@ -58,9 +58,9 @@ pub fn load_cached_servers() -> Option<Vec<ServerInfo>> {
     None
 }
 
-/// Save servers to the crate meta `server.bin` (best-effort). This mirrors the
-/// C++ behavior where the detected server list is stored in
-/// config::get_meta_path() + "/server.bin".
+/// 将服务器列表保存到 crate 的 meta 目录下的 `server.bin`（尽力而为）。
+/// 该行为镜像了 C++ 的实现：检测到的服务器列表存储在
+/// config::get_meta_path() + "/server.bin"。
 pub fn save_cached_servers(servers: &[ServerInfo]) {
     if let Some(path) = default_config_path() {
         match serde_yaml::to_string(servers) {
@@ -74,7 +74,7 @@ pub fn save_cached_servers(servers: &[ServerInfo]) {
     }
 }
 
-/// A small standard server list (partial) copied from the C++ port for detection.
+/// 一个小的标准服务器列表（部分），从 C++ 移植以供检测使用。
 pub fn standard_server_list() -> Vec<ServerInfo> {
     vec![
         ServerInfo {

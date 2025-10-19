@@ -9,18 +9,17 @@ use super::{
     Hello2Response,
 };
 
-/// Minimal client-side protocol helper mirroring C++ ProtocolHandler handshake and keepalive.
+/// 精简的客户端协议辅助工具，模仿 C++ 中 ProtocolHandler 的握手与保活实现。
 ///
-/// Notes:
-/// - The original C++ `client()` builds a TcpConnectionPool and seeds endpoints by running
-///   a server detection routine and caching results. The Rust port here keeps the pool
-///   semantics and intentionally mirrors the C++ behavior exactly: it reads cached
-///   servers from the meta `server.bin` and falls back to running the detection routine
-///   when the cache is missing or stale. No environment-variable override is used.
+/// 说明：
+/// - 原始的 C++ 实现中，`client()` 会构建一个 TcpConnectionPool，并通过运行服务检测
+///   例程来填充端点并缓存结果。此处 Rust 端口保留了相同的连接池语义：它会从
+///   meta 目录下的 `server.bin` 读取已缓存的服务器列表，若缓存缺失或过期则回退到检测
+///   例程。此处不使用环境变量覆盖服务器列表。
 pub struct ProtocolHandler {}
 
 impl ProtocolHandler {
-    /// Perform a two-step handshake (hello1 + hello2) using blocking Mio TcpStream
+    /// 使用阻塞的 Mio TcpStream 执行两步握手（hello1 + hello2）
     pub fn handshake(stream: &mut MioTcpStream) -> std::io::Result<bool> {
         // Hello1
         let mut req1 = Hello1Request::new();
@@ -122,8 +121,8 @@ impl ProtocolHandler {
         Ok(true)
     }
 
-    /// Blocking handshake using std::net::TcpStream. This honors std read/write timeouts
-    /// and is intended to be used before converting the stream into a mio::TcpStream.
+    /// 使用 `std::net::TcpStream` 的阻塞握手。该方法会遵守 std 的读/写超时设置，
+    /// 用于在将流转换为 `mio::TcpStream` 之前完成握手。
     pub fn handshake_std(stream: &mut std::net::TcpStream) -> std::io::Result<bool> {
         // Hello1
         let mut req1 = Hello1Request::new();
@@ -213,15 +212,14 @@ impl ProtocolHandler {
     }
 }
 
-// Global connection pool singleton (initialized on first call to `client()`).
+// 全局连接池单例（在首次调用 `client()` 时初始化）。
 static CONNECTION_POOL: OnceLock<Arc<crate::net::TcpConnectionPool<ProtocolHandler>>> =
     OnceLock::new();
 
-/// Acquire a pooled connection to a level1 server.
+/// 获取一个到 level1 服务器的池化连接。
 ///
-/// This returns a `PooledConnection<ProtocolHandler>` which will return the
-/// connection to the pool when dropped. Endpoints may be seeded from the
-/// `QUANT1X_LEVEL1_SERVERS` environment variable, e.g.:
+/// 返回值是 `PooledConnection<ProtocolHandler>`，该连接在 Drop 时会自动返回到池中。
+/// 端点可以通过环境变量 `QUANT1X_LEVEL1_SERVERS` 进行预置，例如：
 ///
 ///   QUANT1X_LEVEL1_SERVERS=110.41.147.114:7709,124.70.176.52:7709
 pub fn client() -> std::io::Result<crate::net::PooledConnection<ProtocolHandler>> {
@@ -294,12 +292,12 @@ pub fn client() -> std::io::Result<crate::net::PooledConnection<ProtocolHandler>
     pool.acquire()
 }
 
-/// If the global pool has been initialized, return its configured max connections.
+/// 如果全局连接池已初始化，则返回其配置的最大连接数。
 pub fn pool_max_connections() -> Option<usize> {
     CONNECTION_POOL.get().map(|p| p.max_connections())
 }
 
-// Implement the Net handler trait so the connection pool can use our handshake/keepalive
+// 实现 Net handler trait，使连接池能够使用我们的握手/保活实现
 impl crate::net::NetworkHandler for ProtocolHandler {
     fn handshake(&self, stream: &mut mio::net::TcpStream) -> std::io::Result<()> {
         match ProtocolHandler::handshake(stream) {
@@ -317,9 +315,11 @@ impl crate::net::NetworkHandler for ProtocolHandler {
     }
 
     fn timeout(&self) -> Duration {
+        // 默认超时 10 秒
         Duration::from_secs(10)
     }
     fn check_interval(&self) -> Duration {
+        // 保活检查间隔 5 秒
         Duration::from_secs(5)
     }
 }

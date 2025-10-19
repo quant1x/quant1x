@@ -3,7 +3,7 @@ use crate::level1::protocol::Response;
 use std::thread;
 use std::time::Duration;
 
-// 日线最小容错回溯(偏移)天数
+// 日线最小容错回溯（偏移）天数
 pub const MAX_KLINE_LOOKBACK_DAYS: usize = 1;
 pub const CN_DEFAULT_TOTALFZNUM: i32 = 240; // A股默认全天交易240分钟
 

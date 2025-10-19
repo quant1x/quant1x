@@ -140,7 +140,7 @@ impl ResponseHeader {
     }
 }
 
-// Request trait aligned with C++ RequestHeader interface
+// Request trait，与 C++ 的 RequestHeader 接口保持一致
 pub trait Request {
     fn header(&self) -> &RequestHeader;
     fn header_mut(&mut self) -> &mut RequestHeader;
@@ -165,7 +165,7 @@ pub trait Request {
     }
 }
 
-// Response trait aligned with C++ ResponseHeader interface
+// Response trait，与 C++ 的 ResponseHeader 接口保持一致
 pub trait Response {
     fn header(&self) -> &ResponseHeader;
     fn header_mut(&mut self) -> &mut ResponseHeader;

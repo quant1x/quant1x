@@ -12,10 +12,10 @@ pub trait NetworkHandler: Send + Sync + 'static {
     fn handshake(&self, _stream: &mut TcpStream) -> std::io::Result<()> {
         Ok(())
     }
-    /// Optional blocking handshake that can operate on a blocking std::net::TcpStream.
-    /// Default implementation converts to mio::TcpStream and calls `handshake`.
+    /// 可选的阻塞握手，用于在阻塞的 `std::net::TcpStream` 上执行握手。
+    /// 默认实现会将其转换为 `mio::TcpStream` 并调用 `handshake`。
     fn handshake_std(&self, stream: &mut std::net::TcpStream) -> std::io::Result<()> {
-        // Convert to mio and call the non-blocking handshake by default.
+    // 将流转换为 mio 并调用非阻塞的握手实现（默认行为）。
         let mut mio_stream = TcpStream::from_std(stream.try_clone().map_err(|e| e)?);
         self.handshake(&mut mio_stream)
     }
@@ -23,9 +23,11 @@ pub trait NetworkHandler: Send + Sync + 'static {
         Ok(true)
     }
     fn timeout(&self) -> Duration {
+        // 默认超时（秒）
         Duration::from_secs(10)
     }
     fn check_interval(&self) -> Duration {
+        // 保活检查间隔（秒）
         Duration::from_secs(5)
     }
 }
@@ -88,8 +90,8 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
             active: Mutex::new(0),
         });
 
-        // 预热：尝试创建 `min` 个连接并放入空闲队列。
-        // 失败被忽略（启动时网络可能不可用）。
+    // 预热：尝试创建 `min` 个连接并放入空闲队列。
+    // 失败被忽略（启动时网络可能不可用）。
         if min > 0 {
             for _ in 0..min {
                 if let Some(ep) = pool.endpoint_manager.acquire_endpoint() {
@@ -115,7 +117,7 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
                                         "connection_pool: pre-warm handshake ok for {}",
                                         ep
                                     );
-                                    // 仅在推回空闲队列时锁定，以避免在执行网络操作时持有空闲互斥锁
+                                    // 仅在推回空闲队列时加锁，以避免在执行网络操作时持有空闲互斥锁
                                     let mut idle = pool.idle.lock().unwrap();
                                     idle.push_back(Connection::new(stream, ep));
                                 }
@@ -150,17 +152,17 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
             }
         }
 
-        // 生成一个后台心跳线程，该线程定期通过调用处理器的 keepalive 来检查空闲连接。使用 Weak 引用，这样一旦池被丢弃，线程就会退出。
+    // 生成一个后台心跳线程，该线程定期通过调用处理器的 keepalive 来检查空闲连接。使用 Weak 引用，这样一旦池被丢弃，线程会退出。
         let weak_pool: Weak<TcpConnectionPool<H>> = Arc::downgrade(&pool);
         thread::spawn(move || {
             loop {
-                // 尝试升级；如果池不存在，退出线程。
+                // 尝试升级；如果池不存在，则退出线程。
                 let pool_arc = match weak_pool.upgrade() {
                     Some(p) => p,
                     None => break,
                 };
 
-                // 根据处理器的首选间隔睡眠。如果池在睡眠期间被丢弃，下次升级将失败并退出。
+                // 根据处理器的首选间隔睡眠。如果池在睡眠期间被丢弃，则下次升级将失败并退出。
                 let interval = pool_arc.handler.check_interval();
                 thread::sleep(interval);
 
@@ -177,7 +179,7 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
                     continue;
                 }
 
-                // 对于每个排出的连接，运行保活。如果保活成功并返回 true，则连接仍然健康，并将返回到空闲队列。否则将被丢弃。
+                // 对于每个排出的连接，运行保活。如果保活成功并返回 true，则连接仍然健康并返回到空闲队列；否则将被丢弃。
                 let mut survivors: Vec<Connection> = Vec::with_capacity(drained.len());
                 for mut conn in drained {
                     match pool_arc.handler.keepalive(conn.stream()) {
@@ -193,7 +195,7 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
                     }
                 }
 
-                // 将幸存者推回空闲队列（尊重最大值）
+                // 将幸存者推回空闲队列（遵守最大值限制）
                 if !survivors.is_empty() {
                     let mut idle = pool_arc.idle.lock().unwrap();
                     for conn in survivors {
