@@ -93,8 +93,8 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
         if min > 0 {
             for _ in 0..min {
                 if let Some(ep) = pool.endpoint_manager.acquire_endpoint() {
-                    // 使用短的预热超时时间调用 connect_timeout，这样当端点不可达时启动不会阻塞太久。
-                    let timeout = std::time::Duration::from_millis(500);
+                    // 使用 handler 指定的超时（与 C++ 行为保持一致），确保 connect/read/write 超时一致
+                    let timeout = pool.handler.timeout();
                     log::debug!(
                         "connection_pool: pre-warm trying to connect to {} (timeout {:?})",
                         ep,
@@ -296,9 +296,9 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
         let timeout = self.handler.timeout();
         let connect_start = Instant::now();
         match StdTcpStream::connect_timeout(&endpoint, timeout) {
-            Ok(mut std_stream) => {
+                Ok(mut std_stream) => {
                 let connect_elapsed = connect_start.elapsed();
-                log::warn!(
+                log::debug!(
                     "connection_pool: connect to {} succeeded (elapsed {:?}), setting timeouts {:?}",
                     endpoint,
                     connect_elapsed,
@@ -310,14 +310,14 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
                 let _ = std_stream.set_write_timeout(Some(timeout));
 
                 // Perform blocking handshake on the std stream so that std read/write timeouts are honored.
-                log::warn!("connection_pool: running blocking handshake for {}", endpoint);
+                log::debug!("connection_pool: running blocking handshake for {}", endpoint);
                 let hs_start = Instant::now();
                 match self.handler.handshake_std(&mut std_stream) {
                     Ok(()) => {
                         let hs_elapsed = hs_start.elapsed();
                         // convert to mio stream after successful blocking handshake
                         let stream = TcpStream::from_std(std_stream);
-                        log::warn!(
+                        log::debug!(
                             "connection_pool: handshake succeeded for {} (handshake {:?})",
                             endpoint,
                             hs_elapsed
