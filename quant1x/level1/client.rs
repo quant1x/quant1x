@@ -9,13 +9,14 @@ use super::{
     Hello2Response,
 };
 
-/// 精简的客户端协议辅助工具，模仿 C++ 中 ProtocolHandler 的握手与保活实现。
+/// 精简的客户端协议辅助工具, 模拟 C++ 中 ProtocolHandler 的握手与保活实现.
 ///
-/// 说明：
-/// - 原始的 C++ 实现中，`client()` 会构建一个 TcpConnectionPool，并通过运行服务检测
-///   例程来填充端点并缓存结果。此处 Rust 端口保留了相同的连接池语义：它会从
-///   meta 目录下的 `server.bin` 读取已缓存的服务器列表，若缓存缺失或过期则回退到检测
-///   例程。此处不使用环境变量覆盖服务器列表。
+/// 说明:
+///   该处 Rust 端口保留了相同的连接池语义: 它会从 meta 目录下的 `server.bin` 读取已缓存的服务器列表, 若缓存缺失或过期则回退到检测例程.
+///   此处不使用环境变量覆盖服务器列表.
+/// - C++ 实现中 `client()` 会构建一个 TcpConnectionPool，并通过检测例程填充服务器端点并缓存结果。
+/// - Rust 端口保留相同语义：优先加载缓存（meta/server.bin），若缺失则运行检测逻辑并缓存检测结果。
+/// - 默认不使用环境变量覆盖服务器列表；可通过 `QUANT1X_LEVEL1_SERVERS` 预置端点。
 pub struct ProtocolHandler {}
 
 impl ProtocolHandler {
@@ -152,7 +153,9 @@ impl ProtocolHandler {
                     resp1.info
                 );
                 if resp1.info.trim().is_empty() {
-                    log::error!("ProtocolHandler::handshake_std Hello1 validation failed: empty info");
+                    log::error!(
+                        "ProtocolHandler::handshake_std Hello1 validation failed: empty info"
+                    );
                     return Err(std::io::Error::new(
                         std::io::ErrorKind::Other,
                         "Hello1 response invalid or empty",
@@ -195,7 +198,9 @@ impl ProtocolHandler {
                     resp2.info
                 );
                 if resp2.info.trim().is_empty() {
-                    log::error!("ProtocolHandler::handshake_std Hello2 validation failed: empty info");
+                    log::error!(
+                        "ProtocolHandler::handshake_std Hello2 validation failed: empty info"
+                    );
                     return Err(std::io::Error::new(
                         std::io::ErrorKind::Other,
                         "Hello2 response invalid or empty",

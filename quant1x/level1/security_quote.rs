@@ -16,7 +16,7 @@ pub enum TradeState {
     Ipo,
 }
 
-/// Minimal StockInfo mirroring the C++ `level1::StockInfo { int market; std::string code; }`
+/// 最小化的 StockInfo，映射 C++ 中的 `level1::StockInfo { int market; std::string code; }`
 #[derive(Debug, Clone)]
 pub struct StockInfo {
     pub market: u8,
@@ -245,9 +245,8 @@ impl SecurityQuoteRequest {
     }
 }
 
-/// Fetch immediate quotes for a list of security codes. The request/response
-/// encoding/decoding is kept inside level1. Returns Some(SecurityQuoteResponse)
-/// on success, None on IO error.
+/// 为一组证券代码获取即时行情。请求/响应的编解码在 level1 内部处理。
+/// 成功时返回 Some(SecurityQuoteResponse)，发生 IO 错误时返回 None。
 pub fn fetch_security_quote(codes: &[String]) -> Option<SecurityQuoteResponse> {
     match crate::level1::client::client() {
         Ok(mut pooled) => {

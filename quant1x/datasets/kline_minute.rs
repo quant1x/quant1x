@@ -72,13 +72,13 @@ impl DataAdapter for DataMinuteKLine {
     fn print(&self, _code: &str, _dates: &[Timestamp]) {}
 
     fn update(&self, code: &str, _date: Timestamp) {
-        // Read minute kline config (must mirror C++ datasets::get_minute_kline_config)
+        // 读取分钟 K 线配置（必须与 C++ 中的 datasets::get_minute_kline_config 保持一致）
         let mkc = crate::config::get_minute_kline_config();
         if !mkc.enabled {
             log::debug!("[DataMinuteKLine] minute kline not enabled in config");
             return;
         }
-        // build minute filename using normalized frequency from config
+        // 使用配置中的频率构建分钟 K 线缓存文件名
         let filename = crate::config::get_kline_filename_ex(code, &mkc.frequency);
         if filename.is_empty() {
             log::error!(
@@ -89,7 +89,7 @@ impl DataAdapter for DataMinuteKLine {
         }
         log::debug!("[DataMinuteKLine] cache filename: {}", filename);
 
-        // ensure parent dir
+        // 确保父目录存在
         let path = std::path::Path::new(&filename);
         if let Some(parent) = path.parent() {
             if let Err(e) = std::fs::create_dir_all(parent) {
@@ -102,16 +102,16 @@ impl DataAdapter for DataMinuteKLine {
             }
         }
 
-        // constants mirroring C++
+        // 常量设置（与 C++ 保持一致）
         const MAX_KLINE_LOOKBACK_DAYS: usize = 1;
         const SECURITY_BARS_MAX: usize = 800;
         const CN_DEFAULT_TOTALFZNUM: usize = 240; // default trading minutes in a day
 
-        // load existing cache
+        // 加载本地缓存（如果存在）
         let cache_filename = filename.clone();
         let cache_klines: Vec<MinuteKLine> = read_minute_kline_from_csv(&cache_filename);
         let klines_length = cache_klines.len();
-        // derive period and kline type from configuration
+        // 从配置推断周期和对应的 K 线类型
         let period = if mkc.minutes > 0 { mkc.minutes } else { 1 };
         let mut number_of_day = CN_DEFAULT_TOTALFZNUM / period;
         if number_of_day == 0 {
@@ -128,16 +128,15 @@ impl DataAdapter for DataMinuteKLine {
 
         let mut klines_offset = MAX_KLINE_LOOKBACK_DAYS * number_of_day;
         let mut adjust_times = 0i32;
-        // default very old date if no cache
+        // 如果没有缓存，则使用一个非常早的默认日期
         let mut current_start_date =
             crate::Timestamp::pre_market_time(1990, 12, 19).unwrap_or(crate::Timestamp::zero());
         if klines_length > 0 {
             if klines_offset > klines_length {
                 klines_offset = klines_length;
             }
-            // Avoid relying on per-row datetime field (may be unreliable). Instead compute
-            // the start date by stepping back N trading days from today, where N is the
-            // number of whole trading days represented by klines_offset.
+            // 避免依赖每行的 datetime 字段（可能不可靠）。改为按交易日向前回推 N 天来计算起始日期，
+            // 其中 N 由 klines_offset 表示的完整交易日数决定。
             let back_days = if number_of_day > 0 {
                 klines_offset / number_of_day
             } else {
@@ -154,7 +153,7 @@ impl DataAdapter for DataMinuteKLine {
             adjust_times = kline.adjustment_count;
         }
 
-        // build date range from start to today's pre-market
+        // 构建从起始日期到今日盘前的日期范围
         let mut current_end_date =
             crate::Timestamp::pre_market_time_from_current(&crate::Timestamp::now())
                 .unwrap_or(crate::Timestamp::now());
@@ -171,8 +170,7 @@ impl DataAdapter for DataMinuteKLine {
             ts_range.len(),
             period
         );
-        // Align behavior with C++: limit total number of minute entries by u16 max (65535)
-        // and convert days -> minute entries using `number_of_day` (minutes-per-day / period)
+        // 与 C++ 行为对齐：将分钟总条目数限制在 u16 最大值（65535），并使用 number_of_day 将天数转换为分钟条目数
         let max_entries: usize = 65535;
         let total_days = ts_range.len();
         let max_days = if number_of_day > 0 {
@@ -196,15 +194,14 @@ impl DataAdapter for DataMinuteKLine {
             current_end_date.only_date(),
             total
         );
-        // fetch pages from level1 using minute category (9 is day in C++ for KLine; for minute we use 1..8 categories depending on minute freq)
-        // C++ used category '9' for day; for minute categories it's typically 1..8. We'll use category 1 here as minute bars
+        // 从 level1 分页拉取分钟数据（C++ 中日线用类目 9；分钟线依据频率使用 1..8，这里简化使用 1 作为分钟类目）
         let mut hs: Vec<Vec<crate::level1::SecurityBar>> = Vec::new();
         let step = SECURITY_BARS_MAX;
         let mut start_idx: usize = 0;
         while start_idx < total {
             let remaining = total - start_idx;
             let count = std::cmp::min(step, remaining) as u16;
-            // Minimal observability: log request parameters before fetching a page
+            // 最低可观测性：在拉取每页数据前记录请求参数
             log::info!(
                 "[DataMinuteKLine] fetch request: code={} kline_type={:?} start_idx={} count={} total={}",
                 code,

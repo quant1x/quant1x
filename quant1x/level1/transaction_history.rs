@@ -100,13 +100,14 @@ impl Request for HistoryTransactionRequest {
     }
 }
 
-/// Public helper that sends a HISTORY_TRANSACTION_DATA request and parses the response
+/// 公共辅助函数：发送 HISTORY_TRANSACTION_DATA 请求并解析响应
 pub fn fetch_history_transactions(
     security_code: &str,
     date: u32,
     start: u16,
     count: u16,
 ) -> Option<TransactionHistoryResponse> {
+    // 公共辅助：发送 HISTORY_TRANSACTION_DATA 请求并解析响应
     match crate::level1::client::client() {
         Ok(mut pooled) => {
             let mut request = HistoryTransactionRequest::new(security_code, date, start, count);

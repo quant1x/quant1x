@@ -141,6 +141,7 @@ impl ResponseHeader {
 }
 
 // Request trait，与 C++ 的 RequestHeader 接口保持一致
+// 仅用于描述请求头/载荷的序列化行为
 pub trait Request {
     fn header(&self) -> &RequestHeader;
     fn header_mut(&mut self) -> &mut RequestHeader;
@@ -166,6 +167,7 @@ pub trait Request {
 }
 
 // Response trait，与 C++ 的 ResponseHeader 接口保持一致
+// 描述响应头反序列化与业务数据解析接口
 pub trait Response {
     fn header(&self) -> &ResponseHeader;
     fn header_mut(&mut self) -> &mut ResponseHeader;
@@ -197,6 +199,7 @@ pub trait Response {
     }
 }
 
+// 将 numeric command 转为可读字符串（与 C++ 常量对应）
 fn command_to_string(cmd: u16) -> &'static str {
     match cmd {
         commands::HEARTBEAT => "L1:HEARTBEAT",
@@ -222,6 +225,7 @@ fn command_to_string(cmd: u16) -> &'static str {
     }
 }
 
+// 解压 zlib 编码的响应体
 fn unzip(body: Vec<u8>, unzipped_size: usize) -> std::io::Result<Vec<u8>> {
     let mut decoder = ZlibDecoder::new(&body[..]);
     let mut out = Vec::with_capacity(unzipped_size);

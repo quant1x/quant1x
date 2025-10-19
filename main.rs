@@ -80,9 +80,9 @@ fn main() {
                 .value_parser(clap::builder::NonEmptyStringValueParser::new()),
         );
 
-    // 对于短生命周期的 CLI 进程，将这些字符串泄漏为静态是可接受的，
-    // 这样可以避免与 clap 需要 'static str 的程序元数据相关的生命周期问题。
-    // 这也与 C++ 中动态设置程序名/版本的行为一致。
+    // 对于生命周期短的 CLI 流程，将这些字符串字面量泄露为静态是可接受的，
+    // 这样可以避免与 clap 要求 'static str 的生命周期冲突。
+    // 这也与 C++ 中动态设置程序名/版本号的行为一致。
     let program_name_static: &'static str = Box::leak(program_name.into_boxed_str());
     let program_version_static: &'static str = Box::leak(program_version.into_boxed_str());
 
@@ -114,6 +114,9 @@ fn main() {
     // Rust 移植版可能尚未暴露该列表。
     // 我们提供了一个最小的兼容层：如果 crate 提供了
     // `quant1x::run_subcommand(name, matches)`，可以在这里接入。
+    // 注意：C++ 实现会动态注册来自 `quant1x::subcommands` 的子命令。
+    // Rust 移植版可能尚未暴露完整的子命令列表。我们在此提供一个最小兼容层：如果 crate
+    // 提供了 `quant1x::run_subcommand(name, matches)`，则可以从这里转发调用。
 
     let matches = app.clone().get_matches();
 

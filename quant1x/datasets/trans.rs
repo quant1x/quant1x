@@ -37,11 +37,11 @@ impl DataAdapter for DataTrans {
     fn print(&self, _code: &str, _dates: &[Timestamp]) {}
 
     fn update(&self, code: &str, date: Timestamp) {
-        // Follow C++ CheckoutTransactionData behavior: read cache, fetch incremental pages
+        // 遵循 C++ CheckoutTransactionData 的行为：读取缓存并分页增量拉取
         let corrected = crate::exchange::correct_security_code(code);
         let mut path = std::path::PathBuf::from(crate::config::default_cache_path());
         path.push("trans");
-        // use directory per year and date: trans/YYYY/YYYY-MM-DD/<code>.csv
+        // 使用按年/日期目录的组织方式：trans/YYYY/YYYY-MM-DD/<code>.csv
         let date_str = date.only_date();
         let year = if date_str.len() >= 4 {
             &date_str[..4]
@@ -57,7 +57,7 @@ impl DataAdapter for DataTrans {
         path.push(format!("{}.csv", corrected));
         let filename = path.to_string_lossy().to_string();
 
-        // read existing cache if present
+        // 如果存在则尝试读取已有缓存（容错处理，读取失败视为空）
         let mut list: Vec<TickTransaction> = Vec::new();
         if std::path::Path::new(&filename).exists() {
             // try to read CSV; tolerate errors and treat as empty
@@ -95,6 +95,7 @@ impl DataAdapter for DataTrans {
         }
 
         // compute startTime from cache (if any)
+        // 从缓存中计算起始时间（如果存在缓存）
         let mut start_time = HISTORICAL_TRANSACTION_FIRST_TIME.to_string();
         if !list.is_empty() {
             if let Some(last) = list.last() {
@@ -166,6 +167,7 @@ impl DataAdapter for DataTrans {
 
         if today_is_last {
             // fetch TRANSACTION_DATA pages
+            // 拉取当日实时成交分页数据
             loop {
                 match fetch_transaction_page(&corrected, start, OFFSET) {
                     Some(mut resp) => {
@@ -197,6 +199,7 @@ impl DataAdapter for DataTrans {
             }
         } else {
             // fetch HISTORY_TRANSACTION_DATA pages
+            // 拉取历史成交分页数据
             loop {
                 match crate::level1::transaction_history::fetch_history_transactions(
                     &corrected,

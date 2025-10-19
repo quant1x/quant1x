@@ -7,7 +7,7 @@ pub fn sequence_id() -> u32 {
     SEQ_ID.fetch_add(1, Ordering::SeqCst).wrapping_add(1)
 }
 
-/// 对应 C++ helpers::GetDatetimeFromUint32
+/// 对应 C++ helpers::GetDatetimeFromUint32，用于从压缩的日期/分钟编码中恢复年月日时分
 pub fn get_datetime_from_u32(
     category: i32,
     zipday: u32,
@@ -29,7 +29,7 @@ pub fn get_datetime_from_u32(
     }
 }
 
-/// 对应 C++ helpers::IntToFloat64
+/// 对应 C++ helpers::IntToFloat64，将整数编码解码为浮点价格值
 pub fn int_to_float64(v: u32) -> f64 {
     if v == 0 {
         return 0.0;
@@ -76,7 +76,7 @@ pub fn int_to_float64(v: u32) -> f64 {
     dbl_xmm6 + dbl_xmm4 + dbl_xmm3 + dbl_xmm1
 }
 
-/// defaultBaseUnit equivalent from C++ security_quote.h
+/// defaultBaseUnit 等价实现（来自 C++ security_quote.h）
 pub fn default_base_unit(_market_id: i32, code: &str) -> f64 {
     // follow the C++ logic: check prefixes
     if code.starts_with("60")

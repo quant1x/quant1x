@@ -75,7 +75,9 @@ pub fn logger_set(_verbose: bool, _debug: bool) {
         for (level_name, _level_filter, level) in levels {
             let dated_log_path = format!("{}/{}_{}.log", logs_dir, level_name, date);
             let app = match log4rs::append::file::FileAppender::builder()
-                .encoder(Box::new(log4rs::encode::pattern::PatternEncoder::new(pattern)))
+                .encoder(Box::new(log4rs::encode::pattern::PatternEncoder::new(
+                    pattern,
+                )))
                 .build(dated_log_path)
             {
                 Ok(a) => a,

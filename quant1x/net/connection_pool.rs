@@ -7,15 +7,15 @@ use std::time::{Duration, Instant};
 use mio::net::TcpStream;
 use std::net::TcpStream as StdTcpStream;
 
-/// 用户应该实现的连接池特征，用于执行协议特定的工作：握手和保活检查。
+/// 用户应该实现的连接池特征，用于执行协议特定的工作: 握手和保活检查.
 pub trait NetworkHandler: Send + Sync + 'static {
     fn handshake(&self, _stream: &mut TcpStream) -> std::io::Result<()> {
         Ok(())
     }
     /// 可选的阻塞握手，用于在阻塞的 `std::net::TcpStream` 上执行握手。
-    /// 默认实现会将其转换为 `mio::TcpStream` 并调用 `handshake`。
+    /// 默认实现会将其转换为 `mio::TcpStream` 并调用 `handshake`.
     fn handshake_std(&self, stream: &mut std::net::TcpStream) -> std::io::Result<()> {
-    // 将流转换为 mio 并调用非阻塞的握手实现（默认行为）。
+        // 将流转换为 mio 并调用非阻塞的握手实现 (默认行为).
         let mut mio_stream = TcpStream::from_std(stream.try_clone().map_err(|e| e)?);
         self.handshake(&mut mio_stream)
     }
@@ -23,11 +23,11 @@ pub trait NetworkHandler: Send + Sync + 'static {
         Ok(true)
     }
     fn timeout(&self) -> Duration {
-        // 默认超时（秒）
+        // 默认超时 (秒)
         Duration::from_secs(10)
     }
     fn check_interval(&self) -> Duration {
-        // 保活检查间隔（秒）
+        // 保活检查间隔 (秒)
         Duration::from_secs(5)
     }
 }
@@ -65,7 +65,7 @@ impl Connection {
     }
 }
 
-/// 基于 Mio 的 TCP 连接池。这是 C++ TcpConnectionPool 语义的简化端口：acquire 返回一个连接，该连接在 Drop 时自动返回。
+/// 基于 Mio 的 TCP 连接池. 这是 C++ TcpConnectionPool 语义的简化端口: acquire 返回一个连接, 该连接在 Drop 时自动返回.
 pub struct TcpConnectionPool<H: NetworkHandler> {
     handler: Arc<H>,
     max: usize,
@@ -90,8 +90,8 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
             active: Mutex::new(0),
         });
 
-    // 预热：尝试创建 `min` 个连接并放入空闲队列。
-    // 失败被忽略（启动时网络可能不可用）。
+        // 预热：尝试创建 `min` 个连接并放入空闲队列。
+        // 失败被忽略（启动时网络可能不可用）。
         if min > 0 {
             for _ in 0..min {
                 if let Some(ep) = pool.endpoint_manager.acquire_endpoint() {
@@ -108,7 +108,7 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
                             // 设置读/写超时以避免无限阻塞
                             let _ = std_stream.set_read_timeout(Some(timeout));
                             let _ = std_stream.set_write_timeout(Some(timeout));
-                            // 转换为 mio TcpStream
+                            // 转换为 mio::TcpStream
                             let mut stream = TcpStream::from_std(std_stream);
                             // 运行握手，但在预热期间忽略错误
                             match pool.handler.handshake(&mut stream) {
@@ -152,7 +152,7 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
             }
         }
 
-    // 生成一个后台心跳线程，该线程定期通过调用处理器的 keepalive 来检查空闲连接。使用 Weak 引用，这样一旦池被丢弃，线程会退出。
+        // 生成一个后台心跳线程，该线程定期通过调用处理器的 keepalive 来检查空闲连接。使用 Weak 引用，这样一旦池被丢弃，线程会退出。
         let weak_pool: Weak<TcpConnectionPool<H>> = Arc::downgrade(&pool);
         thread::spawn(move || {
             loop {
@@ -298,7 +298,7 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
         let timeout = self.handler.timeout();
         let connect_start = Instant::now();
         match StdTcpStream::connect_timeout(&endpoint, timeout) {
-                Ok(mut std_stream) => {
+            Ok(mut std_stream) => {
                 let connect_elapsed = connect_start.elapsed();
                 log::debug!(
                     "connection_pool: connect to {} succeeded (elapsed {:?}), setting timeouts {:?}",
@@ -312,7 +312,10 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
                 let _ = std_stream.set_write_timeout(Some(timeout));
 
                 // Perform blocking handshake on the std stream so that std read/write timeouts are honored.
-                log::debug!("connection_pool: running blocking handshake for {}", endpoint);
+                log::debug!(
+                    "connection_pool: running blocking handshake for {}",
+                    endpoint
+                );
                 let hs_start = Instant::now();
                 match self.handler.handshake_std(&mut std_stream) {
                     Ok(()) => {

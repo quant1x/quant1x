@@ -17,7 +17,8 @@ pub struct XdxrInfoRequest {
 
 impl XdxrInfoRequest {
     /// Create request from a full security code string like "sh600000" or "600000".
-    /// This mirrors C++ DetectMarket behaviour: strip market prefix and set Market id.
+    /// 从完整的证券代码字符串创建请求，例如 "sh600000" 或 "600000"。
+    /// 功能等价于 C++ 的 DetectMarket：去除市场前缀并设置 market id。
     pub fn new(security_code: &str) -> Self {
         let mut code = [0u8; 6];
         let (_mid, _flag, pure) = crate::exchange::detect_market(security_code);
@@ -40,13 +41,13 @@ impl XdxrInfoRequest {
     }
 
     pub fn serialize(&mut self) -> Vec<u8> {
-        // payload = padding + market(1) + code(6)
+    // payload = padding + market(1) + code(6)
         let payload_len = (self.padding.len() + 1 + self.code.len()) as u16;
         // pkg_len includes method (2) + payload
         self.pkg_len1 = 2u16 + payload_len;
         self.pkg_len2 = self.pkg_len1;
 
-        // Build header exactly like C++ RequestHeader::headerSerialize()
+    // 构建与 C++ 中 RequestHeader::headerSerialize() 完全一致的头部
         let mut buf = BinaryStream::new();
         buf.push_u8(self.zip_flag);
         buf.push_u32(self.seq_id);
@@ -97,7 +98,7 @@ pub struct XdxrInfo {
 }
 
 impl XdxrInfo {
-    /// Return CSV header names in the same order used by C++ and datasets::xdxr
+    /// 返回 CSV 表头，顺序与 C++ 及 datasets::xdxr 保持一致
     pub fn headers() -> &'static [&'static str] {
         &[
             "Date",
@@ -117,7 +118,7 @@ impl XdxrInfo {
         ]
     }
 
-    /// Compute (m, a) adjust factors equivalent to C++ adjustFactor()
+    /// 计算除权因子 (m, a)，与 C++ adjustFactor() 等价
     pub fn adjust_factor(&self) -> (f64, f64) {
         // A = (PeiGu * PeiGuJia - FenHong + FenShu * XingQuanJia) / 10.0
         // B = (SongZhuanGu + PeiGu - SuoGu + FenShu) / 10.0

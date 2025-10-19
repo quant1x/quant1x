@@ -32,8 +32,8 @@ pub fn fetch_kline(
                     .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))
                 {
                     Ok(()) => {
-                            if resp.list.is_empty() {
-                                log::warn!(
+                        if resp.list.is_empty() {
+                            log::warn!(
                                     "[datasets::kline_raw] empty response from {} for {} start={} count={} cat={} zip={} unzip={} resp_count={}",
                                     endpoint,
                                     code,
@@ -44,7 +44,7 @@ pub fn fetch_kline(
                                     resp.header().unzip_size,
                                     resp.count
                                 );
-                            }
+                        }
                         return Some(resp);
                     }
                     Err(e) => {

@@ -1,7 +1,11 @@
+// 模块助手
 mod helpers;
 
+// 导出标准库的二进制流
 pub use crate::std::BinaryStream;
+// 导出助手模块
 pub use helpers::*;
+// 导出区块信息模块
 pub mod block_info;
 pub mod block_meta;
 mod client;
@@ -29,11 +33,14 @@ pub use client::*;
 pub use heartbeat::*;
 pub use hello1::*;
 pub use hello2::*;
+// 导出协议命令
 pub use protocol::commands;
 pub use protocol::commands::*;
+// 导出处理请求
 pub use protocol::process_request;
-pub use protocol::process_request_std;
 pub(crate) use protocol::process_request_raw;
 pub(crate) use protocol::process_request_raw_std;
+// 导出标准处理请求
+pub use protocol::process_request_std;
 pub use security_bars::*;
 pub use xdxr::*;

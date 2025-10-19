@@ -1,4 +1,4 @@
-// 使用库中 Vyukov 队列实现的轻量性能驱动。
+// 使用库中 Vyukov 队列实现的轻量性能驱动.
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::thread;

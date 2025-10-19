@@ -22,7 +22,7 @@ struct EndpointData {
     failed_until: Option<Instant>,
 }
 
-/// Simple thread-safe endpoint manager, similar to the C++ EndpointManager.
+/// 简单的线程安全端点管理器，类似于 C++ 的 EndpointManager。
 pub struct EndpointManager {
     list: Mutex<Vec<Endpoint>>,
     data: Mutex<HashMap<Endpoint, EndpointData>>,
