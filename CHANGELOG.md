@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.143] - 2025-10-19
+### Changed
+- rust版本去掉日志文件前缀quant1x
+- c++ level1协议处理模板函数增加quant1x::error
+- 删除废弃的日志sink代码
+
 ## [0.6.142] - 2025-10-19
 ### Changed
 - rust版本按级别拆分成不同的日志文件
@@ -12,6 +18,7 @@ All notable changes to this project will be documented in this file.
 - 去掉mod.rs中的函数，将mod作为纯粹的模块聚合功能
 - tcp连接池增加重试功能
 - 优化协议编解码
+- update changelog
 
 ## [0.6.141] - 2025-10-18
 ### Changed
@@ -1003,7 +1010,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.142...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.143...HEAD
+[0.6.143]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.142...v0.6.143
 [0.6.142]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.141...v0.6.142
 [0.6.141]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.140...v0.6.141
 [0.6.140]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.139...v0.6.140
