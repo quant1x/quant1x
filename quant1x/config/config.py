@@ -17,12 +17,14 @@ from quant1x import system
 # 加载环境变量
 dotenv.load_dotenv()
 
+default_quant1x_work = 'quant1x' # 默认工作目录关键词
+
 def get_quant1x_work_keyword() -> str:
     """
     获取quant1x工作目录的关键词
     :return:
     """
-    quant1x_work = 'quant1x'
+    quant1x_work = ''
     quant1x_work_env = system.env('QUANT1X_WORK')
     if len(quant1x_work_env) > 0:
         quant1x_work = quant1x_work_env
@@ -31,18 +33,25 @@ def get_quant1x_work_keyword() -> str:
 def get_quant1x_config_filename() -> str:
     """
     获取quant1x.yaml文件路径
-    :return:
+    优先级：QUANT1X_WORK指定的目录 > ~/runtime/etc > 默认~/.quant1x
+    :return: 配置文件路径
     """
-    # 默认配置文件名
     default_config_filename = 'quant1x.yaml'
-    yaml_filename = os.path.join('~', 'runtime', 'etc', default_config_filename)
-    yaml_filename = os.path.expanduser(yaml_filename)
     user_home = system.homedir()
     quant1x_work = get_quant1x_work_keyword()
-    if not os.path.isfile(yaml_filename):
+
+    if quant1x_work:
+        # 使用环境变量指定的工作目录
         quant1x_root = os.path.join(user_home, f'.{quant1x_work}')
         yaml_filename = os.path.join(quant1x_root, default_config_filename)
-        yaml_filename = os.path.expanduser(yaml_filename)
+    else:
+        # 检查 ~/runtime/etc/quant1x.yaml
+        yaml_filename = os.path.join(user_home, 'runtime', 'etc', default_config_filename)
+        if not os.path.isfile(yaml_filename):
+            # 回退到默认 ~/.quant1x/quant1x.yaml
+            quant1x_root = os.path.join(user_home, f'.{default_quant1x_work}')
+            yaml_filename = os.path.join(quant1x_root, default_config_filename)
+
     yaml_filename = os.path.expanduser(yaml_filename)
     return yaml_filename
 
