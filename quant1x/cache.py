@@ -9,8 +9,20 @@ import pandas as pd
 from dateutil import parser
 from pandas import DataFrame
 
-from quant1x import exchange, config
+import importlib
+import sys
 import inflection
+
+# Try package-relative imports for normal package usage. If that fails
+# (e.g., when running this file directly as a script), leave exchange
+# and config as None for now and perform a local fallback only when
+# executing the file as __main__ (see bottom of this file). This
+# avoids mutating sys.path at import time.
+try:
+    from . import exchange, config
+except Exception:
+    exchange = None
+    config = None
 
 
 @lru_cache(maxsize=None)
@@ -20,11 +32,31 @@ def securities() -> pd.DataFrame:
     """
     full_path = os.path.join(config.quant1x_config.meta_path, 'securities.csv')
     if not os.path.isfile(full_path):
-        return pd.DataFrame()
+        return pd.DataFrame(columns=['code', 'name'])
     df = pd.read_csv(full_path)
     # 转换为小写
     df.columns = df.columns.str.lower()
-    return df[['code', 'name']]
+    # 兼容多种列名：优先匹配 'code' 和 'name'，否则尝试常见替代列名，最终回退到前两列
+    cols = list(df.columns)
+    code_candidates = ['code', 'symbol', 'securitycode', 'security_code', 'sec_code', 'sid']
+    name_candidates = ['name', 'sec_name', 'security_name', 'secname', 'stock_name']
+
+    def find_first(candidates, cols):
+        for c in candidates:
+            if c in cols:
+                return c
+        return None
+
+    code_col = find_first(code_candidates, cols) or (cols[0] if cols else None)
+    name_col = find_first(name_candidates, cols) or (cols[1] if len(cols) > 1 else (cols[0] if cols else None))
+
+    if code_col is None or name_col is None:
+        return pd.DataFrame(columns=['code', 'name'])
+
+    # 返回时保持列名为标准名称 'code' 和 'name'，以便后续代码不变
+    out = df[[code_col, name_col]].copy()
+    out.columns = ['code', 'name']
+    return out
 
 
 @lru_cache(maxsize=None)
@@ -33,13 +65,23 @@ def block_list():
     板块列表
     """
     df = securities()
+    if df.empty or 'code' not in df.columns:
+        return pd.DataFrame(columns=df.columns if not df.empty else ['code', 'name'])
     return df[df['code'].astype(str).str.startswith(('sh880', 'sh881'))]
 
 
 def stock_name(code: str) -> str:
     corrected_symbol = exchange.correct_security_code(code)
     df = securities()
-    tmp = df[df['code'] == corrected_symbol]
+    if df.empty:
+        return ""
+    # ensure types align
+    try:
+        tmp = df[df['code'].astype(str) == str(corrected_symbol)]
+    except Exception:
+        tmp = df[df['code'] == corrected_symbol]
+    if tmp.empty:
+        return ""
     name = tmp['name'].iloc[0]
     return name
 
@@ -148,7 +190,20 @@ def get_sector_list() -> pd.DataFrame:
     获取板块列表
     """
     sfn = sector_filename()
-    df = pd.read_csv(sfn)
+    try:
+        df = pd.read_csv(sfn)
+    except FileNotFoundError:
+        # fallback: find latest blocks.* file under meta_path
+        meta_dir = os.path.dirname(sfn)
+        prefix = os.path.join(meta_dir, 'blocks.')
+        candidates = [f for f in os.listdir(meta_dir) if f.startswith('blocks.')]
+        if not candidates:
+            raise
+        # pick the latest by modification time
+        candidates_full = [os.path.join(meta_dir, f) for f in candidates]
+        candidates_full.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+        sfn2 = candidates_full[0]
+        df = pd.read_csv(sfn2)
     df['code'] = 'sh' + df['code'].astype(str)
     return df
 
@@ -255,6 +310,19 @@ def get_tick_transaction(code: str, date: str) -> DataFrame | None:
 
 
 if __name__ == '__main__':
+    # If package-relative imports failed at module import time (e.g. when
+    # running this file directly), perform a one-time fallback here so the
+    # interactive script continues to work without mutating sys.path at
+    # import time.
+    if exchange is None or config is None:
+        this_dir = os.path.dirname(__file__)
+        pkg_parent = os.path.abspath(os.path.join(this_dir, '..'))
+        if pkg_parent not in sys.path:
+            sys.path.insert(0, pkg_parent)
+        from quant1x import exchange as _exchange, config as _config
+        globals()['exchange'] = _exchange
+        globals()['config'] = _config
+
     print(config.get_quant1x_config_filename())
     print('data_path', config.quant1x_config.data_path)
     print('kline_path', config.quant1x_config.kline_path)

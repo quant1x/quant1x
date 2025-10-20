@@ -24,11 +24,12 @@ def get_quant1x_work_keyword() -> str:
     获取quant1x工作目录的关键词
     :return:
     """
-    quant1x_work = ''
+    # 只在环境变量中存在时返回其值；否则返回空字符串，
+    # 由调用方决定后续的回退策略（例如 ~/runtime/etc 或 ~/.quant1x）
     quant1x_work_env = system.env('QUANT1X_WORK')
-    if len(quant1x_work_env) > 0:
-        quant1x_work = quant1x_work_env
-    return quant1x_work
+    if quant1x_work_env and len(quant1x_work_env) > 0:
+        return quant1x_work_env
+    return ''
 
 def get_quant1x_config_filename() -> str:
     """
@@ -88,7 +89,10 @@ class Quant1XConfig:
         self.__work_keyword = get_quant1x_work_keyword()
 
         # 初始化路径
-        self.__default_main_path = os.path.join(self.__home_path, f'.{self.__work_keyword}')
+        # 如果 work_keyword 为空（表示未通过环境变量指定），
+        # 在构建默认主路径时应回退到默认关键词，避免生成类似 '~/.\' 的路径。
+        effective_work = self.__work_keyword if self.__work_keyword else default_quant1x_work
+        self.__default_main_path = os.path.join(self.__home_path, f'.{effective_work}')
 
         self.meta_path = os.path.join(self.__default_main_path, 'meta')
         """str: 元数据路径"""
