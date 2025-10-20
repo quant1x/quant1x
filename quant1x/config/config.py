@@ -6,7 +6,7 @@
 @File    : config.py
 @Author  : wangfeng
 @Date    : 2025/9/15 16:37
-@Desc    :
+@Desc    : 加载配置文件, 支持.env指定工作目录
 """
 import os
 import yaml
@@ -33,7 +33,7 @@ def get_quant1x_work_keyword() -> str:
 def get_quant1x_config_filename() -> str:
     """
     获取quant1x.yaml文件路径
-    优先级：QUANT1X_WORK指定的目录 > ~/runtime/etc > 默认~/.quant1x
+    优先级: QUANT1X_WORK指定的目录 > ~/runtime/etc > 默认~/.quant1x
     :return: 配置文件路径
     """
     default_config_filename = 'quant1x.yaml'
