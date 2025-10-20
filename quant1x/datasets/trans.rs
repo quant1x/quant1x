@@ -57,17 +57,17 @@ impl DataAdapter for DataTrans {
         path.push(format!("{}.csv", corrected));
         let filename = path.to_string_lossy().to_string();
 
-        // 如果存在则尝试读取已有缓存（容错处理，读取失败视为空）
+        // 如果存在则尝试读取已有缓存(容错处理, 读取失败视为空)
         let mut list: Vec<TickTransaction> = Vec::new();
         if std::path::Path::new(&filename).exists() {
-            // try to read CSV; tolerate errors and treat as empty
+            // 尝试读取CSV；容错，读取失败视为空
             if let Ok(mut rdr) = csv::ReaderBuilder::new()
                 .has_headers(true)
                 .from_path(&filename)
             {
                 for result in rdr.records() {
                     if let Ok(rec) = result {
-                        // fields: time,price,vol,num,amount,buyOrSell
+                        // 字段: time,price,vol,num,amount,buyOrSell
                         let time = rec.get(0).unwrap_or("").to_string();
                         let price = rec
                             .get(1)
@@ -94,17 +94,16 @@ impl DataAdapter for DataTrans {
             }
         }
 
-        // compute startTime from cache (if any)
         // 从缓存中计算起始时间（如果存在缓存）
         let mut start_time = HISTORICAL_TRANSACTION_FIRST_TIME.to_string();
         if !list.is_empty() {
             if let Some(last) = list.last() {
                 if last.time == HISTORICAL_TRANSACTION_LAST_TIME {
-                    return; // up-to-date
+                    return; // 已更新
                 }
             }
 
-            // find earliest time after which we need to append (mirror C++ logic)
+            // 查找需要追加的最早时间（镜像C++逻辑）
             let mut first_time = String::new();
             let mut skip_count: usize = 0;
             let cache_len = list.len();
@@ -166,7 +165,6 @@ impl DataAdapter for DataTrans {
         }
 
         if today_is_last {
-            // fetch TRANSACTION_DATA pages
             // 拉取当日实时成交分页数据
             loop {
                 match fetch_transaction_page(&corrected, start, OFFSET) {
@@ -174,7 +172,7 @@ impl DataAdapter for DataTrans {
                         if resp.count == 0 || resp.list.is_empty() {
                             break;
                         }
-                        // C++ reverses each page and filters by start_time
+                        // C++反转每页并按start_time过滤
                         let mut tmp: Vec<TickTransaction> = Vec::new();
                         resp.list.reverse();
                         for td in resp.list.into_iter() {
@@ -198,7 +196,7 @@ impl DataAdapter for DataTrans {
                 }
             }
         } else {
-            // fetch HISTORY_TRANSACTION_DATA pages
+            // 获取历史成交数据页
             // 拉取历史成交分页数据
             loop {
                 match crate::level1::transaction_history::fetch_history_transactions(
@@ -235,7 +233,7 @@ impl DataAdapter for DataTrans {
             }
         }
 
-        // reverse pages and flatten
+        // 反转页面并展平
         hs.reverse();
         for v in hs.into_iter() {
             history.extend(v.into_iter());
@@ -247,12 +245,12 @@ impl DataAdapter for DataTrans {
 
         list.extend(history.into_iter());
 
-        // write CSV back
+        // 写回CSV
         let tmp = format!("{}.tmp", filename);
         match std::fs::File::create(&tmp) {
             Ok(f) => {
                 let mut w = csv::WriterBuilder::new().has_headers(true).from_writer(f);
-                // header
+                // 表头
                 let header = vec!["time", "price", "vol", "num", "amount", "buyOrSell"];
                 let _ = w.write_record(&header);
                 for rec in &list {
