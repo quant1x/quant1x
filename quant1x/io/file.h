@@ -8,16 +8,6 @@
 
 namespace io {
 
-//    // 获取文件修改时间
-//    std::chrono::system_clock::time_point getModificationTime(const std::string &filePath);
-//
-//    // 设置文件时间（创建时间在非Windows平台可能不可修改）
-//    void setFileTimes(
-//            const std::string &filePath,
-//            const std::chrono::system_clock::time_point &createTime,
-//            const std::chrono::system_clock::time_point &modifyTime,
-//            const std::chrono::system_clock::time_point &accessTime);
-
     // 去掉扩展名
     std::string remove_extension(const std::string& path_str);
 
