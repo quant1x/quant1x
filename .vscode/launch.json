@@ -1,4 +1,5 @@
 {
+    "version": "0.2.0",
     "configurations": [
         {
             "type": "cmake",
@@ -7,6 +8,18 @@
             "cmakeDebugType": "external",
             "pipeName": "\\\\.\\pipe\\vcpkg_ext_portfile_dbg",
             "preLaunchTask": "Debug vcpkg commands"
+        },
+        {
+            "name": "Run current Python file",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/.env",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         }
     ]
 }
