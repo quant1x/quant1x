@@ -3,6 +3,8 @@ import os
 import sys
 from typing import Tuple
 
+from matplotlib.pylab import f
+
 
 def application() -> Tuple[str, str, str]:
     """
@@ -75,39 +77,65 @@ def homedir() -> str:
 def read_dotenv(key: str) -> str:
     """
     只读地从项目附近的 .env 文件读取指定的环境变量 `key`（不写入 os.environ）。
-    搜索顺序：当前工作目录 -> 本文件目录及若干父目录 -> dotenv.find_dotenv()
+    搜索顺序：从当前工作目录开始，逐级向上查找每一级目录下的 `.env`，直到根目录；
+    如果都找不到，再使用 dotenv.find_dotenv() 作为最后的回退。
     返回值：如果找不到或解析失败，返回空字符串。
     """
     if not key:
         return ''
+
+    def find_env_upwards(start_path) -> 'str | None':
+        """从 start_path 开始，向上逐级查找 `.env` 文件，找到则返回该文件的绝对路径字符串；找不到返回 None。"""
+        try:
+            from pathlib import Path
+            p = Path(start_path)
+            for d in [p] + list(p.parents):
+                env_file = d / '.env'
+                #print('checking for .env at', env_file)
+                if env_file.is_file():
+                    return str(env_file)
+        except Exception:
+            pass
+        return None
+
     try:
-        from pathlib import Path
         import dotenv
+        from pathlib import Path
 
-        candidates = []
-        candidates.append(Path.cwd())
-        this_dir = Path(__file__).resolve().parent
-        candidates.append(this_dir)
-        for p in this_dir.parents[:4]:
-            candidates.append(p)
+        # 按用户要求：先用 cmd（运行时的 cwd），然后用 python 后面的脚本文件的绝对路径（sys.argv[0]）
+        starts = [Path.cwd()]
+        try:
+            entry = Path(sys.argv[0]).resolve()
+            if entry.is_file():
+                starts.append(entry.parent)
+            else:
+                # 回退到本模块文件夹
+                starts.append(Path(__file__).absolute().parent)
+        except Exception:
+            starts.append(Path(__file__).absolute().parent)
 
-        for start in candidates:
-            env_path = start.joinpath('.env')
-            if env_path.is_file():
+        for start in starts:
+            env_path = find_env_upwards(start)
+            if env_path:
                 try:
-                    vals = dotenv.dotenv_values(str(env_path))
-                    val = vals.get(key)
-                    if val:
-                        return str(val).strip().strip('"\'')
+                    vals = dotenv.dotenv_values(env_path)
+                    raw = vals.get(key)
+                    if raw:
+                        return str(raw).strip().strip('"\'')
                 except Exception:
+                    # 解析失败则继续到下一个起点或回退策略
                     continue
 
+        # 最后回退到 dotenv.find_dotenv()
         found = dotenv.find_dotenv()
         if found:
-            vals = dotenv.dotenv_values(found)
-            val = vals.get(key)
-            if val:
-                return str(val).strip().strip('"\'')
+            try:
+                vals = dotenv.dotenv_values(found)
+                raw = vals.get(key)
+                if raw:
+                    return str(raw).strip().strip('"\'')
+            except Exception:
+                pass
     except Exception:
         pass
     return ''
