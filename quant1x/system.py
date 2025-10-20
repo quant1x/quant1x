@@ -70,3 +70,44 @@ def homedir() -> str:
     if len(user_home) == 0:
         user_home = os.path.expanduser('~')
     return user_home
+
+
+def read_dotenv(key: str) -> str:
+    """
+    只读地从项目附近的 .env 文件读取指定的环境变量 `key`（不写入 os.environ）。
+    搜索顺序：当前工作目录 -> 本文件目录及若干父目录 -> dotenv.find_dotenv()
+    返回值：如果找不到或解析失败，返回空字符串。
+    """
+    if not key:
+        return ''
+    try:
+        from pathlib import Path
+        import dotenv
+
+        candidates = []
+        candidates.append(Path.cwd())
+        this_dir = Path(__file__).resolve().parent
+        candidates.append(this_dir)
+        for p in this_dir.parents[:4]:
+            candidates.append(p)
+
+        for start in candidates:
+            env_path = start.joinpath('.env')
+            if env_path.is_file():
+                try:
+                    vals = dotenv.dotenv_values(str(env_path))
+                    val = vals.get(key)
+                    if val:
+                        return str(val).strip().strip('"\'')
+                except Exception:
+                    continue
+
+        found = dotenv.find_dotenv()
+        if found:
+            vals = dotenv.dotenv_values(found)
+            val = vals.get(key)
+            if val:
+                return str(val).strip().strip('"\'')
+    except Exception:
+        pass
+    return ''
