@@ -43,13 +43,11 @@ namespace datasets {
         return _historical_trading_data_begin_date;
     }
 
-    // 获取指定日期的分笔成交记录
-    std::vector<level1::TickTransaction> CheckoutTransactionData(const std::string &securityCode,
-                                                                 const exchange::timestamp &featureDate,
-                                                                 bool ignorePreviousData) {
+    // 从缓存加载分笔成交数据
+    static std::pair<std::vector<level1::TickTransaction>, std::string> LoadTransactionDataFromCache(const std::string &correctedCode,
+                                                                                                     const exchange::timestamp &featureDate,
+                                                                                                     bool ignorePreviousData) {
         std::vector<level1::TickTransaction> list;
-        std::string correctedCode = exchange::CorrectSecurityCode(securityCode);
-        // 对齐日期格式: YYYYMMDD
         u32 tradeDate = featureDate.yyyymmdd();
 
         if (ignorePreviousData) {
@@ -57,7 +55,7 @@ namespace datasets {
             auto startDate = GetBeginDateOfHistoricalTradingData();
             if (tradeDate < startDate.yyyymmdd()) {
                 spdlog::error("[dataset::trans] code={}, trade-date={}, start-date={}, 没有数据", correctedCode, tradeDate, startDate.toString());
-                return list;
+                return {list, HistoricalTransactionDataFirstTime};
             }
         }
 
@@ -66,13 +64,23 @@ namespace datasets {
 
         if (std::filesystem::exists(filename)) {
             // 如果缓存存在
-            list = encoding::csv::csv_to_slices<level1::TickTransaction>(filename);
+            // list = encoding::csv::csv_to_slices<level1::TickTransaction>(filename);  // 屏蔽，使用io::CSVReader解析
+            io::CSVReader<6> in(filename);
+            in.read_header(io::ignore_extra_column, "time", "price", "vol", "num", "amount", "buyOrSell");
+            std::string time;
+            f64 price;
+            i64 vol, num;
+            f64 amount;
+            i64 buy_or_sell;
+            while (in.read_row(time, price, vol, num, amount, buy_or_sell)) {
+                list.emplace_back(time, price, vol, num, amount, buy_or_sell);
+            }
             if (!list.empty()) {
                 size_t cacheLength = list.size();
                 if (cacheLength > 0) {
                     std::string lastTime = list.back().time;
                     if (lastTime == HistoricalTransactionDataLastTime) {
-                        return list;
+                        return {list, startTime};  // 数据完整，直接返回
                     }
 
                     std::string firstTime;
@@ -99,6 +107,15 @@ namespace datasets {
                 spdlog::error("[dataset::trans] code={}, trade-date={}, 没有有效数据", correctedCode, tradeDate);
             }
         }
+
+        return {list, startTime};
+    }
+
+    // 更新分笔成交数据到缓存
+    static void UpdateTransactionData(const std::string &correctedCode,
+                                      const exchange::timestamp &featureDate,
+                                      const std::string& startTime) {
+        u32 tradeDate = featureDate.yyyymmdd();
         auto today_is_last_trading_date = featureDate.is_same_date(exchange::last_trading_day());
 
         uint16_t offset = level1::tick_transaction_max;
@@ -108,83 +125,74 @@ namespace datasets {
         std::vector<level1::TickTransaction> history;
         std::vector<std::vector<level1::TickTransaction>> hs;
         auto [marketId, marketCode, pureCode] = exchange::DetectMarket(correctedCode);
-        if(today_is_last_trading_date) {
+
+        if (today_is_last_trading_date) {
             while (true) {
-                try {
-                    level1::TransactionRequest request(correctedCode, start, offset);
-                    level1::TransactionResponse response(marketId, pureCode.c_str());
-                    auto conn = level1::client();
-                    auto err = level1::process(conn->socket(), request, response);
-                    if (err) {
-                        throw std::runtime_error(fmt::format("Process error: {}", err.message()));
-                    }
-
-                    if (response.Count == 0 || response.List.empty()) {
-                        break;
-                    }
-
-                    std::vector<level1::TickTransaction> tmp{};
-                    auto tmpList = response.List;
-                    std::reverse(tmpList.begin(), tmpList.end());
-                    for (const auto &td: tmpList) {
-                        // 追加包含startTime之后的记录
-                        if (td.time >= startTime) {
-                            tmp.emplace_back(td);
-                        }
-                    }
-                    std::reverse(tmp.begin(), tmp.end());
-                    hs.emplace_back(tmp);
-
-                    if (tmp.size() < offset) {
-                        // 已经是最早的记录
-                        // 需要排序
-                        break;
-                    }
-                    start += offset;
-                } catch (const std::exception &e) {
-                    spdlog::error("[dataset::trans] code={}, tradeDate={}, error={}", correctedCode, tradeDate,
-                                  e.what());
+                level1::TransactionRequest request(correctedCode, start, offset);
+                level1::TransactionResponse response(marketId, pureCode.c_str());
+                auto conn = level1::client();
+                auto err = level1::process(conn->socket(), request, response);
+                if (err) {
+                    spdlog::error("[dataset::trans] code={}, tradeDate={}, error={}", correctedCode, tradeDate, std::string(err.message()));
                     break;
                 }
+
+                if (response.Count == 0 || response.List.empty()) {
+                    break;
+                }
+
+                std::vector<level1::TickTransaction> tmp{};
+                auto tmpList = response.List;
+                std::reverse(tmpList.begin(), tmpList.end());
+                for (const auto &td: tmpList) {
+                    // 追加包含startTime之后的记录
+                    if (td.time >= startTime) {
+                        tmp.emplace_back(td);
+                    }
+                }
+                std::reverse(tmp.begin(), tmp.end());
+                hs.emplace_back(tmp);
+
+                if (tmp.size() < offset) {
+                    // 已经是最早的记录
+                    // 需要排序
+                    break;
+                }
+                start += offset;
             }
         } else {
             while (true) {
-                try {
-                    level1::HistoryTransactionRequest request(correctedCode, u32Date, start, offset);
-                    level1::HistoryTransactionResponse response(marketId, pureCode.c_str());
-                    auto conn = level1::client();
-                    auto err = level1::process(conn->socket(), request, response);
-                    if (err) {
-                        throw std::runtime_error(fmt::format("Process error: {}", err.message()));
-                    }
-
-                    if (response.Count == 0 || response.List.empty()) {
-                        break;
-                    }
-
-                    std::vector<level1::TickTransaction> tmp{};
-                    auto tmpList = response.List;
-                    std::reverse(tmpList.begin(), tmpList.end());
-                    for (const auto &td: tmpList) {
-                        // 追加包含startTime之后的记录
-                        if (td.time >= startTime) {
-                            tmp.emplace_back(td);
-                        }
-                    }
-                    std::reverse(tmp.begin(), tmp.end());
-                    hs.emplace_back(tmp);
-
-                    if (tmp.size() < offset) {
-                        // 已经是最早的记录
-                        // 需要排序
-                        break;
-                    }
-                    start += offset;
-                } catch (const std::exception &e) {
-                    spdlog::error("[dataset::trans] code={}, tradeDate={}, error={}", correctedCode, tradeDate,
-                                  e.what());
+                level1::HistoryTransactionRequest request(correctedCode, u32Date, start, offset);
+                level1::HistoryTransactionResponse response(marketId, pureCode.c_str());
+                auto conn = level1::client();
+                auto err = level1::process(conn->socket(), request, response);
+                if (err) {
+                    spdlog::error("[dataset::trans] code={}, tradeDate={}, error={}", correctedCode, tradeDate, std::string(err.message()));
                     break;
                 }
+
+                if (response.Count == 0 || response.List.empty()) {
+                    break;
+                }
+
+                std::vector<level1::TickTransaction> tmp{};
+                auto tmpList = response.List;
+                std::reverse(tmpList.begin(), tmpList.end());
+                for (const auto &td: tmpList) {
+                    // 追加包含startTime之后的记录
+                    if (td.time >= startTime) {
+                        tmp.emplace_back(td);
+                    }
+                }
+                std::reverse(tmp.begin(), tmp.end());
+                hs.emplace_back(tmp);
+
+                if (tmp.size() < offset) {
+                    // 已经是最早的记录
+                    // 需要排序
+                    break;
+                }
+                start += offset;
             }
         }
 
@@ -195,11 +203,47 @@ namespace datasets {
         }
 
         if (history.empty()) {
-            return list;
+            return;  // 无新数据
         }
 
-        list.insert(list.end(), history.begin(), history.end());
-        encoding::csv::slices_to_csv(list, filename);
+        // 加载现有缓存数据并合并
+        auto [existingList, _] = LoadTransactionDataFromCache(correctedCode, featureDate, false);
+        existingList.insert(existingList.end(), history.begin(), history.end());
+
+        // 手动写入CSV，避免packed结构体问题
+        std::string filename = config::get_historical_trade_filename(correctedCode, featureDate.only_date());
+        std::string tmp = filename + ".tmp";
+        auto ec = util::check_filepath(tmp, true);
+        ec.clear();  // 忽略错误，已处理
+        io::CSVWriter writer(tmp);
+        // 写入header，与reader对应
+        writer.write_row("time", "price", "vol", "num", "amount", "buyOrSell");
+        // 写入数据
+        for (const auto& rec : existingList) {
+            writer.write_row(rec.time, rec.price, rec.vol, rec.num, rec.amount, rec.buyOrSell);
+        }
+        // 原子重命名
+        std::filesystem::rename(tmp, filename);
+    }
+
+    // 确保分笔成交数据已更新到缓存
+    static void EnsureTransactionDataUpdated(const std::string &correctedCode,
+                                             const exchange::timestamp &featureDate,
+                                             bool ignorePreviousData) {
+        auto [list, startTime] = LoadTransactionDataFromCache(correctedCode, featureDate, ignorePreviousData);
+        bool needsUpdate = list.empty() || (list.back().time != HistoricalTransactionDataLastTime);
+        if (needsUpdate) {
+            UpdateTransactionData(correctedCode, featureDate, startTime);
+        }
+    }
+
+    // 获取指定日期的分笔成交记录
+    std::vector<level1::TickTransaction> CheckoutTransactionData(const std::string &securityCode,
+                                                                 const exchange::timestamp &featureDate,
+                                                                 bool ignorePreviousData) {
+        std::string correctedCode = exchange::CorrectSecurityCode(securityCode);
+        EnsureTransactionDataUpdated(correctedCode, featureDate, ignorePreviousData);
+        auto [list, _] = LoadTransactionDataFromCache(correctedCode, featureDate, ignorePreviousData);
         return list;
     }
 
@@ -288,6 +332,7 @@ namespace datasets {
     }
 
     void DataTrans::Update(const std::string &code, const exchange::timestamp &date) {
-        CheckoutTransactionData(code, date, false);
+        std::string correctedCode = exchange::CorrectSecurityCode(code);
+        EnsureTransactionDataUpdated(correctedCode, date, false);
     }
 } // namespace datasets
