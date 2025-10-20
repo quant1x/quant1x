@@ -211,33 +211,6 @@ namespace {
 
 namespace io {
 
-//    // 获取文件修改时间
-//    std::chrono::system_clock::time_point getModificationTime(const std::string &filePath) {
-//        try {
-//#ifdef _WIN32
-//            return getWindowsModificationTime(filePath);
-//#else
-//            return getPosixModificationTime(filePath);
-//#endif
-//        } catch (...) {
-//            return std::chrono::system_clock::from_time_t(0);
-//        }
-//    }
-//
-//    // 设置文件时间（创建时间在非Windows平台可能不可修改）
-//    void setFileTimes(
-//        const std::string &filePath,
-//        const std::chrono::system_clock::time_point &createTime,
-//        const std::chrono::system_clock::time_point &modifyTime,
-//        const std::chrono::system_clock::time_point &accessTime) {
-//#ifdef _WIN32
-//        setWindowsFileTimes(filePath, createTime, modifyTime, accessTime);
-//#else
-//        (void)createTime;
-//        setPosixFileTimes(filePath, modifyTime, accessTime);
-//#endif
-//    }
-
     std::string remove_extension(const std::string& path_str) {
         std::filesystem::path p(path_str);
         // 分解为路径 + 文件名（含可能的扩展名）
