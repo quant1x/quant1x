@@ -295,13 +295,13 @@ Options:
 
 说明与注意事项：
 
-- `stock` 二进制是一个可与库（crate）协同工作的前端：它会尝试调用库中暴露的初始化与子命令钩子（如 `quant1x::global_init`, `quant1x::datasets_init`, `quant1x::engine_daemon` 等）。如果你直接从源码运行，确保启用了需要的 feature 或在编译时链接到库中实现这些函数的 crate。
+- `q1x` 二进制是一个可与库（crate）协同工作的前端：它会尝试调用库中暴露的初始化与子命令钩子（如 `quant1x::global_init`, `quant1x::datasets_init`, `quant1x::engine_daemon` 等）。如果你直接从源码运行，确保启用了需要的 feature 或在编译时链接到库中实现这些函数的 crate。
 - 在 Windows 上，可以通过 `service` 子命令与提升参数（`--pipe`, `--elevated-out`, `--elevated-pipe`）交互以支持以服务/守护进程模式运行。具体行为由 `engine::daemon` 的实现决定。
 - 若打算在 CI 或部署中使用，请优先使用 `--release` 构建并根据目标平台交叉编译或在对应平台上构建以避免 -march/native 引入不可移植的指令集。
 
 如果需要，我可以：
 
-- 为 `stock` 添加示例配置和 systemd/Windows service 安装脚本。
+- 为 `q1x` 添加示例配置和 systemd/Windows service 安装脚本。
 - 在 README 中加入更详细的运行参数说明（基于库中 `engine::daemon` 的实现）。
 
 # 5. c/c++ 开发环境
