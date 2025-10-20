@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.154] - 2025-10-20
+### Changed
+- 修订config描述
+
 ## [0.6.153] - 2025-10-20
 ### Changed
 - 删除废弃的代码，补全函数注释
@@ -10,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - 文件改名前需要关闭临时tmp文件
 - 调整readme文件名，采用功能模块名为前缀，方便维护
 - 优化.env主导的工作区逻辑
+- update changelog
 
 ## [0.6.152] - 2025-10-20
 ### Changed
@@ -1073,7 +1078,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.153...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.154...HEAD
+[0.6.154]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.153...v0.6.154
 [0.6.153]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.152...v0.6.153
 [0.6.152]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.151...v0.6.152
 [0.6.151]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.150...v0.6.151
