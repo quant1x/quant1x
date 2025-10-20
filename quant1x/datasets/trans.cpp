@@ -215,15 +215,23 @@ namespace datasets {
         std::string tmp = filename + ".tmp";
         auto ec = util::check_filepath(tmp, true);
         ec.clear();  // 忽略错误，已处理
-        io::CSVWriter writer(tmp);
-        // 写入header，与reader对应
-        writer.write_row("time", "price", "vol", "num", "amount", "buyOrSell");
-        // 写入数据
-        for (const auto& rec : existingList) {
-            writer.write_row(rec.time, rec.price, rec.vol, rec.num, rec.amount, rec.buyOrSell);
+        {
+            io::CSVWriter writer(tmp);
+            // 写入header，与reader对应
+            writer.write_row("time", "price", "vol", "num", "amount", "buyOrSell");
+            // 写入数据
+            for (const auto& rec : existingList) {
+                writer.write_row(rec.time, rec.price, rec.vol, rec.num, rec.amount, rec.buyOrSell);
+            }
         }
         // 原子重命名
-        std::filesystem::rename(tmp, filename);
+        try {
+            std::filesystem::rename(tmp, filename);
+        } catch (const std::filesystem::filesystem_error& e) {
+            spdlog::error("[dataset::trans] 重命名失败: {} -> {}: {}", tmp, filename, e.what());
+            // 尝试删除临时文件
+            std::filesystem::remove(tmp);
+        }
     }
 
     // 确保分笔成交数据已更新到缓存
