@@ -24,11 +24,55 @@ def get_quant1x_work_keyword() -> str:
     获取quant1x工作目录的关键词
     :return:
     """
-    # 只在环境变量中存在时返回其值；否则返回空字符串，
-    # 由调用方决定后续的回退策略（例如 ~/runtime/etc 或 ~/.quant1x）
     quant1x_work_env = system.env('QUANT1X_WORK')
     if quant1x_work_env and len(quant1x_work_env) > 0:
         return quant1x_work_env
+    # Try to obtain QUANT1X_WORK in a robust, read-only way.
+    # 1) Check the process environment first (system.env wraps os.getenv)
+    if quant1x_work_env and len(quant1x_work_env) > 0:
+        return quant1x_work_env
+
+    # 2) If not set in the process env, try to read a project .env file in a read-only fashion
+    #    without writing into os.environ. We look for .env starting from several
+    #    candidate locations to handle different run modes (script vs module vs IDE).
+    try:
+        from pathlib import Path
+        # candidate starting points: current working dir, this file's dir, and package root
+        candidates = []
+        candidates.append(Path.cwd())
+        # directory of this config.py
+        this_dir = Path(__file__).resolve().parent
+        candidates.append(this_dir)
+        # walk up from this file to a few parents
+        for p in this_dir.parents[:4]:
+            candidates.append(p)
+
+        # look for a .env file in candidates
+        for start in candidates:
+            env_path = start.joinpath('.env')
+            if env_path.is_file():
+                try:
+                    vals = dotenv.dotenv_values(str(env_path))
+                    val = vals.get('QUANT1X_WORK')
+                    if val:
+                        # strip surrounding quotes and whitespace
+                        return str(val).strip().strip('"\'')
+                except Exception:
+                    # if parsing fails, ignore and continue
+                    pass
+
+        # final fallback: allow python-dotenv's find_dotenv to attempt a broader search
+        found = dotenv.find_dotenv()
+        if found:
+            vals = dotenv.dotenv_values(found)
+            val = vals.get('QUANT1X_WORK')
+            if val:
+                return str(val).strip().strip('"\'')
+    except Exception:
+        # be conservative: on any error just fall back to empty
+        pass
+
+    # no value found
     return ''
 
 def get_quant1x_config_filename() -> str:
