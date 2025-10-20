@@ -3,9 +3,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.152] - 2025-10-20
+### Changed
+- rust下一个版本0.6.15
+- 优化csv写入, 修复可能null的bug
+- 格式化代码，风格保持一致
+- 删除废弃的代码
+- 优化c++版本的分笔成交数据的更新流程, 修改csv读写方法，去掉反射的部分，作为adapter更新，不适用带有返回列表的函数
+- 修订日志
+
 ## [0.6.151] - 2025-10-19
 ### Changed
 - 交易日历增加盘前边界测试
+- update changelog
 
 ## [0.6.150] - 2025-10-19
 ### Changed
@@ -1054,7 +1064,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.151...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.152...HEAD
+[0.6.152]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.151...v0.6.152
 [0.6.151]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.150...v0.6.151
 [0.6.150]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.149...v0.6.150
 [0.6.149]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.148...v0.6.149
