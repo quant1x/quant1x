@@ -172,9 +172,9 @@ add_catch2_executable(tdd-datasets.cpp)
 add_catch2_executable(tdd-klines.cpp)
 
 # f10
-add_catch2_executable(tdd-notices.cpp)
-add_catch2_executable(tdd-safety-score.cpp)
-add_catch2_executable(tdd-margin-trading.cpp)
+add_catch2_executable(tdd-f10-notices.cpp)
+add_catch2_executable(tdd-f10-safety-score.cpp)
+add_catch2_executable(tdd-f10-margin-trading.cpp)
 add_catch2_executable(tdd-f10-capital.cpp)
 
 # 筹码分布

@@ -27,7 +27,7 @@ TEST_CASE("notice-basic", "[f10]") {
 TEST_CASE("notice-reports", "[f10]") {
     runtime::global_init();
     runtime::logger_set(true, true);
-    auto x = dfcf::GetCacheQuarterlyReportsBySecurityCode("sh600600", "20250501");
+    auto x = dfcf::GetCacheQuarterlyReportsBySecurityCode("sh600600", "20250720");
     std::cout << x.value() << std::endl;
 }
 

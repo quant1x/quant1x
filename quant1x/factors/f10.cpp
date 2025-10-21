@@ -203,7 +203,7 @@ static std::unique_ptr<Top10ShareHolder> checkoutShareHolder(const std::string &
         }
 
         // 获取前期数据
-        auto frontList = dfcf::GetCacheShareHolder(securityCode, featureDate, 2);
+        const auto frontList = dfcf::GetCacheShareHolder(securityCode, featureDate, 2);
         auto [frontTop10Capital, x1, x2, x3, x4] = ComputeFreeCapital(frontList, totalCapital);
 
         // 构建返回结果
@@ -294,8 +294,8 @@ void F10Feature::Update(const std::string &code, const exchange::timestamp &date
     // 4. 季报
     auto [q, x1, x2] = api::GetQuarterByDate(feature_date, 1);
     f10.QuarterlyYearQuarter = q;
-    auto report = dfcf::getQuarterlyReportSummary(securityCode, feature_date);
     {
+        auto report = dfcf::getQuarterlyReportSummary(securityCode, feature_date);
         f10.QDate = report.QDate;
         f10.BPS = report.BPS;
         f10.BasicEPS = report.BasicEPS;
@@ -342,7 +342,7 @@ std::vector<std::string> F10Feature::values() const {
 }
 
 void F10Feature::init(const exchange::timestamp &timestamp) {
-    std::string feature_date = timestamp.only_date();
+    const std::string feature_date = timestamp.only_date();
     dfcf::loadQuarterlyReports(feature_date);
 }
 

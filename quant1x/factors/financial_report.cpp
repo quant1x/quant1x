@@ -1333,7 +1333,7 @@ namespace dfcf {
 
     std::tuple<std::vector<QuarterlyReport>, int, Exception>
     cacheQuarterlyReportsBySecurityCode(const std::string& date, int diffQuarters = 1) {
-        auto [_, __, last] = api::GetQuarterByDate(date, diffQuarters);
+        auto [x1, x2, last] = api::GetQuarterByDate(date, diffQuarters);
         std::string filename = config::reports_filename(last);
 
         std::vector<QuarterlyReport> allReports;
@@ -1341,7 +1341,8 @@ namespace dfcf {
         auto it = mapReports.find(filename);
         if (it == mapReports.end()) {
             // TODO 这里加载需要一个过期淘汰机制
-            if (std::filesystem::exists(filename)) {
+            auto modified = io::last_modified_time(filename);
+            if (!exchange::can_initialize(modified)) {
                 allReports = encoding::csv::csv_to_slices<QuarterlyReport>(filename);
                 if (!allReports.empty()) {
                     mapReports[filename] = allReports;
@@ -1353,7 +1354,7 @@ namespace dfcf {
         }
         std::string qdate = date;
         if(diffQuarters > 1) {
-            auto [x1, x2, tmp_date] = api::GetQuarterByDate(date, diffQuarters -1);
+            auto [xx1, xx2, tmp_date] = api::GetQuarterByDate(date, diffQuarters -1);
             qdate = tmp_date;
         }
 
@@ -1425,7 +1426,7 @@ namespace dfcf {
 
 
     void loadQuarterlyReports(const std::string &date) {
-        auto [_, __, last] = api::GetQuarterByDate(date, 1);
+        auto [x1, x2, last] = api::GetQuarterByDate(date, 1);
         std::string filename = config::reports_filename(last);
 
         // TODO 这里加载需要一个过期淘汰机制

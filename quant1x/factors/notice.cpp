@@ -13,7 +13,7 @@ namespace dfcf {
         //const std::string CacheL5KeyNotices = "cache/notices";
         const std::string urlEastmoneyNotices = "https://np-anotice-stock.eastmoney.com/api/security/ann";
         const std::string urlEastmoneyWarning = "https://datacenter.eastmoney.com/securities/api/data/get";
-        const int EastmoneyNoticesPageSize = 100;
+        constexpr int EastmoneyNoticesPageSize = 100;
 
         // 风险检测的关键词
         const std::vector<std::string> riskKeywords = {
@@ -51,12 +51,12 @@ namespace dfcf {
                     std::string TitleEn;
                 };
                 std::vector<ListItem> List;
-                int PageIndex;
-                int PageSize;
-                int TotalHits;
+                int PageIndex{};
+                int PageSize{};
+                int TotalHits{};
             } Data;
             std::string Error;
-            int Success;
+            int Success{};
         };
 
         // 大事提醒结构
@@ -68,12 +68,13 @@ namespace dfcf {
             std::vector<std::string> Level2Content; // 2级内容
             std::string InfoCode;          // 信息代码
         };
+
         struct RawWarning {
-            int Code;                      // 状态码
-            bool Success;                  // 接口是否调用成功
+            int Code{};                      // 状态码
+            bool Success{};                  // 接口是否调用成功
             std::string Message;           // 状态信息
             std::vector<std::vector<WarningDetail>> Data;
-            int HasNext;                   // 是否有下一页
+            int HasNext{};                   // 是否有下一页
         };
 
         /////////////////////////////////////////////////////////////////////////////
@@ -81,35 +82,6 @@ namespace dfcf {
         /////////////////////////////////////////////////////////////////////////////
         int GetPages(int pageSize, int totalHits);
         std::string EncodeParams(const std::map<std::string, std::string>& params);
-
-//        template <typename T>
-//        T safe_get(const nlohmann::json& j, const std::string& key, const T& default_val = T()) {
-//            if (j.contains(key) && !j[key].is_null()) {
-//                try {
-//                    return j[key].get<T>();
-//                } catch (...) {
-//                    spdlog::warn("JSON字段类型不匹配: {}", key);
-//                    return default_val;
-//                }
-//            }
-//            return default_val;
-//        }
-//
-//        template <typename T>
-//        T safe_nested_get(const nlohmann::json& j, const std::vector<std::string>& keys, const T& default_val = T()) {
-//            const auto* current = &j;
-//            for (const auto& key : keys) {
-//                if (!current->contains(key)) return default_val;
-//                current = &(*current)[key];
-//            }
-//            if (current->is_null()) return default_val;
-//            try {
-//                return current->get<T>();
-//            } catch (...) {
-//                spdlog::warn("嵌套JSON字段类型不匹配");
-//                return default_val;
-//            }
-//        }
     } // anonymous namespace
 
     /////////////////////////////////////////////////////////////////////////////
@@ -202,7 +174,7 @@ namespace dfcf {
                             continue;
                         }
 
-                        auto marketCode = exchange::MarketType(std::stoll(noticeItem.Codes[0].MarketCode));
+                        auto marketCode = static_cast<exchange::MarketType>(std::stoll(noticeItem.Codes[0].MarketCode));
                         std::string securityCode = exchange::GetSecurityCode(marketCode, noticeItem.Codes[0].StockCode);
                         std::string securityName = noticeItem.Codes[0].ShortName;
 
@@ -352,7 +324,7 @@ namespace dfcf {
                             continue;
                         }
 
-                        auto marketCode = exchange::MarketType(std::stoll(noticeItem.Codes[0].MarketCode));
+                        auto marketCode = static_cast<exchange::MarketType>(std::stoll(noticeItem.Codes[0].MarketCode));
                         std::string security_code = exchange::GetSecurityCode(marketCode, noticeItem.Codes[0].StockCode);
                         std::string security_name = noticeItem.Codes[0].ShortName;
 
@@ -417,7 +389,7 @@ namespace dfcf {
     {
         auto marketInfo = exchange::DetectMarket(securityCode);
         std::string flag = std::get<1>(marketInfo);
-        std::transform(flag.begin(), flag.end(), flag.begin(), ::toupper);
+        flag = strings::to_upper(flag);
 
         std::map<std::string, std::string> params = {
             {"type", "RTP_F10_DETAIL"},
@@ -521,8 +493,8 @@ namespace dfcf {
     /////////////////////////////////////////////////////////////////////////////
     std::tuple<std::string, std::string> NoticeDateForReport(const std::string& code, const std::string& date)
     {
-        std::string fixedDate = exchange::timestamp(date).only_date();
-        std::string year = fixedDate.substr(0, 4);
+        const std::string fixedDate = exchange::timestamp(date).only_date();
+        const std::string year = fixedDate.substr(0, 4);
         int pageNo = 1;
         std::string annualReportDate, quarterlyReportDate;
 
@@ -550,13 +522,13 @@ namespace dfcf {
     /////////////////////////////////////////////////////////////////////////////
     CompanyNotice getOneNotice(const std::string& securityCode, const std::string& currentDate)
     {
-        CompanyNotice notice;
+        CompanyNotice notice{};
         if (!exchange::AssertStockBySecurityCode(securityCode)) return notice;
 
         exchange::timestamp timestamp(currentDate);
         timestamp = timestamp.offset(-24 * 30);
-        std::string beginDate = timestamp.only_date();
-        std::string endDate = currentDate;
+        const std::string beginDate = timestamp.only_date();
+        const std::string& endDate = currentDate;
         int pagesCount = 1;
         std::unique_ptr<NoticeDetail> tmpNotice;
 
@@ -624,7 +596,7 @@ namespace dfcf {
     // 工具函数实现
     /////////////////////////////////////////////////////////////////////////////
     namespace {
-        int GetPages(int pageSize, int totalHits) {
+        int GetPages(const int pageSize, const int totalHits) {
             return (totalHits + pageSize - 1) / pageSize;
         }
 

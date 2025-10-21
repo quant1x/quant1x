@@ -395,8 +395,8 @@ namespace exchange {
 
     /// 同步交易日历
     void update_calendar() {
-        auto cache_filename = config::get_calendar_filename();
-        auto modified = io::last_modified_time(cache_filename);
+        const auto cache_filename = config::get_calendar_filename();
+        const auto modified = io::last_modified_time(cache_filename);
         auto [text, tm] = io::request(urlSinaRealstockCompanyKlcTdSh, modified);
         if(!text.empty()) {
             auto list = js_sina::decode(text);
