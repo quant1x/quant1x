@@ -1,5 +1,18 @@
 {
-    "testMate.cpp.debug.configTemplate": null,
+    "testMate.cpp.test.advancedExecutables": [
+        {
+            "pattern": "build/tests/catch2-*.exe",
+            "cwd": "${workspaceFolder}",
+            "env": {}
+        }
+    ],
+    "testMate.cpp.debug.configTemplate": {
+        "type": "cppvsdbg",
+        "program": "${exe}",
+        "args": ["${testName}"],
+        "cwd": "${workspaceFolder}",
+        "console": "integratedTerminal"
+    },
     "python.analysis.autoImportCompletions": true,
     "python.envFile": "${workspaceFolder}/.env",
     "cmake.buildDirectory": "${workspaceFolder}/build",
