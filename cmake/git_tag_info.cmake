@@ -46,6 +46,7 @@ function(get_latest_git_tag_info OUT_VERSION OUT_LATEST_TAG OUT_TAG_COMMIT_HASH 
 
     execute_process(
         COMMAND git log -1 ${LATEST_TAG} --pretty=format:%an||%ae||%ai
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         OUTPUT_VARIABLE GIT_INFO
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
