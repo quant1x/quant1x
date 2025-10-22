@@ -1,5 +1,3 @@
-#include(Catch)
-
 # 定义一个宏，用于创建 一般性的测试 可执行文件
 macro(add_app_executable source_file)
     # 获取源文件名（不含扩展名）
@@ -23,6 +21,14 @@ macro(add_app_executable source_file)
     )
 endmacro()
 
+include(GoogleTest)
+
+# Ensure CTest is available and tests are enabled so test discovery (or add_test)
+# entries are registered into the generated build tree. Without this, `ctest`
+# may report "No tests were found" even when test executables exist.
+include(CTest)
+enable_testing()
+
 # 定义一个宏，用于创建 Catch2单元测试 可执行文件
 macro(add_catch2_executable source_file)
     # 获取源文件名（不含扩展名）
@@ -34,7 +40,17 @@ macro(add_catch2_executable source_file)
     # 创建带前缀的可执行文件
     add_executable(${target_name} ${source_file})
 
-    #catch_discover_tests(${target_name})
+    # 自动为该可执行中的每个 Catch2 测试用例创建 CTest 条目
+    # 如果项目已经包含 Catch2 的 CMake helpers，则使用 catch_discover_tests，
+    # 否则退回到为整个可执行添加一个单独的 add_test（可通过 exe 参数过滤具体测试）
+    if(COMMAND catch_discover_tests)
+        catch_discover_tests(${target_name}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            PROPERTIES TIMEOUT 60
+        )
+    else()
+        add_test(NAME ${target_name} COMMAND $<TARGET_FILE:${target_name}>)
+    endif()
 
     # 添加头文件路径
     target_include_directories(${target_name} PUBLIC
@@ -46,6 +62,15 @@ macro(add_catch2_executable source_file)
     target_link_libraries(${target_name} PRIVATE
         quant1x test-catch2 test-benchmark
     )
+    # Fallback: register a single CTest entry for the whole executable only if
+    # a test with the same name hasn't been registered already. This avoids
+    # duplicate add_test errors when discovery helpers have already added tests
+    # or when the same macro is processed multiple times for any reason.
+    get_property(_registered_tests DIRECTORY PROPERTY TESTS)
+    list(FIND _registered_tests ${target_name} _test_index)
+    if(_test_index EQUAL -1)
+        add_test(NAME ${target_name} COMMAND $<TARGET_FILE:${target_name}>)
+    endif()
 endmacro()
 
 # 定义一个宏，用于创建 GTest单元测试 可执行文件
@@ -69,6 +94,16 @@ macro(add_gtest_executable source_file)
     target_link_libraries(${target_name} PRIVATE
         quant1x test-gtest
     )
+
+    # 自动为 GoogleTest 可执行注册 CTest 条目（如果可用则使用 gtest_discover_tests）
+    if(COMMAND gtest_discover_tests)
+        gtest_discover_tests(${target_name}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            PROPERTIES TIMEOUT 60
+        )
+    else()
+        add_test(NAME ${target_name} COMMAND $<TARGET_FILE:${target_name}>)
+    endif()
 endmacro()
 
 # 定义一个宏，用于创建 benchmark基准测试 可执行文件

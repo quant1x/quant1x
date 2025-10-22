@@ -1068,6 +1068,12 @@ install(FILES
 install(TARGETS q1x
     DESTINATION bin)
 # 单元测试
+# Ensure testing is enabled at the top-level so that add_test calls in
+# subdirectories (e.g. `tests/`) are properly registered with CTest and
+# a top-level CTestTestfile.cmake is generated.
+include(CTest)
+enable_testing()
+
 add_subdirectory(tests)
 # 演示代码
 add_subdirectory(examples)
