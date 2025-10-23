@@ -1,4 +1,5 @@
 #include <quant1x/datasets/kline_raw.h>
+#include <quant1x/factors/base.h>
 
 namespace datasets {
 
@@ -31,7 +32,8 @@ namespace datasets {
     namespace {
 
         void save_kline_raw(const std::string &filename, const std::vector<KLineRaw>& values) {
-            util::check_filepath(filename, true);
+            auto ec = util::check_filepath(filename, true);
+            ec.clear();
             io::CSVWriter writer(filename);
             writer.write_row("Date", "Open", "Close", "High", "Low", "Volume", "Amount", "Up", "Down", "Datetime");
             for (const auto &row: values) {
@@ -41,7 +43,9 @@ namespace datasets {
         }
     }
 
-    void KLineRaw::adjust(double m, double a, int number) {
+    void KLineRaw::adjust(const factors::CumulativeAdjustment &adj) {
+        auto m = adj.m;
+        auto a = adj.a;
         this->Open = this->Open * m + a;
         this->Close = this->Close * m + a;
         this->High = this->High * m + a;
@@ -53,8 +57,7 @@ namespace datasets {
         ap = ap * m + a;
         // 3. 以成交金额为基准, 用复权均价计算成交量
         this->Volume = this->Amount / ap;
-        //kline->AdjustmentCount+= factor.no;
-        (void)number;
+        (void)adj;
     }
 
     std::vector<KLineRaw> read_kline_raw_from_csv(const std::string& filename) {
