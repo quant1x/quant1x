@@ -17,6 +17,12 @@
     "python.envFile": "${workspaceFolder}/.env",
     "cmake.buildDirectory": "${workspaceFolder}/build",
     "cmake.configureSettings": {
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-    }
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_BUILD_TYPE": "Debug"
+    },
+    "cmake.buildArgs": [
+        "--config",
+        "Debug"
+    ],
+    "cmake.launchBehavior": "reuseTerminal",
 }
