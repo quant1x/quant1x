@@ -469,7 +469,6 @@ set(quant1x-headers
     # 数据集
     quant1x/datasets/base.h
     quant1x/datasets/xdxr.h
-    quant1x/datasets/xdxr_adjust_factor.h
     quant1x/datasets/kline_raw.h
     quant1x/datasets/kline.h
     quant1x/datasets/trans.h
@@ -613,7 +612,6 @@ set(quant1x-sources
     quant1x/backtest/trade.cpp
 
     # 数据集
-    quant1x/datasets/xdxr_adjust_factor.cpp
     quant1x/datasets/xdxr.cpp
     quant1x/datasets/kline.cpp
     quant1x/datasets/kline_raw.cpp
