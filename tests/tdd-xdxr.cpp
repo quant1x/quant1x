@@ -126,7 +126,7 @@ void check_and_update(const exchange::timestamp& timestamp) {
                 // 只处理最后一条复权因子
                 auto factor = tmp_list.back();
                 if(factor.timestamp < timestamp.pre_market_time()) {
-                    v.adjust(factor.m, factor.a, factor.no);
+                    v.adjust(factor);
                 }
             }
             g_factor_history_map.emplace(v.Code, v);

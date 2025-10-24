@@ -1,3 +1,4 @@
+#include <quant1x/exchange/timestamp.h>
 #include <quant1x/test/test.h>
 #include <quant1x/datasets/kline_raw.h>
 
@@ -11,11 +12,29 @@ TEST_CASE("download-kline-raw", "[datasets]") {
     adapter->Update(code, now);
 }
 
+TEST_CASE("daily-kline", "[datasets]") {
+    runtime::global_init();
+    std::string code = "sz002350";
+    exchange::timestamp now = exchange::last_trading_day();
+
+    const auto adapter = std::make_unique<datasets::DataKLine>();
+    adapter->Update(code, now);
+}
+
+TEST_CASE("daily-kline-xdxr", "[datasets]") {
+    runtime::global_init();
+    std::string code = "sz300773";
+    exchange::timestamp now = exchange::timestamp::pre_market_time(2025, 6, 5);
+
+    const auto adapter = std::make_unique<datasets::DataKLine>();
+    adapter->Update(code, now);
+}
+
 TEST_CASE("minute-kline", "[datasets]") {
     runtime::global_init();
     std::string code = "sz300773";
     exchange::timestamp now = exchange::last_trading_day();
 
-    const auto adapter = std::make_unique<datasets::DataMinuteKLine>("1min");
+    const auto adapter = std::make_unique<datasets::DataMinuteKLine>("5min");
     adapter->Update(code, now);
 }
