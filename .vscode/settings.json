@@ -28,7 +28,6 @@
         "args": "${argsArray}",
         "cwd": "${command:cmake.launchTargetDirectory}",
         "sourceFileMap": "${sourceFileMapObj}",
-        "externalConsole": false
     },
     "testMate.cpp.debug.noThrow": false,
     "python.analysis.autoImportCompletions": true,
