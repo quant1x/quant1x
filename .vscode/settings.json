@@ -7,12 +7,30 @@
         }
     ],
     "testMate.cpp.debug.configTemplate": {
-        "type": "cppvsdbg",
-        "program": "${exe}",
-        "args": ["${testName}"],
-        "cwd": "${workspaceFolder}",
-        "console": "integratedTerminal"
+        "type": "${assert:testMate.cpp.debug.configTemplate doesn't support this platform.}",
+        "linux": {
+            "type": "cppdbg",
+            "MIMode": "gdb"
+        },
+        "darwin": {
+            "type": "lldb",
+            "env": {
+                "ASAN_OPTIONS": "detect_leaks=1",
+                "LSAN_OPTIONS": "suppressions=leaksanitizer.supp",
+                "DYLD_LIBRARY_PATH": "${command:cmake.buildDirectory}/lib"
+            },
+        },
+        "win32": {
+            "type": "cppvsdbg"
+        },
+        "preLaunchTask": "CMake: build",
+        "program": "${exec}",
+        "args": "${argsArray}",
+        "cwd": "${command:cmake.launchTargetDirectory}",
+        "sourceFileMap": "${sourceFileMapObj}",
+        "externalConsole": false
     },
+    "testMate.cpp.debug.noThrow": false,
     "python.analysis.autoImportCompletions": true,
     "python.envFile": "${workspaceFolder}/.env",
     "cmake.buildDirectory": "${workspaceFolder}/build",
@@ -24,5 +42,5 @@
         "--config",
         "Debug"
     ],
-    "cmake.launchBehavior": "reuseTerminal",
+    "cmake.launchBehavior": "reuseTerminal"
 }
