@@ -3,8 +3,7 @@
 #define QUANT1X_DATASETS_KLINE_MINUTE_H 1
 
 #include <quant1x/datasets/xdxr.h>
-
-#include "quant1x/pandas/rule.h"
+#include <quant1x/pandas/rule.h>
 
 namespace datasets {
 
@@ -22,7 +21,7 @@ namespace datasets {
         std::string Datetime;             // 时间
         int         AdjustmentCount = 0;  // 新增：除权除息次数
 
-        void adjust(double m, double a, int number);
+        //void adjust(double m, double a, int number);
 
         static std::vector<std::string> headers() {
             return {"Date",
@@ -52,15 +51,15 @@ namespace datasets {
 
     class DataMinuteKLine : public cache::DataAdapter {
     public:
-        DataMinuteKLine(const config::MinuteKLineConfig &config):mkc_(config){}
+        DataMinuteKLine(const config::MinuteKLineConfig &config) : mkc_(config) {}
 
         DataMinuteKLine(const std::string &freq) {
             auto [minutes, freq_] = pandas::parse_frequency(freq);
-            auto cfg = config::MinuteKLineConfig{};
-            cfg.minutes = minutes;
-            cfg.frequency = freq_;
-            cfg.enabled = true;
-            mkc_ = cfg;
+            auto cfg              = config::MinuteKLineConfig{};
+            cfg.minutes           = minutes;
+            cfg.frequency         = freq_;
+            cfg.enabled           = true;
+            mkc_                  = cfg;
         }
 
     public:
@@ -84,5 +83,4 @@ namespace datasets {
 
 }  // namespace datasets
 
-
-#endif //QUANT1X_DATASETS_KLINE_MINUTE_H
+#endif  // QUANT1X_DATASETS_KLINE_MINUTE_H

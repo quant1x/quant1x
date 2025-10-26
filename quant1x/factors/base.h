@@ -2,8 +2,8 @@
 #ifndef QUANT1X_FACTOR_BASE_H
 #define QUANT1X_FACTOR_BASE_H 1
 
-#include "quant1x/datasets/kline.h"
-#include "quant1x/datasets/kline_raw.h"
+#include <quant1x/datasets/kline.h>
+#include <quant1x/datasets/kline_raw.h>
 
 namespace factors {
 
@@ -13,13 +13,25 @@ namespace factors {
 
     // 累计复权因子
     struct CumulativeAdjustment {
-        exchange::timestamp timestamp;  // 除权除息的毫秒数
-        double              m;          // 系数, 比例因子（乘法）
-        double              a;          // 偏移, 偏移因子（加法）
-        int                 no;         // 第几次
+        exchange::timestamp timestamp;             // 除权除息的毫秒数
+        double              m;                     // 系数, 比例因子（乘法）
+        double              a;                     // 偏移, 偏移因子（加法）
+        double              monetaryAdjustment;    // 货币调整（例如每10股的货币调整）
+        double              shareAdjustmentRatio;  // 股本调整比率（例如新增股/基数）
+        int                 no;                    // 第几次
+        // 为避免多个相邻元素在同一缓存行导致的伪共享，补齐到 64 字节（典型 cache-line 大小）
+        // 重新排列字段后需要更多填充以保持 sizeof == 64
+        // 保持结构体总大小为 64 字节
+        char _cacheline_pad[20] = {0};
 
         std::string to_string() const {
-            return fmt::format("{{no={},timestamp={},m={},a={}}}", no, timestamp.only_date(), m, a);
+            return fmt::format("{{no={},timestamp={},m={},a={},monetaryAdjustment={},shareAdjRatio={}}}",
+                               no,
+                               timestamp.only_date(),
+                               m,
+                               a,
+                               monetaryAdjustment,
+                               shareAdjustmentRatio);
         }
 
         // 将一个价格应用此次调整
@@ -29,8 +41,10 @@ namespace factors {
         double inverse(double adjusted_price) const { return (adjusted_price - a) / m; }
     };
 
+    static_assert(sizeof(CumulativeAdjustment) == 64, "CumulativeAdjustment must be 64 bytes (cache-line aligned)");
+
     // 通过证券代码获取最新的除权除息列表
-    std::span<const level1::XdxrInfo> get_xdxr_list(const std::string &);
+    std::span<const level1::XdxrInfo> get_xdxr_list(const std::string &security_code);
     // 从除权除息的列表提取IPO日期
     std::optional<std::string> ipo_date_from_xdxrs(std::span<const level1::XdxrInfo> xdxrs);
     // 聚合给定一个时间范围内的复权因子
@@ -48,11 +62,11 @@ namespace factors {
      * @param should_truncate 是否应该截断 klines, 默认为true, 即截断
      */
     template <typename T>
-    void apply_forward_adjustments(std::vector<T>                   &klines,
-                                   std::span<const level1::XdxrInfo> xdxrs,
-                                   const exchange::timestamp        &start_date,
-                                   const exchange::timestamp        &end_date,
-                                   bool                              should_truncate = true) {
+    void apply_forward_adjustments_once(std::vector<T>                   &klines,
+                                        std::span<const level1::XdxrInfo> xdxrs,
+                                        const exchange::timestamp        &start_date,
+                                        const exchange::timestamp        &end_date,
+                                        bool                              should_truncate = true) {
         if (klines.empty()) {
             return;
         }
@@ -78,12 +92,15 @@ namespace factors {
             // 如果日线日期大于因子的日期, 因子索引+, 自动切换下一个因子
             // 考虑到可能存在长期停牌且停牌期间有除权除息记录的情况, 这种情况很少, 但还是可能会发生
             // 所以, 这里用了while循环, 直接找到最近的可以复权的记录
+            // 注意：除权/除息事件在 "当日" 不应修改当日的 K 线，而是将之前的历史数据向前调整。
+            // 因此当 current_date >= factor.timestamp 时我们会推进因子索引，使得当天的 K 线不使用当天发生的因子。
+            // 换言之，事件生效于当日之前的行情（即历史数据被修改），当天数据保持不变。
             while (i + 1 < factors_count && current_date >= factor.timestamp) {
                 ++i;
                 factor = factors[i];
             }
             if (current_date < factor.timestamp) {
-                kline->adjust(factor.m, factor.a, factor.no);
+                kline->adjust(factor);
             } else if (!should_truncate) {
                 // 如果不截断数据, 那么, 对于已经没有需要复权的因子来说，后面的klines数据就没必要继续循环了
                 break;
@@ -93,6 +110,28 @@ namespace factors {
         if (should_truncate) {
             klines.resize(rows);
         }
+    }
+
+    /**
+     * @brief 对K线数据进行前复权计算
+     *
+     * 根据提供的分红送配信息，对K线数据进行前复权处理，确保历史价格数据可比性。
+     *
+     * @param klines 需要复权的K线数据向量，会被直接修改
+     * @param dividends 分红送配信息向量，包含除权除息数据
+     *
+     * @note 如果输入K线数据为空，函数将直接返回不做任何处理
+     * @note 使用factors::apply_forward_adjustments_once实现实际复权计算
+     */
+    template <typename T>
+    void calculate_pre_adjust(std::vector<T> &klines, const std::vector<level1::XdxrInfo> &dividends) {
+        if (klines.empty()) {
+            return;
+        }
+        // 使用apply_forward_adjustments_once进行前复权
+        auto start_ts = exchange::timestamp(klines[0].Date).pre_market_time();
+        auto end_ts   = exchange::timestamp(klines.back().Date).pre_market_time();
+        apply_forward_adjustments_once(klines, dividends, start_ts, end_ts, true);
     }
 
     constexpr int  KLineMin    = 120;                       ///< K线最小记录数

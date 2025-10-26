@@ -43,22 +43,21 @@ namespace datasets {
         }
     }
 
-    void KLineRaw::adjust(const factors::CumulativeAdjustment &adj) {
-        auto m = adj.m;
-        auto a = adj.a;
-        this->Open = this->Open * m + a;
-        this->Close = this->Close * m + a;
-        this->High = this->High * m + a;
-        this->Low = this->Low * m + a;
-        // 成交量复权
-        // 1. 计算均价
-        auto ap = this->Amount / this->Volume;
-        // 2. 均价复权
-        ap = ap * m + a;
-        // 3. 以成交金额为基准, 用复权均价计算成交量
-        this->Volume = this->Amount / ap;
-        (void)adj;
-    }
+    // void KLineRaw::adjust(const factors::CumulativeAdjustment &adj) {
+    //     auto m = adj.m;
+    //     auto a = adj.a;
+    //     this->Open = this->Open * m + a;
+    //     this->Close = this->Close * m + a;
+    //     this->High = this->High * m + a;
+    //     this->Low = this->Low * m + a;
+    //     // 成交量复权
+    //     // 1. 计算均价
+    //     auto ap = this->Amount / this->Volume;
+    //     // 2. 均价复权
+    //     ap = ap * m + a;
+    //     // 3. 以成交金额为基准, 用复权均价计算成交量
+    //     this->Volume = this->Amount / ap;
+    // }
 
     std::vector<KLineRaw> read_kline_raw_from_csv(const std::string& filename) {
         std::vector<KLineRaw> klines;

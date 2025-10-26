@@ -47,7 +47,7 @@ struct History {
      * @param a 偏移
      * @param number 第几次除权除息
      */
-    void adjust(double m, double a, int number);
+    void adjust(const factors::CumulativeAdjustment &adj);
 
     friend std::ostream &operator<<(std::ostream &os, const History &history);
 };

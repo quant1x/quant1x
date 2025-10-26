@@ -5,10 +5,8 @@
 #include <boost/pfr.hpp>
 #include <quant1x/encoding/csv.h>
 
-void History::adjust(double m, double a, int number) {
-    (void)m;
-    (void)a;
-    (void)number;
+void History::adjust(const factors::CumulativeAdjustment &adj) {
+    (void)adj;
 }
 
 cache::Kind HistoryFeature::Kind() const {

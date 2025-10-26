@@ -6,6 +6,10 @@
 #include <quant1x/level1/client.h>
 #include <quant1x/engine/action.h>
 
+namespace factors {
+    struct CumulativeAdjustment;
+}
+
 namespace datasets {
 
     // 加载除权除息记录

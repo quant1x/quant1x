@@ -17,90 +17,22 @@ namespace datasets {
                                  row.Up, row.Down, row.Datetime, row.AdjustmentCount);
             }
         }
-
-        void calculate_pre_adjust(std::vector<MinuteKLine> &klines, const exchange::timestamp &startDate, const std::vector<level1::XdxrInfo> &dividends) {
-            if(klines.empty()) {
-                return;
-            }
-            // 最后一根K线的日期
-            auto const& last_day = klines[klines.size()-1].Date;
-            // 转成时间戳且对齐时间
-            auto const& ts_last_day = exchange::timestamp::parse(last_day).pre_market_time();
-            // 计算最后一根K线的下一个交易日的日期, 除权除息是不包括除权除息当日的, 所以要计算下一个交易日与除权除息的列表去匹配
-            // 300773拉卡拉, 2025年6月6日除权, 数据公布于6月3日之前, 那么在6月6日之前的6月4日收盘前是不能除权除息的，6月5日收盘可以除权
-            auto const& last_day_next = exchange::next_trading_day(ts_last_day).only_date();
-            auto start_date = startDate.only_date();
-            auto xdxr_infos = dividends | std::views::filter([&last_day_next](const level1::XdxrInfo & x) {return last_day_next >= x.Date && x.Category == 1;});
-            //int times = 0; // 除权除息次数
-            size_t count = std::ranges::distance(xdxr_infos); // 除权除息总次数
-            // 时间越早的记录除权除息次数越多, 第一条数据时时总的除权除息次数
-            auto times = count;
-            for(auto const & info : xdxr_infos) {
-                if(info.Date <= start_date) {
-                    // 除权除息数据在日线第一条数据之前, 也就是ipo上市日期之前的数据, 不能用作复权
-                    //continue;
-                } else {
-                    auto [m, a] = info.adjustFactor();
-                    auto klines_size = klines.size();
-                    for (size_t i = 0; i < klines_size; ++i) {
-                        auto kl = &(klines[i]);
-                        if (kl->Date >= info.Date) {
-                            break;
-                        }
-                        if (kl->Date < info.Date) {
-                            kl->Open = kl->Open * m + a;
-                            kl->Close = kl->Close * m + a;
-                            kl->High = kl->High * m + a;
-                            kl->Low = kl->Low * m + a;
-                            // 成交量复权
-                            // 1. 计算均价
-                            auto ap = kl->Amount / kl->Volume;
-                            // 2. 均价复权
-                            ap = ap * m + a;
-                            // 3. 以成交金额为基准, 用复权均价计算成交量
-                            kl->Volume = kl->Amount / ap;
-                            kl->AdjustmentCount += 1;
-                        }
-                    }
-                }
-                --times;
-                (void)times;
-            }
-        }
-
-        // config::MinuteKLineConfig kline_config() {
-        //     config::MinuteKLineConfig config{};
-        //     auto const &local_cfg = config::global_config().data.cache.kline;
-        //     if (local_cfg.size() != 1) {
-        //         throw std::runtime_error("kline config size must be exactly one");
-        //     }
-        //     const auto minute_kline_config = local_cfg.begin();
-        //     const auto key = minute_kline_config->first;
-        //     const auto value = minute_kline_config->second;
-        //     const auto d = pandas::ParseTimeRule(key);
-        //     const auto minutes = std::chrono::duration_cast<std::chrono::minutes>(d);
-        //     config.minutes = minutes.count();
-        //     config.frequency = key;
-        //     config.enabled = value;
-        //     return config;
-        // }
-
     }
 
-    void MinuteKLine::adjust(double m, double a, int number) {
-        Open = Open * m + a;
-        Close = Close * m + a;
-        High = High * m + a;
-        Low = Low * m + a;
-        // 成交量复权
-        // 1. 计算均价
-        auto ap = Amount / Volume;
-        // 2. 均价复权
-        ap = ap * m + a;
-        // 3. 以成交金额为基准, 用复权均价计算成交量
-        Volume = Amount / ap;
-        AdjustmentCount += number;
-    }
+    // void MinuteKLine::adjust(double m, double a, int number) {
+    //     Open = Open * m + a;
+    //     Close = Close * m + a;
+    //     High = High * m + a;
+    //     Low = Low * m + a;
+    //     // 成交量复权
+    //     // 1. 计算均价
+    //     auto ap = Amount / Volume;
+    //     // 2. 均价复权
+    //     ap = ap * m + a;
+    //     // 3. 以成交金额为基准, 用复权均价计算成交量
+    //     Volume = Amount / ap;
+    //     AdjustmentCount += number;
+    // }
 
     std::vector<MinuteKLine> read_minute_kline_from_csv(const std::string& filename) {
         std::vector<MinuteKLine> klines;
@@ -260,7 +192,7 @@ namespace datasets {
             auto dividends = load_xdxr(code);
             if (isFreshFetchRequireAdjustment) {
                 // 只除权除息最新的一条记录
-                calculate_pre_adjust(incremental_klines, current_start_date, dividends);
+                detail::apply_forward_adjustment_for_event(incremental_klines, current_start_date, dividends);
             }
             // 6.2 只前复权当日数据
             // 7. 拼接缓存和新增的数据
@@ -277,7 +209,7 @@ namespace datasets {
             }
             // 8. 前复权
             if (!isFreshFetchRequireAdjustment) {
-                calculate_pre_adjust(klines, current_start_date, dividends);
+                detail::apply_forward_adjustment_for_event(klines, current_start_date, dividends);
             }
             // 9. 刷新缓存文件
             save_kline(cache_filename, klines);

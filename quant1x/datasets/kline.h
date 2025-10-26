@@ -20,7 +20,7 @@ namespace datasets {
         std::string Datetime;             // 时间
         int         AdjustmentCount = 0;  // 新增：除权除息次数
 
-        void adjust(double m, double a, int number);
+        void adjust(const factors::CumulativeAdjustment &adj);
 
         static std::vector<std::string> headers() {
             return {"Date",

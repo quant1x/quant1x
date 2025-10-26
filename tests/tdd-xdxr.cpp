@@ -46,7 +46,7 @@ TEST_CASE("klines-check", "[xdxr]") {
     // 在这里修正开始日期不能早于ipo日期
     start_date = std::max(ipo_date, start_date);
     auto end_date = exchange::timestamp(2025,6,5).pre_market_time();
-    factors::apply_forward_adjustments(raw_list, xdxr_infos, start_date, end_date, true);
+    factors::apply_forward_adjustments_once(raw_list, xdxr_infos, start_date, end_date, true);
     //std::string cache_filename = config::get_kline_filename(code, true);
     //encoding::csv::slices_to_csv(raw_list, cache_filename);
     DataFrame df = DataFrame::from_struct_vector(raw_list);
