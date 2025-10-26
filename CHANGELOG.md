@@ -3,9 +3,31 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.158] - 2025-10-26
+### Changed
+- 删除废弃的临时文件
+- 修订应用程序名
+- 优化f10缓存过期机制
+- 调整测试代码
+- 修复git tag脚本
+- 修复c++ Testing模板
+- 修复vscode 单元测试执行其它exe的问题
+- 修改除权除息文档文件名
+- 删除废弃的除权除息代码
+- 调整vscode配置
+- 剔除废弃的代码
+- 修复std::error_code未使用告警
+- 调整部分代码
+- 调整测试代码
+- 调整c++ catch2调试配置
+- 删除扩展终端选项
+- windows下调整为gcc的cppdbg
+- 成交量复权与通达信算法对齐
+
 ## [0.6.157] - 2025-10-20
 ### Changed
 - 优化.env的检索方法
+- update changelog
 
 ## [0.6.156] - 2025-10-20
 ### Changed
@@ -1095,7 +1117,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.157...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.158...HEAD
+[0.6.158]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.157...v0.6.158
 [0.6.157]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.156...v0.6.157
 [0.6.156]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.155...v0.6.156
 [0.6.155]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.154...v0.6.155
