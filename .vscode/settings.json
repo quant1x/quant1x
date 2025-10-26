@@ -21,7 +21,7 @@
             },
         },
         "win32": {
-            "type": "cppvsdbg"
+            "type": "cppdbg"
         },
         "preLaunchTask": "CMake: build",
         "program": "${exec}",
