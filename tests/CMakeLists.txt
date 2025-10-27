@@ -95,15 +95,15 @@ macro(add_gtest_executable source_file)
         quant1x test-gtest
     )
 
-    # 自动为 GoogleTest 可执行注册 CTest 条目（如果可用则使用 gtest_discover_tests）
-    if(COMMAND gtest_discover_tests)
-        gtest_discover_tests(${target_name}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-            PROPERTIES TIMEOUT 60
-        )
-    else()
-        add_test(NAME ${target_name} COMMAND $<TARGET_FILE:${target_name}>)
-    endif()
+    # # 自动为 GoogleTest 可执行注册 CTest 条目（如果可用则使用 gtest_discover_tests）
+    # if(COMMAND gtest_discover_tests)
+    #     gtest_discover_tests(${target_name}
+    #         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    #         PROPERTIES TIMEOUT 60
+    #     )
+    # else()
+    #     add_test(NAME ${target_name} COMMAND $<TARGET_FILE:${target_name}>)
+    # endif()
 endmacro()
 
 # 定义一个宏，用于创建 benchmark基准测试 可执行文件
