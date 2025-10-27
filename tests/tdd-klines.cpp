@@ -33,7 +33,7 @@ TEST_CASE("daily-kline-xdxr", "[datasets]") {
 
 TEST_CASE("minute-kline", "[datasets]") {
     runtime::global_init();
-    std::string code = "sz300773";
+    std::string code = "sh510050";
     exchange::timestamp now = exchange::last_trading_day();
 
     const auto adapter = std::make_unique<datasets::DataMinuteKLine>("5min");

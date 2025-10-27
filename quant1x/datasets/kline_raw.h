@@ -70,15 +70,17 @@ namespace datasets {
                             kl->Close = kl->Close * m + a;
                             kl->High  = kl->High * m + a;
                             kl->Low   = kl->Low * m + a;
-                            // 成交量复权
+                            // 成交量前复权
                             // 1. 计算均价
                             auto ap = kl->Amount / kl->Volume;
                             // 2. 均价复权
                             ap = ap * m + a;
-                            // 3. 以成交金额为基准, 用复权均价计算成交量
+                            // 3. 成交量复权
                             kl->Volume *= (1 + share_ratio);
                             // 4. 重新计算成交金额
                             kl->Amount = kl->Volume * ap;
+                            // kl->Amount = kl->Volume * ((kl->Amount / kl->Volume) * m + a);
+                            //kl->Amount = kl->Amount * (m +a);
                             // 5. 更新除权除息次数
                             kl->AdjustmentCount += 1;
                         }
