@@ -1,5 +1,6 @@
+#include <quant1x/test/test.h>
 #include <gtest/gtest.h>
-#include "quant1x/level1/security_quote.h"
+#include <quant1x/level1/security_quote.h>
 
 using namespace level1;
 

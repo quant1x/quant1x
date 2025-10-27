@@ -1,20 +1,8 @@
 #pragma once
-#include <cstdint>
 #ifndef QUANT1X_FACTOR_F10_SHARE_HOLDER_H
 #define QUANT1X_FACTOR_F10_SHARE_HOLDER_H 1
 
-#include <cpr/cpr.h>
-
-#include <ctime>
-#include <iomanip>
-#include <iostream>
-#include <map>
-#include <nlohmann/json.hpp>
-#include <sstream>
-#include <string>
-#include <vector>
-
-using json = nlohmann::json;
+#include <quant1x/std/api.h>
 
 namespace dfcf {
 
