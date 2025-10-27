@@ -74,11 +74,11 @@ namespace datasets {
                             // 1. 计算均价
                             auto ap = kl->Amount / kl->Volume;
                             // 2. 均价复权
-                            ap = ap * m + a;
+                            auto ap_adjusted = ap * m + a;
                             // 3. 成交量复权
                             kl->Volume *= (1 + share_ratio);
                             // 4. 重新计算成交金额
-                            kl->Amount = kl->Volume * ap;
+                            kl->Amount = kl->Volume * ap_adjusted;
                             // kl->Amount = kl->Volume * ((kl->Amount / kl->Volume) * m + a);
                             //kl->Amount = kl->Amount * (m +a);
                             // 5. 更新除权除息次数

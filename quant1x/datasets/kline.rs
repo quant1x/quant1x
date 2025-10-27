@@ -209,7 +209,7 @@ impl DataAdapter for DataKLine {
         // 仅从本地缓存加载除权除息数据（与 C++ 行为一致）
         let dividends = crate::datasets::xdxr::load_xdxr(code);
         if is_fresh_fetch_require_adjustment {
-            calculate_pre_adjust(&mut incremental_klines, ts_range[0], &dividends);
+            apply_forward_adjustment_for_event!(&mut incremental_klines, ts_range[0], &dividends);
         }
 
         // 按照 C++ 的合并逻辑合并缓存与增量数据
@@ -224,7 +224,7 @@ impl DataAdapter for DataKLine {
         }
 
         if !is_fresh_fetch_require_adjustment {
-            calculate_pre_adjust(&mut klines, ts_range[0], &dividends);
+            apply_forward_adjustment_for_event!(&mut klines, ts_range[0], &dividends);
         }
 
         // 持久化保存
@@ -294,67 +294,6 @@ fn read_kline_from_csv(filename: &str) -> Vec<KLine> {
     klines
 }
 
-// 辅助函数：计算预除权（与 C++ 实现相似）
-fn calculate_pre_adjust(
-    klines: &mut Vec<KLine>,
-    start_date: crate::Timestamp,
-    dividends: &Vec<crate::level1::xdxr::XdxrInfo>,
-) {
-    if klines.is_empty() {
-        return;
-    }
-    let last_day = klines.last().unwrap().date.clone();
-    let ts_last_day = crate::Timestamp::parse(&last_day).unwrap_or(crate::Timestamp::now());
-    // 将该日期转换为该日的盘前时间
-    let ts_last_day =
-        crate::Timestamp::pre_market_time_from_current(&ts_last_day).unwrap_or(ts_last_day);
-    let last_day_next = crate::exchange::next_trading_day(ts_last_day).only_date();
-    let start_date_only = start_date.only_date();
-    // 筛选除权除息记录：满足 last_day_next >= x.Date 并且 x.Category == 1
-    let xdxr_infos: Vec<crate::level1::xdxr::XdxrInfo> = dividends
-        .iter()
-        .filter(|x| {
-            if x.category as i32 != 1 {
-                return false;
-            }
-            if let Ok(dts) = crate::Timestamp::parse(&x.date) {
-                return last_day_next >= dts.only_date();
-            }
-            false
-        })
-        .cloned()
-        .collect();
-    let mut _times = xdxr_infos.len();
-    for info in xdxr_infos.iter() {
-        if info.date <= start_date_only { /* continue */
-        } else {
-            let (m, a) = info.adjust_factor();
-            let klines_size = klines.len();
-            for i in 0..klines_size {
-                if klines[i].date >= info.date {
-                    break;
-                }
-                klines[i].open = klines[i].open * m + a;
-                klines[i].close = klines[i].close * m + a;
-                klines[i].high = klines[i].high * m + a;
-                klines[i].low = klines[i].low * m + a;
-                // 使用 amount/volume 进行成交量的调整
-                let ap = if klines[i].volume != 0.0 {
-                    klines[i].amount / klines[i].volume
-                } else {
-                    0.0
-                };
-                let ap_adjusted = ap * m + a;
-                if ap_adjusted != 0.0 {
-                    klines[i].volume = klines[i].amount / ap_adjusted;
-                }
-                klines[i].adjustment_count += 1;
-            }
-        }
-        _times -= 1;
-    }
-}
-
 pub fn init() {
     let plugin = Arc::new(DataKLine) as Arc<dyn DataAdapter>;
     cache::register(plugin);
@@ -365,9 +304,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_read_kline_from_csv() {
+    fn test_kline_update() {
         let adapter = DataKLine;
-        let code = "sh510050";
+        let code = "sz002350";
         let date = Timestamp::now();
         adapter.update(code, date);
     }

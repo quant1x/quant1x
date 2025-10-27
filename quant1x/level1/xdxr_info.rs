@@ -41,13 +41,13 @@ impl XdxrInfoRequest {
     }
 
     pub fn serialize(&mut self) -> Vec<u8> {
-    // payload = padding + market(1) + code(6)
+        // payload = padding + market(1) + code(6)
         let payload_len = (self.padding.len() + 1 + self.code.len()) as u16;
         // pkg_len includes method (2) + payload
         self.pkg_len1 = 2u16 + payload_len;
         self.pkg_len2 = self.pkg_len1;
 
-    // 构建与 C++ 中 RequestHeader::headerSerialize() 完全一致的头部
+        // 构建与 C++ 中 RequestHeader::headerSerialize() 完全一致的头部
         let mut buf = BinaryStream::new();
         buf.push_u8(self.zip_flag);
         buf.push_u32(self.seq_id);
@@ -118,16 +118,25 @@ impl XdxrInfo {
         ]
     }
 
+    pub fn monetary_factor(&self) -> f64 {
+        // 现金分红调整金额 = 每股分红 * 除权前总股本 / 10
+        ((self.peigu as f64 * self.peigu_jia as f64) - self.fenhong as f64
+            + (self.fenshu as f64 * self.xingquan_jia as f64))
+            / 10.0
+    }
+
+    pub fn share_ratio_factor(&self) -> f64 {
+        // 股本变动调整比例 = 除权后总股本 / 除权前总股本
+        ((self.songzhuan as f64) + (self.peigu as f64) - (self.suogu as f64) + (self.fenshu as f64))
+            / 10.0
+    }
+
     /// 计算除权因子 (m, a)，与 C++ adjustFactor() 等价
     pub fn adjust_factor(&self) -> (f64, f64) {
         // A = (PeiGu * PeiGuJia - FenHong + FenShu * XingQuanJia) / 10.0
         // B = (SongZhuanGu + PeiGu - SuoGu + FenShu) / 10.0
-        let a = ((self.peigu as f64 * self.peigu_jia as f64) - self.fenhong as f64
-            + (self.fenshu as f64 * self.xingquan_jia as f64))
-            / 10.0;
-        let b = ((self.songzhuan as f64) + (self.peigu as f64) - (self.suogu as f64)
-            + (self.fenshu as f64))
-            / 10.0;
+        let a = self.monetary_factor();
+        let b = self.share_ratio_factor();
         if (1.0 + b).abs() > 1e-10 {
             let m = 1.0 / (1.0 + b);
             let aa = a * m;
@@ -136,6 +145,7 @@ impl XdxrInfo {
             (1.0, 0.0)
         }
     }
+
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

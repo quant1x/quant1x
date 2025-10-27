@@ -47,6 +47,46 @@ impl MinuteKLine {
     }
 }
 
+// 推断成交量单位 (参照 C++ 实现)。遍历获取的 SecurityBar 列表, 使用第一条有效记录的
+// (Amount / Vol) 与典型价格(平均 OCHL)和 High 比较, 向上取整到 10 的次幂以推断单位。
+fn infer_bar_vol_unit(hs: &Vec<Vec<crate::level1::SecurityBar>>) -> f64 {
+    for vec in hs.iter() {
+        for row in vec.iter() {
+            if row.amount <= 0.0 || row.vol <= 0.0 {
+                continue;
+            }
+            let mut typical = (row.open + row.close + row.high + row.low) / 4.0;
+            if typical <= 0.0 {
+                typical = row.close;
+            }
+            if typical <= 0.0 {
+                continue;
+            }
+            let implied = row.amount / row.vol;
+            if !implied.is_finite() || implied <= 0.0 || row.high <= 0.0 {
+                return 1.0;
+            }
+            if implied <= row.high {
+                return 1.0;
+            }
+            let ratio = implied / row.high;
+            if !ratio.is_finite() || ratio <= 1.0 {
+                return 1.0;
+            }
+            let expd = ratio.log10().ceil();
+            let mut expi = expd as i32;
+            if expi < 0 {
+                expi = 0;
+            }
+            if expi > 9 {
+                expi = 9;
+            }
+            return 10f64.powi(expi);
+        }
+    }
+    1.0
+}
+
 #[derive(Debug)]
 pub struct DataMinuteKLine;
 
@@ -126,7 +166,10 @@ impl DataAdapter for DataMinuteKLine {
             _ => crate::level1::KLineType::_1Min, // default
         };
 
-        let mut klines_offset = MAX_KLINE_LOOKBACK_DAYS * number_of_day;
+        // Align klines offset to a fixed block size (floor alignment), mirroring the C++ logic.
+        // Ensure (klines_length - klines_offset) is an integer multiple of `min_fixed_offset`.
+        let min_fixed_offset = MAX_KLINE_LOOKBACK_DAYS * number_of_day;
+        let mut klines_offset = min_fixed_offset;
         let mut adjust_times = 0i32;
         // 如果没有缓存，则使用一个非常早的默认日期
         let mut current_start_date =
@@ -135,22 +178,42 @@ impl DataAdapter for DataMinuteKLine {
             if klines_offset > klines_length {
                 klines_offset = klines_length;
             }
-            // 避免依赖每行的 datetime 字段（可能不可靠）。改为按交易日向前回推 N 天来计算起始日期，
-            // 其中 N 由 klines_offset 表示的完整交易日数决定。
-            let back_days = if number_of_day > 0 {
-                klines_offset / number_of_day
+            // candidate: 原始候选起点索引
+            let candidate = if klines_length > klines_offset {
+                klines_length - klines_offset
             } else {
                 0
             };
-            let mut ts = crate::Timestamp::pre_market_time_from_current(&crate::Timestamp::now())
-                .unwrap_or(crate::Timestamp::now());
-            for _ in 0..back_days {
-                ts = crate::exchange::prev_trading_day(ts);
+            // 使用 floor 对齐到 min_fixed_offset 的倍数，确保 (klines_length - klines_offset) 为该块大小的整数倍
+            let mut aligned = if min_fixed_offset > 0 {
+                (candidate / min_fixed_offset) * min_fixed_offset
+            } else {
+                0
+            };
+            // 边界保护
+            if aligned >= klines_length {
+                aligned = 0;
             }
-            current_start_date = ts;
-            // preserve adjustment count from the cached boundary row
-            let kline = &cache_klines[klines_length - klines_offset];
+            // 重新计算 klines_offset，使得 klines_length - klines_offset == aligned
+            klines_offset = klines_length - aligned;
+            // 根据对齐后的索引取出对应的日期作为拉取起点，并保留该边界行的 adjustment_count
+            let kline = &cache_klines[aligned];
+            // kline.date 是字符串, 尝试解析并转换为盘前时间
+            if let Ok(mut ts) = crate::Timestamp::parse(&kline.date) {
+                ts = crate::Timestamp::pre_market_time_from_current(&ts).unwrap_or(ts);
+                current_start_date = ts;
+            }
             adjust_times = kline.adjustment_count;
+
+            // 如果 aligned 看起来不是某个交易日的首条记录，记录警告以便人工审查。
+            if aligned > 0 && cache_klines[aligned - 1].date == cache_klines[aligned].date {
+                log::warn!(
+                    "[DataMinuteKLine] aligned index {} is not day-first for {} (date={})",
+                    aligned,
+                    code,
+                    cache_klines[aligned].date
+                );
+            }
         }
 
         // 构建从起始日期到今日盘前的日期范围
@@ -240,6 +303,7 @@ impl DataAdapter for DataMinuteKLine {
         hs.reverse();
 
         let mut incremental_klines: Vec<MinuteKLine> = Vec::new();
+        let bar_vol_unit = infer_bar_vol_unit(&hs);
         for page in hs.iter() {
             for row in page.iter() {
                 let date_time =
@@ -254,7 +318,7 @@ impl DataAdapter for DataMinuteKLine {
                     close: row.close,
                     high: row.high,
                     low: row.low,
-                    volume: row.vol * 100.0,
+                    volume: row.vol * bar_vol_unit,
                     amount: row.amount,
                     up: row.up_count as i32,
                     down: row.down_count as i32,
@@ -268,7 +332,7 @@ impl DataAdapter for DataMinuteKLine {
         let is_fresh_fetch_require_adjustment = adjust_times == 1;
         let dividends = crate::datasets::xdxr::load_xdxr(code);
         if is_fresh_fetch_require_adjustment {
-            calculate_pre_adjust(&mut incremental_klines, current_start_date, &dividends);
+            apply_forward_adjustment_for_event!(&mut incremental_klines, current_start_date, &dividends);
         }
 
         // merge cache and incremental
@@ -283,7 +347,7 @@ impl DataAdapter for DataMinuteKLine {
         }
 
         if !is_fresh_fetch_require_adjustment {
-            calculate_pre_adjust(&mut klines, current_start_date, &dividends);
+            apply_forward_adjustment_for_event!(&mut klines, current_start_date, &dividends);
         }
 
         // persist
@@ -356,64 +420,6 @@ fn read_minute_kline_from_csv(filename: &str) -> Vec<MinuteKLine> {
     klines
 }
 
-// calculate pre-adjustment for minute klines (reuse same algorithm as day KLine)
-fn calculate_pre_adjust(
-    klines: &mut Vec<MinuteKLine>,
-    start_date: crate::Timestamp,
-    dividends: &Vec<crate::level1::xdxr::XdxrInfo>,
-) {
-    if klines.is_empty() {
-        return;
-    }
-    let last_day = klines.last().unwrap().date.clone();
-    let ts_last_day = crate::Timestamp::parse(&last_day).unwrap_or(crate::Timestamp::now());
-    let ts_last_day =
-        crate::Timestamp::pre_market_time_from_current(&ts_last_day).unwrap_or(ts_last_day);
-    let last_day_next = crate::exchange::next_trading_day(ts_last_day).only_date();
-    let start_date_only = start_date.only_date();
-
-    let xdxr_infos: Vec<crate::level1::xdxr::XdxrInfo> = dividends
-        .iter()
-        .filter(|x| {
-            if x.category as i32 != 1 {
-                return false;
-            }
-            if let Ok(dts) = crate::Timestamp::parse(&x.date) {
-                return last_day_next >= dts.only_date();
-            }
-            false
-        })
-        .cloned()
-        .collect();
-
-    for info in xdxr_infos.iter() {
-        if info.date <= start_date_only {
-            continue;
-        }
-        let (m, a) = info.adjust_factor();
-        let klines_size = klines.len();
-        for i in 0..klines_size {
-            if klines[i].date >= info.date {
-                break;
-            }
-            klines[i].open = klines[i].open * m + a;
-            klines[i].close = klines[i].close * m + a;
-            klines[i].high = klines[i].high * m + a;
-            klines[i].low = klines[i].low * m + a;
-            let ap = if klines[i].volume != 0.0 {
-                klines[i].amount / klines[i].volume
-            } else {
-                0.0
-            };
-            let ap_adjusted = ap * m + a;
-            if ap_adjusted != 0.0 {
-                klines[i].volume = klines[i].amount / ap_adjusted;
-            }
-            klines[i].adjustment_count += 1;
-        }
-    }
-}
-
 pub fn init() {
     let plugin = Arc::new(DataMinuteKLine) as Arc<dyn DataAdapter>;
     cache::register(plugin);
@@ -424,9 +430,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_read_kline_from_csv() {
-        let adapter = DataMinuteKLine;
-        let code = "sz300144";
+    fn test_minute_kline_update() {
+        let adapter: DataMinuteKLine = DataMinuteKLine;
+        let code = "sh510050";
         let date = Timestamp::now();
         adapter.update(code, date);
     }

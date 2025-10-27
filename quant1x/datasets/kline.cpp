@@ -39,11 +39,11 @@ namespace datasets {
         // 1. 计算均价
         auto ap = Amount / Volume;
         // 2. 均价复权
-        ap = ap * adj.m + adj.a;
+        auto ap_adjusted = ap * adj.m + adj.a;
         // 3. 成交量复权
         Volume *=(1+adj.shareAdjustmentRatio);
         // 4. 以新成交量*均价计算成交额
-        Amount = Volume * ap;
+        Amount = Volume * ap_adjusted;
         // 5. 更新除权除息次数
         AdjustmentCount = adj.no;
     }

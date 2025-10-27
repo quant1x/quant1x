@@ -25,7 +25,7 @@ pub mod security_list;
 mod security_quote;
 pub mod transaction_data;
 pub mod transaction_history;
-pub mod xdxr;
+mod xdxr_info;
 
 pub use block_info::*;
 pub use block_meta::*;
@@ -43,4 +43,4 @@ pub(crate) use protocol::process_request_raw_std;
 // 导出标准处理请求
 pub use protocol::process_request_std;
 pub use security_bars::*;
-pub use xdxr::*;
+pub use xdxr_info::*;

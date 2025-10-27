@@ -29,7 +29,7 @@ impl cache::DataAdapter for DataXdxr {
 
     fn update(&self, code: &str, _date: Timestamp) {
         // call into level1 client to fetch xdxr (if available)
-        if let Some(resp) = crate::level1::xdxr::fetch_xdxr(code) {
+        if let Some(resp) = crate::level1::fetch_xdxr(code) {
             if !resp.list.is_empty() {
                 // write CSV file using C++ header order
                 let filename = crate::config::get_xdxr_filename(code);
@@ -78,13 +78,13 @@ pub fn init() {
 }
 
 /// Load XDXR CSV cache for a given security code. Returns an empty Vec on error or missing file.
-pub fn load_xdxr(code: &str) -> Vec<crate::level1::xdxr::XdxrInfo> {
+pub fn load_xdxr(code: &str) -> Vec<crate::level1::XdxrInfo> {
     let filename = crate::config::get_xdxr_filename(code);
-    let mut list: Vec<crate::level1::xdxr::XdxrInfo> = Vec::new();
+    let mut list: Vec<crate::level1::XdxrInfo> = Vec::new();
     if let Ok(f) = std::fs::File::open(&filename) {
         let mut rdr = csv::ReaderBuilder::new().has_headers(true).from_reader(f);
         match rdr
-            .deserialize::<crate::level1::xdxr::XdxrInfo>()
+            .deserialize::<crate::level1::XdxrInfo>()
             .collect::<Result<Vec<_>, csv::Error>>()
         {
             Ok(v) => list = v,
