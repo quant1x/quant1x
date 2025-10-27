@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <ranges>
 
 namespace datasets {
@@ -195,15 +196,37 @@ namespace datasets {
                         break;
                 }
             }
-            auto klines_offset = detail::MAX_KLINE_LOOKBACK_DAYS * numberOfDay;
+            const size_t min_fixed_offset = detail::MAX_KLINE_LOOKBACK_DAYS * numberOfDay;
+            auto klines_offset = min_fixed_offset;
+            //size_t klines_aligned_length = 0;
             if (klines_length > 0) {
                 if (klines_offset > klines_length) {
                     klines_offset = klines_length;
                 }
-                // 根据最大可以偏移的K线天数, 从缓存中截取对应的日期, 作为从服务器获取数据的起始日期
-                const auto &kline  = cacheMinuteKLines[klines_length - klines_offset];
+                // candidate: 原始候选起点索引
+                size_t candidate = (klines_length > klines_offset) ? (klines_length - klines_offset) : 0;
+                // 使用 floor 对齐到 min_fixed_offset 的倍数，确保 (klines_length - klines_offset) 为该块大小的整数倍
+                size_t aligned = (candidate / min_fixed_offset) * min_fixed_offset;
+                // 边界保护
+                if (aligned >= klines_length) {
+                    aligned = 0;
+                }
+                // 重新计算 klines_offset，使得 klines_length - klines_offset == aligned
+                klines_offset = klines_length - aligned;
+                // 根据对齐后的索引取出对应的日期作为拉取起点
+                const auto &kline  = cacheMinuteKLines[aligned];
                 current_start_date = kline.Date;  // 修正本次更新的开始日期
                 adjust_times       = kline.AdjustmentCount;
+
+                // 如果 aligned 看起来不是某个交易日的首条记录，记录警告以便人工审查。
+                // （业务上若要求严格为交易日首条，应在此处添加向前回退到当天首条的逻辑；
+                // 但那将打破“(klines_length - klines_offset) 为整块大小”的约束，两者需明确优先级。）
+                if (aligned > 0 && cacheMinuteKLines[aligned - 1].Date == cacheMinuteKLines[aligned].Date) {
+                    spdlog::warn("[dataset::MinuteKLine] aligned index {} is not day-first for {} (date={})",
+                                 aligned,
+                                 code,
+                                 cacheMinuteKLines[aligned].Date);
+                }
             }
             // 2. 确定结束日期
             auto current_trading_date = exchange::timestamp::now().pre_market_time();
@@ -211,15 +234,15 @@ namespace datasets {
                           code,
                           current_start_date.only_date(),
                           current_trading_date.only_date());
-            auto ts               = exchange::date_range(current_start_date, current_trading_date);
-            auto total_days       = ts.size();
-            auto max_             = 65535;
-            auto total            = int(total_days);
-            auto max_days         = max_ / numberOfDay;
-            auto days_            = std::min(max_days, total);
-            total                 = days_ * numberOfDay;
-            current_start_date    = ts[total_days - days_];
-            auto current_end_date = ts[total_days - 1];
+            auto ts         = exchange::date_range(current_start_date, current_trading_date);
+            auto total_days = ts.size();
+            auto max_       = 65535;
+            auto max_days   = max_ / numberOfDay;
+            auto days_      = std::min(max_days, int(total_days));
+            // 计算需要拉取的新增分钟K线数量
+            auto incremental_total = days_ * numberOfDay;
+            current_start_date     = ts[total_days - days_];
+            auto current_end_date  = ts[total_days - 1];
             spdlog::debug("[dataset::MinuteKLine] [{}]: from {} to {}",
                           code,
                           current_start_date.only_date(),
@@ -231,10 +254,10 @@ namespace datasets {
             size_t                                        elementCount = 0;
             do {
                 u16 count = step;
-                if (total - start >= step) {
+                if (incremental_total - start >= step) {
                     count = step;
                 } else {
-                    count = u16(total - start);
+                    count = u16(incremental_total - start);
                 }
                 auto reply = detail::fetch_kline(code, start, count, kline_type);
                 if (reply.empty()) {
@@ -246,7 +269,7 @@ namespace datasets {
                     break;
                 }
                 start += count;
-            } while (start < total);
+            } while (start < incremental_total);
             // 4. 由于K线数据，每次获取数据是从后往前获取, 所以这里需要反转历史数据的切片
             std::reverse(hs.begin(), hs.end());
             // 5. 调整成交量, 单位从手改成股, vol字段 * 100
@@ -254,7 +277,7 @@ namespace datasets {
             incremental_klines.reserve(elementCount);
             // 从获取到的 bars 中推断成交量单位（可能为 1、10、100、1000 等）
             f64 bar_vol_unit = infer_bar_vol_unit(hs);
-            //std::cout << "Inferred bar volume unit: " << bar_vol_unit << "\n";
+            // std::cout << "Inferred bar volume unit: " << bar_vol_unit << "\n";
             for (const auto &vec : hs) {
                 for (const auto &row : vec) {
                     auto dateTime = exchange::timestamp(row.Year, row.Month, row.Day).pre_market_time();
@@ -297,9 +320,10 @@ namespace datasets {
             std::vector<MinuteKLine> klines;
             // 7.1 先截取本地缓存的数据
             if (klines_length > klines_offset) {
+                // 注意：iterator 的差值类型为 signed difference_type, 这里显式转换以避免窄化警告
                 klines.insert(klines.end(),
                               cacheMinuteKLines.begin(),
-                              cacheMinuteKLines.begin() + (klines_length - klines_offset));
+                              cacheMinuteKLines.begin() + static_cast<std::ptrdiff_t>(klines_length - klines_offset));
             }
             // 7.2 拼接新增的数据
             if (klines.empty()) {
