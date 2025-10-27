@@ -3,9 +3,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.6.160] - 2025-10-27
+### Changed
+- 修改cmake编译gtest测试用例存在失败的问题
+- 修复5minK线前复权金额错误的bug
+- 修复增加分钟K线数据存在日期和记录不对齐的bug
+- 对齐rust与c++的量前复权
+
 ## [0.6.159] - 2025-10-27
 ### Changed
 - 优化部分F10数据的代码
+- update changelog
 
 ## [0.6.158] - 2025-10-26
 ### Changed
@@ -1122,7 +1130,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.159...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.160...HEAD
+[0.6.160]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.159...v0.6.160
 [0.6.159]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.158...v0.6.159
 [0.6.158]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.157...v0.6.158
 [0.6.157]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.156...v0.6.157
