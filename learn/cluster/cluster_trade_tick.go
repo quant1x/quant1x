@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"gitee.com/quant1x/gotdx/quotes"
+	"gitee.com/quant1x/data/level1/quotes"
 	"gitee.com/quant1x/num"
 	"gitee.com/quant1x/quant1x/learn/preprocessing"
 )
