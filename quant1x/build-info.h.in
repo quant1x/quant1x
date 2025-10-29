@@ -121,6 +121,5 @@
 #define MIMALLOC_MODE                    "@MIMALLOC_MODE@"
 #define DEPENDENCY_SPDLOG                "@DEPENDENCY_SPDLOG@"
 #define DEPENDENCY_CPR                   "@DEPENDENCY_CPR@"
-#define DEPENDENCY_DUKTAPE               "@DEPENDENCY_DUKTAPE@"
 #define DEPENDENCY_BENCHMARK             "@DEPENDENCY_BENCHMARK@"
 #define DEPENDENCY_CATCH2                "@DEPENDENCY_CATCH2@"

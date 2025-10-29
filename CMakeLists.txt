@@ -281,14 +281,14 @@ endif()
 # spdlog
 include(cmake/spdlog.cmake)
 
-message(STATUS "================== JavaScript工具库 ==================")
+#message(STATUS "================== JavaScript工具库 ==================")
 ## MuJS
 #find_package(PkgConfig)
 #pkg_check_modules(MUJS REQUIRED IMPORTED_TARGET mujs)
 # duktape
-find_package(unofficial-duktape CONFIG REQUIRED)
-target_link_libraries(third_libs INTERFACE unofficial::duktape::duktape)
-echo_lib_version(duktape ${unofficial-duktape_VERSION})
+#find_package(unofficial-duktape CONFIG REQUIRED)
+#target_link_libraries(third_libs INTERFACE unofficial::duktape::duktape)
+#echo_lib_version(duktape ${unofficial-duktape_VERSION})
 
 message(STATUS "================== 测试工具库 ==================")
 
@@ -816,7 +816,7 @@ message(STATUS "                             Cap'n Proto : v${CapnProto_VERSION}
 message(STATUS "                                mimalloc : v${mimalloc_VERSION}")
 message(STATUS "                                  spdlog : v${spdlog_VERSION}")
 message(STATUS "     C++ Requests Library (Cpr for curl) : v${cpr_VERSION}")
-message(STATUS "                   unofficial-duktape(√) : v${unofficial-duktape_VERSION}")
+#message(STATUS "                   unofficial-duktape(√) : v${unofficial-duktape_VERSION}")
 message(STATUS "                               benchmark : v${benchmark_VERSION}")
 message(STATUS "                                  Catch2 : v${Catch2_VERSION}")
 message(STATUS "                                   GTest : v${GTest_VERSION}")

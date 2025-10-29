@@ -9,7 +9,6 @@
     "zlib",
     "mimalloc",
     "cpr",
-    "duktape",
     "flatbuffers",
     "capnproto",
     "benchmark",
