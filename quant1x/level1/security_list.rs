@@ -10,11 +10,13 @@ use encoding_rs::GBK;
 pub struct SecurityListRequest {
     header: RequestHeader,
     market: u16,
-    start: u16,
+    start: u32,
+    count: u32,
+    unknown: u32,
 }
 
 impl SecurityListRequest {
-    pub fn new(market: u16, start: u16) -> Self {
+    pub fn new(market: u16, start: u32, count: u32) -> Self {
         let mut header = RequestHeader::new();
         header.zip_flag = 0x0C;
         header.seq_id = sequence_id();
@@ -25,6 +27,8 @@ impl SecurityListRequest {
             header,
             market,
             start,
+            count,
+            unknown: 0,
         }
     }
 
@@ -32,7 +36,7 @@ impl SecurityListRequest {
         self.market
     }
 
-    pub fn start(&self) -> u16 {
+    pub fn start(&self) -> u32 {
         self.start
     }
 }
@@ -49,7 +53,9 @@ impl Request for SecurityListRequest {
     fn serialize_payload(&mut self) -> Vec<u8> {
         let mut payload = BinaryStream::new();
         payload.push_u16(self.market);
-        payload.push_u16(self.start);
+        payload.push_u32(self.start);
+        payload.push_u32(self.count);
+        payload.push_u32(self.unknown);
         payload.data().clone()
     }
 
@@ -127,13 +133,15 @@ impl Response for SecurityListResponse {
             let name_nul = name_buf.iter().position(|&b| b == 0).unwrap_or(8);
             let (name_cow, _, _) = GBK.decode(&name_buf[..name_nul]);
             let name = name_cow.into_owned();
-            let mut _rev1 = [0u8; 4];
+            let mut _rev1 = [0u8; 8];
             bs.get_byte_array(&mut _rev1)?;
+            let mut _rev2 = [0u8; 4];
+            bs.get_byte_array(&mut _rev2)?;
             let decimal_point = bs.get_u8()?;
             let tmp = bs.get_u32()?;
             let pre_close = int_to_float64(tmp);
-            let mut _rev2 = [0u8; 4];
-            bs.get_byte_array(&mut _rev2)?;
+            let mut _rev3 = [0u8; 4];
+            bs.get_byte_array(&mut _rev3)?;
 
             self.list.push(Security {
                 code,
@@ -153,10 +161,10 @@ impl Response for SecurityListResponse {
 
 /// Fetch a single page of security list from level1 server.
 /// Returns Some(SecurityListResponse) on success, None on any IO error.
-pub fn fetch_security_list(market: u16, start: u16) -> Option<SecurityListResponse> {
+pub fn fetch_security_list(market: u16, start: u32, count: u32) -> Option<SecurityListResponse> {
     match crate::level1::client::client() {
         Ok(mut pooled) => {
-            let mut request = SecurityListRequest::new(market, start);
+            let mut request = SecurityListRequest::new(market, start, count);
             let mut response = SecurityListResponse::new();
             match protocol::process(pooled.stream(), &mut request, &mut response) {
                 Ok(_) => {

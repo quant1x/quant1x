@@ -63,6 +63,14 @@ pub fn get_stock_code_list() -> Vec<String> {
         }
     }
 
+    // Beijing Stock Exchange 920000-920999
+    for i in 920000..=920999 {
+        let code = format!("bj{:06}", i);
+        if !is_need_ignore(&code) {
+            all_codes.push(code);
+        }
+    }    
+
     all_codes
 }
 
@@ -78,6 +86,7 @@ pub fn get_index_list() -> Vec<String> {
         "sz399001".to_string(), // 深证成份指数
         "sz399006".to_string(), // 创业板指
         "sz399107".to_string(), // 深证A指
+        "bj899050".to_string(), // 北证指数
         "sh880005".to_string(), // 通达信板块-涨跌家数
         "sh510050".to_string(), // 上证50ETF
         "sh510300".to_string(), // 沪深300ETF

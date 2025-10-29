@@ -18,7 +18,8 @@ pub mod commands {
     pub const COMPANY_CATEGORY: u16 = 0x02cf;
     pub const COMPANY_CONTENT: u16 = 0x02d0;
     pub const SECURITY_COUNT: u16 = 0x044e;
-    pub const SECURITY_LIST: u16 = 0x0450;
+    pub const SECURITY_LIST: u16 = 0x044d;
+    pub const OLD_SECURITY_LIST: u16 = 0x0450;
     pub const INDEX_BARS: u16 = 0x052d;
     pub const SECURITY_BARS: u16 = 0x052d; // same numeric value as INDEX_BARS in C++
     pub const SECURITY_QUOTES_OLD: u16 = 0x053e;

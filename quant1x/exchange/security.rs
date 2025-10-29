@@ -1,3 +1,4 @@
+use crate::get_market_flag;
 use crate::runtime::RollingOnce;
 use crate::timestamp::Timestamp;
 use once_cell::sync::Lazy;
@@ -73,16 +74,16 @@ fn init_securities_impl() -> Result<(), Box<dyn std::error::Error>> {
     if need_update {
         log::info!("security: updating securities list into {}", filename);
 
-        use crate::exchange::{MARKET_FLAG_SH, MARKET_FLAG_SZ, MARKET_SHANGHAI, MARKET_SHENZHEN};
+        use crate::exchange::{MARKET_FLAG_SH, MARKET_FLAG_SZ, MARKET_SHANGHAI, MARKET_SHENZHEN, MARKET_BEIJING};
 
         // markets to query (SZ then SH) mirror previous behavior
-        let markets: [u16; 2] = [MARKET_SHENZHEN as u16, MARKET_SHANGHAI as u16];
-        let mut all: Vec<(String, u16, u8, String, f64)> = Vec::new();
-
+        let markets: [u16; 3] = [MARKET_SHENZHEN as u16, MARKET_SHANGHAI as u16, MARKET_BEIJING as u16];
+    let mut all: Vec<SecurityInfo> = Vec::new();
+        let count = 1600u32;
         for &market in markets.iter() {
-            let mut start: u16 = 0;
+            let mut start: u32 = 0;
             loop {
-                match crate::level1::security_list::fetch_security_list(market as u16, start) {
+                match crate::level1::security_list::fetch_security_list(market as u16, start, count) {
                     Some(resp) => {
                         log::info!(
                             "security list market={} start={} count={}",
@@ -92,19 +93,15 @@ fn init_securities_impl() -> Result<(), Box<dyn std::error::Error>> {
                         );
                         let cnt = resp.list.len();
                         for e in resp.list.into_iter() {
-                            let prefix = if market == MARKET_SHANGHAI as u16 {
-                                MARKET_FLAG_SH
-                            } else {
-                                MARKET_FLAG_SZ
-                            };
+                            let prefix = get_market_flag(market as u8);
                             let code = format!("{}{}", prefix, e.code);
-                            all.push((code, e.vol_unit, e.decimal_point, e.name, e.pre_close));
+                            // store as SecurityInfo (pre_close is not stored in SecurityInfo)
+                            all.push(SecurityInfo::new(code, e.name, e.vol_unit, e.decimal_point));
                         }
-                        // security_list_max in C++ is 1000
-                        if cnt < 1000 {
+                        if cnt < count as usize {
                             break;
                         }
-                        start = start.wrapping_add(1000u16);
+                        start = start.wrapping_add(count);
                     }
                     None => {
                         log::error!(
@@ -140,16 +137,16 @@ fn init_securities_impl() -> Result<(), Box<dyn std::error::Error>> {
                     .unwrap_or_else(|| std::path::Path::new(".")),
             )?;
             use std::io::Write;
-            writeln!(tmp.as_file_mut(), "Code,VolUnit,DecimalPoint,Name,PreClose")?;
+            writeln!(tmp.as_file_mut(), "Code,VolUnit,DecimalPoint,Name")?;
             for s in all.iter() {
+                // PreClose not part of SecurityInfo; write placeholder 0.0 to keep CSV columns compatible
                 writeln!(
                     tmp.as_file_mut(),
-                    "{},{},{},{},{}",
-                    s.0,
-                    s.1,
-                    s.2,
-                    csv_escape(&s.3),
-                    s.4
+                    "{},{},{},{}",
+                    s.code,
+                    s.lot_size,
+                    s.price_precision,
+                    csv_escape(&s.name),
                 )?;
             }
             let _ = tmp.persist(&filename);
@@ -169,7 +166,7 @@ fn init_securities_impl() -> Result<(), Box<dyn std::error::Error>> {
 
         for result in rdr.records() {
             if let Ok(rec) = result {
-                // rec: Code,VolUnit,DecimalPoint,Name,PreClose (Name may contain commas)
+                // rec: Code,VolUnit,DecimalPoint,Name
                 let code = rec.get(0).unwrap_or("").trim().to_string();
                 if code.is_empty() {
                     continue;
