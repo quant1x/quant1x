@@ -2,6 +2,7 @@
 #include <quant1x/exchange.h>
 #include <quant1x/exchange/session.h>
 #include <quant1x/proto/data.h>
+#include <random>
 
 #include "quant1x/datasets/trans.h"
 

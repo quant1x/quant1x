@@ -2,6 +2,23 @@
 
 namespace exchange {
 
+    // A股指数列表
+    static const std::vector<std::string> AShareIndexList = {
+        "sh000001",  // 上证综合指数
+        "sh000002",  // 上证A股指数
+        "sh000300",  // 沪深300指数
+        "sh000688",  // 科创50指数
+        "sh000905",  // 中证500指数
+        "sz399001",  // 深证成份指数
+        "sz399006",  // 创业板指
+        "sz399107",  // 深证A指
+        "bj899050",  // 北证50指数
+        "sh880005",  // 通达信板块-涨跌家数
+        "sh510050",  // 上证50ETF
+        "sh510300",  // 沪深300ETF
+        "sh510900",  // H股ETF
+    };
+
     /// 证券代码是否需要忽略, 这是一个不参与数据和策略处理的开关
     bool IsNeedIgnore(const std::string& code) {
         auto p = get_security_info(code);
@@ -68,6 +85,14 @@ namespace exchange {
             }
         }
 
+        // 北交所 (bj920000-bj920999)
+        {
+            for (int i = 920000; i <= 920999; ++i) {
+                std::string fc = std::format("bj{:06d}", i);
+                if (!IsNeedIgnore(fc)) allCodes.emplace_back(fc);
+            }
+        }
+        
         // 港股示例 (hk00001-hk09999)
         /*
         {

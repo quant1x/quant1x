@@ -42,14 +42,14 @@ namespace exchange {
             // 同步证券信息文件
             try {
                 // 开始业务处理
-                auto markets = {exchange::MarketType::ShangHai, exchange::MarketType::ShenZhen};
+                auto markets = {exchange::MarketType::ShangHai, exchange::MarketType::ShenZhen, exchange::MarketType::BeiJing};
                 // 1. 获取证券列表
                 std::vector<level1::Security> allSecurity;
                 for(auto const & marketId : markets) {
                     std::string prefix = exchange::GetMarketFlag(marketId);
                     int start = 0;
                     for(;;){
-                        level1::SecurityListRequest reqSecurityList((int) marketId, start);
+                        level1::SecurityListRequest reqSecurityList((int) marketId, start, level1::security_list_pre_request_max);
                         level1::SecurityListResponse respSecurityList;
                         auto conn = level1::client();
                         auto err = level1::process(conn->socket(), reqSecurityList, respSecurityList);
@@ -73,10 +73,10 @@ namespace exchange {
                                 allSecurity.emplace_back(*v);
                             }
                         }
-                        if (respSecurityList.List.size() < level1::security_list_max) {
+                        if (respSecurityList.List.size() < level1::security_list_pre_request_max) {
                             break;
                         }
-                        start += level1::security_list_max;
+                        start += level1::security_list_pre_request_max;
                     }
                 }
                 if (!allSecurity.empty()){

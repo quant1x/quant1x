@@ -48,7 +48,8 @@ namespace exchange {
     // 9: B股
     static const std::vector<std::string> shanghaiMainBoardPrefixes = {"50", "51", "60", "68", "90", "110", "113", "132", "204"};
     static const std::vector<std::string> shanghaiSpecialPrefixes = {"5", "6", "9", "7"};
-    static const std::vector<std::string> shanghaiOtherPrefixes = {"88"};
+    // 板块指数: 880,881
+    static const std::vector<std::string> sectorPrefixes = {"880", "881"};
     // 深圳交易所
     // 主板: 000,001
     // 中小板: 002,003,004
@@ -66,8 +67,15 @@ namespace exchange {
     // 399: 指数
     static const std::vector<std::string> shenzhenMainBoardPrefixes = {"00", "12", "13", "18", "15", "16", "18", "20", "30", "39",
                                                                        "115", "1318"};
-    // 北京交易所, 只处理4和8开头的代码
-    static const std::vector<std::string> beijingMainBoardPrefixes = {"4", "8"};
+    // 北京交易所证券代码段
+	// 北交所指数: 899
+	// 新三板: 40,43,83,87
+	// 88开头: 通常表示公开发行的股票, 与新三板市场中的其他类型股票进行区分
+	// 三板A: 400,430,830-839,870-873
+	// 三板B: 420
+	// 优先股: 820
+	// 新代码段: 920
+    static const std::vector<std::string> beijingMainBoardPrefixes = {"40", "43", "83", "87", "88", "420", "820", "899", "920"};
 
     /**
      * @brief 根据代码判断所属市场
@@ -91,7 +99,7 @@ namespace exchange {
             market = market_shenzhen;
         } else if (strings::startsWith(code, shanghaiSpecialPrefixes)) {
             market = market_shangHai;
-        } else if (strings::startsWith(code, shanghaiOtherPrefixes)) {
+        } else if (strings::startsWith(code, sectorPrefixes)) {
             market = market_shangHai;
         } else if (strings::startsWith(code, beijingMainBoardPrefixes)) {
             market = market_beijing;
@@ -158,7 +166,7 @@ namespace exchange {
             marketCode = market_shenzhen;
         } else if (strings::startsWith(pureCode, shanghaiSpecialPrefixes)) {
             marketCode = market_shangHai;
-        } else if (strings::startsWith(pureCode, shanghaiOtherPrefixes)) {
+        } else if (strings::startsWith(pureCode, sectorPrefixes)) {
             marketCode = market_shangHai;
         } else if (strings::startsWith(pureCode, beijingMainBoardPrefixes)) {
             marketCode = market_beijing;
@@ -180,8 +188,18 @@ namespace exchange {
      * @return 是否为指数
      */
     bool AssertIndexByMarketAndCode(MarketType marketId, const std::string &symbol) {
-        if (marketId == MarketType::ShangHai && strings::startsWith(symbol, {"000", "880", "881"})) return true;
-        if (marketId == MarketType::ShenZhen && strings::startsWith(symbol, {"399"})) return true;
+        // 上交所指数: 000, 880, 881
+        if (marketId == MarketType::ShangHai && strings::startsWith(symbol, {"000", "880", "881"})) {
+            return true;
+        }
+        // 深交所指数: 399
+        if (marketId == MarketType::ShenZhen && strings::startsWith(symbol, {"399"})) {
+            return true;
+        }
+        // 北交所指数: 899
+        if (marketId == MarketType::BeiJing && strings::startsWith(symbol, {"899"})) {
+            return true;
+        }
         return false;
     }
 
@@ -202,7 +220,7 @@ namespace exchange {
      */
     bool AssertBlockBySecurityCode(std::string *securityCode) {
         auto [marketId, flag, code] = DetectMarket(*securityCode);
-        if (marketId != MarketType::ShangHai || !strings::startsWith(code, {"880", "881"})) return false;
+        if (marketId != MarketType::ShangHai || !strings::startsWith(code, sectorPrefixes)) return false;
         *securityCode = flag + code;
         return true;
     }
@@ -224,8 +242,15 @@ namespace exchange {
      * @return 是否为个股
      */
     bool AssertStockByMarketAndCode(MarketType marketId, const std::string &symbol) {
-        if (marketId == MarketType::ShangHai && strings::startsWith(symbol, {"60", "68", "510"})) return true;
-        if (marketId == MarketType::ShenZhen && strings::startsWith(symbol, {"00", "30"})) return true;
+        if (marketId == MarketType::ShangHai && strings::startsWith(symbol, {"60", "68", "510"})) {
+            return true;
+        }
+        if (marketId == MarketType::ShenZhen && strings::startsWith(symbol, {"00", "30"})) {
+            return true;
+        }
+        if (marketId == MarketType::BeiJing && strings::startsWith(symbol, {"40", "43", "83", "87", "88", "420", "820","920"})) {
+            return true;
+        }
         return false;
     }
 
@@ -258,11 +283,16 @@ namespace exchange {
     TargetKind AssertCode(const std::string &securityCode) {
         auto [marketId, _, code] = DetectMarket(securityCode);
         if (marketId == MarketType::ShangHai) {
-            if (strings::startsWith(code, {"880", "881"})) return TargetKind::BLOCK;
+            if (strings::startsWith(code, sectorPrefixes)) return TargetKind::BLOCK;
             if (strings::startsWith(code, {"000"})) return TargetKind::INDEX;
             if (strings::startsWith(code, {"510"})) return TargetKind::ETF;
         }
-        if (marketId == MarketType::ShenZhen && strings::startsWith(code, {"399"})) return TargetKind::INDEX;
+        if (marketId == MarketType::ShenZhen && strings::startsWith(code, {"399"})) {
+            return TargetKind::INDEX;
+        }
+        if (marketId == MarketType::BeiJing && strings::startsWith(code, {"899"})) {
+            return TargetKind::INDEX;
+        }
         return TargetKind::STOCK;
     }
 

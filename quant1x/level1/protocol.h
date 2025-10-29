@@ -23,7 +23,8 @@ namespace level1 {
         COMPANY_CATEGORY         = 0x02cf,  // 公司信息文件信息
         COMPANY_CONTENT          = 0x02d0,  // 公司信息描述
         SECURITY_COUNT           = 0x044e,  // 证券数量
-        SECURITY_LIST            = 0x0450,  // 证券列表
+        SECURITY_LIST            = 0x044d,  // 证券列表
+        OLD_SECURITY_LIST        = 0x0450,  // 证券列表, 已废弃, 缺少北交所证券代码列表
         INDEX_BARS               = 0x052d,  // 指数K线
         SECURITY_BARS            = 0x052d,  // 股票K线
         SECURITY_QUOTES_OLD      = 0x053e,  // 旧版行情信息
