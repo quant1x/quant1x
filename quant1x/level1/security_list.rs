@@ -128,13 +128,13 @@ impl Response for SecurityListResponse {
         for _ in 0..self.count {
             let code = bs.get_string(6)?;
             let vol_unit = bs.get_u16()?;
-            let mut name_buf = [0u8; 8];
+            let mut name_buf = [0u8; 8+8];
             bs.get_byte_array(&mut name_buf)?;
-            let name_nul = name_buf.iter().position(|&b| b == 0).unwrap_or(8);
+            let name_nul = name_buf.iter().position(|&b| b == 0).unwrap_or(8+8);
             let (name_cow, _, _) = GBK.decode(&name_buf[..name_nul]);
             let name = name_cow.into_owned();
-            let mut _rev1 = [0u8; 8];
-            bs.get_byte_array(&mut _rev1)?;
+            //let mut _rev1 = [0u8; 8];
+            //bs.get_byte_array(&mut _rev1)?;
             let mut _rev2 = [0u8; 4];
             bs.get_byte_array(&mut _rev2)?;
             let decimal_point = bs.get_u8()?;

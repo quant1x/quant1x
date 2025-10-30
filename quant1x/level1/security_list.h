@@ -55,16 +55,20 @@ namespace level1 {
         std::string Code;          // 证券代码
         u16         VolUnit;       // 每手股数
         std::string Name;          // 证券名称
-        u8          Reversed1[8];  // 保留字段1
+        //u8          Reversed1[8];  // 保留字段1
         u8          Reversed2[4];  // 保留字段2
         u8          DecimalPoint;  // 小数点位数
         f64         PreClose;      // 昨收价
         u8          Reversed3[4];  // 保留字段3
 
         friend std::ostream &operator<<(std::ostream &os, const Security &security) {
-            os << "Code:" << security.Code << " VolUnit:" << security.VolUnit << " Name:" << security.Name
-               << " Reversed1:" << security.Reversed1 << " Reversed2:" << security.Reversed2
-               << " DecimalPoint:" << security.DecimalPoint << " PreClose:" << security.PreClose
+            os << "Code:" << security.Code
+               << " VolUnit:" << security.VolUnit
+               << " Name:" << security.Name
+               //<< " Reversed1:" << security.Reversed1
+               << " Reversed2:" << security.Reversed2
+               << " DecimalPoint:" << security.DecimalPoint
+               << " PreClose:" << security.PreClose
                << " Reversed3:" << security.Reversed3;
             return os;
         }
@@ -81,9 +85,9 @@ namespace level1 {
                 auto e           = Security{};
                 e.Code           = buf.get_string(6);
                 e.VolUnit        = buf.get_u16();
-                std::string Name = buf.get_string(8);
+                std::string Name = buf.get_string(8+8);
                 e.Name           = charsets::gbk_to_utf8(Name);
-                buf.get_array(e.Reversed1);
+                //buf.get_array(e.Reversed1);
                 buf.get_array(e.Reversed2);
                 e.DecimalPoint = buf.get_u8();
                 u32 tmp        = buf.get_u32();
