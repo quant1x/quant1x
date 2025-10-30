@@ -16,9 +16,9 @@ namespace exchange {
         std::string code;  // 板块代码
         std::string name;  // 板块名称
         u16 type = 0;      // 板块类型
-        u16 num = 0;       // 成分股数量
+        u16 num = 0;       // 成份股数量
         std::string Block; // 通达信板块编码
-        std::vector<std::string> ConstituentStocks; // 成分股
+        std::vector<std::string> ConstituentStocks; // 成份股
 
         friend std::ostream &operator<<(std::ostream &os, const block_info &info);
     };

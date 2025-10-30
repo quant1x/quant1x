@@ -184,6 +184,9 @@ def sector_filename(date: str = '') -> str:
     if len(cache_date) == 0:
         cache_date = exchange.last_trade_date()
     filename = os.path.join(config.quant1x_config.meta_path, f'{name}.{cache_date}')
+    if not os.path.isfile(filename):
+        # fallback to blocks.csv
+        filename = os.path.join(config.quant1x_config.meta_path, 'blocks.csv')
     return filename
 
 
