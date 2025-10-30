@@ -210,7 +210,9 @@ def get_sector_list() -> pd.DataFrame:
         candidates_full.sort(key=lambda p: os.path.getmtime(p), reverse=True)
         sfn2 = candidates_full[0]
         df = pd.read_csv(sfn2)
-    df['code'] = 'sh' + df['code'].astype(str)
+    # 补全sh前缀
+    s = df['code'].astype(str)
+    df['code'] = s.where(s.str.startswith('sh'), 'sh' + s)
     return df
 
 
