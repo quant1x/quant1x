@@ -33,6 +33,9 @@ def securities() -> pd.DataFrame:
     full_path = os.path.join(config.quant1x_config.meta_path, 'securities.csv')
     if not os.path.isfile(full_path):
         return pd.DataFrame(columns=['code', 'name'])
+    # with open(full_path, 'rb') as f:
+    #     f.seek(87287 - 13)
+    #     print('Bytes around 85710:', f.read(19).hex(' '))
     df = pd.read_csv(full_path)
     # 转换为小写
     df.columns = df.columns.str.lower()
