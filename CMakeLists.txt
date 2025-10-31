@@ -683,7 +683,7 @@ if(ENABLE_MIMALLOC)
     # <mimalloc-new-delete.h> when the corresponding compile-time macros
     # are defined. This guarantees the anchor symbol
     # `quant1x_mimalloc_force_symbol` exists for link-time forcing.
-    list(APPEND quant1x-sources quant1x/platform/mimalloc_force.cpp)
+    list(APPEND quant1x-sources quant1x/std/mimalloc_force.cpp)
 endif()
 
 if (WIN32)
