@@ -8,8 +8,6 @@
 template <typename Derived>
 class NetworkOperationHandler {
 public:
-    //virtual ~NetworkOperationHandler() = default;
-
     /**
      * @brief 网络连接建立后的协议握手
      * @param socket 新建立的socket连接
