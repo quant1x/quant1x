@@ -6,7 +6,6 @@ import sys
 def project_path(package: str = "quant1x", filename: str = '') -> str:
     filename = filename.strip()
     if len(filename) == 0:
-        # filename = __file__
         raise Exception('filename is empty')
     pos = filename.rfind(package)
     project_path = filename[:pos - 1]
