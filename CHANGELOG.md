@@ -3,11 +3,30 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.1] - 2025-11-03
+### Changed
+- rust代码下一个版本号0.7.0
+- 修正证券列表, 已支持北交所
+- rust代码下一个版本0.7.1
+- 屏蔽测试utf-8异常的观测代码, 暂时保留后面可能还会用到
+- 优化c++字符集转码
+- 调整证券名称的字节数为16, 后续的4个字节不属于证券名称, 视为未知/保留字段
+- c++新增minizip库, 从服务器下载行业及zhb.zip, 解压获得tdxzs*.cfg
+- 修复go和c++版本的板块数据差异, python补全板块代码的sh前缀
+- 调整mimlloc编译辅助实现文件的路径到std
+- 删除废弃的代码
+- 删除废弃的代码
+- go代码网络与c++对齐
+- cmake安装脚本增加minizip
+- 统一ETF的level1基准价格单位的处理
+- rust实现板块每日自动更新
+
 ## [0.7.0] - 2025-10-29
 ### Changed
 - 更新go依賴庫engine的版本號到1.12.2
 - 取消对javascript库的支持, 改为c++实现的解码
 - 优化level1证券列表接口, 支持北交所
+- update changelog
 
 ## [0.6.160] - 2025-10-27
 ### Changed
@@ -1137,7 +1156,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.0...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.1...HEAD
+[0.7.1]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.0...v0.7.1
 [0.7.0]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.160...v0.7.0
 [0.6.160]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.159...v0.6.160
 [0.6.159]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.158...v0.6.159
