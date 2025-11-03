@@ -78,17 +78,25 @@ pub fn int_to_float64(v: u32) -> f64 {
 
 /// defaultBaseUnit 等价实现（来自 C++ security_quote.h）
 pub fn default_base_unit(_market_id: i32, code: &str) -> f64 {
-    // follow the C++ logic: check prefixes
-    if code.starts_with("60")
-        || code.starts_with("68")
-        || code.starts_with("00")
-        || code.starts_with("30")
-        || code.starts_with("39")
-    {
-        100.0
-    } else if code.starts_with("510") {
-        1000.0
-    } else {
-        100.0
+    // Align with C++ helpers::defaultBaseUnit in `level1/helpers.h`:
+    // - If market is Shanghai and code starts with '5' => 1000.0
+    // - If market is Shenzhen and code starts with "159" => 1000.0
+    // - Otherwise => 100.0
+    use crate::exchange::{MARKET_SHANGHAI, MARKET_SHENZHEN};
+
+    // Normalize input and guard for empty strings
+    let s = code.trim();
+    if s.is_empty() {
+        return 100.0;
     }
+
+    if _market_id == (MARKET_SHANGHAI as i32) && s.as_bytes()[0] == b'5' {
+        return 1000.0;
+    }
+
+    if _market_id == (MARKET_SHENZHEN as i32) && s.starts_with("159") {
+        return 1000.0;
+    }
+
+    100.0
 }

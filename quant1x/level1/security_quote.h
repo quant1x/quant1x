@@ -54,24 +54,6 @@ namespace level1 {
         std::string code;
     };
 
-    inline f64 defaultBaseUnit(int marketId, const char * const code) {
-        (void) marketId; // 忽略未使用的参数，避免编译警告
-        // 检查前两位字符
-        if (strncmp(code, "60", 2) == 0 ||
-            strncmp(code, "68", 2) == 0 ||
-            strncmp(code, "00", 2) == 0 ||
-            strncmp(code, "30", 2) == 0 ||
-            strncmp(code, "39", 2) == 0) {
-            return 100.0;
-        } else if (strncmp(code, "510", 3) == 0) {
-            // 检查前三位字符
-            return 1000.0;
-        } else {
-            // 默认返回值
-            return 100.0;
-        }
-    }
-
     /// 即时行情 - 请求
     struct SecurityQuoteRequest : public RequestHeader<SecurityQuoteRequest> {
         std::vector<u8> padding;
@@ -317,7 +299,7 @@ namespace level1 {
                 SecurityQuote ele = {};
                 ele.market = stream.get_u8();
                 ele.code = stream.get_string(6);
-                f64 baseUnit = defaultBaseUnit(ele.market, ele.code.c_str());
+                f64 baseUnit = helpers::defaultBaseUnit(ele.market, ele.code.c_str());
                 ele.active1 = stream.get_u16();
 
                 i64 price_base = stream.varint_decode();

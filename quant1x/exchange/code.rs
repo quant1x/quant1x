@@ -131,10 +131,16 @@ pub const MARKET_FLAG_US: &str = "us";
 /// Return true if the given market id and pure code represent an index.
 pub fn assert_index_by_market_and_code(market_id: u8, symbol: &str) -> bool {
     let s = symbol.trim();
-    if market_id == 1 && (s.starts_with("000") || s.starts_with("880") || s.starts_with("881")) {
+    if market_id == MARKET_SHANGHAI
+        && (s.starts_with("000") || s.starts_with("880") || s.starts_with("881"))
+    {
         return true;
     }
-    if market_id == 0 && s.starts_with("399") {
+    if market_id == MARKET_SHENZHEN && s.starts_with("399") {
+        return true;
+    }
+    // Beijing index: 899
+    if market_id == MARKET_BEIJING && s.starts_with("899") {
         return true;
     }
     false
@@ -150,7 +156,7 @@ pub fn assert_index_by_security_code(security_code: &str) -> bool {
 /// to the canonical form (flag+code) and return true. Otherwise return false.
 pub fn assert_block_by_security_code(security_code: &mut String) -> bool {
     let (market_id, flag, code) = detect_market(security_code);
-    if market_id != 1 {
+    if market_id != MARKET_SHANGHAI {
         return false;
     }
     if !(code.starts_with("880") || code.starts_with("881")) {
@@ -162,16 +168,30 @@ pub fn assert_block_by_security_code(security_code: &mut String) -> bool {
 
 /// Return true if the given market id and pure code represent an ETF (Shanghai 510...)
 pub fn assert_etf_by_market_and_code(market_id: u8, symbol: &str) -> bool {
-    market_id == 1 && symbol.trim().starts_with("510")
+    market_id == MARKET_SHANGHAI && symbol.trim().starts_with("510")
 }
 
 /// Return true if the given market id and pure code represent an ordinary stock
 pub fn assert_stock_by_market_and_code(market_id: u8, symbol: &str) -> bool {
     let s = symbol.trim();
-    if market_id == 1 && (s.starts_with("60") || s.starts_with("68") || s.starts_with("510")) {
+    if market_id == MARKET_SHANGHAI
+        && (s.starts_with("60") || s.starts_with("68") || s.starts_with("510"))
+    {
         return true;
     }
-    if market_id == 0 && (s.starts_with("00") || s.starts_with("30")) {
+    if market_id == MARKET_SHENZHEN && (s.starts_with("00") || s.starts_with("30")) {
+        return true;
+    }
+    if market_id == MARKET_BEIJING
+        && (s.starts_with("40")
+            || s.starts_with("43")
+            || s.starts_with("83")
+            || s.starts_with("87")
+            || s.starts_with("88")
+            || s.starts_with("420")
+            || s.starts_with("820")
+            || s.starts_with("920"))
+    {
         return true;
     }
     false
@@ -204,19 +224,27 @@ pub enum TargetKind {
 /// Determine the kind of the security code (block/index/etf/stock)
 pub fn assert_code(security_code: &str) -> TargetKind {
     let (market_id, _flag, code) = detect_market(security_code);
-    if market_id == 1 {
+    if market_id == MARKET_SHANGHAI {
+        // Shanghai: sector prefixes (880/881) -> Block
         if code.starts_with("880") || code.starts_with("881") {
             return TargetKind::Block;
         }
+        // Shanghai: 000... -> Index
         if code.starts_with("000") {
             return TargetKind::Index;
         }
-        if code.starts_with("510") {
+        // Shanghai: codes starting with '5' are ETF (per C++ logic)
+        if code.starts_with('5') {
             return TargetKind::Etf;
         }
     }
-    if market_id == 0 && code.starts_with("399") {
-        return TargetKind::Index;
+    if market_id == MARKET_SHENZHEN {
+        if code.starts_with("399") {
+            return TargetKind::Index;
+        }
+        if code.starts_with("159") {
+            return TargetKind::Etf;
+        }
     }
     TargetKind::Stock
 }
@@ -248,7 +276,7 @@ mod assert_tests {
         assert!(assert_stock_by_security_code("sz000001"));
 
         // ETF example
-        assert!(assert_etf_by_market_and_code(1, "510500"));
+        assert!(assert_etf_by_market_and_code(MARKET_SHANGHAI, "510500"));
         assert_eq!(assert_code("sh880001"), TargetKind::Block);
         assert_eq!(assert_code("sh000001"), TargetKind::Index);
         assert_eq!(assert_code("sz399001"), TargetKind::Index);
@@ -272,7 +300,7 @@ mod assert_tests {
 
 #[cfg(test)]
 mod tests {
-    use super::detect_market;
+    use super::*;
 
     #[test]
     fn test_detect_market_prefix_and_suffix() {
@@ -291,6 +319,21 @@ mod tests {
             ("00700.hk", 21u8, "hk", "00700"),
             ("usAAPL", 22u8, "us", "AAPL"),
         ];
+
+        let cases = cases
+            .into_iter()
+            .map(|(input, exp_id, exp_flag, exp_pure)| {
+                let id_const = match exp_id {
+                    0u8 => MARKET_SHENZHEN,
+                    1u8 => MARKET_SHANGHAI,
+                    2u8 => MARKET_BEIJING,
+                    21u8 => MARKET_HONGKONG,
+                    22u8 => MARKET_USA,
+                    other => other,
+                };
+                (input, id_const, exp_flag, exp_pure)
+            })
+            .collect::<Vec<_>>();
 
         for (input, exp_id, exp_flag, exp_pure) in cases {
             let (id, flag, pure) = detect_market(input);

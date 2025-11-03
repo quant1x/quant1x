@@ -285,10 +285,11 @@ namespace exchange {
         if (marketId == MarketType::ShangHai) {
             if (strings::startsWith(code, sectorPrefixes)) return TargetKind::BLOCK;
             if (strings::startsWith(code, {"000"})) return TargetKind::INDEX;
-            if (strings::startsWith(code, {"510"})) return TargetKind::ETF;
+            if (strings::startsWith(code, {"5"})) return TargetKind::ETF;
         }
-        if (marketId == MarketType::ShenZhen && strings::startsWith(code, {"399"})) {
-            return TargetKind::INDEX;
+        if (marketId == MarketType::ShenZhen) {
+            if (strings::startsWith(code, {"399"}))  return TargetKind::INDEX;
+            if (strings::startsWith(code, {"159"})) return TargetKind::ETF;
         }
         if (marketId == MarketType::BeiJing && strings::startsWith(code, {"899"})) {
             return TargetKind::INDEX;

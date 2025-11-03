@@ -96,7 +96,7 @@ namespace exchange {
         in.read_header(io::ignore_extra_column, "date");
         std::string date;
         while (in.read_row(date)) {
-            global_calendars_string.push_back(date);
+            global_calendars_string.emplace_back(date);
             timestamp ts = date;
             ts           = ts.pre_market_time();
             global_calendars_timestamp.emplace_back(ts);

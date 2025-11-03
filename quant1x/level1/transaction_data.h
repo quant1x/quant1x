@@ -110,7 +110,7 @@ namespace level1 {
             BinaryStream bs(data);
             Count = bs.get_u16();
             List.reserve(Count);
-            auto baseUnit = defaultBaseUnit(market_, code_);
+            auto baseUnit = helpers::defaultBaseUnit(market_, code_);
             auto isIndex = exchange::AssertIndexByMarketAndCode(static_cast<exchange::MarketType>(market_), std::string(code_));
             i64 lastPrice = 0;
             try {
