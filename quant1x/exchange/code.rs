@@ -36,7 +36,7 @@ pub fn detect_market(security_code: &str) -> (u8, String, String) {
     let shenzhen_main = [
         "00", "12", "13", "18", "15", "16", "18", "20", "30", "39", "115", "1318",
     ];
-    let beijing_main = ["4", "8"];
+    let beijing_main = ["40", "43", "83", "87", "88", "420", "820", "899", "920"];
 
     // 1) explicit prefix like sh600000 or sh.600000
     for &flag in &MARKET_FLAGS {

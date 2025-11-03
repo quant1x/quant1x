@@ -1,4 +1,4 @@
-use crate::get_market_flag;
+use crate::{correct_security_code, get_market_flag};
 use crate::runtime::RollingOnce;
 use crate::timestamp::Timestamp;
 use once_cell::sync::Lazy;
@@ -74,16 +74,23 @@ fn init_securities_impl() -> Result<(), Box<dyn std::error::Error>> {
     if need_update {
         log::info!("security: updating securities list into {}", filename);
 
-        use crate::exchange::{MARKET_FLAG_SH, MARKET_FLAG_SZ, MARKET_SHANGHAI, MARKET_SHENZHEN, MARKET_BEIJING};
+        use crate::exchange::{
+            MARKET_BEIJING, MARKET_FLAG_SH, MARKET_FLAG_SZ, MARKET_SHANGHAI, MARKET_SHENZHEN,
+        };
 
         // markets to query (SZ then SH) mirror previous behavior
-        let markets: [u16; 3] = [MARKET_SHENZHEN as u16, MARKET_SHANGHAI as u16, MARKET_BEIJING as u16];
-    let mut all: Vec<SecurityInfo> = Vec::new();
+        let markets: [u16; 3] = [
+            MARKET_SHENZHEN as u16,
+            MARKET_SHANGHAI as u16,
+            MARKET_BEIJING as u16,
+        ];
+        let mut all: Vec<SecurityInfo> = Vec::new();
         let count = 1600u32;
         for &market in markets.iter() {
             let mut start: u32 = 0;
             loop {
-                match crate::level1::security_list::fetch_security_list(market as u16, start, count) {
+                match crate::level1::security_list::fetch_security_list(market as u16, start, count)
+                {
                     Some(resp) => {
                         log::info!(
                             "security list market={} start={} count={}",
@@ -200,35 +207,4 @@ pub fn get_security_info(code: &str) -> Option<SecurityInfo> {
     let code_fixed = correct_security_code(code);
     let map = GLOBAL_SECURITY_MAP.lock().unwrap();
     map.get(&code_fixed).cloned()
-}
-
-/// Basic normalization similar to C++/Python CorrectSecurityCode
-fn correct_security_code(s: &str) -> String {
-    let v = s.trim().to_lowercase();
-    // handle forms like 600519.sh or 600519.SH
-    if v.contains('.') {
-        let parts: Vec<&str> = v.split('.').collect();
-        if parts.len() >= 2 {
-            let code = parts[0];
-            let suf = parts[1];
-            if suf == "sh" {
-                return format!("sh{:0>6}", code);
-            } else if suf == "sz" {
-                return format!("sz{:0>6}", code);
-            }
-        }
-    }
-    // if starts with sh/sz
-    if v.starts_with("sh") || v.starts_with("sz") {
-        let prefix = &v[..2];
-        let rest = v[2..].to_string();
-        return format!("{}{:0>6}", prefix, rest);
-    }
-    // plain numeric code: infer market by leading digit
-    let numeric = v.chars().filter(|c| c.is_ascii_digit()).collect::<String>();
-    if numeric.starts_with('6') {
-        format!("sh{:0>6}", numeric)
-    } else {
-        format!("sz{:0>6}", numeric)
-    }
 }
