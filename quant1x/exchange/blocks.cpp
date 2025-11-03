@@ -3,7 +3,6 @@
 #include <quant1x/runtime/config.h>
 #include <quant1x/exchange/session.h>
 #include <quant1x/level1/client.h>
-#include <quant1x/resources/meta/blocks.h>
 #include <minizip/unzip.h>
 #include <quant1x/std/util.h>
 #include <unordered_set>

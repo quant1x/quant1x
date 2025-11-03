@@ -1,11 +1,65 @@
 use crate::std::BinaryStream;
 use once_cell::sync::Lazy;
+use std::fs;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
-use std::path::PathBuf;
+use std::io::{self, BufRead, BufReader, Read};
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use strsim::levenshtein;
 use unicode_normalization::UnicodeNormalization;
+use flate2::read::DeflateDecoder;
+use zip::ZipArchive;
+
+// filenames and allowed lists (no magic strings elsewhere)
+const META_ADDITIONAL_FILES: [&str; 2] = ["tdxhy.cfg", "zhb.zip"];
+const ALLOWED_ZHB_FILES: [&str; 2] = ["tdxzs.cfg", "tdxzs3.cfg"];
+
+fn extract_allowed_from_zip(zip_path: &Path, output_dir: &Path, allowed_files: &[&str]) -> Result<(), String> {
+    let file = File::open(zip_path).map_err(|e| format!("failed to open zip {}: {}", zip_path.display(), e))?;
+    let mut archive = ZipArchive::new(file).map_err(|e| format!("failed to read zip {}: {}", zip_path.display(), e))?;
+    let allowed_set: std::collections::HashSet<String> = allowed_files.iter().map(|s| s.to_string()).collect();
+
+    for i in 0..archive.len() {
+        let mut entry = archive.by_index(i).map_err(|e| e.to_string())?;
+        let name = entry.name().to_string();
+        let base_name = std::path::Path::new(&name).file_name().and_then(|s| s.to_str()).unwrap_or("").to_string();
+        let want = allowed_set.contains(&name) || allowed_set.contains(&base_name);
+
+        if !want {
+            continue;
+        }
+
+        // ensure output dir exists
+        fs::create_dir_all(output_dir).map_err(|e| format!("failed to create output dir {}: {}", output_dir.display(), e))?;
+
+        let out_path = output_dir.join(&base_name);
+
+        if entry.name().ends_with('/') {
+            fs::create_dir_all(&out_path).map_err(|e| e.to_string())?;
+            continue;
+        }
+
+        if let Some(parent) = out_path.parent() {
+            if !parent.exists() {
+                fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+            }
+        }
+
+        let mut outfile = fs::File::create(&out_path).map_err(|e| e.to_string())?;
+        io::copy(&mut entry, &mut outfile).map_err(|e| e.to_string())?;
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Some(mode) = entry.unix_mode() {
+                fs::set_permissions(&out_path, fs::Permissions::from_mode(mode)).ok();
+            }
+        }
+        log::info!("blocks: extracted {} -> {}", name, out_path.display());
+    }
+
+    Ok(())
+}
 
 #[derive(Clone, Debug)]
 pub struct BlockInfo {
@@ -234,13 +288,33 @@ fn industry_constituent_stock_list(
 }
 
 fn parse_and_generate_block_file() -> Result<Vec<BlockInfo>, String> {
-    // Ensure embedded cfg resources are exported to the meta/block path like C++ does.
-    // C++ writes resources_meta_block_files contents into <meta>/tdx*.cfg when missing.
-    // We approximate that by extracting bytes from the C-style .inc files under
-    // resources/meta/*.inc (they contain an unsigned char array initializer) and
-    // writing the resulting bytes into the meta dir if the target cfg is missing.
-    // NOTE: removed embedded .inc -> .cfg export. Files are expected to be
-    // present under the configured block path (get_block_path()).
+    // Ensure the two auxiliary resources are present. Per C++ changes, the
+    // embedded .inc export was removed; instead we attempt to download the
+    // following files from level1 when missing: `tdxhy.cfg` and `zhb.zip`.
+    // If `zhb.zip` is downloaded we only extract the two index cfg files
+    // `tdxzs.cfg` and `tdxzs3.cfg` from it.
+    let block_path = default_block_path();
+    for fname in META_ADDITIONAL_FILES.iter() {
+        let mut p = block_path.clone();
+        p.push(fname);
+        if !p.exists() {
+            log::info!("blocks: auxiliary file {} not found locally, attempting download", fname);
+            if download_block_file(fname) {
+                log::info!("blocks: downloaded {}", fname);
+                if *fname == "zhb.zip" {
+                    let zip_path = p.clone();
+                    // extract only allowed files into block path
+                    match extract_allowed_from_zip(&zip_path, &block_path, &ALLOWED_ZHB_FILES) {
+                        Ok(_) => log::info!("blocks: extracted allowed files from {}", zip_path.display()),
+                        Err(e) => log::warn!("blocks: failed to extract {}: {}", zip_path.display(), e),
+                    }
+                }
+            } else {
+                log::warn!("blocks: failed to download auxiliary file {}", fname);
+            }
+        }
+    }
+
     let mut block_infos = load_index_block_infos();
     log::debug!(
         "blocks: loaded {} index block entries from tdxzs files",
