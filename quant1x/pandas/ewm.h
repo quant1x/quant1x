@@ -153,6 +153,7 @@ private:
 
     // 不使用初始调整因子的指数加权均值
     void not_adjusted_mean(double alpha, bool ignore_na) {
+        (void)ignore_na; // 未使用该参数
         bool has_callback = static_cast<bool>(call_back_); // 判断是否有回调函数
 
         double beta = 1.0 - alpha;

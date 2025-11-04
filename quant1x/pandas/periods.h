@@ -2,8 +2,8 @@
 #ifndef QUANT1X_PANDAS_PERIODS_H
 #define QUANT1X_PANDAS_PERIODS_H 1
 
+#include <cmath>
 #include <vector>
-#include <string>
 
 namespace ta {
     /**
