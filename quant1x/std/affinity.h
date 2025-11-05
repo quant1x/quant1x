@@ -239,6 +239,7 @@ namespace affinity {
             }
         }
 #else
+        (void)numa_node;
         // macOS 或其他平台，回退到普通分配
         if (posix_memalign(&ptr, 64, size) != 0) {
             ec = std::error_code(errno, std::system_category());
