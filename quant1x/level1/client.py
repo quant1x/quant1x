@@ -18,13 +18,16 @@ import logging
 from typing import List, Tuple, Optional
 
 from quant1x.net.connection_pool import TcpConnectionPool
-from quant1x.net.operation_handler import OperationHandler
+from quant1x.net.operation_handler import NetworkOperationHandler
 from typing import Any
+
+import os
+import time
 
 log = logging.getLogger(__name__)
 
 
-class ProtocolHandler(OperationHandler):
+class ProtocolHandler(NetworkOperationHandler):
     """Protocol handler that performs Hello1/Hello2 handshake and Heartbeat.
 
     This implementation calls into `level1.protocol` to serialize requests
@@ -71,29 +74,91 @@ class ProtocolHandler(OperationHandler):
 _pool_lock = threading.Lock()
 _pool: Optional[TcpConnectionPool] = None
 
+def _build_pool(*, min_conn: int, max_conn: int, servers: Optional[List[Tuple[str, int]]]) -> TcpConnectionPool:
+    """Construct and return a TcpConnectionPool mirroring C++ tdx_connection_pool.
 
- 
+    - Read cache file and determine whether to run detection (pre-market staleness).
+    - If detection runs, persist detected list to cache and limit concurrency.
+    - Always read the cache and seed endpoints from it (or from `servers`).
+    Exceptions from detect/cache IO are allowed to propagate so callers see
+    initialization failures (fail-fast), consistent with C++ behaviour.
+    """
+    from quant1x.level1 import config as l1config
 
+    handler = ProtocolHandler()
 
-def _init_pool() -> None:
-    global _pool
-    with _pool_lock:
-        if _pool is not None:
-            return
+    # default concurrency bounded by max_conn (C++ uses 10 as default)
+    default_concurrency = max_conn
 
-        # handler provides handshake/keepalive/timeouts
-        handler = ProtocolHandler()
+    discovered: List[Tuple[str, int]] = []
 
-        # default pool sizes: min=1, max=10
-        min_conn = 1
-        max_conn = 10
+    # decide whether to update server cache
+    cache_fn = None
+    try:
+        cache_fn = l1config._cache_filename()
+    except Exception:
+        cache_fn = None
 
-        pool = TcpConnectionPool(min_conn, max_conn, handler)
+    need_update = False
+    try:
+        if not cache_fn or not os.path.isfile(cache_fn) or os.path.getsize(cache_fn) == 0:
+            need_update = True
+        else:
+            mtime = os.path.getmtime(cache_fn)
+            now = time.time()
+            t = time.localtime()
+            try:
+                pre_ts = time.mktime((t.tm_year, t.tm_mon, t.tm_mday, 9, 0, 0, t.tm_wday, t.tm_yday, t.tm_isdst))
+            except Exception:
+                pre_ts = 0.0
+            if pre_ts and now >= pre_ts and mtime < pre_ts:
+                need_update = True
+    except Exception:
+        need_update = True
 
-        # No environment variable based configuration here. Callers must
-        # configure endpoints explicitly (see `init_pool`).
+    if need_update:
+        total_candidates = len(getattr(l1config, 'StandardServerList', []))
+        detected = []
+        if total_candidates > 0:
+            detected = l1config.detect(conn_limit=total_candidates)
+        if detected:
+            try:
+                l1config.write_cache(detected)
+            except Exception:
+                log.exception("level1._build_pool: failed to write server cache")
+        try:
+            if detected:
+                default_concurrency = min(default_concurrency, max(1, len(detected)))
+        except Exception:
+            pass
 
-        _pool = pool
+    # read cached servers
+    try:
+        cached = l1config.read_cache()
+        if cached:
+            for s in cached:
+                h = s.get("Host")
+                p_obj: Any = s.get("Port")
+                try:
+                    p = int(str(p_obj)) if p_obj is not None else None
+                except Exception:
+                    p = None
+                if isinstance(h, str) and p is not None:
+                    discovered.append((h, p))
+    except Exception:
+        log.exception("level1._build_pool: failed to read server cache")
+
+    pool = TcpConnectionPool(min_conn, default_concurrency, handler)
+
+    # seed endpoints from provided servers or discovered cache
+    if servers:
+        for host, port in servers:
+            pool.add_endpoint(host, port)
+    else:
+        for h, p in discovered:
+            pool.add_endpoint(h, p)
+
+    return pool
 
 
 def client():
@@ -107,7 +172,8 @@ def client():
     Raises RuntimeError if no endpoints have been configured for the pool.
     """
     if _pool is None:
-        _init_pool()
+        # Lazily initialize via the single public init function.
+        init_pool()
     assert _pool is not None
     return _pool.acquire()
 
@@ -129,77 +195,6 @@ def init_pool(servers: Optional[List[Tuple[str, int]]] = None, *, min_conn: int 
     with _pool_lock:
         if _pool is not None:
             return
-
-    # Determine server endpoints first (read cache, else detect)
-    # Note: per C++ behaviour, detect() probes only `StandardServerList`.
-    # `ExtensionServerList` is intentionally not probed by default because
-    # extension servers may use different protocols/ports. If callers need
-    # extension-server probing, they must add endpoints explicitly via the
-    # `servers` parameter or implement a separate probing routine.
-    discovered: List[Tuple[str, int]] = []
-    try:
-        from quant1x.level1 import config as l1config
-
-        cached = l1config.read_cache()
-        if cached:
-            for s in cached:
-                h = s.get("Host")
-                p_obj: Any = s.get("Port")
-                try:
-                    p = int(str(p_obj)) if p_obj is not None else None
-                except Exception:
-                    p = None
-                if isinstance(h, str) and p is not None:
-                    discovered.append((h, p))
-        else:
-            # request detection for the standard candidates only (C++ behaviour)
-            try:
-                total_candidates = len(l1config.StandardServerList)
-            except Exception:
-                total_candidates = 0
-            detected = []
-            try:
-                if total_candidates > 0:
-                    detected = l1config.detect(conn_limit=total_candidates)
-            except Exception:
-                log.exception("level1.init_pool: detect() raised an exception")
-
-            if detected:
-                for s in detected:
-                    h = s.get("Host")
-                    p_obj: Any = s.get("Port")
-                    try:
-                        p = int(str(p_obj)) if p_obj is not None else None
-                    except Exception:
-                        p = None
-                    if isinstance(h, str) and p is not None:
-                        discovered.append((h, p))
-                # persist detected list back to cache
-                try:
-                    l1config.write_cache(detected)
-                except Exception:
-                    pass
-    except Exception:
-        log.exception("level1.init_pool: server detect/cache step failed")
-
-    # Adjust concurrency similar to C++: concurrency = min(max_conn, len(discovered))
-    concurrency = max_conn
-    if discovered:
-        try:
-            concurrency = min(max_conn, max(1, len(discovered)))
-        except Exception:
-            concurrency = max_conn
-
-    # handler provides handshake/keepalive/timeouts
-    handler = ProtocolHandler()
-    pool = TcpConnectionPool(min_conn, concurrency, handler)
-
-    # seed endpoints if discovered or provided by caller
-    if servers:
-        for host, port in servers:
-            pool.add_endpoint(host, port)
-    else:
-        for h, p in discovered:
-            pool.add_endpoint(h, p)
-
-    _pool = pool
+        # Build pool and assign; allow exceptions to propagate so caller
+        # observes initialization failures (match C++ behaviour).
+        _pool = _build_pool(min_conn=min_conn, max_conn=max_conn, servers=servers)

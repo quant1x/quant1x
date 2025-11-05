@@ -38,7 +38,7 @@ namespace level1 {
 
     #pragma pack(pop)  // 恢复默认对齐方式
 
-    class ProtocolHandler : public NetworkOperationHandler<ProtocolHandler> {
+    class StandardProtocolHandler : public NetworkOperationHandler<StandardProtocolHandler> {
     public:
         bool handshakeImpl(asio::ip::tcp::socket &socket) {
             try {

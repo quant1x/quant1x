@@ -1,4 +1,4 @@
-"""Operation handler interface ported from C++ NetworkOperationHandler.
+"""Operation handler interface ported from C++ NetworkOperationHandlerr.
 
 Provides a base class that matches the C++ semantics: default timeouts
 and intervals, setters, and abstract methods for handshake and keepalive.
@@ -9,7 +9,7 @@ import datetime
 from typing import Union
 
 
-class OperationHandler:
+class NetworkOperationHandler:
     """Simple interface for network operation handler.
 
     This class intentionally does not use `abc.ABC`. It provides default

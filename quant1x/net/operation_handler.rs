@@ -3,7 +3,7 @@ use std::net::TcpStream as StdTcpStream;
 use std::time::Duration;
 
 /// 用户应该实现的连接池特征，用于执行协议特定的工作: 握手和保活检查.
-pub trait NetworkHandler: Send + Sync + 'static {
+pub trait NetworkOperationHandler: Send + Sync + 'static {
     fn handshake(&self, _stream: &mut TcpStream) -> std::io::Result<()> {
         Ok(())
     }

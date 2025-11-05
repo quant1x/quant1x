@@ -9,24 +9,23 @@ use super::{
     Hello2Response,
 };
 
-/// 精简的客户端协议辅助工具, 模拟 C++ 中 ProtocolHandler 的握手与保活实现.
+/// 精简的客户端协议辅助工具, 模拟 C++ 中 StandardProtocolHandler 的握手与保活实现.
 ///
 /// 说明:
 ///   该处 Rust 端口保留了相同的连接池语义: 它会从 meta 目录下的 `server.bin` 读取已缓存的服务器列表, 若缓存缺失或过期则回退到检测例程.
 ///   此处不使用环境变量覆盖服务器列表.
 /// - C++ 实现中 `client()` 会构建一个 TcpConnectionPool，并通过检测例程填充服务器端点并缓存结果。
 /// - Rust 端口保留相同语义：优先加载缓存（meta/server.bin），若缺失则运行检测逻辑并缓存检测结果。
-/// - 默认不使用环境变量覆盖服务器列表；可通过 `QUANT1X_LEVEL1_SERVERS` 预置端点。
-pub struct ProtocolHandler {}
+pub struct StandardProtocolHandler {}
 
-impl ProtocolHandler {
+impl StandardProtocolHandler {
     /// 使用阻塞的 Mio TcpStream 执行两步握手（hello1 + hello2）
     pub fn handshake(stream: &mut MioTcpStream) -> std::io::Result<bool> {
         // Hello1
         let mut req1 = Hello1Request::new();
         let req_buf1 = req1.serialize();
         log::debug!(
-            "ProtocolHandler::handshake -> sending Hello1 ({} bytes): {}",
+            "StandardProtocolHandler::handshake -> sending Hello1 ({} bytes): {}",
             req_buf1.len(),
             hex::encode(&req_buf1)
         );
@@ -35,7 +34,7 @@ impl ProtocolHandler {
         {
             Ok(body1) => {
                 log::debug!(
-                    "ProtocolHandler::handshake <- received Hello1 body ({} bytes): {}",
+                    "StandardProtocolHandler::handshake <- received Hello1 body ({} bytes): {}",
                     body1.len(),
                     if body1.len() > 128 {
                         hex::encode(&body1[..128]) + "..."
@@ -46,12 +45,12 @@ impl ProtocolHandler {
                 let mut resp1 = Hello1Response::new();
                 resp1.deserialize(&body1).expect("deserialize error");
                 log::debug!(
-                    "ProtocolHandler::handshake Hello1 parsed info: {}",
+                    "StandardProtocolHandler::handshake Hello1 parsed info: {}",
                     resp1.info
                 );
                 // validate Hello1 response: must contain non-empty info
                 if resp1.info.trim().is_empty() {
-                    log::error!("ProtocolHandler::handshake Hello1 validation failed: empty info");
+                    log::error!("StandardProtocolHandler::handshake Hello1 validation failed: empty info");
                     return Err(std::io::Error::new(
                         std::io::ErrorKind::Other,
                         "Hello1 response invalid or empty",
@@ -59,7 +58,7 @@ impl ProtocolHandler {
                 }
             }
             Err(e) => {
-                log::error!("ProtocolHandler::handshake Hello1 failed: {}", e);
+                log::error!("StandardProtocolHandler::handshake Hello1 failed: {}", e);
                 return Err(e);
             }
         }
@@ -68,7 +67,7 @@ impl ProtocolHandler {
         let mut req2 = Hello2Request::new();
         let req_buf2 = req2.serialize();
         log::debug!(
-            "ProtocolHandler::handshake -> sending Hello2 ({} bytes): {}",
+            "StandardProtocolHandler::handshake -> sending Hello2 ({} bytes): {}",
             req_buf2.len(),
             hex::encode(&req_buf2)
         );
@@ -77,7 +76,7 @@ impl ProtocolHandler {
         {
             Ok(body2) => {
                 log::debug!(
-                    "ProtocolHandler::handshake <- received Hello2 body ({} bytes): {}",
+                    "StandardProtocolHandler::handshake <- received Hello2 body ({} bytes): {}",
                     body2.len(),
                     if body2.len() > 128 {
                         hex::encode(&body2[..128]) + "..."
@@ -90,12 +89,12 @@ impl ProtocolHandler {
                     .deserialize(&body2)
                     .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
                 log::debug!(
-                    "ProtocolHandler::handshake Hello2 parsed info: {}",
+                    "StandardProtocolHandler::handshake Hello2 parsed info: {}",
                     resp2.info
                 );
                 // validate Hello2 response as well
                 if resp2.info.trim().is_empty() {
-                    log::error!("ProtocolHandler::handshake Hello2 validation failed: empty info");
+                    log::error!("StandardProtocolHandler::handshake Hello2 validation failed: empty info");
                     return Err(std::io::Error::new(
                         std::io::ErrorKind::Other,
                         "Hello2 response invalid or empty",
@@ -103,7 +102,7 @@ impl ProtocolHandler {
                 }
             }
             Err(e) => {
-                log::error!("ProtocolHandler::handshake Hello2 failed: {}", e);
+                log::error!("StandardProtocolHandler::handshake Hello2 failed: {}", e);
                 return Err(e);
             }
         }
@@ -129,7 +128,7 @@ impl ProtocolHandler {
         let mut req1 = Hello1Request::new();
         let req_buf1 = req1.serialize();
         log::debug!(
-            "ProtocolHandler::handshake_std -> sending Hello1 ({} bytes): {}",
+            "StandardProtocolHandler::handshake_std -> sending Hello1 ({} bytes): {}",
             req_buf1.len(),
             hex::encode(&req_buf1)
         );
@@ -138,7 +137,7 @@ impl ProtocolHandler {
         {
             Ok(body1) => {
                 log::debug!(
-                    "ProtocolHandler::handshake_std <- received Hello1 body ({} bytes): {}",
+                    "StandardProtocolHandler::handshake_std <- received Hello1 body ({} bytes): {}",
                     body1.len(),
                     if body1.len() > 128 {
                         hex::encode(&body1[..128]) + "..."
@@ -149,12 +148,12 @@ impl ProtocolHandler {
                 let mut resp1 = Hello1Response::new();
                 resp1.deserialize(&body1).expect("deserialize error");
                 log::debug!(
-                    "ProtocolHandler::handshake_std Hello1 parsed info: {}",
+                    "StandardProtocolHandler::handshake_std Hello1 parsed info: {}",
                     resp1.info
                 );
                 if resp1.info.trim().is_empty() {
                     log::error!(
-                        "ProtocolHandler::handshake_std Hello1 validation failed: empty info"
+                        "StandardProtocolHandler::handshake_std Hello1 validation failed: empty info"
                     );
                     return Err(std::io::Error::new(
                         std::io::ErrorKind::Other,
@@ -163,7 +162,7 @@ impl ProtocolHandler {
                 }
             }
             Err(e) => {
-                log::error!("ProtocolHandler::handshake_std Hello1 failed: {}", e);
+                log::error!("StandardProtocolHandler::handshake_std Hello1 failed: {}", e);
                 return Err(e);
             }
         }
@@ -172,7 +171,7 @@ impl ProtocolHandler {
         let mut req2 = Hello2Request::new();
         let req_buf2 = req2.serialize();
         log::debug!(
-            "ProtocolHandler::handshake_std -> sending Hello2 ({} bytes): {}",
+            "StandardProtocolHandler::handshake_std -> sending Hello2 ({} bytes): {}",
             req_buf2.len(),
             hex::encode(&req_buf2)
         );
@@ -181,7 +180,7 @@ impl ProtocolHandler {
         {
             Ok(body2) => {
                 log::debug!(
-                    "ProtocolHandler::handshake_std <- received Hello2 body ({} bytes): {}",
+                    "StandardProtocolHandler::handshake_std <- received Hello2 body ({} bytes): {}",
                     body2.len(),
                     if body2.len() > 128 {
                         hex::encode(&body2[..128]) + "..."
@@ -194,12 +193,12 @@ impl ProtocolHandler {
                     .deserialize(&body2)
                     .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
                 log::debug!(
-                    "ProtocolHandler::handshake_std Hello2 parsed info: {}",
+                    "StandardProtocolHandler::handshake_std Hello2 parsed info: {}",
                     resp2.info
                 );
                 if resp2.info.trim().is_empty() {
                     log::error!(
-                        "ProtocolHandler::handshake_std Hello2 validation failed: empty info"
+                        "StandardProtocolHandler::handshake_std Hello2 validation failed: empty info"
                     );
                     return Err(std::io::Error::new(
                         std::io::ErrorKind::Other,
@@ -208,7 +207,7 @@ impl ProtocolHandler {
                 }
             }
             Err(e) => {
-                log::error!("ProtocolHandler::handshake_std Hello2 failed: {}", e);
+                log::error!("StandardProtocolHandler::handshake_std Hello2 failed: {}", e);
                 return Err(e);
             }
         }
@@ -218,16 +217,16 @@ impl ProtocolHandler {
 }
 
 // 全局连接池单例（在首次调用 `client()` 时初始化）。
-static CONNECTION_POOL: OnceLock<Arc<crate::net::TcpConnectionPool<ProtocolHandler>>> =
+static CONNECTION_POOL: OnceLock<Arc<crate::net::TcpConnectionPool<StandardProtocolHandler>>> =
     OnceLock::new();
 
 /// 获取一个到 level1 服务器的池化连接。
 ///
-/// 返回值是 `PooledConnection<ProtocolHandler>`，该连接在 Drop 时会自动返回到池中。
+/// 返回值是 `PooledConnection<StandardProtocolHandler>`，该连接在 Drop 时会自动返回到池中。
 /// 端点可以通过环境变量 `QUANT1X_LEVEL1_SERVERS` 进行预置，例如：
 ///
 ///   QUANT1X_LEVEL1_SERVERS=110.41.147.114:7709,124.70.176.52:7709
-pub fn client() -> std::io::Result<crate::net::PooledConnection<ProtocolHandler>> {
+pub fn client() -> std::io::Result<crate::net::PooledConnection<StandardProtocolHandler>> {
     let pool = CONNECTION_POOL
         .get_or_init(|| {
             let endpoint_manager = Arc::new(crate::net::endpoint::EndpointManager::new());
@@ -289,7 +288,7 @@ pub fn client() -> std::io::Result<crate::net::PooledConnection<ProtocolHandler>
                 server_count
             );
 
-            let handler = Arc::new(ProtocolHandler {});
+            let handler = Arc::new(StandardProtocolHandler {});
             crate::net::TcpConnectionPool::new(1, pool_max, handler, endpoint_manager)
         })
         .clone();
@@ -302,10 +301,10 @@ pub fn pool_max_connections() -> Option<usize> {
     CONNECTION_POOL.get().map(|p| p.max_connections())
 }
 
-// 实现 Net handler trait，使连接池能够使用我们的握手/保活实现
-impl crate::net::NetworkHandler for ProtocolHandler {
+// 实现 Net operation handler 特征，使连接池能够使用我们的握手/保活实现
+impl crate::net::NetworkOperationHandler for StandardProtocolHandler {
     fn handshake(&self, stream: &mut mio::net::TcpStream) -> std::io::Result<()> {
-        match ProtocolHandler::handshake(stream) {
+        match StandardProtocolHandler::handshake(stream) {
             Ok(true) => Ok(()),
             Ok(false) => Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
@@ -316,7 +315,7 @@ impl crate::net::NetworkHandler for ProtocolHandler {
     }
 
     fn keepalive(&self, stream: &mut mio::net::TcpStream) -> std::io::Result<bool> {
-        ProtocolHandler::keepalive(stream)
+        StandardProtocolHandler::keepalive(stream)
     }
 
     fn timeout(&self) -> Duration {

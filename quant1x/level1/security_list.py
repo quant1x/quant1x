@@ -152,3 +152,8 @@ def fetch_security_list(market: int, start: int, count: int) -> Optional[List[Di
     except Exception as e:
         log.exception('fetch_security_list failed: %s', e)
         return None
+
+
+if __name__ == '__main__':
+    list = fetch_security_list(1, 0, 10)
+    print(list)

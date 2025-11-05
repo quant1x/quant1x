@@ -44,7 +44,7 @@ type TcpConnectionPool struct {
 	endpointWeight int
 
 	// dependencies
-	networkHandler  NetworkHandler
+	networkHandler  NetworkOperationHandler
 	endpointManager *EndpointManager
 
 	// lifecycle
@@ -63,7 +63,7 @@ type TcpConnectionPool struct {
 }
 
 // NewTcpConnectionPool creates a new pool. networkHandler must be non-nil.
-func NewTcpConnectionPool(minConn, maxConn int, handler NetworkHandler) (*TcpConnectionPool, error) {
+func NewTcpConnectionPool(minConn, maxConn int, handler NetworkOperationHandler) (*TcpConnectionPool, error) {
 	if minConn > maxConn {
 		return nil, fmt.Errorf("min_connections cannot be greater than max_connections")
 	}

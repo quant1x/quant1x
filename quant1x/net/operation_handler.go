@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// NetworkHandler 定义了TCP连接的握手和心跳检查
-type NetworkHandler interface {
+// NetworkOperationHandler 定义了TCP连接的握手和心跳检查
+type NetworkOperationHandler interface {
 	// Timeout 超时时间
 	Timeout() time.Duration
 	// Handshake 执行TCP连接握手验证，返回验证结果和可能的错误

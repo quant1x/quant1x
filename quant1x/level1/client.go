@@ -15,26 +15,26 @@ import (
 	"golang.org/x/text/transform"
 )
 
-// ProtocolHandler implements the Level1 protocol handshake and heartbeat.
+// StandardProtocolHandler implements the Level1 protocol handshake and heartbeat.
 // It is created in package level1 and implements the net.NetworkHandler interface.
-type ProtocolHandler struct {
+type StandardProtocolHandler struct {
 	timeout       time.Duration
 	checkInterval time.Duration
 }
 
-// NewProtocolHandler constructs a handler with specified timeout and check interval.
-func NewProtocolHandler(timeout, interval time.Duration) qnet.NetworkHandler {
+// NewStandardProtocolHandler constructs a handler with specified timeout and check interval.
+func NewStandardProtocolHandler(timeout, interval time.Duration) qnet.NetworkOperationHandler {
 	if timeout <= 0 {
 		timeout = 10 * time.Second
 	}
 	if interval <= 0 {
 		interval = 5 * time.Second
 	}
-	return &ProtocolHandler{timeout: timeout, checkInterval: interval}
+	return &StandardProtocolHandler{timeout: timeout, checkInterval: interval}
 }
 
-func (h *ProtocolHandler) Timeout() time.Duration       { return h.timeout }
-func (h *ProtocolHandler) CheckInterval() time.Duration { return h.checkInterval }
+func (h *StandardProtocolHandler) Timeout() time.Duration       { return h.timeout }
+func (h *StandardProtocolHandler) CheckInterval() time.Duration { return h.checkInterval }
 
 var seqId uint32
 
@@ -109,7 +109,7 @@ func gbkToUTF8(b []byte) (string, error) {
 	return string(res), nil
 }
 
-func (h *ProtocolHandler) processRequest(conn *stdnet.TCPConn, req []byte) ([]byte, *ResponseHeader, error) {
+func (h *StandardProtocolHandler) processRequest(conn *stdnet.TCPConn, req []byte) ([]byte, *ResponseHeader, error) {
 	if conn == nil {
 		return nil, nil, errors.New("nil conn")
 	}
@@ -139,7 +139,7 @@ func (h *ProtocolHandler) processRequest(conn *stdnet.TCPConn, req []byte) ([]by
 	return body, hdr, nil
 }
 
-func (h *ProtocolHandler) Handshake(conn *stdnet.TCPConn) (bool, error) {
+func (h *StandardProtocolHandler) Handshake(conn *stdnet.TCPConn) (bool, error) {
 	payload1 := []byte{0x01}
 	req1 := buildRequest(0x000d, 0x01, payload1)
 	body1, _, err := h.processRequest(conn, req1)
@@ -165,7 +165,7 @@ func (h *ProtocolHandler) Handshake(conn *stdnet.TCPConn) (bool, error) {
 	return true, nil
 }
 
-func (h *ProtocolHandler) Keepalive(conn *stdnet.TCPConn) (bool, error) {
+func (h *StandardProtocolHandler) Keepalive(conn *stdnet.TCPConn) (bool, error) {
 	req := buildRequest(0x0004, 0x02, nil)
 	body, _, err := h.processRequest(conn, req)
 	if err != nil {

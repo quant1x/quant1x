@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 
 use mio::net::TcpStream;
 use std::net::TcpStream as StdTcpStream;
-use crate::net::operation_handler::NetworkHandler;
+use crate::net::operation_handler::NetworkOperationHandler;
 
 /// 池化连接包装器。池拥有连接，并在丢弃时返回连接到池的守卫。
 pub struct Connection {
@@ -42,7 +42,7 @@ impl Connection {
 }
 
 /// 基于 Mio 的 TCP 连接池. 这是 C++ TcpConnectionPool 语义的简化端口: acquire 返回一个连接, 该连接在 Drop 时自动返回.
-pub struct TcpConnectionPool<H: NetworkHandler> {
+pub struct TcpConnectionPool<H: NetworkOperationHandler> {
     handler: Arc<H>,
     max: usize,
     endpoint_manager: Arc<crate::net::endpoint::EndpointManager>,
@@ -51,7 +51,7 @@ pub struct TcpConnectionPool<H: NetworkHandler> {
     active: Mutex<usize>,
 }
 
-impl<H: NetworkHandler> TcpConnectionPool<H> {
+impl<H: NetworkOperationHandler> TcpConnectionPool<H> {
     pub fn new(
         min: usize,
         max: usize,
@@ -384,12 +384,12 @@ impl<H: NetworkHandler> TcpConnectionPool<H> {
 }
 
 /// RAII 守卫，在丢弃时将连接返回到池。
-pub struct PooledConnection<H: NetworkHandler> {
+pub struct PooledConnection<H: NetworkOperationHandler> {
     pool: Arc<TcpConnectionPool<H>>,
     conn: Option<Connection>,
 }
 
-impl<H: NetworkHandler> PooledConnection<H> {
+impl<H: NetworkOperationHandler> PooledConnection<H> {
     pub fn stream(&mut self) -> &mut TcpStream {
         &mut self.conn.as_mut().unwrap().stream
     }
@@ -398,7 +398,7 @@ impl<H: NetworkHandler> PooledConnection<H> {
     }
 }
 
-impl<H: NetworkHandler> Drop for PooledConnection<H> {
+impl<H: NetworkOperationHandler> Drop for PooledConnection<H> {
     fn drop(&mut self) {
         if let Some(conn) = self.conn.take() {
             self.pool.release(conn);
@@ -420,7 +420,7 @@ mod tests {
     use std::time::Duration;
 
     struct TestHandler;
-    impl NetworkHandler for TestHandler {
+    impl NetworkOperationHandler for TestHandler {
         fn handshake(&self, _stream: &mut TcpStream) -> std::io::Result<()> {
             Ok(())
         }
