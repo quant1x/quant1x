@@ -228,10 +228,10 @@ fn normalize_to_utf8(b: &[u8]) -> Vec<u8> {
 }
 
 pub fn engine_daemon(
-    action: &str,
+    _action: &str,
     _pipe: bool,
-    elevated_out: Option<&str>,
-    elevated_pipe: Option<&str>,
+    _elevated_out: Option<&str>,
+    _elevated_pipe: Option<&str>,
 ) -> i32 {
     // 默认实现：在非 Windows 平台上不提供 service 管理器；
     // 在 Windows 上尝试进行 UAC 提升，并在 `pipe` 设置时将提升后子进程的 stdout/stderr 回传给父进程。
@@ -243,11 +243,19 @@ pub fn engine_daemon(
 
     #[cfg(windows)]
     {
-        use std::env;
-        use std::io::{Read, Seek, SeekFrom, Write};
-        use std::process::Command;
-        use std::thread::sleep;
-        use std::time::Duration;
+    use std::env;
+    use std::io::{Read, Seek, SeekFrom, Write};
+    use std::process::Command;
+    use std::thread::sleep;
+    use std::time::Duration;
+
+    // Local bindings to rename underscore-prefixed parameters to the
+    // names used throughout the Windows-specific implementation. This
+    // avoids unused-variable warnings when compiling for non-Windows
+    // targets while keeping the logic identical on Windows.
+    let action = _action;
+    let elevated_out = _elevated_out;
+    let elevated_pipe = _elevated_pipe;
 
         // 如果用户请求直接 'run'，则在进程内运行（如果 crate 提供 runner）。
         if action == "run" {
