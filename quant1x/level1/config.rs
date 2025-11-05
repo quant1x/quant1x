@@ -1056,7 +1056,7 @@ pub fn detect(
         let conn_cap = std::cmp::min(conn_limit, MAX_CONNECTIONS);
         let timeout = Duration::from_millis(connect_timeout_milliseconds as u64);
         handles.push(thread::spawn(move || {
-            use super::client::ProtocolHandler;
+            use super::client::StandardProtocolHandler;
 
             let mut found: Vec<ServerInfo> = Vec::new();
             for j in start..end {
@@ -1075,7 +1075,7 @@ pub fn detect(
                                 let _ = std_stream.set_write_timeout(Some(timeout));
 
                                 let mut stream = MioTcpStream::from_std(std_stream);
-                                match ProtocolHandler::handshake(&mut stream) {
+                                match StandardProtocolHandler::handshake(&mut stream) {
                                     Ok(true) => {
                                         let duration = start_time.elapsed();
                                         let mut si = s.clone();
