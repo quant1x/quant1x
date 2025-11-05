@@ -117,7 +117,13 @@ void AsyncScheduler::stop() {
 
     // 2. 等待调度器线程结束
     if (scheduler_thread_.joinable()) {
-        scheduler_thread_.join();
+        // 如果 stop() 在调度线程自身被调用，不能 join 当前线程 —— 会抛出或死锁。
+        // 在此情形下跳过 join（调度线程会在 running_ == false 后自行退出）并记录日志。
+        if (scheduler_thread_.get_id() != std::this_thread::get_id()) {
+            scheduler_thread_.join();
+        } else {
+            spdlog::warn("stop() called from scheduler thread; skipping join() to avoid self-join");
+        }
     }
 
     // 3. 等待线程池中已经派发的任务完成
