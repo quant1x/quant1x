@@ -1,4 +1,5 @@
 use crate::std::BinaryStream;
+use flate2::read::DeflateDecoder;
 use once_cell::sync::Lazy;
 use std::fs;
 use std::fs::File;
@@ -7,22 +8,32 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use strsim::levenshtein;
 use unicode_normalization::UnicodeNormalization;
-use flate2::read::DeflateDecoder;
 use zip::ZipArchive;
 
 // filenames and allowed lists (no magic strings elsewhere)
 const META_ADDITIONAL_FILES: [&str; 2] = ["tdxhy.cfg", "zhb.zip"];
 const ALLOWED_ZHB_FILES: [&str; 2] = ["tdxzs.cfg", "tdxzs3.cfg"];
 
-fn extract_allowed_from_zip(zip_path: &Path, output_dir: &Path, allowed_files: &[&str]) -> Result<(), String> {
-    let file = File::open(zip_path).map_err(|e| format!("failed to open zip {}: {}", zip_path.display(), e))?;
-    let mut archive = ZipArchive::new(file).map_err(|e| format!("failed to read zip {}: {}", zip_path.display(), e))?;
-    let allowed_set: std::collections::HashSet<String> = allowed_files.iter().map(|s| s.to_string()).collect();
+fn extract_allowed_from_zip(
+    zip_path: &Path,
+    output_dir: &Path,
+    allowed_files: &[&str],
+) -> Result<(), String> {
+    let file = File::open(zip_path)
+        .map_err(|e| format!("failed to open zip {}: {}", zip_path.display(), e))?;
+    let mut archive = ZipArchive::new(file)
+        .map_err(|e| format!("failed to read zip {}: {}", zip_path.display(), e))?;
+    let allowed_set: std::collections::HashSet<String> =
+        allowed_files.iter().map(|s| s.to_string()).collect();
 
     for i in 0..archive.len() {
         let mut entry = archive.by_index(i).map_err(|e| e.to_string())?;
         let name = entry.name().to_string();
-        let base_name = std::path::Path::new(&name).file_name().and_then(|s| s.to_str()).unwrap_or("").to_string();
+        let base_name = std::path::Path::new(&name)
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("")
+            .to_string();
         let want = allowed_set.contains(&name) || allowed_set.contains(&base_name);
 
         if !want {
@@ -30,7 +41,13 @@ fn extract_allowed_from_zip(zip_path: &Path, output_dir: &Path, allowed_files: &
         }
 
         // ensure output dir exists
-        fs::create_dir_all(output_dir).map_err(|e| format!("failed to create output dir {}: {}", output_dir.display(), e))?;
+        fs::create_dir_all(output_dir).map_err(|e| {
+            format!(
+                "failed to create output dir {}: {}",
+                output_dir.display(),
+                e
+            )
+        })?;
 
         let out_path = output_dir.join(&base_name);
 
@@ -298,15 +315,23 @@ fn parse_and_generate_block_file() -> Result<Vec<BlockInfo>, String> {
         let mut p = block_path.clone();
         p.push(fname);
         if !p.exists() {
-            log::info!("blocks: auxiliary file {} not found locally, attempting download", fname);
+            log::info!(
+                "blocks: auxiliary file {} not found locally, attempting download",
+                fname
+            );
             if download_block_file(fname) {
                 log::info!("blocks: downloaded {}", fname);
                 if *fname == "zhb.zip" {
                     let zip_path = p.clone();
                     // extract only allowed files into block path
                     match extract_allowed_from_zip(&zip_path, &block_path, &ALLOWED_ZHB_FILES) {
-                        Ok(_) => log::info!("blocks: extracted allowed files from {}", zip_path.display()),
-                        Err(e) => log::warn!("blocks: failed to extract {}: {}", zip_path.display(), e),
+                        Ok(_) => log::info!(
+                            "blocks: extracted allowed files from {}",
+                            zip_path.display()
+                        ),
+                        Err(e) => {
+                            log::warn!("blocks: failed to extract {}: {}", zip_path.display(), e)
+                        }
                     }
                 }
             } else {

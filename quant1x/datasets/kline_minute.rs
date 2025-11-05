@@ -332,7 +332,11 @@ impl DataAdapter for DataMinuteKLine {
         let is_fresh_fetch_require_adjustment = adjust_times == 1;
         let dividends = crate::datasets::xdxr::load_xdxr(code);
         if is_fresh_fetch_require_adjustment {
-            apply_forward_adjustment_for_event!(&mut incremental_klines, current_start_date, &dividends);
+            apply_forward_adjustment_for_event!(
+                &mut incremental_klines,
+                current_start_date,
+                &dividends
+            );
         }
 
         // merge cache and incremental

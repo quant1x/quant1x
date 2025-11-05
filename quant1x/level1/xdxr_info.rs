@@ -145,7 +145,6 @@ impl XdxrInfo {
             (1.0, 0.0)
         }
     }
-
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

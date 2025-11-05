@@ -243,19 +243,19 @@ pub fn engine_daemon(
 
     #[cfg(windows)]
     {
-    use std::env;
-    use std::io::{Read, Seek, SeekFrom, Write};
-    use std::process::Command;
-    use std::thread::sleep;
-    use std::time::Duration;
+        use std::env;
+        use std::io::{Read, Seek, SeekFrom, Write};
+        use std::process::Command;
+        use std::thread::sleep;
+        use std::time::Duration;
 
-    // Local bindings to rename underscore-prefixed parameters to the
-    // names used throughout the Windows-specific implementation. This
-    // avoids unused-variable warnings when compiling for non-Windows
-    // targets while keeping the logic identical on Windows.
-    let action = _action;
-    let elevated_out = _elevated_out;
-    let elevated_pipe = _elevated_pipe;
+        // Local bindings to rename underscore-prefixed parameters to the
+        // names used throughout the Windows-specific implementation. This
+        // avoids unused-variable warnings when compiling for non-Windows
+        // targets while keeping the logic identical on Windows.
+        let action = _action;
+        let elevated_out = _elevated_out;
+        let elevated_pipe = _elevated_pipe;
 
         // 如果用户请求直接 'run'，则在进程内运行（如果 crate 提供 runner）。
         if action == "run" {

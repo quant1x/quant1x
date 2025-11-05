@@ -69,7 +69,7 @@ pub fn get_stock_code_list() -> Vec<String> {
         if !is_need_ignore(&code) {
             all_codes.push(code);
         }
-    }    
+    }
 
     all_codes
 }

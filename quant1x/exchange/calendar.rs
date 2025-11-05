@@ -509,13 +509,19 @@ mod tests {
 
     #[test]
     fn test_last_trading_day() -> Result<(), Box<dyn std::error::Error>> {
-        let mut date = crate::timestamp::Timestamp::from_date(2025, 10, 13,8,59, 59, 999).unwrap();
+        let mut date =
+            crate::timestamp::Timestamp::from_date(2025, 10, 13, 8, 59, 59, 999).unwrap();
         let mut last = last_trading_day(date);
-        println!("last trading day before {:?} is {:?}", date.only_date(), last.only_date());
+        println!(
+            "last trading day before {:?} is {:?}",
+            date.only_date(),
+            last.only_date()
+        );
         // Assert the expected last trading day is 2025-10-10 (previous Friday)
-        let mut expected = crate::timestamp::Timestamp::from_date(2025, 10, 10, 9, 0, 0, 0).unwrap();
+        let mut expected =
+            crate::timestamp::Timestamp::from_date(2025, 10, 10, 9, 0, 0, 0).unwrap();
         assert_eq!(last.only_date(), expected.only_date());
-        date = crate::timestamp::Timestamp::from_date(2025, 10, 13,9,0, 0, 1).unwrap();
+        date = crate::timestamp::Timestamp::from_date(2025, 10, 13, 9, 0, 0, 1).unwrap();
         last = last_trading_day(date);
         expected = crate::timestamp::Timestamp::from_date(2025, 10, 13, 9, 0, 0, 0).unwrap();
         assert_eq!(last.only_date(), expected.only_date());

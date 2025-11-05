@@ -50,7 +50,9 @@ impl StandardProtocolHandler {
                 );
                 // validate Hello1 response: must contain non-empty info
                 if resp1.info.trim().is_empty() {
-                    log::error!("StandardProtocolHandler::handshake Hello1 validation failed: empty info");
+                    log::error!(
+                        "StandardProtocolHandler::handshake Hello1 validation failed: empty info"
+                    );
                     return Err(std::io::Error::new(
                         std::io::ErrorKind::Other,
                         "Hello1 response invalid or empty",
@@ -94,7 +96,9 @@ impl StandardProtocolHandler {
                 );
                 // validate Hello2 response as well
                 if resp2.info.trim().is_empty() {
-                    log::error!("StandardProtocolHandler::handshake Hello2 validation failed: empty info");
+                    log::error!(
+                        "StandardProtocolHandler::handshake Hello2 validation failed: empty info"
+                    );
                     return Err(std::io::Error::new(
                         std::io::ErrorKind::Other,
                         "Hello2 response invalid or empty",
@@ -162,7 +166,10 @@ impl StandardProtocolHandler {
                 }
             }
             Err(e) => {
-                log::error!("StandardProtocolHandler::handshake_std Hello1 failed: {}", e);
+                log::error!(
+                    "StandardProtocolHandler::handshake_std Hello1 failed: {}",
+                    e
+                );
                 return Err(e);
             }
         }
@@ -207,7 +214,10 @@ impl StandardProtocolHandler {
                 }
             }
             Err(e) => {
-                log::error!("StandardProtocolHandler::handshake_std Hello2 failed: {}", e);
+                log::error!(
+                    "StandardProtocolHandler::handshake_std Hello2 failed: {}",
+                    e
+                );
                 return Err(e);
             }
         }

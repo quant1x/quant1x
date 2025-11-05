@@ -4,9 +4,9 @@ use std::sync::{Arc, Mutex, Weak};
 use std::thread;
 use std::time::{Duration, Instant};
 
+use crate::net::operation_handler::NetworkOperationHandler;
 use mio::net::TcpStream;
 use std::net::TcpStream as StdTcpStream;
-use crate::net::operation_handler::NetworkOperationHandler;
 
 /// 池化连接包装器。池拥有连接，并在丢弃时返回连接到池的守卫。
 pub struct Connection {
