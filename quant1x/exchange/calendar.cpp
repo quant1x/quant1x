@@ -1,4 +1,3 @@
-#include <duktape.h>
 #include <quant1x/exchange/calendar.h>
 #include <quant1x/exchange/timestamp.h>
 #include <quant1x/io/csv-reader.h>
