@@ -1,6 +1,13 @@
 {
     "testMate.cpp.test.advancedExecutables": [
         {
+            // macOS / Linux: executables produced by CMake usually have no extension
+            "pattern": "build/tests/catch2-*",
+            "cwd": "${workspaceFolder}",
+            "env": {}
+        },
+        {
+            // Windows: keep the existing .exe pattern
             "pattern": "build/tests/catch2-*.exe",
             "cwd": "${workspaceFolder}",
             "env": {}
