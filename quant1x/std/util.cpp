@@ -1,6 +1,5 @@
 #include <quant1x/std/util.h>
 
-#include <duktape.h>
 #include <algorithm> // for find_xxx
 #include <string>
 #include <vector>
