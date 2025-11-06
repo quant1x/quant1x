@@ -7,6 +7,12 @@
 #include <memory>
 #include <atomic>
 #include <thread>
+#include <errno.h>
+#include <cstdlib>
+
+#if defined(__linux__)
+#include <numaif.h>
+#endif
 
 // CPU亲和性和NUMA感知优化
 namespace affinity {
