@@ -14,8 +14,11 @@ namespace datasets {
     config::MinuteKLineConfig get_minute_kline_config() {
         config::MinuteKLineConfig config{};
         auto const &local_cfg = config::global_config().data.cache.kline;
-        if (local_cfg.size() != 1) {
+        if (local_cfg.size() > 1) {
             throw std::runtime_error("kline config size must be exactly one");
+        }
+        if (local_cfg.empty()) {
+            return config;
         }
         const auto minute_kline_config = local_cfg.begin();
         const auto key = minute_kline_config->first;
