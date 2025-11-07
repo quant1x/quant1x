@@ -13,7 +13,12 @@ find_dependency(mimalloc CONFIG REQUIRED)
 find_dependency(cpr CONFIG REQUIRED)
 find_dependency(ZLIB REQUIRED)
 #find_dependency(fmt CONFIG REQUIRED)
-#find_dependency(date CONFIG REQUIRED)
+# date dependency: some Clang builds (non-Windows) need date::date-tz
+# Only add this dependency when the consuming project is building with
+# Clang/AppleClang on a non-Windows platform.
+if(NOT WIN32 AND (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"))
+    find_dependency(date CONFIG REQUIRED)
+endif()
 #find_dependency(spdlog CONFIG REQUIRED)
 #find_dependency(unofficial-duktape CONFIG REQUIRED)
 find_dependency(unofficial-minizip CONFIG REQUIRED)
