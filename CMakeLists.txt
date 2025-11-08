@@ -817,7 +817,7 @@ message(STATUS "                                argparse : v${argparse_VERSION}"
 message(STATUS "                                yaml-cpp : v${yaml-cpp_VERSION}")
 message(STATUS "                                Protobuf : v${Protobuf_VERSION}")
 message(STATUS "                             Cap'n Proto : v${CapnProto_VERSION}")
-message(STATUS "                                mimalloc : v${mimalloc_VERSION}")
+#message(STATUS "                                mimalloc : v${mimalloc_VERSION}")
 message(STATUS "                                  spdlog : v${spdlog_VERSION}")
 message(STATUS "     C++ Requests Library (Cpr for curl) : v${cpr_VERSION}")
 #message(STATUS "                   unofficial-duktape(√) : v${unofficial-duktape_VERSION}")
