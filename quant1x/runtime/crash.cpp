@@ -4,6 +4,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <vector>
@@ -84,7 +85,7 @@ namespace crash {
 
     [[maybe_unused]] constexpr int MAX_FRAMES = 64;
     // 全局变量：启用 backward-cpp 的信号处理
-    inline backward::SignalHandling sh;
+    static backward::SignalHandling sh{};
 
     namespace detail {
         static void LogStackTrace(const backward::StackTrace &st) {
@@ -213,7 +214,7 @@ namespace crash {
         }
 
         [[maybe_unused]] void install_posix() {
-            struct sigaction sa;
+            struct sigaction sa{};
             sa.sa_handler = posix_signal_handler;
             sigemptyset(&sa.sa_mask);
             sa.sa_flags = SA_RESTART;
