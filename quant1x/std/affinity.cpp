@@ -72,7 +72,13 @@ namespace affinity {
                 return false;
             }
 #elif defined(__APPLE__)
-            mach_port_t thread_mach = static_cast<mach_port_t>(handle);
+            pthread_t pthread = reinterpret_cast<pthread_t>(handle);
+            mach_port_t thread_mach = pthread_mach_thread_np(pthread);
+            if (thread_mach == MACH_PORT_NULL) {
+                ec = std::make_error_code(std::errc::no_such_process);
+                return false;
+            }
+
             thread_affinity_policy policy{};
             policy.affinity_tag = static_cast<integer_t>(cpu_index + 1);
             kern_return_t kr = thread_policy_set(
@@ -80,6 +86,9 @@ namespace affinity {
                 THREAD_AFFINITY_POLICY,
                 reinterpret_cast<thread_policy_t>(&policy),
                 THREAD_AFFINITY_POLICY_COUNT);
+
+            mach_port_deallocate(mach_task_self(), thread_mach);
+
             if (kr != KERN_SUCCESS) {
                 ec = std::error_code(kr, std::system_category());
                 return false;
