@@ -16,7 +16,6 @@ pub struct XdxrInfoRequest {
 }
 
 impl XdxrInfoRequest {
-    /// Create request from a full security code string like "sh600000" or "600000".
     /// 从完整的证券代码字符串创建请求，例如 "sh600000" 或 "600000"。
     /// 功能等价于 C++ 的 DetectMarket：去除市场前缀并设置 market id。
     pub fn new(security_code: &str) -> Self {
