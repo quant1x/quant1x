@@ -2,7 +2,7 @@
 #ifndef QUANT1X_LEVEL1_PROTOCOL_H
 #define QUANT1X_LEVEL1_PROTOCOL_H 1
 
-#include <quant1x/encoding/iconv.h>
+#include <quant1x/encoding/charsets.h>
 #include <quant1x/level1/helpers.h>
 #include <quant1x/net/connection_pool.h>
 #include <quant1x/std/api.h>

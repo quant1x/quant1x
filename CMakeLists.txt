@@ -422,7 +422,7 @@ set(quant1x-headers
     quant1x/log/lazy_daily_sink.h
 
     # 编码相关
-    quant1x/encoding/iconv.h
+    quant1x/encoding/charsets.h
     quant1x/encoding/csv.h
     quant1x/encoding/json.h
     quant1x/encoding/yaml.h
@@ -582,7 +582,7 @@ set(quant1x-sources
     quant1x/log/lazy_daily_sink.cpp
 
     # 编码相关
-    quant1x/encoding/iconv.cpp
+    quant1x/encoding/charsets.cpp
     quant1x/encoding/json.cpp
 
     # 数据帧处理

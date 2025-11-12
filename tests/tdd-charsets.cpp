@@ -1,7 +1,7 @@
 #include <quant1x/test/test.h>
 
 #include <iconv.h>
-#include <quant1x/encoding/iconv.h>
+#include <quant1x/encoding/charsets.h>
 #include <quant1x/std/util.h>
 
 TEST_CASE("raw-gbk-to-utf8", "[charsets]") {
