@@ -3,7 +3,6 @@ package level1
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -140,46 +139,12 @@ func TestDecodeHelloInfo(t *testing.T) {
 	}
 }
 
-func TestMapToServerInfo(t *testing.T) {
-	input := map[string]any{
-		"Source":     "test-source",
-		"Desc":       "server-name",
-		"Host":       "127.0.0.1",
-		"Port":       "7709",
-		"Latency_ms": 15,
-	}
-	srv := mapToServerInfo(input)
-	if srv.Source != "test-source" || srv.Name != "server-name" || srv.Host != "127.0.0.1" || srv.Port != 7709 || srv.LatencyMS != 15 {
-		t.Fatalf("unexpected server info: %+v", srv)
-	}
-}
-
-func TestAsInt(t *testing.T) {
-	cases := []struct {
-		in   any
-		want int
-	}{
-		{in: 5, want: 5},
-		{in: int64(7), want: 7},
-		{in: float64(3.9), want: 3},
-		{in: uint64(11), want: 11},
-		{in: "12", want: 12},
-		{in: "oops", want: 0},
-	}
-	for _, tc := range cases {
-		if got := asInt(tc.in); got != tc.want {
-			t.Fatalf("asInt(%v) = %d want %d", tc.in, got, tc.want)
-		}
-	}
-}
-
 func TestShouldRefreshCache(t *testing.T) {
 	if !shouldRefreshCache(nil) {
 		t.Fatalf("expected refresh for nil info")
 	}
 
 	dir := t.TempDir()
-	fmt.Println(dir)
 	emptyPath := filepath.Join(dir, "empty.yaml")
 	if err := os.WriteFile(emptyPath, nil, 0o644); err != nil {
 		t.Fatalf("write failed: %v", err)
@@ -239,7 +204,6 @@ func TestSaveAndLoadCachedServers(t *testing.T) {
 	if len(loaded) != 1 || loaded[0] != servers[0] {
 		t.Fatalf("unexpected loaded servers: %+v", loaded)
 	}
-	fmt.Println(loaded)
 }
 
 func TestDecodeServerListLegacyFormat(t *testing.T) {
@@ -252,8 +216,11 @@ func TestDecodeServerListLegacyFormat(t *testing.T) {
 		t.Fatalf("expected 1 server got %d", len(servers))
 	}
 	got := servers[0]
-	if got.Source != "legacy" || got.Name != "legacy-name" || got.Host != "example.com" || got.Port != 1234 || got.LatencyMS != 42 {
+	if got.Source != "legacy" || got.Host != "example.com" || got.Port != 1234 || got.LatencyMS != 0 {
 		t.Fatalf("unexpected server: %+v", got)
+	}
+	if got.Name != "" {
+		t.Fatalf("expected empty name when only desc provided, got %q", got.Name)
 	}
 }
 

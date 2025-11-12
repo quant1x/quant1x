@@ -2,7 +2,6 @@ package level1
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"math"
 	stdnet "net"
@@ -365,52 +364,11 @@ func decodeServerList(data []byte) ([]serverInfo, error) {
 	if err := yaml.Unmarshal(data, &wrapper); err == nil && len(wrapper.Servers) > 0 {
 		return wrapper.Servers, nil
 	}
-	var rawList []map[string]any
-	if err := yaml.Unmarshal(data, &rawList); err == nil && len(rawList) > 0 {
-		servers := make([]serverInfo, 0, len(rawList))
-		for _, m := range rawList {
-			servers = append(servers, mapToServerInfo(m))
-		}
+	var servers []serverInfo
+	if err := yaml.Unmarshal(data, &servers); err == nil && len(servers) > 0 {
 		return servers, nil
 	}
 	return nil, errors.New("unsupported cache format")
-}
-
-func mapToServerInfo(m map[string]any) serverInfo {
-	var srv serverInfo
-	for k, v := range m {
-		switch strings.ToLower(k) {
-		case "source":
-			srv.Source = fmt.Sprint(v)
-		case "name", "desc":
-			srv.Name = fmt.Sprint(v)
-		case "host":
-			srv.Host = fmt.Sprint(v)
-		case "port":
-			srv.Port = uint16(asInt(v))
-		case "latency_ms", "latency":
-			srv.LatencyMS = int64(asInt(v))
-		}
-	}
-	return srv
-}
-
-func asInt(v any) int {
-	switch t := v.(type) {
-	case int:
-		return t
-	case int64:
-		return int(t)
-	case float64:
-		return int(t)
-	case uint64:
-		return int(t)
-	case string:
-		if n, err := strconv.Atoi(t); err == nil {
-			return n
-		}
-	}
-	return 0
 }
 
 func shouldRefreshCache(info os.FileInfo) bool {
