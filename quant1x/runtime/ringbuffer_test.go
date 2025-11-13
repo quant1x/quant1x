@@ -1,4 +1,4 @@
-package ringbuffer
+package runtime
 
 import (
 	"runtime"

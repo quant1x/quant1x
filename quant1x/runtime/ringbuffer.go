@@ -1,30 +1,4 @@
-// Package ringbuffer 提供了高性能、无锁的 MPMC（多生产者多消费者）环形缓冲区实现。
-// 它使用原子操作和自旋等待以实现高并发下的高效访问，适用于高吞吐场景。
-// 为获得最优性能，缓冲区大小应为二的幂。
-//
-// 示例用法：
-//
-//	rb, err := ringbuffer.New[int](1024)
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//	defer rb.Close()
-//
-//	go func() {
-//		for i := 0; i < 100; i++ {
-//			rb.Write(i)
-//		}
-//		rb.Close()
-//	}()
-//
-//	for {
-//		v, err := rb.Read()
-//		if err != nil {
-//			break
-//		}
-//		fmt.Println(v)
-//	}
-package ringbuffer
+package runtime
 
 import (
 	"errors"
@@ -51,9 +25,9 @@ type RingBuffer[T any] struct {
 	slots       []Slot[T] // 使用槽位数组存储数据
 	size        uint32
 	mask        uint32
-	producerPos uint32 // 全局生产者位置
-	consumerPos uint32 // 全局消费者位置
-	closed      uint32 // 关闭标记
+	producerPos uint32    // 全局生产者位置
+	consumerPos uint32    // 全局消费者位置
+	closed      uint32    // 关闭标记
 	pool        sync.Pool // 对象池，用于复用 T 的包装对象
 }
 
