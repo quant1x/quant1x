@@ -184,8 +184,11 @@ TEST_CASE("scheduler-stats", "[runtime][fast]") {
     runtime::global_init();
     runtime::logger_set(true, true);
     AsyncScheduler scheduler;
-    auto id = scheduler.schedule_cron("STATFAST", "*/1 * * * * *", []{ /* fast task */ });
-    std::this_thread::sleep_for(std::chrono::seconds(2)); // allow at least one trigger
+    auto           id = scheduler.schedule_cron("STATFAST", "*/1 * * * * *", [] {
+        spdlog::warn("STATFAST");
+        std::this_thread::sleep_for(std::chrono::seconds(2)); // allow at least one trigger    
+     });
+    std::this_thread::sleep_for(std::chrono::seconds(20)); // allow at least one trigger
     scheduler.cancel(id);
     std::this_thread::sleep_for(std::chrono::seconds(1)); // ensure cancel processed
     auto st = scheduler.get_stats();
