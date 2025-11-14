@@ -40,9 +40,9 @@ mod timestamp;
 mod fpgrowth;
 pub use crate::fpgrowth::*;
 
-// calendar decoder module
-mod decoder;
-pub use crate::decoder::*;
+// // calendar decoder module
+// mod decoder;
+// pub use crate::decoder::*;
 
 // network module (mio-based connection pool)
 mod net;

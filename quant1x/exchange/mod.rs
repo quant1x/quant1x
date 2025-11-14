@@ -1,3 +1,5 @@
+#[path = "sina_decoder.rs"]
+mod sina;
 pub mod blocks;
 pub mod calendar;
 pub mod code;

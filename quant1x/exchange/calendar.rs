@@ -1,4 +1,4 @@
-use crate::decoder::CalendarDecoder;
+use super::sina::FinanceDecoder;
 use crate::runtime::RollingOnce;
 use crate::timestamp::Timestamp;
 use chrono::Local;
@@ -132,7 +132,7 @@ fn download_and_cache_calendar_url(
     let text = resp.text()?;
     let pre = preprocess_js(&text);
     // decoder expects base64-like payload; use CalendarDecoder
-    let mut dec = CalendarDecoder::new(&pre);
+    let mut dec = FinanceDecoder::new(&pre);
     dec.decode_base64(&pre);
     let records = dec.decode();
     // write CSV cache file: header + date,source rows
@@ -466,7 +466,7 @@ mod tests {
         }
 
         let pre = preprocess_js(text);
-        let mut dec = CalendarDecoder::new(&pre);
+        let mut dec = FinanceDecoder::new(&pre);
         dec.decode_base64(&pre);
         let records = dec.decode();
 

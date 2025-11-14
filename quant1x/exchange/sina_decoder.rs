@@ -17,8 +17,8 @@ pub struct Record {
     pub avg_price: Option<String>,
 }
 
-/// CalendarDecoder: 基于自定义 base64/位流的解码器，用于从压缩编码中解析日期/数值序列
-pub struct CalendarDecoder {
+/// FinanceDecoder: 基于自定义 base64/位流的解码器，用于从压缩编码中解析日期/数值序列
+pub struct FinanceDecoder {
     pub indices: Vec<u8>,
     pub e: usize,
     pub o: usize,
@@ -36,7 +36,7 @@ pub struct CalendarDecoder {
     pub header_done: bool,
 }
 
-impl CalendarDecoder {
+impl FinanceDecoder {
     pub fn new(_data: &str) -> Self {
         let mut base64_chars = String::new();
         for i in 0..26 {
@@ -56,7 +56,7 @@ impl CalendarDecoder {
             h[i] = 1i64 << i;
         }
 
-        CalendarDecoder {
+        FinanceDecoder {
             indices: Vec::new(),
             e: 0,
             o: 0,
