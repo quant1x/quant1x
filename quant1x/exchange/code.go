@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 )
@@ -15,6 +16,23 @@ const (
 	MarketIDHongKong MarketID = 21 // 香港交易所
 	MarketIDUSA      MarketID = 22 // 美国交易所
 )
+
+func (m MarketID) String() string {
+	switch m {
+	case MarketIDShenZhen:
+		return "sz"
+	case MarketIDShangHai:
+		return "sh"
+	case MarketIDBeiJing:
+		return "bj"
+	case MarketIDHongKong:
+		return "hk"
+	case MarketIDUSA:
+		return "us"
+	default:
+		panic(fmt.Sprintf("unknown market id: %d", m))
+	}
+}
 
 // DetectMarket implements the same semantics as exchange::DetectMarket.
 // It returns the inferred market id, market flag (sh/sz/...), and the pure 6-digit code.
