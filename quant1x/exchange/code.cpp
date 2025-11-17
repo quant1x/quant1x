@@ -35,7 +35,7 @@ namespace exchange {
     // 优先股: 360xxx
     // 科创板存托凭证: 689xxx
     // 申购/配股/投票: 7xxxxx
-    // 上海总规则: http://www.sse.com.cn/lawandrules/guide/stock/jyglywznylc/zn/a/20230209/4ae280c58535e0424b3a9c743c47e6b9.docx
+    // 上海总规则: https://zhuanlan.zhihu.com/p/719045287
     // 0: 国债/指数, 000 上证指数系列和中证指数系列, 00068x科创板指数
     // 1: 债券
     // 2: 回购

@@ -38,47 +38,6 @@ namespace exchange {
      */
     std::string GetSecurityCode(MarketType market, const std::string &symbol);
 
-//    // 上海证券交易所
-//    // 主板: 60xxxx
-//    // 科创板: 688xxx
-//    // B股: 900xxx
-//    // 优先股: 360xxx
-//    // 科创板存托凭证: 689xxx
-//    // 申购/配股/投票: 7xxxxx
-//    // 上海总规则: https://zhuanlan.zhihu.com/p/719045287
-//    // 0: 国债/指数, 000 上证指数系列和中证指数系列, 00068x科创板指数
-//    // 1: 债券
-//    // 2: 回购
-//    // 3: 期货
-//    // 4: 备用
-//    // 5: 基金/权证
-//    // 6: A股
-//    // 7: 非交易业务(发行, 权益分配)
-//    // 8: 备用, 通达信编制板块指数占用880,881
-//    // 9: B股
-//    static const std::vector<std::string> shanghaiMainBoardPrefixes = {"50", "51", "60", "68", "90", "110", "113", "132", "204"};
-//    static const std::vector<std::string> shanghaiSpecialPrefixes = {"5", "6", "9", "7"};
-//    static const std::vector<std::string> shanghaiOtherPrefixes = {"88"};
-//    // 深圳交易所
-//    // 主板: 000,001
-//    // 中小板: 002,003,004
-//    // 创业板: 30xxxx
-//    // 优先股: 140xxx
-//    // 深圳总规则: https://zhuanlan.zhihu.com/p/63064991
-//    // 0: 股票
-//    // 1: 国债/基金
-//    // 2: B股
-//    // 30: 创业板
-//    // 36: 投票, 369999用于深交所认证业务的密码激活/密码挂失
-//    // 37: 增发/可转债申购
-//    // 38: 配股/可转债优先权
-//    // 395: 成家量统计指数
-//    // 399: 指数
-//    static const std::vector<std::string> shenzhenMainBoardPrefixes = {"00", "12", "13", "18", "15", "16", "18", "20", "30", "39",
-//                                                             "115", "1318"};
-//    // 北京交易所, 只处理4和8开头的代码
-//    static const std::vector<std::string> beijingMainBoardPrefixes = {"4", "8"};
-
     /**
      * @brief 根据代码判断所属市场
      * @param symbol 证券代码
