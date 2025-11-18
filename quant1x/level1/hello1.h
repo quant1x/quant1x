@@ -4,7 +4,6 @@
 
 #include <quant1x/level1/protocol.h>
 #include <quant1x/std/util.h>
-#include <quant1x/encoding/iconv.h>
 
 // ==============================
 // 第一次协议握手

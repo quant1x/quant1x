@@ -1,5 +1,5 @@
 #include <quant1x/test/test.h>
-#include <quant1x/encoding/iconv.h>
+#include <quant1x/encoding/charsets.h>
 
 TEST_CASE("utf8_to_gbk converts UTF-8 to GBK", "[charsets]") {
     std::string utf8 = "Hello, 世界!";
