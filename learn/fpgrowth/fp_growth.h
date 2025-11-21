@@ -1,5 +1,5 @@
-#ifndef QUANT1X_FP_GROWTH_HPP
-#define QUANT1X_FP_GROWTH_HPP
+#ifndef QUANT1X_FP_GROWTH_H
+#define QUANT1X_FP_GROWTH_H 1
 
 #include <vector>
 #include <unordered_map>
@@ -133,4 +133,4 @@ private:
 
 } // namespace quant1x
 
-#endif // QUANT1X_FP_GROWTH_HPP
+#endif // QUANT1X_FP_GROWTH_H
