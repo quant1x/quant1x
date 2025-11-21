@@ -6,10 +6,10 @@
 //! # 示例
 //!
 //! ```
-//! use quant1x::FPGrowthMiner;
+//! use quant1x::FPGrowth;
 //!
 //! // 创建FP-Growth挖掘器，最小支持度为30%
-//! let miner = FPGrowthMiner::new(0.3);
+//! let miner = FPGrowth::new(0.3);
 //!
 //! // 示例事务数据集（购物篮数据）
 //! let transactions = vec![
@@ -29,26 +29,31 @@
 //! // 输出结果
 //! println!("发现的频繁模式数量: {}", patterns.len());
 //! for (pattern, support) in patterns {
-//!     println!("模式 {:?} : 支持度 = {:.1}%", pattern, (support as f64) * 100.0);
+//!     println!("模式 {:?} : 支持度 = {:.2}", pattern, support);
 //! }
 //! ```
 
 use std::collections::HashMap;
+use std::hash::Hash;
+use std::marker::PhantomData;
 
-/// FP树节点
+// ==========================================
+// FPGrowthCore: 核心实现 (处理 usize 类型)
+// ==========================================
+
 #[derive(Debug, Clone)]
 struct FPNode {
-    item: String,
+    item_id: usize,
     count: usize,
-    parent: Option<usize>,            // 父节点索引
-    children: HashMap<String, usize>, // 子节点映射
-    next: Option<usize>,              // 相同项的链表
+    parent: Option<usize>,
+    children: HashMap<usize, usize>, // item_id -> node_index
+    next: Option<usize>,             // 相同项的链表
 }
 
 impl FPNode {
-    fn new(item: String, count: usize, parent: Option<usize>) -> Self {
+    fn new(item_id: usize, count: usize, parent: Option<usize>) -> Self {
         Self {
-            item,
+            item_id,
             count,
             parent,
             children: HashMap::new(),
@@ -57,232 +62,353 @@ impl FPNode {
     }
 }
 
-/// FP树结构
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+struct HeaderEntry {
+    item_id: usize,
+    support: usize,
+    head: Option<usize>, // 指向第一个节点的索引
+}
+
 struct FPTree {
     nodes: Vec<FPNode>,
-    header_table: HashMap<String, (usize, Option<usize>)>, // (总计数, 链表头)
     root: usize,
 }
 
 impl FPTree {
     fn new() -> Self {
-        let mut nodes = Vec::new();
-        nodes.push(FPNode::new("null".to_string(), 0, None)); // 根节点
-
+        let root_node = FPNode::new(0, 0, None);
         Self {
-            nodes,
-            header_table: HashMap::new(),
+            nodes: vec![root_node],
             root: 0,
         }
     }
 
-    fn insert(&mut self, transaction: &[String], count: usize) {
-        let mut current = self.root;
+    fn insert(
+        &mut self,
+        transaction: &[usize],
+        rank_map: &HashMap<usize, usize>,
+        header_table: &mut [HeaderEntry],
+        count: usize,
+    ) {
+        let mut current_idx = self.root;
 
-        for item in transaction {
-            // 获取或创建子节点
-            let child_idx = if let Some(&idx) = self.nodes[current].children.get(item) {
-                idx
+        for &item in transaction {
+            // 检查子节点是否存在
+            let child_idx_opt = self.nodes[current_idx].children.get(&item).copied();
+
+            if let Some(child_idx) = child_idx_opt {
+                self.nodes[child_idx].count += count;
+                current_idx = child_idx;
             } else {
-                let new_idx = self.nodes.len();
-                self.nodes.push(FPNode::new(item.clone(), 0, Some(current)));
-                self.nodes[current].children.insert(item.clone(), new_idx);
-                new_idx
-            };
+                // 创建新节点
+                let new_node_idx = self.nodes.len();
+                let new_node = FPNode::new(item, count, Some(current_idx));
+                self.nodes.push(new_node);
+                self.nodes[current_idx].children.insert(item, new_node_idx);
 
-            // 增加计数
-            self.nodes[child_idx].count += count;
+                // 更新项头表
+                let rank = rank_map[&item];
+                let entry = &mut header_table[rank];
+                
+                // 插入到链表头部
+                self.nodes[new_node_idx].next = entry.head;
+                entry.head = Some(new_node_idx);
 
-            // 更新头表
-            let entry = self.header_table.entry(item.clone()).or_insert((0, None));
-            entry.0 += count;
-
-            // 更新链表
-            if let Some(last) = entry.1 {
-                let mut next = self.nodes[last].next;
-                while let Some(n) = next {
-                    if self.nodes[n].next.is_none() {
-                        self.nodes[n].next = Some(child_idx);
-                        break;
-                    }
-                    next = self.nodes[n].next;
-                }
-            } else {
-                entry.1 = Some(child_idx);
+                current_idx = new_node_idx;
             }
-
-            current = child_idx;
         }
     }
 
-    fn get_conditional_pattern_base(&self, item: &str) -> Vec<(Vec<String>, usize)> {
+    fn mine_patterns(
+        &self,
+        header_table: &[HeaderEntry],
+        min_support: usize,
+    ) -> Vec<(Vec<usize>, usize)> {
         let mut patterns = Vec::new();
 
-        if let Some(&(_, node_idx_opt)) = self.header_table.get(item) {
-            let mut node_idx = node_idx_opt;
-            while let Some(idx) = node_idx {
-                let mut path = Vec::new();
-                let mut current = idx;
-                let count = self.nodes[idx].count;
+        // 从项头表底部向上挖掘
+        for entry in header_table.iter().rev() {
+            // 1. 生成条件模式基
+            let conditional_patterns = self.mine_conditional_patterns(header_table, entry.item_id, min_support);
 
-                // 向上遍历到根节点
-                while let Some(parent) = self.nodes[current].parent {
-                    if parent != self.root {
-                        path.push(self.nodes[parent].item.clone());
-                    }
-                    current = parent;
-                }
+            // 2. 生成包含当前项的频繁模式
+            patterns.push((vec![entry.item_id], entry.support));
 
-                if !path.is_empty() {
-                    path.reverse();
-                    patterns.push((path, count));
-                }
-
-                node_idx = self.nodes[idx].next;
+            // 3. 合并
+            for (mut pat, count) in conditional_patterns {
+                pat.push(entry.item_id);
+                patterns.push((pat, count));
             }
         }
 
         patterns
     }
+
+    fn mine_conditional_patterns(
+        &self,
+        header_table: &[HeaderEntry],
+        suffix_item: usize,
+        min_support: usize,
+    ) -> Vec<(Vec<usize>, usize)> {
+        // 找到后缀项的 HeaderEntry
+        let suffix_entry = header_table.iter().find(|e| e.item_id == suffix_item);
+        if suffix_entry.is_none() || suffix_entry.unwrap().head.is_none() {
+            return Vec::new();
+        }
+        let suffix_entry = suffix_entry.unwrap();
+
+        // 第一遍扫描：统计条件模式基频率
+        let mut conditional_counts: HashMap<usize, usize> = HashMap::new();
+        let mut current_opt = suffix_entry.head;
+
+        while let Some(curr_idx) = current_opt {
+            let path_count = self.nodes[curr_idx].count;
+            let mut parent_opt = self.nodes[curr_idx].parent;
+
+            while let Some(parent_idx) = parent_opt {
+                let parent_node = &self.nodes[parent_idx];
+                if parent_node.item_id != 0 { // 0 is root
+                    *conditional_counts.entry(parent_node.item_id).or_insert(0) += path_count;
+                    parent_opt = parent_node.parent;
+                } else {
+                    break;
+                }
+            }
+            current_opt = self.nodes[curr_idx].next;
+        }
+
+        // 筛选
+        let mut conditional_items: Vec<(usize, usize)> = conditional_counts
+            .into_iter()
+            .filter(|&(_, count)| count >= min_support)
+            .collect();
+        
+        if conditional_items.is_empty() {
+            return Vec::new();
+        }
+
+        // 排序
+        conditional_items.sort_by(|a, b| {
+            if a.1 == b.1 {
+                b.0.cmp(&a.0) // count相等时按id降序 (match C++)
+            } else {
+                b.1.cmp(&a.1) // count降序
+            }
+        });
+
+        // 构建 Order Map 和 Header Table
+        let mut order_map = HashMap::new();
+        let mut conditional_header_table = Vec::new();
+        for (i, &(item, count)) in conditional_items.iter().enumerate() {
+            order_map.insert(item, i);
+            conditional_header_table.push(HeaderEntry {
+                item_id: item,
+                support: count,
+                head: None,
+            });
+        }
+
+        // 构建条件树
+        let mut conditional_tree = FPTree::new();
+        
+        // 第二遍扫描：插入路径
+        current_opt = suffix_entry.head;
+        while let Some(curr_idx) = current_opt {
+            let path_count = self.nodes[curr_idx].count;
+            let mut filtered_pattern = Vec::new();
+            let mut parent_opt = self.nodes[curr_idx].parent;
+
+            while let Some(parent_idx) = parent_opt {
+                let parent_node = &self.nodes[parent_idx];
+                if parent_node.item_id != 0 {
+                    if order_map.contains_key(&parent_node.item_id) {
+                        filtered_pattern.push(parent_node.item_id);
+                    }
+                    parent_opt = parent_node.parent;
+                } else {
+                    break;
+                }
+            }
+
+            if !filtered_pattern.is_empty() {
+                // 按频率排序
+                filtered_pattern.sort_by(|a, b| {
+                    order_map[a].cmp(&order_map[b])
+                });
+                conditional_tree.insert(&filtered_pattern, &order_map, &mut conditional_header_table, path_count);
+            }
+
+            current_opt = self.nodes[curr_idx].next;
+        }
+
+        conditional_tree.mine_patterns(&conditional_header_table, min_support)
+    }
 }
 
-/// FP-Growth 挖掘器
-pub struct FPGrowthMiner {
-    min_support_ratio: f64,
+struct FPGrowthCore {
+    min_support: f64,
+    min_support_count: usize,
+    use_count_threshold: bool,
 }
 
-impl FPGrowthMiner {
-    /// 创建新的FP-Growth挖掘器
-    ///
-    /// # 参数
-    /// * `min_support` - 最小支持度阈值 (0.0-1.0之间的小数)
-    pub fn new(min_support: f64) -> Self {
+impl FPGrowthCore {
+    fn new(min_support: f64) -> Self {
         Self {
-            min_support_ratio: min_support,
+            min_support,
+            min_support_count: 0,
+            use_count_threshold: false,
         }
     }
 
-    /// 从事务数据挖掘频繁模式
-    ///
-    /// # 参数
-    /// * `transactions` - 事务数据集，每个事务是一个字符串向量
-    ///
-    /// # 返回
-    /// 频繁模式及其支持度计数的向量
-    pub fn mine(&self, transactions: &[Vec<String>]) -> Vec<(Vec<String>, usize)> {
-        let total_transactions = transactions.len();
-        let min_support_count =
-            (self.min_support_ratio * total_transactions as f64).ceil() as usize;
+    fn new_with_count(min_support_count: usize) -> Self {
+        Self {
+            min_support: 0.0,
+            min_support_count,
+            use_count_threshold: true,
+        }
+    }
 
-        // 统计项频
-        let mut item_counts = HashMap::new();
-        for transaction in transactions {
-            for item in transaction {
-                *item_counts.entry(item.clone()).or_insert(0) += 1;
+    fn mine(&self, transactions: &[Vec<usize>]) -> Vec<(Vec<usize>, f64)> {
+        if transactions.is_empty() {
+            return Vec::new();
+        }
+
+        // 1. 统计频率
+        let mut counts = HashMap::new();
+        for tx in transactions {
+            for &item in tx {
+                *counts.entry(item).or_insert(0) += 1;
             }
         }
 
-        // 筛选频繁项
-        let mut frequent_items: Vec<_> = item_counts
+        let total_transactions = transactions.len();
+        
+        // 2. 计算最小支持度计数
+        let min_count = if self.use_count_threshold {
+            self.min_support_count
+        } else {
+            (self.min_support * total_transactions as f64).ceil() as usize
+        };
+
+        // 3. 获取频繁项并排序
+        let mut frequent_items: Vec<(usize, usize)> = counts
             .into_iter()
-            .filter(|&(_, count)| count >= min_support_count)
+            .filter(|&(_, count)| count >= min_count)
             .collect();
+        
+        if frequent_items.is_empty() {
+            return Vec::new();
+        }
 
-        // 按支持度降序排序
-        frequent_items.sort_by(|a, b| b.1.cmp(&a.1));
+        frequent_items.sort_by(|a, b| {
+            if a.1 == b.1 {
+                b.0.cmp(&a.0) // count相等时按id降序
+            } else {
+                b.1.cmp(&a.1) // count降序
+            }
+        });
 
-        // 构建FP树
+        let mut header_table = Vec::new();
+        let mut rank_map = HashMap::new();
+        for (i, &(item, count)) in frequent_items.iter().enumerate() {
+            header_table.push(HeaderEntry {
+                item_id: item,
+                support: count,
+                head: None,
+            });
+            rank_map.insert(item, i);
+        }
+
+        // 4. 构建FP树
         let mut fp_tree = FPTree::new();
-        for transaction in transactions {
-            let mut sorted_transaction: Vec<String> = transaction
-                .iter()
-                .filter(|item| {
-                    frequent_items
-                        .iter()
-                        .any(|(freq_item, _)| freq_item == *item)
-                })
+        for tx in transactions {
+            let mut filtered_tx: Vec<usize> = tx.iter()
+                .filter(|item| rank_map.contains_key(item))
                 .cloned()
                 .collect();
-
-            // 按频繁项顺序排序
-            sorted_transaction.sort_by(|a, b| {
-                let a_pos = frequent_items
-                    .iter()
-                    .position(|(item, _)| item == a)
-                    .unwrap_or(usize::MAX);
-                let b_pos = frequent_items
-                    .iter()
-                    .position(|(item, _)| item == b)
-                    .unwrap_or(usize::MAX);
-                a_pos.cmp(&b_pos)
-            });
-
-            if !sorted_transaction.is_empty() {
-                fp_tree.insert(&sorted_transaction, 1);
+            
+            if !filtered_tx.is_empty() {
+                filtered_tx.sort_by(|a, b| rank_map[a].cmp(&rank_map[b]));
+                fp_tree.insert(&filtered_tx, &rank_map, &mut header_table, 1);
             }
         }
 
-        // 挖掘频繁模式
-        let mut patterns = Vec::new();
+        // 5. 挖掘
+        let internal_patterns = fp_tree.mine_patterns(&header_table, min_count);
 
-        // 添加单个频繁项
-        for (item, count) in &frequent_items {
-            patterns.push((vec![item.clone()], *count));
+        // 6. 转换结果
+        internal_patterns.into_iter().map(|(items, count)| {
+            (items, count as f64 / total_transactions as f64)
+        }).collect()
+    }
+}
+
+// ==========================================
+// FPGrowth: 泛型接口
+// ==========================================
+
+pub struct FPGrowth<T> {
+    core: FPGrowthCore,
+    _marker: PhantomData<T>,
+}
+
+impl<T> FPGrowth<T>
+where
+    T: Hash + Eq + Clone + Ord,
+{
+    pub fn new(min_support: f64) -> Self {
+        Self {
+            core: FPGrowthCore::new(min_support),
+            _marker: PhantomData,
         }
-
-        // 递归挖掘
-        for (item, _) in frequent_items.iter().rev() {
-            let conditional_patterns = fp_tree.get_conditional_pattern_base(item);
-            if !conditional_patterns.is_empty() {
-                let sub_miner = FPGrowthMiner::new(self.min_support_ratio);
-                let sub_patterns = sub_miner.mine_from_patterns(&conditional_patterns);
-
-                // 添加后缀
-                for (mut pattern, count) in sub_patterns {
-                    pattern.push(item.clone());
-                    patterns.push((pattern, count));
-                }
-            }
-        }
-
-        // 去重和排序
-        let mut unique_patterns = HashMap::new();
-        for (pattern, count) in patterns {
-            let key = pattern.clone();
-            unique_patterns.insert(key, count);
-        }
-
-        let mut result: Vec<_> = unique_patterns.into_iter().collect();
-        result.sort_by(|a, b| b.1.cmp(&a.1)); // 按支持度降序
-
-        result
     }
 
-    /// 从条件模式基挖掘频繁模式（辅助方法）
-    fn mine_from_patterns(
-        &self,
-        conditional_patterns: &[(Vec<String>, usize)],
-    ) -> Vec<(Vec<String>, usize)> {
-        let mut patterns = Vec::new();
+    pub fn new_with_count(min_support_count: usize) -> Self {
+        Self {
+            core: FPGrowthCore::new_with_count(min_support_count),
+            _marker: PhantomData,
+        }
+    }
 
-        // 转换为事务格式
-        let transactions: Vec<Vec<String>> = conditional_patterns
-            .iter()
-            .map(|(pattern, _)| pattern.clone())
-            .collect();
-
-        // 递归挖掘
-        let sub_patterns = self.mine(&transactions);
-
-        // 合并计数
-        for (pattern, _) in sub_patterns {
-            let total_count: usize = conditional_patterns.iter().map(|(_, count)| *count).sum();
-
-            patterns.push((pattern, total_count));
+    pub fn mine(&self, transactions: &[Vec<T>]) -> Vec<(Vec<T>, f64)> {
+        if transactions.is_empty() {
+            return Vec::new();
         }
 
-        patterns
+        // 1. 映射 T -> usize
+        let mut item_to_id = HashMap::new();
+        let mut id_to_item = Vec::new();
+        // 0号保留给Root
+        id_to_item.push(None); 
+
+        let mut core_transactions = Vec::with_capacity(transactions.len());
+
+        for tx in transactions {
+            let mut core_tx = Vec::with_capacity(tx.len());
+            for item in tx {
+                let id = if let Some(&id) = item_to_id.get(item) {
+                    id
+                } else {
+                    let new_id = id_to_item.len();
+                    item_to_id.insert(item.clone(), new_id);
+                    id_to_item.push(Some(item.clone()));
+                    new_id
+                };
+                core_tx.push(id);
+            }
+            core_transactions.push(core_tx);
+        }
+
+        // 2. 调用核心算法
+        let core_patterns = self.core.mine(&core_transactions);
+
+        // 3. 映射回 T
+        core_patterns.into_iter().map(|(ids, support)| {
+            let items: Vec<T> = ids.into_iter()
+                .map(|id| id_to_item[id].as_ref().unwrap().clone())
+                .collect();
+            (items, support)
+        }).collect()
     }
 }
 
@@ -293,7 +419,7 @@ mod tests {
     /// 测试基本的频繁模式挖掘功能
     #[test]
     fn test_basic_frequent_patterns() {
-        let miner = FPGrowthMiner::new(0.3);
+        let miner = FPGrowth::new(0.3);
 
         // 示例数据集：购物篮分析
         let transactions = vec![
@@ -326,13 +452,13 @@ mod tests {
         for (pattern, support) in &patterns {
             if pattern == &vec!["牛奶".to_string()] {
                 found_milk = true;
-                assert_eq!(*support, 6, "牛奶的支持度应该是6");
+                assert!((support - 6.0/9.0).abs() < 1e-5, "牛奶的支持度应该是6/9");
             } else if pattern == &vec!["面包".to_string()] {
                 found_bread = true;
-                assert_eq!(*support, 7, "面包的支持度应该是7");
+                assert!((support - 7.0/9.0).abs() < 1e-5, "面包的支持度应该是7/9");
             } else if pattern == &vec!["黄油".to_string()] {
                 found_butter = true;
-                assert_eq!(*support, 6, "黄油的支持度应该是6");
+                assert!((support - 6.0/9.0).abs() < 1e-5, "黄油的支持度应该是6/9");
             }
         }
 
@@ -351,11 +477,11 @@ mod tests {
         ];
 
         // 较低的支持度
-        let miner_low = FPGrowthMiner::new(0.3);
+        let miner_low = FPGrowth::new(0.3);
         let patterns_low = miner_low.mine(&transactions);
 
         // 较高的支持度
-        let miner_high = FPGrowthMiner::new(0.8);
+        let miner_high = FPGrowth::new(0.8);
         let patterns_high = miner_high.mine(&transactions);
 
         // 较低支持度应该找到更多模式
@@ -368,7 +494,7 @@ mod tests {
     /// 测试空数据集
     #[test]
     fn test_empty_dataset() {
-        let miner = FPGrowthMiner::new(0.1);
+        let miner = FPGrowth::<String>::new(0.1);
         let transactions: Vec<Vec<String>> = vec![];
 
         let patterns = miner.mine(&transactions);
@@ -378,7 +504,7 @@ mod tests {
     /// 测试单个事务
     #[test]
     fn test_single_transaction() {
-        let miner = FPGrowthMiner::new(0.1);
+        let miner = FPGrowth::new(0.1);
         let transactions = vec![vec!["A".to_string(), "B".to_string(), "C".to_string()]];
 
         let patterns = miner.mine(&transactions);
@@ -386,16 +512,16 @@ mod tests {
         // 应该找到所有单个项和组合
         assert!(!patterns.is_empty(), "应该找到频繁模式");
 
-        // 验证所有项的支持度都是1
+        // 验证所有项的支持度都是1.0
         for (_, support) in &patterns {
-            assert_eq!(*support, 1, "单个事务中所有模式的支持度应该是1");
+            assert!((support - 1.0).abs() < 1e-5, "单个事务中所有模式的支持度应该是1.0");
         }
     }
 
     /// 测试最小支持度边界情况
     #[test]
     fn test_min_support_boundary() {
-        let miner = FPGrowthMiner::new(1.0); // 100% 支持度
+        let miner = FPGrowth::new(1.0); // 100% 支持度
         let transactions = vec![
             vec!["A".to_string(), "B".to_string()],
             vec!["A".to_string()],
