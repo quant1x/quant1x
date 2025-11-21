@@ -1,303 +1,78 @@
 #include "fp_growth.h"
-#include <algorithm>
+#include "fp_growth_core.h"
 
 namespace quant1x {
 
-FPGrowth::FPGrowth(double min_support)
-    : min_support_(min_support),
-      min_support_count_(0),
-      use_count_threshold_(false) {}
+// FPGrowth<T> 实现
+template <typename T>
+FPGrowth<T>::FPGrowth(double min_support) 
+    : core_(std::make_unique<FPGrowthCore>(min_support)) {}
 
-FPGrowth::FPGrowth(size_t min_support_count)
-    : min_support_(0.0),
-      min_support_count_(min_support_count),
-      use_count_threshold_(true) {}
+template <typename T>
+FPGrowth<T>::FPGrowth(size_t min_support_count) 
+    : core_(std::make_unique<FPGrowthCore>(min_support_count)) {}
 
-std::vector<FPGrowth::FrequentPattern> FPGrowth::mine(const Transactions& transactions) {
+template <typename T>
+FPGrowth<T>::~FPGrowth() = default;
+
+template <typename T>
+FPGrowth<T>::FPGrowth(FPGrowth&&) noexcept = default;
+
+template <typename T>
+FPGrowth<T>& FPGrowth<T>::operator=(FPGrowth&&) noexcept = default;
+
+template <typename T>
+std::vector<typename FPGrowth<T>::FrequentPattern> FPGrowth<T>::mine(const Transactions& transactions) {
     if (transactions.empty()) {
         return {};
     }
 
-    // 计算项频
-    auto item_counts = count_item_frequencies(transactions);
-    size_t total_transactions = transactions.size();
+    // 1. 建立映射 T -> size_t
+    std::unordered_map<T, size_t> item_to_id;
+    std::vector<T> id_to_item;
+    id_to_item.push_back(T()); // 0号ID保留
 
-    // 计算最小支持度计数
-    size_t min_count = use_count_threshold_ ?
-        min_support_count_ :
-        static_cast<size_t>(min_support_ * static_cast<double>(total_transactions));
+    FPGrowthCore::Transactions core_transactions;
+    core_transactions.reserve(transactions.size());
 
-    // 获取频繁项
-    auto frequent_items = get_frequent_items(item_counts, min_count);
-
-    if (frequent_items.empty()) {
-        return {};
-    }
-
-    // 构建FP树
-    FPTree fp_tree;
-    std::vector<HeaderEntry> header_table;
-
-    // 初始化项头表
-    header_table.reserve(frequent_items.size());
-    for (size_t item : frequent_items) {
-        header_table.emplace_back(item, item_counts[item]);
-    }
-
-    // 插入事务到FP树
-    for (const auto& transaction : transactions) {
-        Transaction filtered_transaction;
-        for (size_t item : transaction) {
-            if (item_counts[item] >= min_count) {
-                filtered_transaction.push_back(item);
+    for (const auto& tx : transactions) {
+        FPGrowthCore::Transaction core_tx;
+        core_tx.reserve(tx.size());
+        for (const auto& item : tx) {
+            if (item_to_id.find(item) == item_to_id.end()) {
+                size_t new_id = id_to_item.size();
+                item_to_id[item] = new_id;
+                id_to_item.push_back(item);
             }
+            core_tx.push_back(item_to_id[item]);
         }
-
-        if (!filtered_transaction.empty()) {
-            sort_transaction_by_frequency(filtered_transaction, frequent_items);
-            fp_tree.insert(filtered_transaction, frequent_items, header_table);
-        }
+        core_transactions.push_back(std::move(core_tx));
     }
 
-    // 从FP树中挖掘模式
-    return fp_tree.mine_patterns(header_table, min_count);
-}
+    // 2. 调用核心算法
+    auto core_patterns = core_->mine(core_transactions);
 
-std::unordered_map<size_t, size_t> FPGrowth::count_item_frequencies(
-    const Transactions& transactions) {
-
-    std::unordered_map<size_t, size_t> counts;
-    for (const auto& transaction : transactions) {
-        for (size_t item : transaction) {
-            counts[item]++;
-        }
-    }
-    return counts;
-}
-
-std::vector<size_t> FPGrowth::get_frequent_items(
-    const std::unordered_map<size_t, size_t>& item_counts,
-    size_t min_support) {
-
-    std::vector<std::pair<size_t, size_t>> items;
-    for (const auto& pair : item_counts) {
-        if (pair.second >= min_support) {
-            items.emplace_back(pair.second, pair.first); // 按支持度降序
-        }
-    }
-
-    std::sort(items.rbegin(), items.rend()); // 降序排序
-
-    std::vector<size_t> result;
-    result.reserve(items.size());
-    for (const auto& item : items) {
-        result.push_back(item.second);
-    }
-
-    return result;
-}
-
-void FPGrowth::sort_transaction_by_frequency(
-    Transaction& transaction,
-    const std::vector<size_t>& item_order) {
-
-    // 创建项到顺序的映射
-    std::unordered_map<size_t, size_t> order_map;
-    for (size_t i = 0; i < item_order.size(); ++i) {
-        order_map[item_order[i]] = i;
-    }
-
-    // 按频率排序（支持度高的项排在前面）
-    std::sort(transaction.begin(), transaction.end(),
-              [&order_map](size_t a, size_t b) {
-                  return order_map[a] < order_map[b];
-              });
-}
-
-// ===== FPTree 实现 =====
-
-void FPGrowth::FPTree::insert(
-    const Transaction& transaction,
-    [[maybe_unused]] const std::vector<size_t>& item_order,
-    std::vector<HeaderEntry>& header_table) {
-
-    insert_single_path(root_.get(), transaction, 0, header_table);
-}
-
-void FPGrowth::FPTree::insert_single_path(
-    FPNode* node,
-    const Transaction& transaction,
-    size_t index,
-    std::vector<HeaderEntry>& header_table) {
-
-    if (index >= transaction.size()) {
-        return;
-    }
-
-    size_t item = transaction[index];
-    auto it = node->children.find(item);
-
-    if (it == node->children.end()) {
-        // 创建新节点
-        auto new_node = std::make_unique<FPNode>(item, 1, node);
-        auto* new_node_ptr = new_node.get();
-        node->children[item] = std::move(new_node);
-
-        // 更新项头表
-        for (auto& entry : header_table) {
-            if (entry.item_id == item) {
-                new_node_ptr->next = entry.head;
-                entry.head = new_node_ptr;
-                break;
-            }
-        }
-
-        // 递归插入剩余项
-        insert_single_path(new_node_ptr, transaction, index + 1, header_table);
-    } else {
-        // 增加计数
-        it->second->count++;
-
-        // 递归插入剩余项
-        insert_single_path(it->second.get(), transaction, index + 1, header_table);
-    }
-}
-
-std::vector<FPGrowth::FrequentPattern> FPGrowth::FPTree::mine_patterns(
-    const std::vector<HeaderEntry>& header_table,
-    size_t min_support) {
-
+    // 3. 映射回 T
     std::vector<FrequentPattern> patterns;
+    patterns.reserve(core_patterns.size());
 
-    // 从支持度最低的项开始挖掘
-    for (auto it = header_table.rbegin(); it != header_table.rend(); ++it) {
-        const auto& entry = *it;
-
-        // 生成条件模式基
-        auto conditional_patterns = mine_conditional_patterns(
-            header_table, entry.item_id, min_support);
-
-        // 添加单项模式
-        patterns.emplace_back(ItemSet{entry.item_id}, entry.support);
-
-        // 添加条件模式
-        for (auto& pattern : conditional_patterns) {
-            pattern.first.push_back(entry.item_id);
-            patterns.push_back(std::move(pattern));
+    for (const auto& p : core_patterns) {
+        ItemSet itemset;
+        itemset.reserve(p.first.size());
+        for (size_t id : p.first) {
+            itemset.push_back(id_to_item[id]);
         }
+        patterns.emplace_back(std::move(itemset), p.second);
     }
 
     return patterns;
 }
 
-std::vector<FPGrowth::FrequentPattern> FPGrowth::FPTree::mine_conditional_patterns(
-    const std::vector<HeaderEntry>& header_table,
-    size_t suffix_item,
-    size_t min_support) {
-
-    // 找到后缀项在项头表中的位置
-    const HeaderEntry* suffix_entry = nullptr;
-    for (const auto& entry : header_table) {
-        if (entry.item_id == suffix_item) {
-            suffix_entry = &entry;
-            break;
-        }
-    }
-
-    if (!suffix_entry || !suffix_entry->head) {
-        return {};  // 没有找到后缀项或没有节点
-    }
-
-    // 收集条件模式基：遍历后缀项的所有节点
-    std::vector<std::pair<Transaction, size_t>> conditional_patterns;
-
-    FPNode* current = suffix_entry->head;
-    while (current) {
-        // 从当前节点向上遍历到根，收集路径
-        Transaction path;
-        size_t path_count = current->count;
-
-        FPNode* node = current->parent;
-        while (node && node->item_id != 0) {  // 根节点的item_id为0
-            path.push_back(node->item_id);
-            node = node->parent;
-        }
-
-        if (!path.empty()) {
-            conditional_patterns.emplace_back(path, path_count);
-        }
-
-        current = current->next;
-    }
-
-    if (conditional_patterns.empty()) {
-        return {};
-    }
-
-    // 统计条件模式基中各项的频率
-    std::unordered_map<size_t, size_t> conditional_counts;
-    for (const auto& pattern : conditional_patterns) {
-        for (size_t item : pattern.first) {
-            conditional_counts[item] += pattern.second;
-        }
-    }
-
-    // 获取条件频繁项（在条件模式基中满足最小支持度的项）
-    std::vector<std::pair<size_t, size_t>> conditional_items;
-    for (const auto& pair : conditional_counts) {
-        if (pair.second >= min_support) {
-            conditional_items.emplace_back(pair.second, pair.first);
-        }
-    }
-
-    if (conditional_items.empty()) {
-        return {};
-    }
-
-    // 按支持度降序排序
-    std::sort(conditional_items.rbegin(), conditional_items.rend());
-
-    // 创建条件项的顺序映射
-    std::vector<size_t> conditional_item_order;
-    std::unordered_map<size_t, size_t> order_map;
-    for (size_t i = 0; i < conditional_items.size(); ++i) {
-        size_t item = conditional_items[i].second;
-        conditional_item_order.push_back(item);
-        order_map[item] = i;
-    }
-
-    // 构建条件FP树
-    FPTree conditional_tree;
-    std::vector<HeaderEntry> conditional_header_table;
-    conditional_header_table.reserve(conditional_item_order.size());
-
-    for (size_t item : conditional_item_order) {
-        conditional_header_table.emplace_back(item, conditional_counts[item]);
-    }
-
-    // 插入条件模式基到条件FP树
-    for (const auto& pattern : conditional_patterns) {
-        Transaction filtered_pattern;
-        for (size_t item : pattern.first) {
-            if (conditional_counts[item] >= min_support) {
-                filtered_pattern.push_back(item);
-            }
-        }
-
-        if (!filtered_pattern.empty()) {
-            // 按条件项的频率排序
-            std::sort(filtered_pattern.begin(), filtered_pattern.end(),
-                     [&order_map](size_t a, size_t b) {
-                         return order_map[a] < order_map[b];
-                     });
-
-            conditional_tree.insert(filtered_pattern, conditional_item_order,
-                                   conditional_header_table);
-        }
-    }
-
-    // 在条件FP树上递归挖掘模式
-    return conditional_tree.mine_patterns(conditional_header_table, min_support);
-}
+// 显式实例化
+template class FPGrowth<std::string>;
+template class FPGrowth<size_t>;
+template class FPGrowth<int>;
+template class FPGrowth<long>;
 
 } // namespace quant1x
+

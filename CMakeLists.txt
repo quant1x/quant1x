@@ -557,6 +557,7 @@ set(quant1x-headers
 
     # 数据处理功能 quant1x/data
     learn/fpgrowth/fp_growth.h
+    learn/fpgrowth/fp_growth_core.h
 )
 
 set(quant1x-sources
@@ -673,6 +674,7 @@ set(quant1x-sources
 
     # 数据处理功能 quant1x/data
     learn/fpgrowth/fp_growth.cpp
+    learn/fpgrowth/fp_growth_core.cpp
 )
 
 # If mimalloc is enabled and we're using the C++ new/delete override mode,
