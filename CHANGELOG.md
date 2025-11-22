@@ -3,6 +3,64 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.2] - 2025-11-22
+### Changed
+- rust下一个版本0.7.2
+- 消除重复的证券代码矫正函数
+- 调整go代码包名为exchange
+- 新增go版本的证券代码规则
+- 抽象网络接口
+- 暴露网络接口
+- python实现c++网络模式
+- rust市场代码改源文件名为markets
+- 备份exchange.py
+- 实现python版本的证券代码列表
+- 整理python的证券代码, 消除package和python源文件名冲突的问题
+- 消除部分警告
+- 统一level1标准行情接口名
+- 调整vscode mac下的配置
+- 修复osx下numa_code未使用的警告
+- 删除对duktape javascript库的依赖
+- 去掉对duktape的依赖
+- 修复统一标准协议后的对齐问题
+- 修复函数未使用参数的告警，用有“故意未使用"的前缀下划”_“线来解决
+- rustfmt
+- 修复调度器stop可能被调度线程自身调用, 如果join会死锁
+- 修复linux缺少numaif.h的问题
+- 修复quant1x cmake config脚本对date 非windows平台和clang的判断
+- 兼容quant1x.yaml可以不配置分钟级K线
+- 屏蔽mimalloc的版本提示
+- 小调整部分crash handler代码
+- 删除numa
+- 修复mac下cpu亲和性绑定失败的问题
+- 屏蔽httplib
+- 删除废弃的测试代码
+- 修订注释
+- 删除废弃的python代码
+- 删除废弃的代码
+- 调整vscode终端的字体
+- 调整go代码依赖库版本
+- 优化go版本的协议实现方式
+- 优化客户端
+- 调整字符集功能的源文件名，避免和iconv冲突
+- 删除废弃的fft代码
+- 修订gcc和clang的最低版本
+- 调整ringbuffer的包名
+- ringbuffer文档文件改名，去掉README
+- c++：验证调度器延迟执行
+- rust: 调整sina解码器的包路径
+- go: 新增缓存机制
+- 新增证券代码SecurityCode结构体，减少运行时对代码的检测
+- 修订上海证券交所证券代码规则链接
+- c++: 修订关于证券交易所的注释
+- c++: 修复字符集头文件
+- go: logger包路径和c++统一为log
+- c++: 调整头文件宏
+- c++: 优化FP Growth算法
+- go: 重构FP Growth算法
+- rust: 删除废弃sina解码的测试代码
+- rust: 优化FP Growth算法
+
 ## [0.7.1] - 2025-11-03
 ### Changed
 - rust代码下一个版本号0.7.0
@@ -20,6 +78,7 @@ All notable changes to this project will be documented in this file.
 - cmake安装脚本增加minizip
 - 统一ETF的level1基准价格单位的处理
 - rust实现板块每日自动更新
+- update changelog
 
 ## [0.7.0] - 2025-10-29
 ### Changed
@@ -1156,7 +1215,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.1...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.2...HEAD
+[0.7.2]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.1...v0.7.2
 [0.7.1]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.0...v0.7.1
 [0.7.0]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.160...v0.7.0
 [0.6.160]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.159...v0.6.160
