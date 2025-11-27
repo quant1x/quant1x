@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+
+	"gitee.com/quant1x/quant1x/quant1x/std"
 )
 
 // resetGlobals resets package-level globals so tests can control initialization.
@@ -74,7 +76,7 @@ func TestQuarterAndExpandHome(t *testing.T) {
 	}
 
 	// expandHome for ~/ should equal user's home dir
-	home := expandHome("~")
+	home, _ := std.ExpandUser("~")
 	if home == "" {
 		t.Fatalf("expandHome returned empty")
 	}

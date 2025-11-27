@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -13,6 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"gitee.com/quant1x/quant1x/quant1x/std"
 )
 
 // Go translation of config::BaseConfig and helpers from config.cpp
@@ -39,7 +39,7 @@ var globalConfig BaseConfig
 var globalCacheOnce sync.Once
 
 func initPath(path string) {
-	expanded := expandHome(path)
+	expanded, _ := std.ExpandUser(path)
 	if expanded == "" {
 		expanded = path
 	}
@@ -49,7 +49,7 @@ func initPath(path string) {
 
 func lazyInit() {
 	initPath(defaultQuant1xDataPath)
-	globalConfig.Filename = expandHome(filepath.Join(globalConfig.HomeDir, "quant1x.yaml"))
+	globalConfig.Filename, _ = std.ExpandUser(filepath.Join(globalConfig.HomeDir, "quant1x.yaml"))
 
 	// try to read YAML and honor top-level basedir/debug and generic data
 	data, err := os.ReadFile(globalConfig.Filename)
@@ -57,7 +57,7 @@ func lazyInit() {
 		var node map[string]interface{}
 		if err := yaml.Unmarshal(data, &node); err == nil {
 			if v, ok := node["basedir"].(string); ok && strings.TrimSpace(v) != "" {
-				if expanded := expandHome(strings.TrimSpace(v)); expanded != "" {
+				if expanded, _ := std.ExpandUser(strings.TrimSpace(v)); expanded != "" {
 					globalConfig.CacheDir = expanded
 				}
 			}
@@ -75,16 +75,7 @@ func lazyInit() {
 	}
 
 	globalConfig.LogsDir = filepath.Join(globalConfig.CacheDir, "logs")
-	_ = os.MkdirAll(globalConfig.LogsDir, 0o755)
-
-	// // register calendar filename resolver and a RollingOnce marker so exchange
-	// // calendar updates are gated once-per-day (mirrors C++ behavior).
-	// exchange.SetCalendarFilenameResolver(GetCalendarFilename)
-	// marker := filepath.Join(GetMetaPath(), "rolling", "exchange-calendar")
-
-	// _ = os.MkdirAll(filepath.Dir(marker), 0o755)
-	// ro := runtimepkg.CreateDaily(9, 0)
-	// exchange.SetCalendarRollingOnce(ro)
+	_ = std.MkDirs(globalConfig.LogsDir)
 }
 
 // Trader loading and defaults moved to `trader_parameter.go`, `strategy_parameter.go`, and `rule_parameter.go`.
@@ -298,20 +289,4 @@ func GetQmtCachePath() string {
 		}
 	}
 	return qmtOrderPath
-}
-
-func expandHome(path string) string {
-	if path == "~" {
-		if u, err := user.Current(); err == nil {
-			return u.HomeDir
-		}
-		return ""
-	}
-	if strings.HasPrefix(path, "~/") {
-		if u, err := user.Current(); err == nil {
-			return filepath.Join(u.HomeDir, path[2:])
-		}
-		return ""
-	}
-	return path
 }
