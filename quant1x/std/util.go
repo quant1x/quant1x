@@ -12,7 +12,11 @@ const (
 )
 
 // MkDirs 创建指定路径的所有目录（包括任何必要的父目录），使用默认的目录权限
-func MkDirs(path string, notExistToCreate ...bool) error {
+func MkDirs(path_ string, notExistToCreate ...bool) error {
+	path, err := ExpandUser(path_)
+	if err != nil {
+		return err
+	}
 	create := true
 	if len(notExistToCreate) > 0 {
 		create = notExistToCreate[0]
