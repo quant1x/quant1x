@@ -1,5 +1,7 @@
 #include <quant1x/runtime/scheduler.h>
 
+static thread_local AsyncScheduler* current_scheduler_ptr = nullptr;
+
 AsyncScheduler::AsyncScheduler(size_t thread_count) : pool_(thread_count), running_(true), next_id_(1) {
     spdlog::info("start scheduler...");
     scheduler_thread_ = std::thread([this] { scheduler_loop(); });
@@ -79,6 +81,7 @@ void AsyncScheduler::scheduler_loop() {
         }
 
         pool_.detach_task([this, task_to_run] {
+            current_scheduler_ptr = this;
             try {
                 if (running_) {
                     task_to_run.task();
@@ -88,6 +91,7 @@ void AsyncScheduler::scheduler_loop() {
             } catch (...) {
                 spdlog::error("任务执行未知异常 id={}, name={}", task_to_run.id, task_to_run.name);
             }
+            current_scheduler_ptr = nullptr;
         });
     }
     spdlog::info("scheduler_loop...stop");
@@ -127,7 +131,11 @@ void AsyncScheduler::stop() {
     }
 
     // 3. 等待线程池中已经派发的任务完成
-    pool_.wait();
+    if (current_scheduler_ptr != this) {
+        pool_.wait();
+    } else {
+        spdlog::warn("stop() called from worker thread; skipping pool_.wait() to avoid deadlock");
+    }
 
     // 4. 现在没有并发访问了，安全清理容器
     {
