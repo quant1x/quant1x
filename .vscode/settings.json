@@ -49,5 +49,6 @@
         "Debug"
     ],
     "cmake.launchBehavior": "reuseTerminal",
-    "terminal.integrated.fontFamily": "'FiraCode Nerd Font Mono', 'Courier New', monospace"
+    "terminal.integrated.fontFamily": "'FiraCode Nerd Font Mono', 'Courier New', monospace",
+    "debug.console.fontFamily": "'Source Code Pro', 'Courier New', monospace"
 }
