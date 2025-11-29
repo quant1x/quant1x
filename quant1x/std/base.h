@@ -1,6 +1,6 @@
 #pragma once
-#ifndef API_BASE_H
-#define API_BASE_H 1
+#ifndef QUANT1X_STD_BASE_H
+#define QUANT1X_STD_BASE_H 1
 
 #include "feature_detection.h"
 
@@ -105,4 +105,4 @@ constexpr const char *const INVALID_DATE_FORMAT_YMD_COMPACT_MSG = "日期格式�
 
 #include "format.h"
 
-#endif  // API_BASE_H
+#endif  // QUANT1X_STD_BASE_H
