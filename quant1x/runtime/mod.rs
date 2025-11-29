@@ -1,9 +1,9 @@
 mod core;
-mod rolling_once;
+mod once;
 mod scheduler;
 
 pub use core::*;
-pub use rolling_once::*;
+pub use once::*;
 pub use scheduler::*;
 
 // ringbuffer 模块 - 最小包装
