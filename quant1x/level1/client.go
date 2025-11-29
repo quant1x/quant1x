@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/logging"
+	"gitee.com/quant1x/quant1x/quant1x/log"
 	qnet "gitee.com/quant1x/quant1x/quant1x/net"
 	"gopkg.in/yaml.v3"
 )
@@ -101,7 +101,7 @@ func (h *StandardProtocolHandler) Handshake(conn *stdnet.TCPConn) (bool, error) 
 	req1 := Hello1Request{}
 	body1, _, err := h.processRequest(conn, req1.Bytes())
 	if err != nil {
-		logging.Errorf("level1 handshake Hello1 failed: %v", err)
+		log.Errorf("level1 handshake Hello1 failed: %v", err)
 		return false, err
 	}
 	if len(body1) == 0 {
@@ -109,14 +109,14 @@ func (h *StandardProtocolHandler) Handshake(conn *stdnet.TCPConn) (bool, error) 
 	}
 	var resp1 Hello1Response
 	if err := resp1.Deserialize(body1); err != nil {
-		logging.Errorf("level1 handshake Hello1 validation failed: %v", err)
+		log.Errorf("level1 handshake Hello1 validation failed: %v", err)
 		return false, err
 	}
 
 	req2 := Hello2Request{}
 	body2, _, err := h.processRequest(conn, req2.Bytes())
 	if err != nil {
-		logging.Errorf("level1 handshake Hello2 failed: %v", err)
+		log.Errorf("level1 handshake Hello2 failed: %v", err)
 		return false, err
 	}
 	if len(body2) == 0 {
@@ -124,7 +124,7 @@ func (h *StandardProtocolHandler) Handshake(conn *stdnet.TCPConn) (bool, error) 
 	}
 	var resp2 Hello2Response
 	if err := resp2.Deserialize(body2); err != nil {
-		logging.Errorf("level1 handshake Hello2 validation failed: %v", err)
+		log.Errorf("level1 handshake Hello2 validation failed: %v", err)
 		return false, err
 	}
 	return true, nil
@@ -140,7 +140,7 @@ func (h *StandardProtocolHandler) Keepalive(conn *stdnet.TCPConn) (bool, error) 
 	}
 	var resp HeartbeatResponse
 	if err := resp.Deserialize(body); err != nil {
-		logging.Errorf("level1 keepalive response invalid: %v", err)
+		log.Errorf("level1 keepalive response invalid: %v", err)
 		return false, err
 	}
 	return true, nil
@@ -172,22 +172,22 @@ func initConnectionPool() (*qnet.TcpConnectionPool, error) {
 	servers, info, err := loadCachedServers(cachePath)
 	needDetect := false
 	if err != nil {
-		logging.Debugf("level1: cached server list missing or invalid: %v", err)
+		log.Debugf("level1: cached server list missing or invalid: %v", err)
 		needDetect = true
 	} else if shouldRefreshCache(info) {
 		needDetect = true
 	}
 
 	if needDetect {
-		logging.Infof("level1: refreshing server cache via detection")
+		log.Infof("level1: refreshing server cache via detection")
 		detected := detectServers(handler, latencyThreshold, maxConnections, defaultConnectTimeout)
 		if len(detected) > 0 {
 			servers = detected
 			if err := saveCachedServers(cachePath, servers); err != nil {
-				logging.Errorf("level1: failed to save detected servers: %v", err)
+				log.Errorf("level1: failed to save detected servers: %v", err)
 			}
 		} else if len(servers) == 0 {
-			logging.Infof("level1: detection returned no servers, falling back to standard list")
+			log.Infof("level1: detection returned no servers, falling back to standard list")
 			servers = standardServerList()
 		}
 	}
@@ -211,7 +211,7 @@ func initConnectionPool() (*qnet.TcpConnectionPool, error) {
 			break
 		}
 		if added := pool.AddEndpoint(srv.Host, int(srv.Port), 0); !added {
-			logging.Debugf("level1: endpoint %s:%d already registered", srv.Host, srv.Port)
+			log.Debugf("level1: endpoint %s:%d already registered", srv.Host, srv.Port)
 		}
 	}
 
@@ -248,7 +248,7 @@ func detectServers(handler *StandardProtocolHandler, threshold time.Duration, li
 			addr := stdnet.JoinHostPort(srv.Host, strconv.Itoa(int(srv.Port)))
 			conn, err := stdnet.DialTimeout("tcp", addr, connectTimeout)
 			if err != nil {
-				logging.Debugf("level1 detect: dial %s failed: %v", addr, err)
+				log.Debugf("level1 detect: dial %s failed: %v", addr, err)
 				return
 			}
 			tcpConn, ok := conn.(*stdnet.TCPConn)
@@ -261,12 +261,12 @@ func detectServers(handler *StandardProtocolHandler, threshold time.Duration, li
 			_ = tcpConn.SetNoDelay(true)
 			start := time.Now()
 			if ok, err := handler.Handshake(tcpConn); err != nil || !ok {
-				logging.Debugf("level1 detect: handshake %s failed: %v", addr, err)
+				log.Debugf("level1 detect: handshake %s failed: %v", addr, err)
 				return
 			}
 			latency := time.Since(start)
 			if latency >= threshold {
-				logging.Debugf("level1 detect: latency %s = %v exceeds threshold", addr, latency)
+				log.Debugf("level1 detect: latency %s = %v exceeds threshold", addr, latency)
 				return
 			}
 			srv.LatencyMS = latency.Milliseconds()

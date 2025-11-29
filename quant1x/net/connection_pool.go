@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/logging"
+	"gitee.com/quant1x/quant1x/quant1x/log"
 )
 
 // Connection is an RAII-style wrapper around an established TCP connection.
@@ -85,7 +85,7 @@ func NewTcpConnectionPool(minConn, maxConn int, handler NetworkOperationHandler)
 		cancel:          cancel,
 	}
 
-	logging.Debugf("[connection pool] min_connections=%d, max_connections=%d, endpoint_weight=%d", minConn, maxConn, p.endpointWeight)
+	log.Debugf("[connection pool] min_connections=%d, max_connections=%d, endpoint_weight=%d", minConn, maxConn, p.endpointWeight)
 
 	// start background heartbeat
 	p.start()
@@ -118,16 +118,16 @@ func (p *TcpConnectionPool) Acquire() (*Connection, func(), error) {
 		c = p.idleConnections[len(p.idleConnections)-1]
 		p.idleConnections = p.idleConnections[:len(p.idleConnections)-1]
 		p.idleCount--
-		logging.Debugf("Reused connection from pool (ptr: %p)", c)
+		log.Debugf("Reused connection from pool (ptr: %p)", c)
 	}
 	p.connectionsMutex.Unlock()
 
 	// 2. create new if needed
 	if c == nil {
-		logging.Debugf("Creating new connection...")
+		log.Debugf("Creating new connection...")
 		ep, ok := p.endpointManager.AcquireEndpoint()
 		if !ok || ep == nil {
-			logging.Errorf("No available endpoints")
+			log.Errorf("No available endpoints")
 			return nil, nil, errors.New("no available endpoints")
 		}
 
@@ -137,7 +137,7 @@ func (p *TcpConnectionPool) Acquire() (*Connection, func(), error) {
 		rawConn, err := dialer.DialContext(p.ctx, "tcp", addr)
 		if err != nil {
 			p.endpointManager.ReleaseEndpoint(ep)
-			logging.Errorf("Error dialing %s: %v", addr, err)
+			log.Errorf("Error dialing %s: %v", addr, err)
 			return nil, nil, err
 		}
 		tcpConn, ok2 := rawConn.(*stdnet.TCPConn)
@@ -152,7 +152,7 @@ func (p *TcpConnectionPool) Acquire() (*Connection, func(), error) {
 		if err != nil || !okHandshake {
 			tcpConn.Close()
 			p.endpointManager.ReleaseEndpoint(ep)
-			logging.Errorf("Handshake failed with %s: %v", addr, err)
+			log.Errorf("Handshake failed with %s: %v", addr, err)
 			if err == nil {
 				err = errors.New("handshake failed")
 			}
@@ -160,7 +160,7 @@ func (p *TcpConnectionPool) Acquire() (*Connection, func(), error) {
 		}
 
 		c = NewConnection(tcpConn, ep)
-		logging.Debugf("Created new connection (ptr: %p)", c)
+		log.Debugf("Created new connection (ptr: %p)", c)
 	}
 
 	p.connectionsMutex.Lock()
@@ -185,7 +185,7 @@ func (p *TcpConnectionPool) Release(c *Connection) {
 		return
 	}
 	connPtr := fmt.Sprintf("%p", c)
-	logging.Debugf("Returning connection %s to pool", connPtr)
+	log.Debugf("Returning connection %s to pool", connPtr)
 
 	p.connectionsMutex.Lock()
 	defer p.connectionsMutex.Unlock()
@@ -201,7 +201,7 @@ func (p *TcpConnectionPool) closeConnection(c *Connection) {
 	if c == nil {
 		return
 	}
-	logging.Debugf("Closing connection (ptr: %p)", c)
+	log.Debugf("Closing connection (ptr: %p)", c)
 	// Release the endpoint back to manager, then close the socket.
 	// This mirrors the C++ closeConnection behavior which returns the
 	// endpoint allocation when a connection is being permanently closed.
@@ -230,11 +230,11 @@ func (p *TcpConnectionPool) start() {
 		for {
 			select {
 			case <-p.ctx.Done():
-				logging.Infof("heartbeat exiting")
+				log.Infof("heartbeat exiting")
 				return
 			case <-p.heartbeatTicker.C:
 				if !p.running {
-					logging.Infof("heartbeat stopping")
+					log.Infof("heartbeat stopping")
 					return
 				}
 				p.checkConnections()
@@ -277,7 +277,7 @@ func (p *TcpConnectionPool) checkConnections() {
 		ok, err := p.networkHandler.Keepalive(conn.Conn())
 		if err != nil {
 			// Exception path: permanently close and release endpoint
-			logging.Errorf("keepalive error: %v", err)
+			log.Errorf("keepalive error: %v", err)
 			p.connectionsMutex.Unlock() // unlock while performing closeConnection which will lock
 			p.closeConnection(conn)
 			p.connectionsMutex.Lock()
@@ -287,7 +287,7 @@ func (p *TcpConnectionPool) checkConnections() {
 			survivors = append(survivors, conn)
 		} else {
 			// keepalive=false: close socket but DO NOT release endpoint here
-			logging.Debugf("connection not healthy, closing socket: %p", conn)
+			log.Debugf("connection not healthy, closing socket: %p", conn)
 			conn.Close()
 			// do NOT call ReleaseEndpoint here (mirror C++ behavior)
 		}
@@ -302,14 +302,14 @@ func (p *TcpConnectionPool) tryCreateConnections() {
 	for p.activeCount+p.idleCount < p.minConnections && retries < 10 {
 		available := p.endpointManager.GetAvailableResources()
 		if available == 0 {
-			logging.Infof("endpoint resources insufficient, retry %d/10", retries)
+			log.Infof("endpoint resources insufficient, retry %d/10", retries)
 			time.Sleep(100 * time.Millisecond)
 			retries++
 			continue
 		}
 		conn, release, err := p.Acquire()
 		if err != nil {
-			logging.Errorf("Error acquiring new connection: %v", err)
+			log.Errorf("Error acquiring new connection: %v", err)
 			break
 		}
 		// Immediately release the connection to mirror C++ unique_ptr
@@ -320,7 +320,7 @@ func (p *TcpConnectionPool) tryCreateConnections() {
 		}
 		// increment retry counter on attempt
 		retries++
-		logging.Debugf("supplemented 1 connection, endpoint=%v", conn.Endpoint())
+		log.Debugf("supplemented 1 connection, endpoint=%v", conn.Endpoint())
 	}
 }
 
