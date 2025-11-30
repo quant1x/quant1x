@@ -3,6 +3,9 @@ package datasets
 import (
 	"path/filepath"
 	"testing"
+
+	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"gitee.com/quant1x/quant1x/quant1x/level1"
 )
 
 func TestSaveAndReadKlineCSV(t *testing.T) {
@@ -101,5 +104,17 @@ func TestAdjust(t *testing.T) {
 
 	if k.AdjustmentCount != 3 {
 		t.Fatalf("AdjustmentCount wrong: %v", k.AdjustmentCount)
+	}
+}
+
+func TestKLineDaily_update(t *testing.T) {
+	code := "600000.sh"
+	securityCode := exchange.CorrectSecurityCode(code)
+	list, err := FetchKLines(securityCode, level1.KLineDaily, 0, 10)
+	if err != nil {
+		t.Fatalf("FetchKLines failed: %v", err)
+	}
+	if len(list) == 0 {
+		t.Fatalf("FetchKLines returned empty list")
 	}
 }

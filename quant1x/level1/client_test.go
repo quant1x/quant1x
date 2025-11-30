@@ -276,15 +276,15 @@ func TestClientAcquireReal(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("QUANT1X_HOME", dir)
 
-	conn, release, err := Client()
+	conn, release, err := GetStdConnection()
 	if err != nil {
-		t.Fatalf("Client() returned error: %v", err)
+		t.Fatalf("GetStdConnection() returned error: %v", err)
 	}
 	if conn == nil {
-		t.Fatalf("Client() returned nil connection")
+		t.Fatalf("GetStdConnection() returned nil connection")
 	}
 	if release == nil {
-		t.Fatalf("Client() returned nil release func")
+		t.Fatalf("GetStdConnection() returned nil release func")
 	}
 	release()
 }

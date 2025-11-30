@@ -17,9 +17,9 @@ func TestSecurityListReal(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("QUANT1X_HOME", dir)
 
-	conn, release, err := Client()
+	conn, release, err := GetStdConnection()
 	if err != nil {
-		t.Fatalf("Client() returned error: %v", err)
+		t.Fatalf("GetStdConnection() returned error: %v", err)
 	}
 	defer release()
 

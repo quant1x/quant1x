@@ -34,7 +34,7 @@ const maxKlineLookbackDays = 1
 
 // FetchKLines pulls K-line data from level1 and converts it to datasets.KLine.
 func FetchKLines(securityCode string, category level1.KLineType, start, count uint16) ([]KLine, error) {
-	conn, release, err := level1.Client()
+	conn, release, err := level1.GetStdConnection()
 	if err != nil {
 		return nil, fmt.Errorf("level1 client acquire failed: %w", err)
 	}
@@ -207,7 +207,7 @@ func (d *DataKLine) Print(code string, dates []exchange.Timestamp) {
 // fetchRawSecurityBars performs a low-level level1 SecurityBars request and
 // returns the raw list of level1.SecurityBar (unconverted).
 func fetchRawSecurityBars(securityCode string, category level1.KLineType, start, count uint16) ([]level1.SecurityBar, error) {
-	conn, release, err := level1.Client()
+	conn, release, err := level1.GetStdConnection()
 	if err != nil {
 		return nil, fmt.Errorf("level1 client acquire failed: %w", err)
 	}

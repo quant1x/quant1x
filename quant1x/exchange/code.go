@@ -103,3 +103,11 @@ func sanitizeDigits(s string) string {
 	replaced = strings.ReplaceAll(replaced, "-", "")
 	return replaced
 }
+
+func CorrectSecurityCode(input string) string {
+	_, marketFlag, symbol := DetectMarket(input)
+	if symbol == "" {
+		panic(fmt.Errorf("invalid security code: %s", input))
+	}
+	return fmt.Sprintf("%s%s", marketFlag, symbol)
+}

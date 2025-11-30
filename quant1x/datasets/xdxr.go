@@ -158,7 +158,7 @@ func UpdateXdxr(code string) ([]XdxrInfo, error) {
 		return nil, fmt.Errorf("invalid security code length: %s", code)
 	}
 	fname := config.GetXdxrFilename(code)
-	conn, release, err := level1.Client()
+	conn, release, err := level1.GetStdConnection()
 	if err != nil {
 		return nil, fmt.Errorf("level1 client acquire failed: %w", err)
 	}
