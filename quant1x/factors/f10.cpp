@@ -29,7 +29,7 @@ static std::tuple<f64, f64, std::string, std::string> get_finance_info(const std
     try {
         level1::FinanceRequest request(security_code);
         level1::FinanceResponse response{};
-        auto conn = level1::client();
+        auto conn = level1::get_std_conn();
         level1::process(conn->socket(), request, response);
         if(response.Count>0) {
             auto const &info = response.Info;

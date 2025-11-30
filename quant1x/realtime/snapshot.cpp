@@ -171,7 +171,7 @@ namespace realtime {
                 }
                 level1::SecurityQuoteRequest request(sub_codes);
                 level1::SecurityQuoteResponse response;
-                auto conn = level1::client();
+                auto conn = level1::get_std_conn();
                 if(conn == nullptr) {
                     spdlog::error("服务器网络不稳定, 稍后重试");
                     return;

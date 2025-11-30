@@ -45,7 +45,7 @@ namespace datasets {
 
     void DataMinute::Update(const std::string &code, const exchange::timestamp &date) {
         try {
-            auto conn = level1::client();
+            auto conn = level1::get_std_conn();
             auto [id, _, symbol] = exchange::DetectMarket(code);
             level1::HistoryMinuteTimeRequest request(code, date.yyyymmdd());
             level1::HistoryMinuteTimeResponse response(id, symbol.c_str());

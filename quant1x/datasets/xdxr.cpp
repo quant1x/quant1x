@@ -67,7 +67,7 @@ namespace datasets {
 //            return;
 //        }
         try {
-            auto conn = level1::client();
+            auto conn = level1::get_std_conn();
             level1::XdxrInfoRequest request(code);
             level1::XdxrInfoResponse response;
             auto err = level1::process(conn->socket(), request, response);

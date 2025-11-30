@@ -130,7 +130,7 @@ namespace datasets {
             while (true) {
                 level1::TransactionRequest request(correctedCode, start, offset);
                 level1::TransactionResponse response(marketId, pureCode.c_str());
-                auto conn = level1::client();
+                auto conn = level1::get_std_conn();
                 auto err = level1::process(conn->socket(), request, response);
                 if (err) {
                     spdlog::error("[dataset::trans] code={}, tradeDate={}, error={}", correctedCode, tradeDate, std::string(err.message()));
@@ -164,7 +164,7 @@ namespace datasets {
             while (true) {
                 level1::HistoryTransactionRequest request(correctedCode, u32Date, start, offset);
                 level1::HistoryTransactionResponse response(marketId, pureCode.c_str());
-                auto conn = level1::client();
+                auto conn = level1::get_std_conn();
                 auto err = level1::process(conn->socket(), request, response);
                 if (err) {
                     spdlog::error("[dataset::trans] code={}, tradeDate={}, error={}", correctedCode, tradeDate, std::string(err.message()));

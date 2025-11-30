@@ -51,7 +51,7 @@ namespace exchange {
                     for(;;){
                         level1::SecurityListRequest reqSecurityList((int) marketId, start, level1::security_list_pre_request_max);
                         level1::SecurityListResponse respSecurityList;
-                        auto conn = level1::client();
+                        auto conn = level1::get_std_conn();
                         auto err = level1::process(conn->socket(), reqSecurityList, respSecurityList);
                         if (err) {
                             throw std::runtime_error(fmt::format("Process error: {}", err.message()));

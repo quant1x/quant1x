@@ -31,7 +31,7 @@ TEST_CASE("base-snapshot", "[runtime]") {
             }
             level1::SecurityQuoteRequest request(sub_codes);
             level1::SecurityQuoteResponse response;
-            auto conn = level1::client();
+            auto conn = level1::get_std_conn();
             auto err = level1::process(conn->socket(), request, response);
             REQUIRE(!err);
             response.verify_delisted_securities(maps);
@@ -249,7 +249,7 @@ TEST_CASE("tick-snapshot", "[runtime]") {
             }
             level1::SecurityQuoteRequest request(sub_codes);
             level1::SecurityQuoteResponse response;
-            auto conn = level1::client();
+            auto conn = level1::get_std_conn();
             auto err = level1::process(conn->socket(), request, response);
             REQUIRE(!err);
             response.verify_delisted_securities(maps);

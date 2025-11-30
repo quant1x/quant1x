@@ -11,7 +11,7 @@ TEST_CASE("detect", "[level1]") {
 }
 
 TEST_CASE("client", "[level1]") {
-    auto client = level1::client();
+    auto client = level1::get_std_conn();
 
 }
 

@@ -72,8 +72,16 @@ namespace level1 {
         }
     };
 
-    std::unique_ptr<Connection, std::function<void(Connection*)>> client();
+    /**
+     * @brief 获取标准连接对象
+     *
+     * 返回一个智能指针管理的标准连接对象，该指针会在销毁时自动调用指定的删除器函数
+     *
+     * @return std::unique_ptr<Connection, std::function<void(Connection *)>> 包含标准连接对象的智能指针，
+     *         使用自定义删除器管理连接生命周期
+     */
+    std::unique_ptr<Connection, std::function<void(Connection *)>> get_std_conn();
 
-} // namespace level1
+}  // namespace level1
 
 #endif //QUANT1X_LEVEL1_CLIENT_H

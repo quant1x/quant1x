@@ -196,7 +196,7 @@ namespace exchange {
             for(u32 start = 0;;) {
                 level1::BlockInfoRequest request(filename, start);
                 level1::BlockInfoResponse response;
-                auto conn = level1::client();
+                auto conn = level1::get_std_conn();
                 level1::process(conn->socket(), request, response);
                 auto data = response.Data;
                 if( response.Size > 0) {

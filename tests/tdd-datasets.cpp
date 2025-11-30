@@ -384,7 +384,7 @@ void write_file_binary(const std::string& filename, const std::vector<u8> &data)
 // 拉取数据
 std::vector<level1::SecurityBar> fetch(const std::string &code, u16 start, u16 count) {
     try {
-        auto conn = level1::client();
+        auto conn = level1::get_std_conn();
         auto category = level1::KLineType::RI_K;
         level1::SecurityBarsRequest request(code, category, start, count);
         level1::SecurityBarsResponse response(request.isIndex, category);

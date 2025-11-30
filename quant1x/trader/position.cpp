@@ -141,10 +141,11 @@ namespace trader {
                 std::vector<std::string> codes={code};
                 level1::SecurityQuoteRequest request(codes);
                 level1::SecurityQuoteResponse response;
-                auto conn = level1::client();
+                auto conn = level1::get_std_conn();
                 auto err = level1::process(conn->socket(), request, response);
                 if (err) {
                     spdlog::error("Process error: {}", err.message());
+                    err.clear();
                     continue;
                 }
                 response.verify_delisted_securities(maps);

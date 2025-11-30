@@ -7,7 +7,7 @@ namespace datasets {
         // 拉取数据
         std::vector<level1::SecurityBar> fetch_kline(const std::string &code, u16 start, u16 count, level1::KLineType kline_type) {
             try {
-                auto conn = level1::client();
+                auto conn = level1::get_std_conn();
                 //constexpr auto category = kline_type;
                 level1::SecurityBarsRequest request(code, kline_type, start, count);
                 level1::SecurityBarsResponse response(request.isIndex, kline_type);
