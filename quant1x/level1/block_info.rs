@@ -65,7 +65,7 @@ impl BlockInfoRequest {
 
 /// Fetch block data for filename and offset from level1 server.
 pub fn fetch_block_info(filename: &str, offset: u32) -> Option<BlockInfoResponse> {
-    match crate::level1::client::client() {
+    match crate::level1::client::get_std_conn() {
         Ok(mut pooled) => {
             let mut req = BlockInfoRequest::new(filename, offset);
             let req_buf = req.serialize();

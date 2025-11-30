@@ -108,7 +108,7 @@ pub fn fetch_history_transactions(
     count: u16,
 ) -> Option<TransactionHistoryResponse> {
     // 公共辅助：发送 HISTORY_TRANSACTION_DATA 请求并解析响应
-    match crate::level1::client::client() {
+    match crate::level1::client::get_std_conn() {
         Ok(mut pooled) => {
             let mut request = HistoryTransactionRequest::new(security_code, date, start, count);
             let mut response = TransactionHistoryResponse::new_from_request(&request);

@@ -239,7 +239,7 @@ pub fn fetch_xdxr(code: &str) -> Option<XdxrInfoResponse> {
     // XdxrInfoRequest::new will detect market and pure code from the supplied string
 
     // Acquire a pooled client connection
-    match crate::level1::client::client() {
+    match crate::level1::client::get_std_conn() {
         Ok(mut pooled) => {
             // prepare request
             let mut req = XdxrInfoRequest::new(code);

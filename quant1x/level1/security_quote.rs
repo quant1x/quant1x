@@ -248,7 +248,7 @@ impl SecurityQuoteRequest {
 /// 为一组证券代码获取即时行情。请求/响应的编解码在 level1 内部处理。
 /// 成功时返回 Some(SecurityQuoteResponse)，发生 IO 错误时返回 None。
 pub fn fetch_security_quote(codes: &[String]) -> Option<SecurityQuoteResponse> {
-    match crate::level1::client::client() {
+    match crate::level1::client::get_std_conn() {
         Ok(mut pooled) => {
             let mut req = SecurityQuoteRequest::new(codes);
 

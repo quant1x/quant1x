@@ -162,7 +162,7 @@ impl Response for SecurityListResponse {
 /// Fetch a single page of security list from level1 server.
 /// Returns Some(SecurityListResponse) on success, None on any IO error.
 pub fn fetch_security_list(market: u16, start: u32, count: u32) -> Option<SecurityListResponse> {
-    match crate::level1::client::client() {
+    match crate::level1::client::get_std_conn() {
         Ok(mut pooled) => {
             let mut request = SecurityListRequest::new(market, start, count);
             let mut response = SecurityListResponse::new();

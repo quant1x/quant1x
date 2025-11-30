@@ -137,7 +137,7 @@ impl DataAdapter for DataTrans {
             start: u16,
             count: u16,
         ) -> Option<TransactionResponse> {
-            match crate::level1::client() {
+            match crate::level1::get_std_conn() {
                 Ok(mut pooled) => {
                     let mut request = TransactionRequest::new(security_code, start, count);
                     let mut response = TransactionResponse::new_from_request(&request);

@@ -85,7 +85,7 @@ impl Request for HistoryMinuteTimeRequest {
 }
 
 pub fn fetch_history_minute_time(security_code: &str, date: u32) -> Option<MinuteTimeResponse> {
-    match crate::level1::client::client() {
+    match crate::level1::client::get_std_conn() {
         Ok(mut pooled) => {
             let mut request = HistoryMinuteTimeRequest::new(security_code, date);
             let mut response = MinuteTimeResponse::new_from_request(&request);

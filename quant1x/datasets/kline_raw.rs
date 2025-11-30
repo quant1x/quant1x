@@ -24,7 +24,7 @@ pub fn fetch_kline(
     const RETRY_DELAY_MS: u64 = 1000;
 
     for attempt in 0..=MAX_RETRIES {
-        match level1::client() {
+        match level1::get_std_conn() {
             Ok(mut pooled) => {
                 let endpoint = pooled.addr();
                 let mut resp = level1::SecurityBarsResponse::new_with(is_index, category);

@@ -236,7 +236,7 @@ static CONNECTION_POOL: OnceLock<Arc<crate::net::TcpConnectionPool<StandardProto
 /// 端点可以通过环境变量 `QUANT1X_LEVEL1_SERVERS` 进行预置，例如：
 ///
 ///   QUANT1X_LEVEL1_SERVERS=110.41.147.114:7709,124.70.176.52:7709
-pub fn client() -> std::io::Result<crate::net::PooledConnection<StandardProtocolHandler>> {
+pub fn get_std_conn() -> std::io::Result<crate::net::PooledConnection<StandardProtocolHandler>> {
     let pool = CONNECTION_POOL
         .get_or_init(|| {
             let endpoint_manager = Arc::new(crate::net::endpoint::EndpointManager::new());

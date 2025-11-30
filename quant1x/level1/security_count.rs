@@ -74,7 +74,7 @@ impl SecurityCountResponse {
 
 /// Fetch security count for a market from level1 server.
 pub fn fetch_security_count(market: u16) -> Option<SecurityCountResponse> {
-    match crate::level1::client::client() {
+    match crate::level1::client::get_std_conn() {
         Ok(mut pooled) => {
             let mut req = SecurityCountRequest::new(market);
             let req_buf = req.serialize();
