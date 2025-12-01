@@ -54,5 +54,7 @@
     "editor.inlayHints.fontFamily": "",
     "editor.fontVariations": false,
     "editor.fontFamily": "'Source Code Pro', 'Courier New', monospace",
-    "editor.inlineSuggest.fontFamily": "'Source Code Pro', 'Courier New', monospace"
+    "editor.inlineSuggest.fontFamily": "'Source Code Pro', 'Courier New', monospace",
+    "chat.editor.fontFamily": "default",
+    "chat.fontFamily": "default"
 }
