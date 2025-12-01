@@ -62,7 +62,7 @@ namespace level1 {
         std::vector<u8> padding;
 
         XdxrInfoRequest(const std::string &securityCode) : RequestHeader<XdxrInfoRequest>() {
-            ZipFlag               = ZlibFlag::NotZipped;
+            ZipFlag               = ZlibFlag::Uncompressed;
             SeqID                 = SequenceId();
             PacketType            = 0x01;
             Method                = StdCommand::XDXR_INFO;

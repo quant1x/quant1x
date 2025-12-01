@@ -1,10 +1,5 @@
-"""Minimal Python port of level1 protocol helpers used by ProtocolHandler.
+# -*- coding: UTF-8 -*-
 
-This implements request header serialization for Hello1/Hello2/Heartbeat and
-blocking `process_request_std` that mirrors the Rust/C++ behavior: write the
-request to the blocking socket, read a 16-byte response header and the body,
-handle optional zlib decompression, and return the response body bytes.
-"""
 from __future__ import annotations
 
 import socket
@@ -16,6 +11,10 @@ from typing import Tuple
 COMMAND_HEARTBEAT = 0x0004
 COMMAND_LOGIN1 = 0x000d
 COMMAND_LOGIN2 = 0x0fdb
+
+FLAG_ZIP = 0x10
+FLAG_UNCOMPRESSED = 0x0C
+FLAG_ZIPPED = FLAG_ZIP | FLAG_UNCOMPRESSED
 
 _seq_lock = threading.Lock()
 _seq_id = 0
@@ -66,7 +65,7 @@ def process_request_std(sock: socket.socket, req_buf: bytes) -> bytes:
 
 class Hello1Request:
     def __init__(self):
-        self.zip_flag = 0x0C
+        self.zip_flag = FLAG_UNCOMPRESSED
         self.seq_id = sequence_id()
         self.packet_type = 0x01
         self.pkg_len1 = 0
@@ -99,7 +98,7 @@ class Hello1Response:
 
 class Hello2Request:
     def __init__(self):
-        self.zip_flag = 0x0C
+        self.zip_flag = FLAG_UNCOMPRESSED
         self.seq_id = sequence_id()
         self.packet_type = 0x01
         self.pkg_len1 = 0
@@ -132,7 +131,7 @@ class Hello2Response:
 
 class HeartbeatRequest:
     def __init__(self):
-        self.zip_flag = 0x0C
+        self.zip_flag = FLAG_UNCOMPRESSED
         self.seq_id = sequence_id()
         self.packet_type = 0x02
         self.pkg_len1 = 2

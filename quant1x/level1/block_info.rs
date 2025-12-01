@@ -26,7 +26,7 @@ impl BlockInfoRequest {
         buf[..copy_len].copy_from_slice(&bytes[..copy_len]);
 
         BlockInfoRequest {
-            zip_flag: 0x0C,
+            zip_flag: crate::level1::protocol::zlib_flag::UNCOMPRESSED,
             seq_id: sequence_id(),
             packet_type: 0x01,
             pkg_len1: 0,

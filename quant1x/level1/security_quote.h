@@ -60,7 +60,7 @@ namespace level1 {
         std::vector<StockInfo> list;
 
         SecurityQuoteRequest(const std::vector<std::string> &codes) : RequestHeader<SecurityQuoteRequest>() {
-            ZipFlag = ZlibFlag::NotZipped;
+            ZipFlag = ZlibFlag::Uncompressed;
             SeqID = SequenceId();
             PacketType = 0x01;
             Method = StdCommand::SECURITY_QUOTES_OLD;

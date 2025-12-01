@@ -21,7 +21,7 @@ namespace level1 {
         u16 start;
 
         OldSecurityListRequest(int market, int start) : RequestHeader<OldSecurityListRequest>() {
-            ZipFlag      = ZlibFlag::NotZipped;
+            ZipFlag      = ZlibFlag::Uncompressed;
             SeqID        = SequenceId();
             PacketType   = 0x01;
             Method       = StdCommand::SECURITY_LIST;

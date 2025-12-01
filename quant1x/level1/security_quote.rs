@@ -199,7 +199,7 @@ impl SecurityQuoteRequest {
         }
 
         SecurityQuoteRequest {
-            zip_flag: 0x0C,
+            zip_flag: crate::level1::protocol::zlib_flag::UNCOMPRESSED,
             seq_id: sequence_id(),
             packet_type: 0x01,
             pkg_len1: 0,

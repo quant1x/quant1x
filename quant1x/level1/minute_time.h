@@ -22,7 +22,7 @@ namespace level1 {
         char Code[6];       // 证券代码(固定6字节)
 
         HistoryMinuteTimeRequest(const std::string &securityCode, u32 date) : RequestHeader<HistoryMinuteTimeRequest>() {
-            ZipFlag = ZlibFlag::NotZipped;
+            ZipFlag = ZlibFlag::Uncompressed;
             SeqID = SequenceId();
             PacketType = 0x00;
             Method = StdCommand::HISTORY_MINUTE_DATA;

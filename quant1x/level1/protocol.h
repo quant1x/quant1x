@@ -97,9 +97,9 @@ namespace level1 {
 
     // 压缩标志位处理 (使用constexpr)
     namespace ZlibFlag {
-        constexpr u8 Compressed = 0x10;                    // 压缩标志位
-        constexpr u8 NotZipped  = 0x0C;                    // 未压缩
-        constexpr u8 Zipped     = Compressed | NotZipped;  // 0x1C
+        constexpr u8 Zip          = 0x10;                    // zip压缩标志位
+        constexpr u8 Uncompressed = 0x0C;                    // 未压缩
+        constexpr u8 Zipped       = Zip | Uncompressed;      // 0x1C
     }  // namespace ZlibFlag
 
     std::vector<uint8_t> unzip(const std::vector<uint8_t> &buf, uint32_t unzip_size);

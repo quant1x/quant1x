@@ -19,7 +19,7 @@ namespace level1 {
         char Code[6]{};
 
         FinanceRequest(const std::string &securityCode) : RequestHeader<FinanceRequest>() {
-            ZipFlag = ZlibFlag::NotZipped;
+            ZipFlag = ZlibFlag::Uncompressed;
             SeqID = SequenceId();
             PacketType = 0x01;
             Method = StdCommand::FINANCE_INFO;

@@ -15,7 +15,7 @@ pub struct HeartbeatRequest {
 impl HeartbeatRequest {
     pub fn new() -> Self {
         HeartbeatRequest {
-            zip_flag: 0x0C,
+            zip_flag: crate::level1::protocol::zlib_flag::UNCOMPRESSED,
             seq_id: sequence_id(),
             packet_type: 0x02,
             pkg_len1: 0,

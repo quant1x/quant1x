@@ -27,7 +27,7 @@ impl XdxrInfoRequest {
             code[i] = bytes[i];
         }
         XdxrInfoRequest {
-            zip_flag: 0x0C,
+            zip_flag: crate::level1::protocol::zlib_flag::UNCOMPRESSED,
             seq_id: super::sequence_id(),
             packet_type: 0x01,
             pkg_len1: 0,

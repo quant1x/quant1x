@@ -54,7 +54,7 @@ impl SecurityBarsRequest {
         frequency: u16,
     ) -> Self {
         let mut header = RequestHeader::new();
-        header.zip_flag = 0x0C;
+        header.zip_flag = crate::level1::protocol::zlib_flag::UNCOMPRESSED;
         header.seq_id = sequence_id();
         header.packet_type = 0x00;
         header.method = SECURITY_BARS;

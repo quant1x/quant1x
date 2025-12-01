@@ -25,7 +25,7 @@ namespace level1 {
         uint16_t Count;     // 请求数量
 
         HistoryTransactionRequest(const std::string &securityCode, u32 date, u16 offset, u16 size) : RequestHeader<HistoryTransactionRequest>() {
-            ZipFlag = ZlibFlag::NotZipped;
+            ZipFlag = ZlibFlag::Uncompressed;
             SeqID = SequenceId();
             PacketType = 0x00;
             Method = StdCommand::HISTORY_TRANSACTION_DATA;

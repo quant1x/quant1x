@@ -44,7 +44,9 @@ const (
 )
 
 const (
-	zipFlagNotZipped uint8 = 0x0C
+	FlagZip          uint8 = 0x10                          // zip压缩标志位
+	FlagUncompressed uint8 = 0x0C                          // 未压缩
+	FlagZipped             = FlagZip | FlagUncompressed    // zip压缩
 )
 
 var seqId uint32
@@ -205,7 +207,7 @@ func buildRequest(method StdCommand, packetType uint8, payload []byte) []byte {
 		pkgLen = uint16(2 + len(payload))
 	}
 	buf := &bytes.Buffer{}
-	buf.WriteByte(zipFlagNotZipped)
+	buf.WriteByte(FlagUncompressed)
 	_ = binary.Write(buf, binary.LittleEndian, seq)
 	buf.WriteByte(packetType)
 	_ = binary.Write(buf, binary.LittleEndian, pkgLen)

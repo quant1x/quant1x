@@ -17,7 +17,7 @@ namespace level1 {
         std::vector<u8> padding;
 
         Hello1Request() : RequestHeader<Hello1Request>(){
-                ZipFlag = ZlibFlag::NotZipped;
+                ZipFlag = ZlibFlag::Uncompressed;
                 SeqID = SequenceId();
                 PacketType = 0x01;
                 Method = StdCommand::LOGIN1;

@@ -24,7 +24,7 @@ namespace level1 {
         u32 unknown;  // 未知字段，通常为0x00000000
 
         SecurityListRequest(int market, int start, int count) : RequestHeader<SecurityListRequest>() {
-            ZipFlag       = ZlibFlag::NotZipped;
+            ZipFlag       = ZlibFlag::Uncompressed;
             SeqID         = SequenceId();
             PacketType    = 0x01;
             Method        = StdCommand::SECURITY_LIST;

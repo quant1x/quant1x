@@ -17,7 +17,7 @@ pub struct Hello1Request {
 impl Hello1Request {
     pub fn new() -> Self {
         Hello1Request {
-            zip_flag: 0x0C, // NotZipped
+            zip_flag: crate::level1::protocol::zlib_flag::UNCOMPRESSED, // NotZipped
             seq_id: sequence_id(),
             packet_type: 0x01,
             pkg_len1: 0,

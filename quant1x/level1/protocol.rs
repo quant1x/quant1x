@@ -32,6 +32,12 @@ pub mod commands {
     pub const HISTORY_TRANSACTION_DATA: u16 = 0x0fb5;
 }
 
+pub mod zlib_flag {
+    pub const ZIP: u8 = 0x10;
+    pub const UNCOMPRESSED: u8 = 0x0C;
+    pub const ZIPPED: u8 = ZIP | UNCOMPRESSED;
+}
+
 #[derive(Debug, Clone)]
 pub struct RequestHeader {
     pub zip_flag: u8,

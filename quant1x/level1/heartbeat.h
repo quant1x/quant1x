@@ -14,7 +14,7 @@ namespace level1 {
     struct HeartbeatRequest : public RequestHeader<HeartbeatRequest> {
 
         HeartbeatRequest() : RequestHeader<HeartbeatRequest>() {
-            ZipFlag = ZlibFlag::NotZipped;
+            ZipFlag = ZlibFlag::Uncompressed;
             SeqID = SequenceId();
             PacketType = 0x02;
             Method = StdCommand::HEARTBEAT;

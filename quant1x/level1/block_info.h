@@ -34,7 +34,7 @@ namespace level1 {
         char BlockFilename[100];
 
         BlockInfoRequest(const std::string &filename, u32 offset) : RequestHeader<BlockInfoRequest>(), BlockFilename() {
-            ZipFlag = ZlibFlag::NotZipped;
+            ZipFlag = ZlibFlag::Uncompressed;
             SeqID = SequenceId();
             PacketType = 0x01;
             Method = StdCommand::BLOCK_DATA;

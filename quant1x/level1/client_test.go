@@ -22,8 +22,8 @@ func TestBuildRequest(t *testing.T) {
 	if len(req) != wantLen {
 		t.Fatalf("unexpected request length: got %d want %d", len(req), wantLen)
 	}
-	if req[0] != zipFlagNotZipped {
-		t.Fatalf("expected zip flag 0x%02X got 0x%02X", zipFlagNotZipped, req[0])
+	if req[0] != FlagUncompressed {
+		t.Fatalf("expected zip flag 0x%02X got 0x%02X", FlagUncompressed, req[0])
 	}
 	if seq := binary.LittleEndian.Uint32(req[1:5]); seq != 1 {
 		t.Fatalf("expected seq 1 got %d", seq)
@@ -65,7 +65,7 @@ func TestReadResponseHeader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("readResponseHeader failed: %v", err)
 	}
-	if hdr.I1 != 0xAABBCCDD || hdr.ZipFlag != zipFlagNotZipped || hdr.SeqID != 42 || hdr.I2 != 0x01 || hdr.Method != 128 || hdr.ZipSize != 256 || hdr.UnZipSize != 512 {
+	if hdr.I1 != 0xAABBCCDD || hdr.ZipFlag != FlagUncompressed || hdr.SeqID != 42 || hdr.I2 != 0x01 || hdr.Method != 128 || hdr.ZipSize != 256 || hdr.UnZipSize != 512 {
 		t.Fatalf("unexpected header %+v", hdr)
 	}
 }

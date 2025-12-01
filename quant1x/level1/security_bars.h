@@ -102,7 +102,7 @@ namespace level1 {
         bool isIndex = false;
 
         SecurityBarsRequest(const std::string &securityCode, u16 category, u16 start, u16 count) : RequestHeader<SecurityBarsRequest>() {
-            ZipFlag = ZlibFlag::NotZipped;
+            ZipFlag = ZlibFlag::Uncompressed;
             SeqID = SequenceId();
             PacketType = 0x00;
             Method = StdCommand::SECURITY_BARS;

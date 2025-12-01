@@ -50,7 +50,7 @@ namespace level1 {
         uint16_t Count;     // 请求数量
 
         TransactionRequest(const std::string &securityCode, u16 offset, u16 size) : RequestHeader<TransactionRequest>() {
-            ZipFlag = ZlibFlag::NotZipped;
+            ZipFlag = ZlibFlag::Uncompressed;
             SeqID = SequenceId();
             PacketType = 0x00;
             Method = StdCommand::TRANSACTION_DATA;

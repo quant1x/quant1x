@@ -37,7 +37,7 @@ namespace level1 {
         char BlockFilename[40];
 
         BlockMetaRequest(const std::string &filename) : RequestHeader<BlockMetaRequest>() {
-            ZipFlag    = ZlibFlag::NotZipped;
+            ZipFlag    = ZlibFlag::Uncompressed;
             SeqID      = SequenceId();
             PacketType = 0x01;
             Method     = StdCommand::BLOCK_META;
