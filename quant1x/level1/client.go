@@ -40,8 +40,8 @@ type serverInfo struct {
 }
 
 type serverListWrapper struct {
-	Standard []serverInfo `yaml:"standard"` // 标准服务器列表
-	Extended []serverInfo `yaml:"extended"` // 扩展服务器列表
+	Standard  []serverInfo `yaml:"standard"`  // 标准服务器列表
+	Extension []serverInfo `yaml:"extension"` // 扩展服务器列表
 }
 
 // StandardProtocolHandler 与 C++ 版本保持一致，实现握手与心跳逻辑。

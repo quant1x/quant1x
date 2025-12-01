@@ -718,8 +718,8 @@ pub fn try_run_subcommand(
             for srv in detected.iter() {
                 log::info!(
                     "{} {} => {}:{} ({} ms)",
+                    srv.source,
                     srv.name,
-                    srv.desc,
                     srv.host,
                     srv.port,
                     srv.latency_ms

@@ -6,7 +6,7 @@
 namespace level1 {
     struct ServerList {
         std::vector<ServerInfo> standard; // 标准服务器列表
-        std::vector<ServerInfo> extended; // 扩展服务器列表
+        std::vector<ServerInfo> extension; // 扩展服务器列表
     };
 
         
@@ -24,7 +24,7 @@ namespace level1 {
                 need_update = exchange::can_initialize(modified);
             }
             if (!need_update) {
-                auto [standard, extended] = ::encoding::load_yaml<ServerList>(cache_server_filename);
+                auto [standard, extension] = ::encoding::load_yaml<ServerList>(cache_server_filename);
                 if (standard.empty()) {
                     need_update = true;
                 }
@@ -40,7 +40,7 @@ namespace level1 {
             }
             auto tcpConnectionPool = std::make_unique<TcpConnectionPool<StandardProtocolHandler> >(1, concurrency, _handler); {
                 // 从文件读取并反序列化
-                auto [standard, extended] = ::encoding::load_yaml<ServerList>(cache_server_filename);
+                auto [standard, extension] = ::encoding::load_yaml<ServerList>(cache_server_filename);
                 for (auto d: standard) {
                     spdlog::debug("{}: [{}:{}]", d.Name, d.Host, d.Port);
                     tcpConnectionPool->add_endpoint(d.Host, d.Port);
