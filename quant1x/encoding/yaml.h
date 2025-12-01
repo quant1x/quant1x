@@ -210,7 +210,7 @@ namespace encoding {
             try {
                 if constexpr (is_optional_v<T>) {
                     using ValueType = typename T::value_type;
-                    if (node) {
+                    if (node && !node.IsNull()) {
                         ValueType value{};
                         deserialize_field(node, value);
                         field = value;
