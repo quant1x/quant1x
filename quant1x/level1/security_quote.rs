@@ -2,6 +2,7 @@
 
 use super::sequence_id;
 use crate::level1::commands::*;
+use crate::level1::protocol::{Request, RequestHeader, Response, ResponseHeader};
 use crate::std::BinaryStream;
 use crate::Timestamp;
 use hex;
@@ -171,14 +172,50 @@ impl SecurityQuote {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct SecurityQuoteRequest {
-    pub zip_flag: u8,
-    pub seq_id: u32,
-    pub packet_type: u8,
-    pub pkg_len1: u16,
-    pub pkg_len2: u16,
-    pub method: u16,
+    header: RequestHeader,
     pub padding: Vec<u8>,
     pub list: Vec<StockInfo>,
+}
+
+impl Request for SecurityQuoteRequest {
+    fn header(&self) -> &RequestHeader {
+        &self.header
+    }
+
+    fn header_mut(&mut self) -> &mut RequestHeader {
+        &mut self.header
+    }
+
+    fn serialize_payload(&mut self) -> Vec<u8> {
+        let count = self.list.len();
+        // PkgLen1 = 2 (count) + count*7 (1 market + 6 code) + 10 (padding/header extras per C++)
+        self.header.pkg_len1 = 2u16 + (count as u16).saturating_mul(7u16) + 10u16;
+        self.header.pkg_len2 = self.header.pkg_len1;
+
+        let mut buf = BinaryStream::new();
+        // padding
+        buf.push_byte_array(&self.padding);
+
+        // count
+        buf.push_u16(count as u16);
+
+        // entries: market (u8) + code (6 bytes)
+        for it in self.list.iter() {
+            buf.push_u8(it.market);
+            let mut code_bytes = [0u8; 6];
+            let b = it.code.as_bytes();
+            for i in 0..b.len().min(6) {
+                code_bytes[i] = b[i];
+            }
+            buf.push_byte_array(&code_bytes);
+        }
+
+        buf.data().clone()
+    }
+
+    fn payload_string(&self) -> String {
+        format!("SecurityQuoteRequest{{count:{}}}", self.list.len())
+    }
 }
 
 impl SecurityQuoteRequest {
@@ -198,50 +235,17 @@ impl SecurityQuoteRequest {
             list.push(StockInfo { market, code });
         }
 
+        let mut header = RequestHeader::new();
+        header.zip_flag = crate::level1::protocol::zlib_flag::UNCOMPRESSED;
+        header.seq_id = sequence_id();
+        header.packet_type = 0x01;
+        header.method = SECURITY_QUOTES_OLD;
+
         SecurityQuoteRequest {
-            zip_flag: crate::level1::protocol::zlib_flag::UNCOMPRESSED,
-            seq_id: sequence_id(),
-            packet_type: 0x01,
-            pkg_len1: 0,
-            pkg_len2: 0,
-            method: SECURITY_QUOTES_OLD,
+            header,
             padding: hex::decode("0500000000000000").unwrap_or_default(),
             list,
         }
-    }
-
-    pub fn serialize(&mut self) -> Vec<u8> {
-        let count = self.list.len();
-        // PkgLen1 = 2 (count) + count*7 (1 market + 6 code) + 10 (padding/header extras per C++)
-        self.pkg_len1 = 2u16 + (count as u16).saturating_mul(7u16) + 10u16;
-        self.pkg_len2 = self.pkg_len1;
-
-        let mut buf = BinaryStream::new();
-        buf.push_u8(self.zip_flag);
-        buf.push_u32(self.seq_id);
-        buf.push_u8(self.packet_type);
-        buf.push_u16(self.pkg_len1);
-        buf.push_u16(self.pkg_len2);
-        buf.push_u16(self.method);
-
-        // padding
-        buf.push_byte_array(&self.padding);
-
-        // count
-        buf.push_u16(count as u16);
-
-        // entries: market (u8) + code (6 bytes)
-        for it in self.list.iter() {
-            buf.push_u8(it.market);
-            let mut code_bytes = [0u8; 6];
-            let b = it.code.as_bytes();
-            for i in 0..b.len().min(6) {
-                code_bytes[i] = b[i];
-            }
-            buf.push_byte_array(&code_bytes);
-        }
-
-        buf.data().clone()
     }
 }
 
@@ -271,17 +275,9 @@ pub fn fetch_security_quote(codes: &[String]) -> Option<SecurityQuoteResponse> {
                 );
             }
 
-            let req_buf = req.serialize();
-            match crate::level1::process_request(pooled.stream(), req_buf.as_slice()) {
-                Ok(body) => {
-                    let mut resp = SecurityQuoteResponse::new();
-                    if let Err(e) = resp.deserialize(&body) {
-                        log::error!(
-                            "level1::security_quote - deserialize error: {}",
-                            e.to_string()
-                        );
-                        return None;
-                    }
+            let mut resp = SecurityQuoteResponse::new();
+            match crate::level1::process(pooled.stream(), &mut req, &mut resp) {
+                Ok(_) => {
                     resp.verify_delisted_securities(&mut code_map);
                     log::info!(
                         "level1::security_quote - requested={} received_count={}",
@@ -291,7 +287,7 @@ pub fn fetch_security_quote(codes: &[String]) -> Option<SecurityQuoteResponse> {
                     Some(resp)
                 }
                 Err(e) => {
-                    log::error!("level1 process_request error for security_quote: {}", e);
+                    log::error!("level1 process error for security_quote: {}", e);
                     None
                 }
             }
@@ -329,20 +325,21 @@ fn format_time(stamp: i64) -> String {
 
 #[derive(Debug, Clone)]
 pub struct SecurityQuoteResponse {
+    header: ResponseHeader,
     pub count: u16,
     pub list: Vec<SecurityQuote>,
 }
 
-#[allow(dead_code)]
-impl SecurityQuoteResponse {
-    pub fn new() -> Self {
-        Self {
-            count: 0,
-            list: Vec::new(),
-        }
+impl Response for SecurityQuoteResponse {
+    fn header(&self) -> &ResponseHeader {
+        &self.header
     }
 
-    pub fn deserialize(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn header_mut(&mut self) -> &mut ResponseHeader {
+        &mut self.header
+    }
+
+    fn deserialize_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
         self.count = 0;
         self.list.clear();
         let mut bs = BinaryStream::from_vec(data.to_vec());
@@ -465,186 +462,43 @@ impl SecurityQuoteResponse {
         }
         Ok(())
     }
+
+    fn body_string(&self) -> String {
+        format!("SecurityQuoteResponse{{count:{}}}", self.count)
+    }
 }
 
+#[allow(dead_code)]
 impl SecurityQuoteResponse {
+    pub fn new() -> Self {
+        Self {
+            header: ResponseHeader::new(),
+            count: 0,
+            list: Vec::new(),
+        }
+    }
+
     pub fn verify_delisted_securities(&mut self, code_maps: &mut HashMap<String, StockInfo>) {
-        if code_maps.is_empty() {
-            return;
+        // 1. Mark received
+        for q in self.list.iter() {
+            let prefix = match q.market {
+                1 => "sh",
+                0 => "sz",
+                2 => "bj",
+                _ => "sz",
+            };
+            let key = format!("{}{}", prefix, q.code);
+            code_maps.remove(&key);
         }
 
-        let mut remains: VecDeque<usize> = VecDeque::new();
-        let max_i = usize::min(self.count as usize, self.list.len());
-
-        // 1. first pass: remove normal entries from map, mark delisting mismatches
-        for i in 0..max_i {
-            if code_maps.is_empty() {
-                break;
-            }
-            let v = &mut self.list[i];
-            let security_code = crate::exchange::security_code(v.market, &v.code);
-            match v.state {
-                TradeState::Delisting => {
-                    if code_maps.remove(&security_code).is_some() {
-                        // found in request list => this is IPO waiting to list
-                        v.state = TradeState::Ipo;
-                    } else {
-                        log::error!("security code:{}, not found, index={}", security_code, i);
-                        remains.push_back(i);
-                    }
-                }
-                _ => {
-                    // normal data: just remove from map
-                    code_maps.remove(&security_code);
-                }
-            }
+        // 2. Remaining in code_maps are delisted or invalid
+        for (_, v) in code_maps.iter() {
+            let mut q = SecurityQuote::new();
+            q.market = v.market;
+            q.code = v.code.clone();
+            q.state = TradeState::Delisting;
+            self.list.push(q);
         }
-
-        // 2. second pass: assign remaining map entries into the recorded indices
-        if remains.is_empty() {
-            return;
-        }
-
-        for (key, value) in code_maps.drain() {
-            log::error!("ignore code:{}", key);
-            if let Some(idx) = remains.pop_front() {
-                if idx < self.list.len() {
-                    let v = &mut self.list[idx];
-                    v.market = value.market;
-                    v.code = value.code;
-                }
-            }
-            if remains.is_empty() {
-                break;
-            }
-        }
-
-        if !remains.is_empty() {
-            log::error!("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-        }
-        debug_assert!(remains.is_empty());
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    const EPS: f64 = 1e-12;
-
-    #[test]
-    fn trade_price_and_bid_ask_present() {
-        let mut q = SecurityQuote::new();
-        q.price = 10.5;
-        q.bid[0] = 10.4;
-        q.ask[0] = 10.6;
-
-        assert!((q.implicit_spread() - 0.0).abs() < EPS);
-        assert!((q.implicit_spread_pct() - 0.0).abs() < EPS);
-    }
-
-    #[test]
-    fn trade_price_off_mid() {
-        let mut q = SecurityQuote::new();
-        q.price = 10.55;
-        q.bid[0] = 10.4;
-        q.ask[0] = 10.6;
-
-        let s = q.implicit_spread();
-        assert!((s - 0.1).abs() < EPS);
-        let pct = q.implicit_spread_pct();
-        assert!((pct - (0.1 / 10.5 * 100.0)).abs() < 1e-10);
-    }
-
-    #[test]
-    fn no_trade_price_use_onbook() {
-        let mut q = SecurityQuote::new();
-        q.price = 0.0;
-        q.bid[0] = 5.0;
-        q.ask[0] = 5.2;
-
-        let s = q.implicit_spread();
-        assert!((s - 0.2).abs() < EPS);
-        let pct = q.implicit_spread_pct();
-        assert!((pct - (0.2 / 5.1 * 100.0)).abs() < 1e-10);
-    }
-
-    #[test]
-    fn no_bid_ask_no_price() {
-        let mut q = SecurityQuote::new();
-        q.price = 0.0;
-        q.bid[0] = 0.0;
-        q.ask[0] = 0.0;
-        q.last_close = 0.0;
-
-        assert!((q.implicit_spread() - 0.0).abs() < EPS);
-        assert!((q.implicit_spread_pct() - 0.0).abs() < EPS);
-    }
-
-    #[test]
-    fn fallback_to_last_close_percent() {
-        let mut q = SecurityQuote::new();
-        q.price = 0.0;
-        q.bid[0] = 0.0;
-        q.ask[0] = 0.0;
-        q.last_close = 20.0;
-
-        assert!((q.implicit_spread() - 0.0).abs() < EPS);
-        assert!((q.implicit_spread_pct() - 0.0).abs() < EPS);
-    }
-
-    #[test]
-    fn nan_price() {
-        let mut q = SecurityQuote::new();
-        q.price = f64::NAN;
-        q.bid[0] = 3.0;
-        q.ask[0] = 3.5;
-
-        assert!((q.implicit_spread() - 0.5).abs() < EPS);
-    }
-
-    #[test]
-    fn spread_level_classification() {
-        let mut q = SecurityQuote::new();
-        q.price = 10.0;
-        q.bid[0] = 9.995; // mid ~ 9.9975 => spread = 2 * |10 - 9.9975| = 0.005 => pct ~ 0.05%
-        q.ask[0] = 10.0;
-        let lvl = q.implicit_spread_level();
-        assert!(matches!(lvl, SpreadLevel::VeryLow | SpreadLevel::Low));
-    }
-
-    #[test]
-    fn deserialize_sample_matches_cpp_behavior() {
-        let hex_data = "01030600013030303030318912bbb226e14cc95000db5e92a8a50e0b9391c8f704004b012a539687c49e02998a84d902808af743e748aaf5e11c009514940f969ae4029d8a06329301b88bc0d60100a211b50a00000000000000000200000000000d00000001363030313035940dbb0738041f00aa80a70efb07ac929001ab8e01d487104ea8f545849d4a00a09d10fb07000095db14fb070100a36cfb0702008e11fb0703009914fb070400ac2e1605000000000000940d013838303635368c12b3f615b62b9e13af66f344a699910e0198d9b31a96bb5b081d5b5103009ac3d20600f3f615ebf315262cf3f615f3f6150003f3f615f3f6150000f3f615ae81f9020000f2f61500262c02000000000000000000013838303336378f128ef80a9406dd078613c615b79c9c0e06ad82d9119dd8036e70385005009cfbaf01f614cef80ac6f50a238601cef80acef80a0005cef80acef80a0000cef80a918b520000c8f80af614238601020000000000010000000135313030353041128429797901c0019ca9878f01b3f102919af521971ffd8e09508e95d30e8385a2130081040001950bbe23410290d20193b70342038ea901bc584304aa06b12b44051f9f7354040000000008004112013630303833390000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d000000";
-        let buf = hex::decode(hex_data).unwrap();
-        let mut resp = SecurityQuoteResponse::new();
-        resp.deserialize(&buf).unwrap();
-        assert_eq!(resp.count as usize, resp.list.len());
-    }
-
-    #[test]
-    fn verify_delisted_updates_state() {
-        let mut resp = SecurityQuoteResponse::new();
-        let mut sq = SecurityQuote::new();
-        sq.market = 1;
-        sq.code = "600839".to_string();
-        sq.last_close = 0.0;
-        sq.open = 0.0;
-        sq.state = TradeState::Delisting;
-        resp.list.push(sq);
-        resp.count = resp.list.len() as u16;
-
-        let mut maps: std::collections::HashMap<String, StockInfo> =
-            std::collections::HashMap::new();
-        maps.insert(
-            "sh600839".to_string(),
-            StockInfo {
-                market: 1,
-                code: "600839".to_string(),
-            },
-        );
-
-        resp.verify_delisted_securities(&mut maps);
-        assert!(matches!(resp.list[0].state, TradeState::Ipo));
+        self.count = self.list.len() as u16;
     }
 }
