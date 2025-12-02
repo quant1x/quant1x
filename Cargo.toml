@@ -64,6 +64,11 @@ mockito = "1.0"
 criterion = "0.4"
 # keep dependencies minimal for now; remove tokio/cron/uuid/futures that were
 # temporarily added during an attempt to integrate tokio-cron-scheduler.
+bytes = "1.5"
+signal-hook = "0.3"
+ctrlc = "3.4"
+tokio-cron-scheduler = "0.9"
+serde_repr = "0.1.20"
 
 [[bin]]
 name = "q1x"

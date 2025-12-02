@@ -29,7 +29,7 @@ impl TaskScheduler {
     where
         F: Fn() + Send + 'static + Clone,
     {
-        let sender_clone = self.sender.clone();
+        let _sender_clone = self.sender.clone();
         let interval = Duration::from_secs(interval_seconds);
 
         // 发送任务到处理线程

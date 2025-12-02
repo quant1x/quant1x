@@ -1,11 +1,10 @@
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
-use std::thread;
 
 pub struct Runtime {
     callbacks: Arc<Mutex<VecDeque<Box<dyn Fn() + Send + Sync>>>>,
-    exit_flag: Arc<AtomicBool>,
+    _exit_flag: Arc<AtomicBool>,
     condvar: Arc<(Mutex<bool>, Condvar)>,
 }
 
@@ -28,7 +27,7 @@ impl Runtime {
 
         Ok(Self {
             callbacks,
-            exit_flag,
+            _exit_flag: exit_flag,
             condvar,
         })
     }

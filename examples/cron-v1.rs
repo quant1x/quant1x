@@ -1,5 +1,5 @@
 use chrono::Local;
-use tokio_cron_scheduler::{Job, JobScheduler, JobToRun};
+use tokio_cron_scheduler::{Job, JobScheduler};
 
 #[tokio::main]
 async fn main() {

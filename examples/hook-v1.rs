@@ -1,4 +1,4 @@
-use q1x::{self};
+use quant1x::{self};
 use std::env;
 use std::io::Error;
 
@@ -18,7 +18,7 @@ fn main() -> Result<(), Error> {
     info!("当前工作目录: {:?}", cwd);
     log4rs::init_file("engine/config/log4rs.yaml", Default::default()).unwrap();
 
-    let ts = q1x::base::time::now();
+    let ts = quant1x::Timestamp::now();
     info!("Hello, world!");
     info!("{}", ts);
 

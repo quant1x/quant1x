@@ -13,7 +13,7 @@ const MAX_RETRIES: u32 = 5;
 const BUFFER_SIZE: usize = 8 * 1024;
 
 /// 网络连接状态
-enum ConnectState {
+enum _ConnectState {
     /// 未连接
     StateUnconnected,
     /// 正在连接
@@ -70,7 +70,7 @@ impl Connection {
     }
 
     fn send_heartbeat(&mut self) -> io::Result<()> {
-        if let Some(stream) = self.stream.as_mut() {
+        if let Some(_stream) = self.stream.as_mut() {
             if !self.connecting {
                 // 直接发送原始心跳数据（不带长度前缀）
                 self.write_buffer.extend_from_slice(b"heartbeat");

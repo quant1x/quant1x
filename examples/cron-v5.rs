@@ -32,8 +32,8 @@ impl LocalCronScheduler {
     where
         F: Fn() + Send + Sync + 'static,
     {
-        // 直接创建Job并设置时区
-        let job = Job::new_tz(cron_expr.to_string(), chrono::Local, move |_uuid, _lock| {
+        // 直接创建Job
+        let job = Job::new(cron_expr, move |_uuid, _lock| {
             job();
         })
         .unwrap();
