@@ -14,8 +14,8 @@ from quant1x.cache import (
 
 def test_cache_functions():
     print(config.get_quant1x_config_filename())
-    print('data_path', config.quant1x_config.data_path)
-    print('kline_path', config.quant1x_config.kline_path)
+    print('data_path', config.data_path)
+    print('kline_path', config.kline_path)
     code = '600600'
     df = klines(code)
     print(df)

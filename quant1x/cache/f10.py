@@ -13,7 +13,7 @@ def cache_f10(date: str = None) -> DataFrame:
     file_extension = exchange.fix_trade_date(trade_date)
     filename = f"{factor_name}.{file_extension}"
     year = trade_date[:4]
-    base_path = os.path.join(config.quant1x_config.data_path, 'flash')
+    base_path = os.path.join(config.data_path, 'flash')
     return pd.read_csv(os.path.join(base_path, year, filename))
 
 def get_f10(code: str, date: str = None) -> Dict[str, Any]:

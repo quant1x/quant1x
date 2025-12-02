@@ -13,7 +13,14 @@ from .config import (
     quant1x_config
 )
 
+# 导出常用配置路径
+data_path = quant1x_config.data_path
+meta_path = quant1x_config.meta_path
+kline_path = quant1x_config.kline_path
+
 __all__ = [
-    "quant1x_config",
     "get_quant1x_config_filename",
+    "data_path",
+    "meta_path",
+    "kline_path",
 ]

@@ -9,7 +9,7 @@ def securities() -> pd.DataFrame:
     """
     证券列表
     """
-    full_path = os.path.join(config.quant1x_config.meta_path, 'securities.csv')
+    full_path = os.path.join(config.meta_path, 'securities.csv')
     if not os.path.isfile(full_path):
         return pd.DataFrame(columns=['code', 'name'])
     # with open(full_path, 'rb') as f:

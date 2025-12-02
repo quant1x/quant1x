@@ -14,7 +14,7 @@ def klines(code: str, freq:str = 'D') -> pd.DataFrame | None:
     corrected_symbol = exchange.correct_security_code(code)
     suffix_length = 3  # 修正拼写并明确表示后缀长度
     freq_path = 'day' if freq == 'D' else freq
-    symbol_directory = os.path.join(config.quant1x_config.data_path, freq_path, corrected_symbol[:-suffix_length])  # 更清晰表达目录用途
+    symbol_directory = os.path.join(config.data_path, freq_path, corrected_symbol[:-suffix_length])  # 更清晰表达目录用途
     file_extension = '.csv'
     filename = f"{corrected_symbol}{file_extension}"  # 使用f-string格式化
     full_path = os.path.join(symbol_directory, filename)
@@ -106,7 +106,7 @@ def get_minutes_data(code: str, date: str) -> DataFrame | None:
     # 获取年份
     cache_date = date_format(cache_date, layout='%Y%m%d')
     year = cache_date[:4]
-    base_path = os.path.join(config.quant1x_config.data_path, 'minutes')
+    base_path = os.path.join(config.data_path, 'minutes')
     full_path = os.path.join(base_path, year, cache_date, filename)
 
     if os.path.isfile(full_path):
@@ -126,7 +126,7 @@ def get_tick_transaction(code: str, date: str) -> DataFrame | None:
     # 获取年份
     cache_date = date_format(cache_date, layout='%Y%m%d')
     year = cache_date[:4]
-    base_path = os.path.join(config.quant1x_config.data_path, 'trans')
+    base_path = os.path.join(config.data_path, 'trans')
     full_path = os.path.join(base_path, year, cache_date, filename)
 
     if os.path.isfile(full_path):
