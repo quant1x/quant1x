@@ -8,6 +8,18 @@ from .. import exchange, config
 
 @lru_cache(maxsize=None)
 def cache_f10(date: str = None) -> DataFrame:
+    """
+    从闪存数据中读取F10因子数据
+    
+    Args:
+        date (str, optional): 交易日期，格式为'YYYYMMDD'。如果未提供，则使用交易所最后一个交易日
+    
+    Returns:
+        DataFrame: 包含F10因子数据的Pandas DataFrame
+    
+    Raises:
+        FileNotFoundError: 如果指定日期的数据文件不存在
+    """
     factor_name = 'f10'
     trade_date = date or exchange.last_trade_date()
     file_extension = exchange.fix_trade_date(trade_date)
