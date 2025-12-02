@@ -418,6 +418,7 @@ set(quant1x-headers
     quant1x/io/csv-writer.h
     quant1x/io/file.h
     quant1x/io/http.h
+    quant1x/log/logger.h
     quant1x/log/router_sink.h
     quant1x/log/lazy_daily_sink.h
 
