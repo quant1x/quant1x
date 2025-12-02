@@ -1,38 +1,41 @@
 #![allow(dead_code)]
 
 use crate::level1::commands::*;
+use crate::level1::protocol::{self, Request, RequestHeader, Response, ResponseHeader};
 use crate::std::BinaryStream;
+use encoding_rs::GBK;
 
 #[derive(Debug, Clone)]
 pub struct FinanceInfoRequest {
-    pub zip_flag: u8,
-    pub seq_id: u32,
-    pub packet_type: u8,
-    pub pkg_len1: u16,
-    pub pkg_len2: u16,
-    pub method: u16,
+    header: RequestHeader,
 }
 
 impl FinanceInfoRequest {
     pub fn new() -> Self {
-        FinanceInfoRequest {
-            zip_flag: crate::level1::protocol::zlib_flag::UNCOMPRESSED,
-            seq_id: super::sequence_id(),
-            packet_type: 0x01,
-            pkg_len1: 0,
-            pkg_len2: 0,
-            method: FINANCE_INFO,
-        }
+        let mut header = RequestHeader::new();
+        header.zip_flag = crate::level1::protocol::zlib_flag::UNCOMPRESSED;
+        header.seq_id = super::sequence_id();
+        header.packet_type = 0x01;
+        header.method = FINANCE_INFO;
+        FinanceInfoRequest { header }
     }
-    pub fn serialize(&mut self) -> Vec<u8> {
-        let mut s = BinaryStream::new();
-        s.push_u8(self.zip_flag);
-        s.push_u32(self.seq_id);
-        s.push_u8(self.packet_type);
-        s.push_u16(self.pkg_len1);
-        s.push_u16(self.pkg_len2);
-        s.push_u16(self.method);
-        s.data().clone()
+}
+
+impl Request for FinanceInfoRequest {
+    fn header(&self) -> &RequestHeader {
+        &self.header
+    }
+
+    fn header_mut(&mut self) -> &mut RequestHeader {
+        &mut self.header
+    }
+
+    fn serialize_payload(&mut self) -> Vec<u8> {
+        Vec::new()
+    }
+
+    fn payload_string(&self) -> String {
+        "{}".to_string()
     }
 }
 
@@ -246,6 +249,7 @@ impl RawFinanceInfo {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct FinanceInfoResponse {
+    header: ResponseHeader,
     pub count: u16,
     pub info: FinanceInfo,
 }
@@ -253,12 +257,23 @@ pub struct FinanceInfoResponse {
 impl FinanceInfoResponse {
     pub fn new() -> Self {
         Self {
+            header: ResponseHeader::new(),
             count: 0,
             info: FinanceInfo::new(),
         }
     }
+}
 
-    pub fn deserialize(&mut self, body: &[u8]) -> Result<(), crate::std::DeserializeError> {
+impl Response for FinanceInfoResponse {
+    fn header(&self) -> &ResponseHeader {
+        &self.header
+    }
+
+    fn header_mut(&mut self) -> &mut ResponseHeader {
+        &mut self.header
+    }
+
+    fn deserialize_body(&mut self, body: &[u8]) -> Result<(), crate::std::DeserializeError> {
         let mut bs = BinaryStream::from_vec(body.to_vec());
         self.count = bs.get_u16()?;
         if self.count == 0 {
@@ -305,7 +320,32 @@ impl FinanceInfoResponse {
         self.info.bao_liu2 = raw.bao_liu2 as f64;
         Ok(())
     }
+
+    fn body_string(&self) -> String {
+        format!("{{Count:{}, Code:{}}}", self.count, self.info.code)
+    }
 }
+
+pub fn fetch_finance_info() -> Option<FinanceInfoResponse> {
+    match crate::level1::client::get_std_conn() {
+        Ok(mut pooled) => {
+            let mut request = FinanceInfoRequest::new();
+            let mut response = FinanceInfoResponse::new();
+            match protocol::process(pooled.stream(), &mut request, &mut response) {
+                Ok(_) => Some(response),
+                Err(e) => {
+                    log::error!("level1 protocol::process error for finance_info: {}", e);
+                    None
+                }
+            }
+        }
+        Err(e) => {
+            log::error!("failed to acquire level1 client for finance_info: {}", e);
+            None
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

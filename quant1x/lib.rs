@@ -80,7 +80,7 @@ pub use crate::exchange::*;
 mod cache;
 pub use crate::cache::*;
 // datasets adapters (Rust ports)
-mod datasets;
+pub mod datasets;
 pub use crate::datasets::*;
 
 /// Return the filename used for the calendar cache (convenience wrapper around

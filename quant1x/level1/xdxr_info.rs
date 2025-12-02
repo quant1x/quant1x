@@ -1,18 +1,37 @@
 use super::BinaryStream;
 use crate::level1::commands::*;
+use crate::level1::protocol::{Request, RequestHeader, Response, ResponseHeader};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct XdxrInfoRequest {
-    pub zip_flag: u8,
-    pub seq_id: u32,
-    pub packet_type: u8,
-    pub pkg_len1: u16,
-    pub pkg_len2: u16,
-    pub method: u16,
+    header: RequestHeader,
     pub market: u8,
     pub code: [u8; 6],
     pub padding: Vec<u8>,
+}
+
+impl Request for XdxrInfoRequest {
+    fn header(&self) -> &RequestHeader {
+        &self.header
+    }
+
+    fn header_mut(&mut self) -> &mut RequestHeader {
+        &mut self.header
+    }
+
+    fn serialize_payload(&mut self) -> Vec<u8> {
+        let mut buf = BinaryStream::new();
+        // payload
+        buf.push_byte_array(&self.padding);
+        buf.push_u8(self.market);
+        buf.push_byte_array(&self.code);
+        buf.data().clone()
+    }
+
+    fn payload_string(&self) -> String {
+        format!("XdxrInfoRequest{{market:{}}}", self.market)
+    }
 }
 
 impl XdxrInfoRequest {
@@ -26,41 +45,19 @@ impl XdxrInfoRequest {
         for i in 0..bytes.len().min(6) {
             code[i] = bytes[i];
         }
+
+        let mut header = RequestHeader::new();
+        header.zip_flag = crate::level1::protocol::zlib_flag::UNCOMPRESSED;
+        header.seq_id = super::sequence_id();
+        header.packet_type = 0x01;
+        header.method = XDXR_INFO;
+
         XdxrInfoRequest {
-            zip_flag: crate::level1::protocol::zlib_flag::UNCOMPRESSED,
-            seq_id: super::sequence_id(),
-            packet_type: 0x01,
-            pkg_len1: 0,
-            pkg_len2: 0,
-            method: XDXR_INFO,
+            header,
             market,
             code,
             padding: hex::decode("0100").unwrap_or_default(),
         }
-    }
-
-    pub fn serialize(&mut self) -> Vec<u8> {
-        // payload = padding + market(1) + code(6)
-        let payload_len = (self.padding.len() + 1 + self.code.len()) as u16;
-        // pkg_len includes method (2) + payload
-        self.pkg_len1 = 2u16 + payload_len;
-        self.pkg_len2 = self.pkg_len1;
-
-        // 构建与 C++ 中 RequestHeader::headerSerialize() 完全一致的头部
-        let mut buf = BinaryStream::new();
-        buf.push_u8(self.zip_flag);
-        buf.push_u32(self.seq_id);
-        buf.push_u8(self.packet_type);
-        buf.push_u16(self.pkg_len1);
-        buf.push_u16(self.pkg_len2);
-        buf.push_u16(self.method);
-
-        // payload
-        buf.push_byte_array(&self.padding);
-        buf.push_u8(self.market);
-        buf.push_byte_array(&self.code);
-
-        buf.data().clone()
     }
 }
 
@@ -148,17 +145,21 @@ impl XdxrInfo {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct XdxrInfoResponse {
+    header: ResponseHeader,
     pub count: u16,
     pub list: Vec<XdxrInfo>,
 }
-impl XdxrInfoResponse {
-    pub fn new() -> Self {
-        Self {
-            count: 0,
-            list: Vec::new(),
-        }
+
+impl Response for XdxrInfoResponse {
+    fn header(&self) -> &ResponseHeader {
+        &self.header
     }
-    pub fn deserialize(&mut self, body: &[u8]) -> Result<(), crate::std::DeserializeError> {
+
+    fn header_mut(&mut self) -> &mut ResponseHeader {
+        &mut self.header
+    }
+
+    fn deserialize_body(&mut self, body: &[u8]) -> Result<(), crate::std::DeserializeError> {
         let mut bs = BinaryStream::from_vec(body.to_vec());
         bs.skip(9);
         self.count = bs.get_u16()?;
@@ -231,6 +232,21 @@ impl XdxrInfoResponse {
         }
         Ok(())
     }
+
+    fn body_string(&self) -> String {
+        format!("XdxrInfoResponse{{count:{}}}", self.count)
+    }
+}
+
+#[allow(dead_code)]
+impl XdxrInfoResponse {
+    pub fn new() -> Self {
+        Self {
+            header: ResponseHeader::new(),
+            count: 0,
+            list: Vec::new(),
+        }
+    }
 }
 
 /// Fetch XDXR info for a single security code using the level1 client pool.
@@ -243,17 +259,10 @@ pub fn fetch_xdxr(code: &str) -> Option<XdxrInfoResponse> {
         Ok(mut pooled) => {
             // prepare request
             let mut req = XdxrInfoRequest::new(code);
-            let req_buf = XdxrInfoRequest::serialize(&mut req);
-            // process_request does the write/read and optional unzip
-            match crate::level1::process_request(pooled.stream(), req_buf.as_slice())
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
-            {
-                Ok(body) => {
-                    let mut resp = XdxrInfoResponse::new();
-                    if let Err(e) = resp.deserialize(&body) {
-                        log::error!("level1::xdxr - deserialize error for {}: {}", code, e);
-                        return None;
-                    }
+            let mut resp = XdxrInfoResponse::new();
+            // process does the write/read and optional unzip
+            match crate::level1::process(pooled.stream(), &mut req, &mut resp) {
+                Ok(_) => {
                     // Log response summary to help observation/diagnostics
                     log::info!("level1::xdxr - code={} count={}", code, resp.count);
                     for (i, it) in resp.list.iter().enumerate() {
@@ -264,7 +273,7 @@ pub fn fetch_xdxr(code: &str) -> Option<XdxrInfoResponse> {
                 }
                 Err(e) => {
                     log::error!(
-                        "level1 process_request error for {}: {}",
+                        "level1 process error for {}: {}",
                         code,
                         e.to_string()
                     );
@@ -287,8 +296,8 @@ mod tests {
     fn test_xdxr_request_encoding_matches_cpp() {
         // Build request for code "sh600000" (we'll use "sh6000" 6-bytes) and force seq_id=3
         let mut req = XdxrInfoRequest::new("sh600000");
-        req.seq_id = 3; // match the sequence observed in logs
-        let buf = XdxrInfoRequest::serialize(&mut req);
+        req.header.seq_id = 3; // match the sequence observed in logs
+        let buf = Request::serialize(&mut req);
         // Expected hex per C++ serializeImpl (little-endian fields):
         // header(12): 0c 03 00 00 00 01 0b 00 0b 00 0f 00
         // payload(9): 01 00 00 73 68 36 30 30 30

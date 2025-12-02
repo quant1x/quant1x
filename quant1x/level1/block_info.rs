@@ -2,20 +2,41 @@
 use super::sequence_id;
 use super::BinaryStream;
 use crate::level1::commands::*;
+use crate::level1::protocol::{Request, RequestHeader, Response, ResponseHeader};
 
 // Request builder for BLOCK_DATA
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct BlockInfoRequest {
-    pub zip_flag: u8,
-    pub seq_id: u32,
-    pub packet_type: u8,
-    pub pkg_len1: u16,
-    pub pkg_len2: u16,
-    pub method: u16,
+    header: RequestHeader,
     pub start: u32,
     pub size: u32,
     pub block_filename: [u8; 100],
+}
+
+impl Request for BlockInfoRequest {
+    fn header(&self) -> &RequestHeader {
+        &self.header
+    }
+
+    fn header_mut(&mut self) -> &mut RequestHeader {
+        &mut self.header
+    }
+
+    fn serialize_payload(&mut self) -> Vec<u8> {
+        let mut stream = BinaryStream::new();
+        stream.push_u32(self.start);
+        stream.push_u32(self.size);
+        stream.push_byte_array(&self.block_filename);
+        stream.data().clone()
+    }
+
+    fn payload_string(&self) -> String {
+        format!(
+            "BlockInfoRequest{{start:{}, size:{}}}",
+            self.start, self.size
+        )
+    }
 }
 
 impl BlockInfoRequest {
@@ -25,41 +46,18 @@ impl BlockInfoRequest {
         let copy_len = std::cmp::min(bytes.len(), 99);
         buf[..copy_len].copy_from_slice(&bytes[..copy_len]);
 
+        let mut header = RequestHeader::new();
+        header.zip_flag = crate::level1::protocol::zlib_flag::UNCOMPRESSED;
+        header.seq_id = sequence_id();
+        header.packet_type = 0x01;
+        header.method = BLOCK_DATA;
+
         BlockInfoRequest {
-            zip_flag: crate::level1::protocol::zlib_flag::UNCOMPRESSED,
-            seq_id: sequence_id(),
-            packet_type: 0x01,
-            pkg_len1: 0,
-            pkg_len2: 0,
-            method: BLOCK_DATA, // StdCommand::BLOCK_DATA
+            header,
             start: offset,
             size: crate::level1::block_meta::BLOCK_CHUNKS_SIZE,
             block_filename: buf,
         }
-    }
-
-    pub fn serialize(&mut self) -> Vec<u8> {
-        // fixed pkg len from C++: 0x6e
-        self.pkg_len1 = 0x6e;
-        self.pkg_len2 = 0x6e;
-
-        let mut header = BinaryStream::new();
-        header.push_u8(self.zip_flag);
-        header.push_u32(self.seq_id);
-        header.push_u8(self.packet_type);
-        header.push_u16(self.pkg_len1);
-        header.push_u16(self.pkg_len2);
-        header.push_u16(self.method);
-
-        let mut stream = BinaryStream::new();
-        stream.push_u32(self.start);
-        stream.push_u32(self.size);
-        stream.push_byte_array(&self.block_filename);
-
-        let mut buf = header.data().clone();
-        let data = stream.data();
-        buf.extend_from_slice(data);
-        buf
     }
 }
 
@@ -68,16 +66,12 @@ pub fn fetch_block_info(filename: &str, offset: u32) -> Option<BlockInfoResponse
     match crate::level1::client::get_std_conn() {
         Ok(mut pooled) => {
             let mut req = BlockInfoRequest::new(filename, offset);
-            let req_buf = req.serialize();
-            match crate::level1::process_request(pooled.stream(), req_buf.as_slice()) {
-                Ok(body) => {
-                    let mut resp = BlockInfoResponse::new();
-                    resp.deserialize(&body);
-                    Some(resp)
-                }
+            let mut resp = BlockInfoResponse::new();
+            match crate::level1::process(pooled.stream(), &mut req, &mut resp) {
+                Ok(_) => Some(resp),
                 Err(e) => {
                     log::error!(
-                        "level1 process_request error for block_info {} offset {}: {}",
+                        "level1 process error for block_info {} offset {}: {}",
                         filename,
                         offset,
                         e.to_string()
@@ -100,20 +94,25 @@ pub fn fetch_block_info(filename: &str, offset: u32) -> Option<BlockInfoResponse
 
 #[derive(Debug, Clone)]
 pub struct BlockInfoResponse {
+    header: ResponseHeader,
     pub size: u32,
     pub data: Vec<u8>,
 }
-#[allow(dead_code)]
-impl BlockInfoResponse {
-    pub fn new() -> Self {
-        Self {
-            size: 0,
-            data: Vec::new(),
-        }
+
+impl Response for BlockInfoResponse {
+    fn header(&self) -> &ResponseHeader {
+        &self.header
     }
-    pub fn deserialize(&mut self, body: &[u8]) {
+
+    fn header_mut(&mut self) -> &mut ResponseHeader {
+        &mut self.header
+    }
+
+    fn deserialize_body(&mut self, body: &[u8]) -> Result<(), crate::std::DeserializeError> {
         let mut bs = BinaryStream::from_vec(body.to_vec());
-        self.size = bs.get_u32().expect("buffer error");
+        self.size = bs
+            .get_u32()
+            .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
         if self.size > 0 {
             let pos = bs.position();
             let remain = bs.data();
@@ -121,6 +120,22 @@ impl BlockInfoResponse {
                 self.data.clear();
                 self.data.extend_from_slice(&remain[pos..]);
             }
+        }
+        Ok(())
+    }
+
+    fn body_string(&self) -> String {
+        format!("BlockInfoResponse{{size:{}}}", self.size)
+    }
+}
+
+#[allow(dead_code)]
+impl BlockInfoResponse {
+    pub fn new() -> Self {
+        Self {
+            header: ResponseHeader::new(),
+            size: 0,
+            data: Vec::new(),
         }
     }
 }

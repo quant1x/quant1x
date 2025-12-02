@@ -2,6 +2,7 @@ use mio::net::TcpStream as MioTcpStream;
 
 use crate::std::BinaryStream;
 use flate2::read::ZlibDecoder;
+use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 
 const RESPONSE_HEADER_LEN: usize = 16;
@@ -38,7 +39,7 @@ pub mod zlib_flag {
     pub const ZIPPED: u8 = ZIP | UNCOMPRESSED;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RequestHeader {
     pub zip_flag: u8,
     pub seq_id: u32,
@@ -89,7 +90,7 @@ impl RequestHeader {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResponseHeader {
     pub i1: u32,
     pub zip_flag: u8,
@@ -240,156 +241,9 @@ fn unzip(body: Vec<u8>, unzipped_size: usize) -> std::io::Result<Vec<u8>> {
     Ok(out)
 }
 
-pub(crate) fn process_request_raw(
-    stream: &mut MioTcpStream,
-    req_buf: &[u8],
-) -> Result<(Vec<u8>, Vec<u8>), crate::std::DeserializeError> {
-    stream
-        .write_all(req_buf)
-        .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
-
-    let mut hdr = vec![0u8; RESPONSE_HEADER_LEN];
-    stream
-        .read_exact(&mut hdr)
-        .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
-
-    let mut hdr_reader = BinaryStream::from_vec(hdr.clone());
-    let _i1 = hdr_reader.get_u32()?;
-    let _zip_flag = hdr_reader.get_u8()?;
-    let _seq_id = hdr_reader.get_u32()?;
-    let _i2 = hdr_reader.get_u8()?;
-    let _method = hdr_reader.get_u16()?;
-    let zip_size = hdr_reader.get_u16()? as usize;
-    let unzip_size = hdr_reader.get_u16()? as usize;
-
-    if zip_size == 0 {
-        return Ok((hdr, Vec::new()));
-    }
-
-    let mut body = vec![0u8; zip_size];
-    stream
-        .read_exact(&mut body)
-        .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
-
-    let final_body = if zip_size != unzip_size {
-        unzip(body, unzip_size).map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?
-    } else {
-        body
-    };
-
-    Ok((hdr, final_body))
-}
-
-// Blocking std::net::TcpStream variant used for handshake performed on blocking socket
-pub(crate) fn process_request_raw_std(
-    stream: &mut std::net::TcpStream,
-    req_buf: &[u8],
-) -> Result<(Vec<u8>, Vec<u8>), crate::std::DeserializeError> {
-    stream
-        .write_all(req_buf)
-        .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
-
-    let mut hdr = vec![0u8; RESPONSE_HEADER_LEN];
-    stream
-        .read_exact(&mut hdr)
-        .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
-
-    let mut hdr_reader = BinaryStream::from_vec(hdr.clone());
-    let _i1 = hdr_reader.get_u32()?;
-    let _zip_flag = hdr_reader.get_u8()?;
-    let _seq_id = hdr_reader.get_u32()?;
-    let _i2 = hdr_reader.get_u8()?;
-    let _method = hdr_reader.get_u16()?;
-    let zip_size = hdr_reader.get_u16()? as usize;
-    let unzip_size = hdr_reader.get_u16()? as usize;
-
-    if zip_size == 0 {
-        return Ok((hdr, Vec::new()));
-    }
-
-    let mut body = vec![0u8; zip_size];
-    stream
-        .read_exact(&mut body)
-        .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
-
-    let final_body = if zip_size != unzip_size {
-        unzip(body, unzip_size).map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?
-    } else {
-        body
-    };
-
-    Ok((hdr, final_body))
-}
-
-pub fn process_request_std(
-    stream: &mut std::net::TcpStream,
-    req_buf: &[u8],
-) -> Result<Vec<u8>, crate::std::DeserializeError> {
-    log::debug!(
-        "level1::process_request_std - sending request ({} bytes)",
-        req_buf.len()
-    );
-
-    let (header_bytes, body_bytes) = process_request_raw_std(stream, req_buf)?;
-
-    let mut bs = BinaryStream::from_vec(header_bytes.clone());
-    let i1 = bs.get_u32()?;
-    let zip_flag = bs.get_u8()?;
-    let seq_id = bs.get_u32()?;
-    let i2 = bs.get_u8()?;
-    let method = bs.get_u16()?;
-    let zip_size = bs.get_u16()? as usize;
-    let unzip_size = bs.get_u16()? as usize;
-
-    log::debug!(
-        "level1::process_request_std - parsed header: I1={}, ZipFlag={}, SeqID={}, I2={}, Method=0x{:04x}, ZipSize={}, UnZipSize={}",
-        i1, zip_flag, seq_id, i2, method, zip_size, unzip_size
-    );
-
-    log::debug!(
-        "level1::process_request_std - response body size: {}",
-        body_bytes.len()
-    );
-
-    Ok(body_bytes)
-}
-
-pub fn process_request(
-    stream: &mut MioTcpStream,
-    req_buf: &[u8],
-) -> Result<Vec<u8>, crate::std::DeserializeError> {
-    log::debug!(
-        "level1::process_request - sending request ({} bytes)",
-        req_buf.len()
-    );
-
-    let (header_bytes, body_bytes) = process_request_raw(stream, req_buf)?;
-
-    let mut bs = BinaryStream::from_vec(header_bytes.clone());
-    let i1 = bs.get_u32()?;
-    let zip_flag = bs.get_u8()?;
-    let seq_id = bs.get_u32()?;
-    let i2 = bs.get_u8()?;
-    let method = bs.get_u16()?;
-    let zip_size = bs.get_u16()? as usize;
-    let unzip_size = bs.get_u16()? as usize;
-
-    log::debug!(
-        "level1::process_request - parsed header: I1={}, ZipFlag={}, SeqID={}, I2={}, Method=0x{:04x}, ZipSize={}, UnZipSize={}",
-        i1, zip_flag, seq_id, i2, method, zip_size, unzip_size
-    );
-
-    log::debug!(
-        "level1::process_request - response body size: {}",
-        body_bytes.len()
-    );
-
-    Ok(body_bytes)
-}
-
 // 泛型process函数，匹配C++ protocol.h中的process模板函数
-pub fn process<R: Request, S: Response>(
-    stream: &mut MioTcpStream,
+pub fn process<R: Request, S: Response, T: Read + Write>(
+    stream: &mut T,
     request: &mut R,
     response: &mut S,
 ) -> Result<(), crate::std::DeserializeError> {
@@ -399,9 +253,19 @@ pub fn process<R: Request, S: Response>(
     log::debug!("[{}]Send request ({} bytes)", cmd, req_bytes.len());
     log::debug!("[{}]Send request header: {}", cmd, request.to_string());
 
-    let (header_bytes, body_bytes) = process_request_raw(stream, &req_bytes)?;
+    // Send request
+    stream
+        .write_all(&req_bytes)
+        .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
 
-    response.header_deserialize(&header_bytes).map_err(|e| {
+    // Read header
+    let mut hdr = vec![0u8; RESPONSE_HEADER_LEN];
+    stream
+        .read_exact(&mut hdr)
+        .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
+
+    // Deserialize header
+    response.header_deserialize(&hdr).map_err(|e| {
         crate::std::DeserializeError::Other(format!(
             "response header deserialize error for {}: {}",
             cmd, e
@@ -413,12 +277,29 @@ pub fn process<R: Request, S: Response>(
         response.header_debug_string()
     );
 
-    if response.zip_size() == 0 {
+    let zip_size = response.zip_size();
+    if zip_size == 0 {
         return Ok(());
     }
 
-    log::debug!("[{}]Recv response body size: {}", cmd, body_bytes.len());
-    response.deserialize(&body_bytes).map_err(|e| {
+    // Read body
+    let mut body = vec![0u8; zip_size];
+    stream
+        .read_exact(&mut body)
+        .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
+
+    log::debug!("[{}]Recv response body size: {}", cmd, body.len());
+
+    // Unzip if necessary
+    let unzip_size = response.header().unzip_size as usize;
+    let final_body = if zip_size != unzip_size {
+        unzip(body, unzip_size).map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?
+    } else {
+        body
+    };
+
+    // Deserialize body
+    response.deserialize(&final_body).map_err(|e| {
         crate::std::DeserializeError::Other(format!(
             "response body deserialize error for {}: {}",
             cmd, e

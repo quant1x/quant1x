@@ -23,27 +23,13 @@ impl StandardProtocolHandler {
     pub fn handshake(stream: &mut MioTcpStream) -> std::io::Result<bool> {
         // Hello1
         let mut req1 = Hello1Request::new();
-        let req_buf1 = req1.serialize();
-        log::debug!(
-            "StandardProtocolHandler::handshake -> sending Hello1 ({} bytes): {}",
-            req_buf1.len(),
-            hex::encode(&req_buf1)
-        );
-        match crate::level1::process_request(stream, &req_buf1)
+        let mut resp1 = Hello1Response::new();
+        log::debug!("StandardProtocolHandler::handshake -> sending Hello1");
+        
+        match crate::level1::process(stream, &mut req1, &mut resp1)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
         {
-            Ok(body1) => {
-                log::debug!(
-                    "StandardProtocolHandler::handshake <- received Hello1 body ({} bytes): {}",
-                    body1.len(),
-                    if body1.len() > 128 {
-                        hex::encode(&body1[..128]) + "..."
-                    } else {
-                        hex::encode(&body1)
-                    }
-                );
-                let mut resp1 = Hello1Response::new();
-                resp1.deserialize(&body1).expect("deserialize error");
+            Ok(_) => {
                 log::debug!(
                     "StandardProtocolHandler::handshake Hello1 parsed info: {}",
                     resp1.info
@@ -67,29 +53,13 @@ impl StandardProtocolHandler {
 
         // Hello2
         let mut req2 = Hello2Request::new();
-        let req_buf2 = req2.serialize();
-        log::debug!(
-            "StandardProtocolHandler::handshake -> sending Hello2 ({} bytes): {}",
-            req_buf2.len(),
-            hex::encode(&req_buf2)
-        );
-        match crate::level1::process_request(stream, &req_buf2)
+        let mut resp2 = Hello2Response::new();
+        log::debug!("StandardProtocolHandler::handshake -> sending Hello2");
+
+        match crate::level1::process(stream, &mut req2, &mut resp2)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
         {
-            Ok(body2) => {
-                log::debug!(
-                    "StandardProtocolHandler::handshake <- received Hello2 body ({} bytes): {}",
-                    body2.len(),
-                    if body2.len() > 128 {
-                        hex::encode(&body2[..128]) + "..."
-                    } else {
-                        hex::encode(&body2)
-                    }
-                );
-                let mut resp2 = Hello2Response::new();
-                resp2
-                    .deserialize(&body2)
-                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+            Ok(_) => {
                 log::debug!(
                     "StandardProtocolHandler::handshake Hello2 parsed info: {}",
                     resp2.info
@@ -116,11 +86,8 @@ impl StandardProtocolHandler {
 
     pub fn keepalive(stream: &mut MioTcpStream) -> std::io::Result<bool> {
         let mut req = HeartbeatRequest::new();
-        let req_buf = req.serialize();
-        let body = crate::level1::process_request(stream, &req_buf)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
         let mut resp = HeartbeatResponse::new();
-        resp.deserialize(&body)
+        crate::level1::process(stream, &mut req, &mut resp)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
         Ok(true)
     }
@@ -130,27 +97,13 @@ impl StandardProtocolHandler {
     pub fn handshake_std(stream: &mut std::net::TcpStream) -> std::io::Result<bool> {
         // Hello1
         let mut req1 = Hello1Request::new();
-        let req_buf1 = req1.serialize();
-        log::debug!(
-            "StandardProtocolHandler::handshake_std -> sending Hello1 ({} bytes): {}",
-            req_buf1.len(),
-            hex::encode(&req_buf1)
-        );
-        match crate::level1::process_request_std(stream, &req_buf1)
+        let mut resp1 = Hello1Response::new();
+        log::debug!("StandardProtocolHandler::handshake_std -> sending Hello1");
+
+        match crate::level1::process(stream, &mut req1, &mut resp1)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
         {
-            Ok(body1) => {
-                log::debug!(
-                    "StandardProtocolHandler::handshake_std <- received Hello1 body ({} bytes): {}",
-                    body1.len(),
-                    if body1.len() > 128 {
-                        hex::encode(&body1[..128]) + "..."
-                    } else {
-                        hex::encode(&body1)
-                    }
-                );
-                let mut resp1 = Hello1Response::new();
-                resp1.deserialize(&body1).expect("deserialize error");
+            Ok(_) => {
                 log::debug!(
                     "StandardProtocolHandler::handshake_std Hello1 parsed info: {}",
                     resp1.info
@@ -176,29 +129,13 @@ impl StandardProtocolHandler {
 
         // Hello2
         let mut req2 = Hello2Request::new();
-        let req_buf2 = req2.serialize();
-        log::debug!(
-            "StandardProtocolHandler::handshake_std -> sending Hello2 ({} bytes): {}",
-            req_buf2.len(),
-            hex::encode(&req_buf2)
-        );
-        match crate::level1::process_request_std(stream, &req_buf2)
+        let mut resp2 = Hello2Response::new();
+        log::debug!("StandardProtocolHandler::handshake_std -> sending Hello2");
+
+        match crate::level1::process(stream, &mut req2, &mut resp2)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
         {
-            Ok(body2) => {
-                log::debug!(
-                    "StandardProtocolHandler::handshake_std <- received Hello2 body ({} bytes): {}",
-                    body2.len(),
-                    if body2.len() > 128 {
-                        hex::encode(&body2[..128]) + "..."
-                    } else {
-                        hex::encode(&body2)
-                    }
-                );
-                let mut resp2 = Hello2Response::new();
-                resp2
-                    .deserialize(&body2)
-                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+            Ok(_) => {
                 log::debug!(
                     "StandardProtocolHandler::handshake_std Hello2 parsed info: {}",
                     resp2.info

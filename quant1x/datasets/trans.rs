@@ -275,6 +275,24 @@ impl DataAdapter for DataTrans {
     }
 }
 
+/// Return the full filename for a transaction cache file for `code` and `date`.
+/// The date should be in "YYYYMMDD" or "YYYY-MM-DD" format.
+pub fn get_trans_filepath(code: &str, date: &str) -> String {
+    let corrected = crate::exchange::correct_security_code(code);
+    let mut path = std::path::PathBuf::from(crate::config::default_cache_path());
+    path.push("trans");
+    let date_str = date.replace("-", "");
+    let year = if date_str.len() >= 4 {
+        &date_str[..4]
+    } else {
+        "0000"
+    };
+    path.push(year);
+    path.push(&date_str);
+    path.push(format!("{}.csv", corrected));
+    path.to_string_lossy().to_string()
+}
+
 pub fn init() {
     let plugin = Arc::new(DataTrans) as Arc<dyn DataAdapter>;
     crate::cache::register(plugin);

@@ -79,6 +79,10 @@ fn load_calendar_from_file(path: PathBuf) -> std::io::Result<()> {
     {
         let mut guard_s = GLOBAL_CALENDAR_STRINGS.lock().unwrap();
         let mut guard_ts = GLOBAL_CALENDAR_TS.lock().unwrap();
+        // Ensure timestamps are sorted for binary_search
+        tss.sort();
+        // Ensure strings are sorted to match
+        strs.sort();
         *guard_s = strs;
         *guard_ts = tss;
     }

@@ -37,10 +37,6 @@ pub use hello2::*;
 pub use protocol::commands;
 pub use protocol::commands::*;
 // 导出处理请求
-pub use protocol::process_request;
-pub(crate) use protocol::process_request_raw;
-pub(crate) use protocol::process_request_raw_std;
-// 导出标准处理请求
-pub use protocol::process_request_std;
+pub use protocol::process;
 pub use security_bars::*;
 pub use xdxr_info::*;
