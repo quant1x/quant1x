@@ -4,7 +4,7 @@ import pandas as pd
 from base1x import cache, exchange
 from matplotlib.gridspec import GridSpec
 
-from quant1x.chart import pyplot as plt
+from quant1x.util.chart import pyplot as plt
 
 # =====================================
 # 数据获取与预处理
