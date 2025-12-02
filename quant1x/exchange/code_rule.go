@@ -12,6 +12,7 @@ const (
 	MarketSSE  Market = "sh" // 上海证券交易所
 	MarketSZSE Market = "sz" // 深圳证券交易所
 	MarketBJSE Market = "bj" // 北京证券交易所
+	MarketHK   Market = "hk" // 香港证券交易所
 )
 
 // SecurityType 表示证券类型
@@ -123,6 +124,29 @@ var bjseRules = []CodeRule{
 	{"89", TypeBond, "可转债"},
 }
 
+// ========== 港交所规则(HKSE)==========
+var hkseRules = []CodeRule{
+	// 指数
+	{"HSI", TypeIndex, "恒生指数"},
+	{"HSCEI", TypeIndex, "国企指数"},
+	{"HSCCI", TypeIndex, "红筹指数"},
+	// ETF
+	{"028", TypeETF, "ETF"},
+	{"030", TypeETF, "ETF"},
+	{"031", TypeETF, "ETF"},
+	{"090", TypeETF, "ETF"},
+	{"091", TypeETF, "ETF"},
+	// 股票 (5位数字)
+	{"0", TypeStock, "港股"},
+	{"08", TypeStock, "港股(GEM)"},
+	// 权证/牛熊证 (5位数字)
+	{"1", TypeBond, "权证"},
+	{"2", TypeBond, "权证"},
+	{"4", TypeBond, "牛熊证"},
+	{"5", TypeBond, "牛熊证"},
+	{"6", TypeBond, "牛熊证"},
+}
+
 // matchRule 在规则列表中匹配最长前缀
 func matchRule(code string, rules []CodeRule) (SecurityType, string) {
 	bestLen := 0
@@ -153,39 +177,46 @@ func DetectSecurity(input string) (Market, SecurityType, string) {
 	var code string
 
 	// 1. 尝试解析显式市场标识(前缀或后缀)
-	if len(s) >= 8 {
-		if strings.HasPrefix(s, "sh") || strings.HasPrefix(s, "sz") || strings.HasPrefix(s, "bj") {
+	if len(s) >= 7 {
+		if strings.HasPrefix(s, "sh") || strings.HasPrefix(s, "sz") || strings.HasPrefix(s, "bj") || strings.HasPrefix(s, "hk") {
 			market = Market(s[:2])
 			code = s[2:]
-		} else if strings.HasSuffix(s, "sh") || strings.HasSuffix(s, "sz") || strings.HasSuffix(s, "bj") {
+		} else if strings.HasSuffix(s, "sh") || strings.HasSuffix(s, "sz") || strings.HasSuffix(s, "bj") || strings.HasSuffix(s, "hk") {
 			market = Market(s[len(s)-2:])
 			code = s[:len(s)-2]
 		}
 	}
 
-	// 2. 若无市场标识，且为6位数字，则自动推断市场
-	if market == "" && regexp.MustCompile(`^\d{6}$`).MatchString(s) {
-		code = s
-		switch {
-		case strings.HasPrefix(code, "6") || strings.HasPrefix(code, "5") ||
-			strings.HasPrefix(code, "9") || strings.HasPrefix(code, "7") ||
-			strings.HasPrefix(code, "000"):
-			market = MarketSSE
-		case strings.HasPrefix(code, "0") || strings.HasPrefix(code, "3") ||
-			strings.HasPrefix(code, "1") || strings.HasPrefix(code, "2"):
-			market = MarketSZSE
-		case strings.HasPrefix(code, "8") || strings.HasPrefix(code, "92"):
-			market = MarketBJSE
-		default:
-			return "", TypeUnknown, "无法识别市场"
+	// 2. 若无市场标识，自动推断市场
+	if market == "" {
+		if regexp.MustCompile(`^\d{6}$`).MatchString(s) {
+			code = s
+			switch {
+			case strings.HasPrefix(code, "6") || strings.HasPrefix(code, "5") ||
+				strings.HasPrefix(code, "9") || strings.HasPrefix(code, "7") ||
+				strings.HasPrefix(code, "000"):
+				market = MarketSSE
+			case strings.HasPrefix(code, "0") || strings.HasPrefix(code, "3") ||
+				strings.HasPrefix(code, "1") || strings.HasPrefix(code, "2"):
+				market = MarketSZSE
+			case strings.HasPrefix(code, "8") || strings.HasPrefix(code, "92"):
+				market = MarketBJSE
+			default:
+				return "", TypeUnknown, "无法识别市场"
+			}
+		} else if regexp.MustCompile(`^\d{5}$`).MatchString(s) {
+			code = s
+			market = MarketHK
+		} else {
+			code = s
 		}
 	} else if code == "" {
 		code = s
 	}
 
-	// 3. 验证 code 为6位纯数字
-	if !regexp.MustCompile(`^\d{6}$`).MatchString(code) {
-		return "", TypeUnknown, "代码格式错误(应为6位数字)"
+	// 3. 验证 code 为5或6位纯数字
+	if !regexp.MustCompile(`^\d{5,6}$`).MatchString(code) {
+		return "", TypeUnknown, "代码格式错误(应为5或6位数字)"
 	}
 
 	// 4. 全局规则优先(如板块指数)
@@ -202,6 +233,8 @@ func DetectSecurity(input string) (Market, SecurityType, string) {
 		rules = szseRules
 	case MarketBJSE:
 		rules = bjseRules
+	case MarketHK:
+		rules = hkseRules
 	default:
 		return market, TypeUnknown, "不支持的市场"
 	}
