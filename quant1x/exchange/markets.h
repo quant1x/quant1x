@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_EXCHANGE_H
-#define QUANT1X_EXCHANGE_H 1
+#ifndef QUANT1X_EXCHANGE_MARKETS_H
+#define QUANT1X_EXCHANGE_MARKETS_H 1
 
 #include <quant1x/exchange/blocks.h>
 #include <quant1x/exchange/calendar.h>
@@ -35,4 +35,4 @@ namespace exchange {
     std::vector<std::string> GetCodeList();
 }  // namespace exchange
 
-#endif  // QUANT1X_EXCHANGE_H
+#endif  // QUANT1X_EXCHANGE_MARKETS_H

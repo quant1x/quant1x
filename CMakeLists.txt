@@ -491,7 +491,7 @@ set(quant1x-headers
     quant1x/backtest/position.h
 
     # 交易所相关
-    quant1x/exchange/exchange.h
+    quant1x/exchange/markets.h
     quant1x/exchange/blocks.h
     quant1x/exchange/calendar.h
     quant1x/exchange/code.h
@@ -628,7 +628,7 @@ set(quant1x-sources
     quant1x/datasets.cpp
 
     # 交易所相关
-    quant1x/exchange/exchange.cpp
+    quant1x/exchange/markets.cpp
     quant1x/exchange/blocks.cpp
     quant1x/exchange/security.cpp
     quant1x/exchange/code.cpp

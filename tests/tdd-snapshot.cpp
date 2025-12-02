@@ -1,6 +1,6 @@
 #include <quant1x/test/test.h>
 #include <quant1x/runtime/config.h>
-#include <quant1x/exchange/exchange.h>
+#include <quant1x/exchange/markets.h>
 #include <quant1x/std/util.h>
 
 TEST_CASE("base-snapshot", "[runtime]") {
