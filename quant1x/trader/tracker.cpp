@@ -9,7 +9,7 @@
 #include <quant1x/trader/tracker.h>
 #include <quant1x/runtime/config.h>
 #include <spdlog/spdlog.h>
-#include <quant1x/exchange.h>
+#include <quant1x/exchange/exchange.h>
 #include <indicators/progress_bar.hpp>
 #include <quant1x/realtime/snapshot.h>
 #include <quant1x/trader/trader.h>

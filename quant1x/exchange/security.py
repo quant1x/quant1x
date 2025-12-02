@@ -33,7 +33,7 @@ PRE_MARKET_SECOND = 0
 
 
 def _get_security_filename() -> str:
-    return os.path.join(config.quant1x_config.meta_path, "securities.csv")
+    return os.path.join(config.meta_path, "securities.csv")
 
 
 def _file_mtime(path: str) -> float:

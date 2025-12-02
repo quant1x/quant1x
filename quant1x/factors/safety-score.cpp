@@ -1,5 +1,5 @@
 #include <cpr/cpr.h>
-#include <quant1x/exchange.h>
+#include <quant1x/exchange/exchange.h>
 #include <quant1x/factors/safety-score.h>
 
 //#include <iostream>

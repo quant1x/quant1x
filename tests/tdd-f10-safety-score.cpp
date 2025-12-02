@@ -1,6 +1,6 @@
 #include <quant1x/test/test.h>
 
-#include <quant1x/exchange.h>
+#include <quant1x/exchange/exchange.h>
 #include <iostream>
 #include <string>
 #include <map>

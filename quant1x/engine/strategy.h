@@ -4,7 +4,7 @@
 
 #include <quant1x/engine/action.h>
 #include <quant1x/engine/rule-engine.h>
-#include <quant1x/exchange.h>
+#include <quant1x/exchange/exchange.h>
 #include <quant1x/level1/client.h>
 #include <quant1x/proto/data.h>
 #include <quant1x/proto/snapshot.capnp.h>

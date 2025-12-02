@@ -10,7 +10,7 @@
 #include <nlohmann/json.hpp>
 #include <tuple>
 #include <algorithm>
-#include <quant1x/exchange.h>
+#include <quant1x/exchange/exchange.h>
 #include <quant1x/runtime/config.h>
 #include <quant1x/io/file.h>
 #include <quant1x/io/csv-reader.h>

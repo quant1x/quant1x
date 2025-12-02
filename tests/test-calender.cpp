@@ -1,6 +1,6 @@
 #include <quant1x/exchange/sina_decoder.h>
 #include <quant1x/test/test.h>
-#include <quant1x/exchange.h>
+#include <quant1x/exchange/exchange.h>
 
 TEST_CASE("update-calendar", "[calendar]") {
     runtime::global_init();

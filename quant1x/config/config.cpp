@@ -2,7 +2,7 @@
 #include <quant1x/std/strings.h>
 #include <quant1x/std/util.h>
 #include <quant1x/runtime/config.h>
-#include <quant1x/exchange.h>
+#include <quant1x/exchange/exchange.h>
 #include <quant1x/encoding/yaml.h>
 
 #include <algorithm>

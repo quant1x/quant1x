@@ -1,7 +1,7 @@
 #include <cpr/cpr.h>
 #include <quant1x/encoding/csv.h>
 #include <quant1x/encoding/json.h>
-#include <quant1x/exchange.h>
+#include <quant1x/exchange/exchange.h>
 #include <quant1x/factors/share-holder.h>
 #include <quant1x/std/time.h>
 
