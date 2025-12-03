@@ -3,6 +3,62 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.3] - 2025-12-03
+### Changed
+- rust: 下一个版本0.7.3
+- go: 新增创建目录、检查文件路径的函数
+- go: 新增homedir功能函数
+- go: 创建目录增加对宿主目录写法的支持
+- 调整strings文档文件名
+- go: 调整宿主目录的引用函数
+- c++: 优化调度器stop函数
+- go: 优化客户端
+- rust: 调整once组件源文件名
+- c++: 删除numa文档
+- c++: 调整头文件宏
+- go: 删除homedir文档
+- rust: 对齐homedir源文件名
+- vscode: 调整debug控制台字体
+- 调整vscode字体
+- go: 缓存的服务器地址区分标准和扩展行情
+- c++: 缓存的服务器地址区分标准和扩展行情
+- rust: 缓存的服务器地址区分标准和扩展行情
+- python: 修订level1包注释
+- 修订level1协议的压缩表示常量
+- c++: 修复is_optional_v 分支的判断逻辑
+- python: 优化yaml解析
+- 调整vscode chat字符集
+- 对齐服务器检测结果server.bin的缓存结构
+- python: 补全标准协议命令字
+- rust: 对齐c++的process函数签名
+- rust: 修复examples
+- rust: 对齐c++的process函数
+- c++: 调整logger目录
+- python: 调整logger目录
+- python: 修行函数注释
+- python: 调整chart图标简易工具的包路径
+- python: 调整部分代码
+- python: 拆分cache模块到cache目录, 方便扩展
+- python: 梳理废弃的代码, 合并功能相同的代码
+- go: 删除废弃的演示代码
+- 梳理exchange功能代码结构
+- 修订引用exchange.h
+- python: 梳理exchange工具包
+- python: 修订cache工具包
+- c++: 调整市场markets模块源文件名
+- 对齐go、python的市场代码
+- rust: 调整timestamp路径
+- 对齐session、calendar和timestamp代码
+- rust: 下一个版本0.7.4
+- go: 新增港股代码规则
+- python: 补充部分函数的注释
+- 调整tcp连接池的技术文档
+- go和rust的错误模块与c++对齐
+- go: 新增http工具
+- go: 公开exchange.DateRange函数
+- rust: 拆分函数内嵌套函数的做法
+- go: 删除废弃的连接池测试代码
+
 ## [0.7.2] - 2025-11-22
 ### Changed
 - rust下一个版本0.7.2
@@ -60,6 +116,7 @@ All notable changes to this project will be documented in this file.
 - go: 重构FP Growth算法
 - rust: 删除废弃sina解码的测试代码
 - rust: 优化FP Growth算法
+- update changelog
 
 ## [0.7.1] - 2025-11-03
 ### Changed
@@ -1215,7 +1272,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.2...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.3...HEAD
+[0.7.3]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.2...v0.7.3
 [0.7.2]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.1...v0.7.2
 [0.7.1]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.0...v0.7.1
 [0.7.0]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.160...v0.7.0
