@@ -245,7 +245,7 @@ func get_date_range(begin, end string, skipToday bool) []string {
 	return append([]string(nil), list[is:ie+1]...)
 }
 
-func date_range(begin, end Timestamp, skipToday bool) []Timestamp {
+func DateRange(begin, end Timestamp, skipToday bool) []Timestamp {
 	// Mirror C++: operate directly on the timestamp cache (pre-market times)
 	calendarRollingOnce.Do(lazyLoadCalendar)
 	tradeDates := globalCalendarsTimestamp
