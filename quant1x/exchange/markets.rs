@@ -1,27 +1,27 @@
+// helper: mirror C++ IsNeedIgnore logic
+fn is_need_ignore(code: &str) -> bool {
+    // call into exchange::get_security_info which ensures securities are initialized
+    // Only ignore when the security exists AND its name contains ignored keywords
+    // ("ST", "退", "摘牌"). If the security is not found in the cache, do
+    // not ignore it here — we keep the generated code in the list.
+    if let Some(info) = crate::exchange::get_security_info(code) {
+        const IGNORED_KEYWORDS: [&str; 3] = ["ST", "退", "摘牌"];
+        let upper_name = info.name.to_uppercase();
+        for kw in IGNORED_KEYWORDS.iter() {
+            if upper_name.contains(kw) {
+                return true;
+            }
+        }
+        false
+    } else {
+        // not found -> do ignore (include it)
+        true
+    }
+}
+
 /// Generate stock code list mirroring C++ exchange::GetStockCodeList()
 pub fn get_stock_code_list() -> Vec<String> {
     let mut all_codes: Vec<String> = Vec::new();
-
-    // helper: mirror C++ IsNeedIgnore logic
-    fn is_need_ignore(code: &str) -> bool {
-        // call into exchange::get_security_info which ensures securities are initialized
-        // Only ignore when the security exists AND its name contains ignored keywords
-        // ("ST", "退", "摘牌"). If the security is not found in the cache, do
-        // not ignore it here — we keep the generated code in the list.
-        if let Some(info) = crate::exchange::get_security_info(code) {
-            const IGNORED_KEYWORDS: [&str; 3] = ["ST", "退", "摘牌"];
-            let upper_name = info.name.to_uppercase();
-            for kw in IGNORED_KEYWORDS.iter() {
-                if upper_name.contains(kw) {
-                    return true;
-                }
-            }
-            false
-        } else {
-            // not found -> do ignore (include it)
-            true
-        }
-    }
 
     // Shanghai mainboard 600000-609999
     for i in 600000..=609999 {
