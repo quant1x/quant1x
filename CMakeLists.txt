@@ -558,8 +558,10 @@ set(quant1x-headers
     quant1x/quant1x.h
 
     # 数据处理功能 quant1x/data
-    learn/fpgrowth/fp_growth.h
-    learn/fpgrowth/fp_growth_core.h
+    
+    # 机器学习
+    quant1x/learn/fpgrowth/fp_growth.h
+    quant1x/learn/fpgrowth/fp_growth_core.h
 )
 
 set(quant1x-sources
@@ -675,8 +677,10 @@ set(quant1x-sources
     quant1x/quant1x.cpp
 
     # 数据处理功能 quant1x/data
-    learn/fpgrowth/fp_growth.cpp
-    learn/fpgrowth/fp_growth_core.cpp
+    
+    # 机器学习
+    quant1x/learn/fpgrowth/fp_growth.cpp
+    quant1x/learn/fpgrowth/fp_growth_core.cpp
 )
 
 # If mimalloc is enabled and we're using the C++ new/delete override mode,
@@ -1020,17 +1024,17 @@ install(
     PATTERN ".git" EXCLUDE         # 可选：忽略 .git 目录
 )
 
-# 安装主库头文件
-install(
-    DIRECTORY learn/
-    DESTINATION include/learn
-    FILES_MATCHING
-    PATTERN "*.h"
-    PATTERN "*.hpp"
-    PATTERN "*.inl"
-    PATTERN "__pycache__" EXCLUDE  # 忽略 Python 缓存目录（安全防护）
-    PATTERN ".git" EXCLUDE         # 可选：忽略 .git 目录
-)
+# # 安装主库头文件
+# install(
+#     DIRECTORY learn/
+#     DESTINATION include/learn
+#     FILES_MATCHING
+#     PATTERN "*.h"
+#     PATTERN "*.hpp"
+#     PATTERN "*.inl"
+#     PATTERN "__pycache__" EXCLUDE  # 忽略 Python 缓存目录（安全防护）
+#     PATTERN ".git" EXCLUDE         # 可选：忽略 .git 目录
+# )
 
 install(
     DIRECTORY ${CMAKE_BINARY_DIR}/include/private/

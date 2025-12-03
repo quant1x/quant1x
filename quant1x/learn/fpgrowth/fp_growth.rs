@@ -6,7 +6,7 @@
 //! # 示例
 //!
 //! ```
-//! use quant1x::FPGrowth;
+//! use quant1x::learn::fpgrowth::FPGrowth;
 //!
 //! // 创建FP-Growth挖掘器，最小支持度为30%
 //! let miner = FPGrowth::new(0.3);

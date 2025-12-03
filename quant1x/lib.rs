@@ -30,9 +30,8 @@ use mimalloc::MiMalloc;
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
-// FP-Growth 模块
-mod fpgrowth;
-pub use crate::fpgrowth::*;
+// Machine Learning module
+pub mod learn;
 
 // // calendar decoder module
 // mod decoder;

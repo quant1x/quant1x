@@ -1,5 +1,5 @@
-#ifndef QUANT1X_FP_GROWTH_CORE_H
-#define QUANT1X_FP_GROWTH_CORE_H 1
+#ifndef QUANT1X_LEARN_FP_GROWTH_CORE_H
+#define QUANT1X_LEARN_FP_GROWTH_CORE_H 1
 
 #include <vector>
 #include <memory>
@@ -112,4 +112,4 @@ private:
 
 } // namespace quant1x
 
-#endif // QUANT1X_FP_GROWTH_CORE_H
+#endif // QUANT1X_LEARN_FP_GROWTH_CORE_H

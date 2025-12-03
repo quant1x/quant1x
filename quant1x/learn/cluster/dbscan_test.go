@@ -11,7 +11,7 @@ import (
 	"gitee.com/quant1x/data/level1/securities"
 	"gitee.com/quant1x/engine/datasource/base"
 	"gitee.com/quant1x/num"
-	"gitee.com/quant1x/quant1x/learn/preprocessing"
+	"gitee.com/quant1x/quant1x/quant1x/learn/preprocessing"
 )
 
 func TestDBSCAN_Basic(t *testing.T) {
