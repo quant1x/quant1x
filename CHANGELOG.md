@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.4] - 2025-12-03
+### Changed
+- learn库归档到quant1x下
+
 ## [0.7.3] - 2025-12-03
 ### Changed
 - rust: 下一个版本0.7.3
@@ -58,6 +62,7 @@ All notable changes to this project will be documented in this file.
 - go: 公开exchange.DateRange函数
 - rust: 拆分函数内嵌套函数的做法
 - go: 删除废弃的连接池测试代码
+- update changelog
 
 ## [0.7.2] - 2025-11-22
 ### Changed
@@ -1272,7 +1277,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.3...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.4...HEAD
+[0.7.4]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.3...v0.7.4
 [0.7.3]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.2...v0.7.3
 [0.7.2]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.1...v0.7.2
 [0.7.1]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.0...v0.7.1
