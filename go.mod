@@ -10,6 +10,7 @@ require (
 	gitee.com/quant1x/pkg v0.9.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.10.1
+	github.com/stretchr/testify v1.11.1
 	golang.org/x/text v0.30.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -18,6 +19,7 @@ require (
 	gitee.com/quant1x/asio v1.1.5 // indirect
 	gitee.com/quant1x/pandas v1.6.10 // indirect
 	github.com/bits-and-blooms/bitset v1.24.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -26,6 +28,7 @@ require (
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/petermattis/goid v0.0.0-20250904145737-900bdf8bb490 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sevlyar/go-daemon v0.1.6 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
