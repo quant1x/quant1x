@@ -1,6 +1,7 @@
 #include <quant1x/encoding/csv.h>
 #include <quant1x/formula.h>
 #include <quant1x/pandas/dataframe.h>
+#include <quant1x/factors/factory.h>
 
 #include "no0.h"
 
@@ -64,38 +65,9 @@ std::vector<std::string> DataNo0::values() const {
 }
 namespace factors {
 
-    namespace {
-        inline std::mutex                       g_factor_no0_mutex{};
-        inline tsl::robin_map<std::string, No0> g_factor_no0_map{};
-        inline exchange::timestamp              g_factor_no0_date{};
-
-        void check_and_update(const exchange::timestamp &timestamp) {
-            std::lock_guard<std::mutex> lock{g_factor_no0_mutex};
-            exchange::timestamp         algin_date = timestamp.pre_market_time();
-            if (g_factor_no0_map.empty() || g_factor_no0_date != algin_date) {
-                g_factor_no0_date   = algin_date;
-                auto adapter        = DataNo0();
-                auto cache_filename = adapter.Filename(g_factor_no0_date);
-                if (!std::filesystem::exists(cache_filename)) {
-                    spdlog::error("[no0] cache file[{}], not found", cache_filename);
-                    return;
-                }
-                std::vector<No0> list = encoding::csv::csv_to_slices<No0>(cache_filename);
-                for (auto const &v : list) {
-                    g_factor_no0_map.insert_or_assign(v.Code, v);
-                }
-            }
-        }
-    }  // namespace
-
     /// 获取指定日期的No0数据
     std::optional<No0> get_no0(const std::string &code, const exchange::timestamp &timestamp) {
-        check_and_update(timestamp);
-        auto it = g_factor_no0_map.find(code);
-        if (it != g_factor_no0_map.end()) {
-            return it->second;
-        }
-        return std::nullopt;
+        return FactorManager<No0, DataNo0>::get(code, timestamp);
     }
 
 }  // namespace factors
