@@ -3,7 +3,7 @@
 #define Q1X_RUNTIME_CORE_H 1
 
 #include <quant1x/std/api.h>
-#include <quant1x/io/logger.h>
+#include <quant1x/log/logger.h>
 #include <quant1x/runtime/config.h>
 
 namespace runtime {
