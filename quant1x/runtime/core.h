@@ -1,6 +1,6 @@
 #pragma once
-#ifndef Q1X_RUNTIME_CORE_H
-#define Q1X_RUNTIME_CORE_H 1
+#ifndef QUANT1X_RUNTIME_CORE_H
+#define QUANT1X_RUNTIME_CORE_H 1
 
 #include <quant1x/std/api.h>
 #include <quant1x/log/logger.h>
@@ -30,4 +30,4 @@ namespace runtime {
     void cancel_task(task_id id);
 }
 
-#endif //Q1X_RUNTIME_CORE_H
+#endif // QUANT1X_RUNTIME_CORE_H
