@@ -288,16 +288,15 @@ pub fn get_minute_filename(code: &str, cache_date: &str) -> String {
         log::error!("invalid security code length (expected 8): {}", code);
         return String::new();
     }
-    if cache_date.len() != 8 {
+    let date = cache_date.replace('-', "");
+    if date.len() != 8 {
         log::error!(
             "invalid cache_date format for minute filename: {}",
             cache_date
         );
         return String::new();
     }
-    let year = &cache_date[0..4];
-    // remove any '-' just in case
-    let date = cache_date.replace('-', "");
+    let year = &date[0..4];
     let mut path = std::path::PathBuf::from(get_minute_path());
     path.push(year);
     path.push(date);
@@ -421,4 +420,88 @@ pub fn get_block_path() -> String {
     let p2 = std::path::PathBuf::from(get_meta_path());
     let _ = std::fs::create_dir_all(&p2);
     p2.to_string_lossy().to_string()
+}
+
+fn get_quarter_by_date(date: &str) -> String {
+    let date = date.replace("-", "");
+    if date.len() < 6 {
+        return "0000Q0".to_string();
+    }
+    let year = &date[0..4];
+    let month_str = &date[4..6];
+    let month: u32 = month_str.parse().unwrap_or(0);
+    if month == 0 || month > 12 {
+        return "0000Q0".to_string();
+    }
+    let quarter = (month - 1) / 3 + 1;
+    format!("{}Q{}", year, quarter)
+}
+
+pub fn top10_holders_filename(code: &str, date: &str) -> String {
+    let id_path = cache_id_path(code);
+    let quarter = get_quarter_by_date(date);
+    let holding_path = get_holding_path();
+    let full_path_str = format!("{}/{}/{}.csv", holding_path, quarter, id_path);
+    let path = std::path::PathBuf::from(&full_path_str);
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    full_path_str
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_quarter_by_date() {
+        assert_eq!(get_quarter_by_date("2023-01-01"), "2023Q1");
+        assert_eq!(get_quarter_by_date("2023-03-31"), "2023Q1");
+        assert_eq!(get_quarter_by_date("2023-04-01"), "2023Q2");
+        assert_eq!(get_quarter_by_date("2023-06-30"), "2023Q2");
+        assert_eq!(get_quarter_by_date("2023-07-01"), "2023Q3");
+        assert_eq!(get_quarter_by_date("2023-09-30"), "2023Q3");
+        assert_eq!(get_quarter_by_date("2023-10-01"), "2023Q4");
+        assert_eq!(get_quarter_by_date("2023-12-31"), "2023Q4");
+        assert_eq!(get_quarter_by_date("20230101"), "2023Q1");
+        assert_eq!(get_quarter_by_date("invalid"), "0000Q0");
+        assert_eq!(get_quarter_by_date("2023-13-01"), "0000Q0"); // invalid month
+    }
+
+    #[test]
+    fn test_cache_id_path() {
+        assert_eq!(cache_id_path("sh600000"), "sh600/sh600000");
+        assert_eq!(cache_id_path("sz000001"), "sz000/sz000001");
+        assert_eq!(cache_id_path("bj830000"), "bj830/bj830000");
+        assert_eq!(cache_id_path("sh123"), "sh/sh123"); // short code
+    }
+
+    #[test]
+    fn test_top10_holders_filename() {
+        // This test depends on the default cache path, which might vary.
+        // We check the suffix structure.
+        let filename = top10_holders_filename("sh600000", "2023-03-31");
+        assert!(filename.ends_with("holding/2023Q1/sh600/sh600000.csv"));
+        
+        let filename2 = top10_holders_filename("sz000001", "2023-12-31");
+        assert!(filename2.ends_with("holding/2023Q4/sz000/sz000001.csv"));
+    }
+
+    #[test]
+    fn test_get_kline_filename() {
+        let filename = get_kline_filename("sh600000", true);
+        assert!(filename.ends_with("day/sh600/sh600000.csv"));
+        
+        let filename_raw = get_kline_filename("sh600000", false);
+        assert!(filename_raw.ends_with("day/sh600/sh600000.raw"));
+    }
+
+    #[test]
+    fn test_get_minute_filename() {
+        let filename = get_minute_filename("sh600000", "2023-01-01");
+        assert!(filename.ends_with("minutes/2023/20230101/sh600000.csv"));
+        
+        let filename2 = get_minute_filename("sh600000", "20230101");
+        assert!(filename2.ends_with("minutes/2023/20230101/sh600000.csv"));
+    }
 }
