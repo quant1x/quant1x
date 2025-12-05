@@ -3,9 +3,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.5] - 2025-12-05
+### Changed
+- rust: 下一个版本号0.7.5
+- python: 优化证券代码部分函数
+- c++: 优化策略数据加载机制，引入RollingOnce
+- rust: 调整config模块路径
+- python: 补充level1的协议实现
+- python: 调整transaction测试代码
+- rust: 补全f10信息, 附带完全了相关的level1的协议以及标准函数库的支持
+
 ## [0.7.4] - 2025-12-03
 ### Changed
 - learn库归档到quant1x下
+- update changelog
 
 ## [0.7.3] - 2025-12-03
 ### Changed
@@ -1277,7 +1288,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.4...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.5...HEAD
+[0.7.5]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.4...v0.7.5
 [0.7.4]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.3...v0.7.4
 [0.7.3]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.2...v0.7.3
 [0.7.2]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.1...v0.7.2
