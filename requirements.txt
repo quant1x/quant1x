@@ -20,15 +20,14 @@ matplotlib~=3.10.5
 
 # AKShare
 akshare~=1.17.38
+mootdx~=0.11.7
+
 findpeaks~=2.7.4
 
-mootdx~=0.11.7
-python-dateutil~=2.9.0.post0
 requests==2.32.0
 tqdm~=4.67.1
 xgboost~=3.0.0
 scikit-learn~=1.7.1
-matplotlib~=3.10.1
 scipy~=1.16.0
 caerus~=1.0.1
 joblib~=1.5.1
