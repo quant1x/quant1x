@@ -270,7 +270,7 @@ impl DataAdapter for DataKLine {
 }
 
 // 辅助函数：从 CSV 读取 K 线，功能类似 C++ 的 read_kline_from_csv
-fn read_kline_from_csv(filename: &str) -> Vec<KLine> {
+pub fn load_klines(filename: &str) -> Vec<KLine> {
     // 使用基于 Serde 的 CSV 反序列化，使字段名可自动与表头匹配。
     let mut klines: Vec<KLine> = Vec::new();
     match std::fs::File::open(filename) {
@@ -292,6 +292,10 @@ fn read_kline_from_csv(filename: &str) -> Vec<KLine> {
         Err(_) => { /* missing file -> return empty vector */ }
     }
     klines
+}
+
+fn read_kline_from_csv(filename: &str) -> Vec<KLine> {
+    load_klines(filename)
 }
 
 pub fn init() {

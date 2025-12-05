@@ -114,6 +114,10 @@ impl XdxrInfo {
         ]
     }
 
+    pub fn is_capital_change(&self) -> bool {
+        self.hou_zonggu > 0.0
+    }
+
     pub fn monetary_factor(&self) -> f64 {
         // 现金分红调整金额 = 每股分红 * 除权前总股本 / 10
         ((self.peigu as f64 * self.peigu_jia as f64) - self.fenhong as f64

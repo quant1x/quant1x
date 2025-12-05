@@ -449,6 +449,24 @@ pub fn top10_holders_filename(code: &str, date: &str) -> String {
     full_path_str
 }
 
+pub fn quarterly_cache_path(date: &str) -> String {
+    let quarter = get_quarter_by_date(date);
+    let mut path = std::path::PathBuf::from(default_cache_path());
+    path.push("infoq");
+    path.push(quarter);
+    path.to_string_lossy().to_string()
+}
+
+pub fn quarterly_filename(date: &str, keyword: &str) -> String {
+    let mut path = std::path::PathBuf::from(quarterly_cache_path(date));
+    path.push(format!("{}.csv", keyword));
+    path.to_string_lossy().to_string()
+}
+
+pub fn reports_filename(date: &str) -> String {
+    quarterly_filename(date, "reports")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

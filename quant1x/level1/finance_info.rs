@@ -8,16 +8,32 @@ use encoding_rs::GBK;
 #[derive(Debug, Clone)]
 pub struct FinanceInfoRequest {
     header: RequestHeader,
+    pub count: u16,
+    pub market: u8,
+    pub code: [u8; 6],
 }
 
 impl FinanceInfoRequest {
-    pub fn new() -> Self {
+    pub fn new(security_code: &str) -> Self {
+        let mut code = [0u8; 6];
+        let (_mid, _flag, pure) = crate::exchange::detect_market(security_code);
+        let market = _mid;
+        let bytes = pure.as_bytes();
+        for i in 0..bytes.len().min(6) {
+            code[i] = bytes[i];
+        }
+
         let mut header = RequestHeader::new();
         header.zip_flag = crate::level1::protocol::zlib_flag::UNCOMPRESSED;
         header.seq_id = super::sequence_id();
         header.packet_type = 0x01;
         header.method = FINANCE_INFO;
-        FinanceInfoRequest { header }
+        FinanceInfoRequest {
+            header,
+            count: 1,
+            market,
+            code,
+        }
     }
 }
 
@@ -31,11 +47,15 @@ impl Request for FinanceInfoRequest {
     }
 
     fn serialize_payload(&mut self) -> Vec<u8> {
-        Vec::new()
+        let mut buf = BinaryStream::new();
+        buf.push_u16(self.count);
+        buf.push_u8(self.market);
+        buf.push_byte_array(&self.code);
+        buf.data().clone()
     }
 
     fn payload_string(&self) -> String {
-        "{}".to_string()
+        format!("FinanceInfoRequest{{market:{}}}", self.market)
     }
 }
 
@@ -326,10 +346,10 @@ impl Response for FinanceInfoResponse {
     }
 }
 
-pub fn fetch_finance_info() -> Option<FinanceInfoResponse> {
+pub fn fetch_finance_info(security_code: &str) -> Option<FinanceInfoResponse> {
     match crate::level1::client::get_std_conn() {
         Ok(mut pooled) => {
-            let mut request = FinanceInfoRequest::new();
+            let mut request = FinanceInfoRequest::new(security_code);
             let mut response = FinanceInfoResponse::new();
             match protocol::process(pooled.stream(), &mut request, &mut response) {
                 Ok(_) => Some(response),

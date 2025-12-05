@@ -360,6 +360,14 @@ impl Timestamp {
         (dt.year() as u32) * 10000 + dt.month() * 100 + dt.day()
     }
 
+    /// 从YYYYMMDD整数创建时间戳
+    pub fn from_yyyymmdd_int(date: u32) -> Self {
+        let year = (date / 10000) as i32;
+        let month = ((date % 10000) / 100) as u32;
+        let day = (date % 100) as u32;
+        Self::from_date(year, month, day, 0, 0, 0, 0).unwrap_or(Self::zero())
+    }
+
     /// 是否为空（零值）
     pub fn is_empty(&self) -> bool {
         self.ms == 0
