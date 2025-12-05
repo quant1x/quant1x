@@ -117,3 +117,83 @@ class Quant1XConfig:
 
 # 创建配置单例
 quant1x_config = Quant1XConfig()
+
+def get_historical_trade_filename(code: str, date: str) -> str:
+    """
+    获取历史成交记录文件路径
+    目录结构: ${trans}/${YYYY}/${YYYYMMDD}/${SecurityCode}.csv
+    """
+    date_str = date.replace('-', '').replace('/', '')
+    year = date_str[:4]
+    base_path = os.path.join(quant1x_config.data_path, 'trans')
+    return os.path.join(base_path, year, date_str, f"{code}.csv")
+
+def get_xdxr_path() -> str:
+    """获取除权除息文件路径"""
+    return os.path.join(quant1x_config.data_path, 'xdxr')
+
+def get_xdxr_filename(code: str) -> str:
+    """
+    获取除权除息文件路径
+    目录结构: ${xdxr}/${subpath}/${SecurityCode}.csv
+    subpath: code[:-3]
+    """
+    if len(code) <= 3:
+        sub = ""
+    else:
+        sub = code[:-3]
+        
+    base_path = get_xdxr_path()
+    return os.path.join(base_path, sub, f"{code}.csv")
+
+def get_day_path() -> str:
+    """获取日K线文件路径"""
+    return quant1x_config.kline_path
+
+def get_kline_filename(code: str, forward: bool = True) -> str:
+    """
+    获取日K线文件路径
+    目录结构: ${day}/${subpath}/${SecurityCode}.${ext}
+    subpath: code[:-3]
+    ext: csv if forward else raw
+    """
+    if len(code) <= 3:
+        sub = ""
+    else:
+        sub = code[:-3]
+        
+    base_path = get_day_path()
+    ext = "csv" if forward else "raw"
+    return os.path.join(base_path, sub, f"{code}.{ext}")
+
+from quant1x import std
+
+def get_holding_path() -> str:
+    return os.path.join(quant1x_config.data_path, "holding")
+
+def cache_id_path(code: str) -> str:
+    """
+    Generate cache ID path.
+    SH600000 -> SH600/SH600000
+    """
+    if len(code) <= 3:
+        return code
+    
+    prefix = code[:-3]
+    return os.path.join(prefix, code)
+
+def top10_holders_filename(code: str, date_str: str) -> str:
+    quarter, _, _ = std.get_quarter_by_date(date_str)
+    id_path = cache_id_path(code)
+    return os.path.join(get_holding_path(), quarter, f"{id_path}.csv")
+
+def quarterly_cache_path(date: str) -> str:
+    quarter, _, _ = std.get_quarter_by_date(date)
+    return os.path.join(quant1x_config.data_path, "infoq", quarter)
+
+def quarterly_filename(date: str, keyword: str) -> str:
+    return os.path.join(quarterly_cache_path(date), f"{keyword}.csv")
+
+def reports_filename(date: str) -> str:
+    return quarterly_filename(date, "reports")
+

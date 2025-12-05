@@ -34,3 +34,25 @@ def fix_float(f: float) -> float:
     :return:
     """
     return f if not is_nan(f) else 0
+
+
+def change_rate(base: float, value: float) -> float:
+    """
+    计算变化率
+    :param base: 基准值
+    :param value: 变化值
+    :return: 变化率
+    """
+    if base == 0:
+        return 0.0
+    return value / base
+
+
+def decimal(f: float, digits: int = 2) -> float:
+    """
+    保留小数位
+    :param f: 浮点数
+    :param digits: 小数位数
+    :return:
+    """
+    return float_round(f, digits)

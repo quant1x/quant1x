@@ -1,16 +1,4 @@
-"""Python `level1.client()` implementation that uses the connection pool and
-the `OperationHandler` interface implemented earlier.
-
-This module provides a small, explicit initializer for the singleton
-`TcpConnectionPool`. Unlike an earlier prototype, it does NOT read
-configuration from environment variables. Call `init_pool(...)` from your
-application startup code and provide the server endpoints programmatically
-to match the C++ design where endpoints are configured explicitly.
-
-The `ProtocolHandler` here is a minimal implementation that uses
-`level1.protocol` helpers for handshake and keepalive. Replace or extend it
-if you need additional protocol checks.
-"""
+# -*- coding: UTF-8 -*-
 from __future__ import annotations
 
 import threading
@@ -27,72 +15,68 @@ import time
 log = logging.getLogger(__name__)
 
 
-class ProtocolHandler(NetworkOperationHandler):
-    """Protocol handler that performs Hello1/Hello2 handshake and Heartbeat.
+class StandardProtocolHandler(NetworkOperationHandler):
+    """标准协议处理器，执行Hello1/Hello2握手和心跳。
 
-    This implementation calls into `level1.protocol` to serialize requests
-    and perform blocking read/write on the provided socket.
+    此实现调用`level1.protocol`来序列化请求，并在提供的套接字上执行阻塞读/写。
     """
 
     def handshake(self, sock) -> bool:
-        # perform Hello1 then Hello2 using blocking request helper
+        # 使用阻塞请求助手执行Hello1然后Hello2
         try:
-            from quant1x.level1.protocol import Hello1Request, Hello1Response, Hello2Request, Hello2Response, process_request_std
+            from quant1x.level1.protocol import Hello1Request, Hello1Response, Hello2Request, Hello2Response, process
 
             req1 = Hello1Request()
-            body1 = process_request_std(sock, req1.serialize())
             resp1 = Hello1Response()
-            resp1.deserialize(body1)
-            # Accept any Hello1 response that deserializes without error.
-            # C++ implementation does not require non-empty Info field.
+            process(sock, req1, resp1)
+            # 接受任何没有反序列化错误的Hello1响应。
+            # C++实现不需要非空的Info字段。
 
             req2 = Hello2Request()
-            body2 = process_request_std(sock, req2.serialize())
             resp2 = Hello2Response()
-            resp2.deserialize(body2)
-            # Accept any Hello2 response that deserializes without error.
-            # Return True if both phases completed without exceptions.
+            process(sock, req2, resp2)
+            # 接受任何没有反序列化错误的Hello2响应。
+            # 如果两个阶段都没有异常完成，则返回True。
             return True
         except Exception as e:
-            log.exception('ProtocolHandler.handshake failed: %s', e)
+            # 使用调试日志以避免在服务器检测期间产生噪音
+            log.debug('StandardProtocolHandler.handshake failed: %s', e)
             return False
 
     def keepalive(self, sock) -> bool:
         try:
-            from quant1x.level1.protocol import HeartbeatRequest, HeartbeatResponse, process_request_std
+            from quant1x.level1.protocol import HeartbeatRequest, HeartbeatResponse, process
 
             req = HeartbeatRequest()
-            body = process_request_std(sock, req.serialize())
             resp = HeartbeatResponse()
-            resp.deserialize(body)
+            process(sock, req, resp)
             return True
         except Exception as e:
-            log.exception('ProtocolHandler.keepalive failed: %s', e)
+            log.exception('StandardProtocolHandler.keepalive failed: %s', e)
             return False
 
 
-_pool_lock = threading.Lock()
-_pool: Optional[TcpConnectionPool] = None
+_std_pool_lock = threading.Lock()
+_std_pool: Optional[TcpConnectionPool] = None
 
-def _build_pool(*, min_conn: int, max_conn: int, servers: Optional[List[Tuple[str, int]]]) -> TcpConnectionPool:
-    """Construct and return a TcpConnectionPool mirroring C++ tdx_connection_pool.
+def _build_std_pool(*, min_conn: int, max_conn: int, servers: Optional[List[Tuple[str, int]]]) -> TcpConnectionPool:
+    """构造并返回一个镜像C++ tdx_connection_pool的TcpConnectionPool。
 
-    - Read cache file and determine whether to run detection (pre-market staleness).
-    - If detection runs, persist detected list to cache and limit concurrency.
-    - Always read the cache and seed endpoints from it (or from `servers`).
-    Exceptions from detect/cache IO are allowed to propagate so callers see
-    initialization failures (fail-fast), consistent with C++ behaviour.
+    - 读取缓存文件并确定是否运行检测（盘前陈旧性）。
+    - 如果运行检测，将检测到的列表持久化到缓存并限制并发。
+    - 始终读取缓存并从中（或从`servers`）播种端点。
+    允许来自检测/缓存IO的异常传播，以便调用者看到初始化失败（快速失败），与C++行为一致。
     """
     from quant1x.level1 import config as l1config
 
-    handler = ProtocolHandler()
+    handler = StandardProtocolHandler()
 
-    # default concurrency bounded by max_conn (C++ uses 10 as default)
+    # 默认并发受max_conn限制（C++默认使用10）
     default_concurrency = max_conn
 
     discovered: List[Tuple[str, int]] = []
 
-    # decide whether to update server cache
+    # 决定是否更新服务器缓存
     cache_fn = None
     try:
         cache_fn = l1config._cache_filename()
@@ -132,13 +116,13 @@ def _build_pool(*, min_conn: int, max_conn: int, servers: Optional[List[Tuple[st
         except Exception:
             pass
 
-    # read cached servers
+    # 读取缓存的服务器
     try:
         cached = l1config.read_cache()
         if cached:
             for s in cached:
-                h = s.get("Host")
-                p_obj: Any = s.get("Port")
+                h = s.get("host") or s.get("Host")
+                p_obj: Any = s.get("port") or s.get("Port")
                 try:
                     p = int(str(p_obj)) if p_obj is not None else None
                 except Exception:
@@ -150,7 +134,7 @@ def _build_pool(*, min_conn: int, max_conn: int, servers: Optional[List[Tuple[st
 
     pool = TcpConnectionPool(min_conn, default_concurrency, handler)
 
-    # seed endpoints from provided servers or discovered cache
+    # 从提供的服务器或发现的缓存中播种端点
     if servers:
         for host, port in servers:
             pool.add_endpoint(host, port)
@@ -161,40 +145,41 @@ def _build_pool(*, min_conn: int, max_conn: int, servers: Optional[List[Tuple[st
     return pool
 
 
-def client():
-    """Return a pooled connection handle to a level1 server.
+def get_std_conn():
+    """返回一个到level1服务器的池化连接句柄。
 
-    Usage:
-        with client() as conn:
+    用法:
+        with get_std_conn() as conn:
             sock = conn.socket
             ...
 
-    Raises RuntimeError if no endpoints have been configured for the pool.
+    如果池没有配置端点，则引发RuntimeError。
     """
-    if _pool is None:
-        # Lazily initialize via the single public init function.
-        init_pool()
-    assert _pool is not None
-    return _pool.acquire()
+    if _std_pool is None:
+        # 通过单个公共初始化函数延迟初始化。
+        init_std_pool()
+    assert _std_pool is not None
+    return _std_pool.acquire()
 
 
-def init_pool(servers: Optional[List[Tuple[str, int]]] = None, *, min_conn: int = 1, max_conn: int = 10) -> None:
-    """Initialize the module-level connection pool singleton.
+def init_std_pool(servers: Optional[List[Tuple[str, int]]] = None, *, min_conn: int = 1, max_conn: int = 10) -> None:
+    """初始化模块级连接池单例。
 
-    Parameters:
-        servers: Optional list of (host, port) tuples to seed the pool with.
-                 If omitted, the pool is created without endpoints and callers
-                 must add endpoints via `_pool.add_endpoint(host, port)`.
-        min_conn: minimum number of connections maintained by the pool.
-        max_conn: maximum number of connections allowed by the pool.
+    参数:
+        servers: 可选的(host, port)元组列表，用于播种池。
+                 如果省略，则创建没有端点的池，调用者必须通过`_pool.add_endpoint(host, port)`添加端点。
+        min_conn: 池维护的最小连接数。
+        max_conn: 池允许的最大连接数。
 
-    This must be called once during application startup before `client()` is
-    used. Re-calling has no effect.
+    必须在应用程序启动期间在调用`client()`之前调用一次。重复调用无效。
     """
-    global _pool
-    with _pool_lock:
-        if _pool is not None:
+    global _std_pool
+    with _std_pool_lock:
+        if _std_pool is not None:
             return
-        # Build pool and assign; allow exceptions to propagate so caller
-        # observes initialization failures (match C++ behaviour).
-        _pool = _build_pool(min_conn=min_conn, max_conn=max_conn, servers=servers)
+        # 构建池并分配；允许异常传播，以便调用者观察初始化失败（匹配C++行为）。
+        _std_pool = _build_std_pool(min_conn=min_conn, max_conn=max_conn, servers=servers)
+
+# 兼容旧代码
+client = get_std_conn
+init_pool = init_std_pool

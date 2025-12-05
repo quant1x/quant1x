@@ -55,8 +55,9 @@ def _recv_exact(sock: socket.socket, n: int) -> bytes:
     return bytes(buf)
 
 
-def process_request_raw_std(sock: socket.socket, req_buf: bytes) -> Tuple[bytes, bytes]:
-    # send
+def process(sock: socket.socket, request, response) -> None:
+    """Send request and populate response."""
+    req_buf = request.serialize()
     sock.sendall(req_buf)
 
     # read 16-byte response header
@@ -66,19 +67,14 @@ def process_request_raw_std(sock: socket.socket, req_buf: bytes) -> Tuple[bytes,
     i1, zip_flag, seq_id, i2, method, zip_size, unzip_size = struct.unpack('<IBIBHHH', hdr)
 
     if zip_size == 0:
-        return hdr, b''
+        return
 
     body = _recv_exact(sock, zip_size)
     if zip_size != unzip_size:
         # zlib-compressed
         body = zlib.decompress(body)
-    return hdr, body
-
-
-def process_request_std(sock: socket.socket, req_buf: bytes) -> bytes:
-    """Send request and return response body bytes (decompressed if needed)."""
-    _, body = process_request_raw_std(sock, req_buf)
-    return body
+    
+    response.deserialize(body)
 
 
 class Hello1Request:

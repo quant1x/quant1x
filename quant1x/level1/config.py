@@ -1,14 +1,4 @@
-"""Server detection ported from C++ level1::detect().
-
-Provides:
-- StandardServerList: candidate servers (Name, Host, Port)
-- detect(...): parallel connect + handshake to rank servers by latency
-- read_cache / write_cache to persist detection results to meta/server.bin
-
-This module intentionally keeps the detect implementation conservative:
-it uses blocking sockets with short timeouts and runs workers in threads so
-it works in environments without asyncio.
-"""
+# -*- coding: UTF-8 -*-
 from __future__ import annotations
 
 import os
@@ -263,15 +253,16 @@ def _try_probe_one(candidate: Dict[str, Any], timeout_ms: int, result_list: List
         except Exception:
             pass
 
-        # perform protocol handshake using level1 ProtocolHandler so we reuse same logic
+        # perform protocol handshake using level1 StandardProtocolHandler so we reuse same logic
         try:
             # import lazily to avoid circular import at module import time
-            from quant1x.level1.client import ProtocolHandler
+            from quant1x.level1.client import StandardProtocolHandler
 
-            handler = ProtocolHandler()
+            handler = StandardProtocolHandler()
             ok = handler.handshake(sock)
-        except Exception:
-            log.exception("Handshake exception for %s:%s", host, port)
+        except Exception as e:
+            # log.debug instead of exception to avoid noisy tracebacks during detection
+            log.debug("Handshake failed for %s:%s: %s", host, port, e)
             ok = False
 
         if ok:

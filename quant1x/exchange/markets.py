@@ -1,19 +1,5 @@
 # -*- coding: UTF-8 -*-
 from typing import List
-from quant1x.exchange.code import (
-    MarketType,
-    get_security_code,
-    get_market,
-    get_market_id,
-    detect_market,
-    assert_index_by_market_and_code,
-    assert_index_by_security_code,
-    assert_etf_by_market_and_code,
-    assert_stock_by_market_and_code,
-    correct_security_code,
-    TargetKind,
-    assert_code,
-)
 from quant1x.exchange.security import get_security_info
 from quant1x.cache.sector import get_sector_list
 

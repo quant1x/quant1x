@@ -3,7 +3,7 @@ import threading
 import struct
 import time
 
-from quant1x.level1.client import ProtocolHandler
+from quant1x.level1.client import StandardProtocolHandler
 
 
 def _recv_exact(conn: socket.socket, n: int) -> bytes:
@@ -77,10 +77,10 @@ def test_handshake():
     assert ready.wait(timeout=2.0)
     port = port_holder[0]
 
-    # connect and use ProtocolHandler.handshake
+    # connect and use StandardProtocolHandler.handshake
     sock = socket.create_connection(('127.0.0.1', port), timeout=2.0)
     try:
-        handler = ProtocolHandler()
+        handler = StandardProtocolHandler()
         ok = handler.handshake(sock)
         assert ok is True
     finally:
@@ -88,3 +88,7 @@ def test_handshake():
             sock.close()
         except Exception:
             pass
+
+if __name__ == "__main__":
+    test_handshake()
+    print("test_handshake passed")

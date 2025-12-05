@@ -10,6 +10,7 @@
 """
 from .config import (
     get_quant1x_config_filename,
+    get_historical_trade_filename,
     quant1x_config
 )
 
@@ -20,6 +21,7 @@ kline_path = quant1x_config.kline_path
 
 __all__ = [
     "get_quant1x_config_filename",
+    "get_historical_trade_filename",
     "data_path",
     "meta_path",
     "kline_path",

@@ -74,22 +74,37 @@ def fetch_security_list(market: int, start: int, count: int) -> Optional[List[Di
     DecimalPoint (int), Name (str), PreClose (float). Returns None on error.
     """
     try:
-        # build payload: market(u16), start(u32), count(u32), unknown(u32=0)
-        payload = struct.pack('<H I I I', int(market) & 0xFFFF, int(start) & 0xFFFFFFFF, int(count) & 0xFFFFFFFF, 0)
+        class SecurityListRequest:
+            def __init__(self, market, start, count):
+                self.market = market
+                self.start = start
+                self.count = count
+            
+            def serialize(self):
+                payload = struct.pack('<H I I I', int(self.market) & 0xFFFF, int(self.start) & 0xFFFFFFFF, int(self.count) & 0xFFFFFFFF, 0)
+                zip_flag = 0x0C
+                seq_id = protocol.sequence_id()
+                packet_type = 0x01
+                pkg_len1 = 2 + len(payload)
+                pkg_len2 = pkg_len1
+                method = 0x044d
+                header = struct.pack('<B I B H H H', zip_flag, seq_id, packet_type, pkg_len1, pkg_len2, method)
+                return header + payload
 
-        # header serialization mirrors RequestHeader::serialize: pkg_len1 = 2 + payload_len
-        zip_flag = 0x0C
-        seq_id = protocol.sequence_id()
-        packet_type = 0x01
-        pkg_len1 = 2 + len(payload)
-        pkg_len2 = pkg_len1
-        method = 0x044d  # SECURITY_LIST
+        class SecurityListResponse:
+            def __init__(self):
+                self.body = b''
+            
+            def deserialize(self, data):
+                self.body = data
 
-        header = struct.pack('<B I B H H H', zip_flag, seq_id, packet_type, pkg_len1, pkg_len2, method)
-        req_buf = header + payload
+        req = SecurityListRequest(market, start, count)
+        resp = SecurityListResponse()
 
         with l1client.client() as conn:
-            body = protocol.process_request_std(conn.socket, req_buf)
+            protocol.process(conn.socket, req, resp)
+        
+        body = resp.body
 
         if not body:
             # empty body -> no securities
