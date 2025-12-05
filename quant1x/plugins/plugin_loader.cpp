@@ -1,5 +1,5 @@
-#include <quant1x/plugins/plugin-loader.h>
-#include <quant1x/engine/rule-engine.h>
+#include <quant1x/plugins/plugin_loader.h>
+#include <quant1x/engine/rule_engine.h>
 #include <filesystem>
 #include <memory>
 
@@ -12,7 +12,7 @@
 #endif
 
 #include <spdlog/spdlog.h>
-#include <quant1x/plugins/plugin-api.h>
+#include <quant1x/plugins/plugin_api.h>
 
 namespace fs = std::filesystem;
 using namespace engine;

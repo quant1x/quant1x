@@ -1,6 +1,8 @@
 #include <quant1x/datasets/chips.h>
 #include <quant1x/datasets/trans.h>
 #include <quant1x/proto/data.h>
+#include <quant1x/config/base.h>
+#include <quant1x/config/cache.h>
 
 namespace datasets {
     namespace fs = std::filesystem;

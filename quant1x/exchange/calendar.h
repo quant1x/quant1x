@@ -2,7 +2,7 @@
 #ifndef QUANT1X_EXCHANGE_CALENDAR_H
 #define QUANT1X_EXCHANGE_CALENDAR_H 1
 
-#include <quant1x/runtime/config.h>
+#include <quant1x/config/config.h>
 #include <quant1x/runtime/cache1d.h>
 #include <quant1x/std/time.h>
 #include <quant1x/io/file.h>

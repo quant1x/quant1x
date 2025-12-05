@@ -5,13 +5,13 @@
 #include <quant1x/exchange/blocks.h>
 #include <quant1x/exchange/calendar.h>
 #include <quant1x/exchange/code.h>
-#include <quant1x/exchange/margin-trading.h>
+#include <quant1x/exchange/margin_trading.h>
 #include <quant1x/exchange/security.h>
 #include <quant1x/io/csv-writer.h>
 #include <quant1x/io/file.h>
 #include <quant1x/io/http.h>
 #include <quant1x/level1/client.h>
-#include <quant1x/runtime/config.h>
+#include <quant1x/config/config.h>
 #include <quant1x/runtime/core.h>
 #include <quant1x/runtime/once.h>
 #include <quant1x/std/time.h>

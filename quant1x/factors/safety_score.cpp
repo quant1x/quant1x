@@ -1,6 +1,6 @@
 #include <cpr/cpr.h>
 #include <quant1x/exchange/markets.h>
-#include <quant1x/factors/safety-score.h>
+#include <quant1x/factors/safety_score.h>
 
 //#include <iostream>
 #include <map>

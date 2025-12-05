@@ -7,7 +7,7 @@
 // 6. 记录交易日志
 
 #include <quant1x/trader/tracker.h>
-#include <quant1x/runtime/config.h>
+#include <quant1x/config/config.h>
 #include <spdlog/spdlog.h>
 #include <quant1x/exchange/markets.h>
 #include <indicators/progress_bar.hpp>

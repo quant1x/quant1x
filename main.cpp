@@ -5,7 +5,7 @@
 #include <quant1x/command.h>
 #include <quant1x/datasets.h>
 #include <private/build-info.h>
-#include <quant1x/runtime/config.h>
+#include <quant1x/config/config.h>
 #include <quant1x/cache.h>
 // #if HAVE_MIMALLOC
 // #include <mimalloc.h>

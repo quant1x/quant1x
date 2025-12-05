@@ -7,8 +7,8 @@
 #include <vector>
 #include <algorithm>
 #include <ostream>
-#include "trading-session.h"
-#include "strategy-parameter.h"
+#include "trading_session.h"
+#include "strategy_parameter.h"
 #include "price_cage.h"
 
 namespace config {

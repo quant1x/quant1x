@@ -1,7 +1,7 @@
 #include <quant1x/datasets/kline.h>
 #include <quant1x/datasets/kline_raw.h>
 #include <quant1x/factors/base.h>
-#include <ranges>
+#include <quant1x/config/cache.h>
 
 namespace datasets {
 

@@ -3,6 +3,7 @@
 #define QUANT1X_DATASETS_KLINE_RAW_H 1
 
 #include <quant1x/datasets/xdxr.h>
+
 namespace datasets {
 
     namespace detail {

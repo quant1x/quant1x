@@ -5,7 +5,7 @@
 #include <quant1x/std/api.h>
 #include <quant1x/proto/data.h>
 #include <quant1x/engine/action.h>
-#include <quant1x/runtime/config.h>
+#include <quant1x/config/config.h>
 #include <quant1x/exchange/markets.h>
 
 namespace cache {

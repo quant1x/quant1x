@@ -3,7 +3,7 @@
 #define QUANT1X_ENGINE_STRATEGY_H 1
 
 #include <quant1x/engine/action.h>
-#include <quant1x/engine/rule-engine.h>
+#include <quant1x/engine/rule_engine.h>
 #include <quant1x/exchange/markets.h>
 #include <quant1x/level1/client.h>
 #include <quant1x/proto/data.h>

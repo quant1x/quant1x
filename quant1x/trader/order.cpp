@@ -1,5 +1,7 @@
 #include <quant1x/trader/order.h>
 #include <quant1x/trader/fee.h>
+#include <quant1x/config/base.h>
+#include <quant1x/config/cache.h>
 
 namespace trader {
 

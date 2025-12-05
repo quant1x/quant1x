@@ -8,6 +8,7 @@
 #include <sstream>
 #include <algorithm>
 #include <stdexcept>
+#include <quant1x/config/cache.h>
 
 namespace dfcf {
 

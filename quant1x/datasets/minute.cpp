@@ -1,4 +1,6 @@
 #include <quant1x/datasets/minute.h>
+#include <quant1x/config/base.h>
+#include <quant1x/config/cache.h>
 
 namespace datasets {
 

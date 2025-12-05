@@ -6,7 +6,7 @@
 #include <mutex>
 #include <functional>
 #include <memory>
-#include <quant1x/runtime/config.h>
+#include <quant1x/config/strategy_parameter.h>
 
 namespace trader {
 

@@ -4,7 +4,7 @@
 #include <string>
 #include <cmath>
 #include <algorithm>
-#include <quant1x/runtime/config.h>
+#include <quant1x/config/config.h>
 
 namespace trader {
 

@@ -1,16 +1,13 @@
-#include <quant1x/std/api.h>
-#include <quant1x/factors/f10.h>
-#include <quant1x/level1/client.h>
-#include <quant1x/datasets/xdxr.h>
-#include <boost/pfr.hpp>
-
-#include <quant1x/factors/share-holder.h>
-#include <quant1x/factors/base.h>
 #include <quant1x/encoding/csv.h>
 #include <quant1x/exchange/markets.h>
+#include <quant1x/level1/client.h>
+#include <quant1x/datasets/xdxr.h>
+#include <quant1x/factors/f10.h>
+#include <quant1x/factors/base.h>
 #include <quant1x/factors/notice.h>
 #include <quant1x/factors/financial_report.h>
-#include <quant1x/factors/safety-score.h>
+#include <quant1x/factors/share_holder.h>
+#include <quant1x/factors/safety_score.h>
 
 static std::string get_ipo_date(const std::string &security_code, const std::string &feature_date) {
     auto kls = factors::checkout_klines(security_code, feature_date);

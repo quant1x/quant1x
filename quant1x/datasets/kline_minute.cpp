@@ -6,6 +6,8 @@
 #include <cmath>
 #include <cstddef>
 #include <ranges>
+#include <quant1x/config/base.h>
+#include <quant1x/config/cache.h>
 
 namespace datasets {
 

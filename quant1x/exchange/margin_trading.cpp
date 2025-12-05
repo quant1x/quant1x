@@ -1,4 +1,4 @@
-#include <quant1x/exchange/margin-trading.h>
+#include <quant1x/exchange/margin_trading.h>
 
 #include <string>
 #include <vector>
@@ -11,7 +11,7 @@
 #include <tuple>
 #include <algorithm>
 #include <quant1x/exchange/markets.h>
-#include <quant1x/runtime/config.h>
+#include <quant1x/config/config.h>
 #include <quant1x/io/file.h>
 #include <quant1x/io/csv-reader.h>
 #include <quant1x/encoding/json.h>

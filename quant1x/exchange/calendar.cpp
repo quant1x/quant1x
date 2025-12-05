@@ -5,7 +5,7 @@
 #include <quant1x/io/file.h>
 #include <quant1x/io/http.h>
 #include <quant1x/runtime/cache1d.h>
-#include <quant1x/runtime/config.h>
+#include <quant1x/config/cache.h>
 #include <quant1x/std/time.h>
 #include <quant1x/std/util.h>
 #include "sina_decoder.h"

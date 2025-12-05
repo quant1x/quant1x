@@ -1,5 +1,5 @@
 #include <quant1x/test/test.h>
-#include <quant1x/runtime/config.h>
+#include <quant1x/config/config.h>
 
 #include "quant1x/runtime/core.h"
 #include "quant1x/std/cpu_info.h"

@@ -1,4 +1,4 @@
-#include <quant1x/engine/rule-engine.h>
+#include <quant1x/engine/rule_engine.h>
 #include <spdlog/spdlog.h>
 
 namespace engine {

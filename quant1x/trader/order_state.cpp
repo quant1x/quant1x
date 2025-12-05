@@ -4,6 +4,8 @@
 #include <quant1x/exchange/markets.h>
 #include <quant1x/engine/strategy.h>
 #include <quant1x/trader/order.h>
+#include <quant1x/config/base.h>
+#include <quant1x/config/cache.h>
 
 namespace trader {
     namespace fs = std::filesystem;

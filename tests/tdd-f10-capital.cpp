@@ -2,7 +2,7 @@
 #include <quant1x/test/test.h>
 
 #include <quant1x/factors/f10.h>
-#include <quant1x/factors/share-holder.h>
+#include <quant1x/factors/share_holder.h>
 
 TEST_CASE("f10-share-holder", "[factors]") {
     auto list = dfcf::GetCacheShareHolder("sh600600", "2025-05-20");

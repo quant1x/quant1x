@@ -2,7 +2,6 @@
 #ifndef QUANT1X_TRADER_ORDER_H
 #define QUANT1X_TRADER_ORDER_H 1
 
-#include <quant1x/runtime/config.h>
 #include <quant1x/trader/fee.h>
 
 // ==============================

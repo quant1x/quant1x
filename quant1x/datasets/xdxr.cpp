@@ -1,5 +1,7 @@
 #include <quant1x/level1/client.h>
 #include <quant1x/datasets/xdxr.h>
+#include <quant1x/config/base.h>
+#include <quant1x/config/cache.h>
 
 namespace datasets {
 

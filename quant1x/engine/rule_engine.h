@@ -11,8 +11,8 @@
 #include <string>
 #include <vector>
 
-#include "rule-context.h"
-#include "rule-error.h"
+#include "rule_context.h"
+#include "rule_error.h"
 
 namespace engine {
 

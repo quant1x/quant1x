@@ -1,6 +1,6 @@
-#include <quant1x/config/strategy-parameter.h>
+#include <quant1x/config/strategy_parameter.h>
 #include <quant1x/exchange/markets.h>
-#include <quant1x/exchange/margin-trading.h>
+#include <quant1x/exchange/margin_trading.h>
 
 namespace config {
 

@@ -1,5 +1,5 @@
 #include <quant1x/exchange/timestamp.h>
-#include <quant1x/runtime/config.h>
+#include <quant1x/config/config.h>
 #include <quant1x/std/time.h>
 
 namespace exchange {

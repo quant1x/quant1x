@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <memory>
 #include <unordered_set>
-#include <quant1x/runtime/config.h>
+#include <quant1x/config/config.h>
 #include <filesystem>
 
 namespace cache {

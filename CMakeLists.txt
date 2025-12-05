@@ -429,11 +429,12 @@ set(quant1x-headers
     quant1x/encoding/yaml.h
 
     # 配置
-    quant1x/config/data-cache.h
-    quant1x/config/rule-parameter.h
-    quant1x/config/strategy-parameter.h
-    quant1x/config/trader-parameter.h
-    quant1x/config/trading-session.h
+    quant1x/config/base.h
+    quant1x/config/data_cache.h
+    quant1x/config/rule_parameter.h
+    quant1x/config/strategy_parameter.h
+    quant1x/config/trader_parameter.h
+    quant1x/config/trading_session.h
 
     # 业务引擎
     quant1x/engine/action.h
@@ -495,7 +496,7 @@ set(quant1x-headers
     quant1x/exchange/blocks.h
     quant1x/exchange/calendar.h
     quant1x/exchange/code.h
-    quant1x/exchange/margin-trading.h
+    quant1x/exchange/margin_trading.h
     quant1x/exchange/session.h
     quant1x/exchange/timestamp.h
 
@@ -507,23 +508,23 @@ set(quant1x-headers
 
     # 策略
     quant1x/engine/strategy.h
-    quant1x/engine/rule-engine.h
-    quant1x/engine/rule-error.h
-    quant1x/engine/rule-context.h
+    quant1x/engine/rule_engine.h
+    quant1x/engine/rule_error.h
+    quant1x/engine/rule_context.h
 
     # 模型
 
     # 插件
-    quant1x/plugins/plugin-loader.h
-    quant1x/plugins/plugin-api.h
+    quant1x/plugins/plugin_loader.h
+    quant1x/plugins/plugin_api.h
 
     # 因子
     quant1x/factors/f10.h
-    quant1x/factors/share-holder.h
+    quant1x/factors/share_holder.h
     quant1x/factors/base.h
     quant1x/factors/notice.h
     quant1x/factors/financial_report.h
-    quant1x/factors/safety-score.h
+    quant1x/factors/safety_score.h
     quant1x/factors/history.h
 
     # Technical Analysis Patterns
@@ -603,10 +604,11 @@ set(quant1x-sources
 
 
     # 配置信息
-    quant1x/config/config.cpp
-    quant1x/config/trading-session.cpp
-    quant1x/config/trader-parameter.cpp
-    quant1x/config/strategy-parameter.cpp
+    quant1x/config/base.cpp
+    quant1x/config/cache.cpp
+    quant1x/config/trading_session.cpp
+    quant1x/config/trader_parameter.cpp
+    quant1x/config/strategy_parameter.cpp
 
     quant1x/cache.cpp
     quant1x/command.cpp
@@ -637,16 +639,16 @@ set(quant1x-sources
     quant1x/exchange/calendar.cpp
     quant1x/exchange/session.cpp
     quant1x/exchange/timestamp.cpp
-    quant1x/exchange/margin-trading.cpp
+    quant1x/exchange/margin_trading.cpp
 
     # 因子
-    quant1x/factors/f10.cpp
-    quant1x/factors/share-holder.cpp
     quant1x/factors/base.cpp
+    quant1x/factors/f10.cpp
+    quant1x/factors/share_holder.cpp
     quant1x/factors/history.cpp
     quant1x/factors/notice.cpp
     quant1x/factors/financial_report.cpp
-    quant1x/factors/safety-score.cpp
+    quant1x/factors/safety_score.cpp
 
     # Technical Analysis Patterns
     quant1x/ta/trend.cpp
@@ -656,10 +658,10 @@ set(quant1x-sources
     quant1x/realtime/snapshot.cpp
 
     # 插件
-    quant1x/plugins/plugin-loader.cpp
+    quant1x/plugins/plugin_loader.cpp
 
     # 策略
-    quant1x/engine/rule-engine.cpp
+    quant1x/engine/rule_engine.cpp
     quant1x/engine/strategy.cpp
 
     # 交易柜台

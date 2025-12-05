@@ -1,6 +1,6 @@
 #include <quant1x/exchange/security.h>
 #include <quant1x/std/time.h>
-#include <quant1x/runtime/config.h>
+#include <quant1x/config/cache.h>
 #include <quant1x/exchange/blocks.h>
 #include <quant1x/level1/client.h>
 

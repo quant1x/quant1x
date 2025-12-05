@@ -1,5 +1,6 @@
 #include <quant1x/test/test.h>
-#include <quant1x/runtime/config.h>
+#include <quant1x/config/base.h>
+#include <quant1x/config/cache.h>
 #include <quant1x/datasets.h>
 #include <iostream>
 #include <vector>

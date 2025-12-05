@@ -4,8 +4,8 @@
 
 #include <quant1x/std/strings.h>
 #include <quant1x/encoding/yaml.h>
-#include <quant1x/config/rule-parameter.h>
-#include <quant1x/config/trading-session.h>
+#include <quant1x/config/rule_parameter.h>
+#include <quant1x/config/trading_session.h>
 #include <quant1x/config/price_cage.h>
 #include <string>
 #include <vector>

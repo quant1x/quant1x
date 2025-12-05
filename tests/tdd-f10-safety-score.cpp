@@ -255,7 +255,7 @@ TEST_CASE("safety-score", "[f10]") {
     std::cout << "Safety score for " << stockCode << ": " << score << ", detail:" << detail << std::endl;
 }
 
-#include <quant1x/factors/safety-score.h>
+#include <quant1x/factors/safety_score.h>
 
 TEST_CASE("safety-score-release", "[f10]") {
     std::string stockCode = "600178";

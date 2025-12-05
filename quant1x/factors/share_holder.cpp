@@ -2,12 +2,14 @@
 #include <quant1x/encoding/csv.h>
 #include <quant1x/encoding/json.h>
 #include <quant1x/exchange/markets.h>
-#include <quant1x/factors/share-holder.h>
+#include <quant1x/factors/share_holder.h>
 #include <quant1x/std/time.h>
 
 #include <cstdint>
 #include <filesystem>
 #include <nlohmann/json.hpp>
+#include <quant1x/config/base.h>
+#include <quant1x/config/cache.h>
 
 using json   = nlohmann::json;
 namespace fs = std::filesystem;

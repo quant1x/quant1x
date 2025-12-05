@@ -4,7 +4,7 @@
 
 #include <quant1x/std/api.h>
 #include <quant1x/log/logger.h>
-#include <quant1x/runtime/config.h>
+#include <quant1x/config/config.h>
 
 namespace runtime {
     using task_id = int64_t;

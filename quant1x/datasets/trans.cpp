@@ -5,6 +5,7 @@
 #include <spdlog/spdlog.h>
 #include <quant1x/factors/f10.h>
 #include <filesystem>
+#include <quant1x/config/cache.h>
 
 namespace datasets {
 
