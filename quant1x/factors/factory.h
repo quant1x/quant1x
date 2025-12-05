@@ -14,6 +14,7 @@
 #include <quant1x/encoding/csv.h>
 #include <quant1x/engine/action.h>
 #include <quant1x/runtime/once.h>
+#include <quant1x/std/atomic.h>
 
 namespace factors {
 
@@ -26,8 +27,8 @@ namespace factors {
         };
 
         struct Cache {
-            std::shared_ptr<RollingOnce> once;
-            std::shared_ptr<DataCache>   data;
+            std::shared_ptr<RollingOnce>      once;
+            base::atomic_share_ptr<DataCache> data;
 
             Cache() {
                 auto adapter = Adapter();
@@ -62,11 +63,11 @@ namespace factors {
                     }
                 }
                 // 原子替换数据，实现 Copy-On-Write，避免读锁
-                std::atomic_store(&cache.data, new_data);
+                cache.data.store(new_data);
             });
 
             // 2. 原子读取数据 (无锁)
-            auto current_data = std::atomic_load(&cache.data);
+            auto current_data = cache.data.load();
             if (current_data) {
                 // 如果需要严格的日期匹配，可以在这里检查 current_data->date
                 // 但考虑到 RollingOnce 的特性，这里默认返回缓存的数据
