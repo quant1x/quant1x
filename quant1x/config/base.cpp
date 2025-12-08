@@ -104,17 +104,6 @@ namespace config {
         global_trader_parameter = std::make_shared<TraderParameter>(config);
     }
 
-    std::shared_ptr<TraderParameter> v2_TraderConfig() {
-        static std::once_flag init_flag;
-        static std::shared_ptr<TraderParameter> config;
-        auto tmp_config_filename = config::config_filename();
-        std::call_once(init_flag, [&] {
-            config = std::make_shared<TraderParameter>(load_config_from_yaml(tmp_config_filename));
-        });
-
-        return config;
-    }
-
     std::shared_ptr<TraderParameter> TraderConfig() {
         std::call_once(global_config_once, lazy_load_trader_config);
         return global_trader_parameter;
