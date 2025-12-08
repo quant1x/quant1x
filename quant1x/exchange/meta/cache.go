@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"gitee.com/quant1x/gox/logger"
-	"gitee.com/quant1x/gox/util/homedir"
+	"gitee.com/quant1x/quant1x/quant1x/std"
 )
 
 const (
@@ -19,7 +19,7 @@ var (
 )
 
 func initPath(path string) {
-	finalPath, err := homedir.Expand(path)
+	finalPath, err := std.ExpandUser(path)
 	if err != nil {
 		logger.Fatalf("%+v", err)
 	}

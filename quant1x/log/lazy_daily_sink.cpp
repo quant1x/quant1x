@@ -1,5 +1,5 @@
 // lazy_daily_sink.cpp
-#include "quant1x/log/lazy_daily_sink.h"
+#include "lazy_daily_sink.h"
 #include <spdlog/sinks/daily_file_sink.h>
 #include <spdlog/details/os.h>
 

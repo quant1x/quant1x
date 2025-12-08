@@ -1,4 +1,4 @@
-#include "quant1x/log/router_sink.h"
+#include "router_sink.h"
 
 namespace quant1x::log {
 

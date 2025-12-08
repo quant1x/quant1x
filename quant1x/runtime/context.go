@@ -44,7 +44,8 @@ func GetContextWithCancel() (context.Context, context.CancelFunc) {
 func RegisterHook(name string, cb func()) context.Context {
 	ctx, cancel := GetContextWithCancel()
 	go func() {
-		for range ctx.Done() {
+		select {
+		case <-ctx.Done():
 			// 收到退出信号
 			//logger.Debug("x/context: stopping %s", name)
 			// 执行回调
