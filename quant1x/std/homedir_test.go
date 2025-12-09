@@ -117,7 +117,7 @@ func TestExpand(t *testing.T) {
 
 	DisableCache = true
 	defer func() { DisableCache = false }()
-	defer patchEnv("HOME", "/custom/path/")()
+	defer patchEnv("GOX_HOME", "/custom/path/")()
 	expected := filepath.Join("/", "custom", "path", "foo/bar")
 	actual, err := ExpandUser("~/foo/bar")
 
