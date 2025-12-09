@@ -2,7 +2,7 @@
 
 ## 概述
 
-本文档对quant1x项目中的TCP连接池实现进行全面评估。连接池位于`quant1x/net/connection_pool.h`文件中，实现了一个基于ASIO的线程安全的TCP连接池，支持多endpoint管理和自动连接生命周期管理。
+本文档对quant1x项目中的TCP连接池实现进行全面评估。连接池位于`quant1x/io/connection_pool.h`文件中，实现了一个基于ASIO的线程安全的TCP连接池，支持多endpoint管理和自动连接生命周期管理。
 
 ### 设计理念与业务场景
 

@@ -17,6 +17,12 @@ var (
 
 func initContext() {
 	globalContext, globalCancel = context.WithCancel(context.Background())
+	// 启动goroutine监听退出信号
+	go func() {
+		interrupt := signal.NotifyForShutdown()
+		<-interrupt
+		GracefulShutdown()
+	}()
 }
 
 // Context 获取全局顶层context
@@ -25,8 +31,8 @@ func Context() context.Context {
 	return globalContext
 }
 
-// Shutdown 关闭应用程序, 通知所有协程退出
-func Shutdown() {
+// CancelContext 取消全局context，通知所有协程退出
+func CancelContext() {
 	globalOnce.Do(initContext)
 	if globalCancel != nil {
 		globalCancel()
@@ -44,27 +50,28 @@ func GetContextWithCancel() (context.Context, context.CancelFunc) {
 func RegisterHook(name string, cb func()) context.Context {
 	ctx, cancel := GetContextWithCancel()
 	go func() {
-		select {
-		case <-ctx.Done():
-			// 收到退出信号
-			//logger.Debug("x/context: stopping %s", name)
-			// 执行回调
-			cb()
-			//logger.Debug("x/context: %s stopped", name)
-			// cancel 子context
-			cancel()
-			//logger.Debug("x/context: %s finished", name)
-			globalWaitGroup.Done()
-			return
+		<-ctx.Done()
+		if logger != nil {
+			logger.Debugf("x/context: stopping %s", name)
 		}
+		// 执行回调
+		cb()
+		if logger != nil {
+			logger.Debugf("x/context: %s stopped", name)
+		}
+		// cancel 子context
+		cancel()
+		if logger != nil {
+			logger.Debugf("x/context: %s finished", name)
+		}
+		globalWaitGroup.Done()
 	}()
-	_ = name
 	return ctx
 }
 
-// 执行应用退出前的清理工作
-func applicationShutdown() {
-	globalCancel()
+// GracefulShutdown 优雅关闭应用程序，等待所有hook完成并退出
+func GracefulShutdown() {
+	CancelContext()
 	globalWaitGroup.Wait()
 }
 
@@ -84,13 +91,13 @@ func WaitForShutdown(d ...int) {
 	} else {
 		select {
 		case <-globalContext.Done():
-			//logger.Info("application shutdown...")
+			//logger.Infof("application shutdown...")
 			break
 		case sig := <-interrupt:
-			//logger.Info("interrupt: %s", sig.String())
+			//logger.Infof("interrupt: %s", sig.String())
 			_ = sig
 			break
 		}
 	}
-	applicationShutdown()
+	GracefulShutdown()
 }

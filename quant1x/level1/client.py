@@ -5,8 +5,8 @@ import threading
 import logging
 from typing import List, Tuple, Optional
 
-from quant1x.net.connection_pool import TcpConnectionPool
-from quant1x.net.operation_handler import NetworkOperationHandler
+from quant1x.io.connection_pool import TcpConnectionPool
+from quant1x.io.operation_handler import NetworkOperationHandler
 from typing import Any
 
 import os

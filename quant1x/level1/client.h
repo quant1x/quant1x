@@ -2,7 +2,7 @@
 #ifndef QUANT1X_LEVEL1_CLIENT_H
 #define QUANT1X_LEVEL1_CLIENT_H 1
 
-#include <quant1x/net/connection_pool.h>
+#include <quant1x/io/connection_pool.h>
 #include <quant1x/std/util.h>
 #include <quant1x/std/api.h>
 #include <quant1x/encoding/charsets.h>

@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
+	qnet "gitee.com/quant1x/quant1x/quant1x/io"
 	"gitee.com/quant1x/quant1x/quant1x/log"
-	qnet "gitee.com/quant1x/quant1x/quant1x/net"
 	"gitee.com/quant1x/quant1x/quant1x/std"
 	"gopkg.in/yaml.v3"
 )

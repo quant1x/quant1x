@@ -2,7 +2,7 @@
 #ifndef QUANT1X_NETWORK_IO_ENDPOINT_H
 #define QUANT1X_NETWORK_IO_ENDPOINT_H 1
 
-#include <quant1x/net/base.h>
+#include <quant1x/io/base.h>
 #include <quant1x/runtime/core.h>
 
 class EndpointManager {

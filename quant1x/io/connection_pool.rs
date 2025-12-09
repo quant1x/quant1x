@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex, Weak};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use crate::net::operation_handler::NetworkOperationHandler;
+use crate::io::operation_handler::NetworkOperationHandler;
 use mio::net::TcpStream;
 use std::net::TcpStream as StdTcpStream;
 
@@ -45,7 +45,7 @@ impl Connection {
 pub struct TcpConnectionPool<H: NetworkOperationHandler> {
     handler: Arc<H>,
     max: usize,
-    endpoint_manager: Arc<crate::net::endpoint::EndpointManager>,
+    endpoint_manager: Arc<crate::io::endpoint::EndpointManager>,
     idle: Mutex<VecDeque<Connection>>,
     // 当前活跃（已检出）连接的数量
     active: Mutex<usize>,
@@ -56,7 +56,7 @@ impl<H: NetworkOperationHandler> TcpConnectionPool<H> {
         min: usize,
         max: usize,
         handler: Arc<H>,
-        endpoint_manager: Arc<crate::net::endpoint::EndpointManager>,
+        endpoint_manager: Arc<crate::io::endpoint::EndpointManager>,
     ) -> Arc<Self> {
         let pool = Arc::new(Self {
             handler: Arc::clone(&handler),
@@ -437,7 +437,7 @@ mod tests {
 
     #[test]
     fn test_endpoint_manager_basic() {
-        let mgr = crate::net::endpoint::EndpointManager::new();
+        let mgr = crate::io::endpoint::EndpointManager::new();
         // add_endpoint 需要一个具体的端口；这里不能添加 0，所以我们通过创建一个监听器来获取分配的端口来测试添加/删除语义。
         let listener = TcpListener::bind(("127.0.0.1", 0)).expect("bind");
         let addr = listener.local_addr().unwrap();
@@ -494,7 +494,7 @@ mod tests {
             }
         });
 
-        let mgr = crate::net::endpoint::EndpointManager::new();
+        let mgr = crate::io::endpoint::EndpointManager::new();
         assert!(mgr.add_endpoint(addr, 2));
 
         let handler = Arc::new(TestHandler {});

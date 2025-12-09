@@ -38,8 +38,8 @@ pub mod learn;
 // pub use crate::decoder::*;
 
 // network module (mio-based connection pool)
-mod net;
-pub use crate::net::*;
+mod io;
+pub use crate::io::*;
 mod std;
 pub use crate::std::*;
 

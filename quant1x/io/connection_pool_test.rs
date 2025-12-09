@@ -103,7 +103,7 @@ mod tests {
     fn test_connection_pool_creation() {
         /// Test basic pool creation and configuration
         let handler = Arc::new(MockHandler::new(true, true));
-        let endpoint_manager = Arc::new(crate::net::endpoint::EndpointManager::new());
+        let endpoint_manager = Arc::new(crate::io::endpoint::EndpointManager::new());
         
         let pool = TcpConnectionPool::new(2, 5, handler, endpoint_manager);
         
@@ -114,7 +114,7 @@ mod tests {
     fn test_connection_pool_with_endpoints() {
         /// Test pool creation with endpoint management
         let handler = Arc::new(MockHandler::new(true, true));
-        let endpoint_manager = Arc::new(crate::net::endpoint::EndpointManager::new());
+        let endpoint_manager = Arc::new(crate::io::endpoint::EndpointManager::new());
         
         let server = TestServer::new();
         server.start_accepting();
@@ -132,7 +132,7 @@ mod tests {
     fn test_connection_acquire_and_release() {
         /// Test basic connection lifecycle
         let handler = Arc::new(MockHandler::new(true, true));
-        let endpoint_manager = Arc::new(crate::net::endpoint::EndpointManager::new());
+        let endpoint_manager = Arc::new(crate::io::endpoint::EndpointManager::new());
         
         let server = TestServer::new();
         server.start_accepting();
@@ -162,7 +162,7 @@ mod tests {
     fn test_connection_pool_max_limit() {
         /// Test connection pool maximum limit enforcement
         let handler = Arc::new(MockHandler::new(true, true));
-        let endpoint_manager = Arc::new(crate::net::endpoint::EndpointManager::new());
+        let endpoint_manager = Arc::new(crate::io::endpoint::EndpointManager::new());
         
         let server = TestServer::new();
         server.start_accepting();
@@ -190,7 +190,7 @@ mod tests {
     fn test_connection_pool_pre_warm() {
         /// Test connection pool pre-warming functionality
         let handler = Arc::new(MockHandler::new(true, true));
-        let endpoint_manager = Arc::new(crate::net::endpoint::EndpointManager::new());
+        let endpoint_manager = Arc::new(crate::io::endpoint::EndpointManager::new());
         
         let server = TestServer::new();
         server.start_accepting();
@@ -211,7 +211,7 @@ mod tests {
     fn test_connection_handshake_failure() {
         /// Test connection acquisition with handshake failure
         let handler = Arc::new(MockHandler::new(false, true)); // Handshake fails
-        let endpoint_manager = Arc::new(crate::net::endpoint::EndpointManager::new());
+        let endpoint_manager = Arc::new(crate::io::endpoint::EndpointManager::new());
         
         let server = TestServer::new();
         server.start_accepting();
@@ -229,7 +229,7 @@ mod tests {
     fn test_connection_keepalive_failure() {
         /// Test connection keepalive failure handling
         let handler = Arc::new(MockHandler::new(true, false)); // Keepalive fails
-        let endpoint_manager = Arc::new(crate::net::endpoint::EndpointManager::new());
+        let endpoint_manager = Arc::new(crate::io::endpoint::EndpointManager::new());
         
         let server = TestServer::new();
         server.start_accepting();
@@ -253,7 +253,7 @@ mod tests {
     fn test_pooled_connection_drop_behavior() {
         /// Test that connections are properly returned to pool when dropped
         let handler = Arc::new(MockHandler::new(true, true));
-        let endpoint_manager = Arc::new(crate::net::endpoint::EndpointManager::new());
+        let endpoint_manager = Arc::new(crate::io::endpoint::EndpointManager::new());
         
         let server = TestServer::new();
         server.start_accepting();
@@ -284,7 +284,7 @@ mod tests {
     #[test]
     fn test_endpoint_management() {
         /// Test endpoint addition, removal, and statistics
-        let endpoint_manager = Arc::new(crate::net::endpoint::EndpointManager::new());
+        let endpoint_manager = Arc::new(crate::io::endpoint::EndpointManager::new());
         
         let server1 = TestServer::new();
         let server2 = TestServer::new();
@@ -316,7 +316,7 @@ mod tests {
     fn test_concurrent_connection_acquisition() {
         /// Test thread-safe connection acquisition
         let handler = Arc::new(MockHandler::new(true, true));
-        let endpoint_manager = Arc::new(crate::net::endpoint::EndpointManager::new());
+        let endpoint_manager = Arc::new(crate::io::endpoint::EndpointManager::new());
         
         let server = TestServer::new();
         server.start_accepting();
@@ -363,7 +363,7 @@ mod tests {
     fn test_connection_pool_cleanup() {
         /// Test that connections are properly cleaned up
         let handler = Arc::new(MockHandler::new(true, true));
-        let endpoint_manager = Arc::new(crate::net::endpoint::EndpointManager::new());
+        let endpoint_manager = Arc::new(crate::io::endpoint::EndpointManager::new());
         
         let server = TestServer::new();
         server.start_accepting();

@@ -6,5 +6,5 @@ import (
 
 func TestContext(t *testing.T) {
 	_ = Context()
-	Shutdown()
+	CancelContext()
 }

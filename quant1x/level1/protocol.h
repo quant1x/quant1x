@@ -4,7 +4,7 @@
 
 #include <quant1x/encoding/charsets.h>
 #include <quant1x/level1/helpers.h>
-#include <quant1x/net/connection_pool.h>
+#include <quant1x/io/connection_pool.h>
 #include <quant1x/std/api.h>
 #include <quant1x/std/buffer.h>
 #include <quant1x/std/except.h>

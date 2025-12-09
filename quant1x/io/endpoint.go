@@ -1,4 +1,4 @@
-package net
+package io
 
 import (
 	"errors"
@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"sync"
 
-	"gitee.com/quant1x/quant1x/quant1x/log"
+	"gitee.com/quant1x/quant1x/quant1x/logger"
 )
 
 // EndpointData 保存单个端点的连接统计
@@ -43,7 +43,7 @@ func (m *EndpointManager) AddEndpoint(ip string, port uint16, maxConnections int
 
 	// 验证IP
 	if stdnet.ParseIP(ip) == nil {
-		log.Errorf("[endpoint] invalid ip: %s", ip)
+		logger.Errorf("[endpoint] invalid ip: %s", ip)
 		return false
 	}
 
@@ -117,10 +117,10 @@ func (m *EndpointManager) AcquireEndpoint() (*stdnet.TCPAddr, bool) {
 			if err != nil {
 				// 解析失败时回退计数并继续
 				data.ActiveConnections--
-				log.Errorf("[endpoint] resolve tcp addr failed: %v", err)
+				logger.Errorf("[endpoint] resolve tcp addr failed: %v", err)
 				continue
 			}
-			log.Debugf("acquire endpoint: %s", key)
+			logger.Debugf("acquire endpoint: %s", key)
 			return tcpAddr, true
 		}
 	}
@@ -140,7 +140,7 @@ func (m *EndpointManager) ReleaseEndpoint(addr *stdnet.TCPAddr) {
 	if data, ok := m.endpointsData[key]; ok && data.ActiveConnections > 0 {
 		data.ActiveConnections--
 	}
-	log.Debugf("release endpoint: %s", key)
+	logger.Debugf("release endpoint: %s", key)
 }
 
 // GetEndpointStats 返回 (maxConnections, activeConnections, error)

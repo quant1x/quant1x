@@ -2,7 +2,7 @@
 #ifndef QUANT1X_NETWORK_IO_OPERATION_HANDLER_H
 #define QUANT1X_NETWORK_IO_OPERATION_HANDLER_H 1
 
-#include <quant1x/net/base.h>
+#include <quant1x/io/base.h>
 
 // 基础网络操作接口(CRTP模板基类)
 template <typename Derived>

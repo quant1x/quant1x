@@ -1,4 +1,4 @@
-package log
+package logger
 
 func Info(v ...any) {
 	logger.Info(v...)

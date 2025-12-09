@@ -4,8 +4,8 @@ import time
 import logging
 
 
-from quant1x.net.connection_pool import TcpConnectionPool
-from quant1x.net.operation_handler import OperationHandler
+from quant1x.io.connection_pool import TcpConnectionPool
+from quant1x.io.operation_handler import OperationHandler
 
 
 class MockNetworkHandler(OperationHandler):

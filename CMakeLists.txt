@@ -418,9 +418,9 @@ set(quant1x-headers
     quant1x/io/csv-writer.h
     quant1x/io/file.h
     quant1x/io/http.h
-    quant1x/log/logger.h
-    quant1x/log/router_sink.h
-    quant1x/log/lazy_daily_sink.h
+    quant1x/logger/logger.h
+    quant1x/logger/router_sink.h
+    quant1x/logger/lazy_daily_sink.h
 
     # 编码相关
     quant1x/encoding/charsets.h
@@ -440,10 +440,10 @@ set(quant1x-headers
     quant1x/engine/action.h
 
     # 网络相关
-    quant1x/net/base.h
-    quant1x/net/connection_pool.h
-    quant1x/net/endpoint.h
-    quant1x/net/operation_handler.h
+    quant1x/io/base.h
+    quant1x/io/connection_pool.h
+    quant1x/io/endpoint.h
+    quant1x/io/operation_handler.h
 
     # 数据帧, 列式存储
     quant1x/pandas/dataframe.h
@@ -584,8 +584,8 @@ set(quant1x-sources
     # i/o 相关
     quant1x/io/file.cpp
     quant1x/io/http.cpp
-    quant1x/log/router_sink.cpp
-    quant1x/log/lazy_daily_sink.cpp
+    quant1x/logger/router_sink.cpp
+    quant1x/logger/lazy_daily_sink.cpp
 
     # 编码相关
     quant1x/encoding/charsets.cpp

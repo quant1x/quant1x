@@ -6,7 +6,7 @@ This module implements:
 
 Notes:
 - Endpoints are (host, port) tuples and managed by EndpointManager from
-  quant1x.net.endpoint.
+  quant1x.io.endpoint.
 - Network handler is a user-provided object exposing the methods:
   - timeout() -> float (seconds)
   - handshake(socket.socket) -> bool

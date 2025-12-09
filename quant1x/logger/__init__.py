@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 @Project : quant1x
-@Package : quant1x.log
+@Package : quant1x.logger
 @File    : __init__.py
 @Author  : wangfeng
 @Date    : 2025/9/15 17:01
