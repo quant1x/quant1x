@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func TestParse(t *testing.T) {
+func TestCronMakeCron(t *testing.T) {
 	tests := []struct {
 		expr    string
 		wantErr bool
@@ -20,14 +20,14 @@ func TestParse(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		_, err := Parse(tt.expr)
+		_, err := MakeCron(tt.expr)
 		if (err != nil) != tt.wantErr {
-			t.Errorf("Parse(%q) error = %v, wantErr %v", tt.expr, err, tt.wantErr)
+			t.Errorf("MakeCron(%q) error = %v, wantErr %v", tt.expr, err, tt.wantErr)
 		}
 	}
 }
 
-func TestNext(t *testing.T) {
+func TestCronNext(t *testing.T) {
 	// Fixed time for testing: 2023-01-01 00:00:00 (Sunday)
 	start := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -43,9 +43,9 @@ func TestNext(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		c, err := Parse(tt.expr)
+		c, err := MakeCron(tt.expr)
 		if err != nil {
-			t.Errorf("Parse(%q) failed: %v", tt.expr, err)
+			t.Errorf("MakeCron(%q) failed: %v", tt.expr, err)
 			continue
 		}
 		got := c.Next(start)
@@ -55,38 +55,38 @@ func TestNext(t *testing.T) {
 	}
 }
 
-func TestNextComplex(t *testing.T) {
+func TestCronNextComplex(t *testing.T) {
 	// 2023-01-01 is Sunday.
 	start := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-	
+
 	// Every Monday at 10:00:00
 	// 2023-01-02 is Monday.
 	expr := "0 0 10 * * MON"
 	expected := time.Date(2023, 1, 2, 10, 0, 0, 0, time.UTC)
-	
-	c, err := Parse(expr)
+
+	c, err := MakeCron(expr)
 	if err != nil {
-		t.Fatalf("Parse failed: %v", err)
+		t.Fatalf("MakeCron failed: %v", err)
 	}
-	
+
 	got := c.Next(start)
 	if !got.Equal(expected) {
 		t.Errorf("Next(%q) = %v, want %v", expr, got, expected)
 	}
 }
 
-func TestTraits(t *testing.T) {
+func TestCronTraits(t *testing.T) {
 	// Oracle: 0-11 months. Jan=0.
 	// Standard: 1-12 months. Jan=1.
-	
+
 	// Test Oracle Traits
 	// "0 0 0 1 0 *" -> 1st of Jan (Month 0)
 	expr := "0 0 0 1 0 *"
-	c, err := ParseWithTraits(expr, OracleTraits)
+	c, err := MakeCronWithTraits(expr, OracleTraits)
 	if err != nil {
-		t.Fatalf("ParseWithTraits failed: %v", err)
+		t.Fatalf("MakeCronWithTraits failed: %v", err)
 	}
-	
+
 	start := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
 	// Should match immediately if start is Jan 1st?
 	// Next() always returns time > start if start matches?
@@ -95,37 +95,37 @@ func TestTraits(t *testing.T) {
 	// Here seconds=0. start seconds=0.
 	// So it will look for next occurrence.
 	// Next occurrence of "0 0 0 1 0 *" is next year Jan 1st.
-	
+
 	// Let's start from Dec 31 2022.
 	start = time.Date(2022, 12, 31, 23, 59, 59, 0, time.UTC)
 	expected := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-	
+
 	got := c.Next(start)
 	if !got.Equal(expected) {
 		t.Errorf("Oracle Next(%q) = %v, want %v", expr, got, expected)
 	}
-	
+
 	// Test Standard Traits with same expression
 	// "0 0 0 1 0 *" -> Month 0 is invalid in Standard (1-12)
-	_, err = ParseWithTraits(expr, StandardTraits)
+	_, err = MakeCronWithTraits(expr, StandardTraits)
 	if err == nil {
-		t.Error("ParseWithTraits(Standard) should fail for month 0")
+		t.Error("MakeCronWithTraits(Standard) should fail for month 0")
 	}
 }
 
-func TestQuestionMark(t *testing.T) {
+func TestCronQuestionMark(t *testing.T) {
 	// ? in DOM
 	expr := "0 0 12 ? * MON"
-	c, err := Parse(expr)
+	c, err := MakeCron(expr)
 	if err != nil {
-		t.Fatalf("Parse failed: %v", err)
+		t.Fatalf("MakeCron failed: %v", err)
 	}
-	
+
 	// Should be treated as * for DOM
 	// So every Monday at 12:00
-	start := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC) // Sunday
+	start := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)     // Sunday
 	expected := time.Date(2023, 1, 2, 12, 0, 0, 0, time.UTC) // Monday
-	
+
 	got := c.Next(start)
 	if !got.Equal(expected) {
 		t.Errorf("Next(%q) = %v, want %v", expr, got, expected)

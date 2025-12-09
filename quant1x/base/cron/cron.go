@@ -113,13 +113,13 @@ var (
 	}
 )
 
-// Parse parses a cron expression string using StandardTraits
-func Parse(expr string) (*CronExpr, error) {
-	return ParseWithTraits(expr, StandardTraits)
+// MakeCron parses a cron expression string using StandardTraits
+func MakeCron(expr string) (*CronExpr, error) {
+	return MakeCronWithTraits(expr, StandardTraits)
 }
 
-// ParseWithTraits parses a cron expression string using specific traits
-func ParseWithTraits(expr string, traits CronTraits) (*CronExpr, error) {
+// MakeCronWithTraits parses a cron expression string using specific traits
+func MakeCronWithTraits(expr string, traits CronTraits) (*CronExpr, error) {
 	fields := strings.Fields(expr)
 	if len(fields) != 6 {
 		return nil, errors.New("cron expression must have six fields")

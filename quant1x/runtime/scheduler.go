@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/robfig/cron/v3"
+	"gitee.com/quant1x/quant1x/quant1x/base/cron"
 )
 
 // AsyncScheduler provides asynchronous task scheduling with cron support.
@@ -34,7 +34,7 @@ type AsyncScheduler struct {
 type cronTask struct {
 	cronRunning bool
 	canceled    bool
-	expr        cron.Schedule
+	expr        *cron.CronExpr
 	task        func()
 }
 
@@ -107,7 +107,7 @@ func (s *AsyncScheduler) ScheduleCron(name, cronExpr string, task func()) (int64
 		return 0, fmt.Errorf("schedule_cron called after scheduler stopped")
 	}
 
-	expr, err := cron.ParseStandard(cronExpr)
+	expr, err := cron.MakeCron(cronExpr)
 	if err != nil {
 		return 0, fmt.Errorf("invalid cron expression: %v", err)
 	}
@@ -182,7 +182,7 @@ func (s *AsyncScheduler) enqueueTask(task *scheduledTask) {
 
 func (s *AsyncScheduler) executeCronTask(id int64, name string) {
 	var task func()
-	var expr cron.Schedule
+	var expr *cron.CronExpr
 	var needReschedule bool
 
 	s.mutex.Lock()
@@ -234,7 +234,7 @@ func (s *AsyncScheduler) executeCronTask(id int64, name string) {
 	}
 }
 
-func (s *AsyncScheduler) rescheduleCron(id int64, name string, expr cron.Schedule) {
+func (s *AsyncScheduler) rescheduleCron(id int64, name string, expr *cron.CronExpr) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	if _, ok := s.cronTasks[id]; !ok || s.cronTasks[id].canceled {

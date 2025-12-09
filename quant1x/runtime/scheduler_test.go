@@ -19,7 +19,7 @@ func TestScheduleCron(t *testing.T) {
 	defer s.Stop()
 
 	executed := int64(0)
-	id, err := s.ScheduleCron("test", "@every 1s", func() { // every second
+	id, err := s.ScheduleCron("test", "* * * * * *", func() { // every second
 		atomic.AddInt64(&executed, 1)
 	})
 	if err != nil {
@@ -41,7 +41,7 @@ func TestCancel(t *testing.T) {
 	defer s.Stop()
 
 	executed := false
-	id, err := s.ScheduleCron("test", "@every 1s", func() {
+	id, err := s.ScheduleCron("test", "* * * * * *", func() {
 		executed = true
 	})
 	if err != nil {
@@ -64,7 +64,7 @@ func TestStop(t *testing.T) {
 	s := NewAsyncScheduler(2)
 
 	executed := int64(0)
-	_, err := s.ScheduleCron("test", "@every 1s", func() {
+	_, err := s.ScheduleCron("test", "* * * * * *", func() {
 		atomic.AddInt64(&executed, 1)
 	})
 	if err != nil {
@@ -90,7 +90,7 @@ func TestTaskDelay(t *testing.T) {
 	running := int64(0)
 	executed := int64(0)
 
-	id, err := s.ScheduleCron("test", "@every 1s", func() {
+	id, err := s.ScheduleCron("test", "* * * * * *", func() {
 		atomic.AddInt64(&running, 1)
 		time.Sleep(3 * time.Second) // Long task
 		atomic.AddInt64(&executed, 1)
@@ -134,8 +134,8 @@ func TestStats(t *testing.T) {
 	s := NewAsyncScheduler(2)
 	defer s.Stop()
 
-	id1, _ := s.ScheduleCron("test1", "@every 1s", func() {})
-	_, _ = s.ScheduleCron("test2", "@every 1s", func() {})
+	id1, _ := s.ScheduleCron("test1", "* * * * * *", func() {})
+	_, _ = s.ScheduleCron("test2", "* * * * * *", func() {})
 
 	time.Sleep(1500 * time.Millisecond)
 
