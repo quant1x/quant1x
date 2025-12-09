@@ -508,18 +508,18 @@ mod tests {
     #[test]
     fn test_get_kline_filename() {
         let filename = get_kline_filename("sh600000", true);
-        assert!(filename.ends_with("day/sh600/sh600000.csv"));
+        assert!(filename.replace('\\', "/").ends_with("day/sh600/sh600000.csv"));
 
         let filename_raw = get_kline_filename("sh600000", false);
-        assert!(filename_raw.ends_with("day/sh600/sh600000.raw"));
+        assert!(filename_raw.replace('\\', "/").ends_with("day/sh600/sh600000.raw"));
     }
 
     #[test]
     fn test_get_minute_filename() {
         let filename = get_minute_filename("sh600000", "2023-01-01");
-        assert!(filename.ends_with("minutes/2023/20230101/sh600000.csv"));
+        assert!(filename.replace('\\', "/").ends_with("minutes/2023/20230101/sh600000.csv"));
 
         let filename2 = get_minute_filename("sh600000", "20230101");
-        assert!(filename2.ends_with("minutes/2023/20230101/sh600000.csv"));
+        assert!(filename2.replace('\\', "/").ends_with("minutes/2023/20230101/sh600000.csv"));
     }
 }
