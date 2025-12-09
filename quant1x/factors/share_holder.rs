@@ -120,7 +120,11 @@ fn get_quarter_by_date(date_str: &str, diff: i32) -> (i32, i32, String) {
     };
 
     let end_date = NaiveDate::from_ymd_opt(year, end_month, end_day).unwrap();
-    (year, quarter as i32, end_date.format("%Y-%m-%d").to_string())
+    (
+        year,
+        quarter as i32,
+        end_date.format("%Y-%m-%d").to_string(),
+    )
 }
 
 pub fn share_holder(security_code: &str, date: &str, diff: i32) -> Vec<CirculatingShareholder> {
@@ -130,8 +134,11 @@ pub fn share_holder(security_code: &str, date: &str, diff: i32) -> Vec<Circulati
     let (_, _, quarter_end_date) = get_quarter_by_date(date, diff);
 
     let client = reqwest::blocking::Client::new();
-    let filter = format!("(SECURITY_CODE=\"{}\")(END_DATE='{}')", code, quarter_end_date);
-    
+    let filter = format!(
+        "(SECURITY_CODE=\"{}\")(END_DATE='{}')",
+        code, quarter_end_date
+    );
+
     let params = [
         ("sortColumns", "HOLDER_RANK"),
         ("sortTypes", "1"),
@@ -259,7 +266,11 @@ fn cache_share_holder(security_code: &str, date: &str, diff: i32) -> Vec<Circula
     list
 }
 
-pub fn get_cache_share_holder(security_code: &str, date: &str, mut diff: i32) -> Vec<CirculatingShareholder> {
+pub fn get_cache_share_holder(
+    security_code: &str,
+    date: &str,
+    mut diff: i32,
+) -> Vec<CirculatingShareholder> {
     let mut list = Vec::new();
 
     while diff < 4 {
@@ -291,23 +302,25 @@ pub fn get_share_holder_summary(security_code: &str, date: &str) -> Option<Share
     if list.is_empty() {
         return None;
     }
-    
+
     let mut summary = ShareHolderSummary::default();
-    
+
     for holder in &list {
         summary.top10_capital += holder.hold_num as f64;
         summary.top10_change += holder.hold_num_change as f64;
-        
-        if holder.hold_change_state == HOLD_NUM_INCREASE || holder.hold_change_state == HOLD_NUM_NEWLY_ADDED {
-             summary.change_capital += holder.hold_num_change as f64;
+
+        if holder.hold_change_state == HOLD_NUM_INCREASE
+            || holder.hold_change_state == HOLD_NUM_NEWLY_ADDED
+        {
+            summary.change_capital += holder.hold_num_change as f64;
         } else if holder.hold_change_state == HOLD_NUM_DAMPENED {
-             summary.change_capital += holder.hold_num_change as f64;
+            summary.change_capital += holder.hold_num_change as f64;
         }
     }
-    
+
     if !list.is_empty() {
         summary.quarterly_year_quarter = list[0].end_date.clone();
     }
-    
+
     Some(summary)
 }

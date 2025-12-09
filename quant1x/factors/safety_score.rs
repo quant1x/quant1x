@@ -1,8 +1,8 @@
+use crate::exchange;
+use once_cell::sync::Lazy;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::Mutex;
-use once_cell::sync::Lazy;
-use crate::exchange;
 
 // Constants
 const URL_RISK_ASSESSMENT: &str = "http://page3.tdx.com.cn:7615/site/pcwebcall_static/bxb/json/";
@@ -12,11 +12,11 @@ const DEFAULT_SAFETY_SCORE_OF_IGNORE: i32 = 0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RiskCategoryType {
-    Financial,       // 财务类风险
-    Market,          // 市场类风险
-    Trading,         // 交易类风险
-    STAndDelisting,  // ST风险和退市
-    Unknown,         // 未知类型
+    Financial,      // 财务类风险
+    Market,         // 市场类风险
+    Trading,        // 交易类风险
+    STAndDelisting, // ST风险和退市
+    Unknown,        // 未知类型
 }
 
 impl RiskCategoryType {
@@ -96,9 +96,8 @@ pub struct SafetyReport {
 }
 
 // Global cache for safety scores
-static MAP_SAFETY_SCORE: Lazy<Mutex<HashMap<String, i32>>> = Lazy::new(|| {
-    Mutex::new(HashMap::new())
-});
+static MAP_SAFETY_SCORE: Lazy<Mutex<HashMap<String, i32>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
 pub fn get_safety_score(security_code: &str) -> (i32, String) {
     if !exchange::assert_stock_by_security_code(security_code) {
@@ -114,7 +113,7 @@ pub fn get_safety_score(security_code: &str) -> (i32, String) {
         // This is a simplified version of exchange::detect_market
         let len = security_code.len();
         if len >= 6 {
-            &security_code[len-6..]
+            &security_code[len - 6..]
         } else {
             security_code
         }
@@ -123,13 +122,13 @@ pub fn get_safety_score(security_code: &str) -> (i32, String) {
     };
 
     if pure_code.len() != 6 {
-         return (DEFAULT_SAFETY_SCORE, "".to_string());
+        return (DEFAULT_SAFETY_SCORE, "".to_string());
     }
 
     let url = format!("{}{}.json", URL_RISK_ASSESSMENT, pure_code);
-    
+
     let response = reqwest::blocking::get(&url);
-    
+
     let mut score = DEFAULT_SAFETY_SCORE;
     let mut detail = String::new();
 
@@ -142,7 +141,7 @@ pub fn get_safety_score(security_code: &str) -> (i32, String) {
                     Ok(report) => {
                         let mut tmp_score = 100;
                         let mut risk_categories = Vec::new();
-                        
+
                         for data in report.data {
                             let category = data.name;
                             for v in data.rows {
@@ -155,10 +154,15 @@ pub fn get_safety_score(security_code: &str) -> (i32, String) {
                                         }
                                     }
                                 }
-                                
+
                                 if !details_vec.is_empty() {
-                                    let risk_item = format!("{}:{}({}):{}", 
-                                        category, v.lx, details_vec.len(), details_vec.join("|||"));
+                                    let risk_item = format!(
+                                        "{}:{}({}):{}",
+                                        category,
+                                        v.lx,
+                                        details_vec.len(),
+                                        details_vec.join("|||")
+                                    );
                                     risk_categories.push(risk_item);
                                 }
                             }
@@ -167,12 +171,12 @@ pub fn get_safety_score(security_code: &str) -> (i32, String) {
                         if !risk_categories.is_empty() {
                             detail = format!("[{}]", risk_categories.join(";"));
                         }
-                        
+
                         // Update cache
                         if let Ok(mut map) = MAP_SAFETY_SCORE.lock() {
                             map.insert(security_code.to_string(), score);
                         }
-                    },
+                    }
                     Err(e) => {
                         log::error!("[safety-score] JSON parse error: {}", e);
                         // Read from cache
@@ -184,7 +188,7 @@ pub fn get_safety_score(security_code: &str) -> (i32, String) {
                     }
                 }
             }
-        },
+        }
         Err(e) => {
             log::error!("[safety-score] Request error: {}", e);
             if let Ok(map) = MAP_SAFETY_SCORE.lock() {

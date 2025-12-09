@@ -276,11 +276,7 @@ pub fn fetch_xdxr(code: &str) -> Option<XdxrInfoResponse> {
                     Some(resp)
                 }
                 Err(e) => {
-                    log::error!(
-                        "level1 process error for {}: {}",
-                        code,
-                        e.to_string()
-                    );
+                    log::error!("level1 process error for {}: {}", code, e.to_string());
                     None
                 }
             }

@@ -16,9 +16,7 @@ pub fn change_rate(base: f64, current: f64) -> f64 {
 /// The rounded value
 pub fn decimal_digits(value: f64, digits: i32) -> f64 {
     let digits = digits.clamp(0, 9) as usize;
-    let k_powers_of_10 = [
-        1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10
-    ];
+    let k_powers_of_10 = [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10];
 
     if value.is_nan() {
         return 0.0;

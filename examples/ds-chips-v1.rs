@@ -1,12 +1,12 @@
 use csv::ReaderBuilder;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use quant1x::datasets as data;
-use quant1x::exchange::code as symbol;
 use quant1x::exchange;
-use std::fs::File;
-use std::io::{self, BufReader, Read};
+use quant1x::exchange::code as symbol;
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
+use std::fs::File;
+use std::io::{self, BufReader, Read};
 
 /// 自定义 Reader，跟踪已读字节数并更新进度条
 struct ProgressReader<R> {
@@ -59,7 +59,7 @@ fn main() {
     println!("last day: {:?}", lastday);
     let begin_date = "2025-03-01";
     let end_date = lastday.as_str();
-    
+
     let begin_ts = quant1x::Timestamp::parse(begin_date).unwrap();
     let end_ts = quant1x::Timestamp::parse(end_date).unwrap();
     let dates_ts = exchange::date_range(begin_ts, end_ts, false);
@@ -131,7 +131,7 @@ fn main() {
         }
         // 完成进度条
         pb.finish_with_message("处理完成");
-        
+
         pb_main.inc(1);
     }
 }

@@ -9,7 +9,8 @@ async fn main() {
     // runtime::add_task requires a name and is async
     let _ = runtime::add_task("test_task", "*/5 * * * * *", || {
         println!("test open function-5s...");
-    }).await;
+    })
+    .await;
 
     let x = quant1x::exchange::get_security_info("600600")
         .map(|i| i.name)
@@ -20,9 +21,9 @@ async fn main() {
     match signal::ctrl_c().await {
         Ok(()) => {
             println!("test close function...");
-        },
+        }
         Err(err) => {
             eprintln!("Unable to listen for shutdown signal: {}", err);
-        },
+        }
     }
 }

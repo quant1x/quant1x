@@ -202,8 +202,9 @@ pub fn stock_notices(
 
                 let code_info = &item.codes[0];
                 let market_code_val = code_info.market_code.parse::<u8>().unwrap_or(0);
-                let security_code_str = exchange::security_code(market_code_val, &code_info.stock_code);
-                
+                let security_code_str =
+                    exchange::security_code(market_code_val, &code_info.stock_code);
+
                 let mut notice = NoticeDetail {
                     code: security_code_str,
                     name: code_info.short_name.clone(),
@@ -306,7 +307,7 @@ fn get_annual_report_date(
             continue;
         }
         let tmp_year = &date[0..4];
-        
+
         let event_type = v.event_type.as_deref().unwrap_or("");
         if event_type != "报表披露" {
             continue;
@@ -320,7 +321,8 @@ fn get_annual_report_date(
         {
             annual_report_date = Some(date.clone());
         } else if quarterly_report_date.is_none()
-            && (specific_event_type.contains("季报披露") || specific_event_type.contains("季报预披露"))
+            && (specific_event_type.contains("季报披露")
+                || specific_event_type.contains("季报预披露"))
         {
             quarterly_report_date = Some(date.clone());
         }
@@ -391,7 +393,8 @@ pub fn get_one_notice(security_code: &str, current_date: &str) -> CompanyNotice 
         return notice;
     }
 
-    let timestamp = crate::Timestamp::parse(current_date).unwrap_or_else(|_| crate::Timestamp::now());
+    let timestamp =
+        crate::Timestamp::parse(current_date).unwrap_or_else(|_| crate::Timestamp::now());
     // offset -24 * 30 hours? C++: timestamp.offset(-24 * 30)
     // Assuming offset takes hours in C++, but in Rust Timestamp implementation it might differ.
     // Let's assume we need to go back 30 days.
@@ -401,21 +404,22 @@ pub fn get_one_notice(security_code: &str, current_date: &str) -> CompanyNotice 
     // Since I don't have full Timestamp API, I'll use a safe approximation or try to use what's available.
     // C++: timestamp = timestamp.offset(-24 * 30);
     // Let's assume 30 days ago.
-    
+
     // Hack: parse to chrono, subtract, format back.
     // Or use crate::exchange::calendar if available.
     // For now, let's try to use a simple calculation if Timestamp exposes it.
     // If not, I'll just use current_date as end_date and maybe a fixed start date?
     // No, the logic requires a window.
-    
+
     // Let's try to use chrono directly since it is a dependency.
-    let dt = chrono::NaiveDate::parse_from_str(&timestamp.only_date(), "%Y-%m-%d").unwrap_or_default();
+    let dt =
+        chrono::NaiveDate::parse_from_str(&timestamp.only_date(), "%Y-%m-%d").unwrap_or_default();
     let begin_date_dt = dt - chrono::Duration::days(30);
     let begin_date = begin_date_dt.format("%Y-%m-%d").to_string();
-    
+
     let end_date = current_date.to_string();
     let mut pages_count = 1;
-    
+
     let mut tmp_notice: Option<NoticeDetail> = None;
     let mut page_no = 1;
 
@@ -461,23 +465,24 @@ pub fn get_one_notice(security_code: &str, current_date: &str) -> CompanyNotice 
                         t_notice.reduce += v.reduce;
                         t_notice.holder_change += v.holder_change;
                         t_notice.risk += v.risk;
-
                     } else {
                         tmp_notice = Some(v.clone());
                     }
                 }
-                
+
                 if list.len() < EASTMONEY_NOTICES_PAGE_SIZE as usize {
                     break;
                 }
             }
             Err(_) => break,
         }
-        
+
         page_no += 1;
-        
+
         // Safety break to prevent infinite loops if logic is wrong
-        if page_no > 100 { break; } 
+        if page_no > 100 {
+            break;
+        }
     }
 
     if let Some(t_notice) = tmp_notice {

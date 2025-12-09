@@ -118,10 +118,7 @@ pub fn fetch_quarterly_reports(
     ];
 
     let client = reqwest::blocking::Client::new();
-    let resp = client
-        .get(URL_QUARTERLY_REPORT_ALL)
-        .query(&params)
-        .send()?;
+    let resp = client.get(URL_QUARTERLY_REPORT_ALL).query(&params).send()?;
 
     if !resp.status().is_success() {
         return Err(format!("HTTP error: {}", resp.status()).into());
@@ -155,10 +152,7 @@ pub fn fetch_quarterly_reports_by_security_code(
     ];
 
     let client = reqwest::blocking::Client::new();
-    let resp = client
-        .get(URL_QUARTERLY_REPORT_ALL)
-        .query(&params)
-        .send()?;
+    let resp = client.get(URL_QUARTERLY_REPORT_ALL).query(&params).send()?;
 
     if !resp.status().is_success() {
         return Err(format!("HTTP error: {}", resp.status()).into());

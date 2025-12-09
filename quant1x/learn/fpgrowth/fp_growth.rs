@@ -109,7 +109,7 @@ impl FPTree {
                 // 更新项头表
                 let rank = rank_map[&item];
                 let entry = &mut header_table[rank];
-                
+
                 // 插入到链表头部
                 self.nodes[new_node_idx].next = entry.head;
                 entry.head = Some(new_node_idx);
@@ -129,7 +129,8 @@ impl FPTree {
         // 从项头表底部向上挖掘
         for entry in header_table.iter().rev() {
             // 1. 生成条件模式基
-            let conditional_patterns = self.mine_conditional_patterns(header_table, entry.item_id, min_support);
+            let conditional_patterns =
+                self.mine_conditional_patterns(header_table, entry.item_id, min_support);
 
             // 2. 生成包含当前项的频繁模式
             patterns.push((vec![entry.item_id], entry.support));
@@ -167,7 +168,8 @@ impl FPTree {
 
             while let Some(parent_idx) = parent_opt {
                 let parent_node = &self.nodes[parent_idx];
-                if parent_node.item_id != 0 { // 0 is root
+                if parent_node.item_id != 0 {
+                    // 0 is root
                     *conditional_counts.entry(parent_node.item_id).or_insert(0) += path_count;
                     parent_opt = parent_node.parent;
                 } else {
@@ -182,7 +184,7 @@ impl FPTree {
             .into_iter()
             .filter(|&(_, count)| count >= min_support)
             .collect();
-        
+
         if conditional_items.is_empty() {
             return Vec::new();
         }
@@ -210,7 +212,7 @@ impl FPTree {
 
         // 构建条件树
         let mut conditional_tree = FPTree::new();
-        
+
         // 第二遍扫描：插入路径
         current_opt = suffix_entry.head;
         while let Some(curr_idx) = current_opt {
@@ -232,10 +234,13 @@ impl FPTree {
 
             if !filtered_pattern.is_empty() {
                 // 按频率排序
-                filtered_pattern.sort_by(|a, b| {
-                    order_map[a].cmp(&order_map[b])
-                });
-                conditional_tree.insert(&filtered_pattern, &order_map, &mut conditional_header_table, path_count);
+                filtered_pattern.sort_by(|a, b| order_map[a].cmp(&order_map[b]));
+                conditional_tree.insert(
+                    &filtered_pattern,
+                    &order_map,
+                    &mut conditional_header_table,
+                    path_count,
+                );
             }
 
             current_opt = self.nodes[curr_idx].next;
@@ -282,7 +287,7 @@ impl FPGrowthCore {
         }
 
         let total_transactions = transactions.len();
-        
+
         // 2. 计算最小支持度计数
         let min_count = if self.use_count_threshold {
             self.min_support_count
@@ -295,7 +300,7 @@ impl FPGrowthCore {
             .into_iter()
             .filter(|&(_, count)| count >= min_count)
             .collect();
-        
+
         if frequent_items.is_empty() {
             return Vec::new();
         }
@@ -322,11 +327,12 @@ impl FPGrowthCore {
         // 4. 构建FP树
         let mut fp_tree = FPTree::new();
         for tx in transactions {
-            let mut filtered_tx: Vec<usize> = tx.iter()
+            let mut filtered_tx: Vec<usize> = tx
+                .iter()
                 .filter(|item| rank_map.contains_key(item))
                 .cloned()
                 .collect();
-            
+
             if !filtered_tx.is_empty() {
                 filtered_tx.sort_by(|a, b| rank_map[a].cmp(&rank_map[b]));
                 fp_tree.insert(&filtered_tx, &rank_map, &mut header_table, 1);
@@ -337,9 +343,10 @@ impl FPGrowthCore {
         let internal_patterns = fp_tree.mine_patterns(&header_table, min_count);
 
         // 6. 转换结果
-        internal_patterns.into_iter().map(|(items, count)| {
-            (items, count as f64 / total_transactions as f64)
-        }).collect()
+        internal_patterns
+            .into_iter()
+            .map(|(items, count)| (items, count as f64 / total_transactions as f64))
+            .collect()
     }
 }
 
@@ -379,7 +386,7 @@ where
         let mut item_to_id = HashMap::new();
         let mut id_to_item = Vec::new();
         // 0号保留给Root
-        id_to_item.push(None); 
+        id_to_item.push(None);
 
         let mut core_transactions = Vec::with_capacity(transactions.len());
 
@@ -403,12 +410,16 @@ where
         let core_patterns = self.core.mine(&core_transactions);
 
         // 3. 映射回 T
-        core_patterns.into_iter().map(|(ids, support)| {
-            let items: Vec<T> = ids.into_iter()
-                .map(|id| id_to_item[id].as_ref().unwrap().clone())
-                .collect();
-            (items, support)
-        }).collect()
+        core_patterns
+            .into_iter()
+            .map(|(ids, support)| {
+                let items: Vec<T> = ids
+                    .into_iter()
+                    .map(|id| id_to_item[id].as_ref().unwrap().clone())
+                    .collect();
+                (items, support)
+            })
+            .collect()
     }
 }
 
@@ -452,13 +463,13 @@ mod tests {
         for (pattern, support) in &patterns {
             if pattern == &vec!["牛奶".to_string()] {
                 found_milk = true;
-                assert!((support - 6.0/9.0).abs() < 1e-5, "牛奶的支持度应该是6/9");
+                assert!((support - 6.0 / 9.0).abs() < 1e-5, "牛奶的支持度应该是6/9");
             } else if pattern == &vec!["面包".to_string()] {
                 found_bread = true;
-                assert!((support - 7.0/9.0).abs() < 1e-5, "面包的支持度应该是7/9");
+                assert!((support - 7.0 / 9.0).abs() < 1e-5, "面包的支持度应该是7/9");
             } else if pattern == &vec!["黄油".to_string()] {
                 found_butter = true;
-                assert!((support - 6.0/9.0).abs() < 1e-5, "黄油的支持度应该是6/9");
+                assert!((support - 6.0 / 9.0).abs() < 1e-5, "黄油的支持度应该是6/9");
             }
         }
 
@@ -514,7 +525,10 @@ mod tests {
 
         // 验证所有项的支持度都是1.0
         for (_, support) in &patterns {
-            assert!((support - 1.0).abs() < 1e-5, "单个事务中所有模式的支持度应该是1.0");
+            assert!(
+                (support - 1.0).abs() < 1e-5,
+                "单个事务中所有模式的支持度应该是1.0"
+            );
         }
     }
 

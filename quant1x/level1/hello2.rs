@@ -85,4 +85,3 @@ impl Hello2Response {
         }
     }
 }
-

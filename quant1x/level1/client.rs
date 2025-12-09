@@ -9,20 +9,15 @@ use super::{
     Hello2Response,
 };
 
-/// 精简的客户端协议辅助工具, 模拟 C++ �?StandardProtocolHandler 的握手与保活实现.
-///
-/// 说明:
-///   该处 Rust 端口保留了相同的连接池语�? 它会�?meta 目录下的 `server.bin` 读取已缓存的服务器列�? 若缓存缺失或过期则回退到检测例�?
-///   此处不使用环境变量覆盖服务器列表.
-/// - C++ 实现�?`client()` 会构建一�?TcpConnectionPool，并通过检测例程填充服务器端点并缓存结果�?/// - Rust 端口保留相同语义：优先加载缓存（meta/server.bin），若缺失则运行检测逻辑并缓存检测结果�?pub struct StandardProtocolHandler {}
+pub struct StandardProtocolHandler {}
 
 impl StandardProtocolHandler {
-    /// 使用阻塞�?Mio TcpStream 执行两步握手（hello1 + hello2�?    pub fn handshake(stream: &mut MioTcpStream) -> std::io::Result<bool> {
+    pub fn handshake(stream: &mut MioTcpStream) -> std::io::Result<bool> {
         // Hello1
         let mut req1 = Hello1Request::new();
         let mut resp1 = Hello1Response::new();
         log::debug!("StandardProtocolHandler::handshake -> sending Hello1");
-        
+
         match crate::level1::process(stream, &mut req1, &mut resp1)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
         {
@@ -89,8 +84,7 @@ impl StandardProtocolHandler {
         Ok(true)
     }
 
-    /// 使用 `std::net::TcpStream` 的阻塞握手。该方法会遵�?std 的读/写超时设置，
-    /// 用于在将流转换为 `mio::TcpStream` 之前完成握手�?    pub fn handshake_std(stream: &mut std::net::TcpStream) -> std::io::Result<bool> {
+    pub fn handshake_std(stream: &mut std::net::TcpStream) -> std::io::Result<bool> {
         // Hello1
         let mut req1 = Hello1Request::new();
         let mut resp1 = Hello1Response::new();
@@ -159,13 +153,9 @@ impl StandardProtocolHandler {
     }
 }
 
-// 全局连接池单例（在首次调�?`client()` 时初始化）�?static CONNECTION_POOL: OnceLock<Arc<crate::io::TcpConnectionPool<StandardProtocolHandler>>> =
+static CONNECTION_POOL: OnceLock<Arc<crate::io::TcpConnectionPool<StandardProtocolHandler>>> =
     OnceLock::new();
 
-/// 获取一个到 level1 服务器的池化连接�?///
-/// 返回值是 `PooledConnection<StandardProtocolHandler>`，该连接�?Drop 时会自动返回到池中�?/// 端点可以通过环境变量 `QUANT1X_LEVEL1_SERVERS` 进行预置，例如：
-///
-///   QUANT1X_LEVEL1_SERVERS=110.41.147.114:7709,124.70.176.52:7709
 pub fn get_std_conn() -> std::io::Result<crate::io::PooledConnection<StandardProtocolHandler>> {
     let pool = CONNECTION_POOL
         .get_or_init(|| {
@@ -236,11 +226,10 @@ pub fn get_std_conn() -> std::io::Result<crate::io::PooledConnection<StandardPro
     pool.acquire()
 }
 
-/// 如果全局连接池已初始化，则返回其配置的最大连接数�?pub fn pool_max_connections() -> Option<usize> {
+pub fn pool_max_connections() -> Option<usize> {
     CONNECTION_POOL.get().map(|p| p.max_connections())
 }
 
-// 实现 Net operation handler 特征，使连接池能够使用我们的握手/保活实现
 impl crate::io::NetworkOperationHandler for StandardProtocolHandler {
     fn handshake(&self, stream: &mut mio::net::TcpStream) -> std::io::Result<()> {
         match StandardProtocolHandler::handshake(stream) {
@@ -258,9 +247,9 @@ impl crate::io::NetworkOperationHandler for StandardProtocolHandler {
     }
 
     fn timeout(&self) -> Duration {
-        // 默认超时 10 �?        Duration::from_secs(10)
+        Duration::from_secs(10)
     }
     fn check_interval(&self) -> Duration {
-        // 保活检查间�?5 �?        Duration::from_secs(5)
+        Duration::from_secs(5)
     }
 }

@@ -366,7 +366,6 @@ pub fn fetch_finance_info(security_code: &str) -> Option<FinanceInfoResponse> {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

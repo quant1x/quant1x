@@ -500,7 +500,7 @@ mod tests {
         // We check the suffix structure.
         let filename = top10_holders_filename("sh600000", "2023-03-31");
         assert!(filename.ends_with("holding/2023Q1/sh600/sh600000.csv"));
-        
+
         let filename2 = top10_holders_filename("sz000001", "2023-12-31");
         assert!(filename2.ends_with("holding/2023Q4/sz000/sz000001.csv"));
     }
@@ -509,7 +509,7 @@ mod tests {
     fn test_get_kline_filename() {
         let filename = get_kline_filename("sh600000", true);
         assert!(filename.ends_with("day/sh600/sh600000.csv"));
-        
+
         let filename_raw = get_kline_filename("sh600000", false);
         assert!(filename_raw.ends_with("day/sh600/sh600000.raw"));
     }
@@ -518,7 +518,7 @@ mod tests {
     fn test_get_minute_filename() {
         let filename = get_minute_filename("sh600000", "2023-01-01");
         assert!(filename.ends_with("minutes/2023/20230101/sh600000.csv"));
-        
+
         let filename2 = get_minute_filename("sh600000", "20230101");
         assert!(filename2.ends_with("minutes/2023/20230101/sh600000.csv"));
     }

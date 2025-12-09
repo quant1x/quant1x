@@ -88,10 +88,9 @@ impl Hello1Response {
 
     // Deprecated
     pub fn deserialize(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
-         self.deserialize_body(data)
+        self.deserialize_body(data)
     }
 }
-
 
 #[cfg(test)]
 mod tests {

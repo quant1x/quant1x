@@ -148,10 +148,7 @@ fn get_ipo_date(security_code: &str, _feature_date: &str) -> String {
     kls[0].date.clone()
 }
 
-fn get_finance_info(
-    security_code: &str,
-    feature_date: &str,
-) -> (f64, f64, String, String) {
+fn get_finance_info(security_code: &str, feature_date: &str) -> (f64, f64, String, String) {
     let mut capital = 0.0;
     let mut total_capital = 0.0;
     let mut ipo_date = String::new();
@@ -162,7 +159,7 @@ fn get_finance_info(
     if let Ok(mut conn) = level1::get_std_conn() {
         let mut request = level1::FinanceInfoRequest::new(security_code);
         let mut response = level1::FinanceInfoResponse::new();
-        
+
         // Use stream() to get the stream
         if let Ok(_) = level1::process(conn.stream(), &mut request, &mut response) {
             let info = response.info;
@@ -171,13 +168,13 @@ fn get_finance_info(
                 capital = info.liu_tong_gu_ben;
                 total_capital = info.zong_gu_ben;
             }
-            
+
             if info.ipo_date >= base_date {
                 ipo_date = crate::Timestamp::from_yyyymmdd_int(info.ipo_date).to_string();
             } else {
                 ipo_date = get_ipo_date(security_code, feature_date);
             }
-            
+
             if info.updated_date >= base_date {
                 update_date = crate::Timestamp::from_yyyymmdd_int(info.updated_date).to_string();
             }
@@ -215,7 +212,9 @@ fn checkout_security_basic_info(security_code: &str, feature_date: &str) -> F10S
     list.sort_by(|a, b| b.date.cmp(&a.date));
 
     // Find first capital change <= feature_date
-    let xdxr = list.iter().find(|v| v.is_capital_change() && feature_date >= v.date.as_str());
+    let xdxr = list
+        .iter()
+        .find(|v| v.is_capital_change() && feature_date >= v.date.as_str());
 
     if let Some(v) = xdxr {
         info.total_capital = v.hou_zonggu * 10000.0; // config::TenThousand
@@ -275,7 +274,9 @@ pub fn get_f10(security_code: &str, feature_date: &str) -> F10 {
     }
 
     // Financial report
-    if let Some(report) = financial_report::get_quarterly_report_summary(security_code, feature_date) {
+    if let Some(report) =
+        financial_report::get_quarterly_report_summary(security_code, feature_date)
+    {
         f10.q_date = report.q_date;
         f10.bps = report.bps;
         f10.basic_eps = report.basic_eps;

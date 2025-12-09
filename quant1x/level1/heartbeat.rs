@@ -78,7 +78,6 @@ impl HeartbeatResponse {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
