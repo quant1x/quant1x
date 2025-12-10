@@ -42,7 +42,25 @@ namespace config {
         }
     }
 
-    // 懒加载初始化
+    /**
+     * @brief 延迟初始化全局配置，仅在第一次调用时执行
+     *
+     * 该函数负责初始化全局配置，包括：
+     * - 设置默认数据路径
+     * - 加载并解析YAML配置文件
+     * - 初始化日志目录
+     * - 设置调试标志
+     *
+     * @note 该函数是线程安全的，使用静态局部变量确保只初始化一次
+     * @note 如果配置文件解析失败，会使用默认配置继续运行
+     *
+     * @throws std::exception 当YAML文件解析失败时会捕获并打印异常信息
+     *
+     * 配置项包括：
+     * - basedir: 基础目录路径
+     * - debug: 调试模式标志
+     * - 其他BaseConfig中定义的配置项
+     */
     static void lazy_init() noexcept {
         static int count = 0;
         spdlog::info("lazy_init called: {}", ++count);
