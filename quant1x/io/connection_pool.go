@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	stdnet "net"
+	"net"
 	"sync"
 	"time"
 
@@ -14,16 +14,16 @@ import (
 // Connection is an RAII-style wrapper around an established TCP connection.
 // Its lifecycle is managed by TcpConnectionPool; callers should not copy it.
 type Connection struct {
-	conn     *stdnet.TCPConn
-	endpoint *stdnet.TCPAddr
+	conn     *net.TCPConn
+	endpoint *net.TCPAddr
 }
 
-func NewConnection(c *stdnet.TCPConn, ep *stdnet.TCPAddr) *Connection {
+func NewConnection(c *net.TCPConn, ep *net.TCPAddr) *Connection {
 	return &Connection{conn: c, endpoint: ep}
 }
 
-func (c *Connection) Conn() *stdnet.TCPConn     { return c.conn }
-func (c *Connection) Endpoint() *stdnet.TCPAddr { return c.endpoint }
+func (c *Connection) Conn() *net.TCPConn     { return c.conn }
+func (c *Connection) Endpoint() *net.TCPAddr { return c.endpoint }
 
 func (c *Connection) Close() {
 	if c == nil || c.conn == nil {
@@ -101,7 +101,7 @@ func (p *TcpConnectionPool) AddEndpoint(host string, port int, weight int) bool 
 }
 
 // AddEndpointAddr adds an endpoint by *net.TCPAddr (address object)
-func (p *TcpConnectionPool) AddEndpointAddr(addr *stdnet.TCPAddr, weight int) bool {
+func (p *TcpConnectionPool) AddEndpointAddr(addr *net.TCPAddr, weight int) bool {
 	if weight == 0 {
 		weight = p.endpointWeight
 	}
@@ -132,7 +132,7 @@ func (p *TcpConnectionPool) Acquire() (*Connection, func(), error) {
 		}
 
 		// Dial with timeout
-		dialer := &stdnet.Dialer{Timeout: p.networkHandler.Timeout()}
+		dialer := &net.Dialer{Timeout: p.networkHandler.Timeout()}
 		addr := ep.String()
 		rawConn, err := dialer.DialContext(p.ctx, "tcp", addr)
 		if err != nil {
@@ -140,7 +140,7 @@ func (p *TcpConnectionPool) Acquire() (*Connection, func(), error) {
 			logger.Errorf("Error dialing %s: %v", addr, err)
 			return nil, nil, err
 		}
-		tcpConn, ok2 := rawConn.(*stdnet.TCPConn)
+		tcpConn, ok2 := rawConn.(*net.TCPConn)
 		if !ok2 {
 			rawConn.Close()
 			p.endpointManager.ReleaseEndpoint(ep)
@@ -339,11 +339,11 @@ func (p *TcpConnectionPool) closeAllConnections() {
 
 // GetEndpointStats returns stats for a given host/port
 func (p *TcpConnectionPool) GetEndpointStats(host string, port int) (int, int, error) {
-	ep, err := stdnet.ResolveIPAddr("ip", host)
+	ep, err := net.ResolveIPAddr("ip", host)
 	if err != nil {
 		return 0, 0, err
 	}
-	tcpAddr := &stdnet.TCPAddr{IP: ep.IP, Port: port}
+	tcpAddr := &net.TCPAddr{IP: ep.IP, Port: port}
 	max, active, err := p.endpointManager.GetEndpointStats(tcpAddr)
 	if err != nil {
 		return 0, 0, err

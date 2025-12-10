@@ -6,7 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
-	stdnet "net"
+	"net"
 	"sync/atomic"
 
 	"gitee.com/quant1x/quant1x/quant1x/log"
@@ -44,9 +44,9 @@ const (
 )
 
 const (
-	FlagZip          uint8 = 0x10                          // zip压缩标志位
-	FlagUncompressed uint8 = 0x0C                          // 未压缩
-	FlagZipped             = FlagZip | FlagUncompressed    // zip压缩
+	FlagZip          uint8 = 0x10                       // zip压缩标志位
+	FlagUncompressed uint8 = 0x0C                       // 未压缩
+	FlagZipped             = FlagZip | FlagUncompressed // zip压缩
 )
 
 var seqId uint32
@@ -155,7 +155,7 @@ func (b *ResponseBase) SetHeader(h *ResponseHeader) {
 	b.header = *h
 }
 
-func Process[T ProtocolRequest, R ProtocolResponse](conn *stdnet.TCPConn, req T, resp R) error {
+func Process[T ProtocolRequest, R ProtocolResponse](conn *net.TCPConn, req T, resp R) error {
 	if conn == nil {
 		return errors.New("nil connection")
 	}

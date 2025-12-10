@@ -3,7 +3,7 @@ package io
 import (
 	"errors"
 	"fmt"
-	stdnet "net"
+	"net"
 	"strconv"
 	"sync"
 
@@ -42,17 +42,17 @@ func (m *EndpointManager) AddEndpoint(ip string, port uint16, maxConnections int
 	}
 
 	// 验证IP
-	if stdnet.ParseIP(ip) == nil {
+	if net.ParseIP(ip) == nil {
 		logger.Errorf("[endpoint] invalid ip: %s", ip)
 		return false
 	}
 
-	addr := stdnet.JoinHostPort(ip, strconv.Itoa(int(port)))
+	addr := net.JoinHostPort(ip, strconv.Itoa(int(port)))
 	return m.addEndpointByString(addr, maxConnections)
 }
 
 // AddEndpointAddr 直接使用 net.TCPAddr 添加端点
-func (m *EndpointManager) AddEndpointAddr(addr *stdnet.TCPAddr, maxConnections int) bool {
+func (m *EndpointManager) AddEndpointAddr(addr *net.TCPAddr, maxConnections int) bool {
 	if addr == nil {
 		return false
 	}
@@ -75,7 +75,7 @@ func (m *EndpointManager) addEndpointByString(key string, maxConnections int) bo
 }
 
 // RemoveEndpoint 移除指定端点（使用 net.TCPAddr）
-func (m *EndpointManager) RemoveEndpoint(addr *stdnet.TCPAddr) {
+func (m *EndpointManager) RemoveEndpoint(addr *net.TCPAddr) {
 	if addr == nil {
 		return
 	}
@@ -101,7 +101,7 @@ func (m *EndpointManager) removeEndpointByString(key string) {
 
 // AcquireEndpoint 返回第一个仍有可用连接配额的端点，并同时增加其活跃连接数
 // 返回值为解析后的 *net.TCPAddr 与 ok 标志；若无可用端点则返回 (nil, false)
-func (m *EndpointManager) AcquireEndpoint() (*stdnet.TCPAddr, bool) {
+func (m *EndpointManager) AcquireEndpoint() (*net.TCPAddr, bool) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -113,7 +113,7 @@ func (m *EndpointManager) AcquireEndpoint() (*stdnet.TCPAddr, bool) {
 		if data.ActiveConnections < data.MaxConnections {
 			data.ActiveConnections++
 			// 解析地址为 net.TCPAddr，理论上解析不会失败，因为添加时已验证
-			tcpAddr, err := stdnet.ResolveTCPAddr("tcp", key)
+			tcpAddr, err := net.ResolveTCPAddr("tcp", key)
 			if err != nil {
 				// 解析失败时回退计数并继续
 				data.ActiveConnections--
@@ -129,7 +129,7 @@ func (m *EndpointManager) AcquireEndpoint() (*stdnet.TCPAddr, bool) {
 }
 
 // ReleaseEndpoint 释放指定端点的活跃连接计数（若存在且大于0）
-func (m *EndpointManager) ReleaseEndpoint(addr *stdnet.TCPAddr) {
+func (m *EndpointManager) ReleaseEndpoint(addr *net.TCPAddr) {
 	if addr == nil {
 		return
 	}
@@ -144,7 +144,7 @@ func (m *EndpointManager) ReleaseEndpoint(addr *stdnet.TCPAddr) {
 }
 
 // GetEndpointStats 返回 (maxConnections, activeConnections, error)
-func (m *EndpointManager) GetEndpointStats(addr *stdnet.TCPAddr) (int, int, error) {
+func (m *EndpointManager) GetEndpointStats(addr *net.TCPAddr) (int, int, error) {
 	if addr == nil {
 		return 0, 0, errors.New("nil addr")
 	}
@@ -161,13 +161,13 @@ func (m *EndpointManager) GetEndpointStats(addr *stdnet.TCPAddr) (int, int, erro
 }
 
 // GetAllEndpoints 返回当前所有的端点（解析为 []*net.TCPAddr）
-func (m *EndpointManager) GetAllEndpoints() ([]*stdnet.TCPAddr, error) {
+func (m *EndpointManager) GetAllEndpoints() ([]*net.TCPAddr, error) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	out := make([]*stdnet.TCPAddr, 0, len(m.endpointsList))
+	out := make([]*net.TCPAddr, 0, len(m.endpointsList))
 	for _, key := range m.endpointsList {
-		tcpAddr, err := stdnet.ResolveTCPAddr("tcp", key)
+		tcpAddr, err := net.ResolveTCPAddr("tcp", key)
 		if err != nil {
 			return nil, err
 		}
