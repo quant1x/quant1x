@@ -153,11 +153,11 @@ impl StandardProtocolHandler {
     }
 }
 
-static CONNECTION_POOL: OnceLock<Arc<crate::io::TcpConnectionPool<StandardProtocolHandler>>> =
+static STD_CONNECTION_POOL: OnceLock<Arc<crate::io::TcpConnectionPool<StandardProtocolHandler>>> =
     OnceLock::new();
 
 pub fn get_std_conn() -> std::io::Result<crate::io::PooledConnection<StandardProtocolHandler>> {
-    let pool = CONNECTION_POOL
+    let pool = STD_CONNECTION_POOL
         .get_or_init(|| {
             let endpoint_manager = Arc::new(crate::io::endpoint::EndpointManager::new());
 
@@ -227,7 +227,7 @@ pub fn get_std_conn() -> std::io::Result<crate::io::PooledConnection<StandardPro
 }
 
 pub fn pool_max_connections() -> Option<usize> {
-    CONNECTION_POOL.get().map(|p| p.max_connections())
+    STD_CONNECTION_POOL.get().map(|p| p.max_connections())
 }
 
 impl crate::io::NetworkOperationHandler for StandardProtocolHandler {
