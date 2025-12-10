@@ -11,7 +11,6 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
 	"gitee.com/quant1x/quant1x/quant1x/std"
 )
 
@@ -220,22 +219,6 @@ func GetMinuteFilename(code, cacheDate string) string {
 	return filepath.Clean(p)
 }
 
-// detail namespace
-func CacheId(code string) string {
-	_, marketCode, code_ := exchange.DetectMarket(code)
-	return marketCode + code_
-}
-
-func CacheIdPath(code string) string {
-	const N = 3
-	cacheId := CacheId(code)
-	if len(cacheId) <= N {
-		return cacheId
-	}
-	prefix := cacheId[:len(cacheId)-N]
-	return prefix + "/" + cacheId
-}
-
 func GetHoldingPath() string {
 	return filepath.Join(DefaultCachePath(), "holding")
 }
@@ -252,12 +235,6 @@ func getQuarterByDate(date string) string {
 	fmt.Sscanf(monthStr, "%02d", &month)
 	q := ((month - 1) / 3) + 1
 	return fmt.Sprintf("%sQ%d", year, q)
-}
-
-func Top10HoldersFilename(code, date string) string {
-	idPath := CacheIdPath(code)
-	quarter := getQuarterByDate(date)
-	return filepath.Join(GetHoldingPath(), quarter, idPath+".csv")
 }
 
 func QuarterlyCachePath(date string) string {
