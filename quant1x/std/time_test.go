@@ -71,7 +71,7 @@ func TestMsUtcToLocalAndBack(t *testing.T) {
 }
 
 func TestFromLocal(t *testing.T) {
-	// This is a bit tricky to test exactly without duplicating logic, 
+	// This is a bit tricky to test exactly without duplicating logic,
 	// but we can check round trip consistency or specific known values if we fix timezone.
 	// For now, let's just ensure it returns a valid time.
 	ms := int64(1684132200000) // 2023-05-15 14:30:00 UTC approx
@@ -87,7 +87,7 @@ func TestFromTimePoint(t *testing.T) {
 	// FromTimePoint returns local milliseconds.
 	// Let's convert it back to UTC ms and compare with now.UnixMilli()
 	utcMs := MsLocalToUtc(ms)
-	
+
 	// Allow small difference due to precision loss (nanoseconds to milliseconds)
 	diff := utcMs - now.UnixMilli()
 	if diff < -1 || diff > 1 {
@@ -97,7 +97,7 @@ func TestFromTimePoint(t *testing.T) {
 
 func TestToday(t *testing.T) {
 	got := Today()
-	expected := time.Now().Format("2006-01-02")
+	expected := time.Now().Format(LayoutOnlyDate)
 	if got != expected {
 		t.Errorf("Today() = %v, want %v", got, expected)
 	}
@@ -109,7 +109,7 @@ func TestGetTimestamp(t *testing.T) {
 		t.Error("GetTimestamp() returned empty string")
 	}
 	// Basic format check
-	_, err := time.ParseInLocation("2006-01-02 15:04:05", got, time.Local)
+	_, err := time.ParseInLocation(LayoutDateTime, got, time.Local)
 	if err != nil {
 		t.Errorf("GetTimestamp() returned invalid format: %v", got)
 	}
@@ -117,26 +117,35 @@ func TestGetTimestamp(t *testing.T) {
 
 func TestTimeToString(t *testing.T) {
 	now := time.Now()
+
+	// Test default format (YYYY-MM-DD)
 	got := TimeToString(now)
-	expected := now.Format("2006-01-02 15:04:05")
+	expected := now.Format(LayoutOnlyDate)
 	if got != expected {
-		t.Errorf("TimeToString() = %v, want %v", got, expected)
+		t.Errorf("TimeToString() default = %v, want %v", got, expected)
+	}
+
+	// Test with specific format
+	gotFull := TimeToString(now, LayoutDateTime)
+	expectedFull := now.Format(LayoutDateTime)
+	if gotFull != expectedFull {
+		t.Errorf("TimeToString(full) = %v, want %v", gotFull, expectedFull)
 	}
 }
 
 func TestGetQuarterDay(t *testing.T) {
 	// Test with 0 months (current quarter)
-	// We can't easily predict exact output without mocking time, 
+	// We can't easily predict exact output without mocking time,
 	// but we can check the format and basic logic.
-	
+
 	// Let's try to verify logic by manually calculating for a fixed date if we could inject time,
 	// but since we can't, we'll check format.
 	start, end := GetQuarterDay(0)
-	
+
 	if len(start) != 19 || len(end) != 19 {
 		t.Errorf("GetQuarterDay(0) returned invalid length strings: %q, %q", start, end)
 	}
-	
+
 	// Check if end is after start
 	if start >= end {
 		t.Errorf("GetQuarterDay(0) start %q should be before end %q", start, end)
@@ -145,11 +154,11 @@ func TestGetQuarterDay(t *testing.T) {
 
 func TestGetQuarterByDate(t *testing.T) {
 	tests := []struct {
-		dateStr      string
-		diff         int
-		wantQuarter  string
-		wantStart    string
-		wantEnd      string
+		dateStr     string
+		diff        int
+		wantQuarter string
+		wantStart   string
+		wantEnd     string
 	}{
 		{
 			dateStr:     "2023-05-15",

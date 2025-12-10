@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+const (
+	LayoutOnlyDate = "2006-01-02"
+	LayoutDateTime = "2006-01-02 15:04:05"
+)
+
 // ZoneOffsetMilliseconds 获取时区偏移的毫秒数
 func ZoneOffsetMilliseconds() int64 {
 	_, offset := time.Now().Zone()
@@ -13,8 +18,8 @@ func ZoneOffsetMilliseconds() int64 {
 }
 
 var dateTimeLayouts = []string{
-	"2006-01-02 15:04:05",
-	"2006-01-02",
+	LayoutDateTime,
+	LayoutOnlyDate,
 	"20060102",
 	"2006/01/02 15:04:05",
 	"01/02/2006 15:04:05",
@@ -46,8 +51,8 @@ func ParseDate(str string) int64 {
 
 var timeLayouts = []string{
 	"15:04:05",
-	"2006-01-02 15:04:05",
-	"2006-01-02",
+	LayoutDateTime,
+	LayoutOnlyDate,
 	"20060102",
 	"2006/01/02 15:04:05",
 	"01/02/2006 15:04:05",
@@ -107,17 +112,21 @@ func FromTimePoint(tp time.Time) int64 {
 
 // Today 获取当前日期的字符串
 func Today() string {
-	return time.Now().Format("2006-01-02")
+	return time.Now().Format(LayoutOnlyDate)
 }
 
 // GetTimestamp 获取当前时间戳的字符串
 func GetTimestamp() string {
-	return time.Now().Format("2006-01-02 15:04:05")
+	return time.Now().Format(LayoutDateTime)
 }
 
 // TimeToString Time转字符串
-func TimeToString(tp time.Time) string {
-	return tp.Format("2006-01-02 15:04:05")
+func TimeToString(tp time.Time, format ...string) string {
+	layout := LayoutOnlyDate
+	if len(format) > 0 {
+		layout = format[0]
+	}
+	return tp.Format(layout)
 }
 
 // GetQuarterDay 获得当前季度的初始和结束日期, months为偏移的月数
