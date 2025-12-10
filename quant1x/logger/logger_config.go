@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -103,14 +102,14 @@ var (
 	bws []*zapcore.BufferedWriteSyncer
 )
 
-func init() {
-	tempPath := os.TempDir()
-	//cfg.Path = getLogRoot(tempPath)
-	//zapLogger := NewTextLoggerWithCompression(cfg)
-	//logger = zapLogger.Sugar()
-	fmt.Println(tempPath)
-	InitLogger(tempPath, defaultLevel)
-}
+// func init() {
+// 	tempPath := os.TempDir()
+// 	//cfg.Path = getLogRoot(tempPath)
+// 	//zapLogger := NewTextLoggerWithCompression(cfg)
+// 	//logger = zapLogger.Sugar()
+// 	fmt.Println(tempPath)
+// 	InitLogger(tempPath, defaultLevel)
+// }
 
 func addBufferWriteSyncer(bw *zapcore.BufferedWriteSyncer) {
 	if bw == nil {

@@ -160,15 +160,6 @@ func GetMinutePath() string {
 	return filepath.Join(DefaultCachePath(), "minutes")
 }
 
-const suffixLength = 3
-
-func subpath(code string) string {
-	if len(code) <= suffixLength {
-		return ""
-	}
-	return code[:len(code)-suffixLength]
-}
-
 // GetXdxrFilename 根据证券代码生成对应的除权除息数据文件路径
 //
 //	参数 code: 8位证券代码
@@ -178,8 +169,7 @@ func GetXdxrFilename(code string) string {
 	if len(code) != 8 {
 		panic("invalid security code length")
 	}
-	sub := subpath(code)
-	p := filepath.Join(GetXdxrPath(), sub, code+".csv")
+	p := filepath.Join(GetXdxrPath(), CacheIdPath(code)+".csv")
 	return filepath.Clean(p)
 }
 
@@ -187,12 +177,11 @@ func GetKlineFilename(code string, forward bool) string {
 	if len(code) != 8 {
 		panic("invalid security code length")
 	}
-	sub := subpath(code)
 	ext := "raw"
 	if forward {
 		ext = "csv"
 	}
-	p := filepath.Join(GetDayPath(), sub, code+"."+ext)
+	p := filepath.Join(GetDayPath(), CacheIdPath(code)+"."+ext)
 	return filepath.Clean(p)
 }
 
@@ -200,8 +189,7 @@ func GetKlineFilenameEx(code, freq string) string {
 	if len(code) != 8 {
 		panic("invalid security code length")
 	}
-	sub := subpath(code)
-	p := filepath.Join(GetKlinePath(freq), sub, code+".csv")
+	p := filepath.Join(GetKlinePath(freq), CacheIdPath(code)+".csv")
 	return filepath.Clean(p)
 }
 

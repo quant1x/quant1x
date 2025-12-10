@@ -18,7 +18,7 @@ func resetGlobals() {
 	globalTrader = nil
 }
 
-func TestSubpathAndFilenames(t *testing.T) {
+func TestFilenames(t *testing.T) {
 	resetGlobals()
 	// prepare a fake cache dir
 	td := t.TempDir()
@@ -28,28 +28,22 @@ func TestSubpathAndFilenames(t *testing.T) {
 
 	code := "600000SZ" // 8 chars
 
-	// subpath
-	sp := subpath(code)
-	if sp != "60000" {
-		t.Fatalf("unexpected subpath: %s", sp)
-	}
-
 	// GetXdxrFilename
-	wantX := filepath.Clean(filepath.Join(td, "xdxr", "60000", code+".csv"))
+	wantX := filepath.Clean(filepath.Join(td, "xdxr", CacheIdPath(code)+".csv"))
 	gotX := GetXdxrFilename(code)
 	if gotX != wantX {
 		t.Fatalf("GetXdxrFilename wrong:\n got: %s\n want:%s", gotX, wantX)
 	}
 
 	// GetKlineFilename forward
-	wantK := filepath.Clean(filepath.Join(td, "day", "60000", code+".csv"))
+	wantK := filepath.Clean(filepath.Join(td, "day", CacheIdPath(code)+".csv"))
 	gotK := GetKlineFilename(code, true)
 	if gotK != wantK {
 		t.Fatalf("GetKlineFilename forward wrong:\n got: %s\n want:%s", gotK, wantK)
 	}
 
 	// GetKlineFilename not forward
-	wantKr := filepath.Clean(filepath.Join(td, "day", "60000", code+".raw"))
+	wantKr := filepath.Clean(filepath.Join(td, "day", CacheIdPath(code)+".raw"))
 	gotKr := GetKlineFilename(code, false)
 	if gotKr != wantKr {
 		t.Fatalf("GetKlineFilename raw wrong:\n got: %s\n want:%s", gotKr, wantKr)

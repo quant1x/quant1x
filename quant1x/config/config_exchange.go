@@ -7,7 +7,7 @@ import (
 	"gitee.com/quant1x/quant1x/quant1x/std"
 )
 
-// detail namespace
+// 缓存id, 由市场代码+证券代码组成
 func CacheId(code string) string {
 	_, marketCode, code_ := exchange.DetectMarket(code)
 	return marketCode + code_
