@@ -34,15 +34,6 @@ namespace api {
     //
     // diff 季度偏移数, 大于0前移diff个季度, 小于0后移diff个季度, 默认为当前季度
     std::tuple<std::string, std::string, std::string> GetQuarterByDate(const std::string& date, int diff = 0);
-
-    class Time {
-    private:
-        i64 ms_; ///< 本地时间的毫秒数
-    public:
-        Time(): ms_(0){}
-
-    };
-
 }
 
 
