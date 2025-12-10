@@ -45,8 +45,8 @@ namespace api {
 
     int64_t zone_offset_milliseconds() {
         std::time_t now = std::time(nullptr);
-        std::tm     local = q1x::safe::localtime(now);
-        std::tm utc = q1x::safe::gmtime(now);
+        std::tm     local = safe::localtime(now);
+        std::tm utc = safe::gmtime(now);
         return (mktime(&local) - mktime(&utc)) * 1000LL;
     }
 
@@ -213,7 +213,7 @@ namespace api {
 //    }
 
     static std::string to_string(std::time_t tm, const char *const format = layout_only_date) {
-        std::tm local_time = q1x::safe::localtime(tm);
+        std::tm local_time = safe::localtime(tm);
         std::array<char, 64> buf{};
         size_t               len = std::strftime(buf.data(), buf.size(), format, &local_time);
 
@@ -261,7 +261,7 @@ namespace api {
         // 获取当前时间点，并减去若干个月
         auto now = std::chrono::system_clock::now();
         auto now_time_t = std::chrono::system_clock::to_time_t(now);
-        std::tm tm = q1x::safe::localtime(now_time_t);
+        std::tm tm = safe::localtime(now_time_t);
 
         // 减去 months 个月
         tm.tm_mon -= months;
@@ -317,7 +317,7 @@ namespace api {
 
         // 所有格式都失败时返回当前时间
         time_t now = time(nullptr);
-        return q1x::safe::localtime(now);
+        return safe::localtime(now);
     }
 
     std::tuple<std::string, std::string, std::string> GetQuarterByDate(const std::string& date, int diffQuarters) {

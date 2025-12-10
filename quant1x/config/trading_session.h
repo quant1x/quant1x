@@ -39,7 +39,7 @@ namespace config {
         static std::string getTradingTimestamp() {
             auto now = std::chrono::system_clock::now();
             std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-            std::tm tm = q1x::safe::localtime(now_time);
+            std::tm tm = safe::localtime(now_time);
 
             char buffer[9];
             std::strftime(buffer, sizeof(buffer), "%H:%M:%S", &tm);
@@ -126,7 +126,7 @@ namespace config {
         static std::string getTradingTimestamp() {
             auto        now      = std::chrono::system_clock::now();
             std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-            std::tm    tm       = q1x::safe::localtime(now_time);
+            std::tm    tm       = safe::localtime(now_time);
 
             char buffer[16]{};
             std::strftime(buffer, sizeof(buffer), "%H:%M:%S", &tm);

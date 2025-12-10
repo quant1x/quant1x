@@ -181,7 +181,7 @@ public:
     // FiveYearsAgoJanFirst 获取五年前的1月1日零点
     static std::tm FiveYearsAgoJanFirst() {
         std::time_t now       = std::time(nullptr);
-        std::tm     tm_now    = q1x::safe::localtime(now);
+        std::tm     tm_now    = safe::localtime(now);
         std::tm     tm_result = tm_now;
         tm_result.tm_year -= yearPeriod;
         tm_result.tm_mon  = 0;  // January
