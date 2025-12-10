@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -223,22 +222,8 @@ func GetHoldingPath() string {
 	return filepath.Join(DefaultCachePath(), "holding")
 }
 
-func getQuarterByDate(date string) string {
-	// expect YYYY-MM-DD or YYYYMMDD
-	clean := strings.ReplaceAll(date, "-", "")
-	if len(clean) < 6 {
-		return "unknown"
-	}
-	year := clean[:4]
-	monthStr := clean[4:6]
-	month := 1
-	fmt.Sscanf(monthStr, "%02d", &month)
-	q := ((month - 1) / 3) + 1
-	return fmt.Sprintf("%sQ%d", year, q)
-}
-
 func QuarterlyCachePath(date string) string {
-	q := getQuarterByDate(date)
+	q, _, _ := std.GetQuarterByDate(date, 0)
 	return filepath.Join(DefaultCachePath(), "infoq", q)
 }
 

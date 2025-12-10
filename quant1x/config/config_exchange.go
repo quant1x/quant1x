@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"gitee.com/quant1x/quant1x/quant1x/std"
 )
 
 // detail namespace
@@ -24,6 +25,6 @@ func CacheIdPath(code string) string {
 
 func Top10HoldersFilename(code, date string) string {
 	idPath := CacheIdPath(code)
-	quarter := getQuarterByDate(date)
+	quarter, _, _ := std.GetQuarterByDate(date, 0)
 	return filepath.Join(GetHoldingPath(), quarter, idPath+".csv")
 }

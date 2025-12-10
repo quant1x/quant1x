@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
@@ -70,7 +71,7 @@ func TestCacheIdPath(t *testing.T) {
 
 func TestQuarterAndExpandHome(t *testing.T) {
 	resetGlobals()
-	q := getQuarterByDate("2025-05-15")
+	q, _, _ := std.GetQuarterByDate("2025-05-15", 0)
 	if q != "2025Q2" {
 		t.Fatalf("quarter wrong: %s", q)
 	}
@@ -86,8 +87,11 @@ func TestTraderConfigLoad(t *testing.T) {
 	resetGlobals()
 	td := t.TempDir()
 	// write a small quant1x.yaml with trader section
+	// Escape backslashes for YAML string
+	orderPath := filepath.Join(td, "orders")
+	yamlOrderPath := strings.ReplaceAll(orderPath, "\\", "\\\\")
 	cfg := `trader:
-  order_path: "` + filepath.Join(td, "orders") + `"
+  order_path: "` + yamlOrderPath + `"
   account_id: "acct-123"`
 	cfgFile := filepath.Join(td, "quant1x.yaml")
 	if err := os.WriteFile(cfgFile, []byte(cfg), 0o644); err != nil {
