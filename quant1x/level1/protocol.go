@@ -9,7 +9,7 @@ import (
 	"net"
 	"sync/atomic"
 
-	"gitee.com/quant1x/quant1x/quant1x/log"
+	"gitee.com/quant1x/quant1x/quant1x/logger"
 )
 
 type StdCommand uint16
@@ -162,8 +162,8 @@ func Process[T ProtocolRequest, R ProtocolResponse](conn *net.TCPConn, req T, re
 
 	cmd := commandToString(req.Command())
 	payload := req.Bytes()
-	log.Debugf("[%s] send request bytes: %d", cmd, len(payload))
-	log.Debugf("[%s] request: %s", cmd, req.String())
+	logger.Debugf("[%s] send request bytes: %d", cmd, len(payload))
+	logger.Debugf("[%s] request: %s", cmd, req.String())
 
 	if _, err := conn.Write(payload); err != nil {
 		return err
@@ -174,7 +174,7 @@ func Process[T ProtocolRequest, R ProtocolResponse](conn *net.TCPConn, req T, re
 		return err
 	}
 	resp.SetHeader(hdr)
-	log.Debugf("[%s] response header: %+v", cmd, *hdr)
+	logger.Debugf("[%s] response header: %+v", cmd, *hdr)
 
 	if hdr.ZipSize == 0 {
 		return nil
@@ -192,11 +192,11 @@ func Process[T ProtocolRequest, R ProtocolResponse](conn *net.TCPConn, req T, re
 		}
 	}
 
-	log.Debugf("[%s] response body length: %d", cmd, len(body))
+	logger.Debugf("[%s] response body length: %d", cmd, len(body))
 	if err := resp.Deserialize(body); err != nil {
 		return err
 	}
-	log.Debugf("[%s] response: %s", cmd, resp.String())
+	logger.Debugf("[%s] response: %s", cmd, resp.String())
 	return nil
 }
 

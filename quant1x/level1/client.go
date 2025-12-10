@@ -2,17 +2,17 @@ package level1
 
 import (
 	"errors"
-	"io"
+	stdio "io"
 	"math"
-	stdnet "net"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
-	qnet "gitee.com/quant1x/quant1x/quant1x/io"
-	"gitee.com/quant1x/quant1x/quant1x/log"
+	qio "gitee.com/quant1x/quant1x/quant1x/io"
+	"gitee.com/quant1x/quant1x/quant1x/logger"
 	"gitee.com/quant1x/quant1x/quant1x/std"
 	"gopkg.in/yaml.v3"
 )
@@ -27,7 +27,7 @@ const (
 
 var (
 	poolOnce     sync.Once
-	poolInstance *qnet.TcpConnectionPool
+	poolInstance *qio.TcpConnectionPool
 	poolErr      error
 )
 
@@ -51,7 +51,7 @@ type StandardProtocolHandler struct {
 }
 
 // NewStandardProtocolHandler 构造协议处理器。
-func NewStandardProtocolHandler(timeout, interval time.Duration) qnet.NetworkOperationHandler {
+func NewStandardProtocolHandler(timeout, interval time.Duration) qio.NetworkOperationHandler {
 	if timeout <= 0 {
 		timeout = 10 * time.Second
 	}
@@ -64,7 +64,7 @@ func NewStandardProtocolHandler(timeout, interval time.Duration) qnet.NetworkOpe
 func (h *StandardProtocolHandler) Timeout() time.Duration       { return h.timeout }
 func (h *StandardProtocolHandler) CheckInterval() time.Duration { return h.checkInterval }
 
-func (h *StandardProtocolHandler) processRequest(conn *stdnet.TCPConn, req []byte) ([]byte, *ResponseHeader, error) {
+func (h *StandardProtocolHandler) processRequest(conn *net.TCPConn, req []byte) ([]byte, *ResponseHeader, error) {
 	if conn == nil {
 		return nil, nil, errors.New("nil conn")
 	}
@@ -83,7 +83,7 @@ func (h *StandardProtocolHandler) processRequest(conn *stdnet.TCPConn, req []byt
 		return nil, hdr, nil
 	}
 	body := make([]byte, hdr.ZipSize)
-	if _, err := io.ReadFull(conn, body); err != nil {
+	if _, err := stdio.ReadFull(conn, body); err != nil {
 		return nil, hdr, err
 	}
 	if hdr.ZipSize != hdr.UnZipSize {
@@ -96,11 +96,11 @@ func (h *StandardProtocolHandler) processRequest(conn *stdnet.TCPConn, req []byt
 	return body, hdr, nil
 }
 
-func (h *StandardProtocolHandler) Handshake(conn *stdnet.TCPConn) (bool, error) {
+func (h *StandardProtocolHandler) Handshake(conn *net.TCPConn) (bool, error) {
 	req1 := Hello1Request{}
 	body1, _, err := h.processRequest(conn, req1.Bytes())
 	if err != nil {
-		log.Errorf("level1 handshake Hello1 failed: %v", err)
+		logger.Errorf("level1 handshake Hello1 failed: %v", err)
 		return false, err
 	}
 	if len(body1) == 0 {
@@ -108,14 +108,14 @@ func (h *StandardProtocolHandler) Handshake(conn *stdnet.TCPConn) (bool, error) 
 	}
 	var resp1 Hello1Response
 	if err := resp1.Deserialize(body1); err != nil {
-		log.Errorf("level1 handshake Hello1 validation failed: %v", err)
+		logger.Errorf("level1 handshake Hello1 validation failed: %v", err)
 		return false, err
 	}
 
 	req2 := Hello2Request{}
 	body2, _, err := h.processRequest(conn, req2.Bytes())
 	if err != nil {
-		log.Errorf("level1 handshake Hello2 failed: %v", err)
+		logger.Errorf("level1 handshake Hello2 failed: %v", err)
 		return false, err
 	}
 	if len(body2) == 0 {
@@ -123,13 +123,13 @@ func (h *StandardProtocolHandler) Handshake(conn *stdnet.TCPConn) (bool, error) 
 	}
 	var resp2 Hello2Response
 	if err := resp2.Deserialize(body2); err != nil {
-		log.Errorf("level1 handshake Hello2 validation failed: %v", err)
+		logger.Errorf("level1 handshake Hello2 validation failed: %v", err)
 		return false, err
 	}
 	return true, nil
 }
 
-func (h *StandardProtocolHandler) Keepalive(conn *stdnet.TCPConn) (bool, error) {
+func (h *StandardProtocolHandler) Keepalive(conn *net.TCPConn) (bool, error) {
 	body, _, err := h.processRequest(conn, HeartbeatRequest{}.Bytes())
 	if err != nil {
 		return false, err
@@ -139,14 +139,14 @@ func (h *StandardProtocolHandler) Keepalive(conn *stdnet.TCPConn) (bool, error) 
 	}
 	var resp HeartbeatResponse
 	if err := resp.Deserialize(body); err != nil {
-		log.Errorf("level1 keepalive response invalid: %v", err)
+		logger.Errorf("level1 keepalive response invalid: %v", err)
 		return false, err
 	}
 	return true, nil
 }
 
 // GetStdConnection 获取标准连接池中的连接，返回连接对象、关闭函数和可能的错误
-func GetStdConnection() (*qnet.Connection, func(), error) {
+func GetStdConnection() (*qio.Connection, func(), error) {
 	pool, err := getStandardConnectionPool()
 	if err != nil {
 		return nil, nil, err
@@ -154,14 +154,14 @@ func GetStdConnection() (*qnet.Connection, func(), error) {
 	return pool.Acquire()
 }
 
-func getStandardConnectionPool() (*qnet.TcpConnectionPool, error) {
+func getStandardConnectionPool() (*qio.TcpConnectionPool, error) {
 	poolOnce.Do(func() {
 		poolInstance, poolErr = initStandardConnectionPool()
 	})
 	return poolInstance, poolErr
 }
 
-func initStandardConnectionPool() (*qnet.TcpConnectionPool, error) {
+func initStandardConnectionPool() (*qio.TcpConnectionPool, error) {
 	handler := NewStandardProtocolHandler(0, 0).(*StandardProtocolHandler)
 	cachePath, err := ensureServerCachePath()
 	if err != nil {
@@ -171,22 +171,22 @@ func initStandardConnectionPool() (*qnet.TcpConnectionPool, error) {
 	servers, info, err := loadCachedServers(cachePath)
 	needDetect := false
 	if err != nil {
-		log.Debugf("level1: cached server list missing or invalid: %v", err)
+		logger.Debugf("level1: cached server list missing or invalid: %v", err)
 		needDetect = true
 	} else if shouldRefreshCache(info) {
 		needDetect = true
 	}
 
 	if needDetect {
-		log.Infof("level1: refreshing server cache via detection")
+		logger.Infof("level1: refreshing server cache via detection")
 		detected := detectServers(handler, latencyThreshold, maxConnections, defaultConnectTimeout)
 		if len(detected) > 0 {
 			servers = detected
 			if err := saveCachedServers(cachePath, servers); err != nil {
-				log.Errorf("level1: failed to save detected servers: %v", err)
+				logger.Errorf("level1: failed to save detected servers: %v", err)
 			}
 		} else if len(servers) == 0 {
-			log.Infof("level1: detection returned no servers, falling back to standard list")
+			logger.Infof("level1: detection returned no servers, falling back to standard list")
 			servers = standardServerList()
 		}
 	}
@@ -200,7 +200,7 @@ func initStandardConnectionPool() (*qnet.TcpConnectionPool, error) {
 	}
 
 	poolSize := int(math.Min(float64(len(servers)), float64(maxConnections)))
-	pool, err := qnet.NewTcpConnectionPool(1, poolSize, handler)
+	pool, err := qio.NewTcpConnectionPool(1, poolSize, handler)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func initStandardConnectionPool() (*qnet.TcpConnectionPool, error) {
 			break
 		}
 		if added := pool.AddEndpoint(srv.Host, int(srv.Port), 0); !added {
-			log.Debugf("level1: endpoint %s:%d already registered", srv.Host, srv.Port)
+			logger.Debugf("level1: endpoint %s:%d already registered", srv.Host, srv.Port)
 		}
 	}
 
