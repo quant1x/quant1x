@@ -37,4 +37,4 @@ namespace api {
 }
 
 
-#endif //QUANT1X_STD_TIME_H
+#endif // QUANT1X_STD_TIME_H
