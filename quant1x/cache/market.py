@@ -95,7 +95,21 @@ def date_format(date: str, layout: str = '%Y-%m-%d') -> str:
 
 @lru_cache(maxsize=None)
 def get_minutes_data(code: str, date: str) -> DataFrame | None:
-    """获取分时数据"""
+    """
+    获取指定证券代码和日期的分时数据
+    
+    Args:
+        code (str): 证券代码
+        date (str): 日期字符串，格式为YYYYMMDD
+    
+    Returns:
+        DataFrame | None: 包含分时数据的DataFrame，如果文件不存在则返回None
+    
+    Note:
+        1. 会自动修正证券代码格式
+        2. 数据存储在按年份和日期组织的目录结构中
+        3. 如果未提供日期，默认使用最后一个交易日
+    """
     code = code.strip()
     corrected_symbol = exchange.correct_security_code(code)
     file_extension = '.csv'
