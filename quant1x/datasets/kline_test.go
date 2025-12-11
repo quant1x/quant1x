@@ -6,6 +6,7 @@ import (
 
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 	"gitee.com/quant1x/quant1x/quant1x/level1"
+	"gitee.com/quant1x/quant1x/quant1x/runtime"
 )
 
 func TestSaveAndReadKlineCSV(t *testing.T) {
@@ -108,6 +109,7 @@ func TestAdjust(t *testing.T) {
 }
 
 func TestKLineDaily_update(t *testing.T) {
+	defer runtime.WaitForShutdown(1)
 	code := "600000.sh"
 	securityCode := exchange.CorrectSecurityCode(code)
 	list, err := FetchKLines(securityCode, level1.KLineDaily, 0, 10)
