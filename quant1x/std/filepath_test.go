@@ -7,6 +7,16 @@ import (
 	"testing"
 )
 
+// patchEnv 临时修改或取消环境变量，并返回恢复原值的函数
+//
+// 参数:
+//
+//	key - 要修改的环境变量名
+//	value - 要设置的新值，空字符串表示取消该变量
+//
+// 返回值:
+//
+//	返回一个函数，调用该函数可将环境变量恢复为原值
 func patchEnv(key, value string) func() {
 	bck := os.Getenv(key)
 	deferFunc := func() {
@@ -22,7 +32,7 @@ func patchEnv(key, value string) func() {
 	return deferFunc
 }
 
-func BenchmarkDir(b *testing.B) {
+func BenchmarkHomeDir(b *testing.B) {
 	// We do this for any "warmups"
 	for i := 0; i < 10; i++ {
 		HomeDir()
@@ -34,7 +44,13 @@ func BenchmarkDir(b *testing.B) {
 	}
 }
 
-func TestDir(t *testing.T) {
+// TestHomeDir 测试HomeDir函数是否正确返回当前用户的主目录路径
+//
+// 测试场景包括：
+//  1. 正常情况下的主目录获取
+//  2. 禁用缓存后的主目录获取
+//  3. 环境变量HOME为空时的主目录获取
+func TestHomeDir(t *testing.T) {
 	u, err := user.Current()
 	if err != nil {
 		t.Fatalf("err: %s", err)
@@ -62,7 +78,15 @@ func TestDir(t *testing.T) {
 	}
 }
 
-func TestExpand(t *testing.T) {
+// TestExpandUser 测试 ExpandUser 函数的功能
+//
+// 测试用例包括：
+//   - 普通路径处理
+//   - 用户主目录(~)扩展
+//   - 空字符串处理
+//   - 无效用户目录(~foo)处理
+//   - 环境变量 QUANT1X_HOME 和 GOX_HOME 的优先级测试
+func TestExpandUser(t *testing.T) {
 	u, err := user.Current()
 	if err != nil {
 		t.Fatalf("err: %s", err)
@@ -117,9 +141,22 @@ func TestExpand(t *testing.T) {
 
 	DisableCache = true
 	defer func() { DisableCache = false }()
+	defer patchEnv("QUANT1X_HOME", "/custom/q1x")()
 	defer patchEnv("GOX_HOME", "/custom/path/")()
-	expected := filepath.Join("/", "custom", "path", "foo/bar")
+
+	// Test QUANT1X_HOME priority
+	expected := filepath.Join("/", "custom", "q1x", "foo/bar")
 	actual, err := ExpandUser("~/foo/bar")
+	if err != nil {
+		t.Errorf("No error is expected, got: %v", err)
+	} else if actual != expected {
+		t.Errorf("Expected: %v; actual: %v", expected, actual)
+	}
+
+	// Test GOX_HOME priority (when QUANT1X_HOME is unset)
+	os.Unsetenv("QUANT1X_HOME")
+	expected = filepath.Join("/", "custom", "path", "foo/bar")
+	actual, err = ExpandUser("~/foo/bar")
 
 	if err != nil {
 		t.Errorf("No error is expected, got: %v", err)

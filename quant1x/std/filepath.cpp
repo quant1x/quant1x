@@ -45,8 +45,14 @@ namespace filepath {
         }
 
         std::string home = homedir();
-        if (filepath.size() == 1 || filepath[1] == '/' || filepath[1] == '\\') {
-            return std::string(home) + filepath.substr(1);
+        if (filepath.size() == 1) {
+            return home;
+        }
+        
+        if (filepath[1] == '/' || filepath[1] == '\\') {
+            // 使用 fs::path / 运算符处理路径拼接，确保分隔符正确
+            // 注意：必须使用 substr(2) 去掉 "~/"，否则 "/xxx" 会被视为绝对路径而覆盖 home
+            return (fs::path(home) / filepath.substr(2)).string();
         }
 
         return filepath;

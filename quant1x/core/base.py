@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+from quant1x.std.filepath import expand_user
 
 LANGUAGE = "python"
 DEFAULT_BASE_PATH = f"~/.q1x-{LANGUAGE}"
@@ -12,7 +13,7 @@ def get_base_path() -> str:
     """
     global _QUANT1X_BASE_PATH
     if _QUANT1X_BASE_PATH is None:
-        _QUANT1X_BASE_PATH = os.path.expanduser(DEFAULT_BASE_PATH)
+        _QUANT1X_BASE_PATH = expand_user(DEFAULT_BASE_PATH)
     return _QUANT1X_BASE_PATH
 
 def get_meta_path() -> str:

@@ -57,6 +57,7 @@ func HomeDir() (string, error) {
 // is prefixed with `~`. If it isn't prefixed with `~`, the path is
 // returned as-is.
 func ExpandUser(path string) (string, error) {
+	path = strings.TrimSpace(path)
 	if len(path) == 0 {
 		return path, nil
 	}
@@ -74,7 +75,11 @@ func ExpandUser(path string) (string, error) {
 		return "", err
 	}
 
-	return filepath.Join(dir, path[1:]), nil
+	if len(path) == 1 {
+		return dir, nil
+	}
+
+	return filepath.Join(dir, path[2:]), nil
 }
 
 // Reset clears the cache, forcing the next call to HomeDir to re-detect
@@ -88,10 +93,14 @@ func Reset() {
 }
 
 const (
-	EnvGoxHome = "GOX_HOME"
+	EnvQuant1xHome = "QUANT1X_HOME"
+	EnvGoxHome     = "GOX_HOME"
 )
 
 func dirUnix() (string, error) {
+	if home := os.Getenv(EnvQuant1xHome); home != "" {
+		return home, nil
+	}
 	if home := os.Getenv(EnvGoxHome); home != "" {
 		return home, nil
 	}
@@ -154,6 +163,9 @@ func dirUnix() (string, error) {
 }
 
 func dirWindows() (string, error) {
+	if home := os.Getenv(EnvQuant1xHome); home != "" {
+		return home, nil
+	}
 	// 启用环境变量GOX_HOME是为了Windows服务以系统账户运行时无法获取登录用户的宿主目录而预备的
 	if home := os.Getenv(EnvGoxHome); home != "" {
 		return home, nil
