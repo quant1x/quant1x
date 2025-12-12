@@ -15,6 +15,9 @@ var (
 	globalWaitGroup sync.WaitGroup
 )
 
+// initContext 初始化全局上下文并启动信号监听goroutine
+// 该函数会创建全局可取消的context，并监听系统中断信号
+// 当收到中断信号时，会触发优雅关闭流程
 func initContext() {
 	globalContext, globalCancel = context.WithCancel(context.Background())
 	// 启动goroutine监听退出信号
@@ -39,6 +42,8 @@ func CancelContext() {
 	}
 }
 
+// GetContextWithCancel 返回一个可取消的上下文和对应的取消函数
+// 该函数会确保全局上下文只初始化一次，并在返回前增加全局等待组的计数
 func GetContextWithCancel() (context.Context, context.CancelFunc) {
 	globalOnce.Do(initContext)
 	ctx, cancel := context.WithCancel(globalContext)
