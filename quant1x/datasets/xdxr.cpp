@@ -2,6 +2,7 @@
 #include <quant1x/datasets/xdxr.h>
 #include <quant1x/config/base.h>
 #include <quant1x/config/cache.h>
+#include <quant1x/std/filepath.h>
 
 namespace datasets {
 
@@ -31,7 +32,7 @@ namespace datasets {
         (void)factor_date;
 
         auto ofn = config::get_xdxr_filename(securityCode);
-        util::check_filepath(ofn, true);
+        filepath::check_filepath(ofn, true);
         io::CSVWriter writer(ofn);
         writer.write_row("Date","Category","Name","FenHong","PeiGuJia","SongZhuanGu","PeiGu","SuoGu","QianLiuTong","HouLiuTong","QianZongGuBen","HouZongGuBen","FenShu","XingQuanJia");
         for (const auto &v: values) {

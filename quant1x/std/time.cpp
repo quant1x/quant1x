@@ -360,4 +360,15 @@ namespace api {
 
         return {quarter, firstOfQuarter, lastOfQuarter};
     }
+
+    // std::tm 转 time_point (假设tm为本地时间)
+    std::chrono::system_clock::time_point tm_to_time_point(const std::tm& tm)
+    {
+        std::tm tmp = tm;
+        const std::time_t t = mktime(&tmp);
+        if(t == -1) {
+            throw std::runtime_error("Invalid tm structure");
+        }
+        return std::chrono::system_clock::from_time_t(t);
+    }
 }

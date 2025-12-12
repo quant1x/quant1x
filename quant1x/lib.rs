@@ -43,6 +43,9 @@ pub use crate::io::*;
 mod std;
 pub use crate::std::*;
 
+// core module
+pub mod core;
+
 // runtime helpers (rust translation of runtime utilities)
 pub mod runtime;
 

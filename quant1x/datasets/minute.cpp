@@ -1,6 +1,7 @@
 #include <quant1x/datasets/minute.h>
 #include <quant1x/config/base.h>
 #include <quant1x/config/cache.h>
+#include <quant1x/std/filepath.h>
 
 namespace datasets {
 
@@ -36,7 +37,7 @@ namespace datasets {
         (void) factor_date;
 
         auto ofn = config::get_minute_filename(securityCode, date.toString(config::cache_filename_date_layout));
-        util::check_filepath(ofn, true);
+        filepath::check_filepath(ofn, true);
         //std::cout << "write = " << ofn << std::endl;
         io::CSVWriter writer(ofn);
         writer.write_row("Price", "Vol");

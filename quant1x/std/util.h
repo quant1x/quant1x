@@ -49,13 +49,6 @@ namespace util {
         return buf;
     }
 
-    std::string     homedir();
-    std::string     expand_homedir(const std::string &filename);
-    std::error_code mkdirs(const std::string &path, bool notExistToCreate = true);
-    std::error_code check_filepath(const std::string &filename, bool notExistToCreate = false);
-
-    std::chrono::system_clock::time_point tm_to_time_point(const std::tm &tm);
-
     uint64_t get_thread_id(const std::thread::id &tid);
 }  // namespace util
 

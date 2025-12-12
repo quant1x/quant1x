@@ -7,7 +7,7 @@
 #include <quant1x/runtime/cache1d.h>
 #include <quant1x/config/cache.h>
 #include <quant1x/std/time.h>
-#include <quant1x/std/util.h>
+#include <quant1x/std/filepath.h>
 #include "sina_decoder.h"
 
 //============================================================
@@ -72,7 +72,7 @@ namespace exchange {
                 list.insert(it, calendarMissingDate);
             }
             {
-                auto ec = util::check_filepath(cache_filename, true);
+                auto ec = filepath::check_filepath(cache_filename, true);
                 ec.clear();
                 io::CSVWriter writer(cache_filename);
                 writer.write_row("date", "source");
@@ -89,7 +89,7 @@ namespace exchange {
         spdlog::info("初始化交易日历...");
         update_calendar();
         auto cache_filename = config::get_calendar_filename();
-        auto ec             = util::check_filepath(cache_filename, true);
+        auto ec             = filepath::check_filepath(cache_filename, true);
         ec.clear();
         io::CSVReader<1> in(cache_filename);
         in.read_header(io::ignore_extra_column, "date");

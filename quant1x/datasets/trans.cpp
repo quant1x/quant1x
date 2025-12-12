@@ -6,6 +6,7 @@
 #include <quant1x/factors/f10.h>
 #include <filesystem>
 #include <quant1x/config/cache.h>
+#include <quant1x/std/filepath.h>
 
 namespace datasets {
 
@@ -214,7 +215,7 @@ namespace datasets {
         // 手动写入CSV，避免packed结构体问题
         std::string filename = config::get_historical_trade_filename(correctedCode, featureDate.only_date());
         std::string tmp = filename + ".tmp";
-        auto ec = util::check_filepath(tmp, true);
+        auto ec = filepath::check_filepath(tmp, true);
         ec.clear();  // 忽略错误，已处理
         {
             io::CSVWriter writer(tmp);

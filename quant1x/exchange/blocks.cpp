@@ -4,7 +4,7 @@
 #include <quant1x/exchange/session.h>
 #include <quant1x/level1/client.h>
 #include <minizip/unzip.h>
-#include <quant1x/std/util.h>
+#include <quant1x/std/filepath.h>
 #include <unordered_set>
 #include <fstream>
 #include <quant1x/io/csv-writer.h>
@@ -33,7 +33,7 @@ namespace exchange {
 
                 // 创建输出目录（检查错误）
                 {
-                    auto ec = util::mkdirs(outputDir, true);
+                    auto ec = filepath::mkdirs(outputDir, true);
                     if (ec) {
                         spdlog::error("[exchange::blocks] 无法创建输出目录[{}]: {}", outputDir, ec.message());
                         unzClose(zipfile);
@@ -90,7 +90,7 @@ namespace exchange {
                 if (fname.size() > 0 && fname[fname.size() - 1] == '/') {
                     // 创建目录（检查错误）
                     {
-                        auto ec = util::mkdirs(fullPath, true);
+                        auto ec = filepath::mkdirs(fullPath, true);
                         if (ec) {
                             spdlog::error("[exchange::blocks] 无法创建目录[{}]: {}", fullPath, ec.message());
                             return; // 跳过该条目
@@ -125,7 +125,7 @@ namespace exchange {
                 size_t pos = filepath.find_last_of("/\\");
                 if (pos != std::string::npos) {
                     std::string dir = filepath.substr(0, pos);
-                    auto ec = util::mkdirs(dir, true);
+                    auto ec = filepath::mkdirs(dir, true);
                     if (ec) {
                         spdlog::error("[exchange::blocks] createParentDirectory failed for {}: {}", dir, ec.message());
                         return false;
@@ -185,7 +185,7 @@ namespace exchange {
             needUpdate = exchange::can_initialize(modified);
         }
         if(needUpdate) {
-            auto ec = util::check_filepath(blkFilename, true);
+            auto ec = filepath::check_filepath(blkFilename, true);
             ec.clear();
             std::ofstream file(blkFilename, std::ios::binary|std::ios::out|std::ios::trunc);
             if(!file.is_open()) {

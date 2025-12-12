@@ -15,6 +15,7 @@
 #include <quant1x/io/file.h>
 #include <quant1x/io/csv-reader.h>
 #include <quant1x/encoding/json.h>
+#include <quant1x/std/filepath.h>
 
 using json = nlohmann::json;
 
@@ -283,7 +284,7 @@ namespace exchange {
         std::lock_guard<std::mutex> lock(_margin_trading_cache_mutex);
 
         std::string cache_filename = config::get_meta_path() + "/" + marginTradingFilename;
-        util::check_filepath(cache_filename, true);
+        filepath::check_filepath(cache_filename, true);
         // 1. 获取缓存文件状态
         i64 lastModified = 0;
         if (std::filesystem::exists(cache_filename)) {

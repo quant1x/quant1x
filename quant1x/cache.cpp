@@ -1,4 +1,5 @@
 #include <quant1x/cache.h>
+#include <quant1x/std/filepath.h>
 #include <indicators/dynamic_progress.hpp>
 #include <indicators/progress_bar.hpp>
 #include <boost/pfr/core.hpp>
@@ -40,7 +41,7 @@ namespace cache {
 
     void doneUpdate(const std::string& date, const exchange::timestamp& timestamp) {
         std::string filename = stateFilename(date, timestamp);
-        auto err = util::check_filepath(filename, true);
+        auto err = filepath::check_filepath(filename, true);
         err.clear();
         io::write_file(filename);
     }
@@ -260,7 +261,7 @@ namespace cache {
 
                     // 4. 写入文件
                     if (!final_data.empty()) {
-                        auto ec = util::check_filepath(cache_filename, true);
+                        auto ec = filepath::check_filepath(cache_filename, true);
                         ec.clear();
                         std::ofstream out_file(cache_filename, std::ios::binary|std::ios::out | std::ios::trunc);
                         if (out_file) {

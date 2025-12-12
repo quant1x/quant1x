@@ -1,6 +1,7 @@
 #include <quant1x/std/api.h>
 #include <quant1x/std/strings.h>
 #include <quant1x/std/util.h>
+#include <quant1x/std/filepath.h>
 #include <quant1x/config/base.h>
 #include <quant1x/exchange/markets.h>
 #include <quant1x/encoding/yaml.h>
@@ -33,8 +34,8 @@ namespace config {
     // 初始化路径
     static void init_path(const std::string &path) {
         try {
-            std::string expandedPath = util::expand_homedir(path);
-            util::mkdirs(expandedPath);
+            std::string expandedPath = filepath::expand_user(path);
+            filepath::mkdirs(expandedPath);
             global_config().homeDir = std::move(expandedPath);
         } catch (const std::exception &e) {
             std::cerr << "路径初始化失败: " << e.what() << std::endl;
@@ -65,13 +66,13 @@ namespace config {
         static int count = 0;
         spdlog::info("lazy_init called: {}", ++count);
         init_path(defaultQuant1xDataPath);
-        auto config_filename = util::expand_homedir(global_config().homeDir + "/quant1x.yaml");
+        auto config_filename = filepath::expand_user(global_config().homeDir + "/quant1x.yaml");
         global_config().filename = std::move(config_filename);
         try {
             YAML::Node yaml = YAML::LoadFile(global_config().filename);
             std::string base_dir;
             encoding::safe_yaml::parse_field(yaml, "basedir", base_dir, global_config().homeDir);
-            global_config().cacheDir = util::expand_homedir(base_dir);
+            global_config().cacheDir = filepath::expand_user(base_dir);
             // 读取配置文件顶层的debug设置, 如果解析异常, 当作false处理
             bool in_debug = false;
             encoding::safe_yaml::parse_field(yaml, "debug", in_debug, false);
@@ -85,7 +86,7 @@ namespace config {
         }
 
         global_config().logsDir = global_config().cacheDir + "/logs";
-        auto err = util::mkdirs(global_config().logsDir, true);
+        auto err = filepath::mkdirs(global_config().logsDir, true);
         err.clear();
 
         std::cerr << "lazy_init config_filename = " << &global_config().filename << ",[" << global_config().filename << "]\n";

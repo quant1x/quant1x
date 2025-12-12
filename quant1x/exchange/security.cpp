@@ -3,6 +3,7 @@
 #include <quant1x/config/cache.h>
 #include <quant1x/exchange/blocks.h>
 #include <quant1x/level1/client.h>
+#include <quant1x/std/filepath.h>
 
 namespace exchange {
 
@@ -23,7 +24,7 @@ namespace exchange {
     void init_securities() {
         spdlog::debug("{}, begin", __FUNCTION__);
         auto cache_security_tp = io::last_modified_time(cache_security_filename);
-        auto ec = util::check_filepath(cache_security_filename, true);
+        auto ec = filepath::check_filepath(cache_security_filename, true);
         ec.clear();
         std::string cache_security_time = exchange::timestamp(cache_security_tp).toString();
         std::string check_time_point = exchange::timestamp::now().pre_market_time().toString();

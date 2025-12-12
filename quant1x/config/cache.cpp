@@ -1,6 +1,7 @@
 #include <quant1x/config/cache.h>
 #include <quant1x/config/base.h>
 #include <quant1x/exchange/markets.h>
+#include <quant1x/std/filepath.h>
 
 namespace config {
     namespace fs = std::filesystem;
@@ -183,7 +184,7 @@ namespace config {
         auto qmtOrderPath = defaultQmtCachePath();
         auto const &traderParameter = TraderConfig();
         auto &orderPath = traderParameter->OrderPath;
-        if (!orderPath.empty() && !util::check_filepath(orderPath, true)) {
+        if (!orderPath.empty() && !filepath::check_filepath(orderPath, true)) {
             qmtOrderPath = orderPath;
         }
         return qmtOrderPath;

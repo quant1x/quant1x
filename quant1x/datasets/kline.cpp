@@ -2,6 +2,7 @@
 #include <quant1x/datasets/kline_raw.h>
 #include <quant1x/factors/base.h>
 #include <quant1x/config/cache.h>
+#include <quant1x/std/filepath.h>
 
 namespace datasets {
 
@@ -20,7 +21,7 @@ namespace datasets {
         // }
 
         void save_kline(const std::string &filename, const std::vector<KLine>& values) {
-            util::check_filepath(filename, true);
+            filepath::check_filepath(filename, true);
             io::CSVWriter writer(filename);
             writer.write_row("Date", "Open", "Close", "High", "Low", "Volume", "Amount", "Up", "Down", "Datetime", "AdjustmentCount");
             for (const auto &row: values) {

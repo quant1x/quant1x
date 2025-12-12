@@ -1,4 +1,5 @@
 #include <quant1x/io/file.h>
+#include <quant1x/std/filepath.h>
 
 // macOS 特有宏定义必须放在最前面
 #ifdef __APPLE__
@@ -297,7 +298,7 @@ namespace io {
 
     bool write_file(const std::string& filename, const char *data, size_t size) {
         try {
-            util::check_filepath(filename, true);
+            filepath::check_filepath(filename, true);
             std::ofstream file(filename, std::ios::binary | std::ios::out | std::ios::trunc);
             if(!file.is_open()) {
                 return false;

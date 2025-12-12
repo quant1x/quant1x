@@ -394,6 +394,7 @@ set(quant1x-headers
     quant1x/std/api.h
     quant1x/std/base.h
     quant1x/std/buffer.h
+    quant1x/std/filepath.h
     quant1x/std/strings.h
     quant1x/std/util.h
     quant1x/std/format.h
@@ -402,6 +403,9 @@ set(quant1x-headers
     quant1x/std/safe.h
     quant1x/std/simd.h
     quant1x/std/cpu_info.h
+
+    # 核心库
+    quant1x/core/base.h
 
     # 运行时
     quant1x/runtime/crash.h
@@ -569,6 +573,7 @@ set(quant1x-sources
     # 标准库兼容
     quant1x/std/strings.cpp
     quant1x/std/time.cpp
+    quant1x/std/filepath.cpp
     quant1x/std/util.cpp
     quant1x/std/numerics.cpp
     quant1x/std/safe.cpp
@@ -576,6 +581,9 @@ set(quant1x-sources
     quant1x/std/cpu_info.cpp
     quant1x/std/affinity.cpp
     
+    # 核心库
+    quant1x/core/base.cpp
+
     # 运行时
     quant1x/runtime/core.cpp
     quant1x/runtime/crash.cpp

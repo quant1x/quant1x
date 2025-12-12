@@ -19,6 +19,8 @@ namespace api {
 
     std::chrono::system_clock::time_point from_local(const int64_t &milliseconds);
     int64_t from_time_point(const std::chrono::system_clock::time_point& tp);
+    // std::tm 转 time_point (假设tm为本地时间)
+    std::chrono::system_clock::time_point tm_to_time_point(const std::tm &tm);
 
     /// 获取当前日期的字符串
     std::string today();

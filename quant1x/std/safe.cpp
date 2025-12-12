@@ -1,4 +1,5 @@
 #include <quant1x/std/safe.h>
+#include <cstdlib>
 
 namespace safe {
     std::tm localtime(std::time_t t) noexcept {
@@ -27,5 +28,24 @@ namespace safe {
         }
 #endif
         return result;
+    }
+
+    std::optional<std::string> getenv(const char *name) {
+#ifdef _WIN32
+        char  *value = nullptr;
+        size_t len   = 0;
+        if (_dupenv_s(&value, &len, name) == 0 && value != nullptr) {
+            std::string result(value);
+            free(value);
+            return result;
+        }
+        return std::nullopt;
+#else
+        const char *value = std::getenv(name);
+        if (value) {
+            return std::string(value);
+        }
+        return std::nullopt;
+#endif
     }
 }  // namespace safe

@@ -1,6 +1,6 @@
 #include <quant1x/realtime/snapshot.h>
 #include <quant1x/exchange/markets.h>
-#include <quant1x/std/util.h>
+#include <quant1x/std/filepath.h>
 #include <capnp/serialize.h>
 #include <capnp/message.h>
 #include <mio/mmap.hpp>
@@ -123,7 +123,7 @@ namespace realtime {
     void sync_snapshots() {
         auto all_codes = exchange::GetCodeList();
         auto count = all_codes.size();
-        util::check_filepath(capnp_cache_filename, true);
+        filepath::check_filepath(capnp_cache_filename, true);
         // 确保文件存在且大小合适
         ensure_file_size(capnp_cache_filename, capnp_cache_size);
 

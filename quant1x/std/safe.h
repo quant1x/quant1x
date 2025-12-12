@@ -7,6 +7,7 @@
 #include <cstring>  // C标准库字符串函数
 #include <ctime>
 #include <string>
+#include <optional>
 
 namespace safe {
     // 安全的 localtime 函数，避免线程不安全
@@ -14,6 +15,9 @@ namespace safe {
 
     // 安全的 gmtime 函数，避免线程不安全
     std::tm gmtime(std::time_t t) noexcept;
+
+    // 跨平台安全获取环境变量
+    std::optional<std::string> getenv(const char *name);
 
     inline std::string strerror(int errnum) {
         constexpr size_t buf_size = 256;

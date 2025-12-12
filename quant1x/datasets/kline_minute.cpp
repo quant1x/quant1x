@@ -1,6 +1,7 @@
 #include <quant1x/datasets/kline_minute.h>
 #include <quant1x/datasets/kline_raw.h>
 #include <quant1x/pandas/rule.h>
+#include <quant1x/std/filepath.h>
 
 #include <algorithm>
 #include <cmath>
@@ -14,7 +15,7 @@ namespace datasets {
     namespace {
 
         void save_kline(const std::string &filename, const std::vector<MinuteKLine> &values) {
-            util::check_filepath(filename, true);
+            filepath::check_filepath(filename, true);
             io::CSVWriter writer(filename);
             writer.write_row("Date",
                              "Open",

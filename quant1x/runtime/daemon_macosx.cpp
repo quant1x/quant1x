@@ -4,6 +4,7 @@
 #include <pwd.h>
 #include <quant1x/runtime/core.h>
 #include <quant1x/runtime/service.h>
+#include <quant1x/std/safe.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 #include <sys/stat.h>
@@ -34,9 +35,9 @@ namespace service {
 
     // 获取当前用户名
     std::string get_current_username() {
-        const char *user = std::getenv("USER");
+        auto user = safe::getenv("USER");
         if (user) {
-            return std::string(user);
+            return *user;
         }
 
         uid_t          uid = getuid();
