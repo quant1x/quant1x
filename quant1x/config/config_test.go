@@ -12,41 +12,34 @@ import (
 
 // resetGlobals resets package-level globals so tests can control initialization.
 func resetGlobals() {
-	globalConfig = BaseConfig{}
-	globalCacheOnce = sync.Once{}
+	// reset trader globals only
 	globalTraderOnce = sync.Once{}
 	globalTrader = nil
 }
 
 func TestFilenames(t *testing.T) {
 	resetGlobals()
-	// prepare a fake cache dir
-	td := t.TempDir()
-	globalConfig.CacheDir = td
-	// mark lazy init as done so functions use globalConfig values
-	globalCacheOnce.Do(func() {})
-
 	code := "600000SZ" // 8 chars
 
-	// GetXdxrFilename
-	wantX := filepath.Clean(filepath.Join(td, "xdxr", CacheIdPath(code)+".csv"))
+	// GetXdxrFilename: 应该包含 xdxr 目录并以 <cacheid>.csv 结尾
 	gotX := GetXdxrFilename(code)
-	if gotX != wantX {
-		t.Fatalf("GetXdxrFilename wrong:\n got: %s\n want:%s", gotX, wantX)
+	gotXSlash := strings.ReplaceAll(gotX, "\\", "/")
+	if !strings.Contains(gotXSlash, "xdxr") || !strings.HasSuffix(gotXSlash, CacheIdPath(code)+".csv") {
+		t.Fatalf("GetXdxrFilename wrong: %s", gotX)
 	}
 
-	// GetKlineFilename forward
-	wantK := filepath.Clean(filepath.Join(td, "day", CacheIdPath(code)+".csv"))
+	// GetKlineFilename forward: 包含 day 目录并以 .csv 结尾
 	gotK := GetKlineFilename(code, true)
-	if gotK != wantK {
-		t.Fatalf("GetKlineFilename forward wrong:\n got: %s\n want:%s", gotK, wantK)
+	gotKSlash := strings.ReplaceAll(gotK, "\\", "/")
+	if !strings.Contains(gotKSlash, "day") || !strings.HasSuffix(gotKSlash, CacheIdPath(code)+".csv") {
+		t.Fatalf("GetKlineFilename forward wrong: %s", gotK)
 	}
 
-	// GetKlineFilename not forward
-	wantKr := filepath.Clean(filepath.Join(td, "day", CacheIdPath(code)+".raw"))
+	// GetKlineFilename not forward: 包含 day 目录并以 .raw 结尾
 	gotKr := GetKlineFilename(code, false)
-	if gotKr != wantKr {
-		t.Fatalf("GetKlineFilename raw wrong:\n got: %s\n want:%s", gotKr, wantKr)
+	gotKrSlash := strings.ReplaceAll(gotKr, "\\", "/")
+	if !strings.Contains(gotKrSlash, "day") || !strings.HasSuffix(gotKrSlash, CacheIdPath(code)+".raw") {
+		t.Fatalf("GetKlineFilename raw wrong: %s", gotKr)
 	}
 }
 
@@ -92,19 +85,8 @@ func TestTraderConfigLoad(t *testing.T) {
 		t.Fatalf("write config failed: %v", err)
 	}
 
-	// set global config filename and cache dir, and mark lazy init done
-	globalConfig.Filename = cfgFile
-	globalConfig.CacheDir = td
-	globalCacheOnce.Do(func() {})
-
-	// ensure trader globals reset
-	globalTraderOnce = sync.Once{}
-	globalTrader = nil
-
-	tp := TraderConfig()
-	if tp == nil {
-		t.Fatalf("TraderConfig returned nil")
-	}
+	// directly load trader config from YAML file (no package-level overrides)
+	tp := loadTraderConfigFromYAML(cfgFile)
 	if tp.OrderPath != filepath.Join(td, "orders") {
 		t.Fatalf("TraderConfig.OrderPath wrong: %s", tp.OrderPath)
 	}

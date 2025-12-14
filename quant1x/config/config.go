@@ -1,21 +1,12 @@
 package config
 
 import (
-	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
-	_ "unsafe"
-
-	"gopkg.in/yaml.v3"
-
+	"gitee.com/quant1x/quant1x/quant1x/core"
 	"gitee.com/quant1x/quant1x/quant1x/std"
 )
-
-// Go translation of config::BaseConfig and helpers from config.cpp
-
-const defaultQuant1xDataPath = "~/.q1x-go"
 
 // price cage defaults from C++ config/price_cage.h
 const (
@@ -24,99 +15,41 @@ const (
 	FixedSlippageForSell        = 0.01
 )
 
-type BaseConfig struct {
-	HomeDir        string
-	Filename       string
-	CacheDir       string
-	LogsDir        string
-	RunningInDebug bool
-	Data           map[string]any
-}
-
-var globalConfig BaseConfig
-var globalCacheOnce sync.Once
-
-func initPath(path string) {
-	expanded, _ := std.ExpandUser(path)
-	if expanded == "" {
-		expanded = path
-	}
-	_ = os.MkdirAll(expanded, 0o755)
-	globalConfig.HomeDir = expanded
-}
-
-func lazyInit() {
-	initPath(defaultQuant1xDataPath)
-	globalConfig.Filename, _ = std.ExpandUser(filepath.Join(globalConfig.HomeDir, "quant1x.yaml"))
-
-	// try to read YAML and honor top-level basedir/debug and generic data
-	data, err := os.ReadFile(globalConfig.Filename)
-	if err == nil {
-		var node map[string]interface{}
-		if err := yaml.Unmarshal(data, &node); err == nil {
-			if v, ok := node["basedir"].(string); ok && strings.TrimSpace(v) != "" {
-				if expanded, _ := std.ExpandUser(strings.TrimSpace(v)); expanded != "" {
-					globalConfig.CacheDir = expanded
-				}
-			}
-			if d, ok := node["debug"].(bool); ok {
-				globalConfig.RunningInDebug = d
-			}
-			globalConfig.Data = node
-		} else {
-			// fallback to home
-			globalConfig.CacheDir = globalConfig.HomeDir
-			_ = err
-		}
-	} else {
-		globalConfig.CacheDir = globalConfig.HomeDir
-	}
-
-	globalConfig.LogsDir = filepath.Join(globalConfig.CacheDir, "logs")
-	_ = std.MkDirs(globalConfig.LogsDir)
-}
+// package-level helpers: use core defaults
 
 // Trader loading and defaults moved to `trader_parameter.go`, `strategy_parameter.go`, and `rule_parameter.go`.
 
 func ConfigFilename() string {
-	globalCacheOnce.Do(lazyInit)
-	return globalConfig.Filename
+	return core.GetConfigfilePath()
 }
 
 func IsDebug() bool {
-	globalCacheOnce.Do(lazyInit)
-	return globalConfig.RunningInDebug
-}
-
-func DefaultHomePath() string {
-	globalCacheOnce.Do(lazyInit)
-	return globalConfig.HomeDir
-}
-
-func DefaultCachePath() string {
-	globalCacheOnce.Do(lazyInit)
-	return globalConfig.CacheDir
+	m := core.GetConfigMap()
+	if v, ok := m["debug"].(bool); ok {
+		return v
+	}
+	return false
 }
 
 func GetMetaPath() string {
-	return filepath.Join(DefaultHomePath(), "meta")
+	return core.GetMetaPath()
 }
 
 func GetLogsPath() string {
-	return filepath.Join(DefaultCachePath(), "logs")
+	return core.GetLogsPath()
 }
 
 func GetCalendarFilename() string {
-	return filepath.Join(GetMetaPath(), "calendar")
+	return filepath.Join(core.GetMetaPath(), "calendar")
 }
 
 func GetSecurityFilename() string {
-	return filepath.Join(GetMetaPath(), "securities.csv")
+	return filepath.Join(core.GetMetaPath(), "securities.csv")
 }
 
 func GetSectorFilename(date string) string {
 	filename := "blocks." + date
-	p := filepath.Join(GetMetaPath(), filename)
+	p := filepath.Join(core.GetMetaPath(), filename)
 	return filepath.Clean(p)
 }
 
@@ -126,7 +59,7 @@ func GetHistoricalTradeFilename(code, cacheDate string) string {
 	}
 	year := cacheDate[:4]
 	date := strings.ReplaceAll(cacheDate, "-", "")
-	p := filepath.Join(DefaultCachePath(), "trans", year, date, code+".csv")
+	p := filepath.Join(core.DefaultCachePath(), "trans", year, date, code+".csv")
 	return filepath.Clean(p)
 }
 
@@ -136,28 +69,28 @@ func GetChipDistributionFilename(code, cacheDate string) string {
 	}
 	year := cacheDate[:4]
 	date := strings.ReplaceAll(cacheDate, "-", "")
-	p := filepath.Join(DefaultCachePath(), "trans", year, date, code+".cd")
+	p := filepath.Join(core.DefaultCachePath(), "trans", year, date, code+".cd")
 	return filepath.Clean(p)
 }
 
 func GetBlockPath() string {
-	return GetMetaPath()
+	return core.GetMetaPath()
 }
 
 func GetXdxrPath() string {
-	return filepath.Join(DefaultCachePath(), "xdxr")
+	return filepath.Join(core.DefaultCachePath(), "xdxr")
 }
 
 func GetDayPath() string {
-	return filepath.Join(DefaultCachePath(), "day")
+	return filepath.Join(core.DefaultCachePath(), "day")
 }
 
 func GetKlinePath(freq string) string {
-	return filepath.Join(DefaultCachePath(), freq)
+	return filepath.Join(core.DefaultCachePath(), freq)
 }
 
 func GetMinutePath() string {
-	return filepath.Join(DefaultCachePath(), "minutes")
+	return filepath.Join(core.DefaultCachePath(), "minutes")
 }
 
 // GetXdxrFilename 根据证券代码生成对应的除权除息数据文件路径
@@ -207,12 +140,12 @@ func GetMinuteFilename(code, cacheDate string) string {
 }
 
 func GetHoldingPath() string {
-	return filepath.Join(DefaultCachePath(), "holding")
+	return filepath.Join(core.DefaultCachePath(), "holding")
 }
 
 func QuarterlyCachePath(date string) string {
 	q, _, _ := std.GetQuarterByDate(date, 0)
-	return filepath.Join(DefaultCachePath(), "infoq", q)
+	return filepath.Join(core.DefaultCachePath(), "infoq", q)
 }
 
 func QuarterlyFilename(date, keyword string) string {
@@ -224,7 +157,7 @@ func ReportsFilename(date string) string {
 }
 
 func DefaultQmtCachePath() string {
-	return filepath.Join(DefaultCachePath(), "qmt")
+	return filepath.Join(core.DefaultCachePath(), "qmt")
 }
 
 func GetQmtCachePath() string {

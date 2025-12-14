@@ -77,7 +77,8 @@ impl<T> Queue<T> {
     ///
     /// # Examples
     /// ```
-    /// let ring_buffer = RingBuffer::new(10);  // 实际容量会是16
+    /// use quant1x::runtime::Queue;
+    /// let ring_buffer = Queue::<i32>::new(10);  // 实际容量会是16
     /// ```
     ///
     /// # Panics

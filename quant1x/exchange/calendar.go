@@ -10,11 +10,18 @@ import (
 	"sort"
 	"strings"
 
-	"gitee.com/quant1x/quant1x/quant1x/exchange/meta"
+	"gitee.com/quant1x/quant1x/quant1x/core"
 	"gitee.com/quant1x/quant1x/quant1x/runtime"
 
 	"time"
 )
+
+// CalendarFilename returns full path to calendar cache file under meta directory.
+// Previously this helper lived in package `meta`; migrated here to keep
+// exchange-specific cache layout nearby.
+func CalendarFilename() string {
+	return filepath.Join(core.GetMetaPath(), "calendar")
+}
 
 const (
 	sinaCalendarURL     = "https://finance.sina.com.cn/realstock/company/klc_td_sh.txt"
@@ -25,8 +32,6 @@ var (
 	// in-memory caches
 	globalCalendarsString    []string
 	globalCalendarsTimestamp []Timestamp
-	// optional resolver and rolling-once integration (set by caller to avoid import cycles)
-	calendarFilenameResolver func() string
 	// Initialize a default RollingOnce using the central `runtime` package so call sites can invoke it directly
 	// and behavior matches C++'s global_calendar_once->Do(...).
 	calendarRollingOnce = runtime.CreateDaily(PreMarketHour, PreMarketMinute)
@@ -83,7 +88,7 @@ func decode(text string) []string {
 
 // updateCalendar downloads calendar data from Sina and caches it to disk.
 func updateCalendar() error {
-	fname := meta.CalendarFilename()
+	fname := CalendarFilename()
 	// attempt conditional GET if file exists
 	var modtime time.Time
 	if fi, err := os.Stat(fname); err == nil {
@@ -159,19 +164,10 @@ func updateCalendar() error {
 	return nil
 }
 
-func containsString(slice []string, s string) bool {
-	for _, v := range slice {
-		if v == s {
-			return true
-		}
-	}
-	return false
-}
-
 // lazyLoadCalendar ensures the calendar cache exists and loads it into memory.
 func lazyLoadCalendar() {
 	_ = updateCalendar()
-	fname := meta.CalendarFilename()
+	fname := CalendarFilename()
 	f, err := os.Open(fname)
 	if err != nil {
 		return

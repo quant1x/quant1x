@@ -5,6 +5,8 @@ import (
 	"sync"
 
 	"gopkg.in/yaml.v3"
+
+	"gitee.com/quant1x/quant1x/quant1x/core"
 )
 
 // TraderParameter mirrors C++ config::TraderParameter (fields only).
@@ -132,7 +134,7 @@ func TraderConfig() *TraderParameter {
 	globalTraderOnce.Do(func() {
 		// ensure config filename initialized
 		_ = ConfigFilename()
-		tp := loadTraderConfigFromYAML(globalConfig.Filename)
+		tp := loadTraderConfigFromYAML(core.GetConfigfilePath())
 		globalTrader = &tp
 	})
 	return globalTrader

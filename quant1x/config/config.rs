@@ -1,122 +1,7 @@
 #![allow(dead_code)]
 use serde::{Deserialize, Serialize};
 use serde_yaml;
-use std::fs;
 use std::path::PathBuf;
-use std::sync::OnceLock;
-
-/// Application configuration (single type for both base paths and typed data).
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct AppConfig {
-    // computed at startup (not from YAML)
-    #[serde(skip)]
-    pub home_dir: String,
-    #[serde(skip)]
-    pub filename: String,
-
-    // from YAML: mapped from `basedir`
-    #[serde(default, rename = "basedir")]
-    pub cache_dir: String,
-
-    #[serde(default)]
-    pub logs_dir: String,
-
-    // from YAML: mapped from `debug`
-    #[serde(default, rename = "debug")]
-    pub running_in_debug: bool,
-
-    // typed `data` subsection parsed from YAML at startup
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub data: Option<DataSection>,
-}
-
-static CONFIG: OnceLock<AppConfig> = OnceLock::new();
-
-fn expand_homedir(path: &str) -> Option<PathBuf> {
-    // prefer the crate-level homedir helper which mirrors C++ precedence
-    if let Some(home) = crate::std::homedir() {
-        if path.starts_with("~/") || path == "~" {
-            let mut p = home;
-            let tail = if path == "~" { "" } else { &path[2..] };
-            if !tail.is_empty() {
-                p.push(tail);
-            }
-            return Some(p);
-        }
-    }
-    Some(PathBuf::from(path))
-}
-
-fn default_data_path() -> String {
-    "~/.q1x-rust".to_string()
-}
-
-fn lazy_init() -> AppConfig {
-    let mut cfg = AppConfig::default();
-    // init path
-    let default_home = default_data_path();
-    if let Some(home) = expand_homedir(&default_home) {
-        // create dir
-        if let Err(e) = fs::create_dir_all(&home) {
-            log::warn!("failed to create config dir {:?}: {}", home, e);
-        }
-        // quant1x.yaml inside home
-        let mut config_file = home.clone();
-        config_file.push("quant1x.yaml");
-
-        cfg.home_dir = home.to_string_lossy().to_string();
-        cfg.filename = config_file.to_string_lossy().to_string();
-
-        // try read yaml and parse via a single typed root struct (no Value/node access)
-        match fs::read_to_string(&cfg.filename) {
-            Ok(s) => match serde_yaml::from_str::<AppConfig>(&s) {
-                Ok(mut parsed) => {
-                    // merge computed values: home_dir and filename come from expanded home
-                    parsed.home_dir = cfg.home_dir.clone();
-                    parsed.filename = cfg.filename.clone();
-                    // if cache_dir from YAML is relative, expand
-                    parsed.cache_dir = if parsed.cache_dir.is_empty() {
-                        cfg.home_dir.clone()
-                    } else {
-                        expand_homedir(&parsed.cache_dir)
-                            .map(|p| p.to_string_lossy().to_string())
-                            .unwrap_or_else(|| cfg.home_dir.clone())
-                    };
-                    // logs_dir default
-                    if parsed.logs_dir.is_empty() {
-                        parsed.logs_dir = format!("{}/logs", parsed.cache_dir);
-                    }
-                    cfg = parsed;
-                }
-                Err(e) => {
-                    log::warn!("failed to parse config yaml {}: {}", cfg.filename, e);
-                    cfg.cache_dir = cfg.home_dir.clone();
-                }
-            },
-            Err(_) => {
-                // no config file, use defaults
-                cfg.cache_dir = cfg.home_dir.clone();
-            }
-        }
-    } else {
-        // fallback
-        cfg.home_dir = String::from(".");
-        cfg.filename = String::from("quant1x.yaml");
-        cfg.cache_dir = String::from(".");
-    }
-
-    // logs dir
-    cfg.logs_dir = format!("{}/logs", cfg.cache_dir);
-    // try create logs dir
-    let _ = fs::create_dir_all(&cfg.logs_dir);
-
-    cfg
-}
-
-/// Get a reference to global AppConfig, initialize lazily.
-pub fn global_config() -> &'static AppConfig {
-    CONFIG.get_or_init(|| lazy_init())
-}
 
 // Typed application-level configuration parsed once at startup.
 use std::collections::HashMap;
@@ -137,32 +22,33 @@ pub struct CacheSection {
 
 /// Return the path to the config filename (quant1x.yaml) after lazy init.
 pub fn config_filename() -> String {
-    global_config().filename.clone()
+    crate::core::get_configfile_path().to_string()
 }
 
 /// Whether running in debug mode per config file (default false)
 pub fn is_debug() -> bool {
-    global_config().running_in_debug
+    let m = crate::core::get_config_map();
+    if let Some(v) = m.get("debug") {
+        return v.as_bool().unwrap_or(false);
+    }
+    false
 }
 
 pub fn default_home_path() -> String {
-    global_config().home_dir.clone()
+    crate::core::get_base_path().to_string()
 }
 
 pub fn default_cache_path() -> String {
-    global_config().cache_dir.clone()
+    crate::core::get_data_path().to_string()
 }
 
 pub fn get_meta_path() -> String {
-    let mut p = std::path::PathBuf::from(default_home_path());
-    p.push("meta");
+    let p = crate::core::get_meta_path();
     p.to_string_lossy().to_string()
 }
 
 pub fn get_logs_path() -> String {
-    let mut p = std::path::PathBuf::from(default_cache_path());
-    p.push("logs");
-    p.to_string_lossy().to_string()
+    crate::core::get_logs_path().to_string()
 }
 
 pub fn get_calendar_filename() -> String {
@@ -331,17 +217,21 @@ pub fn get_minute_kline_config() -> MinuteKLineConfig {
     // data.cache.kline and pick the first entry (if multiple exist) while
     // logging a warning. Otherwise fall back to legacy YAML logic but still
     // pick the first entry instead of panicking or disabling by default.
-    if let Some(typed) = &global_config().data {
-        if let Some(kmap) = &typed.cache.as_ref().and_then(|c| c.kline.as_ref()) {
-            if !kmap.is_empty() {
-                if kmap.len() > 1 {
-                    log::warn!(
-                        "typed config: multiple kline entries found, selecting the first one"
-                    );
-                }
-                if let Some((k, v)) = kmap.iter().next() {
-                    cfg.frequency = k.clone();
-                    cfg.enabled = *v;
+    // Try to read typed `data` section from core config map (if present)
+    let cmap = crate::core::get_config_map();
+    if let Some(data_val) = cmap.get("data") {
+        if let Ok(typed) = serde_yaml::from_value::<DataSection>(data_val.clone()) {
+            if let Some(kmap) = typed.cache.and_then(|c| c.kline) {
+                if !kmap.is_empty() {
+                    if kmap.len() > 1 {
+                        log::warn!(
+                            "typed config: multiple kline entries found, selecting the first one"
+                        );
+                    }
+                    if let Some((k, v)) = kmap.into_iter().next() {
+                        cfg.frequency = k;
+                        cfg.enabled = v;
+                    }
                 }
             }
         }
@@ -374,21 +264,24 @@ pub fn get_minute_kline_config() -> MinuteKLineConfig {
 pub fn get_concurrency_for(key: &str) -> usize {
     // Read from typed config parsed at startup (TYPED_CONFIG). If not present
     // or no matching key, fall back to detected parallelism.
-    if let Some(typed) = &global_config().data {
-        if let Some(map) = &typed.concurrency {
-            if let Some(v) = map.get(key) {
-                let mut result = std::cmp::min(*v as usize, 8);
-                if let Some(max) = crate::level1::pool_max_connections() {
-                    result = std::cmp::min(result, max);
+    // Try typed config `data.concurrency` from core config map
+    if let Some(data_val) = crate::core::get_config_map().get("data") {
+        if let Ok(typed) = serde_yaml::from_value::<DataSection>(data_val.clone()) {
+            if let Some(map) = typed.concurrency {
+                if let Some(v) = map.get(key) {
+                    let mut result = std::cmp::min(*v as usize, 8);
+                    if let Some(max) = crate::level1::pool_max_connections() {
+                        result = std::cmp::min(result, max);
+                    }
+                    return result;
                 }
-                return result;
-            }
-            if let Some(v) = map.get("default") {
-                let mut result = std::cmp::min(*v as usize, 8);
-                if let Some(max) = crate::level1::pool_max_connections() {
-                    result = std::cmp::min(result, max);
+                if let Some(v) = map.get("default") {
+                    let mut result = std::cmp::min(*v as usize, 8);
+                    if let Some(max) = crate::level1::pool_max_connections() {
+                        result = std::cmp::min(result, max);
+                    }
+                    return result;
                 }
-                return result;
             }
         }
     }
