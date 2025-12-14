@@ -4,6 +4,9 @@ use crate::level1::protocol::{self, commands, Request, RequestHeader, Response, 
 use crate::std::BinaryStream;
 use encoding_rs::GBK;
 
+/// 单次最大获取多少条股票数据
+pub const PRE_REQUEST_MAX: u32 = 1600;
+
 // Request builder for SECURITY_LIST
 #[allow(dead_code)]
 #[derive(Debug, Clone)]

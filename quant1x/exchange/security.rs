@@ -85,7 +85,7 @@ fn init_securities_impl() -> Result<(), Box<dyn std::error::Error>> {
             MARKET_BEIJING as u16,
         ];
         let mut all: Vec<SecurityInfo> = Vec::new();
-        let count = 1600u32;
+        let count = crate::level1::security_list::PRE_REQUEST_MAX;
         for &market in markets.iter() {
             let mut start: u32 = 0;
             loop {
