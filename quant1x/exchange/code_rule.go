@@ -3,32 +3,48 @@ package exchange
 import (
 	"regexp"
 	"strings"
+
+	"gitee.com/quant1x/quant1x/quant1x/std"
 )
 
-// Market 表示交易所
-type Market string
+// SecurityType 表示证券类型（枚举，基于 int8）
+type SecurityType int8
 
 const (
-	MarketSSE  Market = "sh" // 上海证券交易所
-	MarketSZSE Market = "sz" // 深圳证券交易所
-	MarketBJSE Market = "bj" // 北京证券交易所
-	MarketHK   Market = "hk" // 香港证券交易所
+	TypeUnknown SecurityType = iota // 未知类型
+	TypeStock                       // A股/普通股票
+	TypeETF                         // 交易所交易基金
+	TypeFund                        // 各类基金（如 LOF、封闭式基金等）
+	TypeBond                        // 债券（公司债、可转债、可交换债等）
+	TypeBStock                      // B股
+	TypeIPO                         // 新股申购/新股
+	TypeIndex                       // 指数（如上证指数、深证指数等）
+	TypeBlock                       // 板块/板块指数
 )
 
-// SecurityType 表示证券类型
-type SecurityType string
-
-const (
-	TypeStock   SecurityType = "stock"
-	TypeETF     SecurityType = "etf"
-	TypeFund    SecurityType = "fund" // LOF、封闭式基金等
-	TypeBond    SecurityType = "bond"
-	TypeBStock  SecurityType = "b_stock"
-	TypeIPO     SecurityType = "ipo"
-	TypeIndex   SecurityType = "index"
-	TypeBlock   SecurityType = "block"
-	TypeUnknown SecurityType = "unknown"
-)
+// String 返回 SecurityType 的字符串表示
+func (t SecurityType) String() string {
+	switch t {
+	case TypeStock:
+		return "stock"
+	case TypeETF:
+		return "etf"
+	case TypeFund:
+		return "fund"
+	case TypeBond:
+		return "bond"
+	case TypeBStock:
+		return "b_stock"
+	case TypeIPO:
+		return "ipo"
+	case TypeIndex:
+		return "index"
+	case TypeBlock:
+		return "block"
+	default:
+		return "unknown"
+	}
+}
 
 // CodeRule 表示一条证券代码前缀规则
 type CodeRule struct {
@@ -169,20 +185,20 @@ func matchRule(code string, rules []CodeRule) (SecurityType, string) {
 }
 
 // DetectSecurity 解析证券代码，返回(市场, 类型, 描述)
-func DetectSecurity(input string) (Market, SecurityType, string) {
+func DetectSecurity(input string) (ExchangeCode, SecurityType, string) {
 	// 标准化：去除空格、点，转小写
 	s := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(input), ".", ""))
 
-	var market Market
+	var market ExchangeCode
 	var code string
 
 	// 1. 尝试解析显式市场标识(前缀或后缀)
 	if len(s) >= 7 {
 		if strings.HasPrefix(s, "sh") || strings.HasPrefix(s, "sz") || strings.HasPrefix(s, "bj") || strings.HasPrefix(s, "hk") {
-			market = Market(s[:2])
+			market = ExchangeCode(s[:2])
 			code = s[2:]
 		} else if strings.HasSuffix(s, "sh") || strings.HasSuffix(s, "sz") || strings.HasSuffix(s, "bj") || strings.HasSuffix(s, "hk") {
-			market = Market(s[len(s)-2:])
+			market = ExchangeCode(s[len(s)-2:])
 			code = s[:len(s)-2]
 		}
 	}
@@ -195,18 +211,18 @@ func DetectSecurity(input string) (Market, SecurityType, string) {
 			case strings.HasPrefix(code, "6") || strings.HasPrefix(code, "5") ||
 				strings.HasPrefix(code, "9") || strings.HasPrefix(code, "7") ||
 				strings.HasPrefix(code, "000"):
-				market = MarketSSE
+				market = ExchangeSSE
 			case strings.HasPrefix(code, "0") || strings.HasPrefix(code, "3") ||
 				strings.HasPrefix(code, "1") || strings.HasPrefix(code, "2"):
-				market = MarketSZSE
+				market = ExchangeSZSE
 			case strings.HasPrefix(code, "8") || strings.HasPrefix(code, "92"):
-				market = MarketBJSE
+				market = ExchangeBJSE
 			default:
 				return "", TypeUnknown, "无法识别市场"
 			}
 		} else if regexp.MustCompile(`^\d{5}$`).MatchString(s) {
 			code = s
-			market = MarketHK
+			market = ExchangeHK
 		} else {
 			code = s
 		}
@@ -221,19 +237,19 @@ func DetectSecurity(input string) (Market, SecurityType, string) {
 
 	// 4. 全局规则优先(如板块指数)
 	if typ, desc := matchRule(code, globalRules); typ != TypeUnknown {
-		return MarketSSE, typ, desc // 板块指数归属上证体系
+		return ExchangeSSE, typ, desc // 板块指数归属上证体系
 	}
 
 	// 5. 按市场匹配规则
 	var rules []CodeRule
 	switch market {
-	case MarketSSE:
+	case ExchangeSSE:
 		rules = sseRules
-	case MarketSZSE:
+	case ExchangeSZSE:
 		rules = szseRules
-	case MarketBJSE:
+	case ExchangeBJSE:
 		rules = bjseRules
-	case MarketHK:
+	case ExchangeHK:
 		rules = hkseRules
 	default:
 		return market, TypeUnknown, "不支持的市场"
@@ -247,7 +263,7 @@ func DetectSecurity(input string) (Market, SecurityType, string) {
 }
 
 // 便捷函数
-func GetMarket(code string) Market {
+func GetMarket(code string) ExchangeCode {
 	mkt, _, _ := DetectSecurity(code)
 	return mkt
 }
@@ -255,4 +271,127 @@ func GetMarket(code string) Market {
 func GetSecurityType(code string) SecurityType {
 	_, typ, _ := DetectSecurity(code)
 	return typ
+}
+
+// Detect 解析证券代码并返回 `SecurityCode`（包含 Market 和 Symbol）
+// 要求：对输入仅做一次检测（仅调用一次 regexp FindStringSubmatch），然后基于规则表解析类型。
+// detectRegexp 仅用于一次性提取输入的组成部分：
+// - 前缀形式: <flag><code> (例如 sh600600, hk00700)
+// - 后缀形式: <code>.<flag> (例如 600600.sh, 00700.hk)
+// - 纯形式: <code> (例如 600600 或 00700)
+// - 字母后缀: <alpha>.<flag> (例如 APPL.US)
+func Detect(input string) SecurityCode {
+	raw := strings.TrimSpace(input)
+	if raw == "" {
+		return SecurityCode{Market: ExchangeIdShangHai, Symbol: "", Type: TypeUnknown}
+	}
+	pureCode := strings.ToLower(raw)
+	symbol := ""                    // 纯代码部分
+	exchangeCode := ExchangeUnknown // 默认未知市场
+	exchangeId := ExchangeIdUnknown // 默认未知市场
+	typ := TypeUnknown              // 默认未知类型
+	if std.StartsWith(pureCode, AllExchangeCodes) {
+		// 前缀形式: sh600000, hk00700, usappl
+		symbol = pureCode[2:]
+		exchangeCode = ExchangeCode(pureCode[:2])
+		exchangeId, _ = exchangeCode.Id()
+	} else if std.EndsWith(pureCode, AllExchangeCodes) && len(pureCode) >= 3 && pureCode[len(pureCode)-3] == '.' {
+		// 后缀形式: 600000.sh, 00700.hk, APPL.us
+		suffixLength := 3 // 包含点号
+		symbol = pureCode[:len(pureCode)-suffixLength]
+		exchangeCode = ExchangeCode(pureCode[len(pureCode)-2:])
+		exchangeId, _ = exchangeCode.Id()
+	} else {
+		// 纯形式或字母: 600000, 00700, APPL
+		codeLength := len(pureCode)
+		switch codeLength {
+		case 4: // 可能为美股代码（4位字母），否则视为未知
+			// 仅当全部为字母时认定为美股代码
+			if regexp.MustCompile(`^[a-z]{4}$`).MatchString(pureCode) {
+				exchangeCode = ExchangeUS
+				exchangeId = ExchangeIdUSA
+				symbol = pureCode
+				typ = TypeStock
+			} else {
+				// 未识别的 4 位代码，标记为未知
+				exchangeCode = ExchangeUnknown
+				exchangeId = ExchangeIdUnknown
+				symbol = ""
+				typ = TypeUnknown
+			}
+		case 5: // 港股代码，5位数字
+			exchangeCode = ExchangeHK
+			exchangeId = ExchangeIdHongKong
+			symbol = pureCode
+		case 6: // A股代码，6位数
+			// 1. 全局规则优先(如板块指数)
+			if typ_, desc := matchRule(pureCode, globalRules); typ_ != TypeUnknown {
+				_ = desc
+				symbol = pureCode
+				exchangeCode = ExchangeSSE
+				exchangeId = ExchangeIdShangHai
+				return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ_}
+			}
+			// 2. 按市场匹配规则
+			// 2.1 深交所
+			if typ_, desc := matchRule(pureCode, szseRules); typ_ != TypeUnknown {
+				_ = desc
+				symbol = pureCode
+				exchangeCode = ExchangeSZSE
+				exchangeId = ExchangeIdShenZhen
+				return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ_}
+			}
+			// 2.2 北交所
+			if typ_, desc := matchRule(pureCode, bjseRules); typ_ != TypeUnknown {
+				_ = desc
+				symbol = pureCode
+				exchangeCode = ExchangeBJSE
+				exchangeId = ExchangeIdBeiJing
+				return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ_}
+			}
+			// 2.3 上交所
+			if typ_, desc := matchRule(pureCode, sseRules); typ_ != TypeUnknown {
+				_ = desc
+				symbol = pureCode
+				exchangeCode = ExchangeSSE
+				exchangeId = ExchangeIdShangHai
+				return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ_}
+			}
+		}
+	}
+
+	if exchangeId == ExchangeIdUnknown {
+		// 无法识别市场
+		return SecurityCode{Market: ExchangeIdUnknown, Symbol: "", Type: TypeUnknown}
+	}
+
+	if typ == TypeUnknown {
+		// 基于市场规则解析类型
+		var rules []CodeRule
+		switch exchangeId {
+		case ExchangeIdShangHai:
+			rules = sseRules
+		case ExchangeIdShenZhen:
+			rules = szseRules
+		case ExchangeIdBeiJing:
+			rules = bjseRules
+		case ExchangeIdHongKong:
+			rules = hkseRules
+		case ExchangeIdUSA:
+			typ = TypeStock // 美股默认股票
+			return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ}
+		default:
+			return SecurityCode{Market: ExchangeIdUnknown, Symbol: "", Type: TypeUnknown}
+		}
+		if typ_, _ := matchRule(symbol, rules); typ_ != TypeUnknown {
+			typ = typ_
+			return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ}
+		} else {
+			return SecurityCode{Market: ExchangeIdUnknown, Symbol: "", Type: TypeUnknown}
+		}
+	} else {
+		// 已识别类型，直接返回, 不进行规则匹配
+		// 适用于美股等市场
+		return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ}
+	}
 }

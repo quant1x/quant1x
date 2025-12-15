@@ -1,5 +1,5 @@
 #include <quant1x/config/strategy_parameter.h>
-#include <quant1x/exchange/markets.h>
+#include <quant1x/instruments/markets.h>
 #include <quant1x/exchange/margin_trading.h>
 
 namespace config {
@@ -78,7 +78,7 @@ namespace config {
         }
 
         if (codes.empty()) {
-            codes = exchange::GetStockCodeList();
+            codes = instruments::GetStockCodeList();
         }
         return Filter(codes);
     }

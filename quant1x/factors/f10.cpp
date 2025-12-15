@@ -1,5 +1,5 @@
 #include <quant1x/encoding/csv.h>
-#include <quant1x/exchange/markets.h>
+#include <quant1x/instruments/markets.h>
 #include <quant1x/level1/client.h>
 #include <quant1x/datasets/xdxr.h>
 #include <quant1x/factors/f10.h>
@@ -106,7 +106,7 @@ static f10SecurityInfo checkoutSecurityBasicInfo(const std::string &security_cod
 
         info.SubNew = current < ipo_date;
     }
-    auto securityInfo = exchange::get_security_info(security_code);
+    auto securityInfo = instruments::get_security_info(security_code);
     if(securityInfo.has_value()) {
         info.VolUnit = securityInfo->lotSize;
         info.DecimalPoint = securityInfo->pricePrecision;

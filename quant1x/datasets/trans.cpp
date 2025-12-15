@@ -131,7 +131,7 @@ namespace datasets {
         if (today_is_last_trading_date) {
             while (true) {
                 level1::TransactionRequest request(correctedCode, start, offset);
-                level1::TransactionResponse response(marketId, pureCode.c_str());
+                level1::TransactionResponse response(static_cast<int>(marketId), pureCode.c_str());
                 auto conn = level1::get_std_conn();
                 auto err = level1::process(conn->socket(), request, response);
                 if (err) {
@@ -165,7 +165,7 @@ namespace datasets {
         } else {
             while (true) {
                 level1::HistoryTransactionRequest request(correctedCode, u32Date, start, offset);
-                level1::HistoryTransactionResponse response(marketId, pureCode.c_str());
+                level1::HistoryTransactionResponse response(static_cast<int>(marketId), pureCode.c_str());
                 auto conn = level1::get_std_conn();
                 auto err = level1::process(conn->socket(), request, response);
                 if (err) {

@@ -1,14 +1,25 @@
 from enum import Enum
 from typing import Tuple, List
 
-# Constants
-MARKET_SHANGHAI = "sh"
-MARKET_SHENZHEN = "sz"
-MARKET_BEIJING = "bj"
-MARKET_HONGKONG = "hk"
-MARKET_USA = "us"
+# Canonical exchange flag aliases (use these for cross-language consistency)
+EXCHANGE_SSE = "sh"
+EXCHANGE_SZSE = "sz"
+EXCHANGE_BJSE = "bj"
+EXCHANGE_HK = "hk"
+EXCHANGE_US = "us"
 
-MARKET_FLAGS = ["sh", "sz", "SH", "SZ", "bj", "BJ", "hk", "HK", "us", "US"]
+MARKET_FLAGS = [
+    EXCHANGE_SSE,
+    EXCHANGE_SZSE,
+    EXCHANGE_BJSE,
+    EXCHANGE_HK,
+    EXCHANGE_US,
+    EXCHANGE_SSE.upper(),
+    EXCHANGE_SZSE.upper(),
+    EXCHANGE_BJSE.upper(),
+    EXCHANGE_HK.upper(),
+    EXCHANGE_US.upper(),
+]
 
 SHANGHAI_MAIN_BOARD_PREFIXES = ["50", "51", "60", "68", "90", "110", "113", "132", "204"]
 SHANGHAI_SPECIAL_PREFIXES = ["5", "6", "9", "7"]
@@ -67,15 +78,15 @@ def get_security_code(market: MarketType, symbol: str) -> str:
         str: 根据市场规则生成的完整证券代码字符串
     """
     if market == MarketType.USA:
-        return MARKET_USA + symbol
+        return EXCHANGE_US + symbol
     elif market == MarketType.HongKong:
-        return MARKET_HONGKONG + symbol[:5]
+        return EXCHANGE_HK + symbol[:5]
     elif market == MarketType.BeiJing:
-        return MARKET_BEIJING + symbol[:6]
+        return EXCHANGE_BJSE + symbol[:6]
     elif market == MarketType.ShenZhen:
-        return MARKET_SHENZHEN + symbol[:6]
+        return EXCHANGE_SZSE + symbol[:6]
     else:
-        return MARKET_SHANGHAI + symbol[:6]
+        return EXCHANGE_SSE + symbol[:6]
 
 def get_market(symbol: str) -> str:
     """
@@ -93,24 +104,24 @@ def get_market(symbol: str) -> str:
         3. 默认返回上海市场标识
     """
     code = symbol.strip()
-    market = MARKET_SHANGHAI
+    market = EXCHANGE_SSE
 
     if starts_with(code, MARKET_FLAGS):
         market = code[:2].lower()
     elif ends_with(code, MARKET_FLAGS):
         market = code[-2:].lower()
     elif starts_with(code, SHANGHAI_MAIN_BOARD_PREFIXES):
-        market = MARKET_SHANGHAI
+        market = EXCHANGE_SSE
     elif starts_with(code, SHENZHEN_MAIN_BOARD_PREFIXES):
-        market = MARKET_SHENZHEN
+        market = EXCHANGE_SZSE
     elif starts_with(code, SHANGHAI_SPECIAL_PREFIXES):
-        market = MARKET_SHANGHAI
+        market = EXCHANGE_SSE
     elif starts_with(code, SECTOR_PREFIXES):
-        market = MARKET_SHANGHAI
+        market = EXCHANGE_SSE
     elif starts_with(code, BEIJING_MAIN_BOARD_PREFIXES):
-        market = MARKET_BEIJING
+        market = EXCHANGE_BJSE
     elif code.isalpha():
-        market = MARKET_USA
+        market = EXCHANGE_US
     
     return market
 
@@ -131,15 +142,15 @@ def get_market_id(symbol: str) -> MarketType:
             默认返回上海市场
     """
     market = get_market(symbol)
-    if market == MARKET_SHANGHAI:
+    if market == EXCHANGE_SSE:
         return MarketType.ShangHai
-    if market == MARKET_SHENZHEN:
+    if market == EXCHANGE_SZSE:
         return MarketType.ShenZhen
-    if market == MARKET_BEIJING:
+    if market == EXCHANGE_BJSE:
         return MarketType.BeiJing
-    if market == MARKET_HONGKONG:
+    if market == EXCHANGE_HK:
         return MarketType.HongKong
-    if market == MARKET_USA:
+    if market == EXCHANGE_US:
         return MarketType.USA
     return MarketType.ShangHai
 
@@ -152,22 +163,22 @@ def get_market_flag(market_id: MarketType) -> str:
     
     Returns:
         str: 对应市场的标志字符串，可能的返回值包括:
-            - MARKET_SHENZHEN: 深圳市场
-            - MARKET_BEIJING: 北京市场
-            - MARKET_HONGKONG: 香港市场
-            - MARKET_USA: 美国市场
-            - MARKET_SHANGHAI: 上海市场(默认值)
+            - EXCHANGE_SZSE: 深圳市场
+            - EXCHANGE_BJSE: 北京市场
+            - EXCHANGE_HK: 香港市场
+            - EXCHANGE_US: 美国市场
+            - EXCHANGE_SSE: 上海市场(默认值)
     """
     if market_id == MarketType.ShenZhen:
-        return MARKET_SHENZHEN
+        return EXCHANGE_SZSE
     elif market_id == MarketType.BeiJing:
-        return MARKET_BEIJING
+        return EXCHANGE_BJSE
     elif market_id == MarketType.HongKong:
-        return MARKET_HONGKONG
+        return EXCHANGE_HK
     elif market_id == MarketType.USA:
-        return MARKET_USA
+        return EXCHANGE_US
     else:
-        return MARKET_SHANGHAI
+        return EXCHANGE_SSE
 
 def detect_market(symbol: str) -> Tuple[MarketType, str, str]:
     """
@@ -190,7 +201,7 @@ def detect_market(symbol: str) -> Tuple[MarketType, str, str]:
         4. 板块指数特殊前缀
     """
     pure_code = symbol.strip()
-    market_code = MARKET_SHANGHAI
+    market_code = EXCHANGE_SSE
 
     if starts_with(pure_code, MARKET_FLAGS):
         market_code = pure_code[:2].lower()
@@ -202,26 +213,26 @@ def detect_market(symbol: str) -> Tuple[MarketType, str, str]:
         market_code = pure_code[-2:].lower()
         pure_code = pure_code[:-3]
     elif starts_with(pure_code, SHANGHAI_MAIN_BOARD_PREFIXES):
-        market_code = MARKET_SHANGHAI
+        market_code = EXCHANGE_SSE
     elif starts_with(pure_code, SHENZHEN_MAIN_BOARD_PREFIXES):
-        market_code = MARKET_SHENZHEN
+        market_code = EXCHANGE_SZSE
     elif starts_with(pure_code, SHANGHAI_SPECIAL_PREFIXES):
-        market_code = MARKET_SHANGHAI
+        market_code = EXCHANGE_SSE
     elif starts_with(pure_code, SECTOR_PREFIXES):
-        market_code = MARKET_SHANGHAI
+        market_code = EXCHANGE_SSE
     elif starts_with(pure_code, BEIJING_MAIN_BOARD_PREFIXES):
-        market_code = MARKET_BEIJING
+        market_code = EXCHANGE_BJSE
 
     market_id = MarketType.ShangHai
-    if market_code == MARKET_SHANGHAI:
+    if market_code == EXCHANGE_SSE:
         market_id = MarketType.ShangHai
-    elif market_code == MARKET_SHENZHEN:
+    elif market_code == EXCHANGE_SZSE:
         market_id = MarketType.ShenZhen
-    elif market_code == MARKET_BEIJING:
+    elif market_code == EXCHANGE_BJSE:
         market_id = MarketType.BeiJing
-    elif market_code == MARKET_HONGKONG:
+    elif market_code == EXCHANGE_HK:
         market_id = MarketType.HongKong
-    elif market_code == MARKET_USA:
+    elif market_code == EXCHANGE_US:
         market_id = MarketType.USA
     
     return market_id, market_code, pure_code

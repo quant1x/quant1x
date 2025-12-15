@@ -1,5 +1,5 @@
 #include <quant1x/test/test.h>
-#include <quant1x/exchange/markets.h>
+#include <quant1x/instruments/markets.h>
 #include <quant1x/exchange/session.h>
 #include <quant1x/proto/data.h>
 #include <random>
@@ -230,7 +230,7 @@ TEST_CASE("all-codes", "[exchange]") {
     spdlog::debug("------------------------------");
 //    auto xx = exchange::get_security_map();
 //    (void)xx;
-    auto codes = exchange::GetCodeList();
+    auto codes = instruments::GetCodeList();
     spdlog::debug("------------------------------");
     for(auto const &v : codes) {
         spdlog::debug(v);

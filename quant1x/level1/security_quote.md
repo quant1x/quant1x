@@ -61,7 +61,7 @@ auto spread_pct = q.implicitSpreadPct();
 
 // 例子
 if (spread_pct > 0.5) {
-    spdlog::warn("{}{} 隐形价差过大: {}%", exchange::GetMarketFlag((exchange::MarketType)q.market), q.code, spread_pct);
+    spdlog::warn("{}{} 隐形价差过大: {}%", exchange::GetMarketFlag((exchange::ExchangeId)q.market), q.code, spread_pct);
 }
 ```
 

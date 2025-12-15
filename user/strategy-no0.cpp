@@ -17,7 +17,7 @@ quant1x::error No0Strategy::Filter(const config::StrategyParameter& parameter, c
     }
     // 判断是否涨停
     double prev_price = snapshot.getLastClose();
-    double up_limit = exchange::calc_limit_up_price(snapshot.getSecurityCode(), prev_price);
+    double up_limit = instruments::calc_limit_up_price(snapshot.getSecurityCode(), prev_price);
     if(price == up_limit) {
         return quant1x::make_error_code(0+3, std::format("涨停, 价格{}, 不打板", price));
     }
@@ -35,8 +35,8 @@ quant1x::error No0Strategy::Filter(const config::StrategyParameter &parameter, c
     }
     // 判断是否涨停
     double prev_price = snapshot.lastClose;
-    std::string security_code = exchange::GetSecurityCode(static_cast<exchange::MarketType>(snapshot.market), snapshot.code);
-    double up_limit = exchange::calc_limit_up_price(security_code, prev_price);
+    std::string security_code = exchange::GetSecurityCode(static_cast<exchange::ExchangeId>(snapshot.market), snapshot.code);
+    double up_limit = instruments::calc_limit_up_price(security_code, prev_price);
     if(price == up_limit) {
         return quant1x::make_error_code(0+3, std::format("涨停, 价格{}, 不打板", price));
     }
@@ -67,7 +67,7 @@ void No0Strategy::Evaluate(const SecurityCode &code, ResultInfo &result) const {
 
     auto current_price = numerics::decimal(klines[klines.size() -1].Close);
     auto prev_close = numerics::decimal(klines[klines.size() - 2].Close);
-    auto limit_up_price = exchange::calc_limit_up_price(securityCode, prev_close);
+    auto limit_up_price = instruments::calc_limit_up_price(securityCode, prev_close);
     if(limit_up_price == current_price) {
         result.limit_up = true;
         return;

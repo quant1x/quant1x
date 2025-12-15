@@ -1,6 +1,6 @@
 #include <quant1x/test/test.h>
 
-#include <quant1x/exchange/markets.h>
+#include <quant1x/instruments/markets.h>
 #include <iostream>
 #include <string>
 #include <map>
@@ -172,7 +172,7 @@ std::tuple<int, std::string> GetSafetyScore(const std::string& securityCode) {
         return {defaultSafetyScore, ""};
     }
 
-    if (exchange::IsNeedIgnore(securityCode)) {
+    if (instruments::IsNeedIgnore(securityCode)) {
         return {defaultSafetyScoreOfIgnore, ""};
     }
 

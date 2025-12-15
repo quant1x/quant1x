@@ -1,5 +1,5 @@
 #include <quant1x/trader/position.h>
-#include <quant1x/exchange/markets.h>
+#include <quant1x/instruments/markets.h>
 #include <quant1x/encoding/csv.h>
 
 namespace trader {
@@ -137,7 +137,7 @@ namespace trader {
             try {
                 auto [mid, mflag, symbol] = exchange::DetectMarket(code);
                 tsl::robin_map<std::string, level1::StockInfo> maps;
-                maps[code] = level1::StockInfo{mid, symbol};
+                maps[code] = level1::StockInfo{static_cast<u8>(mid), symbol};
                 std::vector<std::string> codes={code};
                 level1::SecurityQuoteRequest request(codes);
                 level1::SecurityQuoteResponse response;

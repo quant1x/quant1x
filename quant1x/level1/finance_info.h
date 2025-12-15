@@ -25,7 +25,7 @@ namespace level1 {
             Method = StdCommand::FINANCE_INFO;
             auto [id, _, symbol] = exchange::DetectMarket(securityCode);
             Count = 1;
-            Market = id;
+            Market = static_cast<u8>(id);
             const char * const tmp = symbol.c_str();
             std::memcpy(Code, tmp, sizeof(Code));
         }
@@ -292,7 +292,7 @@ namespace level1 {
             raw.decode(bs);
             const static int baseUnit = 10000;
             auto symbol = strings::from(raw.Code);
-            Info.Code = exchange::GetSecurityCode(static_cast<exchange::MarketType>(raw.Market), std::string(raw.Code, sizeof(raw.Code)));
+            Info.Code = exchange::GetSecurityCode(static_cast<exchange::ExchangeId>(raw.Market), std::string(raw.Code, sizeof(raw.Code)));
             Info.LiuTongGuBen = helpers::NumberToFloat64(raw.LiuTongGuBen) * baseUnit;
             Info.Province = raw.Province;
             Info.Industry = raw.Industry;

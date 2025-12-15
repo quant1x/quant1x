@@ -56,7 +56,7 @@ namespace level1 {
             Method = StdCommand::TRANSACTION_DATA;
             {
                 auto [id, _, symbol] = exchange::DetectMarket(securityCode);
-                Market = id;
+                Market = static_cast<uint16_t>(id);
                 const char * const tmp = symbol.c_str();
                 std::memcpy(Code, tmp, sizeof(Code));
             }
@@ -111,7 +111,7 @@ namespace level1 {
             Count = bs.get_u16();
             List.reserve(Count);
             auto baseUnit = helpers::defaultBaseUnit(market_, code_);
-            auto isIndex = exchange::AssertIndexByMarketAndCode(static_cast<exchange::MarketType>(market_), std::string(code_));
+            auto isIndex = exchange::AssertIndexByMarketAndCode(static_cast<exchange::ExchangeId>(market_), std::string(code_));
             i64 lastPrice = 0;
             try {
                 for(int i = 0; i < Count; ++i) {

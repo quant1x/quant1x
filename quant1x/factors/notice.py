@@ -174,7 +174,7 @@ def stock_notices(security_code: str, begin_date: str, end_date: str = "", page_
             if not codes or not columns:
                 continue
                 
-            # C++: auto marketCode = static_cast<exchange::MarketType>(std::stoll(noticeItem.Codes[0].MarketCode));
+            # C++: auto marketCode = static_cast<exchange::ExchangeId>(std::stoll(noticeItem.Codes[0].MarketCode));
             # std::string securityCode = exchange::GetSecurityCode(marketCode, noticeItem.Codes[0].StockCode);
             
             code_info = codes[0]

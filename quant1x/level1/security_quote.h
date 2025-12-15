@@ -336,7 +336,7 @@ namespace level1 {
                 ele.stockOpenAmount = stream.varint_decode() * 100;
 
                 // 确定当前数据是指数或者板块
-                bool isIndexOrBlock = exchange::AssertIndexByMarketAndCode(static_cast<exchange::MarketType>(ele.market), ele.code);
+                bool isIndexOrBlock = exchange::AssertIndexByMarketAndCode(static_cast<exchange::ExchangeId>(ele.market), ele.code);
                 f64 tmpOpenVolume = 0.00f;
                 if (isIndexOrBlock) {
                     // 指数或者板块, 单位是"股"
@@ -398,7 +398,7 @@ namespace level1 {
                     ele.state = DELISTING;
                 } else {
                     // 如果不是退市状态, 从临时映射中删除
-                    std::string securityCode = exchange::GetMarketFlag(static_cast<exchange::MarketType>(ele.market)) + ele.code;
+                    std::string securityCode = exchange::GetMarketFlag(static_cast<exchange::ExchangeId>(ele.market)) + ele.code;
                     //delete(obj.mapCode, securityCode)
                     // 如果开盘价非0, 交易状态正常
                     if (ele.open != f64(0)) {
@@ -445,7 +445,7 @@ namespace level1 {
             for (int i = 0; !code_maps.empty() && i < count; ++i) {
                 //spdlog::warn("process = {}/{}", i, count);
                 auto &v = list[i];
-                std::string securityCode = exchange::GetMarketFlag(static_cast<exchange::MarketType>(v.market)) + v.code;
+                std::string securityCode = exchange::GetMarketFlag(static_cast<exchange::ExchangeId>(v.market)) + v.code;
                 //spdlog::warn("check security code:{}", securityCode);
                 if (v.state == DELISTING) {
                     // 查询在快照请求列表中的证券代码

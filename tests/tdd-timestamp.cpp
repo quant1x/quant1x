@@ -1,5 +1,5 @@
 #include <quant1x/test/test.h>
-#include <quant1x/exchange/markets.h>
+#include <quant1x/instruments/markets.h>
 
 TEST_CASE("parse-datetime", "[chrono]") {
     SECTION("date") {
@@ -54,7 +54,7 @@ TEST_CASE("parse-time-hhmmss.sss", "[timestamp]") {
 #include <date/tz.h>
 
 //// 本地时区: 上海
-//static const auto _local_zone = date::locate_zone("Asia/Shanghai");
+//static const auto _local_zone = date::locate_zone("Asia/ShangHai");
 //static const auto _utc_now = std::chrono::system_clock::now();
 //static const auto _zone_offset_seconds = _local_zone->get_info(_utc_now).offset;
 //static const auto _zone_offset_milliseconds = std::chrono::milliseconds(_zone_offset_seconds).count();

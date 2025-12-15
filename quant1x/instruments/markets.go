@@ -1,4 +1,4 @@
-package exchange
+package instruments
 
 import (
 	"fmt"
@@ -108,9 +108,9 @@ func GetCodeList() []string {
 
 	// 2. 板块
 	// TODO: 需要实现 GetSectorList
-	// sectors := GetSectorList()
+	// sectors := GetSectorList
 	// for _, v := range sectors {
-	// 	list = append(list, v.Code)
+	//  list = append(list, v.Code)
 	// }
 
 	// 3. 个股, 包括场内开放式ETF基金

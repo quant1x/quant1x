@@ -230,7 +230,7 @@ func (d *CalendarDecoder) S() []map[string]string {
 	if len(result) > 0 {
 		// JS sets prevclose = r.pc / r.m; r.pc currently holds integer cd so divide here.
 		if d.r["m"] != 0 {
-			result[0]["prevclose"] = fmt.Sprintf("%f", float64(d.r["pc"]) / float64(d.r["m"]))
+			result[0]["prevclose"] = fmt.Sprintf("%f", float64(d.r["pc"])/float64(d.r["m"]))
 		} else {
 			result[0]["prevclose"] = fmt.Sprintf("%f", float64(d.r["pc"]))
 		}
@@ -268,7 +268,7 @@ func (d *CalendarDecoder) _() []map[string]string {
 	// 删除未使用的临时变量
 
 	// main loop
-	for t = 0; !(d.e >= d.n) && (d.e != d.n-1 || (7&(d.r["c"]^t)) != 0) ; t++ {
+	for t = 0; !(d.e >= d.n) && (d.e != d.n-1 || (7&(d.r["c"]^t)) != 0); t++ {
 		lmap := make(map[string]string)
 		o := make(map[string]int64)
 
@@ -500,7 +500,7 @@ func (d *CalendarDecoder) T() []map[string]string {
 		}
 		d.r["cv0"] = cv0
 		d.r["cv1"] = cv1
-		volume := (cv0 & (int(d.f_mask)-1)) + cv1*int(d.f_mask)
+		volume := (cv0 & (int(d.f_mask) - 1)) + cv1*int(d.f_mask)
 		rec["volume"] = fmt.Sprintf("%d", volume)
 
 		res = append(res, rec)

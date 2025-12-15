@@ -1,6 +1,6 @@
 #include <cpr/cpr.h>
 #include <quant1x/encoding/json.h>
-#include <quant1x/exchange/markets.h>
+#include <quant1x/instruments/markets.h>
 #include <quant1x/factors/notice.h>
 #include <spdlog/spdlog.h>
 
@@ -183,7 +183,7 @@ namespace dfcf {
                             continue;
                         }
 
-                        auto marketCode = static_cast<exchange::MarketType>(std::stoll(noticeItem.Codes[0].MarketCode));
+                        auto marketCode = static_cast<exchange::ExchangeId>(std::stoll(noticeItem.Codes[0].MarketCode));
                         std::string securityCode = exchange::GetSecurityCode(marketCode, noticeItem.Codes[0].StockCode);
                         std::string securityName = noticeItem.Codes[0].ShortName;
 
@@ -342,7 +342,7 @@ namespace dfcf {
                             continue;
                         }
 
-                        auto marketCode = static_cast<exchange::MarketType>(std::stoll(noticeItem.Codes[0].MarketCode));
+                        auto marketCode = static_cast<exchange::ExchangeId>(std::stoll(noticeItem.Codes[0].MarketCode));
                         std::string security_code = exchange::GetSecurityCode(marketCode,
                                                                               noticeItem.Codes[0].StockCode);
                         std::string security_name = noticeItem.Codes[0].ShortName;

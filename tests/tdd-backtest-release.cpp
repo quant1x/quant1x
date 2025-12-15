@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
     engine.initAccount();
 
     // 3. 加载市场数据
-    auto all_codes = exchange::GetCodeList();
+    auto all_codes = instruments::GetCodeList();
     // For faster debugging restrict to a handful of codes so logs are manageable
     size_t                   debug_limit = 5;
     std::vector<std::string> debug_codes;

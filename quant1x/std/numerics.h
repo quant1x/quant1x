@@ -72,7 +72,7 @@ namespace numerics {
         constexpr explicit number_range(T min) : number_range(min, std::numeric_limits<T>::max()) {}
 
         // 新增：从字符串构造（无异常）
-        number_range(const std::string &str) {
+        explicit number_range(const std::string &str) {
             min_ = std::numeric_limits<T>::lowest();
             max_ = std::numeric_limits<T>::max();
 

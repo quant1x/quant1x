@@ -393,7 +393,7 @@ namespace exchange {
                 }
             }
             auto marketId = std::stoi(arr[0]);
-            if (marketId == exchange::BeiJing) {
+            if (marketId == static_cast<int>(exchange::ExchangeId::BeiJing)) {
                 continue;
             }
 
@@ -489,7 +489,7 @@ namespace exchange {
                         continue;
                     }
                     auto [marketId, prefix, x2] = exchange::DetectMarket(symbol);
-                    if (marketId == exchange::BeiJing) {
+                    if (marketId == exchange::ExchangeId::BeiJing) {
                         continue;
                     }
                     list.emplace_back(prefix+symbol);

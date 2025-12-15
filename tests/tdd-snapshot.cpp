@@ -1,12 +1,12 @@
 #include <quant1x/test/test.h>
 #include <quant1x/runtime/config.h>
-#include <quant1x/exchange/markets.h>
+#include <quant1x/instruments/markets.h>
 #include <quant1x/std/util.h>
 
 TEST_CASE("base-snapshot", "[runtime]") {
     runtime::global_init();
     runtime::logger_set(false, false);
-    auto all_codes = exchange::GetCodeList();
+    auto all_codes = instruments::GetCodeList();
     //std::span<std::string> codes(all_codes);
     auto count = all_codes.size();
     size_t start = 0;
@@ -171,7 +171,7 @@ void ensure_file_size(const std::string& path, size_t required_size) {
 TEST_CASE("test-buffer-size", "[capnp]") {
     runtime::global_init();
     runtime::logger_set(false, false);
-    auto all_codes = exchange::GetCodeList();
+    auto all_codes = instruments::GetCodeList();
     auto count = all_codes.size();
     capnp::MallocMessageBuilder message;
     auto quoteList = message.initRoot<QuoteList>();
@@ -188,7 +188,7 @@ TEST_CASE("test-buffer-size", "[capnp]") {
 TEST_CASE("tick-snapshot", "[runtime]") {
     runtime::global_init();
     runtime::logger_set(false, false);
-    auto all_codes = exchange::GetCodeList();
+    auto all_codes = instruments::GetCodeList();
     auto count = all_codes.size();
 
     // 确保文件存在且大小合适

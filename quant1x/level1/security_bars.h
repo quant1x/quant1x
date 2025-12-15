@@ -113,7 +113,7 @@ namespace level1 {
             param.Count = count;
             {
                 auto [id, _, symbol] = exchange::DetectMarket(securityCode);
-                param.Market = id;
+                param.Market = static_cast<u16>(id);
                 const char * const tmp = symbol.c_str();
                 std::memcpy(param.Code, tmp, sizeof(param.Code));
                 if(exchange::AssertIndexByMarketAndCode(id, symbol)) {

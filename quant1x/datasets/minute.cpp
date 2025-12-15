@@ -51,7 +51,7 @@ namespace datasets {
             auto conn = level1::get_std_conn();
             auto [id, _, symbol] = exchange::DetectMarket(code);
             level1::HistoryMinuteTimeRequest request(code, date.yyyymmdd());
-            level1::HistoryMinuteTimeResponse response(id, symbol.c_str());
+            level1::HistoryMinuteTimeResponse response(static_cast<int>(id), symbol.c_str());
             auto err = level1::process(conn->socket(), request, response);
             if (err) {
                 throw std::runtime_error(fmt::format("Process error: {}", err.message()));

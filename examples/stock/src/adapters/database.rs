@@ -20,7 +20,7 @@ impl Adapter for DatabaseAdapter {
         Some(ScheduleConfig {
             name: "database".into(),
             cron: "0 0 9 * * *".into(),
-            timezone: Some("Asia/Shanghai".into()),
+            timezone: Some("Asia/ShangHai".into()),
         })
     }
 

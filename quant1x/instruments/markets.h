@@ -1,12 +1,12 @@
 #pragma once
-#ifndef QUANT1X_EXCHANGE_MARKETS_H
-#define QUANT1X_EXCHANGE_MARKETS_H 1
+#ifndef QUANT1X_INSTRUMENTS_MARKETS_H
+#define QUANT1X_INSTRUMENTS_MARKETS_H 1
 
 #include <quant1x/exchange/blocks.h>
 #include <quant1x/exchange/calendar.h>
 #include <quant1x/exchange/code.h>
 #include <quant1x/exchange/margin_trading.h>
-#include <quant1x/exchange/security.h>
+#include <quant1x/instruments/security.h>
 #include <quant1x/io/csv-writer.h>
 #include <quant1x/io/file.h>
 #include <quant1x/io/http.h>
@@ -20,10 +20,10 @@
 #include <vector>
 
 //============================================================
-// exchange 证券代码整合                                      //
+// instruments 证券代码整合                                   //
 //============================================================
 
-namespace exchange {
+namespace instruments {
 
     /// 证券代码是否需要忽略, 这是一个不参与数据和策略处理的开关
     bool IsNeedIgnore(const std::string &code);
@@ -33,6 +33,6 @@ namespace exchange {
 
     /// 加载全部指数、板块和个股的代码
     std::vector<std::string> GetCodeList();
-}  // namespace exchange
+}  // namespace instruments
 
-#endif  // QUANT1X_EXCHANGE_MARKETS_H
+#endif  // QUANT1X_INSTRUMENTS_MARKETS_H

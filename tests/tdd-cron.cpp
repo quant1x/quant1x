@@ -26,7 +26,7 @@ TEST_CASE("cron-v1", "[runtime]") {
     constexpr int LOOP_COUNT = 10;
     constexpr auto LOOP_SLEEP = std::chrono::seconds(10);
     constexpr auto PRE_SCHED_SLEEP = std::chrono::seconds(60);
-    constexpr auto CRON_PHASE_SLEEP = std::chrono::minutes(10);
+    constexpr auto CRON_PHASE_SLEEP = std::chrono::seconds(10);
     constexpr auto POST_CANCEL_SLEEP = std::chrono::seconds(100);
 #endif
 

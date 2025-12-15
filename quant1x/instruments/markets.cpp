@@ -1,6 +1,6 @@
-#include <quant1x/exchange/markets.h>
+#include <quant1x/instruments/markets.h>
 
-namespace exchange {
+namespace instruments {
 
     // A股指数列表
     static const std::vector<std::string> AShareIndexList = {
@@ -93,17 +93,6 @@ namespace exchange {
             }
         }
         
-        // 港股示例 (hk00001-hk09999)
-        /*
-        {
-            for (int i = 1; i <= 9999; ++i) {
-                std::string fc = std::format("hk{:0dd}", i);
-                snprintf(buffer, sizeof(buffer), "hk%05d", i);
-                allCodes.push_back(buffer);
-            }
-        }
-        */
-
         return allCodes;
     }
 
@@ -113,8 +102,8 @@ namespace exchange {
         // 1. 指数
         list.insert(list.end(), AShareIndexList.begin(), AShareIndexList.end());
         // 2. 板块
-        auto sectors = get_sector_list();
-        for (const block_info & v : sectors) {
+        auto sectors = exchange::get_sector_list();
+        for (const exchange::block_info & v : sectors) {
             list.emplace_back(v.code);
         }
         // 3. 个股, 包括场内开放式ETF基金
@@ -123,4 +112,4 @@ namespace exchange {
         return list;
     }
 
-} // namespace exchange
+} // namespace instruments

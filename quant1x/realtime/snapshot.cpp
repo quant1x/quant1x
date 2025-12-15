@@ -1,5 +1,5 @@
 #include <quant1x/realtime/snapshot.h>
-#include <quant1x/exchange/markets.h>
+#include <quant1x/instruments/markets.h>
 #include <quant1x/std/filepath.h>
 #include <capnp/serialize.h>
 #include <capnp/message.h>
@@ -121,7 +121,7 @@ namespace realtime {
     }
 
     void sync_snapshots() {
-        auto all_codes = exchange::GetCodeList();
+        auto all_codes = instruments::GetCodeList();
         auto count = all_codes.size();
         filepath::check_filepath(capnp_cache_filename, true);
         // 确保文件存在且大小合适
@@ -167,7 +167,7 @@ namespace realtime {
                 for (; i < length; i++) {
                     const auto &code = sub_codes[i];
                     auto [mid, mflag, symbol] = exchange::DetectMarket(code);
-                    maps[code] = level1::StockInfo{mid, symbol};
+                    maps[code] = level1::StockInfo{static_cast<u8>(mid), symbol};
                 }
                 level1::SecurityQuoteRequest request(sub_codes);
                 level1::SecurityQuoteResponse response;
@@ -184,7 +184,7 @@ namespace realtime {
                 response.verify_delisted_securities(maps);
                 for (int j = 0; j < response.count; ++j) {
                     const auto &raw = response.list[j];
-                    std::string security_code = exchange::GetSecurityCode(static_cast<exchange::MarketType>(raw.market), raw.code);
+                    std::string security_code = exchange::GetSecurityCode(static_cast<exchange::ExchangeId>(raw.market), raw.code);
                     mem_snapshots.insert_or_assign(security_code, raw);
                     auto snap = snapshots[uint32_t(start) + j];
                     snap.setDate(current_day);

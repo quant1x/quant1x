@@ -93,7 +93,7 @@ namespace cache {
         bars[0].set_progress(0);
 
         auto first = adapters[0]->Key();
-        auto allCodes = exchange::GetCodeList();
+        auto allCodes = instruments::GetCodeList();
         mpb::ProgressBar barCodes(
             mpb::option::BarWidth{50},
             mpb::option::ForegroundColor{mpb::Color::yellow},

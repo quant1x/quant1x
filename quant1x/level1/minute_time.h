@@ -28,7 +28,7 @@ namespace level1 {
             Method = StdCommand::HISTORY_MINUTE_DATA;
             {
                 auto [id, _, symbol] = exchange::DetectMarket(securityCode);
-                Market = id;
+                Market = static_cast<uint8_t>(id);
                 const char * const tmp = symbol.c_str();
                 std::memcpy(Code, tmp, sizeof(Code));
             }
@@ -92,7 +92,7 @@ namespace level1 {
             Count = bs.get_u16();
             List.reserve(Count);
             auto baseUnit = helpers::defaultBaseUnit(market_, code_);
-            auto isIndex = exchange::AssertIndexByMarketAndCode(static_cast<exchange::MarketType>(market_), std::string(code_));
+            auto isIndex = exchange::AssertIndexByMarketAndCode(static_cast<exchange::ExchangeId>(market_), std::string(code_));
             i64 lastPrice = 0;
             bs.skip(4); // 历史分笔成交记录, 跳过4个字节
             try {

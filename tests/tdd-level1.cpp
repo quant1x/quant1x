@@ -262,7 +262,7 @@ TEST_CASE("block-network-info", "[level1]") {
     spdlog::debug(response.toString());
 }
 
-#include <quant1x/exchange/security.h>
+#include <quant1x/instruments/security.h>
 #include <quant1x/exchange/blocks.h>
 
 TEST_CASE("block-file-update", "[cache]") {
@@ -292,7 +292,7 @@ TEST_CASE("block-file-load", "[cache]") {
 TEST_CASE("security_list", "[cache]") {
     runtime::global_init();
     std::string code = "880301";
-    auto info = exchange::get_security_info(code);
+    auto info = instruments::get_security_info(code);
     std::cout << info->name << std::endl;
 }
 

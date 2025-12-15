@@ -1,4 +1,4 @@
-#include <quant1x/exchange/markets.h>
+#include <quant1x/instruments/markets.h>
 #include <quant1x/factors/base.h>
 
 namespace factors {
@@ -9,7 +9,7 @@ namespace factors {
 
         void lazy_load_xdxr_list() {
             xdxrs_map.clear();
-            auto all_codes = exchange::GetCodeList();
+            auto all_codes = instruments::GetCodeList();
             // 预分配空间，防止插入时频繁 rehash
             xdxrs_map.reserve(all_codes.size());
             for (auto const &security_code : all_codes) {

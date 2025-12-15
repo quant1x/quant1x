@@ -9,7 +9,7 @@
 #include <quant1x/trader/tracker.h>
 #include <quant1x/config/config.h>
 #include <spdlog/spdlog.h>
-#include <quant1x/exchange/markets.h>
+#include <quant1x/instruments/markets.h>
 #include <indicators/progress_bar.hpp>
 #include <quant1x/realtime/snapshot.h>
 #include <quant1x/trader/trader.h>
@@ -44,7 +44,7 @@ namespace trader {
         spdlog::warn("[tracker] {}号策略, 交易流程, 开始", strategy_id);
         // 加载快照
         realtime::load_snapshots();
-        auto all_codes = exchange::GetCodeList();
+        auto all_codes = instruments::GetCodeList();
         auto codeCount = all_codes.size();
         {
             mpb::ProgressBar bar{

@@ -79,8 +79,8 @@ pub fn int_to_float64(v: u32) -> f64 {
 /// defaultBaseUnit 等价实现（来自 C++ security_quote.h）
 pub fn default_base_unit(_market_id: i32, code: &str) -> f64 {
     // Align with C++ helpers::defaultBaseUnit in `level1/helpers.h`:
-    // - If market is Shanghai and code starts with '5' => 1000.0
-    // - If market is Shenzhen and code starts with "159" => 1000.0
+    // - If market is ShangHai and code starts with '5' => 1000.0
+    // - If market is ShenZhen and code starts with "159" => 1000.0
     // - Otherwise => 100.0
     use crate::exchange::{MARKET_SHANGHAI, MARKET_SHENZHEN};
 

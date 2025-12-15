@@ -67,7 +67,7 @@ namespace level1 {
             PacketType            = 0x01;
             Method                = StdCommand::XDXR_INFO;
             auto [id, _, symbol]  = exchange::DetectMarket(securityCode);
-            Market                = id;
+            Market                = static_cast<u8>(id);
             const char *const tmp = symbol.c_str();
             std::memcpy(Code, tmp, sizeof(Code));
             padding = strings::hexToBytes("0100");

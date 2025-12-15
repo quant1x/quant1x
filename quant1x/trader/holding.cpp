@@ -6,7 +6,7 @@
 #include <numeric>
 #include <functional>
 #include <quant1x/trader/trader.h>
-#include <quant1x/exchange/markets.h>
+#include <quant1x/instruments/markets.h>
 #include <quant1x/trader/order_cache.h>
 
 namespace trader {

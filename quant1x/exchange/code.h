@@ -6,26 +6,15 @@
 // exchange 证券代码相关                                      //
 //============================================================
 #include <quant1x/std/api.h>
+#include <quant1x/exchange/exchange.h>
 #include <vector>
 
 namespace exchange {
-    enum MarketType : uint8_t {
-        ShenZhen =  0, ///< 深圳证券交易所
-        ShangHai =  1, ///< 上海证券交易所
-        BeiJing  =  2, ///< 北京证券交易所
-        HongKong = 21, ///< 香港交易所
-        USA      = 22  ///< 美国交易所
-    };
-
     constexpr const char *const stock_delisting          = "DELISTING";  ///< 退市标识
     constexpr const char *const market_cn_first_date     = "19901219";   ///< 上证指数首个交易日
     constexpr const char *const market_cn_first_listtime = "1990-12-19"; ///< 个股上市日期基准
 
-    constexpr const char *const market_shangHai = "sh"; ///< 上海市场标识
-    constexpr const char *const market_shenzhen = "sz"; ///< 深圳市场标识
-    constexpr const char *const market_beijing  = "bj"; ///< 北京市场标识
-    constexpr const char *const market_hongkong = "hk"; ///< 香港市场标识
-    constexpr const char *const market_usa      = "us"; ///< 美国市场标识
+    // Market flag string constants removed — use `exchange::EXCHANGE_*` in exchange/exchange.h
 
     const std::vector<std::string> marketFlags = {"sh", "sz", "SH", "SZ", "bj", "BJ", "hk", "HK", "us", "US"};
     const std::vector<std::string> marketAShareFlags = {"sh", "sz", "SH", "SZ", "bj", "BJ"};
@@ -36,7 +25,7 @@ namespace exchange {
      * @param symbol 原始代码
      * @return 完整证券代码（格式：市场标识+代码）
      */
-    std::string GetSecurityCode(MarketType market, const std::string &symbol);
+    std::string GetSecurityCode(ExchangeId market, const std::string &symbol);
 
     /**
      * @brief 根据代码判断所属市场
@@ -50,21 +39,21 @@ namespace exchange {
      * @param symbol 证券代码
      * @return 市场类型枚举值
      */
-    MarketType GetMarketId(const std::string &symbol);
+    ExchangeId GetMarketId(const std::string &symbol);
 
     /**
      * @brief 根据市场ID获取市场标识
      * @param marketId 市场类型枚举
      * @return 市场标识字符串
      */
-    std::string GetMarketFlag(MarketType marketId);
+    std::string GetMarketFlag(ExchangeId marketId);
 
     /**
      * @brief 综合解析证券代码
      * @param symbol 原始证券代码
      * @return 元组（市场ID，市场标识，纯代码）
      */
-    std::tuple<MarketType, std::string, std::string> DetectMarket(const std::string &symbol);
+    std::tuple<ExchangeId, std::string, std::string> DetectMarket(const std::string &symbol);
 
     /**
      * @brief 判断是否为指数代码（通过市场ID和纯代码）
@@ -72,7 +61,7 @@ namespace exchange {
      * @param symbol 纯代码
      * @return 是否为指数
      */
-    bool AssertIndexByMarketAndCode(MarketType marketId, const std::string &symbol);
+    bool AssertIndexByMarketAndCode(ExchangeId marketId, const std::string &symbol);
 
     /**
      * @brief 判断是否为指数代码（通过完整证券代码）
@@ -94,7 +83,7 @@ namespace exchange {
      * @param symbol 纯代码
      * @return 是否为ETF
      */
-    bool AssertETFByMarketAndCode(MarketType marketId, const std::string &symbol);
+    bool AssertETFByMarketAndCode(ExchangeId marketId, const std::string &symbol);
 
     /**
      * @brief 判断是否为个股（通过市场ID和纯代码）
@@ -102,7 +91,7 @@ namespace exchange {
      * @param symbol 纯代码
      * @return 是否为个股
      */
-    bool AssertStockByMarketAndCode(MarketType marketId, const std::string &symbol);
+    bool AssertStockByMarketAndCode(ExchangeId marketId, const std::string &symbol);
 
     /**
      * @brief 判断是否为个股（通过完整证券代码）

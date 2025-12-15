@@ -4,7 +4,7 @@ fn is_need_ignore(code: &str) -> bool {
     // Only ignore when the security exists AND its name contains ignored keywords
     // ("ST", "退", "摘牌"). If the security is not found in the cache, do
     // not ignore it here — we keep the generated code in the list.
-    if let Some(info) = crate::exchange::get_security_info(code) {
+    if let Some(info) = crate::instruments::get_security_info(code) {
         const IGNORED_KEYWORDS: [&str; 3] = ["ST", "退", "摘牌"];
         let upper_name = info.name.to_uppercase();
         for kw in IGNORED_KEYWORDS.iter() {
@@ -23,7 +23,7 @@ fn is_need_ignore(code: &str) -> bool {
 pub fn get_stock_code_list() -> Vec<String> {
     let mut all_codes: Vec<String> = Vec::new();
 
-    // Shanghai mainboard 600000-609999
+    // ShangHai mainboard 600000-609999
     for i in 600000..=609999 {
         let code = format!("sh{:06}", i);
         if !is_need_ignore(&code) {
@@ -39,7 +39,7 @@ pub fn get_stock_code_list() -> Vec<String> {
         }
     }
 
-    // Shenzhen mainboard 000000-000999
+    // ShenZhen mainboard 000000-000999
     for i in 0..=999 {
         let code = format!("sz{:06}", i);
         if !is_need_ignore(&code) {
@@ -63,7 +63,7 @@ pub fn get_stock_code_list() -> Vec<String> {
         }
     }
 
-    // Beijing Stock Exchange 920000-920999
+    // BeiJing Stock Exchange 920000-920999
     for i in 920000..=920999 {
         let code = format!("bj{:06}", i);
         if !is_need_ignore(&code) {

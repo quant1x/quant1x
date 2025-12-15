@@ -139,7 +139,7 @@ pub fn assert_index_by_market_and_code(market_id: u8, symbol: &str) -> bool {
     if market_id == MARKET_SHENZHEN && s.starts_with("399") {
         return true;
     }
-    // Beijing index: 899
+    // BeiJing index: 899
     if market_id == MARKET_BEIJING && s.starts_with("899") {
         return true;
     }
@@ -152,7 +152,7 @@ pub fn assert_index_by_security_code(security_code: &str) -> bool {
     assert_index_by_market_and_code(market_id, &code)
 }
 
-/// If the provided full security code is a Shanghai block (880/881), normalize it in-place
+/// If the provided full security code is a ShangHai block (880/881), normalize it in-place
 /// to the canonical form (flag+code) and return true. Otherwise return false.
 pub fn assert_block_by_security_code(security_code: &mut String) -> bool {
     let (market_id, flag, code) = detect_market(security_code);
@@ -166,7 +166,7 @@ pub fn assert_block_by_security_code(security_code: &mut String) -> bool {
     true
 }
 
-/// Return true if the given market id and pure code represent an ETF (Shanghai 510...)
+/// Return true if the given market id and pure code represent an ETF (ShangHai 510...)
 pub fn assert_etf_by_market_and_code(market_id: u8, symbol: &str) -> bool {
     market_id == MARKET_SHANGHAI && symbol.trim().starts_with("510")
 }
@@ -225,15 +225,15 @@ pub enum TargetKind {
 pub fn assert_code(security_code: &str) -> TargetKind {
     let (market_id, _flag, code) = detect_market(security_code);
     if market_id == MARKET_SHANGHAI {
-        // Shanghai: sector prefixes (880/881) -> Block
+        // ShangHai: sector prefixes (880/881) -> Block
         if code.starts_with("880") || code.starts_with("881") {
             return TargetKind::Block;
         }
-        // Shanghai: 000... -> Index
+        // ShangHai: 000... -> Index
         if code.starts_with("000") {
             return TargetKind::Index;
         }
-        // Shanghai: codes starting with '5' are ETF (per C++ logic)
+        // ShangHai: codes starting with '5' are ETF (per C++ logic)
         if code.starts_with('5') {
             return TargetKind::Etf;
         }
@@ -286,7 +286,7 @@ mod assert_tests {
     #[test]
     fn test_assert_block_and_correct_code() {
         let mut s = String::from("880001");
-        // Without flag, detect_market will infer Shanghai and assert_block should normalize
+        // Without flag, detect_market will infer ShangHai and assert_block should normalize
         assert!(assert_block_by_security_code(&mut s));
         assert_eq!(s, "sh880001");
 

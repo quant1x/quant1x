@@ -6,8 +6,8 @@
 #include <quant1x/datasets/kline.h>
 #include <quant1x/encoding/csv.h>
 #include <quant1x/datasets/kline_raw.h>
-#include <quant1x/exchange/security.h>
-#include <quant1x/exchange/markets.h>
+#include <quant1x/instruments/security.h>
+#include <quant1x/instruments/markets.h>
 #include <quant1x/factors/f10.h>
 #include <quant1x/factors/history.h>
 #include <quant1x/dataframe/dataframe.h>
@@ -55,7 +55,7 @@ TEST_CASE("klines-check", "[xdxr]") {
 
 std::unordered_map<std::string, std::vector<factors::CumulativeAdjustment>> checkout_dividends_map(const exchange::timestamp &current) {
     std::unordered_map<std::string, std::vector<factors::CumulativeAdjustment>> result_map;
-    auto all_codes = exchange::GetCodeList();
+    auto all_codes = instruments::GetCodeList();
     //auto now = exchange::timestamp::now();
     for(auto const & security_code : all_codes) {
         // 1. 首先加载除权除息记录

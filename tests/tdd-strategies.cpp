@@ -55,7 +55,7 @@ TEST_CASE("strategy-backtest", "[strategies]") {
         };
         bars.push_back(barMain);
         bars[0].set_progress(0);
-        auto all_codes = exchange::GetCodeList();
+        auto all_codes = instruments::GetCodeList();
         auto codeCount = all_codes.size();
         indicators::ProgressBar barCodes(
             indicators::option::ForegroundColor{indicators::Color::yellow},

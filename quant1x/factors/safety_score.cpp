@@ -1,5 +1,5 @@
 #include <cpr/cpr.h>
-#include <quant1x/exchange/markets.h>
+#include <quant1x/instruments/markets.h>
 #include <quant1x/factors/safety_score.h>
 
 //#include <iostream>
@@ -147,7 +147,7 @@ namespace risks {
             return {defaultSafetyScore, ""};
         }
 
-        if (exchange::IsNeedIgnore(securityCode)) {
+        if (instruments::IsNeedIgnore(securityCode)) {
             return {defaultSafetyScoreOfIgnore, ""};
         }
 

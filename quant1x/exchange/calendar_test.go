@@ -3,7 +3,6 @@ package exchange
 import (
 	"fmt"
 	"testing"
-	//_ "gitee.com/quant1x/quant1x/quant1x/config"
 )
 
 func TestDateRange(t *testing.T) {

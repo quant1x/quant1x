@@ -13,18 +13,18 @@ namespace exchange {
      * @param symbol 原始代码
      * @return 完整证券代码（格式：市场标识+代码）
      */
-    std::string GetSecurityCode(MarketType market, const std::string &symbol) {
+    std::string GetSecurityCode(ExchangeId market, const std::string &symbol) {
         switch (market) {
-            case MarketType::USA:
-                return market_usa + symbol;
-            case MarketType::HongKong:
-                return market_hongkong + symbol.substr(0, 5);
-            case MarketType::BeiJing:
-                return market_beijing + symbol.substr(0, 6);
-            case MarketType::ShenZhen:
-                return market_shenzhen + symbol.substr(0, 6);
+            case ExchangeId::USA:
+                return EXCHANGE_US + symbol;
+            case ExchangeId::HongKong:
+                return EXCHANGE_HK + symbol.substr(0, 5);
+            case ExchangeId::BeiJing:
+                return EXCHANGE_BJSE + symbol.substr(0, 6);
+            case ExchangeId::ShenZhen:
+                return EXCHANGE_SZSE + symbol.substr(0, 6);
             default:
-                return market_shangHai + symbol.substr(0, 6);
+                return EXCHANGE_SSE + symbol.substr(0, 6);
         }
     }
 
@@ -84,7 +84,7 @@ namespace exchange {
      */
     std::string GetMarket(const std::string &symbol) {
         std::string code = strings::trim(symbol);
-        std::string market = market_shangHai;
+        std::string market = EXCHANGE_SSE;
 
         if (strings::startsWith(code, marketFlags)) {
             market = code.substr(0, 2);
@@ -94,15 +94,15 @@ namespace exchange {
             market = code.substr(len - 2);
             market = strings::to_lower(market);
         } else if (strings::startsWith(code, shanghaiMainBoardPrefixes)) {
-            market = market_shangHai;
+            market = EXCHANGE_SSE;
         } else if (strings::startsWith(code, shenzhenMainBoardPrefixes)) {
-            market = market_shenzhen;
+            market = EXCHANGE_SZSE;
         } else if (strings::startsWith(code, shanghaiSpecialPrefixes)) {
-            market = market_shangHai;
+            market = EXCHANGE_SSE;
         } else if (strings::startsWith(code, sectorPrefixes)) {
-            market = market_shangHai;
+            market = EXCHANGE_SSE;
         } else if (strings::startsWith(code, beijingMainBoardPrefixes)) {
-            market = market_beijing;
+            market = EXCHANGE_BJSE;
         }
         return market;
     }
@@ -112,12 +112,12 @@ namespace exchange {
      * @param symbol 证券代码
      * @return 市场类型枚举值
      */
-    MarketType GetMarketId(const std::string &symbol) {
+    ExchangeId GetMarketId(const std::string &symbol) {
         std::string market = GetMarket(symbol);
-        if (market == market_shangHai) return MarketType::ShangHai;
-        if (market == market_shenzhen) return MarketType::ShenZhen;
-        if (market == market_beijing) return MarketType::BeiJing;
-        return MarketType::ShangHai;
+        if (market == EXCHANGE_SSE) return ExchangeId::ShangHai;
+        if (market == EXCHANGE_SZSE) return ExchangeId::ShenZhen;
+        if (market == EXCHANGE_BJSE) return ExchangeId::BeiJing;
+        return ExchangeId::ShangHai;
     }
 
     /**
@@ -125,18 +125,18 @@ namespace exchange {
      * @param marketId 市场类型枚举
      * @return 市场标识字符串
      */
-    std::string GetMarketFlag(MarketType marketId) {
+    std::string GetMarketFlag(ExchangeId marketId) {
         switch (marketId) {
-            case MarketType::ShenZhen:
-                return market_shenzhen;
-            case MarketType::BeiJing:
-                return market_beijing;
-            case MarketType::HongKong:
-                return market_hongkong;
-            case MarketType::USA:
-                return market_usa;
+            case ExchangeId::ShenZhen:
+                return EXCHANGE_SZSE;
+            case ExchangeId::BeiJing:
+                return EXCHANGE_BJSE;
+            case ExchangeId::HongKong:
+                return EXCHANGE_HK;
+            case ExchangeId::USA:
+                return EXCHANGE_US;
             default:
-                return market_shangHai;
+                return EXCHANGE_SSE;
         }
     }
 
@@ -145,9 +145,9 @@ namespace exchange {
      * @param symbol 原始证券代码
      * @return 元组（市场ID，市场标识，纯代码）
      */
-    std::tuple<MarketType, std::string, std::string> DetectMarket(const std::string &symbol) {
+    std::tuple<ExchangeId, std::string, std::string> DetectMarket(const std::string &symbol) {
         std::string pureCode = strings::trim(symbol);
-        std::string marketCode = market_shangHai;
+        std::string marketCode = EXCHANGE_SSE;
 
         if (strings::startsWith(pureCode, marketFlags)) {
             marketCode = pureCode.substr(0, 2);
@@ -161,22 +161,22 @@ namespace exchange {
             marketCode = strings::to_lower(marketCode);
             pureCode = pureCode.substr(0, len - 3);
         } else if (strings::startsWith(pureCode, shanghaiMainBoardPrefixes)) {
-            marketCode = market_shangHai;
+            marketCode = EXCHANGE_SSE;
         } else if (strings::startsWith(pureCode, shenzhenMainBoardPrefixes)) {
-            marketCode = market_shenzhen;
+            marketCode = EXCHANGE_SZSE;
         } else if (strings::startsWith(pureCode, shanghaiSpecialPrefixes)) {
-            marketCode = market_shangHai;
+            marketCode = EXCHANGE_SSE;
         } else if (strings::startsWith(pureCode, sectorPrefixes)) {
-            marketCode = market_shangHai;
+            marketCode = EXCHANGE_SSE;
         } else if (strings::startsWith(pureCode, beijingMainBoardPrefixes)) {
-            marketCode = market_beijing;
+            marketCode = EXCHANGE_BJSE;
         }
 
-        MarketType marketId = MarketType::ShangHai;
-        if (marketCode == market_shangHai) marketId = MarketType::ShangHai;
-        else if (marketCode == market_shenzhen) marketId = MarketType::ShenZhen;
-        else if (marketCode == market_beijing) marketId = MarketType::BeiJing;
-        else if (marketCode == market_hongkong) marketId = MarketType::HongKong;
+        ExchangeId marketId = ExchangeId::ShangHai;
+        if (marketCode == EXCHANGE_SSE) marketId = ExchangeId::ShangHai;
+        else if (marketCode == EXCHANGE_SZSE) marketId = ExchangeId::ShenZhen;
+        else if (marketCode == EXCHANGE_BJSE) marketId = ExchangeId::BeiJing;
+        else if (marketCode == EXCHANGE_HK) marketId = ExchangeId::HongKong;
 
         return {marketId, marketCode, pureCode};
     }
@@ -187,17 +187,17 @@ namespace exchange {
      * @param symbol 纯代码
      * @return 是否为指数
      */
-    bool AssertIndexByMarketAndCode(MarketType marketId, const std::string &symbol) {
+    bool AssertIndexByMarketAndCode(ExchangeId marketId, const std::string &symbol) {
         // 上交所指数: 000, 880, 881
-        if (marketId == MarketType::ShangHai && strings::startsWith(symbol, {"000", "880", "881"})) {
+        if (marketId == ExchangeId::ShangHai && strings::startsWith(symbol, {"000", "880", "881"})) {
             return true;
         }
         // 深交所指数: 399
-        if (marketId == MarketType::ShenZhen && strings::startsWith(symbol, {"399"})) {
+        if (marketId == ExchangeId::ShenZhen && strings::startsWith(symbol, {"399"})) {
             return true;
         }
         // 北交所指数: 899
-        if (marketId == MarketType::BeiJing && strings::startsWith(symbol, {"899"})) {
+        if (marketId == ExchangeId::BeiJing && strings::startsWith(symbol, {"899"})) {
             return true;
         }
         return false;
@@ -220,7 +220,7 @@ namespace exchange {
      */
     bool AssertBlockBySecurityCode(std::string *securityCode) {
         auto [marketId, flag, code] = DetectMarket(*securityCode);
-        if (marketId != MarketType::ShangHai || !strings::startsWith(code, sectorPrefixes)) return false;
+        if (marketId != ExchangeId::ShangHai || !strings::startsWith(code, sectorPrefixes)) return false;
         *securityCode = flag + code;
         return true;
     }
@@ -231,8 +231,8 @@ namespace exchange {
      * @param symbol 纯代码
      * @return 是否为ETF
      */
-    bool AssertETFByMarketAndCode(MarketType marketId, const std::string &symbol) {
-        return marketId == MarketType::ShangHai && strings::startsWith(symbol, {"510"});
+    bool AssertETFByMarketAndCode(ExchangeId marketId, const std::string &symbol) {
+        return marketId == ExchangeId::ShangHai && strings::startsWith(symbol, {"510"});
     }
 
     /**
@@ -241,14 +241,14 @@ namespace exchange {
      * @param symbol 纯代码
      * @return 是否为个股
      */
-    bool AssertStockByMarketAndCode(MarketType marketId, const std::string &symbol) {
-        if (marketId == MarketType::ShangHai && strings::startsWith(symbol, {"60", "68", "510"})) {
+    bool AssertStockByMarketAndCode(ExchangeId marketId, const std::string &symbol) {
+        if (marketId == ExchangeId::ShangHai && strings::startsWith(symbol, {"60", "68", "510"})) {
             return true;
         }
-        if (marketId == MarketType::ShenZhen && strings::startsWith(symbol, {"00", "30"})) {
+        if (marketId == ExchangeId::ShenZhen && strings::startsWith(symbol, {"00", "30"})) {
             return true;
         }
-        if (marketId == MarketType::BeiJing && strings::startsWith(symbol, {"40", "43", "83", "87", "88", "420", "820","920"})) {
+        if (marketId == ExchangeId::BeiJing && strings::startsWith(symbol, {"40", "43", "83", "87", "88", "420", "820","920"})) {
             return true;
         }
         return false;
@@ -282,16 +282,16 @@ namespace exchange {
      */
     TargetKind AssertCode(const std::string &securityCode) {
         auto [marketId, _, code] = DetectMarket(securityCode);
-        if (marketId == MarketType::ShangHai) {
+        if (marketId == ExchangeId::ShangHai) {
             if (strings::startsWith(code, sectorPrefixes)) return TargetKind::BLOCK;
             if (strings::startsWith(code, {"000"})) return TargetKind::INDEX;
             if (strings::startsWith(code, {"5"})) return TargetKind::ETF;
         }
-        if (marketId == MarketType::ShenZhen) {
+        if (marketId == ExchangeId::ShenZhen) {
             if (strings::startsWith(code, {"399"}))  return TargetKind::INDEX;
             if (strings::startsWith(code, {"159"})) return TargetKind::ETF;
         }
-        if (marketId == MarketType::BeiJing && strings::startsWith(code, {"899"})) {
+        if (marketId == ExchangeId::BeiJing && strings::startsWith(code, {"899"})) {
             return TargetKind::INDEX;
         }
         return TargetKind::STOCK;
