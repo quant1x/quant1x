@@ -3,8 +3,6 @@ package exchange
 import (
 	"errors"
 	"fmt"
-	"regexp"
-	"strings"
 )
 
 // ExchangeCode 表示交易所代码/标识

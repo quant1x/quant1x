@@ -38,7 +38,7 @@ func NewBlockInfoRequest(filename string, offset uint32) *BlockInfoRequest {
 	return req
 }
 
-func (req *BlockInfoRequest) Bytes() []byte {
+func (req *BlockInfoRequest) Serialize() []byte {
 	buf := new(bytes.Buffer)
 	_ = binary.Write(buf, binary.LittleEndian, req.Start)
 	_ = binary.Write(buf, binary.LittleEndian, req.Size)

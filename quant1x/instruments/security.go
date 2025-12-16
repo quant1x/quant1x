@@ -156,7 +156,7 @@ func GetSecurityInfo(code string) *SecurityInfo {
 
 // GetUpLimitRate returns the up-limit ratio for a security code.
 func GetUpLimitRate(securityCode string) float64 {
-	mid, _, symbol := exchange.DetectMarket(securityCode)
+	mid, _, symbol, _ := exchange.DetectMarket(securityCode)
 	const (
 		highLimit    = 0.20
 		normalLimit  = 0.10

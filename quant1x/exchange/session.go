@@ -268,6 +268,21 @@ func CheckTradingTimestamp(lastModified *Timestamp) RuntimeStatus {
 	return rs
 }
 
+// CanInitialize 判断是否可以初始化数据（等价于 C++ 中 can_initialize）
+func CanInitialize(lastModified *Timestamp) bool {
+	rs := CheckTradingTimestamp(lastModified)
+	if rs.BeforeLastTradeDay {
+		return true
+	}
+	if rs.IsHoliday {
+		return false
+	}
+	if rs.BeforeInitTime {
+		return false
+	}
+	return !rs.CacheAfterInitTime
+}
+
 var (
 	tsTodayInit     Timestamp
 	tsTodayInitOnce sync.Once
