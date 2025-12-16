@@ -2,11 +2,11 @@
 #ifndef QUANT1X_INSTRUMENTS_MARKETS_H
 #define QUANT1X_INSTRUMENTS_MARKETS_H 1
 
-#include <quant1x/exchange/blocks.h>
+#include "blocks.h"
+#include "security.h"
 #include <quant1x/exchange/calendar.h>
 #include <quant1x/exchange/code.h>
 #include <quant1x/exchange/margin_trading.h>
-#include <quant1x/instruments/security.h>
 #include <quant1x/io/csv-writer.h>
 #include <quant1x/io/file.h>
 #include <quant1x/io/http.h>

@@ -35,7 +35,7 @@ func NewSecurityListRequest(market int, start, count int) SecurityListRequest {
 	}
 }
 
-func (r SecurityListRequest) Bytes() []byte {
+func (r SecurityListRequest) Serialize() []byte {
 	payload := &bytes.Buffer{}
 	_ = binary.Write(payload, binary.LittleEndian, r.Market)
 	_ = binary.Write(payload, binary.LittleEndian, r.Start)
@@ -47,17 +47,17 @@ func (r SecurityListRequest) Bytes() []byte {
 func (SecurityListRequest) Command() StdCommand { return StdCommandSecurityList }
 
 func (r SecurityListRequest) String() string {
-	return fmt.Sprintf("SecurityListRequest{market:%d,start:%d,count:%d}", r.Market, r.Start, r.Count)
+	return fmt.Sprintf("SecurityListRequest{Market:%d,Start:%d,Count:%d}", r.Market, r.Start, r.Count)
 }
 
 type Security struct {
-	Code         string
-	VolUnit      uint16
-	Name         string
-	Reversed2    [4]byte
-	DecimalPoint uint8
-	PreClose     float64
-	Reversed3    [4]byte
+	Code         string  // 证券代码
+	VolUnit      uint16  // 成交量单位
+	Name         string  // 证券名称
+	Reversed2    [4]byte // 保留字段2
+	DecimalPoint uint8   // 小数点位置
+	PreClose     float64 // 昨收价
+	Reversed3    [4]byte // 保留字段3
 }
 
 type SecurityListResponse struct {

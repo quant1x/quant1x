@@ -49,6 +49,9 @@ class FinanceInfo:
     bao_liu2: float = 0.0
 
     def is_delisting(self) -> bool:
+        """
+        是否退市
+        """
         return self.ipo_date == 0 and self.zong_gu_ben == 0 and self.liu_tong_gu_ben == 0
 
 

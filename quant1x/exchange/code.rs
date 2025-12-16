@@ -1,3 +1,141 @@
+use crate::exchange::SecurityType;
+use std::fmt;
+
+// Note: Exchange codes are exposed via `ExchangeCode` constants below.
+
+// ExchangeCode newtype mirrors Go's `ExchangeCode` (string alias) and provides
+// conversion to `ExchangeId`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ExchangeCode(pub &'static str);
+
+impl ExchangeCode {
+    pub const fn new(s: &'static str) -> Self {
+        ExchangeCode(s)
+    }
+
+    pub fn as_str(&self) -> &str {
+        self.0
+    }
+
+    pub fn id(&self) -> ExchangeId {
+        match self.0 {
+            x if x == EXCHANGE_SZSE.as_str() => ExchangeId::ShenZhen,
+            x if x == EXCHANGE_SSE.as_str() => ExchangeId::ShangHai,
+            x if x == EXCHANGE_BJSE.as_str() => ExchangeId::BeiJing,
+            x if x == EXCHANGE_HK.as_str() => ExchangeId::HongKong,
+            x if x == EXCHANGE_US.as_str() => ExchangeId::USA,
+            _ => ExchangeId::Unknown,
+        }
+    }
+}
+
+impl std::fmt::Display for ExchangeCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+// Common ExchangeCode constants (match Go names)
+pub const EXCHANGE_UNKNOWN: ExchangeCode = ExchangeCode::new("unknown");
+pub const EXCHANGE_SSE: ExchangeCode = ExchangeCode::new("sh");
+pub const EXCHANGE_SZSE: ExchangeCode = ExchangeCode::new("sz");
+pub const EXCHANGE_BJSE: ExchangeCode = ExchangeCode::new("bj");
+pub const EXCHANGE_HK: ExchangeCode = ExchangeCode::new("hk");
+pub const EXCHANGE_US: ExchangeCode = ExchangeCode::new("us");
+
+#[repr(u8)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExchangeId {
+    Unknown = 255,
+    ShenZhen = 0,
+    ShangHai = 1,
+    BeiJing = 2,
+    HongKong = 21,
+    USA = 22,
+}
+
+impl fmt::Display for ExchangeId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            ExchangeId::Unknown => "unknown",
+            ExchangeId::ShenZhen => EXCHANGE_SZSE.as_str(),
+            ExchangeId::ShangHai => EXCHANGE_SSE.as_str(),
+            ExchangeId::BeiJing => EXCHANGE_BJSE.as_str(),
+            ExchangeId::HongKong => EXCHANGE_HK.as_str(),
+            ExchangeId::USA => EXCHANGE_US.as_str(),
+        };
+        write!(f, "{}", s)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ExchangeInfo {
+    pub id: ExchangeId,
+    pub code: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub is_active: bool,
+}
+
+impl ExchangeInfo {
+    pub fn new(code: &str, name: &str, desc: Option<&str>, id: ExchangeId) -> Self {
+        Self {
+            id,
+            code: code.to_string(),
+            name: name.to_string(),
+            description: desc.map(|s| s.to_string()),
+            is_active: true,
+        }
+    }
+
+    pub fn validate(&self) -> Result<(), String> {
+        if self.code.is_empty() {
+            return Err("exchange code cannot be empty".into());
+        }
+        if self.name.is_empty() {
+            return Err("exchange name cannot be empty".into());
+        }
+        Ok(())
+    }
+}
+
+impl fmt::Display for ExchangeInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}({})", self.name, self.code)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SecurityCode {
+    pub market: ExchangeId,
+    pub symbol: String,
+    pub typ: SecurityType,
+}
+
+impl SecurityCode {
+    pub fn new(market: ExchangeId, symbol: &str, typ: SecurityType) -> Self {
+        Self {
+            market,
+            symbol: symbol.to_string(),
+            typ,
+        }
+    }
+
+    pub fn validate(&self) -> Result<(), String> {
+        if self.symbol.is_empty() {
+            return Err("security code symbol cannot be empty".into());
+        }
+        Ok(())
+    }
+}
+
+impl fmt::Display for SecurityCode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}{}", self.market, self.symbol)
+    }
+}
+
+
 // Minimal Rust implementation of market flag helper mirroring C++ `GetMarketFlag`
 pub fn get_market_flag(market: u8) -> &'static str {
     match market {

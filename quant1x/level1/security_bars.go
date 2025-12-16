@@ -26,34 +26,35 @@ const (
 	KLineYearly
 )
 
+// SecurityBarsMax defines the maximum number of bars retrievable in one request.
 const SecurityBarsMax = 800
 
 // SecurityBarsParameter mirrors the packed request payload used by the C++ client.
 type SecurityBarsParameter struct {
-	Market   uint16
-	Code     [6]byte
-	Category uint16
-	I        uint16
-	Start    uint16
-	Count    uint16
+	Market   uint16  // Market identifier
+	Code     [6]byte // Security code, padded to 6 bytes
+	Category uint16  // K-line category/type
+	I        uint16  // Fixed value, typically set to 1
+	Start    uint16  // Starting index for the bars to retrieve
+	Count    uint16  // Number of bars to retrieve
 }
 
 // SecurityBar represents a single K-line entry.
 type SecurityBar struct {
-	Open      float64
-	Close     float64
-	High      float64
-	Low       float64
-	Vol       float64
-	Amount    float64
-	Year      int
-	Month     int
-	Day       int
-	Hour      int
-	Minute    int
-	DateTime  string
-	UpCount   uint16
-	DownCount uint16
+	Open      float64 // 开盘价
+	Close     float64 // 收盘价
+	High      float64 // 最高价
+	Low       float64 // 最低价
+	Vol       float64 // 成交量
+	Amount    float64 // 成交额
+	Year      int     // 年
+	Month     int     // 月
+	Day       int     // 日
+	Hour      int     // 时
+	Minute    int     // 分
+	DateTime  string  // 日期时间字符串
+	UpCount   uint16  // 上涨家数（仅指数K线）
+	DownCount uint16  // 下跌家数（仅指数K线）
 }
 
 // SecurityBarsRequest encodes a SECURITY_BARS command.
@@ -69,7 +70,7 @@ func NewSecurityBarsRequest(securityCode string, category KLineType, start, coun
 		count = SecurityBarsMax
 	}
 
-	marketID, _, symbol := exchange.DetectMarket(securityCode)
+	marketID, _, symbol, _ := exchange.DetectMarket(securityCode)
 
 	var code [6]byte
 	copy(code[:], symbol)
@@ -91,8 +92,8 @@ func NewSecurityBarsRequest(securityCode string, category KLineType, start, coun
 	return req
 }
 
-// Bytes serializes the request payload.
-func (r SecurityBarsRequest) Bytes() []byte {
+// Serialize serializes the request payload.
+func (r SecurityBarsRequest) Serialize() []byte {
 	payload := &bytes.Buffer{}
 	_ = binary.Write(payload, binary.LittleEndian, r.Param.Market)
 	payload.Write(r.Param.Code[:])
@@ -105,7 +106,7 @@ func (r SecurityBarsRequest) Bytes() []byte {
 }
 
 // Command returns the associated StdCommand.
-func (SecurityBarsRequest) Command() StdCommand { return StdCommandSecurityBars }
+func (r SecurityBarsRequest) Command() StdCommand { return StdCommandSecurityBars }
 
 // String provides a readable representation.
 func (r SecurityBarsRequest) String() string {

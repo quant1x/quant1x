@@ -353,7 +353,7 @@ impl crate::io::NetworkOperationHandler for StandardProtocolHandler {
     fn timeout(&self) -> Duration {
         Duration::from_secs(10)
     }
-    
+
     /// 获取检查间隔时间
     ///
     /// 返回一个固定的5秒时间间隔

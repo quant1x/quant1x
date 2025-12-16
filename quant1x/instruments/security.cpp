@@ -1,7 +1,7 @@
-#include <quant1x/instruments/security.h>
+#include "security.h"
+#include "blocks.h"
 #include <quant1x/std/time.h>
 #include <quant1x/config/cache.h>
-#include <quant1x/exchange/blocks.h>
 #include <quant1x/level1/client.h>
 #include <quant1x/std/filepath.h>
 
@@ -127,7 +127,7 @@ namespace instruments {
     double get_up_limit_rate(const std::string& security_code) {
         auto [mid, mcode, symbol] = exchange::DetectMarket(security_code);
 
-        if (mcode == exchange::EXCHANGE_BJSE) {
+        if (mcode == exchange::ExchangeBJSE.String()) {
             return BeijingLimit;
         }
 

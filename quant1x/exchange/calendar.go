@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"gitee.com/quant1x/quant1x/quant1x/core"
+	"gitee.com/quant1x/quant1x/quant1x/exchange/sina"
 	"gitee.com/quant1x/quant1x/quant1x/runtime"
 
 	"time"
@@ -55,7 +56,7 @@ func preprocess(text string) string {
 // decoder and extract the "date" field from decoded records preserving order.
 func decode(text string) []string {
 	pre := preprocess(text)
-	dec := NewFinanceDecoder(pre)
+	dec := sina.NewFinanceDecoder(pre)
 	raw := dec.Decode()
 
 	dates := make([]string, 0)

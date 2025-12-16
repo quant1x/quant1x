@@ -1,240 +1,151 @@
 package exchange
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 )
 
-// TargetKind mirrors exchange::TargetKind in C++
-// TargetKind removed: use SecurityType instead.
+// ExchangeCode 表示交易所代码/标识
+type ExchangeCode string
 
-// DetectMarket implements the same semantics as exchange::DetectMarket.
-// It returns the inferred market id, market flag (sh/sz/...), and the pure 6-digit code.
-func DetectMarket(symbol string) (ExchangeId, string, string, error) {
-	trimmed := strings.TrimSpace(symbol)
-	if trimmed == "" {
-		return ExchangeIdShangHai, string(ExchangeSSE), "", fmt.Errorf("empty security code")
-	}
+const (
+	ExchangeUnknown ExchangeCode = "unknown" // 未知交易所
+	ExchangeSSE     ExchangeCode = "sh"      // 上海证券交易所
+	ExchangeSZSE    ExchangeCode = "sz"      // 深圳证券交易所
+	ExchangeBJSE    ExchangeCode = "bj"      // 北京证券交易所
+	ExchangeHK      ExchangeCode = "hk"      // 香港证券交易所
+	ExchangeUS      ExchangeCode = "us"      // 美国交易所
+)
 
-	lowered := strings.ToLower(trimmed)
-	marketCode, pureCode := splitMarketFlag(lowered)
-	pureCode = sanitizeDigits(pureCode)
+// String 返回交易所代码的字符串表示，满足 fmt.Stringer 接口
+func (e ExchangeCode) String() string {
+	return string(e)
+}
 
-	if marketCode == "" {
-		if len(pureCode) == 6 && digitsRegexp.MatchString(pureCode) {
-			market := GetMarket(pureCode)
-			marketCode = string(market)
-		} else {
-			marketCode = string(ExchangeSSE)
-		}
-	}
-
-	switch marketCode {
-	case string(ExchangeSZSE):
-		return ExchangeIdShenZhen, marketCode, pureCode, nil
-	case string(ExchangeBJSE):
-		return ExchangeIdBeiJing, marketCode, pureCode, nil
-	case "hk":
-		return ExchangeIdHongKong, marketCode, pureCode, nil
-	case "us":
-		return ExchangeIdUSA, marketCode, pureCode, nil
+// ToExchangeId 将 ExchangeCode 转换为对应的 ExchangeId
+//
+//	如果无法识别返回错误
+func (e ExchangeCode) Id() ExchangeId {
+	switch e {
+	case ExchangeSZSE:
+		return ExchangeIdShenZhen
+	case ExchangeSSE:
+		return ExchangeIdShangHai
+	case ExchangeBJSE:
+		return ExchangeIdBeiJing
+	case ExchangeHK:
+		return ExchangeIdHongKong
+	case ExchangeUS:
+		return ExchangeIdUSA
 	default:
-		return ExchangeIdShangHai, string(ExchangeSSE), pureCode, nil
+		return ExchangeIdUnknown
 	}
 }
 
-// AssertIndexByMarketAndCode mirrors the C++ helper for distinguishing index codes.
-func AssertIndexByMarketAndCode(m ExchangeId, code string) bool {
-	symbol := strings.TrimSpace(code)
+var (
+	// AllExchangeCodes 包含所有已知的交易所代码
+	AllExchangeCodes = []string{
+		ExchangeSSE.String(),
+		ExchangeSZSE.String(),
+		ExchangeBJSE.String(),
+		ExchangeHK.String(),
+		ExchangeUS.String(),
+	}
+)
+
+// ExchangeId 表示交易所ID
+type ExchangeId uint8
+
+const (
+	ExchangeIdUnknown  ExchangeId = 255 // 未知交易所
+	ExchangeIdShenZhen ExchangeId = 0   // 深圳证券交易所
+	ExchangeIdShangHai ExchangeId = 1   // 上海证券交易所
+	ExchangeIdBeiJing  ExchangeId = 2   // 北京证券交易所
+	ExchangeIdHongKong ExchangeId = 21  // 香港交易所
+	ExchangeIdUSA      ExchangeId = 22  // 美国交易所
+)
+
+// String 将交易所ID转换为对应的字符串表示
+//
+//	如果传入未知的交易所ID会触发panic
+func (m ExchangeId) String() string {
 	switch m {
+	case ExchangeIdShenZhen:
+		return string(ExchangeSZSE)
 	case ExchangeIdShangHai:
-		return strings.HasPrefix(symbol, "000") || strings.HasPrefix(symbol, "880") || strings.HasPrefix(symbol, "881")
-	case ExchangeIdShenZhen:
-		return strings.HasPrefix(symbol, "399")
+		return string(ExchangeSSE)
 	case ExchangeIdBeiJing:
-		return strings.HasPrefix(symbol, "899")
-	default:
-		return false
-	}
-}
-
-var digitsRegexp = regexp.MustCompile(`^\d+$`)
-
-func splitMarketFlag(symbol string) (string, string) {
-	for _, flag := range []string{"sh", "sz", "bj", "hk", "us"} {
-		if strings.HasPrefix(symbol, flag) {
-			return flag, symbol[len(flag):]
-		}
-		if strings.HasSuffix(symbol, flag) {
-			return flag, symbol[:len(symbol)-len(flag)]
-		}
-	}
-	return "", symbol
-}
-
-func sanitizeDigits(s string) string {
-	replaced := strings.ReplaceAll(s, ".", "")
-	replaced = strings.ReplaceAll(replaced, "-", "")
-	return replaced
-}
-
-func CorrectSecurityCode(input string) string {
-	_, marketFlag, symbol, err := DetectMarket(input)
-	if err != nil {
-		panic(err)
-	}
-	return fmt.Sprintf("%s%s", marketFlag, symbol)
-}
-
-// GetSecurityCode 根据市场类型和代码生成完整证券代码
-func GetSecurityCode(market ExchangeId, symbol string) string {
-	switch market {
-	case ExchangeIdUSA:
-		return string(ExchangeUS) + symbol
+		return string(ExchangeBJSE)
 	case ExchangeIdHongKong:
-		if len(symbol) >= 5 {
-			return string(ExchangeHK) + symbol[:5]
-		}
-		return string(ExchangeHK) + symbol
-	case ExchangeIdBeiJing:
-		if len(symbol) >= 6 {
-			return string(ExchangeBJSE) + symbol[:6]
-		}
-		return string(ExchangeBJSE) + symbol
-	case ExchangeIdShenZhen:
-		if len(symbol) >= 6 {
-			return string(ExchangeSZSE) + symbol[:6]
-		}
-		return string(ExchangeSZSE) + symbol
+		return string(ExchangeHK)
+	case ExchangeIdUSA:
+		return string(ExchangeUS)
 	default:
-		if len(symbol) >= 6 {
-			return string(ExchangeSSE) + symbol[:6]
-		}
-		return string(ExchangeSSE) + symbol
+		panic(fmt.Sprintf("unknown market id: %d", m))
 	}
 }
 
-// // GetMarket 根据代码判断所属市场，返回市场标识（如 sh/sz/bj）
-// func GetMarket(symbol string) string {
-// 	_, flag, _ := DetectMarket(symbol)
-// 	return flag
-// }
+// 包级错误
+var (
+	ErrExchangeCodeEmpty       = errors.New("exchange code cannot be empty")
+	ErrExchangeNameEmpty       = errors.New("exchange name cannot be empty")
+	ErrSecurityCodeSymbolEmpty = errors.New("security code symbol cannot be empty")
+)
 
-// GetMarketId 获取市场ID
-func GetMarketId(symbol string) ExchangeId {
-	mid, _, _, err := DetectMarket(symbol)
-	if err != nil {
-		panic(err)
-	}
-	return mid
+// ExchangeInfo 表示交易所信息
+type ExchangeInfo struct {
+	ID          ExchangeId `yaml:"id"`                    // 市场ID，对应 ExchangeId 枚举
+	Code        string     `yaml:"code"`                  // 交易所代码，如 "sh", "sz"
+	Name        string     `yaml:"name"`                  // 交易所名称，如 "上海证券交易所"
+	Description string     `yaml:"description,omitempty"` // 描述信息，可选
+	IsActive    bool       `yaml:"is_active"`             // 是否活跃
 }
 
-// GetMarketFlag 根据市场ID返回市场标识
-func GetMarketFlag(m ExchangeId) string {
-	return m.String()
+// String 返回交易所的字符串表示
+func (e ExchangeInfo) String() string {
+	return fmt.Sprintf("%s(%s)", e.Name, e.Code)
 }
 
-// AssertIndexBySecurityCode 判断是否为指数代码（通过完整证券代码）
-func AssertIndexBySecurityCode(securityCode string) bool {
-	mid, _, code, err := DetectMarket(securityCode)
-	if err != nil {
-		panic(err)
+// Validate 检查交易所字段的有效性
+func (e ExchangeInfo) Validate() error {
+	if e.Code == "" {
+		return ErrExchangeCodeEmpty
 	}
-	return AssertIndexByMarketAndCode(mid, code)
+	if e.Name == "" {
+		return ErrExchangeNameEmpty
+	}
+	return nil
 }
 
-// AssertBlockBySecurityCode 判断并修正板块代码（会修改传入字符串）
-func AssertBlockBySecurityCode(securityCode *string) bool {
-	if securityCode == nil || *securityCode == "" {
-		return false
+// NewExchange 创建一个新的 Exchange 实例，带描述信息
+func NewExchange(code, name, desc string, id ExchangeId) ExchangeInfo {
+	return ExchangeInfo{
+		Code:        code,
+		Name:        name,
+		ID:          id,
+		Description: desc,
+		IsActive:    true,
 	}
-	mid, flag, code, err := DetectMarket(*securityCode)
-	if err != nil {
-		panic(err)
-	}
-	if mid != ExchangeIdShangHai {
-		return false
-	}
-	if strings.HasPrefix(code, "880") || strings.HasPrefix(code, "881") {
-		*securityCode = fmt.Sprintf("%s%s", flag, code)
-		return true
-	}
-	return false
 }
 
-// AssertETFByMarketAndCode 判断是否为ETF（通过市场ID和纯代码）
-func AssertETFByMarketAndCode(mid ExchangeId, symbol string) bool {
-	if mid == ExchangeIdShangHai && strings.HasPrefix(symbol, "510") {
-		return true
-	}
-	if mid == ExchangeIdShenZhen && strings.HasPrefix(symbol, "159") {
-		return true
-	}
-	return false
+// SecurityCode 表示证券代码及其所属交易所
+type SecurityCode struct {
+	Market ExchangeId   // 交易所ID
+	Symbol string       // 证券代码
+	Type   SecurityType // 证券类型
 }
 
-// AssertStockByMarketAndCode 判断是否为个股（通过市场ID和纯代码）
-func AssertStockByMarketAndCode(mid ExchangeId, symbol string) bool {
-	if mid == ExchangeIdShangHai && (strings.HasPrefix(symbol, "60") || strings.HasPrefix(symbol, "68") || strings.HasPrefix(symbol, "510")) {
-		return true
-	}
-	if mid == ExchangeIdShenZhen && (strings.HasPrefix(symbol, "00") || strings.HasPrefix(symbol, "30")) {
-		return true
-	}
-	if mid == ExchangeIdBeiJing && (strings.HasPrefix(symbol, "40") || strings.HasPrefix(symbol, "43") || strings.HasPrefix(symbol, "83") || strings.HasPrefix(symbol, "87") || strings.HasPrefix(symbol, "88") || strings.HasPrefix(symbol, "420") || strings.HasPrefix(symbol, "820") || strings.HasPrefix(symbol, "920")) {
-		return true
-	}
-	return false
+// String 返回证券代码的字符串表示形式，格式为"市场代码+证券代码"
+func (c SecurityCode) String() string {
+	return fmt.Sprintf("%s%s", c.Market, c.Symbol)
 }
 
-// AssertStockBySecurityCode 判断是否为个股（通过完整证券代码）
-func AssertStockBySecurityCode(securityCode string) bool {
-	mid, _, code, err := DetectMarket(securityCode)
-	if err != nil {
-		panic(err)
+// Validate 检查证券代码的有效性
+func (c SecurityCode) Validate() error {
+	if c.Symbol == "" {
+		return ErrSecurityCodeSymbolEmpty
 	}
-	return AssertStockByMarketAndCode(mid, code)
-}
-
-// AssertCode 判断证券代码类型
-func AssertCode(securityCode string) SecurityType {
-	mid, _, code, err := DetectMarket(securityCode)
-	if err != nil {
-		panic(err)
-	}
-	if mid == ExchangeIdShangHai {
-		if strings.HasPrefix(code, "880") || strings.HasPrefix(code, "881") {
-			return TypeBlock
-		}
-		if strings.HasPrefix(code, "000") {
-			return TypeIndex
-		}
-		if strings.HasPrefix(code, "5") {
-			return TypeETF
-		}
-	}
-	if mid == ExchangeIdShenZhen {
-		if strings.HasPrefix(code, "399") {
-			return TypeIndex
-		}
-		if strings.HasPrefix(code, "159") {
-			return TypeETF
-		}
-	}
-	if mid == ExchangeIdBeiJing && strings.HasPrefix(code, "899") {
-		return TypeIndex
-	}
-	return TypeStock
-}
-
-// CheckIndexAndStock 检查指数和个股
-func CheckIndexAndStock(securityCode string) bool {
-	if AssertIndexBySecurityCode(securityCode) {
-		return true
-	}
-	if AssertStockBySecurityCode(securityCode) {
-		return true
-	}
-	return false
+	return nil
 }

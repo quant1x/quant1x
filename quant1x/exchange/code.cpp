@@ -16,15 +16,15 @@ namespace exchange {
     std::string GetSecurityCode(ExchangeId market, const std::string &symbol) {
         switch (market) {
             case ExchangeId::USA:
-                return EXCHANGE_US + symbol;
+                return ExchangeUS.String() + symbol;
             case ExchangeId::HongKong:
-                return EXCHANGE_HK + symbol.substr(0, 5);
+                return ExchangeHK.String() + symbol.substr(0, 5);
             case ExchangeId::BeiJing:
-                return EXCHANGE_BJSE + symbol.substr(0, 6);
+                return ExchangeBJSE.String() + symbol.substr(0, 6);
             case ExchangeId::ShenZhen:
-                return EXCHANGE_SZSE + symbol.substr(0, 6);
+                return ExchangeSZSE.String() + symbol.substr(0, 6);
             default:
-                return EXCHANGE_SSE + symbol.substr(0, 6);
+                return ExchangeSSE.String() + symbol.substr(0, 6);
         }
     }
 
@@ -84,7 +84,7 @@ namespace exchange {
      */
     std::string GetMarket(const std::string &symbol) {
         std::string code = strings::trim(symbol);
-        std::string market = EXCHANGE_SSE;
+        std::string market = ExchangeSSE.String();
 
         if (strings::startsWith(code, marketFlags)) {
             market = code.substr(0, 2);
@@ -94,15 +94,15 @@ namespace exchange {
             market = code.substr(len - 2);
             market = strings::to_lower(market);
         } else if (strings::startsWith(code, shanghaiMainBoardPrefixes)) {
-            market = EXCHANGE_SSE;
+            market = ExchangeSSE.String();
         } else if (strings::startsWith(code, shenzhenMainBoardPrefixes)) {
-            market = EXCHANGE_SZSE;
+            market = ExchangeSZSE.String();
         } else if (strings::startsWith(code, shanghaiSpecialPrefixes)) {
-            market = EXCHANGE_SSE;
+            market = ExchangeSSE.String();
         } else if (strings::startsWith(code, sectorPrefixes)) {
-            market = EXCHANGE_SSE;
+            market = ExchangeSSE.String();
         } else if (strings::startsWith(code, beijingMainBoardPrefixes)) {
-            market = EXCHANGE_BJSE;
+            market = ExchangeBJSE.String();
         }
         return market;
     }
@@ -114,9 +114,9 @@ namespace exchange {
      */
     ExchangeId GetMarketId(const std::string &symbol) {
         std::string market = GetMarket(symbol);
-        if (market == EXCHANGE_SSE) return ExchangeId::ShangHai;
-        if (market == EXCHANGE_SZSE) return ExchangeId::ShenZhen;
-        if (market == EXCHANGE_BJSE) return ExchangeId::BeiJing;
+        if (market == ExchangeSSE.String()) return ExchangeId::ShangHai;
+        if (market == ExchangeSZSE.String()) return ExchangeId::ShenZhen;
+        if (market == ExchangeBJSE.String()) return ExchangeId::BeiJing;
         return ExchangeId::ShangHai;
     }
 
@@ -128,15 +128,15 @@ namespace exchange {
     std::string GetMarketFlag(ExchangeId marketId) {
         switch (marketId) {
             case ExchangeId::ShenZhen:
-                return EXCHANGE_SZSE;
+                return ExchangeSZSE.String();
             case ExchangeId::BeiJing:
-                return EXCHANGE_BJSE;
+                return ExchangeBJSE.String();
             case ExchangeId::HongKong:
-                return EXCHANGE_HK;
+                return ExchangeHK.String();
             case ExchangeId::USA:
-                return EXCHANGE_US;
+                return ExchangeUS.String();
             default:
-                return EXCHANGE_SSE;
+                return ExchangeSSE.String();
         }
     }
 
@@ -147,7 +147,7 @@ namespace exchange {
      */
     std::tuple<ExchangeId, std::string, std::string> DetectMarket(const std::string &symbol) {
         std::string pureCode = strings::trim(symbol);
-        std::string marketCode = EXCHANGE_SSE;
+        std::string marketCode = ExchangeSSE.String();
 
         if (strings::startsWith(pureCode, marketFlags)) {
             marketCode = pureCode.substr(0, 2);
@@ -161,22 +161,22 @@ namespace exchange {
             marketCode = strings::to_lower(marketCode);
             pureCode = pureCode.substr(0, len - 3);
         } else if (strings::startsWith(pureCode, shanghaiMainBoardPrefixes)) {
-            marketCode = EXCHANGE_SSE;
+            marketCode = ExchangeSSE.String();
         } else if (strings::startsWith(pureCode, shenzhenMainBoardPrefixes)) {
-            marketCode = EXCHANGE_SZSE;
+            marketCode = ExchangeSZSE.String();
         } else if (strings::startsWith(pureCode, shanghaiSpecialPrefixes)) {
-            marketCode = EXCHANGE_SSE;
+            marketCode = ExchangeSSE.String();
         } else if (strings::startsWith(pureCode, sectorPrefixes)) {
-            marketCode = EXCHANGE_SSE;
+            marketCode = ExchangeSSE.String();
         } else if (strings::startsWith(pureCode, beijingMainBoardPrefixes)) {
-            marketCode = EXCHANGE_BJSE;
+            marketCode = ExchangeBJSE.String();
         }
 
         ExchangeId marketId = ExchangeId::ShangHai;
-        if (marketCode == EXCHANGE_SSE) marketId = ExchangeId::ShangHai;
-        else if (marketCode == EXCHANGE_SZSE) marketId = ExchangeId::ShenZhen;
-        else if (marketCode == EXCHANGE_BJSE) marketId = ExchangeId::BeiJing;
-        else if (marketCode == EXCHANGE_HK) marketId = ExchangeId::HongKong;
+        if (marketCode == ExchangeSSE.String()) marketId = ExchangeId::ShangHai;
+        else if (marketCode == ExchangeSZSE.String()) marketId = ExchangeId::ShenZhen;
+        else if (marketCode == ExchangeBJSE.String()) marketId = ExchangeId::BeiJing;
+        else if (marketCode == ExchangeHK.String()) marketId = ExchangeId::HongKong;
 
         return {marketId, marketCode, pureCode};
     }
@@ -308,3 +308,58 @@ namespace exchange {
         return false;
     }
 }
+
+
+namespace exchange {
+
+ExchangeId ExchangeCode::Id() const {
+    if (value == std::string_view("sz")) return ExchangeId::ShenZhen;
+    if (value == std::string_view("sh")) return ExchangeId::ShangHai;
+    if (value == std::string_view("bj")) return ExchangeId::BeiJing;
+    if (value == std::string_view("hk")) return ExchangeId::HongKong;
+    if (value == std::string_view("us")) return ExchangeId::USA;
+    return ExchangeId::Unknown;
+}
+
+std::string String(ExchangeId m) {
+    switch (m) {
+    case ExchangeId::ShenZhen: return std::string(ExchangeSZSE.String());
+    case ExchangeId::ShangHai: return std::string(ExchangeSSE.String());
+    case ExchangeId::BeiJing: return std::string(ExchangeBJSE.String());
+    case ExchangeId::HongKong: return std::string(ExchangeHK.String());
+    case ExchangeId::USA: return std::string(ExchangeUS.String());
+    default: throw std::runtime_error("unknown market id");
+    }
+}
+
+std::string ExchangeInfo::ToString() const {
+    return fmt::format("{}({})", name, code);
+}
+
+void ExchangeInfo::Validate() const {
+    if (code.empty()) throw std::invalid_argument("exchange code cannot be empty");
+    if (name.empty()) throw std::invalid_argument("exchange name cannot be empty");
+}
+
+ExchangeInfo ExchangeInfo::NewExchange(const std::string& code,
+                                       const std::string& name,
+                                       const std::string& desc,
+                                       ExchangeId id) {
+    ExchangeInfo e;
+    e.code = code;
+    e.name = name;
+    e.description = desc;
+    e.id = id;
+    e.is_active = true;
+    return e;
+}
+
+std::string SecurityCode::ToString() const {
+    return fmt::format("{}{}", String(market), symbol);
+}
+
+void SecurityCode::Validate() const {
+    if (symbol.empty()) throw std::invalid_argument("security code symbol cannot be empty");
+}
+
+} // namespace exchange

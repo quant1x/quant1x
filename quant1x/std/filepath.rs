@@ -50,7 +50,7 @@ pub fn expand_user(path: &str) -> Result<String, String> {
     }
 
     let home = homedir().ok_or("Could not find home directory")?;
-    
+
     if path == "~" {
         return Ok(home.to_string_lossy().to_string());
     }
@@ -85,11 +85,19 @@ mod tests {
         env::remove_var("GOX_HOME");
 
         // Restore env vars
-        if let Some(v) = original_q1x { env::set_var("QUANT1X_HOME", v); }
-        if let Some(v) = original_gox { env::set_var("GOX_HOME", v); }
-        if let Some(v) = original_home { env::set_var("HOME", v); }
+        if let Some(v) = original_q1x {
+            env::set_var("QUANT1X_HOME", v);
+        }
+        if let Some(v) = original_gox {
+            env::set_var("GOX_HOME", v);
+        }
+        if let Some(v) = original_home {
+            env::set_var("HOME", v);
+        }
         #[cfg(target_os = "windows")]
-        if let Some(v) = original_userprofile { env::set_var("USERPROFILE", v); }
+        if let Some(v) = original_userprofile {
+            env::set_var("USERPROFILE", v);
+        }
     }
 
     #[test]

@@ -6,8 +6,87 @@
 // exchange 证券代码相关                                      //
 //============================================================
 #include <quant1x/std/api.h>
-#include <quant1x/exchange/exchange.h>
 #include <vector>
+
+namespace exchange {
+
+enum class ExchangeId : std::uint8_t {
+    Unknown = 255, // 未知交易所
+    ShenZhen = 0, // 深圳交易所
+    ShangHai = 1, // 上海交易所
+    BeiJing = 2, // 北京交易所
+    HongKong = 21, // 香港交易所
+    USA = 22, // 美国交易所
+};
+
+// SecurityType mirrors the Go `SecurityType` enum in rule.go
+enum class SecurityType : int8_t {
+    Unknown = 0, // 未知类型
+    Stock, // 股票
+    ETF, // ETF
+    Fund, // 基金
+    Bond, // 债券
+    BStock, // B股
+    IPO, // 新股
+    Index, // 指数
+    Block, // 板块
+};
+
+class ExchangeCode {
+public:
+    constexpr ExchangeCode(std::string_view sv) : value(sv) {}
+    std::string String() const { return std::string(value); }
+    ExchangeId Id() const; // throws on unknown
+    bool operator==(const ExchangeCode& other) const { return value == other.value; }
+    bool operator==(std::string_view sv) const { return value == sv; }
+
+private:
+    std::string_view value;
+};
+
+static inline constexpr ExchangeCode ExchangeUnknown{"unknown"};
+static inline constexpr ExchangeCode ExchangeSSE{"sh"};
+static inline constexpr ExchangeCode ExchangeSZSE{"sz"};
+static inline constexpr ExchangeCode ExchangeBJSE{"bj"};
+static inline constexpr ExchangeCode ExchangeHK{"hk"};
+static inline constexpr ExchangeCode ExchangeUS{"us"};
+
+// AllExchangeCodes as strings (align with Go's []string)
+static inline const std::vector<std::string> AllExchangeCodes = {
+    ExchangeSSE.String(),
+    ExchangeSZSE.String(),
+    ExchangeBJSE.String(),
+    ExchangeHK.String(),
+    ExchangeUS.String(),
+};
+
+std::string String(ExchangeId m);
+
+struct ExchangeInfo {
+    ExchangeId id;
+    std::string code;
+    std::string name;
+    std::string description;
+    bool is_active = true;
+
+    std::string ToString() const;
+    void Validate() const;
+    static ExchangeInfo NewExchange(const std::string& code,
+                                    const std::string& name,
+                                    const std::string& desc,
+                                    ExchangeId id);
+};
+
+struct SecurityCode {
+    ExchangeId market;
+    std::string symbol;
+    SecurityType type = SecurityType::Unknown;
+
+    std::string ToString() const;
+    void Validate() const;
+};
+
+} // namespace exchange
 
 namespace exchange {
     constexpr const char *const stock_delisting          = "DELISTING";  ///< 退市标识

@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_EXCHANGE_BLOCKS_H
-#define QUANT1X_EXCHANGE_BLOCKS_H 1
+#ifndef QUANT1X_INSTRUMENTS_BLOCKS_H
+#define QUANT1X_INSTRUMENTS_BLOCKS_H 1
 
 //============================================================
 // exchange 板块信息相关                                       //
@@ -36,4 +36,4 @@ namespace exchange {
 
 } // namespace exchange
 
-#endif //QUANT1X_EXCHANGE_BLOCKS_H
+#endif // QUANT1X_INSTRUMENTS_BLOCKS_H

@@ -7,8 +7,9 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/async.h>
-#include <filesystem>
-#include <memory>
+
+// 使用 spdlog 作为日志库
+namespace logger = spdlog;
 
 
 #endif //QUANT1X_LOGGER_LOGGER_H

@@ -1,10 +1,10 @@
+use crate::std::filepath;
+use serde::{Deserialize, Serialize};
+use serde_yaml;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::OnceLock;
-use serde::{Deserialize, Serialize};
-use serde_yaml;
-use crate::std::filepath;
 
 const DEFAULT_BASE_PATH_TEMPLATE: &str = "~/.q1x-rust";
 const QUANT1X_CONFIG_FILENAME: &str = "quant1x.yaml";
@@ -64,9 +64,11 @@ impl BaseConfig {
         if let Some(ref mut logdir) = typed_config.logdir {
             let trimmed = logdir.trim();
             if trimmed.is_empty() {
-                typed_config.logdir = Some(format!("{}/logs", typed_config.basedir.as_ref().unwrap()));
+                typed_config.logdir =
+                    Some(format!("{}/logs", typed_config.basedir.as_ref().unwrap()));
             } else {
-                typed_config.logdir = Some(crate::std::filepath::expand_user(trimmed).unwrap_or(trimmed.to_string()));
+                typed_config.logdir =
+                    Some(crate::std::filepath::expand_user(trimmed).unwrap_or(trimmed.to_string()));
             }
         } else {
             typed_config.logdir = Some(format!("{}/logs", typed_config.basedir.as_ref().unwrap()));
@@ -74,21 +76,29 @@ impl BaseConfig {
 
         // 归一化后的值也写回 map
         if let Some(basedir) = &typed_config.basedir {
-            typed_config.config_map.insert("basedir".to_string(), serde_yaml::Value::String(basedir.clone()));
+            typed_config.config_map.insert(
+                "basedir".to_string(),
+                serde_yaml::Value::String(basedir.clone()),
+            );
         }
         if let Some(logdir) = &typed_config.logdir {
-            typed_config.config_map.insert("logdir".to_string(), serde_yaml::Value::String(logdir.clone()));
+            typed_config.config_map.insert(
+                "logdir".to_string(),
+                serde_yaml::Value::String(logdir.clone()),
+            );
         }
-        typed_config.config_map.insert("debug".to_string(), serde_yaml::Value::Bool(typed_config.debug));
+        typed_config.config_map.insert(
+            "debug".to_string(),
+            serde_yaml::Value::Bool(typed_config.debug),
+        );
 
         Ok(typed_config)
     }
 }
 
 fn lazy_init_base_path() -> String {
-    filepath::expand_user(DEFAULT_BASE_PATH_TEMPLATE).unwrap_or_else(|_| {
-        DEFAULT_BASE_PATH_TEMPLATE.to_string()
-    })
+    filepath::expand_user(DEFAULT_BASE_PATH_TEMPLATE)
+        .unwrap_or_else(|_| DEFAULT_BASE_PATH_TEMPLATE.to_string())
 }
 
 /// 返回默认的基础路径，如果无法展开用户目录则返回默认路径

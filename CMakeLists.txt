@@ -497,9 +497,11 @@ set(quant1x-headers
 
     # 交易所相关
     quant1x/instruments/markets.h
-    quant1x/exchange/blocks.h
+    quant1x/instruments/blocks.h
+    quant1x/instruments/security.h
     quant1x/exchange/calendar.h
     quant1x/exchange/code.h
+    quant1x/exchange/rule.h
     quant1x/exchange/margin_trading.h
     quant1x/exchange/session.h
     quant1x/exchange/timestamp.h
@@ -641,9 +643,10 @@ set(quant1x-sources
 
     # 交易所相关
     quant1x/instruments/markets.cpp
-    quant1x/exchange/blocks.cpp
+    quant1x/instruments/blocks.cpp
     quant1x/instruments/security.cpp
     quant1x/exchange/code.cpp
+    quant1x/exchange/rule.cpp
     quant1x/exchange/calendar.cpp
     quant1x/exchange/session.cpp
     quant1x/exchange/timestamp.cpp
@@ -731,9 +734,6 @@ list(APPEND quant1x-sources user/no0.cpp)
 list(APPEND quant1x-headers user/strategy-no0.h)
 list(APPEND quant1x-sources user/strategy-no0.cpp)
 
-# Project-local exchange translation files (added by assistant)
-list(APPEND quant1x-headers quant1x/exchange/exchange.h)
-list(APPEND quant1x-sources quant1x/exchange/exchange.cpp)
 
 # 检查编译器选项
 get_target_property(_include_dirs third_libs INTERFACE_INCLUDE_DIRECTORIES)

@@ -19,7 +19,7 @@ type XdxrInfoRequest struct {
 
 // NewXdxrInfoRequest constructs a request like the C++ XdxrInfoRequest.
 func NewXdxrInfoRequest(securityCode string) XdxrInfoRequest {
-	mid, _, symbol := exchange.DetectMarket(securityCode)
+	mid, _, symbol, _ := exchange.DetectMarket(securityCode)
 	var code [6]byte
 	copy(code[:], symbol)
 	return XdxrInfoRequest{Padding: []byte{0x01, 0x00}, Market: uint8(mid), Code: code}

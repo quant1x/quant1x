@@ -5,6 +5,7 @@ import (
 	"compress/zlib"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"sync/atomic"
@@ -51,7 +52,7 @@ const (
 
 var seqId uint32
 
-func nextSeqID() uint32 {
+func nextSequenceId() uint32 {
 	return atomic.AddUint32(&seqId, 1)
 }
 
@@ -100,14 +101,30 @@ func commandToString(cmd StdCommand) string {
 	}
 }
 
+// RequestHeader 请求-消息头
+type RequestHeader struct {
+	ZipFlag    uint8  // ZipFlag
+	SeqID      uint32 // 请求编号
+	PacketType uint8  // 包类型
+	PkgLen1    uint16 // 消息体长度1
+	PkgLen2    uint16 // 消息体长度2
+	Method     uint16 // 命令字
+}
+
+func (h RequestHeader) String() string {
+	return fmt.Sprintf("{ZipFlag: %d, SeqID: %d, PacketType: %d, PkgLen1: %d, PkgLen2: %d, Method: %d}",
+		h.ZipFlag, h.SeqID, h.PacketType, h.PkgLen1, h.PkgLen2, h.Method)
+}
+
+// ResponseHeader 响应-消息头
 type ResponseHeader struct {
-	I1        uint32
-	ZipFlag   uint8
-	SeqID     uint32
-	I2        uint8
-	Method    uint16
-	ZipSize   uint16
-	UnZipSize uint16
+	I1        uint32 // reserved
+	ZipFlag   uint8  // 压缩标志
+	SeqID     uint32 // 序列号
+	I2        uint8  // reserved
+	Method    uint16 // 命令字
+	ZipSize   uint16 // 压缩后大小
+	UnZipSize uint16 // 解压后大小
 }
 
 func readResponseHeader(r io.Reader) (*ResponseHeader, error) {
@@ -127,7 +144,7 @@ func readResponseHeader(r io.Reader) (*ResponseHeader, error) {
 }
 
 type ProtocolRequest interface {
-	Bytes() []byte
+	Serialize() []byte
 	Command() StdCommand
 	String() string
 }
@@ -155,13 +172,75 @@ func (b *ResponseBase) SetHeader(h *ResponseHeader) {
 	b.header = *h
 }
 
+// buildRequest 构建请求数据包
+//
+// 参数:
+//
+//	method: 标准命令类型
+//	packetType: 数据包类型
+//	payload: 请求负载数据
+//
+// 返回值:
+//
+//	构建完成的请求字节数组
+func buildRequest(method StdCommand, packetType uint8, payload []byte) []byte {
+	seqId := nextSequenceId()
+	pkgLen := uint16(2)
+	if payload != nil {
+		pkgLen = uint16(2 + len(payload))
+	}
+	req := RequestHeader{
+		ZipFlag:    FlagUncompressed,
+		SeqID:      seqId,
+		PacketType: packetType,
+		PkgLen1:    pkgLen,
+		PkgLen2:    pkgLen,
+		Method:     uint16(method),
+	}
+	buf := &bytes.Buffer{}
+	// buf.WriteByte(FlagUncompressed)
+	// _ = binary.Write(buf, binary.LittleEndian, seq)
+	// buf.WriteByte(packetType)
+	// _ = binary.Write(buf, binary.LittleEndian, pkgLen)
+	// _ = binary.Write(buf, binary.LittleEndian, pkgLen)
+	// _ = binary.Write(buf, binary.LittleEndian, uint16(method))
+	_ = binary.Write(buf, binary.LittleEndian, req)
+	if payload != nil {
+		buf.Write(payload)
+	}
+	return buf.Bytes()
+}
+
+// unzipZlib 解压zlib压缩的数据
+//
+// 参数:
+//
+//	data - 待解压的zlib压缩数据
+//
+// 返回值:
+//
+//	[]byte - 解压后的原始数据
+//	error - 解压过程中遇到的错误
+func unzipZlib(data []byte) ([]byte, error) {
+	r, err := zlib.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+	out := &bytes.Buffer{}
+	if _, err := io.Copy(out, r); err != nil {
+		return nil, err
+	}
+	return out.Bytes(), nil
+}
+
 func Process[T ProtocolRequest, R ProtocolResponse](conn *net.TCPConn, req T, resp R) error {
 	if conn == nil {
 		return errors.New("nil connection")
 	}
 
 	cmd := commandToString(req.Command())
-	payload := req.Bytes()
+	payload := req.Serialize()
 	logger.Debugf("[%s] send request bytes: %d", cmd, len(payload))
 	logger.Debugf("[%s] request: %s", cmd, req.String())
 
@@ -198,36 +277,4 @@ func Process[T ProtocolRequest, R ProtocolResponse](conn *net.TCPConn, req T, re
 	}
 	logger.Debugf("[%s] response: %s", cmd, resp.String())
 	return nil
-}
-
-func buildRequest(method StdCommand, packetType uint8, payload []byte) []byte {
-	seq := nextSeqID()
-	pkgLen := uint16(2)
-	if payload != nil {
-		pkgLen = uint16(2 + len(payload))
-	}
-	buf := &bytes.Buffer{}
-	buf.WriteByte(FlagUncompressed)
-	_ = binary.Write(buf, binary.LittleEndian, seq)
-	buf.WriteByte(packetType)
-	_ = binary.Write(buf, binary.LittleEndian, pkgLen)
-	_ = binary.Write(buf, binary.LittleEndian, pkgLen)
-	_ = binary.Write(buf, binary.LittleEndian, uint16(method))
-	if payload != nil {
-		buf.Write(payload)
-	}
-	return buf.Bytes()
-}
-
-func unzipZlib(data []byte) ([]byte, error) {
-	r, err := zlib.NewReader(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
-	out := &bytes.Buffer{}
-	if _, err := io.Copy(out, r); err != nil {
-		return nil, err
-	}
-	return out.Bytes(), nil
 }

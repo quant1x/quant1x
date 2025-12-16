@@ -30,9 +30,9 @@ COMMAND_TRANSACTION_DATA = 0x0fc5         # 分笔成交信息
 COMMAND_HISTORY_MINUTE_DATA = 0x0fb4      # 历史分时信息
 COMMAND_HISTORY_TRANSACTION_DATA = 0x0fb5 # 历史分笔成交信息
 
-FLAG_ZIP = 0x10
-FLAG_UNCOMPRESSED = 0x0C
-FLAG_ZIPPED = FLAG_ZIP | FLAG_UNCOMPRESSED
+FLAG_ZIP = 0x10                  # 压缩标志
+FLAG_UNCOMPRESSED = 0x0C        # 未压缩标志
+FLAG_ZIPPED = FLAG_ZIP | FLAG_UNCOMPRESSED # 压缩标志
 
 _seq_lock = threading.Lock()
 _seq_id = 0

@@ -2,6 +2,7 @@
 #include <quant1x/exchange/session.h>
 #include <quant1x/std/except.h>
 #include <quant1x/encoding/yaml.h>
+#include <filesystem>
 
 namespace level1 {
     struct ServerList {
@@ -9,8 +10,9 @@ namespace level1 {
         std::vector<ServerInfo> extension; // 扩展服务器列表
     };
 
-        
+
     namespace {
+        namespace fs = std::filesystem;
         std::unique_ptr<TcpConnectionPool<StandardProtocolHandler> > init_standard_protocol_connection_pool() {
             namespace fs = std::filesystem;
             auto _handler = std::make_shared<StandardProtocolHandler>();

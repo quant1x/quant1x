@@ -179,6 +179,11 @@ func (ts *TradingSession) IsTradingEnded(t Timestamp) bool {
 	return t.Greater(ts.LatestEnd)
 }
 
+var (
+	tsTodaySession     *TradingSession
+	tsTodaySessionOnce sync.Once
+)
+
 // InitSession 初始化当日的交易会话时段
 func InitSession() *TradingSession {
 	now := MidnightTimestamp()
@@ -190,11 +195,6 @@ func InitSession() *TradingSession {
 	tr6 := NewTimeRange(now.Offset(14, 57, 0, 0), now.Offset(15, 0, 0, 0), ExchangeCallAuctionClosePhase)
 	return NewTradingSession(tr1, tr2, tr3, tr4, tr5, tr6)
 }
-
-var (
-	tsTodaySession     *TradingSession
-	tsTodaySessionOnce sync.Once
-)
 
 func GetTodaySession() *TradingSession {
 	tsTodaySessionOnce.Do(func() {

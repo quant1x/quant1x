@@ -52,7 +52,8 @@
 #include <variant>
 #include <ranges> // for filter
 #include <boost/pfr.hpp>
-#include <magic_enum/magic_enum.hpp> // for enum_name
+#include <magic_enum/magic_enum.hpp>  // for enum_name
+#include <filesystem> // for path operations
 
 // 基础数据类型简写别名
 

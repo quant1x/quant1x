@@ -8,7 +8,7 @@
 #include <quant1x/config/cache.h>
 #include <quant1x/std/time.h>
 #include <quant1x/std/filepath.h>
-#include "sina_decoder.h"
+#include "sina/decoder.h"
 
 //============================================================
 // exchange 交易日历相关                                      //

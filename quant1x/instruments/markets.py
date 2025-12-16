@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 from typing import List
-from quant1x.exchange.security import get_security_info
+from .security import get_security_info
 from quant1x.cache.sector import get_sector_list
 
 # A股指数列表

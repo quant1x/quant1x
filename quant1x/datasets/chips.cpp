@@ -3,6 +3,7 @@
 #include <quant1x/proto/data.h>
 #include <quant1x/config/base.h>
 #include <quant1x/config/cache.h>
+#include <filesystem>
 
 namespace datasets {
     namespace fs = std::filesystem;
@@ -18,7 +19,7 @@ namespace datasets {
         std::string factor_date = date.only_date();
         auto cache_filename = config::get_historical_trade_filename(securityCode, factor_date);
         if (!fs::exists(cache_filename)) {
-            spdlog::warn("[DataChips] code={},date={}, 历史成交数据存不存在", securityCode, factor_date);
+            logger::warn("[DataChips] code={},date={}, 历史成交数据存不存在", securityCode, factor_date);
             return;
         }
         io::CSVReader<6,io::trim_chars<' ', '\t'>,io::double_quote_escape<',','"'>> csvReader(cache_filename);

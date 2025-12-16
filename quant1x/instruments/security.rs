@@ -208,4 +208,3 @@ pub fn get_security_info(code: &str) -> Option<SecurityInfo> {
     let map = GLOBAL_SECURITY_MAP.lock().unwrap();
     map.get(&code_fixed).cloned()
 }
-
