@@ -5,12 +5,10 @@ import (
 	"embed"
 	"fmt"
 	"io"
-	"io/fs"
 	"net"
 	"os"
 	"slices"
 	"strings"
-	"time"
 
 	"gitee.com/quant1x/quant1x/quant1x/config"
 	"gitee.com/quant1x/quant1x/quant1x/encoding"
@@ -25,56 +23,58 @@ import (
 var (
 	// ResourcesPath 资源路径
 	ResourcesPath = "resources"
+	//go:embed resources/*
+	resources embed.FS
 )
 
-//go:embed resources/*
-var resources embed.FS
+// //go:embed resources/*
+// var resources embed.FS
 
-// OpenEmbed 打开嵌入式文件
-func OpenEmbed(name string) (fs.File, error) {
-	filename := fmt.Sprintf("%s/%s", ResourcesPath, name)
-	reader, err := resources.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	return reader, nil
-}
+// // OpenEmbed 打开嵌入式文件
+// func OpenEmbed(name string) (fs.File, error) {
+// 	filename := fmt.Sprintf("%s/%s", ResourcesPath, name)
+// 	reader, err := resources.Open(filename)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return reader, nil
+// }
 
-// 导出内嵌资源文件
-func export(dest, source string) error {
-	src, err := OpenEmbed(source)
-	if err != nil {
-		return err
-	}
-	output, err := os.Create(dest)
-	if err != nil {
-		return err
-	}
-	//const (
-	//	BUFFERSIZE = 8192
-	//)
-	//buf := make([]byte, BUFFERSIZE)
-	//for {
-	//	n, err := src.Read(buf)
-	//	if err != nil && err != io.EOF {
-	//		return err
-	//	}
-	//	if n == 0 {
-	//		break
-	//	}
-	//
-	//	if _, err := output.Write(buf[:n]); err != nil {
-	//		return err
-	//	}
-	//}
-	_, err = io.Copy(output, src)
-	if err != nil {
-		return err
-	}
-	mtime := time.Now()
-	err = os.Chtimes(dest, mtime, mtime)
-	return err
-}
+// // 导出内嵌资源文件
+// func export(dest, source string) error {
+// 	src, err := OpenEmbed(source)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	output, err := os.Create(dest)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	//const (
+// 	//	BUFFERSIZE = 8192
+// 	//)
+// 	//buf := make([]byte, BUFFERSIZE)
+// 	//for {
+// 	//	n, err := src.Read(buf)
+// 	//	if err != nil && err != io.EOF {
+// 	//		return err
+// 	//	}
+// 	//	if n == 0 {
+// 	//		break
+// 	//	}
+// 	//
+// 	//	if _, err := output.Write(buf[:n]); err != nil {
+// 	//		return err
+// 	//	}
+// 	//}
+// 	_, err = io.Copy(output, src)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	mtime := time.Now()
+// 	err = os.Chtimes(dest, mtime, mtime)
+// 	return err
+// }
 
 func getBlockInfo(conn *net.TCPConn, blockFile string) (*level1.BlockInfoResponse, error) {
 	var result level1.BlockInfoResponse
@@ -158,9 +158,11 @@ func parseRawBlockData(blockFilename string) *__raw_block_data {
 	if err != nil {
 		return nil
 	}
-	decoder := encoding.NewDecoder("GBK")
 	for i, v := range block.Data {
-		name := decoder.ConvertString(v.BlockName)
+		name, err := encoding.GBKToUTF8(std.String2Bytes(v.BlockName))
+		if err != nil {
+			continue
+		}
 		block.Data[i].BlockName = strings.ReplaceAll(name, string([]byte{0x00}), "")
 		for j, s := range v.List {
 			block.Data[i].List[j].Code = strings.ReplaceAll(s.Code, string([]byte{0x00}), "")
@@ -168,6 +170,8 @@ func parseRawBlockData(blockFilename string) *__raw_block_data {
 	}
 	return &block
 }
+
+// 行业板块
 
 const (
 	BLK_INDUSTRY_FILENAME = "tdxhy.cfg"
@@ -190,7 +194,8 @@ func loadIndustryBlocks() []IndustryInfo {
 	cacheFilename := config.GetBlockPath() + "/" + name
 	if !std.FileExist(cacheFilename) {
 		// 如果文件不存在, 导出内嵌资源
-		err := export(cacheFilename, name)
+		embedFilename := fmt.Sprintf("%s/%s", ResourcesPath, name)
+		err := std.Export(resources, embedFilename, cacheFilename)
 		if err != nil {
 			return nil
 		}
@@ -202,14 +207,16 @@ func loadIndustryBlocks() []IndustryInfo {
 	defer std.CloseQuietly(file)
 	reader := bufio.NewReader(file)
 	// 按行处理txt
-	decoder := encoding.NewDecoder("GBK")
 	var hys = []IndustryInfo{}
 	for {
 		data, _, err := reader.ReadLine()
 		if err == io.EOF {
 			break
 		}
-		line := decoder.ConvertString(string(data))
+		line, err := encoding.GBKToUTF8(data)
+		if err != nil {
+			continue
+		}
 		arr := strings.Split(line, "|")
 		bc := arr[2]
 		bc5 := bc
@@ -292,7 +299,8 @@ func getBlockInfoFromConfig(name string) []BlockInfo {
 	cacheFilename := config.GetBlockPath() + "/" + name
 	if !std.FileExist(cacheFilename) {
 		// 如果文件不存在, 导出内嵌资源
-		err := export(cacheFilename, name)
+		embedFilename := fmt.Sprintf("%s/%s", ResourcesPath, name)
+		err := std.Export(resources, embedFilename, cacheFilename)
 		if err != nil {
 			return nil
 		}
@@ -304,14 +312,16 @@ func getBlockInfoFromConfig(name string) []BlockInfo {
 	defer std.CloseQuietly(file)
 	reader := bufio.NewReader(file)
 	// 按行处理txt
-	decoder := encoding.NewDecoder("GBK")
 	var blocks = []BlockInfo{}
 	for {
 		data, _, err := reader.ReadLine()
 		if err == io.EOF {
 			break
 		}
-		line := decoder.ConvertString(string(data))
+		line, err := encoding.GBKToUTF8(data)
+		if err != nil {
+			continue
+		}
 		arr := strings.Split(line, "|")
 		bk := BlockInfo{
 			Name:  arr[0],
