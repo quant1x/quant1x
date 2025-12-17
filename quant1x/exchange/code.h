@@ -7,6 +7,7 @@
 //============================================================
 #include <quant1x/std/api.h>
 #include <vector>
+#include <cstdint>
 
 namespace exchange {
 
@@ -20,16 +21,22 @@ enum class ExchangeId : std::uint8_t {
 };
 
 // SecurityType mirrors the Go `SecurityType` enum in rule.go
-enum class SecurityType : int8_t {
-    Unknown = 0, // 未知类型
-    Stock, // 股票
-    ETF, // ETF
-    Fund, // 基金
-    Bond, // 债券
-    BStock, // B股
-    IPO, // 新股
-    Index, // 指数
-    Block, // 板块
+enum class SecurityType : std::uint8_t {
+    Unknown = 0,    // 未知类型
+    Stock = 1,      // 股票
+    ETF = 2,        // ETF
+    Fund = 3,       // 基金
+    Bond = 4,       // 债券
+    BStock = 5,     // B股
+    IPO = 6,        // 新股
+    Index = 7,      // 指数
+    Block = 8,      // 板块
+    Option = 9,     // 期权
+    Future = 10,    // 期货
+    Warrant = 11,   // 权证
+    Forex = 12,     // 外汇
+    Commodity = 13, // 商品
+    Other = 255,    // 其他类型（与 Go 常量对齐）
 };
 
 class ExchangeCode {

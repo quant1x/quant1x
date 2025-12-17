@@ -5,8 +5,6 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
-
-	"gitee.com/quant1x/quant1x/quant1x/std"
 )
 
 // SecurityType 表示证券类型（枚举，基于 uint8）
@@ -27,6 +25,7 @@ const (
 	SecurityWarrant                       // 权证
 	SecurityForex                         // 外汇
 	SecurityCommodity                     // 商品
+	SecurityOther     = 255               // 其他类型
 )
 
 // String 返回证券类型的字符串表示，满足 fmt.Stringer 接口
@@ -87,6 +86,7 @@ var labels = map[SecurityType]map[string]string{
 	SecurityWarrant:   {localeEN: "Warrant", localeZH: "权证"},
 	SecurityForex:     {localeEN: "Forex", localeZH: "外汇"},
 	SecurityCommodity: {localeEN: "Commodity", localeZH: "商品"},
+	SecurityOther:     {localeEN: "Other", localeZH: "其他"},
 	SecurityUnknown:   {localeEN: "Unknown", localeZH: "未知"},
 }
 
@@ -118,118 +118,367 @@ type CodeRule struct {
 	Prefix string       // 前缀，如 "600", "920"
 	Type   SecurityType // 类型
 	Desc   string       // 描述(用于调试或日志)
+	Note   string       // 备注
 }
 
 // ========== 全局规则(跨市场，优先匹配)==========
 var globalRules = []CodeRule{
-	{"880", SecurityBlock, "板块指数(通达信)"},
-	{"881", SecurityBlock, "板块指数(通达信)"},
+	{"880", SecurityBlock, "板块指数", "通达信"},
+	{"881", SecurityBlock, "板块指数", "通达信"},
 }
 
 // ========== 上交所规则(SSE)==========
 var sseRules = []CodeRule{
-	// 指数
-	{"000", SecurityIndex, "上证指数"},
-	// ETF
-	{"51", SecurityETF, "上交所ETF(510-519)"},
-	{"588", SecurityETF, "科创板ETF"},
-	// 其他基金
-	{"50", SecurityFund, "LOF/封闭式基金"},
-	{"52", SecurityFund, "其他基金"},
-	// A股
-	{"600", SecurityStock, "主板A股"},
-	{"601", SecurityStock, "主板A股"},
-	{"603", SecurityStock, "主板A股"},
-	{"605", SecurityStock, "主板A股"},
-	// 科创板
-	{"688", SecurityStock, "科创板"},
-	{"689", SecurityStock, "科创板CDR"},
-	// B股
-	{"900", SecurityBStock, "B股"},
-	// 债券
-	{"110", SecurityBond, "债券"},
-	{"113", SecurityBond, "可转债"},
-	{"118", SecurityBond, "可交换债"},
-	{"120", SecurityBond, "公司债"},
-	{"123", SecurityBond, "可转债"},
-	{"127", SecurityBond, "可转债"},
-	{"128", SecurityBond, "可转债"},
-	// 新股申购
-	{"730", SecurityIPO, "新股申购"},
-	{"780", SecurityIPO, "新股申购"},
+	// 0xx
+	{"000", SecurityIndex, "上证指数", "上证指数系列；000680-000689 用于科创板相关指数"},
+	{"009", SecurityBond, "国债", "国债（2000年前发行）"},
+	{"010", SecurityBond, "国债", "国债（2000-2009年发行）"},
+	{"018", SecurityBond, "政策性银行债", "政策性银行金融债"},
+	{"019", SecurityBond, "国债", "国债（2010年及以后发行）"},
+	{"020", SecurityBond, "记账式贴现国债", "记账式贴现国债"},
+	{"090", SecurityBond, "国债质押回购出入库", "国债质押式回购质押券出入库"},
+	{"091", SecurityBond, "国债质押回购出入库", "对应019***"},
+	{"099", SecurityBond, "国债质押回购出入库", "对应009***"},
+
+	// 1xx（按表逐项补全，Desc 简洁，Note 为备注）
+	{"100", SecurityBond, "债券回售/可转债", "100000-100899 用于可转换公司债券（对应600***）；100900-100999 用于债券回售（不再增用部分）"},
+	{"101", SecurityBond, "地方政府债", "地方政府债券"},
+	{"102", SecurityBond, "企业债质押出入库", "对应127000-127999"},
+	{"103", SecurityBond, "企业债质押出入库", "对应124000-124999"},
+	{"104", SecurityBond, "公司/企业债质押出入库", "104000-104499 用于公司债质押（对应122000-122499）；104500-104999 用于企业债质押（对应122500-122999）"},
+	{"105", SecurityBond, "债券质押出入库", "105000-105699 分离交易的可转债质押（对应126***）；105700-105799 债券ETF质押；105800-105899 可转债质押（对应110***、113***）；105900-105999 企业债质押（对应120***、129***）"},
+	{"106", SecurityBond, "地方政府债质押出入库", "对应130***"},
+	{"107", SecurityBond, "记账式贴现国债质押出入库", "对应020***"},
+	{"108", SecurityBond, "政策性银行债质押出入库", "对应018***"},
+	{"109", SecurityBond, "地方政府债", "地方政府债券"},
+
+	{"110", SecurityBond, "可转换公司债", "110000-110799 上市公司公开发行可转债（对应600***）；110800-110999 非公开发行"},
+	{"111", SecurityBond, "可转换公司债", "111000-111499 对应605***"},
+	{"112", SecurityBond, "资产支持证券", "资产支持证券"},
+	{"113", SecurityBond, "可转换公司债", "113000-113499 对应601***；113500-113999 对应603***"},
+	{"114", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"115", SecurityBond, "公开公司债", "公开发行公司债券"},
+	{"118", SecurityBond, "科创板可转债", "118000-118499 用于科创板上市公司公开发行可转债"},
+
+	{"120", SecurityBond, "企业/公司债", "122000-122499 用于公司债券；122500-122999 用于企业债券（见122）"},
+	{"121", SecurityBond, "资产支持证券", "资产支持证券"},
+	{"122", SecurityBond, "公司债/企业债", "122000-122499 用于公司债券；122500-122999 用于企业债券"},
+	{"123", SecurityBond, "公司/企业债/ABS", "123000-123499 用于企业/公司债；123500-123999 用于资产支持证券"},
+	{"124", SecurityBond, "企业债质押出入库", "对应124000-124999"},
+	{"125", SecurityBond, "中小企业私募债/非公开公司债", "中小企业私募债券、非公开发行公司债券"},
+	{"126", SecurityBond, "分离交易可转债", "分离交易的可转换公司债券"},
+	{"127", SecurityBond, "企业债", "127000-127899 用于企业债券；127900-127999 用于政府支持债（中国铁路建设债专用）"},
+	{"128", SecurityBond, "信贷资产支持证券", "信贷资产支持证券"},
+	{"129", SecurityBond, "企业债", "企业债券"},
+
+	{"130", SecurityBond, "地方政府债", "地方政府债券(对应130***)"},
+	{"131", SecurityBond, "资产支持证券", "资产支持证券"},
+	{"132", SecurityBond, "可交换公司债", "可交换公司债券"},
+	{"133", SecurityBond, "可交换债质押出入库", "对应132***"},
+	{"134", SecurityBond, "公开公司债质押出入库", "对应136***"},
+	{"135", SecurityBond, "证券公司短期债/并购私募债", "证券公司短期债、并购重组私募债券、非公开发行公司债券"},
+	{"136", SecurityBond, "公开公司债质押出入库", "对应136***"},
+	{"137", SecurityBond, "可交换/公开公司债", "137000-137499 非公开可交换；137500-137999 公开公司债"},
+	{"138", SecurityBond, "可交换换股/公开公司债", "138000-138499 非公开可交换换股(对应137000-137499)；138500-138999 公开公司债"},
+	{"139", SecurityBond, "企业债", "企业债券"},
+
+	{"140", SecurityBond, "地方政府债质押出入库", "对应140***"},
+	{"141", SecurityBond, "地方政府债", "地方政府债券"},
+	{"142", SecurityBond, "资产支持证券", "资产支持证券"},
+	{"143", SecurityBond, "公开公司债质押出入库", "对应143***"},
+	{"144", SecurityBond, "公开公司债", "公开发行公司债券"},
+	{"145", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"146", SecurityBond, "资产支持证券", "资产支持证券"},
+	{"147", SecurityBond, "地方政府债质押出入库", "对应147***"},
+	{"148", SecurityBond, "地方政府债", "地方政府债券"},
+	{"149", SecurityBond, "资产支持证券", "资产支持证券"},
+
+	{"150", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"151", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"152", SecurityBond, "企业债质押出入库", "对应152***"},
+	{"153", SecurityBond, "企业债", "企业债券"},
+	{"154", SecurityBond, "公司债质押出入库", "对应155***"},
+	{"155", SecurityBond, "公司债质押出入库", "对应155***"},
+	{"156", SecurityBond, "公司债", "公司债券"},
+	{"157", SecurityBond, "地方政府债质押出入库", "对应157***"},
+	{"158", SecurityBond, "地方政府债", "地方政府债券"},
+	{"159", SecurityBond, "资产支持证券", "资产支持证券"},
+
+	{"160", SecurityBond, "地方政府债", "地方政府债券"},
+	{"161", SecurityBond, "地方政府债质押出入库", "对应160***"},
+	{"162", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"163", SecurityBond, "公开公司债质押出入库", "对应163***"},
+	{"164", SecurityBond, "公开公司债", "公开发行公司债券"},
+	{"165", SecurityBond, "资产支持证券", "资产支持证券"},
+	{"166", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"167", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"168", SecurityBond, "资产支持证券", "资产支持证券"},
+	{"169", SecurityBond, "资产支持证券", "资产支持证券"},
+
+	{"170", SecurityBond, "信用保护工具", "170000-170499 用于信用保护凭证；170900-170999 用于组合型信用保护合约"},
+	{"171", SecurityBond, "地方政府债质押出入库", "对应171***"},
+	{"172", SecurityBond, "地方政府债", "地方政府债券"},
+	{"173", SecurityBond, "地方政府债质押出入库", "对应173***"},
+	{"174", SecurityBond, "地方政府债", "地方政府债券"},
+	{"175", SecurityBond, "公开公司债质押出入库", "对应175***"},
+	{"176", SecurityBond, "公开公司债", "公开发行公司债券"},
+	{"177", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"178", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"179", SecurityBond, "资产支持证券", "资产支持证券"},
+
+	{"180", SecurityBond, "资产支持证券", "资产支持证券"},
+	{"181", SecurityBond, "可转债转股/非公开公司债", "对应600*** 的转股等/182000 系列为回售或非公开"},
+	{"182", SecurityBond, "债券回售/非公开公司债", "182000-182299 用于债券回售；182300-182999 用于非公开发行公司债券"},
+	{"183", SecurityBond, "资产支持证券", "资产支持证券"},
+	{"184", SecurityBond, "企业债/政府支持债", "184000-184799 企业债券；184800-184999 政府支持债（中国铁路建设债专用）"},
+	{"185", SecurityBond, "公开公司债", "公开发行公司债券"},
+	{"186", SecurityBond, "地方政府债", "地方政府债券"},
+	{"187", SecurityBond, "公开公司债质押出入库", "对应188***"},
+	{"188", SecurityBond, "公开公司债质押出入库", "对应188***"},
+	{"189", SecurityBond, "资产支持证券", "资产支持证券"},
+
+	{"190", SecurityBond, "可转债转股", "对应600***（已不再增用部分）"},
+	{"191", SecurityBond, "可转债转股", "191000-191499 对应601***；191500-191999 对应603***"},
+	{"192", SecurityBond, "可交换债换股", "对应132***"},
+	{"193", SecurityBond, "创新创业转股/ABS", "193000-193099 创新创业公司非公开可转债转股（对应145900-145999）；193100-193999 用于资产支持证券"},
+	{"194", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"195", SecurityBond, "可转债转股", "195000-195499 用于可转债转股，对应605***"},
+	{"196", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"197", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"198", SecurityBond, "地方政府债", "地方政府债券"},
+	{"199", SecurityBond, "资产支持证券", "资产支持证券"},
+
+	// 2xx
+	{"201", SecurityBond, "国债回购", "国债回购（席位托管方式）"},
+	{"202", SecurityBond, "企业债回购", "企业债回购（席位托管方式）"},
+	{"203", SecurityBond, "国债买断式回购", "国债买断式回购"},
+	{"204", SecurityBond, "债券质押式回购(账户托管)", "债券质押式回购（账户托管方式）"},
+	{"205", SecurityBond, "质押式报价回购", "质押式报价回购"},
+	{"206", SecurityBond, "质押式协议回购", "债券质押式协议回购"},
+	{"207", SecurityBond, "质押式三方回购", "债券质押式三方回购"},
+	{"208", SecurityBond, "债券借贷", "208000-208009 用于债券借贷业务"},
+
+	{"230", SecurityBond, "地方政府债", "地方政府债券"},
+	{"231", SecurityBond, "地方政府债", "地方政府债券"},
+	{"232", SecurityBond, "地方政府债", "地方政府债券"},
+	{"233", SecurityBond, "地方政府债", "地方政府债券"},
+
+	{"240", SecurityBond, "公开公司债", "公开发行公司债券"},
+	{"241", SecurityBond, "公开公司债", "公开发行公司债券"},
+
+	{"250", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"251", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"252", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"253", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"254", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"255", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"256", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+	{"257", SecurityBond, "非公开公司债", "非公开发行公司债券"},
+
+	{"260", SecurityBond, "资产支持证券", "资产支持证券"},
+	{"261", SecurityBond, "资产支持证券", "资产支持证券"},
+	{"262", SecurityBond, "资产支持证券", "资产支持证券"},
+	{"263", SecurityBond, "资产支持证券", "资产支持证券"},
+
+	{"270", SecurityBond, "企业债", "企业债券"},
+	{"271", SecurityBond, "企业债", "企业债券"},
+	{"272", SecurityBond, "企业债", "企业债券"},
+
+	// 3xx
+	{"310", SecurityBond, "国债期货", "国债期货（已暂停）"},
+	{"330", SecurityIPO, "优先股(公开)", "公开发行优先股"},
+	{"360", SecurityOther, "非公开优先股", "非公开发行优先股"},
+
+	// 5xx 基金/ETF/REITs/权证（保留已整理）
+	{"500", SecurityFund, "封闭式基金", "契约型封闭式基金"},
+	{"501", SecurityFund, "上市开放式基金", "上市开放式基金"},
+	{"502", SecurityFund, "上市开放式基金", "上市开放式基金"},
+	{"505", SecurityFund, "创新封闭式基金", "505800-505899 用于创新型封闭式证券投资基金"},
+	{"506", SecurityFund, "科创板LOF", "506000-506099 用于科创板相关 LOF"},
+	{"508", SecurityFund, "公募REITs", "508000-508099 用于公募 REITs"},
+	{"511", SecurityETF, "债券ETF/货基", "511000-511299 单市场债券（沪）ETF；511300-511599 现金申赎类债券ETF；511600-511999 交易型货币基金"},
+	{"517", SecurityETF, "跨市场股票ETF", "517000-517999 用于跨市场股票（沪港深京）ETF"},
+	{"520", SecurityETF, "跨境ETF", "520500-520999 用于跨境 ETF"},
+	{"588", SecurityETF, "科创板ETF", "588000-588299 单市场（科创板）ETF；588300-588699 跨市场（含科创板）ETF；588700-588999 单市场（科创板）ETF"},
+	{"519", SecurityFund, "开放式基金申赎/认购", "519*** 系列用于开放式基金的申赎/认购/跨市场转托管/分红/转换等"},
+	{"580", SecurityWarrant, "权证", "含股改权证、公司权证；582/582x 可用于权证行权等"},
+
+	// 6xx A股/科创板
+	{"600", SecurityStock, "主板A股", "主板 A 股"},
+	{"601", SecurityStock, "主板A股", "主板 A 股"},
+	{"603", SecurityStock, "主板A股", "主板 A 股"},
+	{"605", SecurityStock, "主板A股", "主板 A 股（配套号段）"},
+	{"688", SecurityStock, "科创板", "科创板股票"},
+	{"689", SecurityStock, "科创板存托凭证", "科创板存托凭证"},
+
+	// 7xx 非交易/配售/申购等
+	{"700", SecurityOther, "配股", "配股（对应600***）"},
+	{"701", SecurityOther, "转配股", "转配股"},
+	{"702", SecurityOther, "职工股配股", "对应600***"},
+	{"703", SecurityOther, "配售", "配售"},
+	{"704", SecurityOther, "可转债配债", "可转换公司债券持股配债（对应600***）"},
+	{"706", SecurityOther, "要约收购/现金选择权", "706000-706599 主板；706600-706999 科创板"},
+	{"707", SecurityOther, "网上按市值申购/增发", "对应605***"},
+	{"708", SecurityOther, "网上按市值申购配号", "对应605***"},
+	{"713", SecurityOther, "可转债申购", "对应605***"},
+	{"714", SecurityOther, "可转债申购配号", "对应605***"},
+	{"715", SecurityOther, "可转债持股配债", "对应605***"},
+	{"718", SecurityOther, "科创板可转债申购", "对应118000-118499"},
+	{"726", SecurityOther, "科创板可转债配债", "对应118000-118499"},
+	{"730", SecurityIPO, "新股申购", "新股申购/网上申购"},
+	{"758", SecurityOther, "可交换债配号", "758000-758099"},
+	{"759", SecurityOther, "可交换债申购", "759000-759099"},
+	{"786", SecurityOther, "科创板配售/存托配售", "786000-786899 科创板股票配售；786900-786999 科创板存托凭证配售"},
+	{"799", SecurityOther, "特殊业务代码", "指定交易/融资融券/网络投票/资金前端控制/身份认证等（见799xxx 具体编码）"},
+
+	// 8xx 标准券
+	{"880", SecurityBlock, "板块指数", "通达信"},
+	{"881", SecurityBlock, "板块指数", "(通达信"},
+	{"888", SecurityBond, "标准券", "888880 为新标准券，用于债券回购转换成标准券"},
+
+	// 9xx B股
+	{"900", SecurityBStock, "B股", "B 股"},
+	{"901", SecurityBStock, "B转H", "901000-901099 用于 B 转 H"},
+	{"938", SecurityOther, "网络投票", "对应 B 股（不再增用）"},
+	{"939", SecurityOther, "密码服务", "939988 用于 B 股网络投票密码服务"},
+
+	// 兜底首位
+	{"0", SecurityIndex, "指数/国债", "首位 0：指数、国债"},
+	{"1", SecurityBond, "债券现券", "首位 1：债券现券"},
+	{"2", SecurityBond, "债券回购/借贷", "首位 2：债券回购、债券借贷等"},
+	{"3", SecurityOther, "优先股/国债期货", "首位 3：优先股、国债期货（已暂停）"},
+	{"4", SecurityOther, "备用", "首位 4：备用"},
+	{"5", SecurityFund, "基金/REITs/权证", "首位 5：基金、公募 REITs、权证"},
+	{"6", SecurityStock, "A股/存托凭证", "首位 6：A 股、存托凭证"},
+	{"7", SecurityOther, "非交易业务", "首位 7：非交易业务"},
+	{"8", SecurityBond, "标准券/备用", "首位 8：标准券、备用"},
+	{"9", SecurityBStock, "B股", "首位 9：B 股"},
 }
 
 // ========== 深交所规则(SZSE)==========
 var szseRules = []CodeRule{
 	// 指数
-	{"399", SecurityIndex, "深证指数"},
-	// ETF
-	{"159", SecurityETF, "深交所ETF"},
-	// 其他基金
-	{"150", SecurityFund, "LOF"},
-	{"160", SecurityFund, "LOF"},
-	{"161", SecurityFund, "LOF"},
-	{"162", SecurityFund, "LOF"},
-	{"163", SecurityFund, "LOF"},
-	{"164", SecurityFund, "LOF"},
-	{"167", SecurityFund, "LOF"},
-	{"168", SecurityFund, "LOF"},
-	{"169", SecurityFund, "LOF"},
-	{"184", SecurityFund, "封闭式基金"},
+	{"395", SecurityIndex, "成交量统计指数", ""},
+	{"399", SecurityIndex, "深证指数", ""},
 	// A股(主板 + 创业板)
-	{"000", SecurityStock, "主板A股"},
-	{"001", SecurityStock, "主板A股"},
-	{"002", SecurityStock, "主板A股"},
-	{"003", SecurityStock, "主板A股"},
-	{"300", SecurityStock, "创业板"},
-	{"301", SecurityStock, "创业板"},
-	// B股
-	{"200", SecurityBStock, "B股"},
+	{"000", SecurityStock, "主板A股", ""},
+	{"001", SecurityStock, "主板A股", ""},
+	{"002", SecurityStock, "主板A股", ""},
+	{"003", SecurityStock, "主板A股", ""},
+	// 认购权证
+	{"030", SecurityWarrant, "权证", ""},
+	{"031", SecurityWarrant, "权证", ""},
+	{"032", SecurityWarrant, "权证", ""},
+	// 股权激励计划
+	{"036", SecurityWarrant, "创业板股权激励计划涉及的员工认股权", ""},
+	{"0370", SecurityWarrant, "主板A股股权激励计划涉及的员工认股权", ""},
+	{"0371", SecurityWarrant, "主板A股股权激励计划涉及的员工认股权", ""},
+	{"0372", SecurityWarrant, "创业板股权激励计划审计的员工认股权", ""},
+	{"0373", SecurityWarrant, "主板A股股权激励计划涉及的员工认股权", ""},
+	{"0374", SecurityWarrant, "主板A股股权激励计划涉及的员工认股权", ""},
+	{"0375", SecurityWarrant, "中小企业板股权激励计划涉及的员工认股权", ""},
+	{"0376", SecurityWarrant, "中小企业板股权激励计划涉及的员工认股权", ""},
+	{"0377", SecurityWarrant, "中小企业板股权激励计划涉及的员工认股权", ""},
+	{"0378", SecurityWarrant, "中小企业板股权激励计划涉及的员工认股权", ""},
+	{"0379", SecurityWarrant, "中小企业板股权激励计划涉及的员工认股权", ""},
+	// 认沽权证
+	{"038", SecurityWarrant, "主板A股及中小企业股票认沽权证", ""},
+	{"039", SecurityWarrant, "主板A股及中小企业股票认沽权证", ""},
+	// 增发/可转债申购
+	{"070", SecurityWarrant, "主板A股增发/可转债申购", ""},
+	{"071", SecurityWarrant, "主板A股增发/可转债申购", ""},
+	{"072", SecurityWarrant, "中小企业板增发/可转债申购", ""},
+	{"073", SecurityWarrant, "中小企业板增发/可转债申购", ""},
+	{"074", SecurityWarrant, "中小企业板增发/可转债申购", ""},
+	{"080", SecurityWarrant, "A股配股", ""},
+	// 0开头为A股
+	{"0", SecurityStock, "股票", ""},
 	// 债券
-	{"110", SecurityBond, "可转债"},
-	{"111", SecurityBond, "可转债"},
-	{"118", SecurityBond, "可交换债"},
-	{"123", SecurityBond, "可转债"},
-	{"127", SecurityBond, "可转债"},
-	{"128", SecurityBond, "可转债"},
+	{"10", SecurityBond, "国债", ""},
+	{"11", SecurityBond, "企业债", ""},
+	{"120", SecurityBond, "企业债券", ""},
+	{"123", SecurityBond, "可转债", ""},
+	{"127", SecurityBond, "可转债", ""},
+	{"128", SecurityBond, "可转债", ""},
+	{"13", SecurityBond, "债券回购", ""},
+	// ETF
+	{"159", SecurityETF, "深交所ETF", ""},
+	{"15", SecurityFund, "ETF", ""},
+	// 其他基金
+	{"16", SecurityFund, "LOF", ""},
+	{"17", SecurityFund, "传统投资基金", ""},
+	{"184", SecurityFund, "封闭式基金", ""},
+	{"18", SecurityFund, "封闭式基金", ""},
+	// 1开头为债券
+	{"1", SecurityBond, "债券", ""},
+
+	// B股
+	{"200", SecurityBStock, "B股", ""},
+	{"238", SecurityOther, "B股现金选择权", ""},
+	{"28", SecurityOther, "B股配股优先权", ""},
+	// 2开头为B股
+	{"2", SecurityBStock, "B股", ""},
+	// 创业板
+	{"300", SecurityStock, "创业板", ""},
+	{"301", SecurityStock, "创业板注册制", ""},
+	{"30", SecurityStock, "创业板", ""},
+	// 其它
+	{"36", SecurityOther, "投票", ""},
+	{"37", SecurityOther, "增发/可转债申购", ""},
+	{"38", SecurityOther, "配股/可转债优先权", ""},
+
+	// 资产支持证券ABS
+	{"50", SecurityBond, "资产支持证券ABS", ""},
+	{"56", SecurityBond, "资产支持证券ABS", ""},
+	// 5开头为资产支持证券ABS
+	{"5", SecurityBond, "资产支持证券ABS", ""},
+
+	{"700", SecurityWarrant, "B股增发", ""},
+	{"730", SecurityWarrant, "跨市场申购", ""},
 }
 
 // ========== 北交所规则(BJSE)==========
 var bjseRules = []CodeRule{
-	// 指数
-	{"899", SecurityIndex, "北交所指数"},
-	// 新上市公司(2024年起使用 920xxx)
-	{"920", SecurityStock, "北交所股票(2024年起新上市)"},
-	// 存量上市公司(原精选层平移)
-	{"83", SecurityStock, "北交所股票(原精选层)"},
-	{"87", SecurityStock, "北交所股票(原精选层)"},
-	{"88", SecurityStock, "北交所股票(2022-2023年上市)"},
-	// 其他(极少)
-	{"82", SecurityBond, "优先股"},
-	{"89", SecurityBond, "可转债"},
+	// 北京证券交易所 & 全国股转系统 指引要点
+	{"899", SecurityIndex, "指数", "证券指数首三位代码为899"},
+	{"920", SecurityStock, "北交所新上市", "2024-04-22 起新上市使用920号段；已上市公司继续沿用原代码直到统一切换"},
+	{"92", SecurityStock, "上市公司普通股", "首两位92：上市公司普通股票；920号段自2024-04-22起用于新上市公司"},
+	{"400", SecurityStock, "两网/退市A股", "两网公司及退市公司A股首三位代码为400"},
+	{"420", SecurityBStock, "退市B股", "退市公司B股首三位代码为420"},
+	{"810", SecurityBond, "可转换公司债", "向特定对象发行的可转换公司债券首三位代码为810"},
+	{"81", SecurityBond, "优先股(极少)", "其他极少数代码"},
+	{"820", SecurityStock, "优先股", "优先股票首三位代码为820"},
+	{"82", SecurityBond, "优先股(极少)", "其他极少数代码"},
+	{"83", SecurityStock, "挂牌公司普通股", "挂牌公司普通股票首两位为83"},
+	{"840", SecurityOther, "要约收购", "要约收购证券代码首三位代码为840"},
+	{"841", SecurityOther, "要约回购", "要约回购证券代码首三位代码为841"},
+	{"87", SecurityStock, "挂牌公司普通股", "挂牌公司普通股票首两位为87"},
+	{"88", SecurityStock, "挂牌公司普通股", "挂牌公司普通股票首两位为88"},
+	{"850", SecurityOption, "股权激励期权", "股权激励期权首三位代码为850，简称后缀如 JLC1/JLC2 等"},
+	//{"89", SecurityBond, "可转债(极少)", "其他极少数代码"},
 }
 
 // ========== 港交所规则(HKSE)==========
 var hkseRules = []CodeRule{
 	// 指数
-	{"HSI", SecurityIndex, "恒生指数"},
-	{"HSCEI", SecurityIndex, "国企指数"},
-	{"HSCCI", SecurityIndex, "红筹指数"},
+	{"HSI", SecurityIndex, "恒生指数", ""},
+	{"HSCEI", SecurityIndex, "国企指数", ""},
+	{"HSCCI", SecurityIndex, "红筹指数", ""},
 	// ETF
-	{"028", SecurityETF, "ETF"},
-	{"030", SecurityETF, "ETF"},
-	{"031", SecurityETF, "ETF"},
-	{"090", SecurityETF, "ETF"},
-	{"091", SecurityETF, "ETF"},
+	{"028", SecurityETF, "ETF", ""},
+	{"030", SecurityETF, "ETF", ""},
+	{"031", SecurityETF, "ETF", ""},
+	{"090", SecurityETF, "ETF", ""},
+	{"091", SecurityETF, "ETF", ""},
 	// 股票 (5位数字)
-	{"08", SecurityStock, "港股(GEM)"},
-	{"0", SecurityStock, "港股"},
+	{"08", SecurityStock, "港股", "GEM"},
+	{"0", SecurityStock, "港股", ""},
 	// 权证/牛熊证 (5位数字)
-	{"1", SecurityBond, "权证"},
-	{"2", SecurityBond, "权证"},
-	{"4", SecurityBond, "牛熊证"},
-	{"5", SecurityBond, "牛熊证"},
-	{"6", SecurityBond, "牛熊证"},
+	{"1", SecurityBond, "权证", ""},
+	{"2", SecurityBond, "权证", ""},
+	{"4", SecurityBond, "牛熊证", ""},
+	{"5", SecurityBond, "牛熊证", ""},
+	{"6", SecurityBond, "牛熊证", ""},
 }
 
 // matchRule 在规则列表中匹配最长前缀
@@ -340,141 +589,4 @@ func GetMarket(code string) ExchangeCode {
 func GetSecurityType(code string) SecurityType {
 	_, typ, _ := DetectSecurity(code)
 	return typ
-}
-
-// Detect 根据输入的证券代码字符串解析出市场、代码和类型信息
-//
-// 支持多种格式的证券代码输入：
-//  1. 前缀形式：sh600000, hk00700, usappl
-//  2. 后缀形式：600000.sh, 00700.hk, APPL.us
-//  3. 纯数字/字母形式：600000, 00700, APPL
-//
-// 参数：
-//
-//	input - 待解析的证券代码字符串
-//
-// 返回值：
-//
-//	SecurityCode 结构体，包含市场ID、证券代码和证券类型
-//
-// 处理逻辑：
-//  1. 首先去除输入字符串的空格
-//  2. 根据不同的代码格式（前缀/后缀/纯形式）进行解析
-//  3. 对于纯数字/字母形式，根据长度和规则匹配市场
-//  4. 对于A股代码，会进一步匹配各交易所的特定规则
-//  5. 返回解析后的SecurityCode结构体，包含市场、代码和类型信息
-func Detect(input string) SecurityCode {
-	raw := strings.TrimSpace(input)
-	if raw == "" {
-		return SecurityCode{Market: ExchangeIdShangHai, Symbol: "", Type: SecurityUnknown}
-	}
-	pureCode := strings.ToLower(raw)
-	symbol := ""                    // 纯代码部分
-	exchangeCode := ExchangeUnknown // 默认未知市场
-	exchangeId := ExchangeIdUnknown // 默认未知市场
-	typ := SecurityUnknown          // 默认未知类型
-	if std.StartsWith(pureCode, AllExchangeCodes) {
-		// 前缀形式: sh600000, hk00700, usappl
-		symbol = pureCode[2:]
-		exchangeCode = ExchangeCode(pureCode[:2])
-		exchangeId = exchangeCode.Id()
-	} else if std.EndsWith(pureCode, AllExchangeCodes) && len(pureCode) >= 3 && pureCode[len(pureCode)-3] == '.' {
-		// 后缀形式: 600000.sh, 00700.hk, APPL.us
-		suffixLength := 3 // 包含点号
-		symbol = pureCode[:len(pureCode)-suffixLength]
-		exchangeCode = ExchangeCode(pureCode[len(pureCode)-2:])
-		exchangeId = exchangeCode.Id()
-	} else {
-		// 纯形式或字母: 600000, 00700, APPL
-		codeLength := len(pureCode)
-		switch codeLength {
-		case 4: // 可能为美股代码（4位字母），否则视为未知
-			// 仅当全部为字母时认定为美股代码
-			if regexp.MustCompile(`^[a-z]{4}$`).MatchString(pureCode) {
-				exchangeCode = ExchangeUS
-				exchangeId = ExchangeIdUSA
-				symbol = pureCode
-				typ = SecurityStock
-			} else {
-				// 未识别的 4 位代码，标记为未知
-				exchangeCode = ExchangeUnknown
-				exchangeId = ExchangeIdUnknown
-				symbol = ""
-				typ = SecurityUnknown
-			}
-		case 5: // 港股代码，5位数字
-			exchangeCode = ExchangeHK
-			exchangeId = ExchangeIdHongKong
-			symbol = pureCode
-		case 6: // A股代码，6位数
-			// 1. 全局规则优先(如板块指数)
-			if typ_, desc := matchRule(pureCode, globalRules); typ_ != SecurityUnknown {
-				_ = desc
-				symbol = pureCode
-				exchangeCode = ExchangeSSE
-				exchangeId = ExchangeIdShangHai
-				return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ_}
-			}
-			// 2. 按市场匹配规则
-			// 2.1 深交所
-			if typ_, desc := matchRule(pureCode, szseRules); typ_ != SecurityUnknown {
-				_ = desc
-				symbol = pureCode
-				exchangeCode = ExchangeSZSE
-				exchangeId = ExchangeIdShenZhen
-				return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ_}
-			}
-			// 2.2 北交所
-			if typ_, desc := matchRule(pureCode, bjseRules); typ_ != SecurityUnknown {
-				_ = desc
-				symbol = pureCode
-				exchangeCode = ExchangeBJSE
-				exchangeId = ExchangeIdBeiJing
-				return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ_}
-			}
-			// 2.3 上交所
-			if typ_, desc := matchRule(pureCode, sseRules); typ_ != SecurityUnknown {
-				_ = desc
-				symbol = pureCode
-				exchangeCode = ExchangeSSE
-				exchangeId = ExchangeIdShangHai
-				return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ_}
-			}
-		}
-	}
-
-	if exchangeId == ExchangeIdUnknown {
-		// 无法识别市场
-		return SecurityCode{Market: ExchangeIdUnknown, Symbol: "", Type: SecurityUnknown}
-	}
-
-	if typ == SecurityUnknown {
-		// 基于市场规则解析类型
-		var rules []CodeRule
-		switch exchangeId {
-		case ExchangeIdShangHai:
-			rules = sseRules
-		case ExchangeIdShenZhen:
-			rules = szseRules
-		case ExchangeIdBeiJing:
-			rules = bjseRules
-		case ExchangeIdHongKong:
-			rules = hkseRules
-		case ExchangeIdUSA:
-			typ = SecurityStock // 美股默认股票
-			return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ}
-		default:
-			return SecurityCode{Market: ExchangeIdUnknown, Symbol: "", Type: SecurityUnknown}
-		}
-		if typ_, _ := matchRule(symbol, rules); typ_ != SecurityUnknown {
-			typ = typ_
-			return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ}
-		} else {
-			return SecurityCode{Market: ExchangeIdUnknown, Symbol: "", Type: SecurityUnknown}
-		}
-	} else {
-		// 已识别类型，直接返回, 不进行规则匹配
-		// 适用于美股等市场
-		return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ}
-	}
 }

@@ -13,6 +13,7 @@ import (
 	"gitee.com/quant1x/quant1x/quant1x/logger"
 )
 
+// StdCommand 标准命令类型
 type StdCommand uint16
 
 const (
@@ -234,6 +235,17 @@ func unzipZlib(data []byte) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
+// Process 处理请求并获取响应
+//
+// 参数:
+//
+//	conn - 已建立的 TCP 连接
+//	req - 待发送的请求对象
+//	resp - 用于接收响应数据的响应对象
+//
+// 返回值:
+//
+//	error - 处理过程中遇到的错误
 func Process[T ProtocolRequest, R ProtocolResponse](conn *net.TCPConn, req T, resp R) error {
 	if conn == nil {
 		return errors.New("nil connection")

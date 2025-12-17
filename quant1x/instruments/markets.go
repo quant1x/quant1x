@@ -107,11 +107,10 @@ func GetCodeList() []string {
 	list = append(list, AShareIndexList...)
 
 	// 2. 板块
-	// TODO: 需要实现 GetSectorList
-	// sectors := GetSectorList
-	// for _, v := range sectors {
-	//  list = append(list, v.Code)
-	// }
+	sectors := BlockList()
+	for _, v := range sectors {
+		list = append(list, v.Code)
+	}
 
 	// 3. 个股, 包括场内开放式ETF基金
 	stockCodeList := GetStockCodeList()

@@ -2,7 +2,6 @@ package instruments
 
 import (
 	"encoding/csv"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -10,18 +9,28 @@ import (
 	"time"
 
 	"gitee.com/quant1x/quant1x/quant1x/core"
+	"gitee.com/quant1x/quant1x/quant1x/encoding"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 	"gitee.com/quant1x/quant1x/quant1x/level1"
 	"gitee.com/quant1x/quant1x/quant1x/runtime"
 	"gitee.com/quant1x/quant1x/quant1x/std"
 )
 
+type SecurityEntity struct {
+	Code           exchange.SecurityCode `csv:"code"`
+	Name           string                `csv:"name"`
+	LotSize        int                   `csv:"lotsize"`
+	PricePrecision int                   `csv:"price_precision"`
+}
+
 // SecurityInfo 证券信息
 type SecurityInfo struct {
-	Code           string
-	Name           string
-	LotSize        int
-	PricePrecision int
+	ExchangeId     exchange.ExchangeId   `csv:"exchange_id"`     // 交易所ID
+	Type           exchange.SecurityType `csv:"type"`            // 证券类型
+	Code           string                `csv:"code"`            // 证券代码
+	Name           string                `csv:"name"`            // 证券名称
+	LotSize        int                   `csv:"lotsize"`         // 每手股数
+	PricePrecision int                   `csv:"price_precision"` // 价格小数位数
 }
 
 var (
@@ -56,19 +65,16 @@ func initSecurities() {
 		conn, release, err := level1.GetStdConnection()
 		if err == nil {
 			defer release()
-			markets := []struct {
-				id     int
-				prefix string
-			}{
-				{int(exchange.ExchangeIdShangHai), string(exchange.ExchangeSSE)},
-				{int(exchange.ExchangeIdShenZhen), string(exchange.ExchangeSZSE)},
-				{int(exchange.ExchangeIdBeiJing), string(exchange.ExchangeBJSE)},
+			markets := []exchange.ExchangeId{
+				exchange.ExchangeIdShangHai,
+				exchange.ExchangeIdShenZhen,
+				exchange.ExchangeIdBeiJing,
 			}
-			var all []level1.Security
-			for _, m := range markets {
+			var all []SecurityInfo
+			for _, market := range markets {
 				start := 0
 				for {
-					req := level1.NewSecurityListRequest(m.id, start, level1.SecurityListPreRequestMax)
+					req := level1.NewSecurityListRequest(int(market), start, level1.SecurityListPreRequestMax)
 					resp := &level1.SecurityListResponse{}
 					if err := level1.Process(conn.Conn(), req, resp); err != nil {
 						break
@@ -77,8 +83,16 @@ func initSecurities() {
 						// prefix codes and append
 						for i := 0; i < int(resp.Count) && i < len(resp.List); i++ {
 							v := resp.List[i]
-							v.Code = m.prefix + v.Code
-							all = append(all, v)
+							sc := exchange.DetectWithExchangeId(market, v.Code)
+							si := SecurityInfo{
+								ExchangeId:     market,
+								Type:           sc.Type,
+								Code:           v.Code,
+								Name:           v.Name,
+								LotSize:        int(v.VolUnit),
+								PricePrecision: int(v.DecimalPoint),
+							}
+							all = append(all, si)
 						}
 					}
 					if len(resp.List) < level1.SecurityListPreRequestMax {
@@ -87,25 +101,7 @@ func initSecurities() {
 					start += level1.SecurityListPreRequestMax
 				}
 			}
-			if len(all) > 0 {
-				// write csv
-				f, err := os.OpenFile(fname, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, std.CACHE_FILE_PERMS)
-				if err == nil {
-					w := csv.NewWriter(f)
-					_ = w.Write([]string{"Code", "VolUnit", "DecimalPoint", "Name", "PreClose"})
-					for _, v := range all {
-						_ = w.Write([]string{
-							strings.TrimSpace(v.Code),
-							strconv.Itoa(int(v.VolUnit)),
-							strconv.Itoa(int(v.DecimalPoint)),
-							strings.TrimSpace(v.Name),
-							fmt.Sprintf("%f", v.PreClose),
-						})
-					}
-					w.Flush()
-					f.Close()
-				}
-			}
+			encoding.SlicesToCsv(fname, all, true)
 		}
 	}
 
