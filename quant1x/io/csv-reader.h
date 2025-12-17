@@ -30,8 +30,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
-#ifndef API_IO_CSV_READER_H
-#define API_IO_CSV_READER_H 1
+#ifndef QUANT1X_IO_CSV_READER_H
+#define QUANT1X_IO_CSV_READER_H 1
 
 #include <algorithm>
 #include <cstdio>
@@ -1201,4 +1201,4 @@ namespace io {
     };
 }  // namespace io
 
-#endif  // API_IO_CSV_READER_H
+#endif  // QUANT1X_IO_CSV_READER_H

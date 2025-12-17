@@ -1,6 +1,6 @@
 #pragma once
-#ifndef API_IO_CSV_WRITER_H
-#define API_IO_CSV_WRITER_H 1
+#ifndef QUANT1X_IO_CSV_WRITER_H
+#define QUANT1X_IO_CSV_WRITER_H 1
 
 #include <fstream>
 #include <sstream>
@@ -146,4 +146,4 @@ namespace io {
         }
     };
 }  // namespace io
-#endif  // API_IO_CSV_WRITER_H
+#endif  // QUANT1X_IO_CSV_WRITER_H
