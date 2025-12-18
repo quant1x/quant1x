@@ -72,8 +72,8 @@ const (
 // String 将交易所ID转换为对应的字符串表示
 //
 //	如果传入未知的交易所ID会触发panic
-func (m ExchangeId) String() string {
-	switch m {
+func (e ExchangeId) String() string {
+	switch e {
 	case ExchangeIdShenZhen:
 		return string(ExchangeSZSE)
 	case ExchangeIdShangHai:
@@ -85,8 +85,19 @@ func (m ExchangeId) String() string {
 	case ExchangeIdUSA:
 		return string(ExchangeUS)
 	default:
-		panic(fmt.Sprintf("unknown market id: %d", m))
+		//panic(fmt.Sprintf("unknown market id: %d", e))
+		return ExchangeUnknown.String()
 	}
+}
+
+func (e *ExchangeId) UnmarshalCSV(val string) error {
+	text := strings.TrimSpace(val)
+	exchangeCode := ExchangeCode(text)
+	*e = exchangeCode.Id()
+	if *e == ExchangeIdUnknown {
+		return fmt.Errorf("invalid exchange code: %s", text)
+	}
+	return nil
 }
 
 // 包级错误

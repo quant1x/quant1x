@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"gitee.com/quant1x/quant1x/quant1x/encoding"
-
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 	"gitee.com/quant1x/quant1x/quant1x/runtime"
 )

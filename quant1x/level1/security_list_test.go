@@ -35,7 +35,7 @@ func TestSecurityListReal(t *testing.T) {
 	for _, m := range markets {
 		req := NewSecurityListRequest(m.id, 0, SecurityListPreRequestMax)
 		resp := &SecurityListResponse{}
-		if err := Process(conn.Conn(), req, resp); err != nil {
+		if err := Process(conn, req, resp); err != nil {
 			t.Fatalf("Process(%s) failed: %v", m.name, err)
 		}
 		if resp.Count == 0 {

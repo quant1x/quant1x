@@ -1,13 +1,12 @@
 package instruments
 
 import (
-	"encoding/csv"
-	"os"
+	"fmt"
 	"path/filepath"
-	"strconv"
+	"sort"
 	"strings"
-	"time"
 
+	"gitee.com/quant1x/quant1x/quant1x/cache"
 	"gitee.com/quant1x/quant1x/quant1x/core"
 	"gitee.com/quant1x/quant1x/quant1x/encoding"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
@@ -43,97 +42,82 @@ func GetSecurityFilename() string {
 	return filepath.Join(core.GetMetaPath(), "securities.csv")
 }
 
+func updateSecurities(fname string) {
+	conn, release, err := level1.GetStdConnection()
+	if err == nil {
+		defer release()
+		markets := []exchange.ExchangeId{
+			exchange.ExchangeIdShangHai,
+			exchange.ExchangeIdShenZhen,
+			exchange.ExchangeIdBeiJing,
+		}
+		var all []SecurityInfo
+		for _, market := range markets {
+			var codes []SecurityInfo
+			start := 0
+			for {
+				req := level1.NewSecurityListRequest(int(market), start, level1.SecurityListPreRequestMax)
+				resp := &level1.SecurityListResponse{}
+				if err := level1.Process(conn, req, resp); err != nil {
+					break
+				}
+				if len(resp.List) > 0 {
+					// prefix codes and append
+					for i := 0; i < int(resp.Count) && i < len(resp.List); i++ {
+						v := resp.List[i]
+						sc := exchange.DetectWithExchangeId(market, v.Code)
+						si := SecurityInfo{
+							ExchangeId:     market,
+							Type:           sc.Type,
+							Code:           v.Code,
+							Name:           v.Name,
+							LotSize:        int(v.VolUnit),
+							PricePrecision: int(v.DecimalPoint),
+						}
+						codes = append(codes, si)
+					}
+				}
+				if len(resp.List) < level1.SecurityListPreRequestMax {
+					break
+				}
+				start += level1.SecurityListPreRequestMax
+			}
+			sort.Slice(codes, func(i, j int) bool {
+				return codes[i].Code < codes[j].Code
+			})
+			all = append(all, codes...)
+		}
+		encoding.SlicesToCsv(fname, all, true)
+	}
+}
+
 func initSecurities() {
 	fname := GetSecurityFilename()
 
 	// Decide whether to refresh from Level1
-	bUpdate := false
-	info, err := os.Stat(fname)
-	now := exchange.NowTimestamp()
-	checkTP := now.PreMarketTime().ToTime()
-	if err != nil {
-		bUpdate = true
-	} else {
-		// If current time already reached today's pre-market and file is older than
-		// today's pre-market, consider it outdated and update from Level1.
-		if time.Now().After(checkTP) && info.ModTime().Before(checkTP) {
-			bUpdate = true
-		}
-	}
+	bUpdate := cache.ShouldUpdateFile(fname)
 
 	if bUpdate {
-		conn, release, err := level1.GetStdConnection()
-		if err == nil {
-			defer release()
-			markets := []exchange.ExchangeId{
-				exchange.ExchangeIdShangHai,
-				exchange.ExchangeIdShenZhen,
-				exchange.ExchangeIdBeiJing,
-			}
-			var all []SecurityInfo
-			for _, market := range markets {
-				start := 0
-				for {
-					req := level1.NewSecurityListRequest(int(market), start, level1.SecurityListPreRequestMax)
-					resp := &level1.SecurityListResponse{}
-					if err := level1.Process(conn.Conn(), req, resp); err != nil {
-						break
-					}
-					if len(resp.List) > 0 {
-						// prefix codes and append
-						for i := 0; i < int(resp.Count) && i < len(resp.List); i++ {
-							v := resp.List[i]
-							sc := exchange.DetectWithExchangeId(market, v.Code)
-							si := SecurityInfo{
-								ExchangeId:     market,
-								Type:           sc.Type,
-								Code:           v.Code,
-								Name:           v.Name,
-								LotSize:        int(v.VolUnit),
-								PricePrecision: int(v.DecimalPoint),
-							}
-							all = append(all, si)
-						}
-					}
-					if len(resp.List) < level1.SecurityListPreRequestMax {
-						break
-					}
-					start += level1.SecurityListPreRequestMax
-				}
-			}
-			encoding.SlicesToCsv(fname, all, true)
-		}
+		updateSecurities(fname)
 	}
 
 	// Load CSV into memory
-	f, err := os.Open(fname)
+	var all []SecurityInfo
+	err := encoding.CsvToSlices(fname, &all)
 	if err != nil {
+		fmt.Printf("failed to load securities from CSV: %v", err)
 		return
 	}
-	defer f.Close()
-	r := csv.NewReader(f)
-	if _, err := r.Read(); err != nil {
-		return
-	}
-	for {
-		rec, err := r.Read()
-		if err != nil {
-			break
+	for _, si := range all {
+		code := si.ExchangeId.String() + "" + si.Code
+		securityMap[code] = &SecurityInfo{
+			ExchangeId:     si.ExchangeId,
+			Type:           si.Type,
+			Code:           si.Code,
+			Name:           si.Name,
+			LotSize:        si.LotSize,
+			PricePrecision: si.PricePrecision,
 		}
-		if len(rec) < 4 {
-			continue
-		}
-		code := strings.TrimSpace(rec[0])
-		lot := 0
-		if v, e := strconv.Atoi(strings.TrimSpace(rec[1])); e == nil {
-			lot = v
-		}
-		prec := 0
-		if v, e := strconv.Atoi(strings.TrimSpace(rec[2])); e == nil {
-			prec = v
-		}
-		name := strings.TrimSpace(rec[3])
-		securityMap[code] = &SecurityInfo{Code: code, Name: name, LotSize: lot, PricePrecision: prec}
 	}
 }
 

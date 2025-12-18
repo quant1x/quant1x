@@ -6,10 +6,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
-	"net"
+	stdio "io"
 	"sync/atomic"
 
+	qio "gitee.com/quant1x/quant1x/quant1x/io"
 	"gitee.com/quant1x/quant1x/quant1x/logger"
 )
 
@@ -128,9 +128,9 @@ type ResponseHeader struct {
 	UnZipSize uint16 // 解压后大小
 }
 
-func readResponseHeader(r io.Reader) (*ResponseHeader, error) {
+func readResponseHeader(r stdio.Reader) (*ResponseHeader, error) {
 	var buf [16]byte
-	if _, err := io.ReadFull(r, buf[:]); err != nil {
+	if _, err := stdio.ReadFull(r, buf[:]); err != nil {
 		return nil, err
 	}
 	hdr := &ResponseHeader{}
@@ -229,7 +229,7 @@ func unzipZlib(data []byte) ([]byte, error) {
 	}
 	defer r.Close()
 	out := &bytes.Buffer{}
-	if _, err := io.Copy(out, r); err != nil {
+	if _, err := stdio.Copy(out, r); err != nil {
 		return nil, err
 	}
 	return out.Bytes(), nil
@@ -246,7 +246,8 @@ func unzipZlib(data []byte) ([]byte, error) {
 // 返回值:
 //
 //	error - 处理过程中遇到的错误
-func Process[T ProtocolRequest, R ProtocolResponse](conn *net.TCPConn, req T, resp R) error {
+func Process[T ProtocolRequest, R ProtocolResponse](conn_ *qio.Connection, req T, resp R) error {
+	conn := conn_.Conn()
 	if conn == nil {
 		return errors.New("nil connection")
 	}
@@ -272,7 +273,7 @@ func Process[T ProtocolRequest, R ProtocolResponse](conn *net.TCPConn, req T, re
 	}
 
 	body := make([]byte, hdr.ZipSize)
-	if _, err := io.ReadFull(conn, body); err != nil {
+	if _, err := stdio.ReadFull(conn, body); err != nil {
 		return err
 	}
 

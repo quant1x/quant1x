@@ -5,7 +5,6 @@ import (
 	"embed"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"slices"
 	"strings"
@@ -14,6 +13,7 @@ import (
 	"gitee.com/quant1x/quant1x/quant1x/encoding"
 	"gitee.com/quant1x/quant1x/quant1x/encoding/binary/struc"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	qio "gitee.com/quant1x/quant1x/quant1x/io"
 	"gitee.com/quant1x/quant1x/quant1x/level1"
 	"gitee.com/quant1x/quant1x/quant1x/runtime"
 	"gitee.com/quant1x/quant1x/quant1x/std"
@@ -27,7 +27,7 @@ var (
 	resources embed.FS
 )
 
-func getBlockInfo(conn *net.TCPConn, blockFile string) (*level1.BlockInfoResponse, error) {
+func getBlockInfo(conn *qio.Connection, blockFile string) (*level1.BlockInfoResponse, error) {
 	var result level1.BlockInfoResponse
 	start := uint32(0)
 	for {
@@ -66,7 +66,7 @@ func downloadBlockRawData(filename string) {
 			return
 		}
 	}
-	resp, err := getBlockInfo(conn.Conn(), filename)
+	resp, err := getBlockInfo(conn, filename)
 	if err == nil {
 		fn := config.GetBlockPath() + "/" + filename
 		_ = std.CheckFilepath(fn, true)

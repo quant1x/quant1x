@@ -131,14 +131,17 @@ trusted-host = https://pypi.tuna.tsinghua.edu.cn
 ```
 
 ## 2.2 依赖库
+
 python环境中依赖管理的配置文件为requirements.txt，类似java的maven pom.xml、golang的go.mod。
 
 ### 2.2.1 安装项目依赖的库
+
 ```shell
 pip install -r requirements.txt
 ```
 
 ### 2.2.2 检测项目依赖输出到requirements.txt
+
 ```shell
 pip freeze > requirements.txt
 ```
@@ -153,21 +156,25 @@ pipreqs ./ --encoding utf8
 ## 2.3 上传package到PyPi
 
 ### 2.3.1 安装或更新setuptools、wheel、twine
+
 ```shell
 pip install --upgrade setuptools wheel twine
 ```
 
 ### 2.3.2 打包并生成tar.gz和whl文件
+
 ```shell
 python setup.py sdist bdist_wheel
 ```
 
 ### 2.3.3 上传package到PyPi的测试环境
+
 ```shell
 twine upload --repository testpypi dist/*
 ```
 
 ### 2.3.4 上传package到PyPi的正式环境
+
 ```shell
 twine upload dist/*
 ```
@@ -175,13 +182,16 @@ twine upload dist/*
 ## 2.4 Matplotlib中文乱码问题解决方案
 
 ### 2.4.1 编写如下代码，获取matplotlib包所在的配置文件的路径
+
 ```python
 import matplotlib
 matplotlib.matplotlib_fname() #输出matplotlib包所在的配置文件的路径
 ```
 
 ### 2.4.2 根据上面的路径打开文件夹（根据自己实际的输出路径去操作）
+
 我选择了SimHei中文字体, 复制到fonts/ttf/目录下
+
 ```shell
 cp -r /Users/${USERNAME}/Library/Fonts/SimHei.ttf fonts/ttf/
 ```
@@ -190,28 +200,43 @@ cp -r /Users/${USERNAME}/Library/Fonts/SimHei.ttf fonts/ttf/
 #### 2.4.3.1 找到 #font.sans-serif，去掉前面的#，并在：后面写上在准备工作加入的中文字体的名称SimHei
 #### 2.4.3.2 找到#axes.unicode_minus，去掉前面的#，并在：改为False
 ### 2.4.4 控制台切换到~/.matplotlib目录, 删除tex.cache文件和fontList.json文件
+
 ```shell
 cd ~/.matplotlib
 rm -rf *
 ```
 
-
 # 3. golang 开发环境
 
-环境设定
+## 3.1 环境设定
+
 ```shell
 go env -w GO111MODULE=on
 go env -w GOPROXY=https://goproxy.cn,direct
 go env -w GOPRIVATE=gitee.com
 ```
 
+## 3.2 安装protobuf
+
+```shell
+
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+```
+
 # 4. Rust 开发环境
 
-```bash
-# 安装 Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+## 4.1 安装 Rust
 
-# 更新到最新版本
+```shell
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+## 4.2 更新 Rust 工具链到最新版本
+
+```shell
 rustup update
 ```
 
@@ -221,26 +246,26 @@ rustup update
 
 - 在开发模式下构建：
 
-```sh
+```shell
 cargo build --bin q1x
 ```
 
 - 在发布/生产模式下构建（优化）：
 
-```sh
+```shell
 cargo build --release --bin q1x
 ```
 
 - 运行并查看帮助信息：
 
-```sh
+```shell
 # 打印程序帮助（包含子命令和选项）
 cargo run --bin q1x -- --help
 ```
 
 - 常见子命令示例（基于项目根 `main.rs` 中使用的 clap 定义）：
 
-```sh
+```shell
 # 管理服务（install/uninstall/start/stop/status/run）
 cargo run --bin q1x -- service install
 cargo run --bin q1x -- service start
@@ -254,7 +279,7 @@ cargo run --bin q1x -- update --calendar
 
 你也可以直接运行已构建的二进制查看实际帮助文本，例如：
 
-```powershell
+```shell
 # Debug 二进制
 .\target\debug\q1x.exe --help
 

@@ -113,6 +113,85 @@ func (s SecurityType) StringWithLocale(loc string) string {
 	return ""
 }
 
+func (s *SecurityType) MarshalCSV() (string, error) {
+	return s.StringWithLocale(getLocale()), nil
+}
+
+func (s *SecurityType) UnmarshalCSV(val string) error {
+	// Normalize input
+	v := strings.TrimSpace(val)
+	if v == "" {
+		*s = SecurityUnknown
+		return nil
+	}
+	lv := strings.ToLower(v)
+
+	// 1) Try matching against localized labels map (both zh/en)
+	for typ, m := range labels {
+		for _, label := range m {
+			if strings.ToLower(label) == lv {
+				*s = typ
+				return nil
+			}
+		}
+	}
+
+	// 2) Fallback: compact synonym map for common CSV values
+	synonyms := map[string]SecurityType{
+		"stock":     SecurityStock,
+		"a股":        SecurityStock,
+		"普通股票":      SecurityStock,
+		"a股股票":      SecurityStock,
+		"a股普通股票":    SecurityStock,
+		"etf":       SecurityETF,
+		"etf基金":     SecurityETF,
+		"交易所交易基金":   SecurityETF,
+		"fund":      SecurityFund,
+		"基金":        SecurityFund,
+		"各类基金":      SecurityFund,
+		"封闭式基金":     SecurityFund,
+		"lof基金":     SecurityFund,
+		"bond":      SecurityBond,
+		"债券":        SecurityBond,
+		"公司债":       SecurityBond,
+		"可转债":       SecurityBond,
+		"可交换债":      SecurityBond,
+		"bstock":    SecurityBStock,
+		"b股":        SecurityBStock,
+		"ipo":       SecurityIPO,
+		"新股申购":      SecurityIPO,
+		"新股":        SecurityIPO,
+		"index":     SecurityIndex,
+		"指数":        SecurityIndex,
+		"上证指数":      SecurityIndex,
+		"深证指数":      SecurityIndex,
+		"block":     SecurityBlock,
+		"板块":        SecurityBlock,
+		"板块指数":      SecurityBlock,
+		"option":    SecurityOption,
+		"期权":        SecurityOption,
+		"future":    SecurityFuture,
+		"期货":        SecurityFuture,
+		"warrant":   SecurityWarrant,
+		"权证":        SecurityWarrant,
+		"forex":     SecurityForex,
+		"外汇":        SecurityForex,
+		"commodity": SecurityCommodity,
+		"商品":        SecurityCommodity,
+		"other":     SecurityOther,
+		"其他":        SecurityOther,
+	}
+
+	if t, ok := synonyms[lv]; ok {
+		*s = t
+		return nil
+	}
+
+	// 3) Not matched -> Unknown
+	*s = SecurityUnknown
+	return nil
+}
+
 // CodeRule 表示一条证券代码前缀规则
 type CodeRule struct {
 	Prefix string       // 前缀，如 "600", "920"
