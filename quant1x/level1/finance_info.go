@@ -237,42 +237,41 @@ func (r *RawFinanceInfo) decode(reader *bytes.Reader) error {
 
 // FinanceInfo 高级表示
 type FinanceInfo struct {
-	Code               string  `csv:"code"`
-	LiuTongGuBen       float64 `csv:"liu_tong_gu_ben"`
-	Province           uint16  `csv:"province"`
-	Industry           uint16  `csv:"industry"`
-	UpdatedDate        uint32  `csv:"updated_date"`
-	IPODate            uint32  `csv:"ipo_date"`
-	ZongGuBen          float64 `csv:"zong_gu_ben"`
-	GuoJiaGu           float64 `csv:"guo_jia_gu"`
-	FaQiRenFaRenGu     float64 `csv:"fa_qi_ren_fa_ren_gu"`
-	FaRenGu            float64 `csv:"fa_ren_gu"`
-	BGu                float64 `csv:"b_gu"`
-	HGu                float64 `csv:"h_gu"`
-	ZhiGongGu          float64 `csv:"zhi_gong_gu"`
-	ZongZiChan         float64 `csv:"zong_zi_chan"`
-	LiuDongZiChan      float64 `csv:"liu_dong_zi_chan"`
-	GuDingZiChan       float64 `csv:"gu_ding_zi_chan"`
-	WuXingZiChan       float64 `csv:"wu_xing_zi_chan"`
-	GuDongRenShu       float64 `csv:"gu_dong_ren_shu"`
-	LiuDongFuZhai      float64 `csv:"liu_dong_fu_zhai"`
-	ChangQiFuZhai      float64 `csv:"chang_qi_fu_zhai"`
-	ZiBenGongJiJin     float64 `csv:"zi_ben_gong_ji_jin"`
-	JingZiChan         float64 `csv:"jing_zi_chan"`
-	ZhuYingShouRu      float64 `csv:"zhu_ying_shou_ru"`
-	ZhuYingLiRun       float64 `csv:"zhu_ying_li_run"`
-	YingShouZhangKuan  float64 `csv:"ying_shou_zhang_kuan"`
-	YingYeLiRun        float64 `csv:"ying_ye_li_run"`
-	TouZiShouYu        float64 `csv:"tou_zi_shou_yu"`
-	JingYingXianJinLiu float64 `csv:"jing_ying_xian_jin_liu"`
-	ZongXianJinLiu     float64 `csv:"zong_xian_jin_liu"`
-	CunHuo             float64 `csv:"cun_huo"`
-	LiRunZongHe        float64 `csv:"li_run_zong_he"`
-	ShuiHouLiRun       float64 `csv:"shui_hou_li_run"`
-	JingLiRun          float64 `csv:"jing_li_run"`
-	WeiFenLiRun        float64 `csv:"wei_fen_li_run"`
-	MeiGuJingZiChan    float64 `csv:"mei_gu_jing_zi_chan"`
-	BaoLiu2            float64 `csv:"bao_liu2"`
+	Code               string  `csv:"code"`                   // 证券代码
+	LiuTongGuBen       float64 `csv:"liu_tong_gu_ben"`        // 流通股本
+	Province           uint16  `csv:"province"`               // 省份
+	Industry           uint16  `csv:"industry"`               // 行业
+	UpdatedDate        uint32  `csv:"updated_date"`           // 数据更新日期
+	IPODate            uint32  `csv:"ipo_date"`               // IPO日期
+	ZongGuBen          float64 `csv:"zong_gu_ben"`            // 总股本
+	GuoJiaGu           float64 `csv:"guo_jia_gu"`             // 国家股
+	FaQiRenFaRenGu     float64 `csv:"fa_qi_ren_fa_ren_gu"`    // 发起人发认股
+	FaRenGu            float64 `csv:"fa_ren_gu"`              // 法人股
+	BGu                float64 `csv:"b_gu"`                   // B股
+	HGu                float64 `csv:"h_gu"`                   // H股
+	ZhiGongGu          float64 `csv:"zhi_gong_gu"`            // 职工股
+	ZongZiChan         float64 `csv:"zong_zi_chan"`           // 总资产
+	LiuDongZiChan      float64 `csv:"liu_dong_zi_chan"`       // 流动资产
+	GuDingZiChan       float64 `csv:"gu_ding_zi_chan"`        // 固定资产
+	WuXingZiChan       float64 `csv:"wu_xing_zi_chan"`        // 无形资产
+	GuDongRenShu       float64 `csv:"gu_dong_ren_shu"`        // 股东人数
+	LiuDongFuZhai      float64 `csv:"liu_dong_fu_zhai"`       // 流动负债
+	ChangQiFuZhai      float64 `csv:"chang_qi_fu_zhai"`       // 长期负债
+	ZiBenGongJiJin     float64 `csv:"zi_ben_gong_ji_jin"`     // 资本公积金
+	JingZiChan         float64 `csv:"jing_zi_chan"`           // 净资产
+	ZhuYingShouRu      float64 `csv:"zhu_ying_shou_ru"`       // 主营收入
+	ZhuYingLiRun       float64 `csv:"zhu_ying_li_run"`        // 主营利润
+	YingShouZhangKuan  float64 `csv:"ying_shou_zhang_kuan"`   // 应收账款
+	YingYeLiRun        float64 `csv:"ying_ye_li_run"`         // 营业利润
+	TouZiShouYu        float64 `csv:"tou_zi_shou_yu"`         // 投资收益
+	JingYingXianJinLiu float64 `csv:"jing_ying_xian_jin_liu"` // 经营现金流
+	ZongXianJinLiu     float64 `csv:"zong_xian_jin_liu"`      // 总现金流
+	CunHuo             float64 `csv:"cun_huo"`                // 存货
+	LiRunZongHe        float64 `csv:"li_run_zong_he"`         // 利润总和
+	ShuiHouLiRun       float64 `csv:"shui_hou_li_run"`        // 税后利润
+	JingLiRun          float64 `csv:"jing_li_run"`            // 净利润
+	WeiFenLiRun        float64 `csv:"wei_fen_li_run"`         // 未分利润
+	MeiGuJingZiChan    float64 `csv:"mei_gu_jing_zi_chan"`    // 每股净资产
 }
 
 // IsDelisting 判断该金融信息是否表示股票已退市
@@ -283,7 +282,7 @@ func (f FinanceInfo) IsDelisting() bool {
 }
 
 func (f FinanceInfo) String() string {
-	return fmt.Sprintf("FinanceInfo{Code: %s, LiuTongGuBen: %f, Province: %d, Industry: %d, UpdatedDate: %d, IPODate: %d, ZongGuBen: %f, GuoJiaGu: %f, FaQiRenFaRenGu: %f, FaRenGu: %f, BGu: %f, HGu: %f, ZhiGongGu: %f, ZongZiChan: %f, LiuDongZiChan: %f, GuDingZiChan: %f, WuXingZiChan: %f, GuDongRenShu: %f, LiuDongFuZhai: %f, ChangQiFuZhai: %f, ZiBenGongJiJin: %f, JingZiChan: %f, ZhuYingShouRu: %f, ZhuYingLiRun: %f, YingShouZhangKuan: %f, YingYeLiRun: %f, TouZiShouYu: %f, JingYingXianJinLiu: %f, ZongXianJinLiu: %f, CunHuo: %f, LiRunZongHe: %f, ShuiHouLiRun: %f, JingLiRun: %f, WeiFenLiRun: %f, MeiGuJingZiChan: %f, BaoLiu2: %f}", f.Code, f.LiuTongGuBen, f.Province, f.Industry, f.UpdatedDate, f.IPODate, f.ZongGuBen, f.GuoJiaGu, f.FaQiRenFaRenGu, f.FaRenGu, f.BGu, f.HGu, f.ZhiGongGu, f.ZongZiChan, f.LiuDongZiChan, f.GuDingZiChan, f.WuXingZiChan, f.GuDongRenShu, f.LiuDongFuZhai, f.ChangQiFuZhai, f.ZiBenGongJiJin, f.JingZiChan, f.ZhuYingShouRu, f.ZhuYingLiRun, f.YingShouZhangKuan, f.YingYeLiRun, f.TouZiShouYu, f.JingYingXianJinLiu, f.ZongXianJinLiu, f.CunHuo, f.LiRunZongHe, f.ShuiHouLiRun, f.JingLiRun, f.WeiFenLiRun, f.MeiGuJingZiChan, f.BaoLiu2)
+	return fmt.Sprintf("FinanceInfo{Code: %s, LiuTongGuBen: %f, Province: %d, Industry: %d, UpdatedDate: %d, IPODate: %d, ZongGuBen: %f, GuoJiaGu: %f, FaQiRenFaRenGu: %f, FaRenGu: %f, BGu: %f, HGu: %f, ZhiGongGu: %f, ZongZiChan: %f, LiuDongZiChan: %f, GuDingZiChan: %f, WuXingZiChan: %f, GuDongRenShu: %f, LiuDongFuZhai: %f, ChangQiFuZhai: %f, ZiBenGongJiJin: %f, JingZiChan: %f, ZhuYingShouRu: %f, ZhuYingLiRun: %f, YingShouZhangKuan: %f, YingYeLiRun: %f, TouZiShouYu: %f, JingYingXianJinLiu: %f, ZongXianJinLiu: %f, CunHuo: %f, LiRunZongHe: %f, ShuiHouLiRun: %f, JingLiRun: %f, WeiFenLiRun: %f, MeiGuJingZiChan: %f}", f.Code, f.LiuTongGuBen, f.Province, f.Industry, f.UpdatedDate, f.IPODate, f.ZongGuBen, f.GuoJiaGu, f.FaQiRenFaRenGu, f.FaRenGu, f.BGu, f.HGu, f.ZhiGongGu, f.ZongZiChan, f.LiuDongZiChan, f.GuDingZiChan, f.WuXingZiChan, f.GuDongRenShu, f.LiuDongFuZhai, f.ChangQiFuZhai, f.ZiBenGongJiJin, f.JingZiChan, f.ZhuYingShouRu, f.ZhuYingLiRun, f.YingShouZhangKuan, f.YingYeLiRun, f.TouZiShouYu, f.JingYingXianJinLiu, f.ZongXianJinLiu, f.CunHuo, f.LiRunZongHe, f.ShuiHouLiRun, f.JingLiRun, f.WeiFenLiRun, f.MeiGuJingZiChan)
 }
 
 // FinanceResponse 响应
@@ -345,7 +344,6 @@ func (r *FinanceResponse) Deserialize(body []byte) error {
 		info.JingLiRun = NumberToFloat64(raw.JingLiRun) * baseUnit
 		info.WeiFenLiRun = NumberToFloat64(raw.WeiFenLiRun) * baseUnit
 		info.MeiGuJingZiChan = NumberToFloat64(raw.BaoLiu1) * baseUnit
-		info.BaoLiu2 = NumberToFloat64(raw.BaoLiu2)
 		r.List = append(r.List, info)
 	}
 	return nil
