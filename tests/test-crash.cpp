@@ -12,7 +12,7 @@ void foo() {
 
 int main() {
     runtime::global_init();
-    //runtime::logger_set(true, true);
+    runtime::logger_set(true, true);
     crash::InitCrashHandler();
 
     //spdlog::info("程序启动成功，即将触发崩溃...");

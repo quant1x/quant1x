@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <iostream>
 #include <vector>
+#include <mutex>
 
 namespace crash {
     namespace detail {
@@ -17,36 +18,86 @@ namespace crash {
             return app_name;
         }
 
+        // Add once_flag used by std::call_once in get_logger
+        static std::once_flag once_crash_logger;
+
         // 初始化日志, 日志路径与执行程序相同, 去掉扩展名后增加_crash, 避免了创建目录及权限问题
         void init_logger() {
-            spdlog::info("[crash]初始化crash日志...");
-            std::filesystem::path app_path = detail::application_name();  // 获取可执行文件完整路径
-            spdlog::info("[crash] app_path={}", app_path.string());
-            std::filesystem::path log_file = app_path.stem().string() + "_crash.log";  // myapp_crash.log
-            spdlog::info("[crash] log_file={}", log_file.string());
-            std::filesystem::path log_dir = app_path.parent_path();  // 同目录
+            try {
+                spdlog::info("[crash]初始化crash日志...");
+                std::filesystem::path app_path = detail::application_name();  // 获取可执行文件完整路径
+                spdlog::info("[crash] app_path={}", app_path.string());
+                std::filesystem::path log_file = app_path.stem().string() + "_crash.log";  // myapp_crash.log
+                spdlog::info("[crash] log_file={}", log_file.string());
+                std::filesystem::path log_dir = app_path.parent_path();  // 同目录
 
-            std::string filelog_name = (log_dir / log_file).string();  // 最终路径
-            spdlog::info("[crash] log_file={}", filelog_name);
-            std::filesystem::create_directories(log_dir);  // 创建目录（如果不存在）
+                std::string filelog_name = (log_dir / log_file).string();  // 最终路径
+                spdlog::info("[crash] log_file={}", filelog_name);
 
-            auto file_sink    = std::make_shared<spdlog::sinks::daily_file_sink_mt>(filelog_name, 0, 0, false);
-            auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+                // 确保目录存在
+                std::error_code ec;
+                std::filesystem::create_directories(log_dir, ec);
+                if (ec) {
+                    // 目录创建失败：记录并继续（将使用控制台回退）
+                    std::string msg = std::string("create_directories failed: ") + ec.message();
+                    spdlog::warn("[crash] {}", msg);
+                    std::cerr << "[crash] " << msg << std::endl;
+                }
 
-            std::vector<spdlog::sink_ptr> sinks{console_sink, file_sink};
-            auto logger = std::make_shared<spdlog::logger>(crash_logger_name, sinks.begin(), sinks.end());
-            logger->set_level(spdlog::level::debug);
-            spdlog::register_logger(logger);
-            spdlog::info("初始化crash日志...OK");
+                // 创建 sinks，可能会抛异常（例如路径/权限问题或 A/BOM 导致的打开失败）
+                auto file_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(filelog_name, 0, 0, false);
+                auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+
+                std::vector<spdlog::sink_ptr> sinks{console_sink, file_sink};
+                auto logger = std::make_shared<spdlog::logger>(crash_logger_name, sinks.begin(), sinks.end());
+                logger->set_level(spdlog::level::debug);
+
+                // 注册自定义 logger（如果已存在，先移除）
+                if (spdlog::get(crash_logger_name)) {
+                    spdlog::drop(crash_logger_name);
+                }
+                spdlog::register_logger(logger);
+
+                spdlog::info("初始化crash日志...OK");
+            } catch (const std::exception& e) {
+                // 初始化文件 sink 失败：回退到仅控制台 logger 并把错误写到 cerr
+                std::string err = std::string("init_logger failed: ") + e.what();
+                std::cerr << "[crash] " << err << std::endl;
+                spdlog::warn("[crash] {}", err);
+
+                // 确保至少有一个控制台 logger（名字为 crash_logger_name）
+                if (!spdlog::get(crash_logger_name)) {
+                    try {
+                        spdlog::stdout_color_mt(crash_logger_name);
+                    } catch (...) {
+                        // 严重失败：直接输出到 cerr
+                        std::cerr << "[crash] failed to create console logger" << std::endl;
+                    }
+                }
+            } catch (...) {
+                std::cerr << "[crash] init_logger unknown failure" << std::endl;
+                if (!spdlog::get(crash_logger_name)) {
+                    try {
+                        spdlog::stdout_color_mt(crash_logger_name);
+                    } catch (...) {
+                        std::cerr << "[crash] failed to create console logger" << std::endl;
+                    }
+                }
+            }
         }
-
-        std::once_flag once_crash_logger;
 
         static std::shared_ptr<spdlog::logger> get_logger() {
             std::call_once(once_crash_logger, [&]() { detail::init_logger(); });
             auto logger = spdlog::get(crash_logger_name);
             if (!logger) {
-                logger = spdlog::stdout_color_mt(crash_logger_name);
+                // 如果仍然没有，确保我们至少有一个控制台 logger（并把失败写到 cerr）
+                try {
+                    logger = spdlog::stdout_color_mt(crash_logger_name);
+                } catch (const std::exception& e) {
+                    std::cerr << "[crash] get_logger failed creating fallback console logger: " << e.what() << std::endl;
+                    // 最后手段：返回 nullptr（调用者需小心）
+                    return nullptr;
+                }
             }
             return logger;
         }
@@ -156,14 +207,44 @@ namespace crash {
             SymSetOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS | SYMOPT_LOAD_LINES);
             SymInitialize(GetCurrentProcess(), nullptr, TRUE);
 
-            // 打印调用栈（即使不能解析符号，也尽量显示函数名）
+            // 打印调用栈（尽量显示用户代码帧，而不是运行时内部帧）
             backward::StackTrace st;
 #ifdef TARGET_COMPILER_IS_CLANG
             st.set_thread_handle(GetCurrentThread());
-            st.load_here(32+signal_skip_recs);
+            st.load_here(32 + signal_skip_recs);
             st.skip_n_firsts(signal_skip_recs);
 #else
             st.load_from(pExceptionInfo, MAX_FRAMES);
+            // 动态检测并跳过系统/运行时模块帧，避免硬编码跳过帧数
+            try {
+                backward::TraceResolver resolver;
+                resolver.load_stacktrace(st);
+
+                size_t skip = 0;
+                for (size_t i = 0; i < st.size(); ++i) {
+                    backward::ResolvedTrace rt = resolver.resolve(st[i]);
+                    std::string obj = rt.object_filename;
+                    // normalize to lower-case for comparison
+                    std::transform(obj.begin(), obj.end(), obj.begin(), [](unsigned char c) { return std::tolower(c); });
+                    bool is_system = false;
+                    const char *sys_modules[] = {"ntdll.dll", "kernel32.dll", "kernelbase.dll", "ucrtbase.dll", "vcruntime", "msvcrt.dll", "base.dll"};
+                    for (auto m : sys_modules) {
+                        if (!obj.empty() && obj.find(m) != std::string::npos) {
+                            is_system = true;
+                            break;
+                        }
+                    }
+                    if (!is_system) {
+                        // first non-system frame -> user frame
+                        skip = i;
+                        break;
+                    }
+                }
+                st.skip_n_firsts(skip);
+            } catch (...) {
+                // fallback to the conservative fixed skip
+                st.skip_n_firsts(signal_skip_recs);
+            }
 #endif
             detail::LogStackTrace(st);
 
@@ -232,7 +313,7 @@ namespace crash {
         // 初始化崩溃处理器
         void setup_crash_handlers() {
 #if defined(WIN32) || defined(_WIN32)
-            //SetUnhandledExceptionFilter(windows_exception_handler);
+            SetUnhandledExceptionFilter(windows_exception_handler);
 #else
             install_posix();
 #endif
@@ -244,6 +325,9 @@ namespace crash {
 
     void InitCrashHandler() {
         std::call_once(once_crash_handler, [&]() {
+            // Ensure crash logger is initialized early so init_logger() runs
+            //(void)detail::get_logger();
+
             if (!sh.loaded()) {
                 spdlog::error("[ERROR] backward-cpp 未能正确初始化");
             }
