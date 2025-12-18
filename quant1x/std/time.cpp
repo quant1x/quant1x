@@ -132,9 +132,9 @@ namespace api {
 
     // 本地时区: 上海
 #if CXX_CHRONO_ZONE_USE_DATE
-    static const auto _local_zone = date::locate_zone("Asia/ShangHai");
+    static const auto _local_zone = date::locate_zone("Asia/Shanghai");
 #else
-    static const auto _local_zone = std::chrono::locate_zone("Asia/ShangHai");
+    static const auto _local_zone = std::chrono::locate_zone("Asia/Shanghai");
 #endif
     static const auto _utc_now = std::chrono::system_clock::now();
     static const auto _zone_offset_seconds = _local_zone->get_info(_utc_now).offset;
