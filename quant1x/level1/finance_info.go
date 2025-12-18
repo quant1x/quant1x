@@ -10,11 +10,16 @@ import (
 	"gitee.com/quant1x/quant1x/quant1x/std"
 )
 
+const (
+	FinanceInfoPerRequestMax = 100 // 单次请求的最大记录数
+)
+
 // FinanceRequest 请求结构
 type FinanceRequest struct {
 	Count  uint16
 	Market uint8
 	Code   [6]byte
+	Codes  []string
 }
 
 // NewFinanceRequest 构建请求，securityCode 可传入任意形式的代码
@@ -43,9 +48,24 @@ func NewFinanceRequest(securityCode string) FinanceRequest {
 
 func (r FinanceRequest) Serialize() []byte {
 	buf := &bytes.Buffer{}
-	_ = binary.Write(buf, binary.LittleEndian, r.Count)
-	_ = buf.WriteByte(r.Market)
-	buf.Write(r.Code[:])
+	// 写入代码数量
+	count := uint16(len(r.Codes))
+	_ = binary.Write(buf, binary.LittleEndian, count)
+	// 遍历 Codes 列表，写入每个代码
+	for _, code := range r.Codes {
+		mid, _, symbol, err := exchange.DetectMarket(code)
+		if err != nil {
+			continue
+		}
+		// 写入市场代码
+		_ = buf.WriteByte(uint8(mid))
+		// 写入证券代码，固定6字节
+		sym := std.String2Bytes(symbol)
+		if len(sym) > 6 {
+			sym = sym[:6]
+		}
+		buf.Write([]byte(sym))
+	}
 	return buildRequest(StdCommandFinanceInfo, packetTypeRequest, buf.Bytes())
 }
 
@@ -262,11 +282,16 @@ func (f FinanceInfo) IsDelisting() bool {
 	return f.IPODate == 0 && f.ZongGuBen == 0 && f.LiuTongGuBen == 0
 }
 
+func (f FinanceInfo) String() string {
+	return fmt.Sprintf("FinanceInfo{Code: %s, LiuTongGuBen: %f, Province: %d, Industry: %d, UpdatedDate: %d, IPODate: %d, ZongGuBen: %f, GuoJiaGu: %f, FaQiRenFaRenGu: %f, FaRenGu: %f, BGu: %f, HGu: %f, ZhiGongGu: %f, ZongZiChan: %f, LiuDongZiChan: %f, GuDingZiChan: %f, WuXingZiChan: %f, GuDongRenShu: %f, LiuDongFuZhai: %f, ChangQiFuZhai: %f, ZiBenGongJiJin: %f, JingZiChan: %f, ZhuYingShouRu: %f, ZhuYingLiRun: %f, YingShouZhangKuan: %f, YingYeLiRun: %f, TouZiShouYu: %f, JingYingXianJinLiu: %f, ZongXianJinLiu: %f, CunHuo: %f, LiRunZongHe: %f, ShuiHouLiRun: %f, JingLiRun: %f, WeiFenLiRun: %f, MeiGuJingZiChan: %f, BaoLiu2: %f}", f.Code, f.LiuTongGuBen, f.Province, f.Industry, f.UpdatedDate, f.IPODate, f.ZongGuBen, f.GuoJiaGu, f.FaQiRenFaRenGu, f.FaRenGu, f.BGu, f.HGu, f.ZhiGongGu, f.ZongZiChan, f.LiuDongZiChan, f.GuDingZiChan, f.WuXingZiChan, f.GuDongRenShu, f.LiuDongFuZhai, f.ChangQiFuZhai, f.ZiBenGongJiJin, f.JingZiChan, f.ZhuYingShouRu, f.ZhuYingLiRun, f.YingShouZhangKuan, f.YingYeLiRun, f.TouZiShouYu, f.JingYingXianJinLiu, f.ZongXianJinLiu, f.CunHuo, f.LiRunZongHe, f.ShuiHouLiRun, f.JingLiRun, f.WeiFenLiRun, f.MeiGuJingZiChan, f.BaoLiu2)
+}
+
 // FinanceResponse 响应
 type FinanceResponse struct {
 	ResponseBase
 	Count uint16
 	Info  FinanceInfo
+	List  []FinanceInfo
 }
 
 func (r *FinanceResponse) Deserialize(body []byte) error {
@@ -277,51 +302,55 @@ func (r *FinanceResponse) Deserialize(body []byte) error {
 	if r.Count == 0 {
 		return nil
 	}
-	var raw RawFinanceInfo
-	if err := raw.decode(reader); err != nil {
-		return err
+	for i := 0; i < int(r.Count); i++ {
+		var raw RawFinanceInfo
+		if err := raw.decode(reader); err != nil {
+			return err
+		}
+		var info FinanceInfo
+		const baseUnit = 10000.0
+		code := std.Bytes2String(raw.Code[:])
+		info.Code = exchange.GetSecurityCode(exchange.ExchangeId(raw.Market), code)
+		info.LiuTongGuBen = NumberToFloat64(raw.LiuTongGuBen) * baseUnit
+		info.Province = raw.Province
+		info.Industry = raw.Industry
+		info.UpdatedDate = raw.UpdatedDate
+		info.IPODate = raw.IPODate
+		info.ZongGuBen = NumberToFloat64(raw.ZongGuBen) * baseUnit
+		info.GuoJiaGu = NumberToFloat64(raw.GuoJiaGu) * baseUnit
+		info.FaQiRenFaRenGu = NumberToFloat64(raw.FaQiRenFaRenGu) * baseUnit
+		info.FaRenGu = NumberToFloat64(raw.FaRenGu) * baseUnit
+		info.BGu = NumberToFloat64(raw.BGu) * baseUnit
+		info.HGu = NumberToFloat64(raw.HGu) * baseUnit
+		info.ZhiGongGu = NumberToFloat64(raw.ZhiGongGu) * baseUnit
+		info.ZongZiChan = NumberToFloat64(raw.ZongZiChan) * baseUnit
+		info.LiuDongZiChan = NumberToFloat64(raw.LiuDongZiChan) * baseUnit
+		info.GuDingZiChan = NumberToFloat64(raw.GuDingZiChan) * baseUnit
+		info.WuXingZiChan = NumberToFloat64(raw.WuXingZiChan) * baseUnit
+		info.GuDongRenShu = NumberToFloat64(raw.GuDongRenShu)
+		info.LiuDongFuZhai = NumberToFloat64(raw.LiuDongFuZhai) * baseUnit
+		info.ChangQiFuZhai = NumberToFloat64(raw.ChangQiFuZhai) * baseUnit
+		info.ZiBenGongJiJin = NumberToFloat64(raw.ZiBenGongJiJin) * baseUnit
+		info.JingZiChan = NumberToFloat64(raw.JingZiChan) * baseUnit
+		info.ZhuYingShouRu = NumberToFloat64(raw.ZhuYingShouRu) * baseUnit
+		info.ZhuYingLiRun = NumberToFloat64(raw.ZhuYingLiRun) * baseUnit
+		info.YingShouZhangKuan = NumberToFloat64(raw.YingShouZhangKuan) * baseUnit
+		info.YingYeLiRun = NumberToFloat64(raw.YingYeLiRun) * baseUnit
+		info.TouZiShouYu = NumberToFloat64(raw.TouZiShouYu) * baseUnit
+		info.JingYingXianJinLiu = NumberToFloat64(raw.JingYingXianJinLiu) * baseUnit
+		info.ZongXianJinLiu = NumberToFloat64(raw.ZongXianJinLiu) * baseUnit
+		info.CunHuo = NumberToFloat64(raw.CunHuo) * baseUnit
+		info.LiRunZongHe = NumberToFloat64(raw.LiRunZongHe) * baseUnit
+		info.ShuiHouLiRun = NumberToFloat64(raw.ShuiHouLiRun) * baseUnit
+		info.JingLiRun = NumberToFloat64(raw.JingLiRun) * baseUnit
+		info.WeiFenLiRun = NumberToFloat64(raw.WeiFenLiRun) * baseUnit
+		info.MeiGuJingZiChan = NumberToFloat64(raw.BaoLiu1) * baseUnit
+		info.BaoLiu2 = NumberToFloat64(raw.BaoLiu2)
+		r.List = append(r.List, info)
 	}
-	const baseUnit = 10000.0
-	code := std.Bytes2String(raw.Code[:])
-	r.Info.Code = exchange.GetSecurityCode(exchange.ExchangeId(raw.Market), code)
-	r.Info.LiuTongGuBen = NumberToFloat64(raw.LiuTongGuBen) * baseUnit
-	r.Info.Province = raw.Province
-	r.Info.Industry = raw.Industry
-	r.Info.UpdatedDate = raw.UpdatedDate
-	r.Info.IPODate = raw.IPODate
-	r.Info.ZongGuBen = NumberToFloat64(raw.ZongGuBen) * baseUnit
-	r.Info.GuoJiaGu = NumberToFloat64(raw.GuoJiaGu) * baseUnit
-	r.Info.FaQiRenFaRenGu = NumberToFloat64(raw.FaQiRenFaRenGu) * baseUnit
-	r.Info.FaRenGu = NumberToFloat64(raw.FaRenGu) * baseUnit
-	r.Info.BGu = NumberToFloat64(raw.BGu) * baseUnit
-	r.Info.HGu = NumberToFloat64(raw.HGu) * baseUnit
-	r.Info.ZhiGongGu = NumberToFloat64(raw.ZhiGongGu) * baseUnit
-	r.Info.ZongZiChan = NumberToFloat64(raw.ZongZiChan) * baseUnit
-	r.Info.LiuDongZiChan = NumberToFloat64(raw.LiuDongZiChan) * baseUnit
-	r.Info.GuDingZiChan = NumberToFloat64(raw.GuDingZiChan) * baseUnit
-	r.Info.WuXingZiChan = NumberToFloat64(raw.WuXingZiChan) * baseUnit
-	r.Info.GuDongRenShu = NumberToFloat64(raw.GuDongRenShu)
-	r.Info.LiuDongFuZhai = NumberToFloat64(raw.LiuDongFuZhai) * baseUnit
-	r.Info.ChangQiFuZhai = NumberToFloat64(raw.ChangQiFuZhai) * baseUnit
-	r.Info.ZiBenGongJiJin = NumberToFloat64(raw.ZiBenGongJiJin) * baseUnit
-	r.Info.JingZiChan = NumberToFloat64(raw.JingZiChan) * baseUnit
-	r.Info.ZhuYingShouRu = NumberToFloat64(raw.ZhuYingShouRu) * baseUnit
-	r.Info.ZhuYingLiRun = NumberToFloat64(raw.ZhuYingLiRun) * baseUnit
-	r.Info.YingShouZhangKuan = NumberToFloat64(raw.YingShouZhangKuan) * baseUnit
-	r.Info.YingYeLiRun = NumberToFloat64(raw.YingYeLiRun) * baseUnit
-	r.Info.TouZiShouYu = NumberToFloat64(raw.TouZiShouYu) * baseUnit
-	r.Info.JingYingXianJinLiu = NumberToFloat64(raw.JingYingXianJinLiu) * baseUnit
-	r.Info.ZongXianJinLiu = NumberToFloat64(raw.ZongXianJinLiu) * baseUnit
-	r.Info.CunHuo = NumberToFloat64(raw.CunHuo) * baseUnit
-	r.Info.LiRunZongHe = NumberToFloat64(raw.LiRunZongHe) * baseUnit
-	r.Info.ShuiHouLiRun = NumberToFloat64(raw.ShuiHouLiRun) * baseUnit
-	r.Info.JingLiRun = NumberToFloat64(raw.JingLiRun) * baseUnit
-	r.Info.WeiFenLiRun = NumberToFloat64(raw.WeiFenLiRun) * baseUnit
-	r.Info.MeiGuJingZiChan = NumberToFloat64(raw.BaoLiu1) * baseUnit
-	r.Info.BaoLiu2 = NumberToFloat64(raw.BaoLiu2)
 	return nil
 }
 
 func (r *FinanceResponse) String() string {
-	return fmt.Sprintf("FinanceResponse{Count:%d}", r.Count)
+	return fmt.Sprintf("FinanceResponse{Count:%d, List:%v}", r.Count, r.List)
 }

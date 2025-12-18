@@ -2,6 +2,9 @@ use super::sequence_id;
 use crate::level1::protocol::{commands, Request, RequestHeader, Response, ResponseHeader};
 use crate::std::BinaryStream;
 
+// 单次请求最大交易记录数 (与 C++ level1::tick_transaction_per_request_max 对应)
+pub const TICK_TRANSACTION_PER_REQUEST_MAX: u16 = 1800;
+
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct TransactionRequest {

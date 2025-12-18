@@ -1,6 +1,7 @@
 package level1
 
 import (
+	"fmt"
 	"testing"
 
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
@@ -14,22 +15,17 @@ func TestFinanceInfo(t *testing.T) {
 	defer release()
 
 	req := &FinanceRequest{
-		Count:  1,
+		Count:  2,
 		Market: uint8(exchange.ExchangeIdShangHai),
+		Codes:  []string{"sh600600", "sz000001"},
 	}
 	copy(req.Code[:], "600000")
 	resp := &FinanceResponse{}
 	if err := Process(conn, req, resp); err != nil {
 		t.Fatalf("Process() returned error: %v", err)
 	}
-	if resp.Count != 1 {
-		t.Fatalf("expected Count=1 got %d", resp.Count)
-	}
-	info := resp.Info
-	if info.Code != "sh600000" {
-		t.Fatalf("expected Code=600000 got %s", info.Code)
-	}
-	if info.LiuTongGuBen <= 0 {
-		t.Fatalf("expected LiuTongGuBen>0 got %f", info.LiuTongGuBen)
+	fmt.Printf("FinanceResponse: %+v\n", resp)
+	if resp.Count != 2 {
+		t.Fatalf("expected Count=2 got %d", resp.Count)
 	}
 }

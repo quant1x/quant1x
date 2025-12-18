@@ -205,7 +205,7 @@ def update_transaction_data(corrected_code: str, feature_date: Timestamp, start_
     # Check if today is last trading day
     today_is_last_trading_date = feature_date.is_same_date(Timestamp.parse(exchange.last_trade_date()))
     
-    offset = transaction.TICK_TRANSACTION_MAX
+    offset = transaction.TICK_TRANSACTION_PER_REQUEST_MAX
     start = 0
     history: List[transaction.TickTransaction] = []
     hs: List[List[transaction.TickTransaction]] = []

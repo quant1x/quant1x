@@ -20,7 +20,7 @@ namespace level1 {
         XDXR_INFO                = 0x000f,  // 除权除息信息
         FINANCE_INFO             = 0x0010,  // 财务信息
         PING                     = 0x0015,  // 测试连接
-        COMPANY_CATEGORY         = 0x02cf,  // 公司信息文件信息
+        COMPANY_CATEGORY         = 0x02cf,  // 公司信息分类
         COMPANY_CONTENT          = 0x02d0,  // 公司信息描述
         SECURITY_COUNT           = 0x044e,  // 证券数量
         SECURITY_LIST            = 0x044d,  // 证券列表

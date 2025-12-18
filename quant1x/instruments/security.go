@@ -56,7 +56,7 @@ func updateSecurities(fname string) {
 			var codes []SecurityInfo
 			start := 0
 			for {
-				req := level1.NewSecurityListRequest(int(market), start, level1.SecurityListPreRequestMax)
+				req := level1.NewSecurityListRequest(int(market), start, level1.SecurityListPerRequestMax)
 				resp := &level1.SecurityListResponse{}
 				if err := level1.Process(conn, req, resp); err != nil {
 					break
@@ -77,10 +77,10 @@ func updateSecurities(fname string) {
 						codes = append(codes, si)
 					}
 				}
-				if len(resp.List) < level1.SecurityListPreRequestMax {
+				if len(resp.List) < level1.SecurityListPerRequestMax {
 					break
 				}
-				start += level1.SecurityListPreRequestMax
+				start += level1.SecurityListPerRequestMax
 			}
 			sort.Slice(codes, func(i, j int) bool {
 				return codes[i].Code < codes[j].Code

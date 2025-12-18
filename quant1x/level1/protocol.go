@@ -17,27 +17,27 @@ import (
 type StdCommand uint16
 
 const (
-	StdCommandHeartbeat              StdCommand = 0x0004
-	StdCommandLogin1                 StdCommand = 0x000d
-	StdCommandLogin2                 StdCommand = 0x0fdb
-	StdCommandXdxrInfo               StdCommand = 0x000f
-	StdCommandFinanceInfo            StdCommand = 0x0010
-	StdCommandPing                   StdCommand = 0x0015
-	StdCommandCompanyCategory        StdCommand = 0x02cf
-	StdCommandCompanyContent         StdCommand = 0x02d0
-	StdCommandSecurityCount          StdCommand = 0x044e
-	StdCommandSecurityList           StdCommand = 0x044d
-	StdCommandOldSecurityList        StdCommand = 0x0450
-	StdCommandIndexBars              StdCommand = 0x052d
-	StdCommandSecurityBars           StdCommand = 0x052d
-	StdCommandSecurityQuotesOld      StdCommand = 0x053e
-	StdCommandSecurityQuotesNew      StdCommand = 0x054c
-	StdCommandMinuteTimeData         StdCommand = 0x051d
-	StdCommandBlockMeta              StdCommand = 0x02c5
-	StdCommandBlockData              StdCommand = 0x06b9
-	StdCommandTransactionData        StdCommand = 0x0fc5
-	StdCommandHistoryMinuteData      StdCommand = 0x0fb4
-	StdCommandHistoryTransactionData StdCommand = 0x0fb5
+	StdCommandHeartbeat              StdCommand = 0x0004 // 心跳
+	StdCommandLogin1                 StdCommand = 0x000d // 登录1
+	StdCommandLogin2                 StdCommand = 0x0fdb // 登录2
+	StdCommandXdxrInfo               StdCommand = 0x000f // 除权除息信息
+	StdCommandFinanceInfo            StdCommand = 0x0010 // 财务信息
+	StdCommandPing                   StdCommand = 0x0015 // Ping
+	StdCommandCompanyCategory        StdCommand = 0x02cf // 公司信息分类
+	StdCommandCompanyContent         StdCommand = 0x02d0 //	公司信息内容
+	StdCommandSecurityCount          StdCommand = 0x044e // 证券数量
+	StdCommandSecurityList           StdCommand = 0x044d // 证券列表
+	StdCommandOldSecurityList        StdCommand = 0x0450 // 旧版证券列表
+	StdCommandIndexBars              StdCommand = 0x052d // 指数K线数据
+	StdCommandSecurityBars           StdCommand = 0x052d // 证券K线数据
+	StdCommandSecurityQuotesOld      StdCommand = 0x053e // 旧版证券行情数据
+	StdCommandSecurityQuotesNew      StdCommand = 0x054c // 新版证券行情数据
+	StdCommandMinuteTimeData         StdCommand = 0x051d // 分时数据
+	StdCommandBlockMeta              StdCommand = 0x02c5 // 板块元数据
+	StdCommandBlockData              StdCommand = 0x06b9 // 板块数据
+	StdCommandTransactionData        StdCommand = 0x0fc5 // 逐笔数据
+	StdCommandHistoryMinuteData      StdCommand = 0x0fb4 // 历史分时数据
+	StdCommandHistoryTransactionData StdCommand = 0x0fb5 // 历史逐笔数据
 )
 
 const (
@@ -199,12 +199,6 @@ func buildRequest(method StdCommand, packetType uint8, payload []byte) []byte {
 		Method:     uint16(method),
 	}
 	buf := &bytes.Buffer{}
-	// buf.WriteByte(FlagUncompressed)
-	// _ = binary.Write(buf, binary.LittleEndian, seq)
-	// buf.WriteByte(packetType)
-	// _ = binary.Write(buf, binary.LittleEndian, pkgLen)
-	// _ = binary.Write(buf, binary.LittleEndian, pkgLen)
-	// _ = binary.Write(buf, binary.LittleEndian, uint16(method))
 	_ = binary.Write(buf, binary.LittleEndian, req)
 	if payload != nil {
 		buf.Write(payload)

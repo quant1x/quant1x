@@ -54,14 +54,14 @@ func TestDetect_Scenarios(t *testing.T) {
 		{"global 880", "880000", SecurityCode{Market: ExchangeIdShangHai, Symbol: "880000", Type: SecurityBlock}},
 		{"global 881", "881000", SecurityCode{Market: ExchangeIdShangHai, Symbol: "881000", Type: SecurityBlock}},
 		// SSE 相关
-		{"sse ETF 51", "510000", SecurityCode{Market: ExchangeIdShangHai, Symbol: "510000", Type: SecurityETF}},
-		{"sse ETF 588", "588000", SecurityCode{Market: ExchangeIdShangHai, Symbol: "588000", Type: SecurityETF}},
-		{"sse fund 50", "500000", SecurityCode{Market: ExchangeIdShangHai, Symbol: "500000", Type: SecurityFund}},
-		{"sse fund 52", "520000", SecurityCode{Market: ExchangeIdShangHai, Symbol: "520000", Type: SecurityFund}},
+		{"sse ETF 51", "sh510000", SecurityCode{Market: ExchangeIdShangHai, Symbol: "510000", Type: SecurityETF}},
+		{"sse ETF 588", "sh588000", SecurityCode{Market: ExchangeIdShangHai, Symbol: "588000", Type: SecurityETF}},
+		{"sse fund 50", "sh500000", SecurityCode{Market: ExchangeIdShangHai, Symbol: "500000", Type: SecurityFund}},
+		{"sse fund 52", "sh520000", SecurityCode{Market: ExchangeIdShangHai, Symbol: "520000", Type: SecurityETF}},
 		{"sse stock 688", "688000", SecurityCode{Market: ExchangeIdShangHai, Symbol: "688000", Type: SecurityStock}},
 		{"sse stock 689", "689000", SecurityCode{Market: ExchangeIdShangHai, Symbol: "689000", Type: SecurityStock}},
 		{"sse bstock 900", "900000", SecurityCode{Market: ExchangeIdShangHai, Symbol: "900000", Type: SecurityBStock}},
-		{"sse ipo 730", "730000", SecurityCode{Market: ExchangeIdShangHai, Symbol: "730000", Type: SecurityIPO}},
+		{"sse ipo 730", "sh730000", SecurityCode{Market: ExchangeIdShangHai, Symbol: "730000", Type: SecurityIPO}},
 		// SZSE 相关
 		{"sz index 399", "399000", SecurityCode{Market: ExchangeIdShenZhen, Symbol: "399000", Type: SecurityIndex}},
 		{"sz etf 159", "159000", SecurityCode{Market: ExchangeIdShenZhen, Symbol: "159000", Type: SecurityETF}},
@@ -72,7 +72,7 @@ func TestDetect_Scenarios(t *testing.T) {
 		{"bj new 920", "920000", SecurityCode{Market: ExchangeIdBeiJing, Symbol: "920000", Type: SecurityStock}},
 		{"bj 83", "830000", SecurityCode{Market: ExchangeIdBeiJing, Symbol: "830000", Type: SecurityStock}},
 		{"bj 87", "870000", SecurityCode{Market: ExchangeIdBeiJing, Symbol: "870000", Type: SecurityStock}},
-		{"bj bond 82", "820000", SecurityCode{Market: ExchangeIdBeiJing, Symbol: "820000", Type: SecurityBond}},
+		{"bj bond 82", "bj820000", SecurityCode{Market: ExchangeIdBeiJing, Symbol: "820000", Type: SecurityBond}},
 
 		// HK 相关（5位）
 		{"hk etf 028", "02800", SecurityCode{Market: ExchangeIdHongKong, Symbol: "02800", Type: SecurityETF}},

@@ -104,7 +104,7 @@ pub fn get_code_list() -> Vec<String> {
     // Use Rust provider if available: append sector/block codes (in order)
     {
         // The blocks module provides BlockInfo with `code` fields
-        let sectors = crate::exchange::get_sector_list();
+        let sectors = crate::blocks::get_sector_list();
         for s in sectors {
             list.push(s.code);
         }

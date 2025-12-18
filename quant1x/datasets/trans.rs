@@ -5,7 +5,6 @@ use crate::level1::{self};
 use crate::Timestamp;
 use std::sync::Arc;
 
-const OFFSET: u16 = 1800; // level1::tick_transaction_max
 
 const HISTORICAL_TRANSACTION_FIRST_TIME: &str = "09:25";
 const HISTORICAL_TRANSACTION_START_TIME: &str = "09:30";
@@ -167,7 +166,7 @@ impl DataAdapter for DataTrans {
         if today_is_last {
             // 拉取当日实时成交分页数据
             loop {
-                match fetch_transaction_page(&corrected, start, OFFSET) {
+                match fetch_transaction_page(&corrected, start, level1::transaction_data::TICK_TRANSACTION_PER_REQUEST_MAX) {
                     Some(mut resp) => {
                         if resp.count == 0 || resp.list.is_empty() {
                             break;
@@ -185,10 +184,10 @@ impl DataAdapter for DataTrans {
                         if size > 0 {
                             hs.push(tmp);
                         }
-                        if (size as u16) < OFFSET {
+                        if (size as u16) < level1::transaction_data::TICK_TRANSACTION_PER_REQUEST_MAX {
                             break;
                         }
-                        start = start.wrapping_add(OFFSET);
+                        start = start.wrapping_add(level1::transaction_data::TICK_TRANSACTION_PER_REQUEST_MAX);
                     }
                     None => {
                         break;
@@ -203,7 +202,7 @@ impl DataAdapter for DataTrans {
                     &corrected,
                     date.yyyymmdd(),
                     start,
-                    OFFSET,
+                    level1::transaction_data::TICK_TRANSACTION_PER_REQUEST_MAX,
                 ) {
                     Some(mut resp) => {
                         if resp.count == 0 || resp.list.is_empty() {
@@ -221,10 +220,10 @@ impl DataAdapter for DataTrans {
                         if size > 0 {
                             hs.push(tmp);
                         }
-                        if (size as u16) < OFFSET {
+                        if (size as u16) < level1::transaction_data::TICK_TRANSACTION_PER_REQUEST_MAX {
                             break;
                         }
-                        start = start.wrapping_add(OFFSET);
+                        start = start.wrapping_add(level1::transaction_data::TICK_TRANSACTION_PER_REQUEST_MAX);
                     }
                     None => {
                         break;

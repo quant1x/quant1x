@@ -120,7 +120,7 @@ namespace datasets {
         u32 tradeDate = featureDate.yyyymmdd();
         auto today_is_last_trading_date = featureDate.is_same_date(exchange::last_trading_day());
 
-        uint16_t offset = level1::tick_transaction_max;
+        uint16_t offset = level1::tick_transaction_per_request_max;
         uint32_t u32Date = tradeDate;
         // 只求增量, 分笔成交数据是从后往前取数据, 缓存是从前到后顺序存取
         uint16_t start = 0;

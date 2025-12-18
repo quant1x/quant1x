@@ -21,7 +21,7 @@ namespace level1 {
     constexpr int32_t tick_unknown = 3;  // 未知类型(出现在09:27分的历史数据中)
 
     // 单次请求最大交易记录数
-    constexpr uint16_t tick_transaction_max = 1800;
+    constexpr uint16_t tick_transaction_per_request_max = 1800;
 
     /// 网络协议
 #pragma pack(push, 1)  // 确保1字节对齐

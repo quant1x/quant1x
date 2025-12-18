@@ -11,7 +11,9 @@ import (
 	"gitee.com/quant1x/quant1x/quant1x/encoding"
 )
 
-const SecurityListPreRequestMax = 1600
+const (
+	SecurityListPerRequestMax = 1600 // 单次请求的最大记录数
+)
 
 type SecurityListRequest struct {
 	Market  uint16
@@ -21,8 +23,8 @@ type SecurityListRequest struct {
 }
 
 func NewSecurityListRequest(market int, start, count int) SecurityListRequest {
-	if count <= 0 || count > SecurityListPreRequestMax {
-		count = SecurityListPreRequestMax
+	if count <= 0 || count > SecurityListPerRequestMax {
+		count = SecurityListPerRequestMax
 	}
 	if start < 0 {
 		start = 0

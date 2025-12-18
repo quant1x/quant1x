@@ -10,27 +10,27 @@ const RESPONSE_HEADER_LEN: usize = 16;
 pub mod commands {
     #![allow(non_upper_case_globals)]
 
-    pub const HEARTBEAT: u16 = 0x0004;
-    pub const LOGIN1: u16 = 0x000d;
-    pub const LOGIN2: u16 = 0x0fdb;
-    pub const XDXR_INFO: u16 = 0x000f;
-    pub const FINANCE_INFO: u16 = 0x0010;
-    pub const PING: u16 = 0x0015;
-    pub const COMPANY_CATEGORY: u16 = 0x02cf;
-    pub const COMPANY_CONTENT: u16 = 0x02d0;
-    pub const SECURITY_COUNT: u16 = 0x044e;
-    pub const SECURITY_LIST: u16 = 0x044d;
-    pub const OLD_SECURITY_LIST: u16 = 0x0450;
-    pub const INDEX_BARS: u16 = 0x052d;
-    pub const SECURITY_BARS: u16 = 0x052d; // same numeric value as INDEX_BARS in C++
-    pub const SECURITY_QUOTES_OLD: u16 = 0x053e;
-    pub const SECURITY_QUOTES_NEW: u16 = 0x054c;
-    pub const MINUTE_TIME_DATA: u16 = 0x051d;
-    pub const BLOCK_META: u16 = 0x02c5;
-    pub const BLOCK_DATA: u16 = 0x06b9;
-    pub const TRANSACTION_DATA: u16 = 0x0fc5;
-    pub const HISTORY_MINUTE_DATA: u16 = 0x0fb4;
-    pub const HISTORY_TRANSACTION_DATA: u16 = 0x0fb5;
+    pub const HEARTBEAT: u16 = 0x0004; // 心跳包
+    pub const LOGIN1: u16 = 0x000d; // 登录请求1
+    pub const LOGIN2: u16 = 0x0fdb; // 登录请求2
+    pub const XDXR_INFO: u16 = 0x000f; // 除权除息信息
+    pub const FINANCE_INFO: u16 = 0x0010; // 财务信息
+    pub const PING: u16 = 0x0015; // PING 请求
+    pub const COMPANY_CATEGORY: u16 = 0x02cf; // 公司信息分类
+    pub const COMPANY_CONTENT: u16 = 0x02d0; // 公司信息内容
+    pub const SECURITY_COUNT: u16 = 0x044e; // 证券数量
+    pub const SECURITY_LIST: u16 = 0x044d; // 证券列表
+    pub const OLD_SECURITY_LIST: u16 = 0x0450; // 旧版证券列表
+    pub const INDEX_BARS: u16 = 0x052d; // 指数K线数据
+    pub const SECURITY_BARS: u16 = 0x052d; // 证券K线数据
+    pub const SECURITY_QUOTES_OLD: u16 = 0x053e; // 旧版证券行情
+    pub const SECURITY_QUOTES_NEW: u16 = 0x054c; // 新版证券行情
+    pub const MINUTE_TIME_DATA: u16 = 0x051d; // 分时数据
+    pub const BLOCK_META: u16 = 0x02c5; // 板块元数据
+    pub const BLOCK_DATA: u16 = 0x06b9; // 板块数据
+    pub const TRANSACTION_DATA: u16 = 0x0fc5; // 逐笔数据
+    pub const HISTORY_MINUTE_DATA: u16 = 0x0fb4; // 历史分时数据
+    pub const HISTORY_TRANSACTION_DATA: u16 = 0x0fb5; // 历史逐笔数据
 }
 
 pub mod zlib_flag {
