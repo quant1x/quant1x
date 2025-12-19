@@ -440,8 +440,8 @@ set(quant1x-headers
     quant1x/config/trader_parameter.h
     quant1x/config/trading_session.h
 
-    # 业务引擎
-    quant1x/engine/action.h
+    # 缓存
+    quant1x/cache/adapter.h
 
     # 网络相关
     quant1x/io/base.h
@@ -512,7 +512,7 @@ set(quant1x-headers
     quant1x/level1/client.h
     quant1x/level1/protocol.h
 
-    # 策略
+    # 引擎
     quant1x/engine/strategy.h
     quant1x/engine/rule_engine.h
     quant1x/engine/rule_error.h
@@ -605,7 +605,7 @@ set(quant1x-sources
     quant1x/pandas/rule.cpp
 
     # 引擎
-    quant1x/engine/adapter.cpp
+    
 
     # level1
     quant1x/level1/config.cpp
@@ -623,6 +623,9 @@ set(quant1x-sources
     quant1x/cache.cpp
     quant1x/command.cpp
     quant1x/formula.cpp
+
+    # 缓存
+    quant1x/cache/adapter.cpp
 
     # 回测
     quant1x/backtest/backtest.cpp

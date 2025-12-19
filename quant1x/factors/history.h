@@ -3,7 +3,7 @@
 #define QUANT1X_FACTOR_HISTORY_H 1
 
 #include <quant1x/std/api.h>
-#include <quant1x/engine/action.h>
+#include <quant1x/cache/adapter.h>
 #include <quant1x/factors/base.h>
 
 struct History {

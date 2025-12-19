@@ -12,7 +12,7 @@
 #include <tsl/robin_map.h>
 #include <quant1x/exchange/timestamp.h>
 #include <quant1x/encoding/csv.h>
-#include <quant1x/engine/action.h>
+#include <quant1x/cache/adapter.h>
 #include <quant1x/runtime/once.h>
 #include <quant1x/std/atomic.h>
 

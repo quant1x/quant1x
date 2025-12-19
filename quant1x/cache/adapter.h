@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_ENGINE_CACHE_ACTION_H
-#define QUANT1X_ENGINE_CACHE_ACTION_H 1
+#ifndef QUANT1X_CACHE_ADAPTER_H
+#define QUANT1X_CACHE_ADAPTER_H 1
 
 #include <quant1x/std/api.h>
 #include <quant1x/exchange/timestamp.h>
@@ -30,6 +30,7 @@ namespace cache {
         virtual std::string Usage() const = 0; // Usage 控制台参数提示信息, 数据描述(data description)
     };
 
+    // 数据适配器
     class DataAdapter : public Schema {
     public:
         virtual ~DataAdapter() = default;
@@ -39,6 +40,7 @@ namespace cache {
         virtual void Update(const std::string& code, const exchange::timestamp& date = 0) = 0;
     };
 
+    // 特征数据适配器
     class FeatureAdapter : public DataAdapter {
     public:
         // 特征数据为聚合文件路径
@@ -76,4 +78,4 @@ namespace cache {
 
 } // namespace cache
 
-#endif //QUANT1X_ENGINE_CACHE_ACTION_H
+#endif // QUANT1X_CACHE_ADAPTER_H

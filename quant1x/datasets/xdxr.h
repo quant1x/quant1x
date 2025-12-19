@@ -4,7 +4,7 @@
 
 #include <quant1x/datasets/base.h>
 #include <quant1x/level1/client.h>
-#include <quant1x/engine/action.h>
+#include <quant1x/cache/adapter.h>
 
 namespace factors {
     struct CumulativeAdjustment;

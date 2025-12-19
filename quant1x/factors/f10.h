@@ -2,7 +2,7 @@
 #ifndef QUANT1X_FACTOR_F10_H
 #define QUANT1X_FACTOR_F10_H 1
 
-#include "quant1x/engine/action.h"
+#include "quant1x/cache/adapter.h"
 #include "quant1x/exchange/calendar.h"
 #include "quant1x/std/numerics.h"
 

@@ -4,7 +4,7 @@
 
 #include <quant1x/std/api.h>
 #include <quant1x/proto/data.h>
-#include <quant1x/engine/action.h>
+#include <quant1x/cache/adapter.h>
 #include <quant1x/config/config.h>
 #include <quant1x/instruments/markets.h>
 

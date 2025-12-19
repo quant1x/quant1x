@@ -2,7 +2,7 @@
 #ifndef QUANT1X_ENGINE_STRATEGY_H
 #define QUANT1X_ENGINE_STRATEGY_H 1
 
-#include <quant1x/engine/action.h>
+#include <quant1x/cache/adapter.h>
 #include <quant1x/engine/rule_engine.h>
 #include <quant1x/instruments/markets.h>
 #include <quant1x/level1/client.h>

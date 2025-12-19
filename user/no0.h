@@ -3,7 +3,7 @@
 #define QUANT1X_FEATURES_NO0_H 1
 
 #include <quant1x/std/base.h>
-#include <quant1x/engine/action.h>
+#include <quant1x/cache/adapter.h>
 #include <quant1x/factors/base.h>
 
 /// 0号策略特征工程结构体

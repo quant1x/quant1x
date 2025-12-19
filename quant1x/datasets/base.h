@@ -2,7 +2,7 @@
 #ifndef QUANT1X_DATASETS_BASE_H
 #define QUANT1X_DATASETS_BASE_H 1
 
-#include <quant1x/engine/action.h>
+#include <quant1x/cache/adapter.h>
 #include <quant1x/exchange/code.h>
 
 namespace datasets {

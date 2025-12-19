@@ -1,5 +1,5 @@
 #include <quant1x/command.h>
-#include <quant1x/engine/action.h>
+#include <quant1x/cache/adapter.h>
 #include <quant1x/cache.h>
 
 namespace quant1x {
