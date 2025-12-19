@@ -298,7 +298,7 @@ namespace crash {
             struct sigaction sa{};
             sa.sa_handler = posix_signal_handler;
             sigemptyset(&sa.sa_mask);
-            sa.sa_flags = SA_RESTART;
+            sa.sa_flags = SA_RESTART | SA_SIGINFO;
 
             sigaction(SIGSEGV, &sa, nullptr);
             sigaction(SIGBUS, &sa, nullptr);
