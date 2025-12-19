@@ -4,6 +4,9 @@
 #include <indicators/progress_bar.hpp>
 #include <boost/pfr/core.hpp>
 #include <csv2/writer.hpp>
+#include <deque>
+#include <condition_variable>
+#include <limits>
 
 namespace cache {
 
@@ -19,6 +22,36 @@ namespace cache {
         const size_t default_concurrency_max = std::min<size_t>(std::thread::hardware_concurrency(), 8);
         const std::string default_concurrency_key = "default";
     } // 匿名命名空间
+
+    // RAII guard 确保控制台光标在作用域结束时恢复
+    struct ConsoleCursorGuard {
+        ConsoleCursorGuard() noexcept { mpb::show_console_cursor(false); }
+        ConsoleCursorGuard(const ConsoleCursorGuard &) = delete;
+        ConsoleCursorGuard &operator=(const ConsoleCursorGuard &) = delete;
+        ~ConsoleCursorGuard() noexcept {
+            try {
+                mpb::show_console_cursor(true);
+            } catch (...) {
+                // 忽略任何异常，析构函数必须 noexcept
+            }
+        }
+    };
+
+    // RAII guard: 在作用域结束时尽力 flush 日志到磁盘
+    struct LogFlushGuard {
+        LogFlushGuard() noexcept {}
+        LogFlushGuard(const LogFlushGuard &) = delete;
+        LogFlushGuard &operator=(const LogFlushGuard &) = delete;
+        ~LogFlushGuard() noexcept {
+            try {
+                if (spdlog::default_logger()) {
+                    spdlog::default_logger()->flush();
+                }
+            } catch (...) {
+                // 忽略所有异常，析构必须 noexcept
+            }
+        }
+    };
 
     std::string getVariablePath() {
         return config::default_cache_path() + "/var";
@@ -66,14 +99,21 @@ namespace cache {
     int update_with_adapters(const std::vector<cache::DataAdapter*> &adapters, const exchange::timestamp& feature_date) {
         auto const & config = config::global_config();
         auto const & cfg_concurrency = config.data.concurrency;
-        // 隐藏终端光标以获得更流畅的显示效果
-        mpb::show_console_cursor(false);
+        // 隐藏终端光标以获得更流畅的显示效果，使用 RAII 确保恢复
+        ConsoleCursorGuard cursor_guard;
+        // 确保在函数退出时尽力 flush 日志到磁盘
+        LogFlushGuard log_flush_guard;
 
         // 创建多进度条管理器
         mpb::DynamicProgress<mpb::ProgressBar> bars;
 
         // 主进度条为适配器
         auto count = adapters.size();
+        if (count == 0) {
+            spdlog::warn("[update] no adapters provided");
+            mpb::show_console_cursor(true);
+            return 0;
+        }
         mpb::ProgressBar barMain{
             mpb::option::BarWidth{50},
             mpb::option::ForegroundColor{mpb::Color::cyan},
@@ -93,7 +133,7 @@ namespace cache {
         bars[0].set_progress(0);
 
         auto first = adapters[0]->Key();
-        auto allCodes = instruments::GetCodeList();
+        const auto allCodes = instruments::GetCodeList();
         mpb::ProgressBar barCodes(
             mpb::option::BarWidth{50},
             mpb::option::ForegroundColor{mpb::Color::yellow},
@@ -119,13 +159,26 @@ namespace cache {
         if (cfg_default != cfg_concurrency.end() && cfg_default->second > 0) {
             default_concurrency = cfg_default->second;
         }
+        if (default_concurrency == 0) default_concurrency = 1;
         spdlog::info("[{}] concurrency={}", default_concurrency_key, default_concurrency);
         for (size_t idx = 0; idx < count; ++idx) {
             // 默认物理CPU数量的2倍与最大连接数一半, 取最小值
             //size_t concurrency = std::min(num_cpus*2, size_t(level1::_max_connections) / 2);
 
             auto* adapter = adapters[idx];
-            std::string module_name = std::format("{}({}/{})", adapter->Key(), (idx+1), count);
+            if (!adapter) {
+                spdlog::warn("[update] adapter at index {} is null, skipping", idx);
+                // 保持主进度前进
+                bars[0].tick();
+                continue;
+            }
+            std::string module_name;
+            try {
+                module_name = std::format("{}({}/{})", adapter->Key(), (idx+1), count);
+            } catch (const std::exception &e) {
+                spdlog::error("format module_name failed for adapter index {}: {}", idx, e.what());
+                module_name = "adapter(" + std::to_string((idx+1)) + "/" + std::to_string(count) + ")";
+            }
 
             spdlog::info("[update] plugin={}, start", module_name);
             bars[0].set_option(mpb::option::PrefixText{module_name + ""});
@@ -140,6 +193,7 @@ namespace cache {
             if (cfg_adapter != cfg_concurrency.end() && cfg_adapter->second > 0) {
                 num_threads = cfg_adapter->second;
             }
+            if (num_threads == 0) num_threads = 1;
             spdlog::info("[{}] concurrency={}", adapter->Key(), num_threads);
             // 初始化特征适配器
             bool is_feature_adapter = false;
@@ -149,11 +203,21 @@ namespace cache {
             if((adapter->Kind() & cache::PluginMaskFeature) == cache::PluginMaskFeature) {
                 featureAdapter = dynamic_cast<cache::FeatureAdapter*>(adapter);
                 if(featureAdapter) {
-                    //concurrency = std::min<size_t>(std::thread::hardware_concurrency(), 8);
-                    featureAdapter->init(feature_date);
-                    cache_filename = featureAdapter->Filename(cache_date);
-                    is_feature_adapter = true;
-                    spdlog::info("特征适配器[{}]初始化完成，缓存文件: {}", featureAdapter->Name(), cache_filename);
+                    try {
+                        //concurrency = std::min<size_t>(std::thread::hardware_concurrency(), 8);
+                        featureAdapter->init(feature_date);
+                        cache_filename = featureAdapter->Filename(cache_date);
+                        is_feature_adapter = true;
+                        spdlog::info("特征适配器[{}]初始化完成，缓存文件: {}", featureAdapter->Name(), cache_filename);
+                    } catch (const std::exception &e) {
+                        spdlog::error("feature adapter init/filename failed for plugin {}: {}", module_name, e.what());
+                        is_feature_adapter = false;
+                        cache_filename.clear();
+                    } catch (...) {
+                        spdlog::error("feature adapter init/filename unknown error for plugin {}", module_name);
+                        is_feature_adapter = false;
+                        cache_filename.clear();
+                    }
                 }
             }
 
@@ -209,17 +273,64 @@ namespace cache {
                 }
             };
 
-            // 创建并分配线程任务
-            std::vector<std::thread> workers;
+            // 创建任务队列并使用受限数量的工作线程执行（避免创建过多线程）
             size_t batch_size = (allCodes.size() + num_threads - 1) / num_threads;
 
+            // 限制工作线程数为 num_threads 与默认并发最大值的较小者
+            size_t max_workers = std::min(num_threads, default_concurrency_max == 0 ? size_t(1) : default_concurrency_max);
+            if (max_workers == 0) max_workers = 1;
+
+            std::deque<std::pair<size_t, size_t>> tasks;
+            std::mutex tasks_mutex;
+            std::condition_variable tasks_cv;
+            bool done_adding = false;
+
+            // 把批次任务加入队列
             for (size_t t = 0; t < num_threads; ++t) {
                 size_t start = t * batch_size;
                 size_t end = std::min(start + batch_size, allCodes.size());
                 if (start < end) {
-                    workers.emplace_back(process_batch, t, start, end);
+                    std::lock_guard<std::mutex> lk(tasks_mutex);
+                    tasks.emplace_back(start, end);
                 }
             }
+
+            // worker threads
+            std::vector<std::thread> workers;
+            workers.reserve(max_workers);
+            for (size_t w = 0; w < max_workers; ++w) {
+                workers.emplace_back([&, w]() {
+                    for (;;) {
+                        std::pair<size_t, size_t> task;
+                        {
+                            std::unique_lock<std::mutex> lk(tasks_mutex);
+                            tasks_cv.wait(lk, [&] { return !tasks.empty() || done_adding; });
+                            if (tasks.empty()) {
+                                // 没有任务且已经结束添加，则退出
+                                if (done_adding) break;
+                                else continue;
+                            }
+                            task = tasks.front();
+                            tasks.pop_front();
+                        }
+
+                        try {
+                            process_batch(w, task.first, task.second);
+                        } catch (const std::exception &e) {
+                            spdlog::error("worker {} processing chunk [{}-{}) failed: {}", w, task.first, task.second, e.what());
+                        } catch (...) {
+                            spdlog::error("worker {} processing chunk [{}-{}) failed with unknown error", w, task.first, task.second);
+                        }
+                    }
+                });
+            }
+
+            // 完成任务投放并通知工作线程
+            {
+                std::lock_guard<std::mutex> lk(tasks_mutex);
+                done_adding = true;
+            }
+            tasks_cv.notify_all();
 
             // 等待线程完成
             for (auto& worker : workers) {
@@ -238,15 +349,21 @@ namespace cache {
                                         std::make_move_iterator(result.data.end()));
                     }
 
-                    // 2. 按原始代码顺序排序
+                    // 2. 按原始代码顺序排序（缺失键视为末尾）
                     std::unordered_map<std::string, size_t> code_order;
                     for (size_t i = 0; i < allCodes.size(); ++i) {
                         code_order[allCodes[i]] = i;
                     }
 
+                    auto get_idx = [&code_order](const std::string &k) -> size_t {
+                        auto it = code_order.find(k);
+                        if (it == code_order.end()) return std::numeric_limits<size_t>::max();
+                        return it->second;
+                    };
+
                     std::sort(all_data.begin(), all_data.end(),
-                              [&code_order](const auto& a, const auto& b) {
-                                  return code_order[a.first] < code_order[b.first];
+                              [&get_idx](const auto& a, const auto& b) {
+                                  return get_idx(a.first) < get_idx(b.first);
                               });
 
                     // 3. 准备最终数据
@@ -261,25 +378,38 @@ namespace cache {
 
                     // 4. 写入文件
                     if (!final_data.empty()) {
-                        auto ec = filepath::check_filepath(cache_filename, true);
-                        ec.clear();
-                        std::ofstream out_file(cache_filename, std::ios::binary|std::ios::out | std::ios::trunc);
-                        if (out_file) {
-                            csv2::Writer<csv2::delimiter<','>> writer(out_file);
-                            writer.write_rows(final_data);
-                            out_file.close();
-
-                            spdlog::info("成功写入 {} 行数据到 {}", final_data.size(), cache_filename);
-
-                            // 验证文件
-                            if (std::filesystem::exists(cache_filename)) {
-                                auto size = std::filesystem::file_size(cache_filename);
-                                spdlog::info("文件验证: 大小 {} 字节", size);
-                            } else {
-                                spdlog::error("文件写入后不存在: {}", cache_filename);
-                            }
+                        if (cache_filename.empty()) {
+                            spdlog::error("cache filename empty for plugin {}, skip writing", module_name);
                         } else {
-                            spdlog::error("无法打开文件: {}", cache_filename);
+                            auto ec = filepath::check_filepath(cache_filename, true);
+                            ec.clear();
+                            std::ofstream out_file(cache_filename, std::ios::binary|std::ios::out | std::ios::trunc);
+                            if (out_file) {
+                                try {
+                                    csv2::Writer<csv2::delimiter<','>> writer(out_file);
+                                    writer.write_rows(final_data);
+                                    out_file.close();
+                                    spdlog::info("成功写入 {} 行数据到 {}", final_data.size(), cache_filename);
+
+                                    // 验证文件
+                                    try {
+                                        if (std::filesystem::exists(cache_filename)) {
+                                            auto size = std::filesystem::file_size(cache_filename);
+                                            spdlog::info("文件验证: 大小 {} 字节", size);
+                                        } else {
+                                            spdlog::error("文件写入后不存在: {}", cache_filename);
+                                        }
+                                    } catch (const std::filesystem::filesystem_error &fe) {
+                                        spdlog::error("文件验证时发生 filesystem_error: {}", fe.what());
+                                    }
+                                } catch (const std::exception &e) {
+                                    spdlog::error("写入 CSV 时出错: {}", e.what());
+                                } catch (...) {
+                                    spdlog::error("写入 CSV 时发生未知错误");
+                                }
+                            } else {
+                                spdlog::error("无法打开文件: {}", cache_filename);
+                            }
                         }
                     } else {
                         spdlog::warn("没有特征数据需要保存");
@@ -296,8 +426,6 @@ namespace cache {
         }
 
         bars[0].mark_as_completed();
-        // 恢复终端光标显示
-        mpb::show_console_cursor(true);
         return int(count);
     }
 
