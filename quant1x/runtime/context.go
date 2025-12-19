@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/runtime/signal"
+	"gitee.com/quant1x/quant1x/quant1x/std/signal"
 )
 
 var (

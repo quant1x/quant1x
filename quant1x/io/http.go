@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"gitee.com/quant1x/gox/logger"
+	"gitee.com/quant1x/quant1x/quant1x/logger"
 	"gitee.com/quant1x/quant1x/quant1x/std"
 )
 

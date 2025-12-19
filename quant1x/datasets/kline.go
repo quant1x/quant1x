@@ -48,7 +48,7 @@ func FetchKLines(securityCode string, category level1.KLineType, start, count ui
 	req := level1.NewSecurityBarsRequest(securityCode, category, start, count)
 	resp := level1.NewSecurityBarsResponse(req.IsIndex, uint16(req.Param.Category))
 
-	if err := level1.Process(conn.Conn(), req, resp); err != nil {
+	if err := level1.Process(conn, req, resp); err != nil {
 		return nil, fmt.Errorf("security bars request failed: %w", err)
 	}
 
@@ -220,7 +220,7 @@ func fetchRawSecurityBars(securityCode string, category level1.KLineType, start,
 
 	req := level1.NewSecurityBarsRequest(securityCode, category, start, count)
 	resp := level1.NewSecurityBarsResponse(req.IsIndex, uint16(req.Param.Category))
-	if err := level1.Process(conn.Conn(), req, resp); err != nil {
+	if err := level1.Process(conn, req, resp); err != nil {
 		return nil, fmt.Errorf("security bars request failed: %w", err)
 	}
 	return resp.List, nil

@@ -9,21 +9,21 @@ import (
 	"strings"
 	"sync"
 
-	"gitee.com/quant1x/gox/util/homedir"
 	"gitee.com/quant1x/pkg/tools/tail"
-	cmder "github.com/spf13/cobra"
+	"gitee.com/quant1x/quant1x/quant1x/std"
+	cli "github.com/spf13/cobra"
 )
 
 func main() {
 	var tailConfig tail.Config
 
-	cmd := &cmder.Command{
+	cmd := &cli.Command{
 		Use:     "tail [flags] FILE [FILE...]",
 		Example: "tail -f runtime.log",
 		Short:   "文件末端阅览",
 		// disable pflag parsing so we parse args in Run and support legacy '-10'
 		DisableFlagParsing: true,
-		Run: func(cmd *cmder.Command, args []string) {
+		Run: func(cmd *cli.Command, args []string) {
 			// custom parsing in Run (we are still within cobra's command lifecycle)
 			if len(args) < 1 {
 				_ = cmd.Usage()
@@ -212,7 +212,7 @@ func main() {
 
 			for idx, filename := range files {
 				filename = strings.TrimSpace(filename)
-				filename, _ = homedir.Expand(filename)
+				filename, _ = std.ExpandUser(filename)
 
 				showHeader := multiple && !quiet
 				if verbose {
@@ -258,7 +258,7 @@ func main() {
 				wg.Wait()
 			}
 		},
-		//PreRunE: func(cmd *cmder.Command, args []string) error {
+		//PreRunE: func(cmd *cli.Command, args []string) error {
 		//	//fmt.Println(args)
 		//	if slices.Contains(args, "--help") || slices.Contains(args, "-h") {
 		//		cmd.Usage()
@@ -266,7 +266,7 @@ func main() {
 		//	return nil
 		//},
 	}
-	cmd.SetUsageFunc(func(command *cmder.Command) error {
+	cmd.SetUsageFunc(func(command *cli.Command) error {
 		fmt.Println("Usage:\ntail [-f] [-n #] [file]")
 		return nil
 	})
@@ -281,7 +281,7 @@ func main() {
 // TailFile 跟踪文件更新 tail -f
 func TailFile(filename string, config tail.Config, done chan bool) {
 	defer func() { done <- true }()
-	filename, _ = homedir.Expand(filename)
+	filename, _ = std.ExpandUser(filename)
 	t, err := tail.TailFile(filename, config)
 	if err != nil {
 		fmt.Println(err)
@@ -298,7 +298,7 @@ func TailFile(filename string, config tail.Config, done chan bool) {
 
 // TailFileFollow follows file and prints lines with optional prefix
 func TailFileFollow(filename string, config tail.Config, prefix string) {
-	filename, _ = homedir.Expand(filename)
+	filename, _ = std.ExpandUser(filename)
 	t, err := tail.TailFile(filename, config)
 	if err != nil {
 		fmt.Println(err)
@@ -464,7 +464,7 @@ func printFromByte(filename string, from int) {
 
 // TailFileWithNumber 查看最后n行数据
 func TailFileWithNumber(filename string, config tail.Config, n int) {
-	filename, _ = homedir.Expand(filename)
+	filename, _ = std.ExpandUser(filename)
 
 	// If not following, just read the file and keep a ring buffer of last n lines
 	if !config.Follow {

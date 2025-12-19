@@ -117,7 +117,7 @@ func Register(plugin DataAdapter) error {
 }
 
 // PluginsWithName 根据类型掩码和关键字列表返回匹配的适配器
-func PluginsWithName(pluginType Kind, keywords []string) []DataAdapter {
+func PluginsWithName(pluginType Kind, keywords ...string) []DataAdapter {
 	pluginMutex.Lock()
 	defer pluginMutex.Unlock()
 

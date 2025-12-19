@@ -6,6 +6,7 @@ type Logger interface {
 	Infof(msg string, v ...any)
 	Warnf(msg string, v ...any)
 	Errorf(msg string, v ...any)
+	Fatalf(msg string, v ...any)
 }
 
 var logger Logger = nil

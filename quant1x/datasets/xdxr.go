@@ -15,20 +15,20 @@ import (
 
 // XdxrInfo represents a single 除权除息 event row (CSV). Fields mirror the C++ layout.
 type XdxrInfo struct {
-	Date          string
-	Category      int
-	Name          string
-	FenHong       float64
-	PeiGuJia      float64
-	SongZhuanGu   float64
-	PeiGu         float64
-	SuoGu         float64
-	QianLiuTong   float64
-	HouLiuTong    float64
-	QianZongGuBen float64
-	HouZongGuBen  float64
-	FenShu        float64
-	XingQuanJia   float64
+	Date          string  `csv:"date"`             // 除权除息日期 YYYY-MM-DD
+	Category      int     `csv:"category"`         // 事件类别
+	Name          string  `csv:"name"`             // 事件名称
+	FenHong       float64 `csv:"fen_hong"`         // 分红金额
+	PeiGuJia      float64 `csv:"pei_gu_jia"`       // 配股价格
+	SongZhuanGu   float64 `csv:"song_zhuan_gu"`    // 送转股数
+	PeiGu         float64 `csv:"pei_gu"`           // 配股数
+	SuoGu         float64 `csv:"suo_gu"`           // 缩股数
+	QianLiuTong   float64 `csv:"qian_liu_tong"`    // 除权前流通股本
+	HouLiuTong    float64 `csv:"hou_liu_tong"`     // 除权后流通股本
+	QianZongGuBen float64 `csv:"qian_zong_gu_ben"` // 除权前总股本
+	HouZongGuBen  float64 `csv:"hou_zong_gu_ben"`  // 除权后总股本
+	FenShu        float64 `csv:"fen_shu"`          // 份数
+	XingQuanJia   float64 `csv:"xing_quan_jia"`    // 行权价格
 }
 
 // computeShareAdjustmentRatio mirrors C++ XdxrInfo::computeShareAdjustmentRatio
@@ -171,7 +171,7 @@ func UpdateXdxr(code string) ([]XdxrInfo, error) {
 
 	req := level1.NewXdxrInfoRequest(code)
 	resp := level1.NewXdxrInfoResponse()
-	if err := level1.Process(conn.Conn(), req, resp); err != nil {
+	if err := level1.Process(conn, req, resp); err != nil {
 		return nil, fmt.Errorf("xdxr request failed: %w", err)
 	}
 

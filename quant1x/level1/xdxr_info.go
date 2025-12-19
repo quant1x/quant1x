@@ -25,7 +25,7 @@ func NewXdxrInfoRequest(securityCode string) XdxrInfoRequest {
 	return XdxrInfoRequest{Padding: []byte{0x01, 0x00}, Market: uint8(mid), Code: code}
 }
 
-func (r XdxrInfoRequest) Bytes() []byte {
+func (r XdxrInfoRequest) Serialize() []byte {
 	payload := &bytes.Buffer{}
 	payload.Write(r.Padding)
 	payload.WriteByte(r.Market)

@@ -6,12 +6,12 @@ import (
 	"sort"
 	"testing"
 
-	"gitee.com/quant1x/data/exchange"
-	"gitee.com/quant1x/data/level1/quotes"
-	"gitee.com/quant1x/data/level1/securities"
-	"gitee.com/quant1x/engine/datasource/base"
 	"gitee.com/quant1x/num"
+	"gitee.com/quant1x/quant1x/quant1x/datasets"
+	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"gitee.com/quant1x/quant1x/quant1x/instruments"
 	"gitee.com/quant1x/quant1x/quant1x/learn/preprocessing"
+	"gitee.com/quant1x/quant1x/quant1x/level1"
 )
 
 func TestDBSCAN_Basic(t *testing.T) {
@@ -123,10 +123,13 @@ func TestDBSCAN_TickData(t *testing.T) {
 	//date = "2025-07-02"
 	date = "2025-09-12"
 	securityCode := exchange.CorrectSecurityCode(code)
-	securityName := securities.GetStockName(securityCode)
+	securityName := instruments.GetStockName(securityCode)
 	fmt.Printf("%s(%s) - %s\n", securityName, securityCode, date)
-
-	ticks := base.CheckoutTransactionData(securityCode, exchange.FixTradeDate(date), false)
+	ts, err := exchange.NewTimestampFromString(date)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ticks := datasets.CheckoutTransactionData(securityCode, ts, false)
 	if len(ticks) == 0 {
 		t.Fatal("❌ 无数据")
 	}
@@ -165,7 +168,7 @@ func TestDBSCAN_TickData(t *testing.T) {
 
 	// 3. 标准化（复用已有函数）
 	scaler := preprocessing.NewStandardScaler()
-	X_scaled, err := scaler.FitTransform(X_scaled)
+	X_scaled, err = scaler.FitTransform(X_scaled)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -195,7 +198,7 @@ type ClusterStat struct {
 	SellCount   int
 }
 
-func analyzeResults(ticks []quotes.TickTransaction, labels []int) {
+func analyzeResults(ticks []level1.TickTransaction, labels []int) {
 	// 1. 方向预处理（严格匹配Python）
 	dirNums, buyCount, sellCount := preprocessDirection(ticks)
 	fmt.Printf("\n买卖方向分布:\nB    %d\nS    %d\n", buyCount, sellCount)
@@ -361,7 +364,7 @@ func analyzeResults(ticks []quotes.TickTransaction, labels []int) {
 	}
 }
 
-func preprocessDirection(ticks []quotes.TickTransaction) (dirNums []int, buyCount, sellCount int) {
+func preprocessDirection(ticks []level1.TickTransaction) (dirNums []int, buyCount, sellCount int) {
 	dirNums = make([]int, len(ticks))
 
 	for i := 0; i < len(ticks); i++ {
@@ -413,7 +416,7 @@ func preprocessDirection(ticks []quotes.TickTransaction) (dirNums []int, buyCoun
 func printMoneyFlowAnalysis(
 	clusters map[float64]*ClusterStat,
 	sortedClusters []*ClusterStat,
-	ticks []quotes.TickTransaction,
+	ticks []level1.TickTransaction,
 ) {
 	// 第一部分：买卖金额表格
 	fmt.Println("\n===== 各资金规模买卖方向分析 =====")

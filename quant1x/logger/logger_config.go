@@ -45,6 +45,12 @@ func (c *coreLoggerAdapter) Errorf(template string, args ...any) {
 	}
 }
 
+func (c *coreLoggerAdapter) Fatalf(template string, args ...any) {
+	if logger != nil {
+		logger.Fatalf(template, args...)
+	}
+}
+
 // Config 日志配置
 type Config struct {
 	Level         zapcore.Level // 日志级别

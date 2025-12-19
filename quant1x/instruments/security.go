@@ -134,6 +134,15 @@ func GetSecurityInfo(code string) *SecurityInfo {
 	return nil
 }
 
+// GetStockName 获取证券名称
+func GetStockName(securityCode string) string {
+	security := GetSecurityInfo(securityCode)
+	if security != nil {
+		return security.Name
+	}
+	return "Unknown"
+}
+
 // GetUpLimitRate returns the up-limit ratio for a security code.
 func GetUpLimitRate(securityCode string) float64 {
 	mid, _, symbol, _ := exchange.DetectMarket(securityCode)
