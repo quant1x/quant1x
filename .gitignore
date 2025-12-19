@@ -39,3 +39,6 @@ target/
 .cache/
 
 .env
+
+# vscode
+.vscode/launch.json
