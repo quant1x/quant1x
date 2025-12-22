@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"gitee.com/quant1x/quant1x/quant1x/cache"
 	"gitee.com/quant1x/quant1x/quant1x/core"
 	"gitee.com/quant1x/quant1x/quant1x/encoding"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
@@ -95,7 +94,7 @@ func initSecurities() {
 	fname := GetSecurityFilename()
 
 	// Decide whether to refresh from Level1
-	bUpdate := cache.ShouldUpdateFile(fname)
+	bUpdate := exchange.ShouldUpdateFile(fname)
 
 	if bUpdate {
 		updateSecurities(fname)

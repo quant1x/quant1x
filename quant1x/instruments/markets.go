@@ -102,8 +102,6 @@ func GetStockCodeList() []string {
 }
 
 // GetCodeList 加载全部指数、板块和个股的代码
-//
-//go:linkname GetCodeList gitee.com/quant1x/quant1x/quant1x/cache.GetCodeList
 func GetCodeList() []string {
 	var list []string
 	// 1. 指数

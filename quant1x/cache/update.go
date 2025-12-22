@@ -12,6 +12,7 @@ import (
 
 	"gitee.com/quant1x/quant1x/quant1x/core"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"gitee.com/quant1x/quant1x/quant1x/instruments"
 	"gitee.com/quant1x/quant1x/quant1x/logger"
 )
 
@@ -95,7 +96,7 @@ func UpdateWithAdapters(adapters []DataAdapter, featureDate exchange.Timestamp) 
 	// cache date uses featureDate as-is; consumers can pass next-trading-day if needed
 	cacheDate := featureDate
 
-	allCodes := GetCodeList()
+	allCodes := instruments.GetCodeList()
 
 	count := len(adapters)
 	for idx, adapter := range adapters {

@@ -1,9 +1,7 @@
-package cache
+package exchange
 
 import (
 	"os"
-
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
 )
 
 // getFilenameModifiedTime 获取指定文件的最后修改时间
@@ -16,12 +14,12 @@ import (
 //
 //	*exchange.Timestamp: 文件修改时间的时间戳
 //	error: 获取文件信息失败时返回的错误
-func getFilenameModifiedTime(fname string) (*exchange.Timestamp, error) {
+func getFilenameModifiedTime(fname string) (*Timestamp, error) {
 	info, err := os.Stat(fname)
 	if err != nil {
 		return nil, err
 	}
-	tp := exchange.NewTimestampFromTime(info.ModTime())
+	tp := NewTimestampFromTime(info.ModTime())
 	return &tp, nil
 }
 
@@ -43,5 +41,5 @@ func ShouldUpdateFile(fname string) bool {
 	if err != nil {
 		return true
 	}
-	return exchange.CanInitialize(modTime)
+	return CanInitialize(modTime)
 }
