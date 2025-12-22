@@ -12,14 +12,14 @@ const (
 	DefaultFileMode = 0644
 )
 
-// EnsureDirExists 确保指定路径的目录存在，如果不存在则递归创建
+// DirExists 确保指定路径的目录存在，如果不存在则递归创建
 //
 // 参数：
 //   - path: 目录路径
 //
 // 返回值：
 //   - error: 路径无效、创建失败或路径非目录时返回错误
-func EnsureDirExists(path string) error {
+func DirExists(path string) error {
 	path = strings.TrimSpace(path)
 	if path == "" {
 		return fmt.Errorf("invalid directory path: '%s'", path)
@@ -44,14 +44,14 @@ func EnsureDirExists(path string) error {
 	return nil
 }
 
-// EnsureFileDirExists 确保文件所在的目录存在
+// FileDirExists 确保文件所在的目录存在
 //
 // 参数：
 //   - filePath: 文件路径（如 `/data/logs/file.txt`）
 //
 // 返回值：
 //   - error: 目录创建失败或路径非目录时返回错误
-func EnsureFileDirExists(filePath string) error {
+func FileDirExists(filePath string) error {
 	filePath = strings.TrimSpace(filePath)
 	if filePath == "" {
 		return fmt.Errorf("invalid file path: '%s'", filePath)
@@ -59,5 +59,5 @@ func EnsureFileDirExists(filePath string) error {
 	filePath = filepath.Clean(filePath)
 
 	dir := filepath.Dir(filePath)
-	return EnsureDirExists(dir)
+	return DirExists(dir)
 }

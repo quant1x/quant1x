@@ -7,7 +7,7 @@ func TestFilepath(t *testing.T) {
 	_ = DefaultFileMode
 }
 
-func TestEnsureFileDirExists(t *testing.T) {
+func TestFileDirExists(t *testing.T) {
 	type args struct {
 		filePath string
 	}
@@ -17,7 +17,7 @@ func TestEnsureFileDirExists(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "EnsureFileDirExists",
+			name: "FileDirExists",
 			args: args{
 				filePath: "./testdata/",
 			},
@@ -26,8 +26,8 @@ func TestEnsureFileDirExists(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := EnsureFileDirExists(tt.args.filePath); (err != nil) != tt.wantErr {
-				t.Errorf("EnsureFileDirExists() error = %v, wantErr %v", err, tt.wantErr)
+			if err := FileDirExists(tt.args.filePath); (err != nil) != tt.wantErr {
+				t.Errorf("FileDirExists() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
