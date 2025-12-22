@@ -550,7 +550,7 @@ namespace exchange {
             auto csvPath = config::get_block_path() + "/blocks.csv";
             io::CSVWriter writer(csvPath);
             // CSV 头
-            writer.write_row("code", "name", "type", "count", "block", "ConstituentStocks");
+            writer.write_row("code", "name", "type", "count", "block", "constituent_stocks");
             for (auto const &s : global_sector_list) {
                 encoding::json::json_t j = s.ConstituentStocks;
                 std::string stocks_json = j.dump();

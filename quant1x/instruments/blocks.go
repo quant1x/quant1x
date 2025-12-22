@@ -287,12 +287,12 @@ func getBlockInfoFromConfig(name string) []BlockInfo {
 
 // BlockInfo 板块信息
 type BlockInfo struct {
-	Name              string   `dataframe:"name"`              // 名称
-	Code              string   `dataframe:"code"`              // 代码
-	Type              int      `dataframe:"type"`              // 类型
-	Count             int      `dataframe:"count"`             // 个股数量
-	Block             string   `dataframe:"block"`             // 通达信板块编码
-	ConstituentStocks []string `dataframe:"ConstituentStocks"` // 板块成份股
+	Name              string   `csv:"name"`               // 名称
+	Code              string   `csv:"code"`               // 代码
+	Type              int      `csv:"type"`               // 类型
+	Count             int      `csv:"count"`              // 个股数量
+	Block             string   `csv:"block"`              // 通达信板块编码
+	ConstituentStocks []string `csv:"constituent_stocks"` // 板块成份股
 }
 
 var (

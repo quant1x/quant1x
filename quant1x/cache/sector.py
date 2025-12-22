@@ -63,7 +63,7 @@ def get_sector_constituents(code: str) -> list[str]:
     code = code.strip()
     security_code = exchange.correct_security_code(code)
     df = get_sector_list().copy()
-    cs = df[df['code'] == security_code]['ConstituentStocks']
+    cs = df[df['code'] == security_code]['constituent_stocks']
     list = []
     if cs.empty:
         return list
