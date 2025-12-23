@@ -262,7 +262,9 @@ fn load_industry_blocks() -> Vec<(i32, String, String, String, String, String)> 
                         linebuf.clear();
                         continue;
                     }
-                    let code = crate::exchange::correct_security_code(parts[1]);
+                    // Keep the raw code here; normalization (prefixing/correction)
+                    // is performed later to match the Go pipeline semantics.
+                    let code = parts[1].to_string();
                     let block = parts[2].to_string();
                     let block5 = if block.len() >= 5 {
                         block[..5].to_string()
@@ -391,8 +393,6 @@ fn parse_and_generate_block_file() -> Result<Vec<BlockInfo>, String> {
     let hys = load_industry_blocks();
 
     for block_info in block_infos.iter_mut() {
-        // Correct code like C++ does later in the pipeline
-        block_info.code = crate::exchange::correct_security_code(&block_info.code);
         let bn = block_info.name.clone();
         // Strict C++ behavior: prefer exact name-based mapping via name2block
         if let Some(_info) = name2block.get(&bn) {
@@ -401,11 +401,14 @@ fn parse_and_generate_block_file() -> Result<Vec<BlockInfo>, String> {
                 if symbol.len() < 5 {
                     continue;
                 }
-                let (market_id, prefix, _x2) = crate::exchange::detect_market(symbol);
+                let (market_id, _prefix, _x2) = crate::exchange::detect_market(symbol);
                 if market_id == crate::exchange::MARKET_BEIJING {
                     continue;
                 }
-                list.push(format!("{}{}", prefix, symbol));
+                // Keep the raw symbol here (no prefix added). Normalization
+                // will occur as a separate post-processing step, mirroring
+                // the Go implementation which corrects codes later.
+                list.push(symbol.clone());
             }
             block_info.num = _info.num;
             block_info.constituent_stocks = list;
@@ -419,8 +422,80 @@ fn parse_and_generate_block_file() -> Result<Vec<BlockInfo>, String> {
         }
     }
 
-    // remove any entries without constituents (C++ filters these out)
-    block_infos.retain(|b| !b.constituent_stocks.is_empty());
+    // Normalize block and constituent codes to the canonical exchange format
+    // after assembly (this mirrors Go's `loadCacheBlockInfos` which
+    // corrects codes when loading the final CSV). Doing normalization
+    // here keeps the Rust flow consistent with Go.
+        for b in block_infos.iter_mut() {
+            b.code = crate::exchange::correct_security_code(&b.code);
+            for i in 0..b.constituent_stocks.len() {
+                let corrected = crate::exchange::correct_security_code(&b.constituent_stocks[i]);
+                b.constituent_stocks[i] = corrected;
+            }
+        }
+
+        block_infos.retain(|b| !b.constituent_stocks.is_empty());
+
+        // Persist CSV cache under meta path as blocks.<date> (same as Go).
+        if !block_infos.is_empty() {
+            let cache_date = crate::exchange::last_trading_day(crate::Timestamp::now()).only_date();
+            let mut csv_path = std::path::PathBuf::from(crate::config::get_meta_path());
+            let filename = format!("blocks.{}", cache_date);
+            csv_path.push(filename);
+            if let Some(parent) = csv_path.parent() {
+                if let Err(e) = std::fs::create_dir_all(parent) {
+                    log::warn!("blocks: failed to create meta dir {:?}: {}", parent, e);
+                }
+            }
+            let tmp = format!("{}.tmp", csv_path.to_string_lossy());
+            match std::fs::File::create(&tmp) {
+                Ok(f) => {
+                    let mut w = csv::WriterBuilder::new().has_headers(true).from_writer(f);
+                    // header order: name,code,type,count,block,constituent_stocks
+                    if let Err(e) = w.write_record(&[
+                        "name",
+                        "code",
+                        "type",
+                        "count",
+                        "block",
+                        "constituent_stocks",
+                    ])
+                    {
+                        log::error!("blocks: failed to write header to {}: {}", tmp, e);
+                    } else {
+                        for b in block_infos.iter() {
+                            // Serialize constituent list as JSON string (same as C++ writer)
+                            let constituents = match serde_json::to_string(&b.constituent_stocks) {
+                                Ok(s) => s,
+                                Err(_) => String::new(),
+                            };
+                            let record = [
+                                b.name.clone(),
+                                b.code.clone(),
+                                b.tp.to_string(),
+                                b.num.to_string(),
+                                b.block.clone(),
+                                constituents,
+                            ];
+                            if let Err(e) = w.write_record(record.iter()) {
+                                log::error!("blocks: failed to write record to {}: {}", tmp, e);
+                            }
+                        }
+                    }
+                    if let Err(e) = w.flush() {
+                        log::warn!("blocks: failed to flush {}: {}", tmp, e);
+                    }
+                    if let Err(e) = std::fs::rename(&tmp, &csv_path) {
+                        log::warn!("blocks: failed to rename {} -> {}: {}", tmp, csv_path.display(), e);
+                    } else {
+                        log::debug!("blocks: wrote block csv: {}", csv_path.display());
+                    }
+                }
+                Err(e) => {
+                    log::warn!("blocks: failed to create tmp csv {}: {}", tmp, e);
+                }
+            }
+        }
 
     Ok(block_infos)
 }
