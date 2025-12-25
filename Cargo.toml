@@ -1,11 +1,12 @@
 [package]
 name = "quant1x"
-version = "0.7.5"
+version = "0.7.6"
 edition = "2021"
 authors = ["Quant1X Team"]
 description = "Cross-language standard library for quantitative trading"
 license = "MIT"
 readme = "README.md"
+changelog = "CHANGELOG.md"
 homepage = "https://github.com/quant1x/quant1x"
 repository = "https://gitee.com/quant1x/quant1x"
 documentation = "https://gitee.com/quant1x/quant1x"
