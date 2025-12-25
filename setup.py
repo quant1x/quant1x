@@ -36,6 +36,7 @@ setuptools.setup(
     author=__app_author__,
     long_description=readme,
     long_description_content_type='text/markdown',
+    history=history,
     packages=setuptools.find_packages(include=["quant1x", "quant1x.*"]),
     include_package_data=True,
     install_requires=requirements,
