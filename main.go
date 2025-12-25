@@ -12,6 +12,7 @@ import (
 	//_ "gitee.com/quant1x/labs/qlab/factors"
 	//_ "gitee.com/quant1x/labs/services"
 	//_ "gitee.com/quant1x/labs/strategies"
+	_ "gitee.com/quant1x/quant1x/quant1x/datasets"    // for dataset plugins
 	_ "gitee.com/quant1x/quant1x/quant1x/instruments" // for go:linkname GetCodeList
 )
 

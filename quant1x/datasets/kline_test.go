@@ -45,7 +45,7 @@ func TestSaveAndReadKlineCSV(t *testing.T) {
 	if a.Date != b.Date || a.Datetime != b.Datetime || a.Up != b.Up || a.Down != b.Down {
 		t.Fatalf("row mismatch: got %+v want %+v", a, b)
 	}
-	// check numeric fields
+	// 检查数值字段
 	if a.Open != b.Open || a.Close != b.Close || a.High != b.High || a.Low != b.Low {
 		t.Fatalf("price fields mismatch: got %+v want %+v", a, b)
 	}
@@ -54,17 +54,14 @@ func TestSaveAndReadKlineCSV(t *testing.T) {
 	}
 }
 
-// TestFetchKLinesIntegration is a true integration-style test that uses the
-// real `level1.Client()` (no mocks, no local server) and an XDXR cache file
-// that must be checked into the repository at `testdata/xdxr/<code>.csv`.
+// TestFetchKLinesIntegration 是一个集成测试，使用真实的 `level1.Client()`（无模拟、无本地服务器），
+// 并依赖已存入仓库的 XDXR 缓存文件（路径格式：`testdata/xdxr/<code>.csv`）。
 //
-// Requirements:
-//   - Do NOT create or use simulated XDXR files at runtime (no temp dirs).
-//   - The test will look for `testdata/xdxr/600000.SZ.csv` inside the package
-//     directory and will fail if that file is missing.
-//   - This test uses the real network via `level1.Client()`; it will fail if
-//     your environment cannot reach the Level1 servers.
-// (Integration test removed — tests must not rely on resolver hooks.)
+// 要求：
+//   - 运行时不要创建或使用模拟的 XDXR 文件（不要使用临时目录）。
+//   - 测试会在包目录下查找 `testdata/xdxr/600000.SZ.csv`，若缺失则失败。
+//   - 本测试通过真实网络访问 `level1.Client()`；若环境无法连通 Level1 服务器，测试会失败。
+// （已移除依赖解析器钩子的集成测试）
 
 func TestAdjust(t *testing.T) {
 	k := KLine{
@@ -91,14 +88,14 @@ func TestAdjust(t *testing.T) {
 		t.Fatalf("Low adjustment wrong: %v", k.Low)
 	}
 
-	// volume should be scaled by 1 + ShareAdjustmentRatio
+	// 成交量应按 1 + ShareAdjustmentRatio 缩放
 	if k.Volume != 100*(1+0.5) {
 		t.Fatalf("Volume adjustment wrong: %v", k.Volume)
 	}
 
-	// amount should be recalculated: original ap = 1000/100 = 10
-	// apAdjusted = ap*M + A = 10*2 +1 =21
-	// new amount = newVolume * apAdjusted = 150 * 21 = 3150
+	// amount 应重新计算：原始平均价 ap = 1000/100 = 10
+	// apAdjusted = ap*M + A = 10*2 + 1 = 21
+	// 新的 amount = newVolume * apAdjusted = 150 * 21 = 3150
 	if k.Amount != 3150 {
 		t.Fatalf("Amount recalculation wrong: %v", k.Amount)
 	}

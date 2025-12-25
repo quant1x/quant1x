@@ -1,4 +1,4 @@
-// CLEANED: single implementation
+// 单一实现（基于 C++ datasets/kline.cpp）
 package datasets
 
 import (
@@ -10,12 +10,13 @@ import (
 	"strconv"
 	"strings"
 
+	"gitee.com/quant1x/quant1x/quant1x/cache"
 	"gitee.com/quant1x/quant1x/quant1x/config"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 	"gitee.com/quant1x/quant1x/quant1x/level1"
 )
 
-// KLine mirrors the C++ datasets::KLine used elsewhere in the project.
+// KLine 对应 C++ 中的 datasets::KLine，用于表示日线数据。
 type KLine struct {
 	Date            string
 	Open            float64
@@ -32,7 +33,7 @@ type KLine struct {
 
 const maxKlineLookbackDays = 1
 
-// FetchKLines pulls K-line data from level1 and converts it to datasets.KLine.
+// FetchKLines 从 level1 拉取 K 线数据并转换为 datasets.KLine。
 func FetchKLines(securityCode string, category level1.KLineType, start, count uint16) ([]KLine, error) {
 	conn, release, err := level1.GetStdConnection()
 	if err != nil {
@@ -64,7 +65,7 @@ func FetchKLines(securityCode string, category level1.KLineType, start, count ui
 			Close: b.Close,
 			High:  b.High,
 			Low:   b.Low,
-			// level1 returns volume in "lots" (手) — match C++ where volumeshare = vol * 100 (股)
+			// level1 返回的成交量单位为“手”，与 C++ 保持一致：卷转换为股时使用 vol * 100
 			Volume:          b.Vol * 100,
 			Amount:          b.Amount,
 			Up:              int(b.UpCount),
@@ -77,8 +78,8 @@ func FetchKLines(securityCode string, category level1.KLineType, start, count ui
 	return out, nil
 }
 
-// CumulativeAdjustment represents the cumulative forward-adjustment factors.
-// This mirrors the fields used in the C++ `factors::CumulativeAdjustment`.
+// CumulativeAdjustment 表示累计复权因子。
+// 字段与 C++ 中的 `factors::CumulativeAdjustment` 保持一致。
 type CumulativeAdjustment struct {
 	M                    float64 // multiplicative factor
 	A                    float64 // additive factor
@@ -86,7 +87,7 @@ type CumulativeAdjustment struct {
 	No                   int     // number of adjustments applied
 }
 
-// Adjust applies forward-adjustment to the KLine according to adj.
+// Adjust 根据复权因子对 KLine 执行前复权调整。
 func (k *KLine) Adjust(adj CumulativeAdjustment) {
 	// compute adjusted prices
 	k.Open = k.Open*adj.M + adj.A
@@ -110,7 +111,7 @@ func (k *KLine) Adjust(adj CumulativeAdjustment) {
 	k.AdjustmentCount = adj.No
 }
 
-// SaveKline writes klines into a CSV file with header.
+// SaveKline 将 K 线写入 CSV 文件（包含表头）。
 func SaveKline(filename string, values []KLine) error {
 	f, err := os.Create(filename)
 	if err != nil {
@@ -145,7 +146,7 @@ func SaveKline(filename string, values []KLine) error {
 	return nil
 }
 
-// ReadKlineFromCSV reads KLine entries from a CSV file. On error returns an empty slice and the error.
+// ReadKlineFromCSV 从 CSV 文件中读取 KLine 条目；解析错误会返回错误。
 func ReadKlineFromCSV(filename string) ([]KLine, error) {
 	f, err := os.Open(filename)
 	if err != nil {
@@ -160,7 +161,7 @@ func ReadKlineFromCSV(filename string) ([]KLine, error) {
 	if len(rows) == 0 {
 		return nil, nil
 	}
-	// Expect header in first row
+	// 期望第一行为表头
 	out := make([]KLine, 0, len(rows)-1)
 	for i := 1; i < len(rows); i++ {
 		rec := rows[i]
@@ -195,17 +196,23 @@ func ReadKlineFromCSV(filename string) ([]KLine, error) {
 	return out, nil
 }
 
-// DataKLine implements the cache adapter style updater similar to C++ DataKLine
+// DataKLine 实现了与 C++ DataKLine 类似的缓存适配器更新逻辑
 type DataKLine struct{}
 
-func (d *DataKLine) Print(code string, dates []exchange.Timestamp) {
-	// no-op, matches C++ stub
+// 实现 cache.DataAdapter 的 Schema 方法
+func (d *DataKLine) Kind() cache.Kind { return BaseKLine }
+func (d *DataKLine) Owner() string    { return cache.DefaultDataProvider }
+func (d *DataKLine) Key() string      { return "kline" }
+func (d *DataKLine) Name() string     { return "日K线" }
+func (d *DataKLine) Usage() string    { return "" }
+
+// Print 实现 cache.DataAdapter.Print（可变参数日期）
+func (d *DataKLine) Print(code string, dates ...exchange.Timestamp) {
 	_ = code
 	_ = dates
 }
 
-// fetchRawSecurityBars performs a low-level level1 SecurityBars request and
-// returns the raw list of level1.SecurityBar (unconverted).
+// fetchRawSecurityBars 执行底层 level1 SecurityBars 请求并返回原始响应列表（未转换）。
 func fetchRawSecurityBars(securityCode string, category level1.KLineType, start, count uint16) ([]level1.SecurityBar, error) {
 	conn, release, err := level1.GetStdConnection()
 	if err != nil {
@@ -226,20 +233,18 @@ func fetchRawSecurityBars(securityCode string, category level1.KLineType, start,
 	return resp.List, nil
 }
 
-// Update mirrors the C++ DataKLine::Update behavior: read local cache, determine
-// date window, page-fetch from level1, reverse/merge results, apply forward
-// adjustments when appropriate, and save back the cache file.
+// Update 对应 C++ DataKLine::Update 的行为：读取本地缓存、确定时间窗口、分页拉取 level1 数据、
+// 反转与合并结果、在适当时机应用前复权，并写回缓存文件。
 func (d *DataKLine) Update(code string, _date exchange.Timestamp) {
-	// 1. Determine cache filename and read local cache
+	// 1. 确定缓存文件并读取本地缓存
 	cacheFilename := config.GetKlineFilename(code, true)
 	cacheKLines, _ := ReadKlineFromCSV(cacheFilename) // ignore parse errors, follow C++ behavior
 	klinesLength := len(cacheKLines)
 	klinesOffsetDays := maxKlineLookbackDays
 	adjustTimes := 0
 
-	// default start date
-	marketFirst, _ := exchange.ParseTimestamp("1990-12-19")
-	currentStartDate := marketFirst.PreMarketTime()
+	// 默认起始日期（使用 datasets.MarketFirstDate，与 C++ 的 market_first_date 等价）
+	currentStartDate := MarketFirstDate
 	if klinesLength > 0 {
 		if klinesOffsetDays > klinesLength {
 			klinesOffsetDays = klinesLength
@@ -254,10 +259,9 @@ func (d *DataKLine) Update(code string, _date exchange.Timestamp) {
 		adjustTimes = cacheKLines[klinesLength-1].AdjustmentCount
 	}
 
-	// 2. determine end date
+	// 2. 确定结束日期
+	// 使用当前时间的盘前时间作为结束日期，并生成每日序列作为拉取区间（C++ 使用交易日历的 date_range）
 	currentEndDate := exchange.NowTimestamp().PreMarketTime()
-	// build simple daily date range (inclusive). C++ uses exchange::date_range of trading days;
-	// here we generate calendar days as a best-effort equivalent.
 	startT := currentStartDate
 	endT := currentEndDate
 	var ts []exchange.Timestamp
@@ -270,7 +274,7 @@ func (d *DataKLine) Update(code string, _date exchange.Timestamp) {
 		return
 	}
 
-	// 3. page-fetch data from level1
+	// 3. 分页从 level1 拉取数据
 	step := uint16(level1.SecurityBarsMax)
 	var hs [][]level1.SecurityBar
 	var elementCount int
@@ -304,12 +308,12 @@ func (d *DataKLine) Update(code string, _date exchange.Timestamp) {
 		}
 	}
 
-	// 4. reverse hs (server returns newest->oldest segments)
+	// 4. 反转分段数据（服务器按最新->最旧返回）
 	for i, j := 0, len(hs)-1; i < j; i, j = i+1, j-1 {
 		hs[i], hs[j] = hs[j], hs[i]
 	}
 
-	// 5. convert to incremental klines and adjust units
+	// 5. 转换为增量 K 线并调整单位（成交量单位从手转为股）
 	incremental := make([]KLine, 0, elementCount)
 	for _, vec := range hs {
 		for _, row := range vec {
@@ -334,14 +338,14 @@ func (d *DataKLine) Update(code string, _date exchange.Timestamp) {
 		}
 	}
 
-	// 6. determine adjustment requirement
+	// 6. 判断是否需要复权处理
 	isFreshFetchRequireAdjustment := adjustTimes == 1
 	dividends, _ := LoadXdxr(code)
 	if isFreshFetchRequireAdjustment {
 		ApplyForwardAdjustmentForEvent(incremental, currentStartDate.OnlyDate(), dividends)
 	}
 
-	// 7. merge cache and incremental
+	// 7. 合并本地缓存与增量数据
 	var klines []KLine
 	if klinesLength > klinesOffsetDays {
 		klines = append(klines, cacheKLines[:klinesLength-klinesOffsetDays]...)
@@ -352,12 +356,12 @@ func (d *DataKLine) Update(code string, _date exchange.Timestamp) {
 		klines = append(klines, incremental...)
 	}
 
-	// 8. full forward-adjust if not fresh-only
+	// 8. 若不是仅更新最新记录，则对全量数据做前复权处理
 	if !isFreshFetchRequireAdjustment {
 		ApplyForwardAdjustmentForEvent(klines, currentStartDate.OnlyDate(), dividends)
 	}
 
-	// 9. save cache (ensure parent dir exists)
+	// 9. 保存缓存（确保父目录存在）
 	if err := os.MkdirAll(filepath.Dir(cacheFilename), 0o755); err != nil {
 		log.Printf("[DataKLine] failed to create parent dir for %s: %v", cacheFilename, err)
 		return
@@ -365,4 +369,9 @@ func (d *DataKLine) Update(code string, _date exchange.Timestamp) {
 	if err := SaveKline(cacheFilename, klines); err != nil {
 		log.Printf("[DataKLine] save_kline failed: %v", err)
 	}
+}
+
+func init() {
+	// register DataKLine plugin (ignore error if already registered)
+	_ = cache.Register(&DataKLine{})
 }

@@ -39,6 +39,7 @@ func initUpdate() {
 				_ = cmd.Usage()
 				return
 			}
+			tsStart = tsStart.PreMarketTime()
 			fmt.Println("开始日期:", tsStart.OnlyDate())
 			tsEnd, err := exchange.NewTimestampFromString(flagEndDate.Value)
 			if err != nil {
@@ -46,11 +47,13 @@ func initUpdate() {
 				_ = cmd.Usage()
 				return
 			}
+			tsEnd = tsEnd.PreMarketTime()
 			fmt.Println("结束日期:", tsEnd.OnlyDate())
 			plugins := []cache.DataAdapter{}
 			if flagAll.Value {
 				// 全部更新
 				//handleUpdateAll(cacheDate, featureDate)
+				plugins = cache.Plugins(0)
 			} else if len(flagBaseData.Value) > 0 {
 				all, keywords := parseFields(flagBaseData.Value)
 				if all || len(keywords) == 0 {
@@ -68,7 +71,8 @@ func initUpdate() {
 				_ = cmd.Usage()
 				return
 			}
-			ts := exchange.DateRange(tsStart, tsEnd, true)
+			ts := exchange.DateRange(tsStart, tsEnd, false)
+			fmt.Println("data count:", len(ts))
 			for _, d := range ts {
 				fmt.Println("处理日期:", d.OnlyDate())
 				cache.UpdateWithAdapters(plugins, d)

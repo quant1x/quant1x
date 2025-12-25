@@ -57,6 +57,9 @@ var (
 	}
 )
 
+// historical/constant dates (mirror C++ exchange::market_cn_first_listtime)
+const MarketCnFirstListTime = "1990-12-19"
+
 // ExchangeId 表示交易所ID
 type ExchangeId uint8
 

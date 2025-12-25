@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"sync"
 
+	"gitee.com/quant1x/quant1x/quant1x/cache"
 	"gitee.com/quant1x/quant1x/quant1x/config"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 	"gitee.com/quant1x/quant1x/quant1x/level1"
@@ -38,14 +39,14 @@ func initHistoricalTradingData() {
 	historicalTradingDataBegin = ts
 }
 
-// getBeginDateOfHistoricalTradingData returns the configured earliest date
-// for historical trading data. It is lazily initialized from defaultTrainsBeginDate.
+// getBeginDateOfHistoricalTradingData 返回配置的历史逐笔数据的最早日期。
+// 该值为惰性初始化，来源于 defaultTrainsBeginDate。
 func getBeginDateOfHistoricalTradingData() exchange.Timestamp {
 	historicalTradingDataOnce.Do(initHistoricalTradingData)
 	return historicalTradingDataBegin
 }
 
-// updateBeginDateOfHistoricalTradingData updates the begin date in a thread-safe way.
+// updateBeginDateOfHistoricalTradingData 以线程安全的方式更新起始日期。
 func updateBeginDateOfHistoricalTradingData(date string) {
 	// ensure initialized
 	_ = getBeginDateOfHistoricalTradingData()
@@ -56,12 +57,12 @@ func updateBeginDateOfHistoricalTradingData(date string) {
 	}
 }
 
-// restoreBeginDateOfHistoricalTradingData resets the begin date to default.
+// restoreBeginDateOfHistoricalTradingData 将起始日期恢复为默认值。
 func restoreBeginDateOfHistoricalTradingData() {
 	updateBeginDateOfHistoricalTradingData(defaultTrainsBeginDate)
 }
 
-// TurnoverDataSummary mirrors datasets::TurnoverDataSummary
+// TurnoverDataSummary 对应 C++ 中的 datasets::TurnoverDataSummary
 type TurnoverDataSummary struct {
 	OuterVolume int64
 	OuterAmount float64
@@ -73,7 +74,7 @@ type TurnoverDataSummary struct {
 	CloseTurnZ  float64
 }
 
-// loadTransactionDataFromCache reads CSV cache and returns list and startTime.
+// loadTransactionDataFromCache 从 CSV 缓存读取逐笔数据并返回数据列表及起始时间字符串。
 func loadTransactionDataFromCache(correctedCode string, featureDate exchange.Timestamp, ignorePreviousData bool) ([]level1.TickTransaction, string) {
 	list := make([]level1.TickTransaction, 0)
 	//tradeDate := featureDate.YYYYMMDD()
@@ -81,7 +82,7 @@ func loadTransactionDataFromCache(correctedCode string, featureDate exchange.Tim
 	if ignorePreviousData {
 		startDate := getBeginDateOfHistoricalTradingData()
 		if featureDate.YYYYMMDD() < startDate.YYYYMMDD() {
-			// no data
+			// 无数据
 			return list, HistoricalTransactionDataFirstTime
 		}
 	}
@@ -96,10 +97,10 @@ func loadTransactionDataFromCache(correctedCode string, featureDate exchange.Tim
 			r := csv.NewReader(f)
 			rows, err := r.ReadAll()
 			if err == nil && len(rows) > 0 {
-				// expect header
+				// 期望第一行为表头
 				for i := 1; i < len(rows); i++ {
 					rec := rows[i]
-					// ensure at least 6 columns
+					// 确保至少 6 列
 					for len(rec) < 6 {
 						rec = append(rec, "")
 					}
@@ -124,7 +125,7 @@ func loadTransactionDataFromCache(correctedCode string, featureDate exchange.Tim
 						return list, startTime
 					}
 
-					// scan from end to determine startTime and trim cached tail
+					// 从尾部扫描以确定 startTime 并截取已缓存的尾部重复部分
 					cacheLength := len(list)
 					firstTime := ""
 					skipCount := 0
@@ -154,7 +155,7 @@ func loadTransactionDataFromCache(correctedCode string, featureDate exchange.Tim
 	return list, startTime
 }
 
-// updateTransactionData fetches transactions from level1 and writes merged CSV cache.
+// updateTransactionData 从 level1 拉取逐笔数据并写入合并后的 CSV 缓存。
 func updateTransactionData(correctedCode string, featureDate exchange.Timestamp, startTime string) {
 	tradeDate := featureDate.YYYYMMDD()
 	todayIsLastTradingDate := featureDate.IsSameDate(exchange.NowTimestamp())
@@ -243,7 +244,7 @@ func updateTransactionData(correctedCode string, featureDate exchange.Timestamp,
 		}
 	}
 
-	// reverse hs and flatten
+	// 将分段数据反转并展开（服务器返回最新到最旧）
 	for i := len(hs) - 1; i >= 0; i-- {
 		history = append(history, hs[i]...)
 	}
@@ -252,14 +253,14 @@ func updateTransactionData(correctedCode string, featureDate exchange.Timestamp,
 		return
 	}
 
-	// merge with existing cache
+	// 与现有缓存合并
 	existingList, _ := loadTransactionDataFromCache(correctedCode, featureDate, false)
 	existingList = append(existingList, history...)
 
 	filename := config.GetHistoricalTradeFilename(correctedCode, featureDate.OnlyDate())
 	tmp := filename + ".tmp"
 	if err := os.MkdirAll(filepath.Dir(tmp), 0o755); err != nil {
-		// ignore
+		// 忽略创建目录错误
 	}
 	f, err := os.Create(tmp)
 	if err != nil {
@@ -300,7 +301,7 @@ func ensureTransactionDataUpdated(correctedCode string, featureDate exchange.Tim
 	}
 }
 
-// CheckoutTransactionData exported
+// CheckoutTransactionData 导出：检出指定日期的逐笔成交数据
 func CheckoutTransactionData(securityCode string, featureDate exchange.Timestamp, ignorePreviousData bool) []level1.TickTransaction {
 	correctedCode := exchange.CorrectSecurityCode(securityCode)
 	ensureTransactionDataUpdated(correctedCode, featureDate, ignorePreviousData)
@@ -308,7 +309,7 @@ func CheckoutTransactionData(securityCode string, featureDate exchange.Timestamp
 	return list
 }
 
-// CountInflow computes turnover summary similar to C++ implementation.
+// CountInflow 计算成交额/成交量汇总，行为与 C++ 实现相似。
 func CountInflow(list []level1.TickTransaction, securityCode string, featureDate exchange.Timestamp) TurnoverDataSummary {
 	summary := TurnoverDataSummary{}
 	if len(list) == 0 {
@@ -324,7 +325,7 @@ func CountInflow(list []level1.TickTransaction, securityCode string, featureDate
 			lastPrice = price
 		}
 		vol := v.Vol
-		if direction != 0 && direction != 1 { // unknown types
+		if direction != 0 && direction != 1 { // 未知类型
 			if price > lastPrice {
 				direction = 0
 			} else if price < lastPrice {
@@ -356,16 +357,22 @@ func CountInflow(list []level1.TickTransaction, securityCode string, featureDate
 		lastPrice = price
 	}
 
-	// F10 not yet ported to Go in this module; leave TurnZ zeros.
+	// F10 尚未在此模块移植到 Go，保留 TurnZ 为零。
 	_ = correctedCode
 	_ = featureDate
 	return summary
 }
 
-// DataTrans implements cache adapter style updater
+// DataTrans 实现了缓存适配器风格的更新器
 type DataTrans struct{}
 
-func (d *DataTrans) Print(code string, dates []exchange.Timestamp) {
+func (d *DataTrans) Kind() cache.Kind { return BaseTransaction }
+func (d *DataTrans) Owner() string    { return cache.DefaultDataProvider }
+func (d *DataTrans) Key() string      { return "trans" }
+func (d *DataTrans) Name() string     { return "逐笔成交" }
+func (d *DataTrans) Usage() string    { return "" }
+
+func (d *DataTrans) Print(code string, dates ...exchange.Timestamp) {
 	_ = code
 	_ = dates
 }
@@ -373,4 +380,9 @@ func (d *DataTrans) Print(code string, dates []exchange.Timestamp) {
 func (d *DataTrans) Update(code string, date exchange.Timestamp) {
 	correctedCode := exchange.CorrectSecurityCode(code)
 	ensureTransactionDataUpdated(correctedCode, date, false)
+}
+
+func init() {
+	// 注册到 cache 插件中心，容错处理重复注册
+	_ = cache.Register(&DataTrans{})
 }

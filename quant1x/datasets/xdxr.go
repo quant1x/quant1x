@@ -9,11 +9,13 @@ import (
 	"strconv"
 	"time"
 
+	"gitee.com/quant1x/quant1x/quant1x/cache"
 	"gitee.com/quant1x/quant1x/quant1x/config"
+	"gitee.com/quant1x/quant1x/quant1x/exchange"
 	"gitee.com/quant1x/quant1x/quant1x/level1"
 )
 
-// XdxrInfo represents a single 除权除息 event row (CSV). Fields mirror the C++ layout.
+// XdxrInfo 表示一条除权除息事件的 CSV 行，字段布局与 C++ 保持一致。
 type XdxrInfo struct {
 	Date          string  `csv:"date"`             // 除权除息日期 YYYY-MM-DD
 	Category      int     `csv:"category"`         // 事件类别
@@ -31,17 +33,17 @@ type XdxrInfo struct {
 	XingQuanJia   float64 `csv:"xing_quan_jia"`    // 行权价格
 }
 
-// computeShareAdjustmentRatio mirrors C++ XdxrInfo::computeShareAdjustmentRatio
+// computeShareAdjustmentRatio 对应 C++ 中的 XdxrInfo::computeShareAdjustmentRatio
 func (x *XdxrInfo) computeShareAdjustmentRatio() float64 {
 	return (x.SongZhuanGu + x.PeiGu - x.SuoGu + x.FenShu) / 10.0
 }
 
-// computeMonetaryAdjustment mirrors C++ XdxrInfo::computeMonetaryAdjustment
+// computeMonetaryAdjustment 对应 C++ 中的 XdxrInfo::computeMonetaryAdjustment
 func (x *XdxrInfo) computeMonetaryAdjustment() float64 {
 	return (x.PeiGu*x.PeiGuJia - x.FenHong + x.FenShu*x.XingQuanJia) / 10.0
 }
 
-// adjustFactor mirrors C++ XdxrInfo::adjustFactor -> returns m,a
+// adjustFactor 对应 C++ 中的 XdxrInfo::adjustFactor，返回 m 和 a
 func (x *XdxrInfo) adjustFactor() (float64, float64) {
 	A := x.computeMonetaryAdjustment()
 	B := x.computeShareAdjustmentRatio()
@@ -53,9 +55,9 @@ func (x *XdxrInfo) adjustFactor() (float64, float64) {
 	return m, a
 }
 
-// LoadXdxr tries to locate and read the local xdxr CSV cache for `code`.
-// It looks under several likely cache locations (user home .q1x, .q1x-rust, and project ./xdxr).
-// Returns an empty slice and an error if not found or parse fails.
+// LoadXdxr 尝试定位并读取本地的 xdxr CSV 缓存文件。
+// 会在若干常见位置查找（用户主目录下 .q1x、.q1x-rust，以及工程目录 ./xdxr）。
+// 若未找到或解析失败，返回空切片并带错误。
 func LoadXdxr(code string) ([]XdxrInfo, error) {
 	if len(code) != 8 {
 		return nil, fmt.Errorf("invalid security code length: %s", code)
@@ -106,8 +108,8 @@ func LoadXdxr(code string) ([]XdxrInfo, error) {
 
 // path helpers migrated to `config` package
 
-// ApplyForwardAdjustmentForEvent applies forward-adjustment (前复权) to klines using the provided dividends/events.
-// eventStartDate is the starting date used to filter out IPO-era events (format YYYY-MM-DD).
+// ApplyForwardAdjustmentForEvent 使用提供的除权除息事件对 K 线执行前复权处理。
+// eventStartDate 是用于过滤 IPO 早期事件的起始日期（格式 YYYY-MM-DD）。
 func ApplyForwardAdjustmentForEvent(klines []KLine, eventStartDate string, dividends []XdxrInfo) {
 	if len(klines) == 0 {
 		return
@@ -148,10 +150,10 @@ func ApplyForwardAdjustmentForEvent(klines []KLine, eventStartDate string, divid
 	}
 }
 
-// UpdateXdxr fetches XDXR data from the Level1 servers using the real
-// `level1.Client()`, saves it via the registered filename resolver, and
-// returns the loaded slice. Caller must register `SetXdxrFilenameResolver`
-// before calling. This performs a real network request.
+// UpdateXdxr 通过真实的 Level1 客户端从服务器获取除权除息数据，
+// 并通过 config 包确定的文件名保存到本地缓存，然后返回加载的切片。
+// 调用者无需注册 resolver；该函数会使用 config.GetXdxrFilename 生成路径。
+// 该操作会发起真实的网络请求。
 func UpdateXdxr(code string) ([]XdxrInfo, error) {
 	// Compute filename via config package
 	if len(code) != 8 {
@@ -235,4 +237,27 @@ func UpdateXdxr(code string) ([]XdxrInfo, error) {
 		return nil, err
 	}
 	return out, nil
+}
+
+// DataXdxr 实现了 cache.DataAdapter，用于 XDXR 数据，并在包初始化时注册到缓存插件中心。
+type DataXdxr struct{}
+
+func (d *DataXdxr) Kind() cache.Kind { return BaseXdxr }
+func (d *DataXdxr) Owner() string    { return cache.DefaultDataProvider }
+func (d *DataXdxr) Key() string      { return "xdxr" }
+func (d *DataXdxr) Name() string     { return "除权除息" }
+func (d *DataXdxr) Usage() string    { return "" }
+
+func (d *DataXdxr) Print(code string, dates ...exchange.Timestamp) {
+	// No-op for now; could be extended to pretty-print loaded XDXR rows.
+}
+
+func (d *DataXdxr) Update(code string, date exchange.Timestamp) {
+	// Delegate to UpdateXdxr which fetches and writes CSV cache.
+	_, _ = UpdateXdxr(code)
+}
+
+func init() {
+	// Best-effort registration; ignore error if already registered.
+	_ = cache.Register(&DataXdxr{})
 }
