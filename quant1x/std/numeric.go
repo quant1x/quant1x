@@ -6,7 +6,7 @@ import (
 )
 
 // Decimal rounds a floating-point number to the specified number of decimal
-// places using the same branchless algorithm as the C++ `numerics::decimal`.
+// places using the same branchless algorithm as the C++ `numeric::decimal`.
 // digits is clamped to [0,9]. NaN returns 0.0.
 func Decimal(value float64, digits int) float64 {
 	if math.IsNaN(value) {

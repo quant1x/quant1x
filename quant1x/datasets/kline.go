@@ -18,17 +18,17 @@ import (
 
 // KLine 对应 C++ 中的 datasets::KLine，用于表示日线数据。
 type KLine struct {
-	Date            string
-	Open            float64
-	Close           float64
-	High            float64
-	Low             float64
-	Volume          float64
-	Amount          float64
-	Up              int
-	Down            int
-	Datetime        string
-	AdjustmentCount int
+	Date            string  `csv:"date"`             // 日期 YYYY-MM-DD
+	Open            float64 `csv:"open"`             // 开盘价
+	Close           float64 `csv:"close"`            // 收盘价
+	High            float64 `csv:"high"`             // 最高价
+	Low             float64 `csv:"low"`              // 最低价
+	Volume          float64 `csv:"volume"`           // 成交量(股)
+	Amount          float64 `csv:"amount"`           // 成交额(元)
+	Up              int     `csv:"up"`               // 涨家数
+	Down            int     `csv:"down"`             // 跌家数
+	Datetime        string  `csv:"datetime"`         // 日期时间 YYYY-MM-DD HH:MM:SS
+	AdjustmentCount int     `csv:"adjustment_count"` // 复权次数
 }
 
 const maxKlineLookbackDays = 1
@@ -65,7 +65,7 @@ func FetchKLines(securityCode string, category level1.KLineType, start, count ui
 			Close: b.Close,
 			High:  b.High,
 			Low:   b.Low,
-			// level1 返回的成交量单位为“手”，与 C++ 保持一致：卷转换为股时使用 vol * 100
+			// level1 返回的成交量单位为"手"，与 C++ 保持一致：卷转换为股时使用 vol * 100
 			Volume:          b.Vol * 100,
 			Amount:          b.Amount,
 			Up:              int(b.UpCount),
@@ -121,7 +121,7 @@ func SaveKline(filename string, values []KLine) error {
 	w := csv.NewWriter(f)
 	defer w.Flush()
 
-	header := []string{"Date", "Open", "Close", "High", "Low", "Volume", "Amount", "Up", "Down", "Datetime", "AdjustmentCount"}
+	header := []string{"date", "open", "close", "high", "low", "volume", "amount", "up", "down", "datetime", "adjustment_count"}
 	if err := w.Write(header); err != nil {
 		return err
 	}

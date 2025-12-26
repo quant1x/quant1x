@@ -3,6 +3,9 @@ from dataclasses import dataclass
 from enum import IntEnum
 
 
+# Market first list time
+MarketCnFirstListTime = "1990-12-19"
+
 # Exchange codes
 ExchangeSSE = "sh"
 ExchangeSZSE = "sz"

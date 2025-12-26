@@ -4,7 +4,7 @@
 
 #include "quant1x/cache/adapter.h"
 #include "quant1x/exchange/calendar.h"
-#include "quant1x/std/numerics.h"
+#include "quant1x/std/numeric.h"
 
 namespace factors {
     namespace risk {
@@ -88,9 +88,9 @@ struct F10 {
         if(std::fabs(freeCapital) < std::numeric_limits<double>::epsilon()) {
             return 0.00;
         }
-        auto turnoverRateZ = numerics::ChangeRate(freeCapital, v);
+        auto turnoverRateZ = numeric::ChangeRate(freeCapital, v);
         turnoverRateZ *= 10000;
-        turnoverRateZ = numerics::decimal(turnoverRateZ);
+        turnoverRateZ = numeric::decimal(turnoverRateZ);
         return turnoverRateZ;
     }
 

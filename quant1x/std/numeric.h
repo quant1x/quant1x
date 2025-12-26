@@ -7,7 +7,7 @@
 #include <cmath> // for std::abs
 #include <ostream>
 
-namespace numerics {
+namespace numeric {
 
     constexpr double NaN    = std::numeric_limits<double>::quiet_NaN();  ///< NaN常量
     constexpr double Inf    = std::numeric_limits<double>::infinity();   ///< 正无穷常量

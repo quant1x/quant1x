@@ -1,12 +1,4 @@
 
-from .trans import (
-    TickTransaction,
-    TurnoverDataSummary,
-    checkout_transaction_data,
-    count_inflow,
-    DataTrans
-)
-
 from .xdxr import (
     load_xdxr,
     save_xdxr,
@@ -20,3 +12,11 @@ from .kline import (
     fetch_kline,
     DataKLine
 )
+
+from .trans import (
+    TurnoverDataSummary,
+    checkout_transaction_data,
+    #count_inflow,
+    DataTrans
+)
+

@@ -1,71 +1,71 @@
 #include <quant1x/test/test.h>
-#include <quant1x/std/numerics.h>
+#include <quant1x/std/numeric.h>
 
-TEST_CASE("numerics::number_range<T> default constructor works", "[numerics]") {
-    numerics::number_range<int> r;
+TEST_CASE("numeric::number_range<T> default constructor works", "[numerics]") {
+    numeric::number_range<int> r;
 
     CHECK(r.min_ == std::numeric_limits<int>::lowest());
     CHECK(r.max_ == std::numeric_limits<int>::max());
 }
 
-TEST_CASE("numerics::number_range<T> two-argument constructor works", "[numerics::number_range]") {
-    numerics::number_range<double> r(10.5, 20.5);
+TEST_CASE("numeric::number_range<T> two-argument constructor works", "[numeric::number_range]") {
+    numeric::number_range<double> r(10.5, 20.5);
 
     CHECK(r.min_ == 10.5);
     CHECK(r.max_ == 20.5);
 }
 
-TEST_CASE("numerics::number_range<T> one-argument constructor works", "[numerics::number_range]") {
-    numerics::number_range<float> r(3.14f);
+TEST_CASE("numeric::number_range<T> one-argument constructor works", "[numeric::number_range]") {
+    numeric::number_range<float> r(3.14f);
 
     CHECK(r.min_ == 3.14f);
     CHECK(r.max_ == std::numeric_limits<float>::max());
 }
 
-TEST_CASE("numerics::number_range<T> string constructor: no separator", "[numerics::number_range]") {
-    numerics::number_range<int> r("123");
+TEST_CASE("numeric::number_range<T> string constructor: no separator", "[numeric::number_range]") {
+    numeric::number_range<int> r("123");
 
     CHECK(r.min_ == 123);
     CHECK(r.max_ == std::numeric_limits<int>::max());
 }
 
-TEST_CASE("numerics::number_range<T> string constructor: leading separator", "[numerics::number_range]") {
-    numerics::number_range<int> r("~456");
+TEST_CASE("numeric::number_range<T> string constructor: leading separator", "[numeric::number_range]") {
+    numeric::number_range<int> r("~456");
 
     CHECK(r.min_ == std::numeric_limits<int>::lowest());
     CHECK(r.max_ == 456);
 }
 
-TEST_CASE("numerics::number_range<T> string constructor: trailing separator", "[numerics::number_range]") {
-    numerics::number_range<int> r("789~");
+TEST_CASE("numeric::number_range<T> string constructor: trailing separator", "[numeric::number_range]") {
+    numeric::number_range<int> r("789~");
 
     CHECK(r.min_ == 789);
     CHECK(r.max_ == std::numeric_limits<int>::max());
 }
 
-TEST_CASE("numerics::number_range<T> string constructor: both empty", "[numerics::number_range]") {
-    numerics::number_range<int> r("~");
+TEST_CASE("numeric::number_range<T> string constructor: both empty", "[numeric::number_range]") {
+    numeric::number_range<int> r("~");
 
     CHECK(r.min_ == std::numeric_limits<int>::lowest());
     CHECK(r.max_ == std::numeric_limits<int>::max());
 }
 
-TEST_CASE("numerics::number_range<T> string constructor: invalid input", "[numerics::number_range]") {
-    numerics::number_range<int> r("invalid");
+TEST_CASE("numeric::number_range<T> string constructor: invalid input", "[numeric::number_range]") {
+    numeric::number_range<int> r("invalid");
 
     CHECK(r.min_ == std::numeric_limits<int>::lowest());
     CHECK(r.max_ == std::numeric_limits<int>::max());
 }
 
-TEST_CASE("numerics::number_range<T> string constructor: min and max specified", "[numerics::number_range]") {
-    numerics::number_range<int> r("100~200");
+TEST_CASE("numeric::number_range<T> string constructor: min and max specified", "[numeric::number_range]") {
+    numeric::number_range<int> r("100~200");
 
     CHECK(r.min_ == 100);
     CHECK(r.max_ == 200);
 }
 
 #include <yaml-cpp/yaml.h>
-using namespace numerics;
+using namespace numeric;
 
 struct number_range_yaml_parser {
     template <typename T>

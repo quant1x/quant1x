@@ -1,7 +1,7 @@
 #include <quant1x/trader/account.h>
 #include <quant1x/trader/fee.h>
 #include <quant1x/config/config.h>
-#include <quant1x/std/numerics.h>
+#include <quant1x/std/numeric.h>
 #include <spdlog/spdlog.h>
 #include <quant1x/runtime/once.h>
 #include <quant1x/exchange/calendar.h>
@@ -50,14 +50,14 @@ namespace trader {
             canUseAmount += canUseValue * (1 - vix);
         }
 
-        accValue = numerics::decimal(accValue);
-        canUseAmount = numerics::decimal(canUseAmount);
+        accValue = numeric::decimal(accValue);
+        canUseAmount = numeric::decimal(canUseAmount);
 
         auto const &traderParameter = config::TraderConfig();
         // 扣除预留现金
         double canUseCash = acc->Cash + canUseAmount - traderParameter->KeepCash;
         // 根据持仓占比, 计算预留多少资金
-        double reserveCash = numerics::decimal(acc->TotalAsset * (1 - traderParameter->PositionRatio));
+        double reserveCash = numeric::decimal(acc->TotalAsset * (1 - traderParameter->PositionRatio));
         // 可用金额 = 总资金量 - 预留资金
         double available = canUseCash - reserveCash;
 
@@ -66,8 +66,8 @@ namespace trader {
 
         if (available > acc->Cash) {
             spdlog::warn("!!! 持仓占比[{}%], 已超过可总仓位的[{}%], 必须在收盘前择机降低仓位 !!!",
-                         numerics::decimal(100 * (accValue / acc->TotalAsset)),
-                         numerics::decimal(100 * (1 - traderParameter->PositionRatio)));
+                         numeric::decimal(100 * (accValue / acc->TotalAsset)),
+                         numeric::decimal(100 * (1 - traderParameter->PositionRatio)));
         }
         // 这里重新修订可用金额, 不计算持仓可卖后的可用资金量
         available = (acc->TotalAsset - traderParameter->KeepCash) * traderParameter->PositionRatio;
@@ -99,7 +99,7 @@ namespace trader {
         }
 
         double strategyFunds = trader_account_theoretical_fund * weight;
-        double singleFundsAvailable = numerics::decimal(strategyFunds / quantityQuota);
+        double singleFundsAvailable = numeric::decimal(strategyFunds / quantityQuota);
 
         if (singleFundsAvailable > feeMax) {
             singleFundsAvailable = feeMax;

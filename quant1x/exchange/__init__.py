@@ -37,10 +37,6 @@ from .margin_trading import (
     margin_trading_list,
 )
 
-from .security import (
-    get_security_info,
-)
-
 __all__ = [
     "correct_security_code",
     "detect_market",
@@ -57,6 +53,5 @@ __all__ = [
     "is_session_post",
     "is_margin_trading_target",
     "margin_trading_list",
-    "get_security_info",
     "Timestamp",
 ]

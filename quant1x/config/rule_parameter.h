@@ -4,7 +4,7 @@
 
 #include <quant1x/encoding/yaml.h>
 #include <quant1x/std/strings.h>
-#include <quant1x/std/numerics.h>
+#include <quant1x/std/numeric.h>
 
 namespace config {
 
@@ -35,46 +35,46 @@ namespace config {
         double MaxReduceAmount = -1000;
 
         // 80 通达信安全分最小值
-        numerics::number_range<int> SafetyScore = numerics::number_range<int>(80);
+        numeric::number_range<int> SafetyScore = numeric::number_range<int>(80);
 
         // 1.800 成交量放大不能超过1.8
-        numerics::number_range<double> VolumeRatio = numerics::number_range<double>(0.382, 2.800);
+        numeric::number_range<double> VolumeRatio = numeric::number_range<double>(0.382, 2.800);
 
         // 流通股本, 默认0.5亿~20亿
-        numerics::number_range<double> Capital = numerics::number_range<double>(0.5, 20);
+        numeric::number_range<double> Capital = numeric::number_range<double>(0.5, 20);
 
         // 流通市值, 默认4亿~600亿
-        numerics::number_range<double> MarketCap = numerics::number_range<double>(4, 600);
+        numeric::number_range<double> MarketCap = numeric::number_range<double>(4, 600);
 
         // 股价: 4.9E-324~1.7976931348623157e+308
-        numerics::number_range<double> Price = numerics::number_range<double>(2);
+        numeric::number_range<double> Price = numeric::number_range<double>(2);
 
         // 开盘涨幅, 默认不限制
-        numerics::number_range<double> OpenChangeRate = numerics::number_range<double>();
+        numeric::number_range<double> OpenChangeRate = numeric::number_range<double>();
 
         // 开盘量比, 默认不限制
-        numerics::number_range<double> OpenQuantityRatio = numerics::number_range<double>();
+        numeric::number_range<double> OpenQuantityRatio = numeric::number_range<double>();
 
         // 开盘换手, 默认不限制
-        numerics::number_range<double> OpenTurnZ = numerics::number_range<double>();
+        numeric::number_range<double> OpenTurnZ = numeric::number_range<double>();
 
         // 盘中策略涨幅范围, 默认不限制
-        numerics::number_range<double> ChangeRate = numerics::number_range<double>();
+        numeric::number_range<double> ChangeRate = numeric::number_range<double>();
 
         // 波动率, 默认不限制
-        numerics::number_range<double> Vix = numerics::number_range<double>();
+        numeric::number_range<double> Vix = numeric::number_range<double>();
 
         // 换手率范围, 默认不限制
-        numerics::number_range<double> TurnoverRate = numerics::number_range<double>();
+        numeric::number_range<double> TurnoverRate = numeric::number_range<double>();
 
         // 振幅范围, 默认不限制
-        numerics::number_range<double> AmplitudeRatio = numerics::number_range<double>();
+        numeric::number_range<double> AmplitudeRatio = numeric::number_range<double>();
 
         // 5档行情委托平均值范围, 默认不限制
-        numerics::number_range<double> BiddingVolume = numerics::number_range<double>();
+        numeric::number_range<double> BiddingVolume = numeric::number_range<double>();
 
         // 情绪范围
-        numerics::number_range<double> Sentiment = numerics::number_range<double>();
+        numeric::number_range<double> Sentiment = numeric::number_range<double>();
 
         // 买入是否允许跳空低开, 默认是允许
         bool GapDown = true;
@@ -96,12 +96,12 @@ namespace config {
 
         // 构造函数，初始化NumberRange字段
         RuleParameter() {
-            SafetyScore = numerics::number_range<int>("80~");
-            VolumeRatio = numerics::number_range<double>("0.382~2.800");
-            Capital = numerics::number_range<double>("0.5~20");
-            MarketCap = numerics::number_range<double>("4~600");
-            Price = numerics::number_range<double>("2~");
-            Sentiment = numerics::number_range<double>("38.2~61.80");
+            SafetyScore = numeric::number_range<int>("80~");
+            VolumeRatio = numeric::number_range<double>("0.382~2.800");
+            Capital = numeric::number_range<double>("0.5~20");
+            MarketCap = numeric::number_range<double>("4~600");
+            Price = numeric::number_range<double>("2~");
+            Sentiment = numeric::number_range<double>("38.2~61.80");
         }
 
         friend std::ostream &operator<<(std::ostream &os, const RuleParameter &parameter) {
@@ -141,7 +141,7 @@ namespace config {
 
 namespace YAML {
 
-    using namespace numerics;
+    using namespace numeric;
 
     struct number_range_yaml_parser {
         template <typename T>

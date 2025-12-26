@@ -8,11 +8,11 @@ from dataclasses import dataclass
 from typing import Optional, Tuple, List, Dict
 
 import pandas as pd
-from quant1x.datasets import xdxr
+import quant1x.datasets.xdxr as xdxr_module
 from quant1x.exchange import detect_market, correct_security_code, is_margin_trading_target
-from quant1x.exchange.security import get_security_info
+from quant1x.instruments.security import get_security_info
 from quant1x.factors import share_holder, financial_report, safety_score, notice
-from quant1x.level1.client import client
+from quant1x.level1.client import get_std_conn
 from quant1x.level1.finance_info import FinanceRequest, FinanceResponse
 from quant1x.level1.protocol import process
 from quant1x import std
@@ -63,10 +63,10 @@ def get_finance_info(security_code: str, feature_date: str) -> Tuple[float, floa
     base_date = 19900101
 
     try:
-        with client() as conn:
+        with get_std_conn() as conn:
             req = FinanceRequest(security_code)
             resp = FinanceResponse()
-            process(conn.socket, req, resp)
+            process(conn, req, resp)
             
             if resp.count > 0:
                 info = resp.info
@@ -106,7 +106,7 @@ def checkout_security_basic_info(security_code: str, feature_date: str) -> dict:
         "UpdateDate": ""
     }
     
-    xdxr_list = xdxr.load_xdxr(security_code)
+    xdxr_list = xdxr_module.load_xdxr(security_code)
     # Sort descending by Date
     xdxr_list.sort(key=lambda x: x.Date, reverse=True)
     
@@ -191,7 +191,7 @@ def compute_free_capital(holder_list: pd.DataFrame, capital: float) -> Tuple[flo
     return top10_capital, free_capital, capital_changed, increase_ratio, reduction_ratio
 
 def checkout_share_holder(security_code: str, feature_date: str) -> Optional[dict]:
-    xdxr_list = xdxr.load_xdxr(security_code)
+    xdxr_list = xdxr_module.load_xdxr(security_code)
     xdxr_list.sort(key=lambda x: x.Date, reverse=True)
     
     xdxr_info_obj = checkout_capital(xdxr_list, feature_date)

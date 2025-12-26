@@ -6,44 +6,44 @@ use std::sync::Arc;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct KLine {
-    #[serde(rename = "Date")]
+    #[serde(rename = "date")]
     pub date: String,
-    #[serde(rename = "Open")]
+    #[serde(rename = "open")]
     pub open: f64,
-    #[serde(rename = "Close")]
+    #[serde(rename = "close")]
     pub close: f64,
-    #[serde(rename = "High")]
+    #[serde(rename = "high")]
     pub high: f64,
-    #[serde(rename = "Low")]
+    #[serde(rename = "low")]
     pub low: f64,
-    #[serde(rename = "Volume")]
+    #[serde(rename = "volume")]
     pub volume: f64,
-    #[serde(rename = "Amount")]
+    #[serde(rename = "amount")]
     pub amount: f64,
-    #[serde(rename = "Up")]
+    #[serde(rename = "up")]
     pub up: i32,
-    #[serde(rename = "Down")]
+    #[serde(rename = "down")]
     pub down: i32,
-    #[serde(rename = "Datetime")]
+    #[serde(rename = "datetime")]
     pub datetime: String,
-    #[serde(rename = "AdjustmentCount")]
+    #[serde(rename = "adjustment_count")]
     pub adjustment_count: i32,
 }
 
 impl KLine {
     pub fn headers() -> Vec<String> {
         vec![
-            "Date".into(),
-            "Open".into(),
-            "Close".into(),
-            "High".into(),
-            "Low".into(),
-            "Volume".into(),
-            "Amount".into(),
-            "Up".into(),
-            "Down".into(),
-            "Datetime".into(),
-            "AdjustmentCount".into(),
+            "date".into(),
+            "open".into(),
+            "close".into(),
+            "high".into(),
+            "low".into(),
+            "volume".into(),
+            "amount".into(),
+            "up".into(),
+            "down".into(),
+            "datetime".into(),
+            "adjustment_count".into(),
         ]
     }
 }

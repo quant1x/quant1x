@@ -23,30 +23,30 @@ namespace datasets {
         void save_kline(const std::string &filename, const std::vector<KLine>& values) {
             filepath::check_filepath(filename, true);
             io::CSVWriter writer(filename);
-            writer.write_row("Date", "Open", "Close", "High", "Low", "Volume", "Amount", "Up", "Down", "Datetime", "AdjustmentCount");
+            writer.write_row("date", "open", "close", "high", "low", "volume", "amount", "up", "down", "datetime", "adjustment_count");
             for (const auto &row: values) {
-                writer.write_row(row.Date, row.Open, row.Close, row.High, row.Low, row.Volume, row.Amount,
-                                 row.Up, row.Down, row.Datetime, row.AdjustmentCount);
+                writer.write_row(row.date, row.open, row.close, row.high, row.low, row.volume, row.amount,
+                                 row.up, row.down, row.datetime, row.adjustment_count);
             }
         }
     }
 
     void KLine::adjust(const factors::CumulativeAdjustment &adj) {
-        Open = Open * adj.m + adj.a;
-        Close = Close * adj.m + adj.a;
-        High = High * adj.m + adj.a;
-        Low = Low * adj.m + adj.a;
+        open = open * adj.m + adj.a;
+        close = close * adj.m + adj.a;
+        high = high * adj.m + adj.a;
+        low = low * adj.m + adj.a;
         // 成交量复权
         // 1. 计算均价
-        auto ap = Amount / Volume;
+        auto ap = amount / volume;
         // 2. 均价复权
         auto ap_adjusted = ap * adj.m + adj.a;
         // 3. 成交量复权
-        Volume *=(1+adj.shareAdjustmentRatio);
+        volume *=(1+adj.shareAdjustmentRatio);
         // 4. 以新成交量*均价计算成交额
-        Amount = Volume * ap_adjusted;
+        amount = volume * ap_adjusted;
         // 5. 更新除权除息次数
-        AdjustmentCount = adj.no;
+        adjustment_count = adj.no;
     }
 
     std::vector<KLine> read_kline_from_csv(const std::string& filename) {
@@ -57,12 +57,12 @@ namespace datasets {
 
             // 设置表头字段名(用于自动匹配顺序)
             in.read_header(io::ignore_extra_column,
-                           "Date", "Open", "Close", "High", "Low",
-                           "Volume", "Amount", "Up", "Down", "Datetime", "AdjustmentCount");
+                           "date", "open", "close", "high", "low",
+                           "volume", "amount", "up", "down", "datetime", "adjustment_count");
 
             KLine row = {};
-            while (in.read_row(row.Date, row.Open, row.Close, row.High, row.Low, row.Volume, row.Amount,
-                               row.Up, row.Down, row.Datetime, row.AdjustmentCount)) {
+            while (in.read_row(row.date, row.open, row.close, row.high, row.low, row.volume, row.amount,
+                               row.up, row.down, row.datetime, row.adjustment_count)) {
                 klines.emplace_back(row);
             }
         } catch(...) {
@@ -101,8 +101,8 @@ namespace datasets {
                 }
                 // 根据最大可以偏移的K线天数, 从缓存中截取对应的日期, 作为从服务器获取数据的起始日期
                 const auto& kline = cacheKLines[klines_length-klines_offset_days];
-                current_start_date = kline.Date; // 修正本次更新的开始日期
-                adjust_times = kline.AdjustmentCount;
+                current_start_date = kline.date; // 修正本次更新的开始日期
+                adjust_times = kline.adjustment_count;
             }
             // 2. 确定结束日期
             auto current_end_date = exchange::timestamp::now().pre_market_time();
@@ -148,17 +148,17 @@ namespace datasets {
                         continue;
                     }
                     auto kx = KLine{
-                        .Date = dateTime.only_date(), // 日期
-                        .Open = row.Open,             // 开盘价
-                        .Close = row.Close,           // 收盘价
-                        .High = row.High,             // 最高价
-                        .Low = row.Low,               // 最低价
-                        .Volume = row.Vol * 100,      // 成交量(股)
-                        .Amount = row.Amount,         // 成交金额(元)
-                        .Up = row.UpCount,            // 上涨家数 / 外盘
-                        .Down = row.DownCount,        // 下跌家数 / 内盘
-                        .Datetime = row.DateTime,     // 时间
-                        .AdjustmentCount = 0      // 新增：除权除息次数
+                        .date = dateTime.only_date(), // 日期
+                        .open = row.Open,             // 开盘价
+                        .close = row.Close,           // 收盘价
+                        .high = row.High,             // 最高价
+                        .low = row.Low,               // 最低价
+                        .volume = row.Vol * 100,      // 成交量(股)
+                        .amount = row.Amount,         // 成交金额(元)
+                        .up = row.UpCount,            // 上涨家数 / 外盘
+                        .down = row.DownCount,        // 下跌家数 / 内盘
+                        .datetime = row.DateTime,     // 时间
+                        .adjustment_count = 0      // 新增：除权除息次数
                     };
                     incremental_klines.emplace_back(kx);
                 }

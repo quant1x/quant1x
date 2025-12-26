@@ -65,8 +65,8 @@ void No0Strategy::Evaluate(const SecurityCode &code, ResultInfo &result) const {
     }
     klines = std::vector<datasets::KLine>(klines.begin(), klines.end() -1);
 
-    auto current_price = numerics::decimal(klines[klines.size() -1].Close);
-    auto prev_close = numerics::decimal(klines[klines.size() - 2].Close);
+    auto current_price = numeric::decimal(klines[klines.size() -1].close);
+    auto prev_close = numeric::decimal(klines[klines.size() - 2].close);
     auto limit_up_price = instruments::calc_limit_up_price(securityCode, prev_close);
     if(limit_up_price == current_price) {
         result.limit_up = true;
@@ -97,7 +97,7 @@ void No0Strategy::updateIndicators(const SecurityCode &code) {
     buys_.assign(n, false);
     sells_.assign(n, false);
 
-    auto close_at = [&](size_t idx)->double { return static_cast<double>(market_data_[idx].Close); };
+    auto close_at = [&](size_t idx)->double { return static_cast<double>(market_data_[idx].close); };
 
     auto moving_avg = [&](size_t end_idx, size_t period)->double {
         if (end_idx + 1 < period) return 0.0;
@@ -137,7 +137,7 @@ void No0Strategy::updateIndicators(const SecurityCode &code) {
     // Print first few close prices for inspection
     std::string closes_preview;
     for (size_t i = 0; i < std::min<size_t>(n, 10); ++i) {
-        closes_preview += std::to_string(static_cast<double>(market_data_[i].Close)) + ", ";
+        closes_preview += std::to_string(static_cast<double>(market_data_[i].close)) + ", ";
     }
     spdlog::warn("[No0Strategy::updateIndicators] {} bars: {} buys: {} sells: {} closes: {}", securityCode, n, buy_count, sell_count, closes_preview);
     std::cout << "[No0Strategy::updateIndicators] " << securityCode << " bars: " << n << " buys: " << buy_count << " sells: " << sell_count << "\n";

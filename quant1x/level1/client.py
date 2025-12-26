@@ -24,7 +24,9 @@ class StandardProtocolHandler(NetworkOperationHandler):
     def handshake(self, sock) -> bool:
         # 使用阻塞请求助手执行Hello1然后Hello2
         try:
-            from quant1x.level1.protocol import Hello1Request, Hello1Response, Hello2Request, Hello2Response, process
+            from quant1x.level1.hello1 import Hello1Request, Hello1Response
+            from quant1x.level1.hello2 import Hello2Request, Hello2Response
+            from quant1x.level1.protocol import process
 
             req1 = Hello1Request()
             resp1 = Hello1Response()
@@ -45,7 +47,8 @@ class StandardProtocolHandler(NetworkOperationHandler):
 
     def keepalive(self, sock) -> bool:
         try:
-            from quant1x.level1.protocol import HeartbeatRequest, HeartbeatResponse, process
+            from quant1x.level1.heartbeat import HeartbeatRequest, HeartbeatResponse
+            from quant1x.level1.protocol import process
 
             req = HeartbeatRequest()
             resp = HeartbeatResponse()
@@ -145,23 +148,6 @@ def _build_std_pool(*, min_conn: int, max_conn: int, servers: Optional[List[Tupl
     return pool
 
 
-def get_std_conn():
-    """返回一个到level1服务器的池化连接句柄。
-
-    用法:
-        with get_std_conn() as conn:
-            sock = conn.socket
-            ...
-
-    如果池没有配置端点，则引发RuntimeError。
-    """
-    if _std_pool is None:
-        # 通过单个公共初始化函数延迟初始化。
-        init_std_pool()
-    assert _std_pool is not None
-    return _std_pool.acquire()
-
-
 def init_std_pool(servers: Optional[List[Tuple[str, int]]] = None, *, min_conn: int = 1, max_conn: int = 10) -> None:
     """初始化模块级连接池单例。
 
@@ -180,6 +166,19 @@ def init_std_pool(servers: Optional[List[Tuple[str, int]]] = None, *, min_conn: 
         # 构建池并分配；允许异常传播，以便调用者观察初始化失败（匹配C++行为）。
         _std_pool = _build_std_pool(min_conn=min_conn, max_conn=max_conn, servers=servers)
 
-# 兼容旧代码
-client = get_std_conn
-init_pool = init_std_pool
+def get_std_conn():
+    """返回一个到level1服务器的池化连接句柄。
+
+    用法:
+        with get_std_conn() as conn:
+            # 使用 ConnectionHandle 提供的 I/O 方法（例如用于自定义协议）
+            conn.sendall(b'...')
+            ...
+
+    如果池没有配置端点，则引发RuntimeError。
+    """
+    if _std_pool is None:
+        # 通过单个公共初始化函数延迟初始化。
+        init_std_pool()
+    assert _std_pool is not None
+    return _std_pool.acquire()

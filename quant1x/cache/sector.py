@@ -4,7 +4,6 @@ import json
 from functools import lru_cache
 import pandas as pd
 from .. import exchange, config
-from .security import securities
 
 # SectorFilename 板块缓存文件名
 def sector_filename(date: str = '') -> str:
@@ -51,6 +50,7 @@ def block_list():
     """
     板块列表
     """
+    from .security import securities
     df = securities()
     if df.empty or 'code' not in df.columns:
         return pd.DataFrame(columns=df.columns if not df.empty else ['code', 'name'])

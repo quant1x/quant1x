@@ -372,7 +372,7 @@ TEST_CASE("v3_struct-to-dataframe-print", "[dataframe]") {
 
     // 1. 验证原始数据
     REQUIRE_FALSE(klines.empty());
-    std::cout << "原始数据验证 - 第一条记录的close值: " << klines[0].Close << "\n";
+    std::cout << "原始数据验证 - 第一条记录的close值: " << klines[0].close << "\n";
 
     // 2. 转换为DataFrame
     DataFrame df = DataFrame::from_struct_vector(klines);

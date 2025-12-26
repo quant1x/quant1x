@@ -1,6 +1,6 @@
-#include <quant1x/std/numerics.h>
+#include <quant1x/std/numeric.h>
 
-namespace numerics {
+namespace numeric {
 
     // ✅ 支持任意位数保留（0~9）
     // ✅ 使用静态幂表优化性能

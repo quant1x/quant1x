@@ -12,7 +12,7 @@ const baseKind cache.Kind = 0
 
 const (
 	BaseXdxr                cache.Kind = cache.PluginMaskBaseData | (baseKind + 1)  // 基础数据-除权除息
-	RawKLine                cache.Kind = cache.PluginMaskBaseData | (baseKind + 2)  // 基础数据-未复权K线
+	BaseRawDailyKLine       cache.Kind = cache.PluginMaskBaseData | (baseKind + 2)  // 基础数据-未复权K线
 	BaseKLine               cache.Kind = cache.PluginMaskBaseData | (baseKind + 3)  // 基础数据-前复权K线
 	BaseTransaction         cache.Kind = cache.PluginMaskBaseData | (baseKind + 4)  // 基础数据-历史成交
 	BaseMinutes             cache.Kind = cache.PluginMaskBaseData | (baseKind + 5)  // 基础数据-分时数据

@@ -9,7 +9,7 @@
 #include <quant1x/proto/data.h>
 #include <quant1x/proto/snapshot.capnp.h>
 #include <quant1x/std/except.h>
-#include <quant1x/std/numerics.h>
+#include <quant1x/std/numeric.h>
 #include <quant1x/trader/fee.h>
 #include <quant1x/datasets/kline.h>
 

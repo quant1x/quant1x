@@ -55,7 +55,7 @@ def decimal(f: float, digits: int = 2) -> float:
     :param digits: 小数位数
     :return:
     """
-    # Implement same branchless algorithm as C++ numerics::decimal
+    # Implement same branchless algorithm as C++ numeric::decimal
     # clamp digits to [0,9]
     if math.isnan(f):
         return 0.0

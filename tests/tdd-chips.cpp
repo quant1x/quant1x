@@ -219,26 +219,26 @@ public:
         data_.clear();
         data_.reserve(klines.size());
         for (const auto &record : klines) {
-            if (record.Date < activeDeadline) {
+            if (record.date < activeDeadline) {
                 continue;
             }
             DailyData d;
             d.kline        = record;
-            d.TurnoverRate = 100 * (record.Volume / capital_);  // 换手率计算
-            d.Avg          = record.Amount / record.Volume;     // 平均成交价
-            d.kline.Open   = numerics::decimal(d.kline.Open, digits_);
-            d.kline.Close  = numerics::decimal(d.kline.Close, digits_);
-            d.kline.High   = numerics::decimal(d.kline.High, digits_);
-            d.kline.Low    = numerics::decimal(d.kline.Low, digits_);
-            d.Avg          = numerics::decimal(d.Avg, digits_);  // 平均价四舍五入
-            if (d.kline.High > high) {
-                high = d.kline.High;
+            d.TurnoverRate = 100 * (record.volume / capital_);  // 换手率计算
+            d.Avg          = record.amount / record.volume;     // 平均成交价
+            d.kline.open   = numeric::decimal(d.kline.open, digits_);
+            d.kline.close  = numeric::decimal(d.kline.close, digits_);
+            d.kline.high   = numeric::decimal(d.kline.high, digits_);
+            d.kline.low    = numeric::decimal(d.kline.low, digits_);
+            d.Avg          = numeric::decimal(d.Avg, digits_);  // 平均价四舍五入
+            if (d.kline.high > high) {
+                high = d.kline.high;
             }
-            if (d.kline.Low < low) {
-                low = d.kline.Low;
+            if (d.kline.low < low) {
+                low = d.kline.low;
             }
             data_.push_back(d);
-            lastClose = d.kline.Close;
+            lastClose = d.kline.close;
         }
         data_.shrink_to_fit();
         last_close_ = lastClose;
@@ -295,11 +295,11 @@ public:
 private:
     // 处理单一价格日的特殊逻辑
     void handleSinglePriceDay(const DailyData &day) {
-        double singlePrice = numerics::decimal(day.kline.Close, digits_);
+        double singlePrice = numeric::decimal(day.kline.close, digits_);
 
         // 构造全量筹码分布
         std::map<double, double> tmpChip;
-        tmpChip[singlePrice] = day.kline.Volume;
+        tmpChip[singlePrice] = day.kline.volume;
 
         // 应用衰减合并（需特殊处理衰减率）
         DailyData adjustedDay = day;
@@ -310,23 +310,23 @@ private:
     // 三角形分布计算
     bool calculateTriangular(const DailyData &day) {
         // 情况1：处理最高价等于最低价的情况（一字涨停/跌停）
-        if (day.kline.High == day.kline.Low) {
+        if (day.kline.high == day.kline.low) {
             // 直接全部分配到唯一价格点
             handleSinglePriceDay(day);
             return true;
         }
 
         // 情况2：常规价格区间校验
-        if (day.kline.High < day.kline.Low) {
+        if (day.kline.high < day.kline.low) {
             return false;
         }
 
         // 生成价格网格（包含容差处理）
-        std::vector<double> priceGrid = generatePriceGrid(day.kline.Low, day.kline.High, config_.PriceStep, digits_);
+        std::vector<double> priceGrid = generatePriceGrid(day.kline.low, day.kline.high, config_.PriceStep, digits_);
         std::map<double, double> tmpChip;
 
         // 计算归一化系数（处理可能的零除问题）
-        double priceRange = day.kline.High - day.kline.Low;
+        double priceRange = day.kline.high - day.kline.low;
         double h          = 2.0 / priceRange;  // 保证概率密度积分为1
 
         for (double price : priceGrid) {
@@ -337,29 +337,29 @@ private:
             // 分情况处理三角形分布
             if (price < day.Avg) {
                 // 左三角形处理（包含Avg=Low的边界情况）
-                double denominator = day.Avg - day.kline.Low;
+                double denominator = day.Avg - day.kline.low;
                 if (denominator <= 1e-8) {  // 处理浮点精度误差
                     // 当Avg=Low时退化为矩形分布
                     area = config_.PriceStep * h;
                 } else {
-                    double y1 = h / denominator * (x1 - day.kline.Low);
-                    double y2 = h / denominator * (x2 - day.kline.Low);
+                    double y1 = h / denominator * (x1 - day.kline.low);
+                    double y2 = h / denominator * (x2 - day.kline.low);
                     area      = config_.PriceStep * (y1 + y2) / 2;
                 }
             } else {
                 // 右三角形处理（包含Avg=High的边界情况）
-                double denominator = day.kline.High - day.Avg;
+                double denominator = day.kline.high - day.Avg;
                 if (denominator <= 1e-8) {
                     // 当Avg=High时退化为矩形分布
                     area = config_.PriceStep * h;
                 } else {
-                    double y1 = h / denominator * (day.kline.High - x1);
-                    double y2 = h / denominator * (day.kline.High - x2);
+                    double y1 = h / denominator * (day.kline.high - x1);
+                    double y2 = h / denominator * (day.kline.high - x2);
                     area      = config_.PriceStep * (y1 + y2) / 2;
                 }
             }
 
-            tmpChip[price] = area * day.kline.Volume;  // 面积映射到实际成交量
+            tmpChip[price] = area * day.kline.volume;  // 面积映射到实际成交量
         }
 
         // 应用衰减和合并
@@ -369,8 +369,8 @@ private:
 
     // 均匀分布计算
     bool calculateUniform(const DailyData &day) {
-        std::vector<double> priceGrid = generatePriceGrid(day.kline.Low, day.kline.High, config_.PriceStep, digits_);
-        double              eachVol   = day.kline.Volume / priceGrid.size();
+        std::vector<double> priceGrid = generatePriceGrid(day.kline.low, day.kline.high, config_.PriceStep, digits_);
+        double              eachVol   = day.kline.volume / priceGrid.size();
         std::map<double, double> tmpChip;
 
         for (double price : priceGrid) {
@@ -428,7 +428,7 @@ private:
         grid.reserve(length);
         for (int priceInt = lowInt; priceInt <= highInt; priceInt += stepInt) {
             double price = static_cast<double>(priceInt) / scale;
-            price        = numerics::decimal(price, digits);  // 确保四舍五入
+            price        = numeric::decimal(price, digits);  // 确保四舍五入
             grid.push_back(price);
         }
         return grid;

@@ -145,9 +145,9 @@ namespace instruments {
 
     double calc_limit_up_price(const std::string& security_code, double prev_close) {
         double rate = get_up_limit_rate(security_code);
-        auto price = numerics::decimal(prev_close);
+        auto price = numeric::decimal(prev_close);
         auto result = price * (1.0 + rate);
-        return numerics::decimal(result);
+        return numeric::decimal(result);
     }
 
 } // namespace instruments

@@ -11,6 +11,7 @@
 import os
 import yaml
 import dotenv
+import logging
 from yarg import get
 from quant1x import system
 
@@ -72,7 +73,8 @@ def load_config(file_path: str) -> dict:
             config = yaml.safe_load(f) or {}
             return config
     except FileNotFoundError:
-        raise ValueError(f"配置文件 {file_path} 不存在")
+        logging.warning(f"配置文件 {file_path} 不存在，使用默认配置")
+        return {}
     except yaml.YAMLError as e:
         raise ValueError(f"YAML格式错误: {str(e)}")
     except Exception as e:

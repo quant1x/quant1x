@@ -3,14 +3,14 @@
 #define QUANT1X_TRADER_FEE_H 1
 
 #include <quant1x/std/api.h>
-#include <quant1x/std/numerics.h>
+#include <quant1x/std/numeric.h>
 
 // ==============================
 // 交易费用
 // ==============================
 
 namespace trader {
-    constexpr const double  InvalidFloat64  = numerics::NaN;
+    constexpr const double  InvalidFloat64  = numeric::NaN;
     constexpr const double  InvalidFee     = 0.00;  // 无效的费用
     constexpr const int64_t InvalidVolume  = 0;    // 无效的股数
     constexpr const int64_t UnknownVolume  = 1;    // 未知的股数

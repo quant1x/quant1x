@@ -17,29 +17,29 @@ namespace datasets {
         void save_kline(const std::string &filename, const std::vector<MinuteKLine> &values) {
             filepath::check_filepath(filename, true);
             io::CSVWriter writer(filename);
-            writer.write_row("Date",
-                             "Open",
-                             "Close",
-                             "High",
-                             "Low",
-                             "Volume",
-                             "Amount",
-                             "Up",
-                             "Down",
-                             "Datetime",
-                             "AdjustmentCount");
+            writer.write_row("date",
+                             "open",
+                             "close",
+                             "high",
+                             "low",
+                             "volume",
+                             "amount",
+                             "up",
+                             "down",
+                             "datetime",
+                             "adjustment_count");
             for (const auto &row : values) {
-                writer.write_row(row.Date,
-                                 row.Open,
-                                 row.Close,
-                                 row.High,
-                                 row.Low,
-                                 row.Volume,
-                                 row.Amount,
-                                 row.Up,
-                                 row.Down,
-                                 row.Datetime,
-                                 row.AdjustmentCount);
+                writer.write_row(row.date,
+                                 row.open,
+                                 row.close,
+                                 row.high,
+                                 row.low,
+                                 row.volume,
+                                 row.amount,
+                                 row.up,
+                                 row.down,
+                                 row.datetime,
+                                 row.adjustment_count);
             }
         }
 
@@ -115,30 +115,30 @@ namespace datasets {
 
             // 设置表头字段名(用于自动匹配顺序)
             in.read_header(io::ignore_extra_column,
-                           "Date",
-                           "Open",
-                           "Close",
-                           "High",
-                           "Low",
-                           "Volume",
-                           "Amount",
-                           "Up",
-                           "Down",
-                           "Datetime",
-                           "AdjustmentCount");
+                           "date",
+                           "open",
+                           "close",
+                           "high",
+                           "low",
+                           "volume",
+                           "amount",
+                           "up",
+                           "down",
+                           "datetime",
+                           "adjustment_count");
 
             MinuteKLine row = {};
-            while (in.read_row(row.Date,
-                               row.Open,
-                               row.Close,
-                               row.High,
-                               row.Low,
-                               row.Volume,
-                               row.Amount,
-                               row.Up,
-                               row.Down,
-                               row.Datetime,
-                               row.AdjustmentCount)) {
+            while (in.read_row(row.date,
+                               row.open,
+                               row.close,
+                               row.high,
+                               row.low,
+                               row.volume,
+                               row.amount,
+                               row.up,
+                               row.down,
+                               row.datetime,
+                               row.adjustment_count)) {
                 klines.emplace_back(row);
             }
         } catch (...) {
@@ -218,17 +218,17 @@ namespace datasets {
                 klines_offset = klines_length - aligned;
                 // 根据对齐后的索引取出对应的日期作为拉取起点
                 const auto &kline  = cacheMinuteKLines[aligned];
-                current_start_date = kline.Date;  // 修正本次更新的开始日期
-                adjust_times       = kline.AdjustmentCount;
+                current_start_date = kline.date;  // 修正本次更新的开始日期
+                adjust_times       = kline.adjustment_count;
 
                 // 如果 aligned 看起来不是某个交易日的首条记录，记录警告以便人工审查。
                 // （业务上若要求严格为交易日首条，应在此处添加向前回退到当天首条的逻辑；
-                // 但那将打破“(klines_length - klines_offset) 为整块大小”的约束，两者需明确优先级。）
-                if (aligned > 0 && cacheMinuteKLines[aligned - 1].Date == cacheMinuteKLines[aligned].Date) {
+                // 但那将打破"(klines_length - klines_offset) 为整块大小"的约束，两者需明确优先级。）
+                if (aligned > 0 && cacheMinuteKLines[aligned - 1].date == cacheMinuteKLines[aligned].date) {
                     spdlog::warn("[dataset::MinuteKLine] aligned index {} is not day-first for {} (date={})",
                                  aligned,
                                  code,
-                                 cacheMinuteKLines[aligned].Date);
+                                 cacheMinuteKLines[aligned].date);
                 }
             }
             // 2. 确定结束日期
@@ -289,17 +289,17 @@ namespace datasets {
                         continue;
                     }
                     auto kx = MinuteKLine{
-                        .Date            = dateTime.only_date(),    // 日期
-                        .Open            = row.Open,                // 开盘价
-                        .Close           = row.Close,               // 收盘价
-                        .High            = row.High,                // 最高价
-                        .Low             = row.Low,                 // 最低价
-                        .Volume          = row.Vol * bar_vol_unit,  // 成交量(股)
-                        .Amount          = row.Amount,              // 成交金额(元)
-                        .Up              = row.UpCount,             // 上涨家数 / 外盘
-                        .Down            = row.DownCount,           // 下跌家数 / 内盘
-                        .Datetime        = row.DateTime,            // 时间
-                        .AdjustmentCount = 0                        // 新增：除权除息次数
+                        .date            = dateTime.only_date(),    // 日期
+                        .open            = row.Open,                // 开盘价
+                        .close           = row.Close,               // 收盘价
+                        .high            = row.High,                // 最高价
+                        .low             = row.Low,                 // 最低价
+                        .volume          = row.Vol * bar_vol_unit,  // 成交量(股)
+                        .amount          = row.Amount,              // 成交金额(元)
+                        .up              = row.UpCount,             // 上涨家数 / 外盘
+                        .down            = row.DownCount,           // 下跌家数 / 内盘
+                        .datetime        = row.DateTime,            // 时间
+                        .adjustment_count = 0                        // 新增：除权除息次数
                     };
                     incremental_klines.emplace_back(kx);
                 }

@@ -399,7 +399,7 @@ set(quant1x-headers
     quant1x/std/util.h
     quant1x/std/format.h
     quant1x/std/feature_detection.h
-    quant1x/std/numerics.h
+    quant1x/std/numeric.h
     quant1x/std/safe.h
     quant1x/std/simd.h
     quant1x/std/cpu_info.h
@@ -577,7 +577,7 @@ set(quant1x-sources
     quant1x/std/time.cpp
     quant1x/std/filepath.cpp
     quant1x/std/util.cpp
-    quant1x/std/numerics.cpp
+    quant1x/std/numeric.cpp
     quant1x/std/safe.cpp
     quant1x/std/simd.cpp
     quant1x/std/cpu_info.cpp

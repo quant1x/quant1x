@@ -84,7 +84,7 @@ namespace factors {
         size_t klines_count  = klines.size();
         for (size_t idx = 0; idx < klines_count; ++idx) {
             auto kline        = &klines[idx];
-            auto current_date = exchange::timestamp(kline->Date).pre_market_time();
+            auto current_date = exchange::timestamp(kline->date).pre_market_time();
             auto factor       = factors[i];
             if (current_date > ts_end) {
                 break;

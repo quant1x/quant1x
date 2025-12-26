@@ -66,7 +66,7 @@ impl DataAdapter for DataTrans {
             {
                 for result in rdr.records() {
                     if let Ok(rec) = result {
-                        // 字段: time,price,vol,num,amount,buyOrSell
+                // 字段: time,price,volume,number,amount,buy_or_sell
                         let time = rec.get(0).unwrap_or("").to_string();
                         let price = rec
                             .get(1)
@@ -250,7 +250,7 @@ impl DataAdapter for DataTrans {
             Ok(f) => {
                 let mut w = csv::WriterBuilder::new().has_headers(true).from_writer(f);
                 // 表头
-                let header = vec!["time", "price", "vol", "num", "amount", "buyOrSell"];
+                let header = vec!["time", "price", "volume", "number", "amount", "buy_or_sell"];
                 let _ = w.write_record(&header);
                 for rec in &list {
                     let _ = w.write_record(&[

@@ -63,33 +63,33 @@ impl XdxrInfoRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct XdxrInfo {
-    #[serde(rename = "Date")]
+    #[serde(rename = "date")]
     pub date: String,
-    #[serde(rename = "Category")]
+    #[serde(rename = "category")]
     pub category: u8,
-    #[serde(rename = "Name")]
+    #[serde(rename = "name")]
     pub name: String,
-    #[serde(rename = "FenHong")]
+    #[serde(rename = "fen_hong")]
     pub fenhong: f32,
-    #[serde(rename = "PeiGuJia")]
+    #[serde(rename = "pei_gu_jia")]
     pub peigu_jia: f32,
-    #[serde(rename = "SongZhuanGu")]
+    #[serde(rename = "song_zhuan_gu")]
     pub songzhuan: f32,
-    #[serde(rename = "PeiGu")]
+    #[serde(rename = "pei_gu")]
     pub peigu: f32,
-    #[serde(rename = "SuoGu")]
+    #[serde(rename = "suo_gu")]
     pub suogu: f32,
-    #[serde(rename = "QianLiuTong")]
+    #[serde(rename = "qian_liu_tong")]
     pub qian_liutong: f64,
-    #[serde(rename = "HouLiuTong")]
+    #[serde(rename = "hou_liu_tong")]
     pub hou_liutong: f64,
-    #[serde(rename = "QianZongGuBen")]
+    #[serde(rename = "qian_zong_gu_ben")]
     pub qian_zonggu: f64,
-    #[serde(rename = "HouZongGuBen")]
+    #[serde(rename = "hou_zong_gu_ben")]
     pub hou_zonggu: f64,
-    #[serde(rename = "FenShu")]
+    #[serde(rename = "fen_shu")]
     pub fenshu: f32,
-    #[serde(rename = "XingQuanJia")]
+    #[serde(rename = "xing_quan_jia")]
     pub xingquan_jia: f32,
 }
 
@@ -97,20 +97,20 @@ impl XdxrInfo {
     /// 返回 CSV 表头，顺序与 C++ 及 datasets::xdxr 保持一致
     pub fn headers() -> &'static [&'static str] {
         &[
-            "Date",
-            "Category",
-            "Name",
-            "FenHong",
-            "PeiGuJia",
-            "SongZhuanGu",
-            "PeiGu",
-            "SuoGu",
-            "QianLiuTong",
-            "HouLiuTong",
-            "QianZongGuBen",
-            "HouZongGuBen",
-            "FenShu",
-            "XingQuanJia",
+            "date",
+            "category",
+            "name",
+            "fen_hong",
+            "pei_gu_jia",
+            "song_zhuan_gu",
+            "pei_gu",
+            "suo_gu",
+            "qian_liu_tong",
+            "hou_liu_tong",
+            "qian_zong_gu_ben",
+            "hou_zong_gu_ben",
+            "fen_shu",
+            "xing_quan_jia",
         ]
     }
 

@@ -133,10 +133,10 @@ namespace backtest {
             if (symbol != code) {
                 continue;
             }
-            double current_price = market_data.Close;
+            double current_price = market_data.close;
             pos.unrealized_pnl   = (current_price - pos.avg_price) * pos.quantity *
                                    (pos.direction == TradeDirection::LONG ? 1.0 : -1.0);
-            pos.update_time = market_data.Datetime;
+            pos.update_time = market_data.datetime;
         }
     }
 

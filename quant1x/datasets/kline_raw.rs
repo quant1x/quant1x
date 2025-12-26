@@ -1,7 +1,49 @@
 use crate::level1;
 use crate::level1::protocol::Response;
+use serde::{Deserialize, Serialize};
 use std::thread;
 use std::time::Duration;
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct KLineRaw {
+    #[serde(rename = "date")]
+    pub date: String,
+    #[serde(rename = "open")]
+    pub open: f64,
+    #[serde(rename = "close")]
+    pub close: f64,
+    #[serde(rename = "high")]
+    pub high: f64,
+    #[serde(rename = "low")]
+    pub low: f64,
+    #[serde(rename = "volume")]
+    pub volume: f64,
+    #[serde(rename = "amount")]
+    pub amount: f64,
+    #[serde(rename = "up")]
+    pub up: i32,
+    #[serde(rename = "down")]
+    pub down: i32,
+    #[serde(rename = "datetime")]
+    pub datetime: String,
+}
+
+impl KLineRaw {
+    pub fn headers() -> Vec<String> {
+        vec![
+            "date".into(),
+            "open".into(),
+            "close".into(),
+            "high".into(),
+            "low".into(),
+            "volume".into(),
+            "amount".into(),
+            "up".into(),
+            "down".into(),
+            "datetime".into(),
+        ]
+    }
+}
 
 // 日线最小容错回溯（偏移）天数
 pub const MAX_KLINE_LOOKBACK_DAYS: usize = 1;

@@ -40,7 +40,7 @@ pub fn decimal_digits(value: f64, digits: i32) -> f64 {
 ///
 /// # Examples
 /// ```
-/// use quant1x::numerics::decimal;
+/// use quant1x::numeric::decimal;
 /// let result = decimal(3.14159);
 /// assert_eq!(result, 3.14);
 /// ```

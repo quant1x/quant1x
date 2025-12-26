@@ -115,7 +115,7 @@ namespace factors {
         size_t rows   = klines.size();
         int    offset = 0;
         for (size_t i = 0; i < rows; i++) {
-            std::string klineDate = klines[rows - 1 - i].Date;
+            std::string klineDate = klines[rows - 1 - i].date;
             if (klineDate < date) {
                 return -1;
             } else if (klineDate == date) {
@@ -167,7 +167,7 @@ namespace factors {
 
         // 1.1 检查是否最新数据
         datasets::KLine kline = cacheKLines[rows - 1];
-        if (kline.Date < fixed_date) {
+        if (kline.date < fixed_date) {
             // 数据太旧, 重新加载
             cacheKLines = datasets::load_kline(securityCode);
             UpdateCacheKLines(securityCode, cacheKLines);
@@ -204,16 +204,16 @@ namespace factors {
 
         for (size_t i = 0; i < fixed_count; ++i) {
             const auto &raw = raws[i];
-            result.emplace_back(datasets::KLine{raw.Date,
-                                                raw.Open,
-                                                raw.Close,
-                                                raw.High,
-                                                raw.Low,
-                                                raw.Volume,
-                                                raw.Amount,
-                                                raw.Up,
-                                                raw.Down,
-                                                raw.Datetime,
+            result.emplace_back(datasets::KLine{raw.date,
+                                                raw.open,
+                                                raw.close,
+                                                raw.high,
+                                                raw.low,
+                                                raw.volume,
+                                                raw.amount,
+                                                raw.up,
+                                                raw.down,
+                                                raw.datetime,
                                                 0});
         }
 
@@ -254,7 +254,7 @@ namespace factors {
 
         // 1.1 检查是否最新数据
         datasets::KLineRaw last_kline = cache_raw_klines[rows - 1];
-        if (last_kline.Date < fixed_date) {
+        if (last_kline.date < fixed_date) {
             // 数据太旧, 重新加载
             cache_raw_klines = datasets::load_kline_raw(securityCode);
             raw::update_cache_raw_klines(securityCode, cache_raw_klines);
@@ -269,8 +269,8 @@ namespace factors {
         auto result = convert_to_klines(cache_raw_klines, offset);
         auto xdxrs  = get_xdxr_list(securityCode);
         // 确定前复权的时间范围
-        auto ts_start = exchange::timestamp(result[0].Date).pre_market_time();
-        auto ts_end   = exchange::timestamp(result.back().Date).pre_market_time();
+        auto ts_start = exchange::timestamp(result[0].date).pre_market_time();
+        auto ts_end   = exchange::timestamp(result.back().date).pre_market_time();
         // auto cbs = combine_adjustments_in_period(xdxrs, ts_start, ts_end);
         apply_forward_adjustments_once(result, xdxrs, ts_start, ts_end);
         return result;

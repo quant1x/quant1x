@@ -1,21 +1,19 @@
-"""Python implementation of TcpConnectionPool mirroring the C++ design.
+"""TcpConnectionPool 的 Python 实现（参考 C++ 设计）。
 
-This module implements:
-- Connection: RAII-like wrapper around a socket (life-cycle owned by the pool)
-- TcpConnectionPool: thread-safe pool matching the C++ API and semantics
+本模块实现：
+- `Connection`：包裹底层套接字的对象（生命周期由连接池管理）
+- `TcpConnectionPool`：线程安全的连接池，尽量保持与 C++ API/语义一致
 
-Notes:
-- Endpoints are (host, port) tuples and managed by EndpointManager from
-  quant1x.io.endpoint.
-- Network handler is a user-provided object exposing the methods:
-  - timeout() -> float (seconds)
-  - handshake(socket.socket) -> bool
-  - keepalive(socket.socket) -> bool
-  - check_interval() -> float (seconds)
+说明：
+- 端点以 `(host, port)` 元组表示，由 `quant1x.io.endpoint.EndpointManager` 管理。
+- 网络处理器需要实现以下方法：
+    - `timeout() -> float`：超时时间（秒）
+    - `handshake(socket.socket) -> bool`：握手（成功返回 True）
+    - `keepalive(socket.socket) -> bool`：心跳/保活检查
+    - `check_interval() -> float`：心跳/维护定时器间隔（秒）
 
-The pool returns a ConnectionHandle which is a context-manager and will
-automatically return the connection to the pool when exiting the context or
-when the handle is garbage collected.
+连接池返回一个 `ConnectionHandle`（上下文管理器），在 `with` 退出或
+句柄被回收时会自动把连接归还到池中。
 """
 from __future__ import annotations
 
@@ -81,8 +79,24 @@ class ConnectionHandle:
         self._releaser = releaser
         self._released = False
 
-    def __enter__(self) -> Connection:
-        return self._conn
+    def __enter__(self) -> "ConnectionHandle":
+        # 返回句柄本身，使调用方在使用 `with` 时得到 `ConnectionHandle`（而非原始 `Connection`）。
+        # 这样可以屏蔽底层 socket，鼓励通过句柄提供的 API 进行操作。
+        return self
+
+    # 在句柄上暴露最小的类 socket API（sendall/recv/settimeout），
+    # 以便调用方（或协议层）在不直接访问原始 socket 的情况下进行 I/O 操作。
+    def sendall(self, data: bytes) -> None:
+        return self._conn.socket.sendall(data)
+
+    def recv(self, n: int) -> bytes:
+        return self._conn.socket.recv(n)
+
+    def settimeout(self, t: float) -> None:
+        try:
+            return self._conn.socket.settimeout(t)
+        except Exception:
+            return None
 
     def __exit__(self, exc_type, exc, tb):
         self.release()
@@ -95,7 +109,7 @@ class ConnectionHandle:
                 self._released = True
 
     def __del__(self):
-        # best-effort auto-release to mimic C++ unique_ptr deleter
+        # 尽力自动释放（用于模拟 C++ unique_ptr 的析构行为）
         try:
             self.release()
         except Exception:
@@ -125,18 +139,18 @@ class TcpConnectionPool:
         self.running = False
         self._heartbeat_timer: Optional[threading.Timer] = None
 
-        # Start background thread executing heartbeat and creation attempts
+        # 启动后台线程用于运行心跳和连接创建尝试
         self._worker_threads = []
-        # create 2 worker threads to mimic C++ io threads (they only run timers here)
+        # 创建 2 个工作线程以模拟 C++ 的 IO 线程（这里线程仅用于运行定时器）
         for i in range(2):
             t = threading.Thread(target=self._worker_loop, name=f"connpool-io-{i}", daemon=True)
             self._worker_threads.append(t)
             t.start()
 
-        # start pool
+        # 启动连接池
         self.start()
 
-    # ---------- endpoint helpers (C++-compatible names) ----------
+    # ---------- 端点帮助函数（兼容 C++ 命名） ----------
     def add_endpoint(self, ip: str, port: int, weight: int = 0) -> bool:
         return self.endpoint_manager.add_endpoint(ip, port, weight or self.endpoint_weight)
 
@@ -146,9 +160,9 @@ class TcpConnectionPool:
     def add_endpoint_obj(self, endpoint: Endpoint, weight: int = 0) -> bool:
         return self.endpoint_manager.add_endpoint_obj(endpoint, weight or self.endpoint_weight)
 
-    # ---------- core pool API ----------
+    # ---------- 连接池核心 API ----------
     def acquire(self) -> ConnectionHandle:
-        # 1. try reuse
+        # 1. 尝试重用空闲连接
         raw_conn: Optional[Connection] = None
         with self._connections_mutex:
             if self._idle_connections:
@@ -156,7 +170,7 @@ class TcpConnectionPool:
                 self.idle_connection_count -= 1
                 log.debug("Reused connection from pool: %s", raw_conn)
 
-        # 2. if none, create new
+        # 2. 若无空闲连接则创建新连接
         endpoint = None
         if raw_conn is None:
             log.debug("Creating new connection...")
@@ -167,23 +181,22 @@ class TcpConnectionPool:
             endpoint = ep
             sock = None
             try:
-                # create and connect with timeout from handler
+                # 使用 network_handler 提供的超时创建并连接套接字
                 timeout = float(self.network_handler.timeout())
                 sock = socket.create_connection(endpoint, timeout=timeout)
-                # also set socket timeout for subsequent recv/send operations so
-                # blocking reads used by protocol helpers (process_request_std)
-                # will raise socket.timeout instead of blocking forever.
+                # 同时为后续的 recv/send 设置套接字超时，
+                # 这样协议层的阻塞读（例如 process_request_std）在超时后会抛出 socket.timeout，避免永久阻塞。
                 try:
                     sock.settimeout(timeout)
                 except Exception:
                     pass
-                # set TCP_NODELAY
+                # 设置 TCP_NODELAY 以禁用 Nagle 算法
                 try:
                     sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
                 except Exception:
                     pass
 
-                # handshake
+                # 进行握手
                 ok = self.network_handler.handshake(sock)
                 if not ok:
                     sock.close()
@@ -199,12 +212,12 @@ class TcpConnectionPool:
                         sock.close()
                     except Exception:
                         pass
-                # release endpoint reservation
+                # 释放端点预定（当连接创建失败或握手失败时）
                 if endpoint is not None:
                     self.endpoint_manager.release_endpoint(endpoint)
                 raise
 
-        # create deleter/releaser
+        # 创建用于归还连接的回调（deleter/releaser）
         def deleter(conn: Connection) -> None:
             try:
                 self.release(conn)
@@ -220,7 +233,7 @@ class TcpConnectionPool:
         conn_id = id(conn)
         log.debug("Returning connection %s", conn_id)
 
-        # Do NOT release endpoint here (same semantics as C++)
+        # 注意：此处不要释放端点（与 C++ 的语义一致）
         with self._connections_mutex:
             self._idle_connections.append(conn)
             self.idle_connection_count += 1
@@ -232,17 +245,17 @@ class TcpConnectionPool:
             return
         conn_id = id(conn)
         log.debug("Closing connection %s", conn_id)
-        # 1. release endpoint
+        # 1. 释放端点
         try:
             self.endpoint_manager.release_endpoint(conn.endpoint)
         except Exception:
             log.exception("Error releasing endpoint")
-        # 2. close socket
+        # 2. 关闭套接字
         try:
             conn.close()
         except Exception:
             log.exception("Error closing connection socket")
-        # 3. update counters
+        # 3. 更新计数器
         with self._connections_mutex:
             self.idle_connection_count = max(0, self.idle_connection_count - 1)
 
@@ -265,7 +278,7 @@ class TcpConnectionPool:
         except KeyError as e:
             raise RuntimeError("Invalid endpoint: %s" % e)
 
-    # ---------- internal helpers ----------
+    # ---------- 内部辅助函数 ----------
     def _start_heartbeat_timer(self) -> None:
         interval = float(self.network_handler.check_interval())
 
@@ -277,7 +290,7 @@ class TcpConnectionPool:
                 self._try_create_connections()
             except Exception:
                 log.exception("Exception in heartbeat tick")
-            # reschedule
+            # 重新调度定时器
             if self.running:
                 self._heartbeat_timer = threading.Timer(interval, tick)
                 self._heartbeat_timer.daemon = True
@@ -297,7 +310,7 @@ class TcpConnectionPool:
                 try:
                     alive = self.network_handler.keepalive(conn.socket)
                 except Exception:
-                    # treat exception as dead
+                    # 将异常视为连接已死（需要关闭）
                     self.close_connection(conn)
                     continue
                 if not alive:
@@ -319,7 +332,7 @@ class TcpConnectionPool:
             else:
                 try:
                     handle = self.acquire()
-                    # release immediately to put into idle pool
+                    # 立即释放以将连接放回空闲池
                     handle.release()
                     retry_count += 1
                     log.debug("Supplemented 1 connection")
@@ -339,6 +352,6 @@ class TcpConnectionPool:
             self.idle_connection_count = 0
 
     def _worker_loop(self) -> None:
-        # simple loop to keep threads alive; the real work is done by timers
+        # 简单循环以保持线程存活；实际工作由定时器执行
         while self.running:
             time.sleep(0.5)

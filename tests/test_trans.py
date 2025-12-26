@@ -3,7 +3,7 @@ import os
 import shutil
 import tempfile
 from quant1x.datasets import trans
-from quant1x.level1 import client
+from quant1x.level1.client import init_std_pool
 from quant1x.config import config
 from quant1x.exchange import Timestamp
 
@@ -30,7 +30,7 @@ class TestTransReal(unittest.TestCase):
         
         # Initialize pool (this might take a few seconds)
         try:
-            client.init_pool()
+            init_std_pool()
         except Exception as e:
             print(f"Client init failed: {e}")
 

@@ -11,9 +11,9 @@ namespace datasets {
         try {
             auto cache_filename = config::get_xdxr_filename(code);
             io::CSVReader<14> in(cache_filename);
-            in.read_header(io::ignore_extra_column, "Date", "Category", "Name", "FenHong", "PeiGuJia", "SongZhuanGu",
-                           "PeiGu", "SuoGu", "QianLiuTong", "HouLiuTong", "QianZongGuBen", "HouZongGuBen", "FenShu",
-                           "XingQuanJia");
+            in.read_header(io::ignore_extra_column, "date", "category", "name", "fen_hong", "pei_gu_jia", "song_zhuan_gu",
+                           "pei_gu", "suo_gu", "qian_liu_tong", "hou_liu_tong", "qian_zong_gu_ben", "hou_zong_gu_ben", "fen_shu",
+                           "xing_quan_jia");
             level1::XdxrInfo row = {};
             while (in.read_row(row.Date, row.Category, row.Name, row.FenHong, row.PeiGuJia, row.SongZhuanGu, row.PeiGu, row.SuoGu,
                                row.QianLiuTong, row.HouLiuTong, row.QianZongGuBen, row.HouZongGuBen, row.FenShu, row.XingQuanJia)) {
@@ -34,7 +34,7 @@ namespace datasets {
         auto ofn = config::get_xdxr_filename(securityCode);
         filepath::check_filepath(ofn, true);
         io::CSVWriter writer(ofn);
-        writer.write_row("Date","Category","Name","FenHong","PeiGuJia","SongZhuanGu","PeiGu","SuoGu","QianLiuTong","HouLiuTong","QianZongGuBen","HouZongGuBen","FenShu","XingQuanJia");
+        writer.write_row("date","category","name","fen_hong","pei_gu_jia","song_zhuan_gu","pei_gu","suo_gu","qian_liu_tong","hou_liu_tong","qian_zong_gu_ben","hou_zong_gu_ben","fen_shu","xing_quan_jia");
         for (const auto &v: values) {
             writer.write_row(v.Date, v.Category, v.Name, v.FenHong,v.PeiGuJia,v.SongZhuanGu,v.PeiGu,v.SuoGu,v.QianLiuTong,v.HouLiuTong,v.QianZongGuBen,v.HouZongGuBen,v.FenShu,v.XingQuanJia);
         }

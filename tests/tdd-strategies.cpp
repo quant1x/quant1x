@@ -1,7 +1,7 @@
 #include <quant1x/test/test.h>
 #include <quant1x/strategies/strategy.h>
 #include <capnp/message.h>
-#include <quant1x/std/numerics.h>
+#include <quant1x/std/numeric.h>
 #include <indicators/dynamic_progress.hpp>
 #include <indicators/progress_bar.hpp>
 #include <users/no1.h>
@@ -163,7 +163,7 @@ TEST_CASE("strategy-backtest", "[strategies]") {
         }
         std::cout << std::fixed << std::setprecision(2);
         std::cout << "date: " << dates[dates.size()-1].only_date() + ", count signal: " << total_signal << ", win: " << total_win_count << std::endl;
-        std::cout << "       Strategy Win Rate(胜率): " << numerics::ChangeRate(f64(total_signal), f64(total_win_count))*100 << std::endl;
+        std::cout << "       Strategy Win Rate(胜率): " << numeric::ChangeRate(f64(total_signal), f64(total_win_count))*100 << std::endl;
         std::cout << "                  return_rate: " << total_returns << ", date_count:"<< total_buys<< std::endl;
         std::cout << "        Return Rate(平均收益率): " << ((total_returns / total_buys) *100)/total_signal << "%" << std::endl;
         std::cout << "Daily Return Amount(净利润比例): " << (total_returns / total_buys) *100 << "%" << std::endl;

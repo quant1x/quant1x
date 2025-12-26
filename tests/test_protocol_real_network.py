@@ -1,7 +1,8 @@
 import time
 from typing import Any
 
-from quant1x.level1 import client as l1client
+import quant1x.level1.client as l1client
+from quant1x.level1.client import init_std_pool, get_std_conn
 from quant1x.level1 import config as l1config
 
 
@@ -24,22 +25,22 @@ def test_real_network_handshake_first_available():
         port = int(entry.get("Port"))
         try:
             # initialize pool pointing to single real server
-            l1client.init_pool(servers=[(host, port)], min_conn=1, max_conn=1)
+            init_std_pool(servers=[(host, port)], min_conn=1, max_conn=1)
 
             # speed up timeouts for test (internal API access)
             try:
-                if l1client._pool is not None:
-                    l1client._pool.network_handler.set_timeout(3)
-                    l1client._pool.network_handler.set_check_interval(1)
+                if getattr(l1client, '_std_pool', None) is not None:
+                    l1client._std_pool.network_handler.set_timeout(3)
+                    l1client._std_pool.network_handler.set_check_interval(1)
             except Exception:
                 # ignore if internals differ
                 pass
 
             # acquire triggers connection creation and handshake
-            handle = l1client.client()
+            handle = get_std_conn()
             with handle as conn:
-                sock = conn.socket
-                assert sock.fileno() != -1
+                # ConnectionHandle 不再直接暴露底层 socket，验证基本 I/O API 可用
+                assert hasattr(conn, 'sendall') and hasattr(conn, 'recv')
             success = True
             break
         except Exception as e:

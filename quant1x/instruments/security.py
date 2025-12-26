@@ -108,7 +108,7 @@ def init_securities(force: bool = False) -> None:
                 need_download = True
             if need_download:
                 rows = []
-                markets = [MarketType.SHANGHAI, MarketType.SHENZHEN, MarketType.BEIJING]
+                markets = [MarketType.ShangHai, MarketType.ShenZhen, MarketType.BeiJing]
                 for m in markets:
                     start = 0
                     while True:
@@ -125,7 +125,7 @@ def init_securities(force: bool = False) -> None:
                         if not page:
                             break
                         # prefix codes with market flag (sh/sz/bj)
-                        prefix = 'sh' if m == MarketType.SHANGHAI else ('sz' if m == MarketType.SHENZHEN else 'bj')
+                        prefix = 'sh' if m == MarketType.ShangHai else ('sz' if m == MarketType.ShenZhen else 'bj')
                         for it in page:
                             code = (it.get('Code') or '').strip()
                             code_pref = prefix + code

@@ -1,12 +1,10 @@
-"""Fetch SECURITY_LIST pages from level1 servers (Python port).
+"""从 level1 服务器获取 SECURITY_LIST 页面（Python 实现）。
 
-This module provides a small helper `fetch_security_list(market, start, count)`
-which mirrors the Rust/C++ behavior used by the native `exchange` code. It
-builds a SECURITY_LIST request, sends it over a pooled level1 connection and
-parses the response payload into a list of dicts.
+本模块提供一个小工具函数 `fetch_security_list(market, start, count)`，
+其行为与 native（C++/Rust）实现保持一致：构造 SECURITY_LIST 请求，
+通过连接池发送请求，并将响应体解析为字典列表返回。
 
-Note: This implementation aims to be robust but conservative: on any I/O or
-parse error it returns None so callers can decide how to proceed.
+注意：实现偏稳健与保守：遇到任意 I/O 或解析错误时返回 `None`，由调用方决定如何处理。
 """
 from __future__ import annotations
 
@@ -19,13 +17,13 @@ from quant1x.level1 import protocol
 
 log = logging.getLogger(__name__)
 
-# Keep a default page size similar to C++/Rust code. The C++ header uses
-# `security_list_pre_request_max` (commonly 1600). Use 1600 as default.
+# 保持与 C++/Rust 实现类似的默认分页大小。C++ 头文件使用
+# `security_list_pre_request_max`（通常为 1600），这里也使用 1600 作为默认值。
 PRE_REQUEST_MAX = 1600
 
 
 def _int_to_float64(v: int) -> float:
-    # Port of Rust `int_to_float64` from level1/helpers.rs
+    # 移植自 Rust 中 level1/helpers.rs 的 `int_to_float64` 实现
     if v == 0:
         return 0.0
     log_point = ((v >> 24) & 0xFF)
@@ -68,10 +66,10 @@ def _int_to_float64(v: int) -> float:
 
 
 def fetch_security_list(market: int, start: int, count: int) -> Optional[List[Dict]]:
-    """Fetch one page of SECURITY_LIST from a level1 server.
+    """从 level1 服务器获取一页 SECURITY_LIST。
 
-    Returns a list of dicts with keys: Code (6-char string), VolUnit (int),
-    DecimalPoint (int), Name (str), PreClose (float). Returns None on error.
+    返回一个字典列表，字典包含字段：`Code`（6 字符字符串）、`VolUnit`（整数）、
+    `DecimalPoint`（整数）、`Name`（字符串）、`PreClose`（浮点）。出现错误时返回 `None`。
     """
     try:
         class SecurityListRequest:
@@ -101,23 +99,23 @@ def fetch_security_list(market: int, start: int, count: int) -> Optional[List[Di
         req = SecurityListRequest(market, start, count)
         resp = SecurityListResponse()
 
-        with l1client.client() as conn:
-            protocol.process(conn.socket, req, resp)
+        with l1client.get_std_conn() as conn:
+            protocol.process(conn, req, resp)
         
         body = resp.body
 
         if not body:
-            # empty body -> no securities
+            # 响应体为空 -> 表示没有证券记录
             return []
 
-        # parse: first u16 count, then records
+        # 解析：先读取 u16 的计数，然后依次解析记录
         offset = 0
         if len(body) < 2:
             return []
         (cnt,) = struct.unpack_from('<H', body, offset)
         offset += 2
         result = []
-        # each record expected to be 25 bytes minimum as in Rust implementation
+        # 每条记录至少为 25 字节（与 Rust 实现一致）
         for _ in range(cnt):
             if offset + 25 > len(body):
                 log.warning('Insufficient data when parsing SECURITY_LIST payload')
@@ -128,21 +126,21 @@ def fetch_security_list(market: int, start: int, count: int) -> Optional[List[Di
             offset += 2
             name_buf = body[offset:offset+16]
             offset += 16
-            # skip 4 bytes
+            # 跳过 4 字节（保留字段）
             offset += 4
             (decimal_point,) = struct.unpack_from('<B', body, offset)
             offset += 1
             (tmp_u32,) = struct.unpack_from('<I', body, offset)
             offset += 4
-            # skip last 4 bytes
+            # 跳过最后 4 字节（保留/未使用）
             offset += 4
 
-            # decode code and name
+            # 解码代码和名称字段
             try:
                 code = code_bytes.decode('ascii', errors='ignore').rstrip('\x00')
             except Exception:
                 code = code_bytes.decode('utf-8', errors='ignore').rstrip('\x00')
-            # name is GBK encoded up to first NUL
+            # 名称使用 GBK 编码，直到第一个 NUL 字节为止
             try:
                 nul_pos = name_buf.index(0)
             except ValueError:

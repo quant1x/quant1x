@@ -1,6 +1,6 @@
 import unittest
 from quant1x.datasets import kline
-from quant1x.level1 import client
+from quant1x.level1.client import init_std_pool
 from quant1x.level1.security_bars import KLineType
 
 class TestRealKLine(unittest.TestCase):
@@ -20,7 +20,7 @@ class TestRealKLine(unittest.TestCase):
 
         # 初始化连接池，这将执行真实的服务器探测 (detect)
         # 注意：这取决于网络状况，可能会耗时几秒钟
-        client.init_pool()
+        init_std_pool()
 
     def test_fetch_real_kline(self):
         code = "SH600000" # 浦发银行

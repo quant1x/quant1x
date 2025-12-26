@@ -2,7 +2,7 @@
 #ifndef API_ALGO_H
 #define API_ALGO_H 1
 
-#include <quant1x/std/numerics.h>
+#include <quant1x/std/numeric.h>
 
 namespace algo {
 
@@ -50,17 +50,17 @@ namespace algo {
 
             // 获取当前均值
             double getMean() const {
-                return (count > 0) ? mean : numerics::NaN; // 返回NaN如果无数据
+                return (count > 0) ? mean : numeric::NaN; // 返回NaN如果无数据
             }
 
             // 获取总体方差
             double getVariancePopulation() const {
-                return (count > 0) ? M2 / count : numerics::NaN;  // NaN如果无数据
+                return (count > 0) ? M2 / count : numeric::NaN;  // NaN如果无数据
             }
 
             // 获取样本方差（无偏估计）
             double getVarianceSample() const {
-                return (count > 1) ? M2 / (count - 1) : numerics::NaN;  // NaN如果数据不足
+                return (count > 1) ? M2 / (count - 1) : numeric::NaN;  // NaN如果数据不足
             }
 
             // 获取总体标准差

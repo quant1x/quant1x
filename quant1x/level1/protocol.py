@@ -45,129 +45,42 @@ def sequence_id() -> int:
         return _seq_id
 
 
-def _recv_exact(sock: socket.socket, n: int) -> bytes:
+def _recv_exact(conn_like, n: int) -> bytes:
+    """从支持 `recv(n)` 的对象读取恰好 `n` 字节。
+
+    `conn_like` 预期为 `ConnectionHandle`（或任何实现 `recv` 的对象），
+    用于屏蔽对原始 socket 的直接访问。
+    """
     buf = bytearray()
     while len(buf) < n:
-        chunk = sock.recv(n - len(buf))
+        chunk = conn_like.recv(n - len(buf))
         if not chunk:
             raise ConnectionError("socket closed while reading")
         buf.extend(chunk)
     return bytes(buf)
 
 
-def process(sock: socket.socket, request, response) -> None:
-    """Send request and populate response."""
+def process(conn_handle, request, response) -> None:
+    """使用 `ConnectionHandle` 发送请求并填充响应对象。
+
+    `conn_handle` 必须支持 `sendall(bytes)` 和 `recv(n)` 方法（由 `ConnectionHandle` 提供），
+    以避免直接暴露原始 `socket.socket` 给调用方。
+    """
     req_buf = request.serialize()
-    sock.sendall(req_buf)
+    conn_handle.sendall(req_buf)
 
-    # read 16-byte response header
-    hdr = _recv_exact(sock, 16)
+    # 读取 16 字节响应头
+    hdr = _recv_exact(conn_handle, 16)
 
-    # parse header: <I B I B H H H> => u32, u8, u32, u8, u16, u16, u16
+    # 解析头部: <I B I B H H H> => u32, u8, u32, u8, u16, u16, u16
     i1, zip_flag, seq_id, i2, method, zip_size, unzip_size = struct.unpack('<IBIBHHH', hdr)
 
     if zip_size == 0:
         return
 
-    body = _recv_exact(sock, zip_size)
+    body = _recv_exact(conn_handle, zip_size)
     if zip_size != unzip_size:
-        # zlib-compressed
+        # 如果压缩长度与解压长度不一致，则为 zlib 压缩数据，需要解压
         body = zlib.decompress(body)
-    
+
     response.deserialize(body)
-
-
-class Hello1Request:
-    def __init__(self):
-        self.zip_flag = FLAG_UNCOMPRESSED
-        self.seq_id = sequence_id()
-        self.packet_type = 0x01
-        self.pkg_len1 = 0
-        self.pkg_len2 = 0
-        self.method = COMMAND_LOGIN1
-        # padding bytes used by original implementation
-        self.padding = bytes.fromhex('01')
-
-    def serialize(self) -> bytes:
-        self.pkg_len1 = 2 + len(self.padding)
-        self.pkg_len2 = self.pkg_len1
-        header = struct.pack('<B I B H H H', self.zip_flag, self.seq_id, self.packet_type, self.pkg_len1, self.pkg_len2, self.method)
-        return header + self.padding
-
-
-class Hello1Response:
-    def __init__(self):
-        self.info = ''
-
-    def deserialize(self, data: bytes) -> None:
-        # Follow Rust offset: 68
-        offset = 68
-        if len(data) >= offset:
-            info_bytes = data[offset:]
-            try:
-                self.info = info_bytes.decode('gbk', errors='ignore').rstrip('\x00')
-            except Exception:
-                self.info = info_bytes.decode('utf-8', errors='ignore')
-
-
-class Hello2Request:
-    def __init__(self):
-        self.zip_flag = FLAG_UNCOMPRESSED
-        self.seq_id = sequence_id()
-        self.packet_type = 0x01
-        self.pkg_len1 = 0
-        self.pkg_len2 = 0
-        self.method = COMMAND_LOGIN2
-        # padding taken from Rust example
-        self.padding = bytes.fromhex('d5d0c9ccd6a4a8af0000008fc22540130000d500c9ccbdf0d7ea00000002')
-
-    def serialize(self) -> bytes:
-        self.pkg_len1 = 2 + len(self.padding)
-        self.pkg_len2 = self.pkg_len1
-        header = struct.pack('<B I B H H H', self.zip_flag, self.seq_id, self.packet_type, self.pkg_len1, self.pkg_len2, self.method)
-        return header + self.padding
-
-
-class Hello2Response:
-    def __init__(self):
-        self.info = ''
-
-    def deserialize(self, data: bytes) -> None:
-        # Rust uses offset 58
-        offset = 58
-        if len(data) >= offset:
-            info_bytes = data[offset:]
-            try:
-                self.info = info_bytes.decode('gbk', errors='ignore').rstrip('\x00')
-            except Exception:
-                self.info = info_bytes.decode('utf-8', errors='ignore')
-
-
-class HeartbeatRequest:
-    def __init__(self):
-        self.zip_flag = FLAG_UNCOMPRESSED
-        self.seq_id = sequence_id()
-        self.packet_type = 0x02
-        self.pkg_len1 = 2
-        self.pkg_len2 = 2
-        self.method = COMMAND_HEARTBEAT
-
-    def serialize(self) -> bytes:
-        header = struct.pack('<B I B H H H', self.zip_flag, self.seq_id, self.packet_type, self.pkg_len1, self.pkg_len2, self.method)
-        return header
-
-
-class HeartbeatResponse:
-    def __init__(self):
-        self.info = ''
-
-    def deserialize(self, data: bytes) -> None:
-        # get_string(10) in Rust: read up to 10 bytes and strip at first NUL
-        if len(data) >= 10:
-            s = data[:10]
-        else:
-            s = data
-        try:
-            self.info = s.decode('gbk', errors='ignore').split('\x00', 1)[0]
-        except Exception:
-            self.info = s.decode('utf-8', errors='ignore').split('\x00', 1)[0]

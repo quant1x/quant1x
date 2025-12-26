@@ -4,7 +4,7 @@ import threading
 from typing import Tuple, Dict, List, Any
 from enum import Enum
 from quant1x import exchange
-from quant1x.exchange import markets
+from quant1x.instruments import markets
 
 # Constants
 URL_RISK_ASSESSMENT = "http://page3.tdx.com.cn:7615/site/pcwebcall_static/bxb/json/"

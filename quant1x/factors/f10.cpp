@@ -14,7 +14,7 @@ static std::string get_ipo_date(const std::string &security_code, const std::str
     if(kls.empty()) {
         return "";
     }
-    return kls[0].Date;
+    return kls[0].date;
 }
 
 // 获取财务数据

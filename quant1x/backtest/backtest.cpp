@@ -66,10 +66,10 @@ namespace backtest {
             return order;
         }
         order.direction = direction;
-        order.price     = bar.Close * (1.0 + (direction == TradeDirection::LONG ? backtest_data.config.slippage_rate
+        order.price     = bar.close * (1.0 + (direction == TradeDirection::LONG ? backtest_data.config.slippage_rate
                                                                                 : -backtest_data.config.slippage_rate));
         // 计算理论仓位
-        double raw_quantity = calculatePositionSize(bar.Close);
+        double raw_quantity = calculatePositionSize(bar.close);
         // A股买入必须为100股整数倍
         int lot_size         = 100;  // A股1手=100股
         int rounded_quantity = static_cast<int>(raw_quantity / lot_size) * lot_size;
@@ -82,8 +82,8 @@ namespace backtest {
             order.quantity = getPositionQuantity(code);
         }
         // order.quantity    = calculatePositionSize(bar.Close);
-        order.create_time = bar.Datetime;
-        order.update_time = bar.Datetime;
+        order.create_time = bar.datetime;
+        order.update_time = bar.datetime;
         order.status      = OrderStatus::PENDING;
         return order;
     }
@@ -116,7 +116,7 @@ namespace backtest {
     // 记录每日状态
     void BacktestEngine::recordDailyStatus(const datasets::KLine &bar) {
         DailyPositionStatus status;
-        status.timestamp = bar.Datetime;
+        status.timestamp = bar.datetime;
 
         //  包含浮动盈亏的账户快照（避免频繁拷贝positions map）
         Account     snap      = backtest_data.account;
@@ -324,7 +324,7 @@ namespace backtest {
         auto &positions = position_manager.getPositions();
         if (!positions.empty()) {
             // 获取最后交易日收盘价
-            double last_price = last_bar.Close;
+            double last_price = last_bar.close;
 
             // 记录未平仓信息
             for (auto &[symbol, position] : positions) {
@@ -403,7 +403,7 @@ namespace backtest {
             std::string         start_date = ts_start.only_date();
             std::string         end_date   = ts_end.only_date();
             for (const auto &b : market_data) {
-                if (b.Date >= start_date && b.Date <= end_date) {
+                if (b.date >= start_date && b.date <= end_date) {
                     filtered_market_data.push_back(b);
                 }
             }
@@ -429,7 +429,7 @@ namespace backtest {
             // 生成信号
             TradeDirection signal = strategy_->generateSignal(i);
             if (backtest_data.config.verbose) {
-                spdlog::warn("{} {}, signal:{}", bar.Datetime, code, magic_enum::enum_name(signal));
+                spdlog::warn("{} {}, signal:{}", bar.datetime, code, magic_enum::enum_name(signal));
                 std::cout << "[BacktestEngine::run] " << code << " idx=" << i << " signal=" << static_cast<int>(signal)
                           << "\n";
             }
@@ -442,7 +442,7 @@ namespace backtest {
                     if (!position_manager.hasPosition(code)) {
                         // 没有持仓，禁止卖出
                         spdlog::warn(
-                            "{} {}, signal:{}, 没有持仓，禁止卖出", bar.Datetime, code, magic_enum::enum_name(signal));
+                            "{} {}, signal:{}, 没有持仓，禁止卖出", bar.datetime, code, magic_enum::enum_name(signal));
                         continue;
                     }
                 }
@@ -452,7 +452,7 @@ namespace backtest {
                     spdlog::warn("{} order: {}, message={}", code, order.quantity, order.message);
                 if (order.status == OrderStatus::REJECTED || order.quantity == 0) {
                     if (backtest_data.config.verbose)
-                        spdlog::warn("{} {}, signal:{}, 订单被拒绝", bar.Datetime, code, magic_enum::enum_name(signal));
+                        spdlog::warn("{} {}, signal:{}, 订单被拒绝", bar.datetime, code, magic_enum::enum_name(signal));
                     continue;
                 }
                 backtest_data.orders.push_back(order);
@@ -476,7 +476,7 @@ namespace backtest {
             // spdlog::debug("日期结束持仓: {}股", position_manager.getPositionQuantity(code));
             // 记录每日状态
             backtest_data.result.equity_curve.push_back(backtest_data.account.current_capital +
-                                                        position_manager.calculateTotalFloatingPnL(bar.Close));
+                                                        position_manager.calculateTotalFloatingPnL(bar.close));
             recordDailyStatus(bar);
             // 记录本Bar是否存在任何持仓（用于覆盖率计算）
             if (!position_manager.getPositions().empty()) {

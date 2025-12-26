@@ -9,12 +9,86 @@ import numpy as np
 import pandas as pd
 from typing import List, Optional
 import bisect
+import requests
+import csv
+from .sina.decoder import FinanceDecoder
+
+# 新浪财经交易日历URL
+SINA_CALENDAR_URL = "https://finance.sina.com.cn/realstock/company/klc_td_sh.txt"
+CALENDAR_MISSING_DATE = "1992-05-04"
 
 exchange_start_time = '09:15:00'
 exchange_end_time = '15:00:00'
 # time_range = "09:15:00~11:30:00,13:00:00~15:00:00"
 trade_session = session.TimeRange(f'{exchange_start_time}~{exchange_end_time}')
 
+def __preprocess(text: str) -> str:
+    """预处理JS-like响应文本（去除赋值、尾部分号和引号）"""
+    s = text
+    if "=" in s:
+        pos = s.find("=")
+        s = s[pos + 1:]
+    if ";" in s:
+        pos = s.find(";")
+        s = s[:pos]
+    s = s.replace('"', '')
+    return s
+
+def __decode(text: str) -> List[str]:
+    """解码日历数据"""
+    pre = __preprocess(text)
+    decoder = FinanceDecoder(pre)
+    raw = decoder.decode()
+
+    dates = []
+    if isinstance(raw, list):
+        for item in raw:
+            if isinstance(item, dict) and "date" in item:
+                date = item["date"].strip()
+                if date:
+                    dates.append(date)
+            elif isinstance(item, str):
+                dates.append(item.strip())
+
+    return dates if dates else []
+
+def __update_calendar():
+    """下载交易日历数据并缓存到磁盘"""
+    fn = os.path.join(config.meta_path, "calendar")
+
+    try:
+        # 发送HTTP请求下载数据
+        response = requests.get(SINA_CALENDAR_URL, timeout=15)
+        response.raise_for_status()
+
+        body = response.text
+
+        # 解码数据
+        dates = __decode(body)
+
+        if not dates:
+            # 如果解码失败，抛出异常
+            raise ValueError("解码交易日历数据失败")
+
+        # 确保缺失日期存在
+        if CALENDAR_MISSING_DATE not in dates:
+            # 插入缺失日期并保持排序
+            dates.append(CALENDAR_MISSING_DATE)
+            dates.sort()
+
+        # 创建目录
+        os.makedirs(os.path.dirname(fn), exist_ok=True)
+
+        # 写入CSV文件
+        with open(fn, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(["date", "source"])
+            for date in dates:
+                writer.writerow([date, "sina"])
+
+    except Exception as e:
+        # 抛出异常而不是创建默认文件
+        raise RuntimeError(f"更新交易日历失败: {e}")
 
 @lru_cache(maxsize=None)
 def __calendar() -> pd.Series:
@@ -22,8 +96,17 @@ def __calendar() -> pd.Series:
     交易日历
     """
     fn = os.path.join(config.meta_path, "calendar")
-    df = pd.read_csv(fn)
-    return df['date']
+
+    # 检查文件是否存在且不为空
+    if not os.path.exists(fn) or os.path.getsize(fn) == 0:
+        # 文件不存在或为空，下载并缓存
+        __update_calendar()
+
+    try:
+        df = pd.read_csv(fn)
+        return df['date']
+    except Exception as e:
+        raise RuntimeError(f"读取交易日历文件失败: {e}")
 
 @lru_cache(maxsize=None)
 def __calendar_timestamps() -> List[Timestamp]:

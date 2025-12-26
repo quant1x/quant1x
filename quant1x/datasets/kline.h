@@ -8,39 +8,39 @@ namespace datasets {
 
     // 日K线 结构体
     struct KLine {
-        std::string Date;                 // 日期
-        double      Open   = 0;           // 开盘价
-        double      Close  = 0;           // 收盘价
-        double      High   = 0;           // 最高价
-        double      Low    = 0;           // 最低价
-        double      Volume = 0;           // 成交量(股)
-        double      Amount = 0;           // 成交金额(元)
-        int         Up     = 0;           // 上涨家数 / 外盘
-        int         Down   = 0;           // 下跌家数 / 内盘
-        std::string Datetime;             // 时间
-        int         AdjustmentCount = 0;  // 新增：除权除息次数
+        std::string date;                 // 日期
+        double      open   = 0;           // 开盘价
+        double      close  = 0;           // 收盘价
+        double      high   = 0;           // 最高价
+        double      low    = 0;           // 最低价
+        double      volume = 0;           // 成交量(股)
+        double      amount = 0;           // 成交金额(元)
+        int         up     = 0;           // 上涨家数 / 外盘
+        int         down   = 0;           // 下跌家数 / 内盘
+        std::string datetime;             // 时间
+        int         adjustment_count = 0; // 新增：除权除息次数
 
         void adjust(const factors::CumulativeAdjustment &adj);
 
         static std::vector<std::string> headers() {
-            return {"Date",
-                    "Open",
-                    "Close",
-                    "High",
-                    "Low",
-                    "Volume",
-                    "Amount",
-                    "Up",
-                    "Down",
-                    "Datetime",
-                    "AdjustmentCount"};
+            return {"date",
+                    "open",
+                    "close",
+                    "high",
+                    "low",
+                    "volume",
+                    "amount",
+                    "up",
+                    "down",
+                    "datetime",
+                    "adjustment_count"};
         }
 
         friend std::ostream &operator<<(std::ostream &os, const KLine &line) {
-            os << "Date: " << line.Date << " Open: " << line.Open << " Close: " << line.Close << " High: " << line.High
-               << " Low: " << line.Low << " Volume: " << line.Volume << " Amount: " << line.Amount << " Up: " << line.Up
-               << " Down: " << line.Down << " Datetime: " << line.Datetime
-               << " AdjustmentCount: " << line.AdjustmentCount;
+            os << "date: " << line.date << " open: " << line.open << " close: " << line.close << " high: " << line.high
+               << " low: " << line.low << " volume: " << line.volume << " amount: " << line.amount << " up: " << line.up
+               << " down: " << line.down << " datetime: " << line.datetime
+               << " adjustment_count: " << line.adjustment_count;
             return os;
         }
     };

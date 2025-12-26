@@ -8,7 +8,7 @@
 namespace datasets {
     constexpr cache::Kind baseKind = 0;
     constexpr cache::Kind BaseXdxr                = cache::PluginMaskBaseData | (baseKind +  1); // 基础数据-除权除息
-    constexpr cache::Kind RawKLine                = cache::PluginMaskBaseData | (baseKind +  2); // 基础数据-未复权K线
+    constexpr cache::Kind BaseRawDailyKLine      = cache::PluginMaskBaseData | (baseKind +  2); // 基础数据-未复权K线
     constexpr cache::Kind BaseKLine               = cache::PluginMaskBaseData | (baseKind +  3); // 基础数据-前复权K线
     constexpr cache::Kind BaseTransaction         = cache::PluginMaskBaseData | (baseKind +  4); // 基础数据-历史成交
     constexpr cache::Kind BaseMinutes             = cache::PluginMaskBaseData | (baseKind +  5); // 基础数据-分时数据

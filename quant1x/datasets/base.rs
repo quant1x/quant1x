@@ -6,7 +6,7 @@ pub const BASE_KIND: crate::cache::Kind = 0;
 
 // Uppercase (Rust style)
 pub const BASE_XDXR: crate::cache::Kind = crate::cache::PLUGIN_MASK_BASE_DATA | (BASE_KIND + 1);
-pub const RAW_KLINE: crate::cache::Kind = crate::cache::PLUGIN_MASK_BASE_DATA | (BASE_KIND + 2);
+pub const BASE_RAW_DAILY_KLINE: crate::cache::Kind = crate::cache::PLUGIN_MASK_BASE_DATA | (BASE_KIND + 2);
 pub const BASE_KLINE: crate::cache::Kind = crate::cache::PLUGIN_MASK_BASE_DATA | (BASE_KIND + 3);
 pub const BASE_TRANSACTION: crate::cache::Kind =
     crate::cache::PLUGIN_MASK_BASE_DATA | (BASE_KIND + 4);
@@ -26,7 +26,7 @@ pub const BASE_MINUTE_KLINE: crate::cache::Kind =
 
 // Backward-compatible CamelCase aliases (preserve original export names)
 pub const BaseXdxr: crate::cache::Kind = BASE_XDXR;
-pub const RawKLine: crate::cache::Kind = RAW_KLINE;
+pub const BaseRawDailyKLine: crate::cache::Kind = BASE_RAW_DAILY_KLINE;
 pub const BaseKLine: crate::cache::Kind = BASE_KLINE;
 pub const BaseTransaction: crate::cache::Kind = BASE_TRANSACTION;
 pub const BaseMinutes: crate::cache::Kind = BASE_MINUTES;

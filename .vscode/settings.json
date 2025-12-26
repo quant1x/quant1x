@@ -56,5 +56,6 @@
     "editor.fontFamily": "'Source Code Pro', 'Courier New', monospace",
     "editor.inlineSuggest.fontFamily": "'Source Code Pro', 'Courier New', monospace",
     "chat.editor.fontFamily": "default",
-    "chat.fontFamily": "default"
+    "chat.fontFamily": "default",
+    "terminal.integrated.scrollback": 10000
 }

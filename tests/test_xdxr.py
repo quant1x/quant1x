@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import os
 import shutil
 import tempfile
-from quant1x.datasets import xdxr
+import quant1x.datasets.xdxr as xdxr_module
 from quant1x.level1 import xdxr_info
 from quant1x.config import config
 from quant1x.exchange import Timestamp
@@ -52,17 +52,34 @@ class TestXdxr(unittest.TestCase):
         # Run update
         code = "sh600000"
         date = Timestamp.now()
-        xdxr.DataXdxr().update(code, date)
+        xdxr_module.DataXdxr().update(code, date)
         
         # Verify file exists
         filename = config.get_xdxr_filename(code)
         self.assertTrue(os.path.exists(filename))
         
         # Run load
-        loaded_list = xdxr.load_xdxr(code)
+        loaded_list = xdxr_module.load_xdxr(code)
         self.assertEqual(len(loaded_list), 1)
         self.assertEqual(loaded_list[0].Date, "2023-01-01")
         self.assertEqual(loaded_list[0].FenHong, 0.5)
+
+    def test_data_adapter_interface(self):
+        """Test DataXdxr implements DataAdapter interface correctly"""
+        adapter = xdxr_module.DataXdxr()
+        
+        # Test required methods exist and return correct types
+        self.assertEqual(adapter.kind(), "BaseXdxr")
+        self.assertEqual(adapter.owner(), "engine")  # Should use DEFAULT_DATA_PROVIDER
+        self.assertEqual(adapter.key(), "xdxr")
+        self.assertEqual(adapter.name(), "除权除息")
+        self.assertEqual(adapter.usage(), "")
+        
+        # Test print method doesn't raise exception
+        adapter.print("sh600000")
+        
+        # Test update method doesn't raise exception with None date
+        adapter.update("sh600000", None)
 
 if __name__ == '__main__':
     unittest.main()

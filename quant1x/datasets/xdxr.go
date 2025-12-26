@@ -188,7 +188,7 @@ func UpdateXdxr(code string) ([]XdxrInfo, error) {
 	defer f.Close()
 	w := csv.NewWriter(f)
 	defer w.Flush()
-	header := []string{"Date", "Category", "Name", "FenHong", "PeiGuJia", "SongZhuanGu", "PeiGu", "SuoGu", "QianLiuTong", "HouLiuTong", "QianZongGuBen", "HouZongGuBen", "FenShu", "XingQuanJia"}
+		header := []string{"date", "category", "name", "fen_hong", "pei_gu_jia", "song_zhuan_gu", "pei_gu", "suo_gu", "qian_liu_tong", "hou_liu_tong", "qian_zong_gu_ben", "hou_zong_gu_ben", "fen_shu", "xing_quan_jia"}
 	if err := w.Write(header); err != nil {
 		return nil, err
 	}

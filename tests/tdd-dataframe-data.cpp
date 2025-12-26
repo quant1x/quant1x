@@ -746,7 +746,7 @@ TEST_CASE("rows-load-csv", "[dataframe]") {
     // 5. 使用数据（示例）
     for (const auto& data : dataset) {
         printf("date: %s, Price: %.2f, Volume: %f, Active: %d\n",
-               data.Date.c_str(), data.Close, data.Volume, data.AdjustmentCount);
+               data.date.c_str(), data.close, data.volume, data.adjustment_count);
     }
 
 }

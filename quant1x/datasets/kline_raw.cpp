@@ -37,10 +37,10 @@ namespace datasets {
             auto ec = filepath::check_filepath(filename, true);
             ec.clear();
             io::CSVWriter writer(filename);
-            writer.write_row("Date", "Open", "Close", "High", "Low", "Volume", "Amount", "Up", "Down", "Datetime");
+            writer.write_row("date", "open", "close", "high", "low", "volume", "amount", "up", "down", "datetime");
             for (const auto &row: values) {
-                writer.write_row(row.Date, row.Open, row.Close, row.High, row.Low, row.Volume, row.Amount,
-                                 row.Up, row.Down, row.Datetime);
+                writer.write_row(row.date, row.open, row.close, row.high, row.low, row.volume, row.amount,
+                                 row.up, row.down, row.datetime);
             }
         }
     }
@@ -69,12 +69,12 @@ namespace datasets {
 
             // 设置表头字段名(用于自动匹配顺序)
             in.read_header(io::ignore_extra_column,
-                           "Date", "Open", "Close", "High", "Low",
-                           "Volume", "Amount", "Up", "Down", "Datetime");
+                           "date", "open", "close", "high", "low",
+                           "volume", "amount", "up", "down", "datetime");
 
             KLineRaw row = {};
-            while (in.read_row(row.Date, row.Open, row.Close, row.High, row.Low, row.Volume, row.Amount,
-                               row.Up, row.Down, row.Datetime)) {
+            while (in.read_row(row.date, row.open, row.close, row.high, row.low, row.volume, row.amount,
+                               row.up, row.down, row.datetime)) {
                 klines.emplace_back(row);
             }
         } catch(...) {
@@ -110,7 +110,7 @@ namespace datasets {
                 if (klineDaysOffset > kLength) {
                     klineDaysOffset = kLength;
                 }
-                startDate = cacheKLines[kLength-klineDaysOffset].Date;
+                startDate = cacheKLines[kLength-klineDaysOffset].date;
             }
             // 2. 确定结束日期
             auto endDate = exchange::timestamp::now().pre_market_time();
@@ -158,16 +158,16 @@ namespace datasets {
                         continue;
                     }
                     auto kx = KLineRaw{
-                        .Date = dateTime.only_date(), // 日期
-                        .Open = row.Open,             // 开盘价
-                        .Close = row.Close,           // 收盘价
-                        .High = row.High,             // 最高价
-                        .Low = row.Low,               // 最低价
-                        .Volume = row.Vol * 100,      // 成交量(股)
-                        .Amount = row.Amount,         // 成交金额(元)
-                        .Up = row.UpCount,            // 上涨家数 / 外盘
-                        .Down = row.DownCount,        // 下跌家数 / 内盘
-                        .Datetime = row.DateTime,     // 时间
+                        .date = dateTime.only_date(), // 日期
+                        .open = row.Open,             // 开盘价
+                        .close = row.Close,           // 收盘价
+                        .high = row.High,             // 最高价
+                        .low = row.Low,               // 最低价
+                        .volume = row.Vol * 100,      // 成交量(股)
+                        .amount = row.Amount,         // 成交金额(元)
+                        .up = row.UpCount,            // 上涨家数 / 外盘
+                        .down = row.DownCount,        // 下跌家数 / 内盘
+                        .datetime = row.DateTime,     // 时间
                     };
                     incremental_klines.emplace_back(kx);
                 }

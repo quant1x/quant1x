@@ -122,3 +122,13 @@ def get_config_map() -> Dict[str, Any]:
 def get_config_map_ref() -> Dict[str, Any]:
     lazy_init_cache_config()
     return _cache_cfg.config_map
+
+
+if __name__ == "__main__":
+    print("Quant1X Config Test")
+    print("Base Path:", get_base_path())
+    print("Meta Path:", get_meta_path())
+    print("Config File Path:", get_configfile_path())
+    print("Logs Path:", get_logs_path())
+    print("Data Path:", get_data_path())
+    print("Config Map:", get_config_map())

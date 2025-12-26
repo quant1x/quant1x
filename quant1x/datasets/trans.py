@@ -4,17 +4,20 @@ import os
 import threading
 import csv
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
-from quant1x.level1 import client, protocol
+from quant1x.level1 import protocol
+from quant1x.level1.client import get_std_conn
 from quant1x.level1 import transaction
-from quant1x.level1.transaction import TickTransaction
 from quant1x import exchange
 from quant1x.exchange import Timestamp
 from quant1x.config import config
-from quant1x.factors import f10
+#from quant1x.factors import f10
 from quant1x.cache import trains_begin_date
-from quant1x import numerics
+from quant1x.cache import adapter
+from quant1x.cache.adapter import DataAdapter, PLUGIN_MASK_BASE_DATA, register, DEFAULT_DATA_PROVIDER
+from quant1x.datasets.base import BASE_TRANSACTION
+from quant1x.std import numeric
 
 log = logging.getLogger(__name__)
 
@@ -145,15 +148,15 @@ def load_transaction_data_from_cache(corrected_code: str, feature_date: Timestam
         try:
             with open(filename, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
-                # Expected headers: time, price, vol, num, amount, buyOrSell
+                # Expected headers: time, price, volume, number, amount, buy_or_sell
                 for row in reader:
                     t = transaction.TickTransaction(
                         time=row['time'],
                         price=float(row['price']),
-                        vol=int(row['vol']),
-                        num=int(row['num']),
+                        vol=int(row['volume']),
+                        num=int(row['number']),
                         amount=float(row['amount']),
-                        buyOrSell=int(row['buyOrSell'])
+                        buyOrSell=int(row['buy_or_sell'])
                     )
                     data_list.append(t)
             
@@ -218,10 +221,9 @@ def update_transaction_data(corrected_code: str, feature_date: Timestamp, start_
             try:
                 req = transaction.TransactionRequest(corrected_code, start, offset)
                 
-                with client.client() as conn:
-                    sock = conn.socket
+                with get_std_conn() as conn:
                     resp = transaction.TransactionResponse(market_val, pure_code)
-                    protocol.process(sock, req, resp)
+                    protocol.process(conn, req, resp)
                 
                 if resp.count == 0 or not resp.list:
                     break
@@ -249,10 +251,9 @@ def update_transaction_data(corrected_code: str, feature_date: Timestamp, start_
             try:
                 req = transaction.HistoryTransactionRequest(corrected_code, trade_date_int, start, offset)
                 
-                with client.client() as conn:
-                    sock = conn.socket
+                with get_std_conn() as conn:
                     resp = transaction.HistoryTransactionResponse(market_val, pure_code)
-                    protocol.process(sock, req, resp)
+                    protocol.process(conn, req, resp)
                 
                 if resp.count == 0 or not resp.list:
                     break
@@ -296,7 +297,7 @@ def update_transaction_data(corrected_code: str, feature_date: Timestamp, start_
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         with open(tmp_filename, 'w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
-            writer.writerow(["time", "price", "vol", "num", "amount", "buyOrSell"])
+            writer.writerow(["time", "price", "volume", "number", "amount", "buy_or_sell"])
             for rec in existing_list:
                 writer.writerow([rec.time, rec.price, rec.vol, rec.num, rec.amount, rec.buyOrSell])
         
@@ -344,105 +345,105 @@ def checkout_transaction_data(security_code: str, feature_date: Timestamp, ignor
     data_list, _ = load_transaction_data_from_cache(corrected_code, feature_date, ignore_previous_data)
     return data_list
 
-def count_inflow(data_list: List[transaction.TickTransaction], security_code: str, feature_date: Timestamp) -> TurnoverDataSummary:
-    """
-    计算指定证券在特定日期的资金流入流出情况
+# def count_inflow(data_list: List[transaction.TickTransaction], security_code: str, feature_date: Timestamp) -> TurnoverDataSummary:
+#     """
+#     计算指定证券在特定日期的资金流入流出情况
     
-    Args:
-        data_list (List[transaction.TickTransaction]): 该证券的逐笔交易数据列表
-        security_code (str): 证券代码
-        feature_date (Timestamp): 计算日期
+#     Args:
+#         data_list (List[transaction.TickTransaction]): 该证券的逐笔交易数据列表
+#         security_code (str): 证券代码
+#         feature_date (Timestamp): 计算日期
     
-    Returns:
-        TurnoverDataSummary: 包含以下统计数据的对象:
-            - OuterVolume: 外盘成交量
-            - OuterAmount: 外盘成交金额  
-            - InnerVolume: 内盘成交量
-            - InnerAmount: 内盘成交金额
-            - OpenVolume: 开盘成交量
-            - CloseVolume: 收盘成交量
-            - OpenTurnZ: 开盘换手率(万分之)
-            - CloseTurnZ: 收盘换手率(万分之)
+#     Returns:
+#         TurnoverDataSummary: 包含以下统计数据的对象:
+#             - OuterVolume: 外盘成交量
+#             - OuterAmount: 外盘成交金额  
+#             - InnerVolume: 内盘成交量
+#             - InnerAmount: 内盘成交金额
+#             - OpenVolume: 开盘成交量
+#             - CloseVolume: 收盘成交量
+#             - OpenTurnZ: 开盘换手率(万分之)
+#             - CloseTurnZ: 收盘换手率(万分之)
     
-    Notes:
-        - 根据买卖方向(TICK_BUY/TICK_SELL)区分内外盘
-        - 对于中性方向交易，按成交量均分到内外盘
-        - 开盘/收盘成交量根据时间范围统计
-        - 换手率基于F10中的流通股本计算(万分之)
-    """
-    summary = TurnoverDataSummary()
-    if not data_list:
-        return summary
+#     Notes:
+#         - 根据买卖方向(TICK_BUY/TICK_SELL)区分内外盘
+#         - 对于中性方向交易，按成交量均分到内外盘
+#         - 开盘/收盘成交量根据时间范围统计
+#         - 换手率基于F10中的流通股本计算(万分之)
+#     """
+#     summary = TurnoverDataSummary()
+#     if not data_list:
+#         return summary
         
-    corrected_code = exchange.correct_security_code(security_code)
-    last_price = 0.0
+#     corrected_code = exchange.correct_security_code(security_code)
+#     last_price = 0.0
     
-    for v in data_list:
-        tm = v.time
-        direction = v.buyOrSell
-        price = v.price
+#     for v in data_list:
+#         tm = v.time
+#         direction = v.buyOrSell
+#         price = v.price
         
-        if last_price == 0:
-            last_price = price
+#         if last_price == 0:
+#             last_price = price
             
-        vol = v.vol
+#         vol = v.vol
         
-        if direction != transaction.TICK_BUY and direction != transaction.TICK_SELL:
-            if price > last_price:
-                direction = transaction.TICK_BUY
-            elif price < last_price:
-                direction = transaction.TICK_SELL
+#         if direction != transaction.TICK_BUY and direction != transaction.TICK_SELL:
+#             if price > last_price:
+#                 direction = transaction.TICK_BUY
+#             elif price < last_price:
+#                 direction = transaction.TICK_SELL
                 
-        if direction == transaction.TICK_BUY:
-            summary.OuterVolume += vol
-            summary.OuterAmount += float(vol) * price
-        elif direction == transaction.TICK_SELL:
-            summary.InnerVolume += vol
-            summary.InnerAmount += float(vol) * price
-        else:
-            vn = vol
-            buy_offset = vn // 2
-            sell_offset = vn - buy_offset
+#         if direction == transaction.TICK_BUY:
+#             summary.OuterVolume += vol
+#             summary.OuterAmount += float(vol) * price
+#         elif direction == transaction.TICK_SELL:
+#             summary.InnerVolume += vol
+#             summary.InnerAmount += float(vol) * price
+#         else:
+#             vn = vol
+#             buy_offset = vn // 2
+#             sell_offset = vn - buy_offset
             
-            summary.OuterVolume += buy_offset
-            summary.OuterAmount += float(buy_offset) * price
-            summary.InnerVolume += sell_offset
-            summary.InnerAmount += float(sell_offset) * price
+#             summary.OuterVolume += buy_offset
+#             summary.OuterAmount += float(buy_offset) * price
+#             summary.InnerVolume += sell_offset
+#             summary.InnerAmount += float(sell_offset) * price
             
-        if HistoricalTransactionDataFirstTime <= tm < HistoricalTransactionDataStartTime:
-            summary.OpenVolume += vol
+#         if HistoricalTransactionDataFirstTime <= tm < HistoricalTransactionDataStartTime:
+#             summary.OpenVolume += vol
             
-        if HistoricalTransactionDataFinalBiddingTime < tm <= HistoricalTransactionDataLastTime:
-            summary.CloseVolume += vol
+#         if HistoricalTransactionDataFinalBiddingTime < tm <= HistoricalTransactionDataLastTime:
+#             summary.CloseVolume += vol
             
-        last_price = price
+#         last_price = price
         
-    # F10 TurnZ
-    f10_data = f10.get_f10(corrected_code, feature_date.only_date())
-    if f10_data:
-        free_capital = f10_data.free_capital
-        capital = f10_data.capital
+#     # F10 TurnZ
+#     f10_data = f10.get_f10(corrected_code, feature_date.only_date())
+#     if f10_data:
+#         free_capital = f10_data.free_capital
+#         capital = f10_data.capital
         
-        if free_capital == 0:
-            free_capital = capital
+#         if free_capital == 0:
+#             free_capital = capital
             
-        if abs(free_capital) > 1e-6:
-            def calculate_turn_z(v):
-                turnover_rate_z = numerics.change_rate(free_capital, v)
-                turnover_rate_z *= 10000
-                return numerics.decimal(turnover_rate_z)
+#         if abs(free_capital) > 1e-6:
+#             def calculate_turn_z(v):
+#                 turnover_rate_z = numeric.change_rate(free_capital, v)
+#                 turnover_rate_z *= 10000
+#                 return numeric.decimal(turnover_rate_z)
                 
-            summary.OpenTurnZ = calculate_turn_z(float(summary.OpenVolume))
-            summary.CloseTurnZ = calculate_turn_z(float(summary.CloseVolume))
+#             summary.OpenTurnZ = calculate_turn_z(float(summary.OpenVolume))
+#             summary.CloseTurnZ = calculate_turn_z(float(summary.CloseVolume))
         
-    return summary
+#     return summary
 
-class DataTrans:
-    def kind(self):
-        return "BaseTransaction"
+class DataTrans(DataAdapter):
+    def kind(self) -> int:
+        return BASE_TRANSACTION
         
     def owner(self):
-        return "default"
+        return DEFAULT_DATA_PROVIDER
         
     def key(self):
         return "trans"
@@ -453,10 +454,26 @@ class DataTrans:
     def usage(self):
         return "历史成交"
         
-    def print(self, code: str, dates: List[str]):
+    def print(self, code: str, dates: Optional[List[Timestamp]] = None) -> None:
         pass
         
-    def update(self, code: str, date: str):
+    def update(self, code: str, date: Optional[Timestamp] = None) -> None:
+        if date is None:
+            # 如果没有提供日期，使用当前日期或其他默认逻辑
+            # 这里可能需要根据业务逻辑决定如何处理
+            raise ValueError("Date is required for transaction data update")
         corrected_code = exchange.correct_security_code(code)
-        ensure_transaction_data_updated(corrected_code, Timestamp.parse(date), False)
+        ensure_transaction_data_updated(corrected_code, date, False)
 
+
+# 注册插件
+_data_trans_plugin = adapter.register(DataTrans)
+
+if __name__ == "__main__":
+    # Example usage
+    code = "sh600000"
+    date = Timestamp.parse("2023-01-04")
+    transactions = checkout_transaction_data(code, date, False)
+    print(transactions)
+    #summary = count_inflow(transactions, code, date)
+    #print(summary)

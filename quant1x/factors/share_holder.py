@@ -5,7 +5,7 @@ import requests
 from typing import List, Dict, Tuple, Optional
 from datetime import datetime
 from quant1x import exchange
-from quant1x.exchange import markets
+from quant1x.instruments import markets
 from quant1x.config import config
 from quant1x import std
 

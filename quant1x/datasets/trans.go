@@ -64,14 +64,14 @@ func restoreBeginDateOfHistoricalTradingData() {
 
 // TurnoverDataSummary 对应 C++ 中的 datasets::TurnoverDataSummary
 type TurnoverDataSummary struct {
-	OuterVolume int64
-	OuterAmount float64
-	InnerVolume int64
-	InnerAmount float64
-	OpenVolume  int64
-	OpenTurnZ   float64
-	CloseVolume int64
-	CloseTurnZ  float64
+	OuterVolume int64   `csv:"outer_volume"`
+	OuterAmount float64 `csv:"outer_amount"`
+	InnerVolume int64   `csv:"inner_volume"`
+	InnerAmount float64 `csv:"inner_amount"`
+	OpenVolume  int64   `csv:"open_volume"`
+	OpenTurnZ   float64 `csv:"open_turn_z"`
+	CloseVolume int64   `csv:"close_volume"`
+	CloseTurnZ  float64 `csv:"close_turn_z"`
 }
 
 // loadTransactionDataFromCache 从 CSV 缓存读取逐笔数据并返回数据列表及起始时间字符串。
@@ -270,7 +270,7 @@ func updateTransactionData(correctedCode string, featureDate exchange.Timestamp,
 	defer f.Close()
 	w := csv.NewWriter(f)
 	defer w.Flush()
-	_ = w.Write([]string{"time", "price", "vol", "num", "amount", "buyOrSell"})
+	_ = w.Write([]string{"time", "price", "volume", "number", "amount", "buy_or_sell"})
 	for _, rec := range existingList {
 		_ = w.Write([]string{
 			rec.Time,

@@ -38,7 +38,7 @@ namespace datasets {
                 return;
             }
             // 最后一根K线的日期
-            auto const &last_day = klines[klines.size() - 1].Date;
+            auto const &last_day = klines[klines.size() - 1].date;
             // 转成时间戳且对齐时间
             auto const &ts_last_day = exchange::timestamp::parse(last_day).pre_market_time();
             // 计算最后一根K线的下一个交易日的日期, 除权除息是不包括除权除息当日的,
@@ -63,27 +63,27 @@ namespace datasets {
                     auto klines_size = klines.size();
                     for (size_t i = 0; i < klines_size; ++i) {
                         auto kl = &(klines[i]);
-                        if (kl->Date >= info.Date) {
+                        if (kl->date >= info.Date) {
                             break;
                         }
-                        if (kl->Date < info.Date) {
-                            kl->Open  = kl->Open * m + a;
-                            kl->Close = kl->Close * m + a;
-                            kl->High  = kl->High * m + a;
-                            kl->Low   = kl->Low * m + a;
+                        if (kl->date < info.Date) {
+                            kl->open  = kl->open * m + a;
+                            kl->close = kl->close * m + a;
+                            kl->high  = kl->high * m + a;
+                            kl->low   = kl->low * m + a;
                             // 成交量前复权
                             // 1. 计算均价
-                            auto ap = kl->Amount / kl->Volume;
+                            auto ap = kl->amount / kl->volume;
                             // 2. 均价复权
                             auto ap_adjusted = ap * m + a;
                             // 3. 成交量复权
-                            kl->Volume *= (1 + share_ratio);
+                            kl->volume *= (1 + share_ratio);
                             // 4. 重新计算成交金额
-                            kl->Amount = kl->Volume * ap_adjusted;
+                            kl->amount = kl->volume * ap_adjusted;
                             // kl->Amount = kl->Volume * ((kl->Amount / kl->Volume) * m + a);
                             //kl->Amount = kl->Amount * (m +a);
                             // 5. 更新除权除息次数
-                            kl->AdjustmentCount += 1;
+                            kl->adjustment_count += 1;
                         }
                     }
                 }
@@ -95,28 +95,28 @@ namespace datasets {
 
     // 日K线 结构体
     struct KLineRaw {
-        std::string Date;        // 日期
-        double      Open   = 0;  // 开盘价
-        double      Close  = 0;  // 收盘价
-        double      High   = 0;  // 最高价
-        double      Low    = 0;  // 最低价
-        double      Volume = 0;  // 成交量(股)
-        double      Amount = 0;  // 成交金额(元)
-        int         Up     = 0;  // 上涨家数 / 外盘
-        int         Down   = 0;  // 下跌家数 / 内盘
-        std::string Datetime;    // 时间
+        std::string date;        // 日期
+        double      open   = 0;  // 开盘价
+        double      close  = 0;  // 收盘价
+        double      high   = 0;  // 最高价
+        double      low    = 0;  // 最低价
+        double      volume = 0;  // 成交量(股)
+        double      amount = 0;  // 成交金额(元)
+        int         up     = 0;  // 上涨家数 / 外盘
+        int         down   = 0;  // 下跌家数 / 内盘
+        std::string datetime;    // 时间
 
         // // 复权
         // void adjust(const factors::CumulativeAdjustment &adj);
 
         static std::vector<std::string> headers() {
-            return {"Date", "Open", "Close", "High", "Low", "Volume", "Amount", "Up", "Down", "Datetime"};
+            return {"date", "open", "close", "high", "low", "volume", "amount", "up", "down", "datetime"};
         }
 
         friend std::ostream &operator<<(std::ostream &os, const KLineRaw &line) {
-            os << "Date: " << line.Date << " Open: " << line.Open << " Close: " << line.Close << " High: " << line.High
-               << " Low: " << line.Low << " Volume: " << line.Volume << " Amount: " << line.Amount << " Up: " << line.Up
-               << " Down: " << line.Down << " Datetime: " << line.Datetime;
+            os << "date: " << line.date << " open: " << line.open << " close: " << line.close << " high: " << line.high
+               << " low: " << line.low << " volume: " << line.volume << " amount: " << line.amount << " up: " << line.up
+               << " down: " << line.down << " datetime: " << line.datetime;
             return os;
         }
     };
@@ -126,7 +126,7 @@ namespace datasets {
 
     class DataKLineRaw : public cache::DataAdapter {
     public:
-        cache::Kind Kind() const override { return RawKLine; }
+        cache::Kind Kind() const override { return BaseRawDailyKLine; }
 
         std::string Owner() override { return cache::DefaultDataProvider; }
 

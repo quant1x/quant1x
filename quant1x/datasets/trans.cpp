@@ -68,7 +68,7 @@ namespace datasets {
             // 如果缓存存在
             // list = encoding::csv::csv_to_slices<level1::TickTransaction>(filename);  // 屏蔽，使用io::CSVReader解析
             io::CSVReader<6> in(filename);
-            in.read_header(io::ignore_extra_column, "time", "price", "vol", "num", "amount", "buyOrSell");
+            in.read_header(io::ignore_extra_column, "time", "price", "volume", "number", "amount", "buy_or_sell");
             std::string time;
             f64 price;
             i64 vol, num;
@@ -220,7 +220,7 @@ namespace datasets {
         {
             io::CSVWriter writer(tmp);
             // 写入header，与reader对应
-            writer.write_row("time", "price", "vol", "num", "amount", "buyOrSell");
+            writer.write_row("time", "price", "volume", "number", "amount", "buy_or_sell");
             // 写入数据
             for (const auto& rec : existingList) {
                 writer.write_row(rec.time, rec.price, rec.vol, rec.num, rec.amount, rec.buyOrSell);

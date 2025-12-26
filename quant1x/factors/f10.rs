@@ -7,7 +7,7 @@ use crate::factors::notice;
 use crate::factors::safety_score;
 use crate::factors::share_holder;
 use crate::level1;
-use crate::std::numerics;
+use crate::std::numeric;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -120,9 +120,9 @@ impl F10 {
         if free_capital.abs() < f64::EPSILON {
             return 0.00;
         }
-        let mut turnover_rate_z = numerics::change_rate(free_capital, v);
+        let mut turnover_rate_z = numeric::change_rate(free_capital, v);
         turnover_rate_z *= 10000.0;
-        numerics::decimal(turnover_rate_z)
+        numeric::decimal(turnover_rate_z)
     }
 
     /// 是否财报披露前夕

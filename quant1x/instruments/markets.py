@@ -100,3 +100,9 @@ def get_code_list() -> List[str]:
     code_list.extend(stock_code_list)
     
     return code_list
+
+
+if __name__ == "__main__":
+    code_list = get_code_list()
+    print(code_list)
+    print(len(code_list))
