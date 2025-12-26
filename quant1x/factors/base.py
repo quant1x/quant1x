@@ -48,11 +48,11 @@ def check_kline_offset(klines: List[Any], date: str) -> int:
         return -1
     return offset
 
-def ipo_date_from_xdxrs(xdxrs: List[XdxrInfo]) -> Optional[str]:
+def ipo_date_from_xdxrs(xdxr_list: List[XdxrInfo]) -> Optional[str]:
     """
     从除权除息的列表提取IPO日期
     """
-    for v in xdxrs:
+    for v in xdxr_list:
         if v.Category != 5:
             continue
         # 如果首次, 前流通前总股本为0且后流通后总股本大于0, 即为上市日期
@@ -60,7 +60,7 @@ def ipo_date_from_xdxrs(xdxrs: List[XdxrInfo]) -> Optional[str]:
             return v.Date
     return None
 
-def combine_adjustments_in_period(xdxrs: List[XdxrInfo],
+def combine_adjustments_in_period(xdxr_list: List[XdxrInfo],
                                   start_date: Timestamp,
                                   end_date: Timestamp) -> List[CumulativeAdjustment]:
     """
@@ -68,7 +68,7 @@ def combine_adjustments_in_period(xdxrs: List[XdxrInfo],
     """
     result: List[CumulativeAdjustment] = []
     
-    for info in xdxrs:
+    for info in xdxr_list:
         if not info.is_adjust():
             continue
 
@@ -114,21 +114,35 @@ def combine_adjustments_in_period(xdxrs: List[XdxrInfo],
         
     return result
 
-def apply_forward_adjustments_once(klines: List[Any],
-                                   xdxrs: List[XdxrInfo],
-                                   start_date: Timestamp,
-                                   end_date: Timestamp,
-                                   should_truncate: bool = True):
+
+def apply_forward_adjustment_incrementally(klines: List[Any],
+                                           xdxr_list: List[XdxrInfo],
+                                           last_adjusted_date: Timestamp,
+                                           as_of_date: Timestamp,
+                                           truncate_to_as_of_date: bool = True):
     """
-    一次性复权, 只遍历一次
+    对K线数据进行增量式前复权处理，按时间顺序逐步应用复权因子。
+    
+    Args:
+        klines (List[Any]): 待复权的K线数据列表，会被原地修改
+        xdxr_list (List[XdxrInfo]): 除权除息信息列表
+        last_adjusted_date (Timestamp): 复权开始时间
+        as_of_date (Timestamp): 复权结束时间
+        truncate_to_as_of_date (bool, optional): 是否截断处理后的数据到as_of_date，默认为True
+    
+    Note:
+        1. 会自动将时间统一转换为盘前时间
+        2. 当遇到不再需要复权的数据且truncate_to_as_of_date为False时会提前终止循环
+        3. 会原地修改klines列表中的数据
+        4. 如果时间范围内没有需要处理的除权记录，则直接返回
     """
     if not klines:
         return
 
     # 强制统一为盘前时间
-    ts_start = start_date
-    ts_end = end_date
-    factors = combine_adjustments_in_period(xdxrs, ts_start, ts_end)
+    ts_start = last_adjusted_date
+    ts_end = as_of_date
+    factors = combine_adjustments_in_period(xdxr_list, ts_start, ts_end)
     
     # 如果在时间范围内没有需要除权处理的记录, 则返回
     if not factors:
@@ -161,16 +175,16 @@ def apply_forward_adjustments_once(klines: List[Any],
                 # We need to ensure the KLine object has this method.
                 if hasattr(kline, 'adjust'):
                     kline.adjust(factor)
-            elif not should_truncate:
+            elif not truncate_to_as_of_date:
                 # 如果不截断数据, 那么, 对于已经没有需要复权的因子来说，后面的klines数据就没必要继续循环了
                 break
         
         rows += 1
 
-    if should_truncate:
+    if truncate_to_as_of_date:
         del klines[rows:]
 
-def calculate_pre_adjust(klines: List[Any], dividends: List[XdxrInfo]):
+def calculate_pre_adjust(klines: List[Any], xdxr_list: List[XdxrInfo]):
     """
     对K线数据进行前复权计算
     """
@@ -182,25 +196,30 @@ def calculate_pre_adjust(klines: List[Any], dividends: List[XdxrInfo]):
     end_date = datetime.strptime(klines[-1].date, '%Y-%m-%d')
     start_ts = Timestamp.pre_market_time(start_date.year, start_date.month, start_date.day)
     end_ts = Timestamp.pre_market_time(end_date.year, end_date.month, end_date.day)
-    apply_forward_adjustments_once(klines, dividends, start_ts, end_ts, True)
+    apply_forward_adjustment_incrementally(klines, xdxr_list, start_ts, end_ts, True)
 
 
-def klines_forward_adjusted_to_date(code: str, date: str) -> List[Any]:
+def get_cross_section_forward_adjusted_klines(code: str, as_of_date: str) -> List[Any]:
     """
-    捡出截至指定日期date的K线记录, 并前复权
+    获取指定证券代码截至指定日期的前复权K线数据
     
     Args:
-        code (str): 证券代码
-        date (str): 截至日期，格式为YYYY-MM-DD
-        
+        code (str): 证券代码，支持多种格式输入
+        as_of_date (str): 截止日期，格式为YYYY-MM-DD
+    
     Returns:
-        List[KLine]: 从上市第一天起到date的全部前复权K线记录
+        List[KLine]: 从上市首日至截止日期的所有前复权K线记录列表，包含日期、开盘价、收盘价、最高价、最低价、成交量等字段
+    
+    Note:
+        1. 会自动处理证券代码格式转换
+        2. 会对原始K线数据进行日期对齐和过滤
+        3. 会应用前复权计算调整价格数据
     """
     from quant1x.datasets.kline import KLine
     from quant1x.datasets.kline_raw import checkout_kline_raw
     
     security_code = correct_security_code(code)
-    ts = Timestamp.parse(date)
+    ts = Timestamp.parse(as_of_date)
     fixed_date = ts.only_date()
     
     # 获取所有原始K线数据
@@ -245,7 +264,7 @@ def klines_forward_adjusted_to_date(code: str, date: str) -> List[Any]:
         klines.append(kline)
     
     # 获取XDXR数据
-    xdxrs = xdxr_module.load_xdxr(security_code)
+    xdxr_list = xdxr_module.load_xdxr(security_code)
     
     # 确定前复权的时间范围
     start_date = datetime.strptime(klines[0].date, '%Y-%m-%d')
@@ -254,7 +273,7 @@ def klines_forward_adjusted_to_date(code: str, date: str) -> List[Any]:
     end_ts = Timestamp.pre_market_time(end_date.year, end_date.month, end_date.day)
     
     # 应用前复权
-    apply_forward_adjustments_once(klines, xdxrs, start_ts, end_ts)
+    apply_forward_adjustment_incrementally(klines, xdxr_list, start_ts, end_ts, True)
     
     return klines
 
@@ -275,8 +294,8 @@ if __name__ == "__main__":
 
     # 获取除权除息数据
     security_code = correct_security_code(code)
-    xdxrs = xdxr_module.load_xdxr(security_code)
-    print(f"Loaded {len(xdxrs)} xdxr records for {security_code}")
+    xdxr_list = xdxr_module.load_xdxr(security_code)
+    print(f"Loaded {len(xdxr_list)} xdxr records for {security_code}")
 
     # 创建原始数据的副本用于对比
     original_klines = [KLineRaw(
@@ -285,7 +304,7 @@ if __name__ == "__main__":
     ) for k in klines]
 
     # 进行前复权
-    calculate_pre_adjust(klines, xdxrs)
+    calculate_pre_adjust(klines, xdxr_list)
 
     print(f"After adjustment: {len(klines)} klines")
 
@@ -334,11 +353,11 @@ if __name__ == "__main__":
         print()
 
     # 显示复权因子信息
-    if xdxrs:
-        print(f"\n=== 除权除息记录 ({len(xdxrs)} 条) ===")
+    if xdxr_list:
+        print(f"\n=== 除权除息记录 ({len(xdxr_list)} 条) ===")
         # 显示不同类别的记录
         categories = {}
-        for xdxr in xdxrs:
+        for xdxr in xdxr_list:
             cat = xdxr.Category
             if cat not in categories:
                 categories[cat] = []
@@ -349,8 +368,8 @@ if __name__ == "__main__":
             for xdxr in records[-2:]:  # 每类显示最近2条
                 print(f"  日期: {xdxr.Date}, 分红:{xdxr.FenHong}, 送转:{xdxr.SongZhuanGu}, 配股:{xdxr.PeiGu}")
 
-    # 对比 klines_forward_adjusted_to_date 与 datasets.kline 缓存
-    print(f"\n=== 对比 klines_forward_adjusted_to_date 与 datasets.kline 缓存 ===")
+    # 对比 get_cross_section_forward_adjusted_klines 与 datasets.kline 缓存
+    print(f"\n=== 对比 get_cross_section_forward_adjusted_klines 与 datasets.kline 缓存 ===")
     
     # 获取 datasets.kline 缓存数据
     from quant1x.datasets.kline import load_kline
@@ -361,9 +380,9 @@ if __name__ == "__main__":
         last_cached_date = cached_klines[-1].date
         print(f"datasets.kline 缓存日期范围: {first_cached_date} 到 {last_cached_date}")
         
-        # 使用 klines_forward_adjusted_to_date 获取相同日期范围的复权数据
+        # 使用 get_cross_section_forward_adjusted_klines 获取相同日期范围的复权数据
         # 使用最后一条数据的日期作为截止日期
-        adjusted_klines = klines_forward_adjusted_to_date(code, last_cached_date)
+        adjusted_klines = get_cross_section_forward_adjusted_klines(code, last_cached_date)
         
         if adjusted_klines and len(adjusted_klines) > 0:
             # 找到相同日期的第一条数据进行对比
@@ -377,7 +396,7 @@ if __name__ == "__main__":
             
             if first_adjusted:
                 print(f"\n在 {first_cached.date} 的数据对比:")
-                print(f"klines_forward_adjusted_to_date:")
+                print(f"get_cross_section_forward_adjusted_klines:")
                 print(f"  开盘: {first_adjusted.open:.4f}, 最高: {first_adjusted.high:.4f}, 最低: {first_adjusted.low:.4f}, 收盘: {first_adjusted.close:.4f}")
                 print(f"  成交量: {first_adjusted.volume:.0f}, 成交额: {first_adjusted.amount:.0f}")
                 
@@ -408,14 +427,14 @@ if __name__ == "__main__":
                     
                     # 检查调整次数
                     print(f"调整次数对比:")
-                    print(f"  klines_forward_adjusted_to_date: {getattr(first_adjusted, 'adjustment_count', 'N/A')}")
+                    print(f"  get_cross_section_forward_adjusted_klines: {getattr(first_adjusted, 'adjustment_count', 'N/A')}")
                     print(f"  datasets.kline: {getattr(first_cached, 'adjustment_count', 'N/A')}")
             else:
-                print(f"klines_forward_adjusted_to_date 中找不到日期 {first_cached.date} 的数据")
+                print(f"get_cross_section_forward_adjusted_klines 中找不到日期 {first_cached.date} 的数据")
                 print(f"adjusted_klines 长度: {len(adjusted_klines)}")
                 if len(adjusted_klines) > 0:
                     print(f"第一条: {adjusted_klines[0].date}, 最后一条: {adjusted_klines[-1].date}")
         else:
-            print("klines_forward_adjusted_to_date 返回空数据")
+            print("get_cross_section_forward_adjusted_klines 返回空数据")
     else:
         print("datasets.kline 缓存为空")
