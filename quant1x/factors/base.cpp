@@ -109,7 +109,17 @@ namespace factors {
         std::unordered_map<std::string, std::vector<datasets::KLine>> routineLocal_klines;
     }  // namespace forward
 
-    // 检查K线偏移量
+    /**
+     * @brief 检查K线数据中指定日期的偏移量
+     *
+     * @tparam T K线数据类型
+     * @param klines K线数据向量
+     * @param date 要查找的目标日期
+     * @return int 返回目标日期的偏移量，如果找不到则返回-1
+     *
+     * @note 函数从K线数据的末尾开始向前查找，直到找到匹配的日期或日期小于目标日期
+     * @throws 无异常抛出
+     */
     template <typename T>
     int check_kline_offset(const std::vector<T> &klines, const std::string &date) {
         size_t rows   = klines.size();

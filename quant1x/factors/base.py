@@ -44,7 +44,7 @@ def check_kline_offset(klines: List[Any], date: str) -> int:
             break
         else:
             offset += 1
-    if offset + 1 >= rows:
+    if offset+1 >= rows:
         return -1
     return offset
 

@@ -1,3 +1,6 @@
+pub mod base;
+pub use base::*;
+
 pub mod safety_score;
 pub use safety_score::*;
 

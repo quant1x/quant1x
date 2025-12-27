@@ -470,6 +470,76 @@ ctest --test-dir cmake-build-debug --output-on-failure
 ./cmake-build-debug/bin/q1x --help
 ```
 
+## 📊 获取K线数据示例
+
+### Python
+
+```python
+from quant1x.factors.base import get_cross_section_forward_adjusted_klines
+
+# 获取前复权K线数据
+code = "sh600000"
+as_of_date = "2024-12-26"
+klines = get_cross_section_forward_adjusted_klines(code, as_of_date)
+print(f"Loaded {len(klines)} adjusted kline records for {code}")
+
+# 显示最近5条记录
+for kline in klines[-5:]:
+    print(f"Date: {kline.date}, Open: {kline.open:.2f}, Close: {kline.close:.2f}")
+```
+
+### Go
+
+```go
+package main
+
+import (
+    "fmt"
+    "gitee.com/quant1x/quant1x/quant1x/factors"
+)
+
+func main() {
+    code := "sh600000"
+    asOfDate := "2024-12-26"
+    
+    // 获取前复权K线数据
+    klines := factors.GetCrossSectionForwardAdjustedKlines(code, asOfDate)
+    
+    fmt.Printf("Loaded %d adjusted kline records for %s\n", len(klines), code)
+    
+    // 显示最近5条记录
+    start := len(klines) - 5
+    if start < 0 {
+        start = 0
+    }
+    for _, kline := range klines[start:] {
+        fmt.Printf("Date: %s, Open: %.2f, Close: %.2f\n", kline.Date, kline.Open, kline.Close)
+    }
+}
+```
+### Rust
+
+```rust
+use quant1x::factors::base::get_cross_section_forward_adjusted_klines;
+
+fn main() {
+    let code = "sh600000";
+    let as_of_date = "2024-12-26";
+    
+    // 获取前复权K线数据
+    let klines = get_cross_section_forward_adjusted_klines(code, as_of_date);
+    
+    println!("Loaded {} adjusted kline records for {}", klines.len(), code);
+    
+    // 显示最近5条记录
+    let start = if klines.len() > 5 { klines.len() - 5 } else { 0 };
+    for kline in &klines[start..] {
+        println!("Date: {}, Open: {:.2}, Close: {:.2}", 
+                kline.date, kline.open, kline.close);
+    }
+}
+```
+
 ## 🤝 贡献
 
 欢迎贡献代码！请遵循以下步骤：

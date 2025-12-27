@@ -6,7 +6,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
-const DEFAULT_BASE_PATH_TEMPLATE: &str = "~/.q1x-rust";
+const DEFAULT_BASE_PATH_TEMPLATE: &str = "~/.q1x-rs";
 const QUANT1X_CONFIG_FILENAME: &str = "quant1x.yaml";
 
 static QUANT1X_BASE_PATH: OnceLock<String> = OnceLock::new();

@@ -3,6 +3,7 @@ package datasets
 import (
 	"encoding/csv"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -17,42 +18,43 @@ import (
 
 // XdxrInfo 表示一条除权除息事件的 CSV 行，字段布局与 C++ 保持一致。
 type XdxrInfo struct {
-	Date          string  `csv:"date"`             // 除权除息日期 YYYY-MM-DD
-	Category      int     `csv:"category"`         // 事件类别
-	Name          string  `csv:"name"`             // 事件名称
-	FenHong       float64 `csv:"fen_hong"`         // 分红金额
-	PeiGuJia      float64 `csv:"pei_gu_jia"`       // 配股价格
-	SongZhuanGu   float64 `csv:"song_zhuan_gu"`    // 送转股数
-	PeiGu         float64 `csv:"pei_gu"`           // 配股数
-	SuoGu         float64 `csv:"suo_gu"`           // 缩股数
-	QianLiuTong   float64 `csv:"qian_liu_tong"`    // 除权前流通股本
-	HouLiuTong    float64 `csv:"hou_liu_tong"`     // 除权后流通股本
-	QianZongGuBen float64 `csv:"qian_zong_gu_ben"` // 除权前总股本
-	HouZongGuBen  float64 `csv:"hou_zong_gu_ben"`  // 除权后总股本
-	FenShu        float64 `csv:"fen_shu"`          // 份数
-	XingQuanJia   float64 `csv:"xing_quan_jia"`    // 行权价格
+	Date          string  `name:"日期" csv:"date"`                 // 除权除息日期 YYYY-MM-DD
+	Category      int     `name:"类别" csv:"category"`             // 事件类别
+	Name          string  `name:"名称" csv:"name"`                 // 事件名称
+	FenHong       float64 `name:"分红金额" csv:"fen_hong"`           // 分红金额
+	PeiGuJia      float64 `name:"配股价格" csv:"pei_gu_jia"`         // 配股价格
+	SongZhuanGu   float64 `name:"送转股数" csv:"song_zhuan_gu"`      // 送转股数
+	PeiGu         float64 `name:"配股数" csv:"pei_gu"`              // 配股数
+	SuoGu         float64 `name:"缩股数" csv:"suo_gu"`              // 缩股数
+	QianLiuTong   float64 `name:"除权前流通股本" csv:"qian_liu_tong"`   // 除权前流通股本
+	HouLiuTong    float64 `name:"除权后流通股本" csv:"hou_liu_tong"`    // 除权后流通股本
+	QianZongGuBen float64 `name:"除权前总股本" csv:"qian_zong_gu_ben"` // 除权前总股本
+	HouZongGuBen  float64 `name:"除权后总股本" csv:"hou_zong_gu_ben"`  // 除权后总股本
+	FenShu        float64 `name:"份数" csv:"fen_shu"`              // 份数
+	XingQuanJia   float64 `name:"行权价格" csv:"xing_quan_jia"`      // 行权价格
 }
 
-// computeShareAdjustmentRatio 对应 C++ 中的 XdxrInfo::computeShareAdjustmentRatio
-func (x *XdxrInfo) computeShareAdjustmentRatio() float64 {
+// ComputeShareAdjustmentRatio 对应 C++ 中的 XdxrInfo::computeShareAdjustmentRatio
+func (x *XdxrInfo) ComputeShareAdjustmentRatio() float64 {
 	return (x.SongZhuanGu + x.PeiGu - x.SuoGu + x.FenShu) / 10.0
 }
 
-// computeMonetaryAdjustment 对应 C++ 中的 XdxrInfo::computeMonetaryAdjustment
-func (x *XdxrInfo) computeMonetaryAdjustment() float64 {
+// ComputeMonetaryAdjustment 对应 C++ 中的 XdxrInfo::computeMonetaryAdjustment
+func (x *XdxrInfo) ComputeMonetaryAdjustment() float64 {
 	return (x.PeiGu*x.PeiGuJia - x.FenHong + x.FenShu*x.XingQuanJia) / 10.0
 }
 
-// adjustFactor 对应 C++ 中的 XdxrInfo::adjustFactor，返回 m 和 a
-func (x *XdxrInfo) adjustFactor() (float64, float64) {
-	A := x.computeMonetaryAdjustment()
-	B := x.computeShareAdjustmentRatio()
-	if (1.0 + B) == 0 {
-		return 1.0, 0.0
+// AdjustFactor 对应 C++ 中的 XdxrInfo::adjustFactor，返回 m 和 a
+func (x *XdxrInfo) AdjustFactor() (float64, float64) {
+	A := x.ComputeMonetaryAdjustment()
+	B := x.ComputeShareAdjustmentRatio()
+	if math.Abs(1.0+B) > 1e-10 {
+		m := 1.0 / (1.0 + B)
+		a := A * m
+		return m, a
+	} else {
+		return 1.0, A
 	}
-	m := 1.0 / (1.0 + B)
-	a := A * m
-	return m, a
 }
 
 // LoadXdxr 尝试定位并读取本地的 xdxr CSV 缓存文件。
@@ -138,8 +140,8 @@ func ApplyForwardAdjustmentForEvent(klines []KLine, eventStartDate string, divid
 			// skip events before or on the start date
 			continue
 		}
-		m, a := info.adjustFactor()
-		shareRatio := info.computeShareAdjustmentRatio()
+		m, a := info.AdjustFactor()
+		shareRatio := info.ComputeShareAdjustmentRatio()
 		for i := range klines {
 			if klines[i].Date >= info.Date {
 				break
@@ -188,7 +190,7 @@ func UpdateXdxr(code string) ([]XdxrInfo, error) {
 	defer f.Close()
 	w := csv.NewWriter(f)
 	defer w.Flush()
-		header := []string{"date", "category", "name", "fen_hong", "pei_gu_jia", "song_zhuan_gu", "pei_gu", "suo_gu", "qian_liu_tong", "hou_liu_tong", "qian_zong_gu_ben", "hou_zong_gu_ben", "fen_shu", "xing_quan_jia"}
+	header := []string{"date", "category", "name", "fen_hong", "pei_gu_jia", "song_zhuan_gu", "pei_gu", "suo_gu", "qian_liu_tong", "hou_liu_tong", "qian_zong_gu_ben", "hou_zong_gu_ben", "fen_shu", "xing_quan_jia"}
 	if err := w.Write(header); err != nil {
 		return nil, err
 	}
