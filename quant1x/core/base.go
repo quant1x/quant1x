@@ -24,11 +24,11 @@ var (
 
 // BaseConfig 基础配置结构体
 type BaseConfig struct {
-	Debug     bool   `yaml:"debug"`
-	BaseDir   string `yaml:"basedir"`
-	LogDir    string `yaml:"logdir"`
-	Filename  string
-	ConfigMap map[string]any
+	Debug     bool           `yaml:"debug"`   // 是否开启调试模式
+	BaseDir   string         `yaml:"basedir"` // 基础目录路径
+	LogDir    string         `yaml:"logdir"`  // 日志目录路径
+	ConfigMap map[string]any `yaml:"-"`       // 原始配置 map，用于扩展读取
+	Filename  string         `yaml:"-"`       // 配置文件名
 }
 
 var (
