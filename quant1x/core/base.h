@@ -10,8 +10,6 @@
 namespace quant1x {
 namespace core {
 
-const std::string QUANT1X_CONFIG_FILENAME = "quant1x.yaml";
-
 // 返回默认的基础路径，如果无法展开用户目录则返回默认路径
 std::string get_base_path();
 
