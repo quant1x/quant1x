@@ -6,6 +6,14 @@ import (
 	"time"
 )
 
+// CumulativeAdjustment 累计复权因子, 对应仿射变换: P' = M * P + A
+type CumulativeAdjustment struct {
+	M                    float64 // 乘性因子（Multiplier），处理比例调整（如送股）
+	A                    float64 // 加性因子（Additive），处理平移调整（如分红）
+	ShareAdjustmentRatio float64 // 股本调整比率，用于成交量复权（V' = V * (1 + ratio)）
+	No                   int     // 本次复权调整的序号（从1开始），用于追踪应用顺序
+}
+
 // XdxrInfo 表示一条除权除息事件
 type XdxrInfo struct {
 	Date          string  `name:"日期" csv:"date"`                 // 除权除息日期 YYYY-MM-DD
@@ -34,26 +42,27 @@ func (x *XdxrInfo) ComputeMonetaryAdjustment() float64 {
 	return (x.PeiGu*x.PeiGuJia - x.FenHong + x.FenShu*x.XingQuanJia) / 10.0
 }
 
-// AdjustFactor 对应 C++ 中的 XdxrInfo::adjustFactor，返回 m 和 a
-func (x *XdxrInfo) AdjustFactor() (float64, float64) {
+// AdjustFactor 计算并返回完整的复权调整参数，对应 C++ 中的 XdxrInfo::adjustFactor。
+// 返回的 CumulativeAdjustment.No 字段为 0，应在应用时由调用方设置为实际调整序号。
+func (x *XdxrInfo) AdjustFactor() CumulativeAdjustment {
 	A := x.ComputeMonetaryAdjustment()
 	B := x.ComputeShareAdjustmentRatio()
-	if math.Abs(1.0+B) > 1e-10 {
-		m := 1.0 / (1.0 + B)
-		a := A * m
-		return m, a
-	} else {
-		return 1.0, A
-	}
-}
 
-// CumulativeAdjustment 表示累计复权因子。
-// 字段与 C++ 中的 `factors::CumulativeAdjustment` 保持一致。
-type CumulativeAdjustment struct {
-	M                    float64 // multiplicative factor
-	A                    float64 // additive factor
-	ShareAdjustmentRatio float64 // share adjustment ratio for volumes
-	No                   int     // number of adjustments applied
+	var m, a float64
+	if math.Abs(1.0+B) > 1e-10 {
+		m = 1.0 / (1.0 + B)
+		a = A * m
+	} else {
+		m = 1.0
+		a = A
+	}
+
+	return CumulativeAdjustment{
+		M:                    m,
+		A:                    a,
+		ShareAdjustmentRatio: B, // 即 B = (SongZhuanGu + PeiGu - SuoGu + FenShu) / 10.0
+		No:                   0, // 由 ApplyForwardAdjustmentForEvent 填充
+	}
 }
 
 // ApplyForwardAdjustmentForEvent 使用提供的除权除息事件对 K 线执行前复权处理。
@@ -86,14 +95,13 @@ func ApplyForwardAdjustmentForEvent(klines []KLine, eventStartDate string, divid
 			// skip events before or on the start date
 			continue
 		}
-		multiplier, additive := info.AdjustFactor()
-		shareAdjustRatio := info.ComputeShareAdjustmentRatio()
+		adj := info.AdjustFactor()
 		for i := range klines {
 			if klines[i].Date >= info.Date {
 				break
 			}
-			newAdjustmentNo := klines[i].AdjustmentCount + 1
-			adj := CumulativeAdjustment{M: multiplier, A: additive, ShareAdjustmentRatio: shareAdjustRatio, No: newAdjustmentNo}
+			// 填充调整序号（No）
+			adj.No = klines[i].AdjustmentCount + 1
 			klines[i].Adjust(adj)
 		}
 	}
