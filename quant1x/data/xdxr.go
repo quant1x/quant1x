@@ -66,9 +66,10 @@ func (x *XdxrInfo) AdjustFactor() CumulativeAdjustment {
 }
 
 // ApplyForwardAdjustmentForEvent 使用提供的除权除息事件对 K 线执行前复权处理。
-// eventStartDate 是用于过滤 IPO 早期事件的起始日期（格式 YYYY-MM-DD）。
+//
+//	eventStartDate 是用于过滤 IPO 早期事件的起始日期（格式 YYYY-MM-DD）。
 func ApplyForwardAdjustmentForEvent(klines []KLine, eventStartDate string, dividends []XdxrInfo) {
-	if len(klines) == 0 {
+	if len(klines) == 0 || len(dividends) == 0 {
 		return
 	}
 	latestKLineDate := klines[len(klines)-1].Date
