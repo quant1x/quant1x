@@ -57,5 +57,6 @@
     "editor.inlineSuggest.fontFamily": "'Source Code Pro', 'Courier New', monospace",
     "chat.editor.fontFamily": "default",
     "chat.fontFamily": "default",
-    "terminal.integrated.scrollback": 10000
+    "terminal.integrated.scrollback": 10000,
+    "go.diagnostic.vulncheck": "Imports"
 }
