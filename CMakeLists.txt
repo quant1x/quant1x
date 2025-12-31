@@ -505,6 +505,7 @@ set(quant1x-headers
     quant1x/exchange/margin_trading.h
     quant1x/exchange/session.h
     quant1x/exchange/timestamp.h
+    quant1x/exchange/status.h
 
     # level1
     quant1x/level1/config.h
@@ -653,6 +654,7 @@ set(quant1x-sources
     quant1x/exchange/calendar.cpp
     quant1x/exchange/session.cpp
     quant1x/exchange/timestamp.cpp
+    quant1x/exchange/status.cpp
     quant1x/exchange/margin_trading.cpp
 
     # 因子
