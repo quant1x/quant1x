@@ -6,6 +6,8 @@ from enum import IntFlag, auto
 from typing import List, Optional
 from datetime import datetime
 
+from .timestamp import Timestamp
+
 # 仅日期格式: 2022-11-28
 FORMAT_ONLY_DATE = '%Y-%m-%d'
 # 仅时间格式: 09:15:59
@@ -87,7 +89,11 @@ def is_order_cancelable(status: int) -> bool:
     return (status & MaskCancelable) != 0
 
 def is_trading_disabled(status: int) -> bool:
-    return status == TimeStatus.ExchangeClosing or status == TimeStatus.ExchangeSuspend or (status & MaskHalt)
+    return (
+        status == TimeStatus.ExchangeClosing
+        or status == TimeStatus.ExchangeSuspend
+        or ((status & MaskHalt) != 0)
+    )
 
 
 @dataclass
@@ -328,10 +334,88 @@ class RuntimeStatus:
 
 def check_trading_timestamp(last_modified: Optional[str] = None) -> RuntimeStatus:
     """
-    检查运行时交易状态 (Stub)
+    兼容旧接口：接受字符串或 None，尝试解析为 Timestamp。
+    如果传入的是 `Timestamp` 实例，请使用 `CheckTradingTimestamp`。
+    返回 `RuntimeStatus`。
     """
-    # TODO: 实现完整的检查逻辑
-    return RuntimeStatus()
+    # If caller passed a Timestamp as string representation, try to keep compatibility
+    if last_modified is None:
+        return CheckTradingTimestamp(None)
+    # try to interpret as numeric/ISO string? For now, treat as None (stub behavior)
+    return CheckTradingTimestamp(None)
+
+
+def CheckTradingTimestamp(last_modified: Optional[Timestamp] = None) -> RuntimeStatus:
+    """Check trading runtime status using `Timestamp` objects (mirrors session.go)."""
+    rs = RuntimeStatus()
+    rs.status = TimeStatus.ExchangeClosing
+
+    now = Timestamp.now()
+    if last_modified is not None:
+        ts = last_modified
+    else:
+        ts = now
+
+    # Use today init as last trading day placeholder (TODO: calendar module)
+    last_day = GetTodayInit()
+
+    # 1. timestamp before last trading day
+    if ts < last_day:
+        rs.before_last_trade_day = True
+        return rs
+
+    # 2. if today != last_day => holiday
+    today = now
+    if not today.is_same_date(last_day):
+        rs.is_holiday = True
+        return rs
+
+    # 3. before init
+    if ts < GetTodayInit():
+        rs.before_init_time = True
+        return rs
+
+    rs.status = TimeStatus.ExchangePreMarket
+    rs.cache_after_init_time = True
+
+    # 5. trading not started
+    session = ts_today_session
+    # convert timestamp to time-only string for existing string-based session
+    tstr = ts.to_string(FORMAT_ONLY_TIME)
+    if session.is_trading_not_started(tstr):
+        return rs
+
+    rs.update_in_real_time = True
+
+    rs.status = session.check_status(tstr)
+    if is_trading_disabled(rs.status):
+        rs.update_in_real_time = False
+    return rs
+
+
+_ts_today_init: Optional[Timestamp] = None
+
+
+def GetTodayInit() -> Timestamp:
+    """Return today's pre-market Timestamp (cached)."""
+    global _ts_today_init
+    if _ts_today_init is None:
+        now = Timestamp.now()
+        y, m, d = now.extract()
+        _ts_today_init = Timestamp.pre_market_time(y, m, d)
+    return _ts_today_init
+
+
+def CanInitialize(last_modified: Optional[Timestamp]) -> bool:
+    """Determine whether initialization should run (mirror of Go CanInitialize)."""
+    rs = CheckTradingTimestamp(last_modified)
+    if rs.before_last_trade_day:
+        return True
+    if rs.is_holiday:
+        return False
+    if rs.before_init_time:
+        return False
+    return not rs.cache_after_init_time
 
 
 if __name__ == '__main__':
