@@ -15,7 +15,7 @@ import (
 //	*exchange.Timestamp: 文件修改时间的时间戳
 //	error: 获取文件信息失败时返回的错误
 func getFilenameModifiedTime(fname string) (*Timestamp, error) {
-	info, err := os.Stat(fname)
+	info, err := os.Lstat(fname)
 	if err != nil {
 		return nil, err
 	}
