@@ -7,6 +7,7 @@ pub mod code;
 // `markets` and `security` moved to `crate::instruments`.
 // Consumers should use `crate::instruments` instead of `crate::exchange` for these.
 pub mod session;
+pub mod status;
 
 mod sina;
 pub mod timestamp;
@@ -14,3 +15,4 @@ pub use calendar::*;
 pub use code::*;
 pub use session::*;
 pub use timestamp::*;
+pub use status::*;
