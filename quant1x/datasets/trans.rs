@@ -1,4 +1,3 @@
-use crate::cache::{self, DataAdapter, Kind};
 use crate::level1::protocol;
 use crate::level1::transaction_data::{TickTransaction, TransactionRequest, TransactionResponse};
 use crate::level1::{self};
@@ -14,12 +13,12 @@ const HISTORICAL_TRANSACTION_LAST_TIME: &str = "15:00";
 #[derive(Debug)]
 pub struct DataTrans;
 
-impl cache::Schema for DataTrans {
-    fn kind(&self) -> Kind {
+impl crate::data::Schema for DataTrans {
+    fn kind(&self) -> crate::Kind {
         crate::datasets::BaseTransaction
     }
     fn owner(&self) -> String {
-        crate::cache::DEFAULT_DATA_PROVIDER.to_string()
+        crate::data::DEFAULT_DATA_PROVIDER.to_string()
     }
     fn key(&self) -> String {
         "trans".to_string()
@@ -32,7 +31,7 @@ impl cache::Schema for DataTrans {
     }
 }
 
-impl DataAdapter for DataTrans {
+impl crate::data::DataAdapter for DataTrans {
     fn print(&self, _code: &str, _dates: &[Timestamp]) {}
 
     fn update(&self, code: &str, date: Timestamp) {
@@ -293,6 +292,6 @@ pub fn get_trans_filepath(code: &str, date: &str) -> String {
 }
 
 pub fn init() {
-    let plugin = Arc::new(DataTrans) as Arc<dyn DataAdapter>;
-    crate::cache::register(plugin);
+    let plugin = Arc::new(DataTrans) as Arc<dyn crate::data::DataAdapter>;
+    crate::data::register(plugin);
 }

@@ -1,7 +1,7 @@
-pub mod markets;
+pub mod instruments;
 pub mod security;
 
-pub use markets::*;
+pub use instruments::*;
 pub use security::*;
 
 pub mod blocks;

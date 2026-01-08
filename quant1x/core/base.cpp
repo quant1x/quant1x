@@ -13,8 +13,7 @@ namespace quant1x {
 namespace core {
 
 namespace {
-    const std::string LANGUAGE = "cpp";
-    const std::string DEFAULT_BASE_PATH = "~/.q1x-" + LANGUAGE;
+    const std::string DEFAULT_BASE_PATH = "~/.q1x";
     const std::string QUANT1X_CONFIG_FILENAME = "quant1x.yaml";
 
     // 使用Lazy模板实现线程安全的延迟初始化

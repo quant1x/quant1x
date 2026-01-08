@@ -1,4 +1,4 @@
-package cache
+package data
 
 import (
 	"encoding/csv"
@@ -12,8 +12,8 @@ import (
 
 	"gitee.com/quant1x/quant1x/quant1x/core"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
-	"gitee.com/quant1x/quant1x/quant1x/instruments"
 	"gitee.com/quant1x/quant1x/quant1x/logger"
+	"gitee.com/quant1x/quant1x/quant1x/markets"
 )
 
 const (
@@ -96,7 +96,7 @@ func UpdateWithAdapters(adapters []DataAdapter, featureDate exchange.Timestamp) 
 	// cache date uses featureDate as-is; consumers can pass next-trading-day if needed
 	cacheDate := featureDate
 
-	allCodes := instruments.GetCodeList()
+	allCodes := markets.GetCodeList()
 
 	count := len(adapters)
 	for idx, adapter := range adapters {
@@ -112,7 +112,7 @@ func UpdateWithAdapters(adapters []DataAdapter, featureDate exchange.Timestamp) 
 
 		// worker pool
 		numThreads := defaultConcurrency
-		jobs := make(chan string)
+		jobs := make(chan exchange.SecurityCode)
 		var wg sync.WaitGroup
 
 		// results for feature adapter
@@ -153,10 +153,10 @@ func UpdateWithAdapters(adapters []DataAdapter, featureDate exchange.Timestamp) 
 
 		// if feature adapter, write CSV
 		if featureAdapter != nil {
-			// sort finalData by code order to match instruments.GetCodeList order
+			// sort finalData by code order to match markets.GetCodeList order
 			order := make(map[string]int)
 			for i, c := range allCodes {
-				order[c] = i
+				order[c.String()] = i
 			}
 			sort.SliceStable(finalData, func(i, j int) bool {
 				if len(finalData[i]) == 0 || len(finalData[j]) == 0 {

@@ -1,6 +1,7 @@
 package exchange
 
 import (
+	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -298,3 +299,25 @@ func GetTodayInit() Timestamp {
 }
 
 const LayoutSession = "15:04:05"
+
+var (
+	onceFirstMarketDate sync.Once
+	firstMarketDate     Timestamp
+)
+
+func initFirstMarketDate() {
+	// 与 C++ 严格保持一致：解析常量并取盘前时间。
+	ts, err := NewTimestampFromString(MarketCnFirstListTime)
+	if err != nil {
+		panic(fmt.Sprintf("datasets: failed to parse MarketCnFirstListTime: %v", err))
+	}
+	firstMarketDate = ts.PreMarketTime()
+}
+
+// GetFirstMarketDate 返回指定交易所的第一个市场交易日时间戳
+// 该函数是线程安全的，首次调用时会初始化数据
+func GetFirstMarketDate(exchange ExchangeId) Timestamp {
+	onceFirstMarketDate.Do(initFirstMarketDate)
+	_ = exchange
+	return firstMarketDate
+}

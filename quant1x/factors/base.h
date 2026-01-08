@@ -135,7 +135,7 @@ namespace factors {
     }
 
     constexpr int  KLineMin    = 120;                       ///< K线最小记录数
-    constexpr auto baseFeature = cache::PluginMaskFeature;  // 特征类型基础编码
+    constexpr auto baseFeature = data::PluginMaskFeature;  // 特征类型基础编码
 
     // ==============================
     // 登记所有的特征数据

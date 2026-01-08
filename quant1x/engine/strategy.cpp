@@ -1,4 +1,4 @@
-#include <quant1x/engine/strategy.h>
+#include "strategy.h"
 
 std::string StrategyInfo::QmtStrategyName() const {
     std::string result = "S";

@@ -124,11 +124,11 @@ namespace datasets {
     // 加载原始K线
     std::vector<KLineRaw> load_kline_raw(const std::string &code);
 
-    class DataKLineRaw : public cache::DataAdapter {
+    class DataKLineRaw : public data::DataAdapter {
     public:
-        cache::Kind Kind() const override { return BaseRawDailyKLine; }
+        data::Kind Kind() const override { return BaseRawDailyKLine; }
 
-        std::string Owner() override { return cache::DefaultDataProvider; }
+        std::string Owner() override { return data::DefaultDataProvider; }
 
         std::string Key() const override { return "day_raw"; }
 

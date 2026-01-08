@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"sync"
 
-	"gitee.com/quant1x/quant1x/quant1x/cache"
 	"gitee.com/quant1x/quant1x/quant1x/config"
+	"gitee.com/quant1x/quant1x/quant1x/data"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 	"gitee.com/quant1x/quant1x/quant1x/level1"
 	"gitee.com/quant1x/quant1x/quant1x/std"
@@ -366,11 +366,11 @@ func CountInflow(list []level1.TickTransaction, securityCode string, featureDate
 // DataTrans 实现了缓存适配器风格的更新器
 type DataTrans struct{}
 
-func (d *DataTrans) Kind() cache.Kind { return BaseTransaction }
-func (d *DataTrans) Owner() string    { return cache.DefaultDataProvider }
-func (d *DataTrans) Key() string      { return "trans" }
-func (d *DataTrans) Name() string     { return "逐笔成交" }
-func (d *DataTrans) Usage() string    { return "" }
+func (d *DataTrans) Kind() data.Kind { return BaseTransaction }
+func (d *DataTrans) Owner() string   { return data.DefaultDataProvider }
+func (d *DataTrans) Key() string     { return "trans" }
+func (d *DataTrans) Name() string    { return "逐笔成交" }
+func (d *DataTrans) Usage() string   { return "" }
 
 func (d *DataTrans) Print(code string, dates ...exchange.Timestamp) {
 	_ = code
@@ -383,6 +383,6 @@ func (d *DataTrans) Update(code string, date exchange.Timestamp) {
 }
 
 func init() {
-	// 注册到 cache 插件中心，容错处理重复注册
-	_ = cache.Register(&DataTrans{})
+	// 注册到 data 插件中心，容错处理重复注册
+	_ = data.Register(&DataTrans{})
 }

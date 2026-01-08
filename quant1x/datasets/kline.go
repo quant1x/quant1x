@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"gitee.com/quant1x/quant1x/quant1x/cache"
 	"gitee.com/quant1x/quant1x/quant1x/config"
+	"gitee.com/quant1x/quant1x/quant1x/data"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 	"gitee.com/quant1x/quant1x/quant1x/level1"
 )
@@ -199,14 +199,14 @@ func ReadKlineFromCSV(filename string) ([]KLine, error) {
 // DataKLine 实现了与 C++ DataKLine 类似的缓存适配器更新逻辑
 type DataKLine struct{}
 
-// 实现 cache.DataAdapter 的 Schema 方法
-func (d *DataKLine) Kind() cache.Kind { return BaseKLine }
-func (d *DataKLine) Owner() string    { return cache.DefaultDataProvider }
-func (d *DataKLine) Key() string      { return "kline" }
-func (d *DataKLine) Name() string     { return "日K线" }
-func (d *DataKLine) Usage() string    { return "" }
+// 实现 data.DataAdapter 的 Schema 方法
+func (d *DataKLine) Kind() data.Kind { return BaseKLine }
+func (d *DataKLine) Owner() string   { return data.DefaultDataProvider }
+func (d *DataKLine) Key() string     { return "kline" }
+func (d *DataKLine) Name() string    { return "日K线" }
+func (d *DataKLine) Usage() string   { return "" }
 
-// Print 实现 cache.DataAdapter.Print（可变参数日期）
+// Print 实现 data.DataAdapter.Print（可变参数日期）
 func (d *DataKLine) Print(code string, dates ...exchange.Timestamp) {
 	_ = code
 	_ = dates
@@ -373,5 +373,5 @@ func (d *DataKLine) Update(code string, _date exchange.Timestamp) {
 
 func init() {
 	// register DataKLine plugin (ignore error if already registered)
-	_ = cache.Register(&DataKLine{})
+	_ = data.Register(&DataKLine{})
 }

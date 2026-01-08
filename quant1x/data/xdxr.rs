@@ -1,4 +1,3 @@
-use crate::cache::{self, DataAdapter, Kind};
 use crate::Timestamp;
 use std::sync::Arc;
 
@@ -6,12 +5,12 @@ use std::sync::Arc;
 #[derive(Debug)]
 pub struct DataXdxr;
 
-impl cache::Schema for DataXdxr {
-    fn kind(&self) -> Kind {
-        cache::PLUGIN_MASK_BASE_DATA | 1
+impl crate::data::Schema for DataXdxr {
+    fn kind(&self) -> crate::data::Kind {
+        crate::data::PLUGIN_MASK_BASE_DATA | 1
     }
     fn owner(&self) -> String {
-        cache::DEFAULT_DATA_PROVIDER.to_string()
+        crate::data::DEFAULT_DATA_PROVIDER.to_string()
     }
     fn key(&self) -> String {
         "xdxr".to_string()
@@ -24,7 +23,7 @@ impl cache::Schema for DataXdxr {
     }
 }
 
-impl cache::DataAdapter for DataXdxr {
+impl crate::data::DataAdapter for DataXdxr {
     fn print(&self, _code: &str, _dates: &[Timestamp]) {}
 
     fn update(&self, code: &str, _date: Timestamp) {
@@ -73,8 +72,8 @@ impl cache::DataAdapter for DataXdxr {
 }
 
 pub fn init() {
-    let plugin = Arc::new(DataXdxr) as Arc<dyn DataAdapter>;
-    cache::register(plugin);
+    let plugin = Arc::new(DataXdxr) as Arc<dyn crate::data::DataAdapter>;
+    crate::data::register(plugin);
 }
 
 /// Load XDXR CSV cache for a given security code. Returns an empty Vec on error or missing file.

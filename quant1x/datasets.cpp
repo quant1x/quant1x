@@ -34,28 +34,28 @@ namespace datasets {
     void init() {
         // 基础数据
         // 除权除息
-        cache::Register(std::make_unique<DataXdxr>());
+        data::Register(std::make_unique<DataXdxr>());
         // 日线 - 未除权
-        cache::Register(std::make_unique<DataKLineRaw>());
+        data::Register(std::make_unique<DataKLineRaw>());
         // 日线 - 除权
-        cache::Register(std::make_unique<DataKLine>());
+        data::Register(std::make_unique<DataKLine>());
         // 分时数据
-        cache::Register(std::make_unique<DataMinute>());
+        data::Register(std::make_unique<DataMinute>());
         // 分笔成交
-        cache::Register(std::make_unique<DataTrans>());
+        data::Register(std::make_unique<DataTrans>());
         // 筹码分布
-        cache::Register(std::make_unique<DataChips>());
+        data::Register(std::make_unique<DataChips>());
         // 分钟级别K线
         auto const &mkc = get_minute_kline_config();
         if (mkc.enabled) {
-            cache::Register(std::make_unique<DataMinuteKLine>(mkc));
+            data::Register(std::make_unique<DataMinuteKLine>(mkc));
         }
 
         // 特征数据
         // F10
-        cache::Register(std::make_unique<F10Feature>());
+        data::Register(std::make_unique<F10Feature>());
         // 通用历史数据
-        cache::Register(std::make_unique<HistoryFeature>());
+        data::Register(std::make_unique<HistoryFeature>());
     }
 
 } // namespace datasets

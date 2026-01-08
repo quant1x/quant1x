@@ -12,7 +12,7 @@ async fn main() {
     })
     .await;
 
-    let x = quant1x::instruments::get_security_info("600600")
+    let x = quant1x::markets::get_security_info("600600")
         .map(|i| i.name)
         .unwrap_or_default();
     println!("x: {}", x);

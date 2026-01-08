@@ -1,4 +1,4 @@
-package instruments
+package markets
 
 import (
 	"bufio"

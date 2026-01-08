@@ -262,8 +262,8 @@ TEST_CASE("block-network-info", "[level1]") {
     spdlog::debug(response.toString());
 }
 
-#include <quant1x/instruments/security.h>
-#include <quant1x/instruments/blocks.h>
+#include <quant1x/markets/security.h>
+#include <quant1x/markets/blocks.h>
 
 TEST_CASE("block-file-update", "[cache]") {
     spdlog::set_level(spdlog::level::debug);

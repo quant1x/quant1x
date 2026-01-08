@@ -49,7 +49,7 @@ namespace datasets {
     std::vector<MinuteKLine> read_minute_kline_from_csv(const std::string &filename);
     std::vector<MinuteKLine> load_minute_kline(const std::string &code, const std::string &freq);
 
-    class DataMinuteKLine : public cache::DataAdapter {
+    class DataMinuteKLine : public data::DataAdapter {
     public:
         DataMinuteKLine(const config::MinuteKLineConfig &config) : mkc_(config) {}
 
@@ -63,9 +63,9 @@ namespace datasets {
         }
 
     public:
-        cache::Kind Kind() const override { return BaseMinuteKLine; }
+        data::Kind Kind() const override { return BaseMinuteKLine; }
 
-        std::string Owner() override { return cache::DefaultDataProvider; }
+        std::string Owner() override { return data::DefaultDataProvider; }
 
         std::string Key() const override { return "min"; }
 

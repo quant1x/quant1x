@@ -10,8 +10,8 @@ from quant1x.level1 import protocol
 from quant1x.level1.client import get_std_conn
 from quant1x.level1.security_bars import SecurityBarsRequest, SecurityBarsResponse, KLineType, SecurityBar, SECURITY_BARS_MAX
 from quant1x.config import config
-from quant1x.cache import adapter
-from quant1x.cache.adapter import DataAdapter, PLUGIN_MASK_BASE_DATA, register, DEFAULT_DATA_PROVIDER
+from data import adapter
+from data.adapter import DataAdapter, PLUGIN_MASK_BASE_DATA, register, DEFAULT_DATA_PROVIDER
 from quant1x.datasets.base import BASE_RAW_DAILY_KLINE
 
 logger = logging.getLogger(__name__)
@@ -334,7 +334,7 @@ class DataKLineRaw(DataAdapter):
 
 
 # 自动注册DataKLineRaw插件
-from quant1x.cache.adapter import register
+from data.adapter import register
 
 # 创建并注册DataKLineRaw插件
 _data_kline_raw_plugin = adapter.register(DataKLineRaw)

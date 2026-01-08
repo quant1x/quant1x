@@ -1,5 +1,5 @@
 #include <quant1x/encoding/csv.h>
-#include <quant1x/instruments/markets.h>
+#include <quant1x/markets/instruments.h>
 #include <quant1x/level1/client.h>
 #include <quant1x/datasets/xdxr.h>
 #include <quant1x/factors/f10.h>
@@ -219,12 +219,12 @@ static std::unique_ptr<Top10ShareHolder> checkoutShareHolder(const std::string &
     return nullptr;
 }
 
-cache::Kind F10Feature::Kind() const {
+data::Kind F10Feature::Kind() const {
     return factors::FeatureF10;
 }
 
 std::string F10Feature::Owner() {
-    return cache::DefaultDataProvider;
+    return data::DefaultDataProvider;
 }
 
 std::string F10Feature::Key() const {
@@ -315,7 +315,7 @@ void F10Feature::Update(const std::string &code, const exchange::timestamp &date
     spdlog::debug("update f10, code={}, OK", securityCode);
 }
 
-std::unique_ptr<cache::FeatureAdapter> F10Feature::clone() const {
+std::unique_ptr<data::FeatureAdapter> F10Feature::clone() const {
     return std::make_unique<F10Feature>(*this);
 }
 

@@ -232,7 +232,7 @@ fn checkout_security_basic_info(security_code: &str, feature_date: &str) -> F10S
     }
 
     // Basic info from exchange
-    if let Some(sec_info) = crate::instruments::get_security_info(security_code) {
+    if let Some(sec_info) = crate::markets::get_security_info(security_code) {
         info.vol_unit = sec_info.lot_size as i32;
         info.decimal_point = sec_info.price_precision as i32;
         info.name = sec_info.name.clone();

@@ -8,8 +8,8 @@ import (
 	"os"
 	"strconv"
 
-	"gitee.com/quant1x/quant1x/quant1x/cache"
 	"gitee.com/quant1x/quant1x/quant1x/config"
+	"gitee.com/quant1x/quant1x/quant1x/data"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 	"gitee.com/quant1x/quant1x/quant1x/level1"
 )
@@ -144,14 +144,14 @@ func LoadKlineRaw(code string) ([]KLineRaw, error) {
 // DataKLineRaw 实现了与 C++ DataKLineRaw 类似的缓存适配器更新逻辑
 type DataKLineRaw struct{}
 
-// 实现 cache.DataAdapter 的 Schema 方法
-func (d *DataKLineRaw) Kind() cache.Kind { return BaseRawDailyKLine }
-func (d *DataKLineRaw) Owner() string    { return cache.DefaultDataProvider }
-func (d *DataKLineRaw) Key() string      { return "day_raw" }
-func (d *DataKLineRaw) Name() string     { return "日K线RAW" }
-func (d *DataKLineRaw) Usage() string    { return "日K线RAW" }
+// 实现 data.DataAdapter 的 Schema 方法
+func (d *DataKLineRaw) Kind() data.Kind { return BaseRawDailyKLine }
+func (d *DataKLineRaw) Owner() string   { return data.DefaultDataProvider }
+func (d *DataKLineRaw) Key() string     { return "day_raw" }
+func (d *DataKLineRaw) Name() string    { return "日K线RAW" }
+func (d *DataKLineRaw) Usage() string   { return "日K线RAW" }
 
-// Print 实现 cache.DataAdapter.Print（可变参数日期）
+// Print 实现 data.DataAdapter.Print（可变参数日期）
 func (d *DataKLineRaw) Print(code string, dates ...exchange.Timestamp) {
 	_ = code
 	_ = dates
@@ -257,7 +257,7 @@ func (d *DataKLineRaw) Update(code string, _date exchange.Timestamp) {
 
 func init() {
 	// 注册DataKLineRaw插件
-	if err := cache.Register(&DataKLineRaw{}); err != nil {
+	if err := data.Register(&DataKLineRaw{}); err != nil {
 		log.Printf("[dataset::KLineRaw] failed to register plugin: %v", err)
 	}
 }

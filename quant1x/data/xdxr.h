@@ -4,7 +4,7 @@
 
 #include <quant1x/datasets/base.h>
 #include <quant1x/level1/client.h>
-#include <quant1x/cache/adapter.h>
+#include <quant1x/data/adapter.h>
 
 namespace factors {
     struct CumulativeAdjustment;
@@ -16,9 +16,9 @@ namespace datasets {
     std::vector<level1::XdxrInfo> load_xdxr(const std::string& code);
 
     // 除权除息
-    class DataXdxr : public cache::DataAdapter {
+    class DataXdxr : public data::DataAdapter {
     public:
-        cache::Kind Kind() const override;
+        data::Kind Kind() const override;
         std::string Owner() override ;
         std::string Key() const override ;
         std::string Name() const override ;

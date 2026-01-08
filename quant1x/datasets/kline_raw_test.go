@@ -3,13 +3,13 @@ package datasets
 import (
 	"testing"
 
-	"gitee.com/quant1x/quant1x/quant1x/cache"
+	"gitee.com/quant1x/quant1x/quant1x/data"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 )
 
 func TestKLineRaw(t *testing.T) {
 	code := "sh600000"
-	adapter := cache.GetDataAdapter(BaseRawDailyKLine)
+	adapter := data.GetDataAdapter(BaseRawDailyKLine)
 	if adapter == nil {
 		t.Fatalf("GetDataAdapter returned nil")
 	}

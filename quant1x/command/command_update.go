@@ -3,7 +3,7 @@ package command
 import (
 	"fmt"
 
-	"gitee.com/quant1x/quant1x/quant1x/cache"
+	"gitee.com/quant1x/quant1x/quant1x/data"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 	cli "github.com/spf13/cobra"
 )
@@ -49,23 +49,23 @@ func initUpdate() {
 			}
 			tsEnd = tsEnd.PreMarketTime()
 			fmt.Println("结束日期:", tsEnd.OnlyDate())
-			plugins := []cache.DataAdapter{}
+			plugins := []data.DataAdapter{}
 			if flagAll.Value {
 				// 全部更新
 				//handleUpdateAll(cacheDate, featureDate)
-				plugins = cache.Plugins(0)
+				plugins = data.Plugins(0)
 			} else if len(flagBaseData.Value) > 0 {
 				all, keywords := parseFields(flagBaseData.Value)
 				if all || len(keywords) == 0 {
 					clear(keywords)
 				}
-				plugins = append(plugins, cache.PluginsWithName(cache.PluginMaskBaseData, keywords...)...)
+				plugins = append(plugins, data.PluginsWithName(data.PluginMaskBaseData, keywords...)...)
 			} else if len(flagFeatures.Value) > 0 {
 				all, keywords := parseFields(flagFeatures.Value)
 				if all || len(keywords) == 0 {
 					clear(keywords)
 				}
-				plugins = append(plugins, cache.PluginsWithName(cache.PluginMaskFeature, keywords...)...)
+				plugins = append(plugins, data.PluginsWithName(data.PluginMaskFeature, keywords...)...)
 			} else {
 				fmt.Println("Error: 非全部更新, 必须携带--features或--base")
 				_ = cmd.Usage()
@@ -75,7 +75,7 @@ func initUpdate() {
 			fmt.Println("data count:", len(ts))
 			for _, d := range ts {
 				fmt.Println("处理日期:", d.OnlyDate())
-				cache.UpdateWithAdapters(plugins, d)
+				data.UpdateWithAdapters(plugins, d)
 			}
 			_ = currentDate
 
@@ -86,12 +86,12 @@ func initUpdate() {
 	commandInit(CmdUpdate, &flagEndDate)
 
 	// 1. 基础数据
-	plugins := cache.Plugins(cache.PluginMaskBaseData)
+	plugins := data.Plugins(data.PluginMaskBaseData)
 	flagBaseData.Usage = getPluginsUsage(plugins)
 	commandInit(CmdUpdate, &flagBaseData)
 
 	// 2. 特征数据
-	plugins = cache.Plugins(cache.PluginMaskFeature)
+	plugins = data.Plugins(data.PluginMaskFeature)
 	flagFeatures.Usage = getPluginsUsage(plugins)
 	commandInit(CmdUpdate, &flagFeatures)
 

@@ -43,7 +43,7 @@ void DataNo0::init(const exchange::timestamp &timestamp) {
     (void)timestamp;
 }
 
-std::unique_ptr<cache::FeatureAdapter> DataNo0::clone() const {
+std::unique_ptr<data::FeatureAdapter> DataNo0::clone() const {
     return std::make_unique<DataNo0>(*this);
 }
 

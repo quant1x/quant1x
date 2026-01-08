@@ -9,9 +9,9 @@ namespace datasets {
     /**
      * @brief 分时数据, 每天固定条数
      */
-    class DataMinute : public cache::DataAdapter {
+    class DataMinute : public data::DataAdapter {
     public:
-        cache::Kind Kind() const override;
+        data::Kind Kind() const override;
         std::string Owner() override;
         std::string Key() const override;
         std::string Name() const override;

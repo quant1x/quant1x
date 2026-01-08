@@ -441,7 +441,7 @@ set(quant1x-headers
     quant1x/config/trading_session.h
 
     # 缓存
-    quant1x/cache/adapter.h
+    quant1x/data/adapter.h
 
     # 网络相关
     quant1x/io/base.h
@@ -496,9 +496,9 @@ set(quant1x-headers
     quant1x/backtest/position.h
 
     # 交易所相关
-    quant1x/instruments/markets.h
-    quant1x/instruments/blocks.h
-    quant1x/instruments/security.h
+    quant1x/markets/instruments.h
+    quant1x/markets/blocks.h
+    quant1x/markets/security.h
     quant1x/exchange/calendar.h
     quant1x/exchange/code.h
     quant1x/exchange/rule.h
@@ -626,7 +626,7 @@ set(quant1x-sources
     quant1x/formula.cpp
 
     # 缓存
-    quant1x/cache/adapter.cpp
+    quant1x/data/adapter.cpp
 
     # 回测
     quant1x/backtest/backtest.cpp
@@ -646,9 +646,9 @@ set(quant1x-sources
     quant1x/datasets.cpp
 
     # 交易所相关
-    quant1x/instruments/markets.cpp
-    quant1x/instruments/blocks.cpp
-    quant1x/instruments/security.cpp
+    quant1x/markets/instruments.cpp
+    quant1x/markets/blocks.cpp
+    quant1x/markets/security.cpp
     quant1x/exchange/code.cpp
     quant1x/exchange/rule.cpp
     quant1x/exchange/calendar.cpp

@@ -48,11 +48,11 @@ namespace datasets {
     std::vector<KLine> read_kline_from_csv(const std::string &filename);
     std::vector<KLine> load_kline(const std::string &code);
 
-    class DataKLine : public cache::DataAdapter {
+    class DataKLine : public data::DataAdapter {
     public:
-        cache::Kind Kind() const override { return BaseKLine; }
+        data::Kind Kind() const override { return BaseKLine; }
 
-        std::string Owner() override { return cache::DefaultDataProvider; }
+        std::string Owner() override { return data::DefaultDataProvider; }
 
         std::string Key() const override { return "day"; }
 

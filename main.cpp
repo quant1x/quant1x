@@ -157,7 +157,7 @@ int main(const int argc, const char *const argv[]) {
     quant1x::engine::init([] {
         std::cout << "这里执行定制的初始化工作" << std::endl;
         // 注册1号特征
-        cache::Register(std::make_unique<DataNo0>());
+        data::Register(std::make_unique<DataNo0>());
         // 注册策略
         StrategyManager& manager = StrategyManager::Instance();
         StrategyPtr s0 = std::make_shared<No0Strategy>();

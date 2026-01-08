@@ -1,6 +1,6 @@
 #include <quant1x/test/test.h>
 
-#include <quant1x/instruments/markets.h>
+#include <quant1x/markets/instruments.h>
 #include <iostream>
 #include <string>
 #include <map>

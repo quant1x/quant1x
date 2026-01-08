@@ -746,8 +746,8 @@ pub fn try_run_subcommand(
         // If the user specified base keys, select plugins with those keys; otherwise update all base data plugins
         if base_keys.is_empty() {
             // update all base adapters
-            let _count = crate::cache::update_all_mask(
-                crate::cache::PLUGIN_MASK_BASE_DATA,
+            let _count = crate::data::update_all_mask(
+                crate::data::PLUGIN_MASK_BASE_DATA,
                 None,
                 crate::exchange::last_trading_day(crate::Timestamp::now()),
             );
@@ -755,8 +755,8 @@ pub fn try_run_subcommand(
         } else {
             // update only named base adapters
             let ks: Vec<String> = base_keys.clone();
-            let _count = crate::cache::update_all_mask(
-                crate::cache::PLUGIN_MASK_BASE_DATA,
+            let _count = crate::data::update_all_mask(
+                crate::data::PLUGIN_MASK_BASE_DATA,
                 Some(&ks),
                 crate::exchange::last_trading_day(crate::Timestamp::now()),
             );
@@ -776,8 +776,8 @@ pub fn try_run_subcommand(
         // If the user specified feature keys, select plugins with those keys; otherwise update all feature data plugins
         if features_keys.is_empty() {
             // update all feature adapters
-            let _count = crate::cache::update_all_mask(
-                crate::cache::PLUGIN_MASK_FEATURE,
+            let _count = crate::data::update_all_mask(
+                crate::data::PLUGIN_MASK_FEATURE,
                 None,
                 crate::exchange::last_trading_day(crate::Timestamp::now()),
             );
@@ -785,8 +785,8 @@ pub fn try_run_subcommand(
         } else {
             // update only named feature adapters
             let ks: Vec<String> = features_keys.clone();
-            let _count = crate::cache::update_all_mask(
-                crate::cache::PLUGIN_MASK_FEATURE,
+            let _count = crate::data::update_all_mask(
+                crate::data::PLUGIN_MASK_FEATURE,
                 Some(&ks),
                 crate::exchange::last_trading_day(crate::Timestamp::now()),
             );

@@ -44,12 +44,11 @@ namespace datasets {
                                     const std::string& securityCode,
                                     const exchange::timestamp& featureDate);
 
-    class DataTrans : public cache::DataAdapter {
+    class DataTrans : public data::DataAdapter {
     public:
-        cache::Kind Kind() const override { return BaseTransaction; }
+        data::Kind Kind() const override { return BaseTransaction; }
 
-        std::string Owner() override { return cache::DefaultDataProvider; }
-
+        std::string Owner() override { return data::DefaultDataProvider; }
         std::string Key() const override { return "trans"; }
 
         std::string Name() const override { return "历史成交"; }

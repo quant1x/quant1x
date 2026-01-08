@@ -3,7 +3,7 @@
 基础数据类型定义
 """
 
-from quant1x.cache.adapter import PLUGIN_MASK_BASE_DATA
+from .adapter import PLUGIN_MASK_BASE_DATA
 from quant1x.exchange import Timestamp
 from quant1x.exchange.code import MarketCnFirstListTime
 

@@ -1,8 +1,8 @@
-use crate::cache::{self, DataAdapter, Kind};
 use crate::level1::KLineType;
 use crate::Timestamp;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use crate::data::adapter::DataAdapter;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct KLine {
@@ -51,12 +51,12 @@ impl KLine {
 #[derive(Debug)]
 pub struct DataKLine;
 
-impl cache::Schema for DataKLine {
-    fn kind(&self) -> Kind {
+impl crate::data::Schema for DataKLine {
+    fn kind(&self) -> crate::Kind {
         crate::datasets::BaseKLine
     }
     fn owner(&self) -> String {
-        crate::cache::DEFAULT_DATA_PROVIDER.to_string()
+        crate::data::DEFAULT_DATA_PROVIDER.to_string()
     }
     fn key(&self) -> String {
         "day".to_string()
@@ -69,7 +69,7 @@ impl cache::Schema for DataKLine {
     }
 }
 
-impl DataAdapter for DataKLine {
+impl crate::data::DataAdapter for DataKLine {
     fn print(&self, _code: &str, _dates: &[Timestamp]) {}
 
     fn update(&self, code: &str, _date: Timestamp) {
@@ -299,8 +299,8 @@ fn read_kline_from_csv(filename: &str) -> Vec<KLine> {
 }
 
 pub fn init() {
-    let plugin = Arc::new(DataKLine) as Arc<dyn DataAdapter>;
-    cache::register(plugin);
+    let plugin = Arc::new(DataKLine) as Arc<dyn crate::data::DataAdapter>;
+    crate::data::register(plugin);
 }
 
 #[cfg(test)]

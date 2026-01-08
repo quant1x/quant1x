@@ -1,7 +1,7 @@
-use crate::cache::{self, DataAdapter, Kind};
 use crate::Timestamp;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use crate::data::adapter::DataAdapter;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct MinuteKLine {
@@ -90,12 +90,12 @@ fn infer_bar_vol_unit(hs: &Vec<Vec<crate::level1::SecurityBar>>) -> f64 {
 #[derive(Debug)]
 pub struct DataMinuteKLine;
 
-impl cache::Schema for DataMinuteKLine {
-    fn kind(&self) -> Kind {
+impl crate::data::Schema for DataMinuteKLine {
+    fn kind(&self) -> crate::Kind {
         crate::datasets::BaseMinuteKLine
     }
     fn owner(&self) -> String {
-        crate::cache::DEFAULT_DATA_PROVIDER.to_string()
+        crate::data::DEFAULT_DATA_PROVIDER.to_string()
     }
     fn key(&self) -> String {
         "min".to_string()
@@ -108,7 +108,7 @@ impl cache::Schema for DataMinuteKLine {
     }
 }
 
-impl DataAdapter for DataMinuteKLine {
+impl crate::data::DataAdapter for DataMinuteKLine {
     fn print(&self, _code: &str, _dates: &[Timestamp]) {}
 
     fn update(&self, code: &str, _date: Timestamp) {
@@ -425,8 +425,8 @@ fn read_minute_kline_from_csv(filename: &str) -> Vec<MinuteKLine> {
 }
 
 pub fn init() {
-    let plugin = Arc::new(DataMinuteKLine) as Arc<dyn DataAdapter>;
-    cache::register(plugin);
+    let plugin = Arc::new(DataMinuteKLine) as Arc<dyn crate::data::DataAdapter>;
+    crate::data::register(plugin);
 }
 
 #[cfg(test)]

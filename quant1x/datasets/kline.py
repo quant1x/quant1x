@@ -13,8 +13,8 @@ from quant1x.level1.security_bars import SecurityBarsRequest, SecurityBarsRespon
 from quant1x.level1.xdxr_info import XdxrInfo
 import quant1x.datasets.xdxr as xdxr_module
 from quant1x.config import config
-from quant1x.cache import adapter
-from quant1x.cache.adapter import DataAdapter, PLUGIN_MASK_BASE_DATA, register, DEFAULT_DATA_PROVIDER
+from data import adapter
+from data.adapter import DataAdapter, PLUGIN_MASK_BASE_DATA, register, DEFAULT_DATA_PROVIDER
 from quant1x.datasets.base import BASE_KLINE
 
 logger = logging.getLogger(__name__)

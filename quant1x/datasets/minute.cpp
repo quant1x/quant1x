@@ -5,12 +5,12 @@
 
 namespace datasets {
 
-    cache::Kind DataMinute::Kind() const {
+    data::Kind DataMinute::Kind() const {
         return BaseMinutes;
     }
 
     std::string DataMinute::Owner() {
-        return cache::DefaultDataProvider;
+        return data::DefaultDataProvider;
     }
 
     std::string DataMinute::Key() const {

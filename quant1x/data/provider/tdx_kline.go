@@ -36,8 +36,8 @@ func tdxFetchRawSecurityBars(securityCode string, category level1.KLineType, sta
 // 反转与合并结果、在适当时机应用前复权，并写回缓存文件。
 func tdxUpdateKLine(code string, _date exchange.Timestamp) {
 	_ = _date
-	sc := data.DetectSymbol(code)
-	if sc.Type == data.SecurityUnknown {
+	sc := exchange.DetectSymbol(code)
+	if sc.Type == exchange.SecurityUnknown {
 		log.Printf("[DataKLine] unknown security type for code %s", code)
 		return
 	}
@@ -55,7 +55,7 @@ func tdxUpdateKLine(code string, _date exchange.Timestamp) {
 	adjustTimes := 0
 
 	// 默认起始日期（使用 datasets.MarketFirstDate，与 C++ 的 market_first_date 等价）
-	currentStartDate := data.GetFirstMarketDate(sc.Exchange)
+	currentStartDate := exchange.GetFirstMarketDate(sc.Market)
 	if klinesLength > 0 {
 		if klinesOffsetDays > klinesLength {
 			klinesOffsetDays = klinesLength

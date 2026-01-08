@@ -4,7 +4,7 @@ fn is_need_ignore(code: &str) -> bool {
     // Only ignore when the security exists AND its name contains ignored keywords
     // ("ST", "退", "摘牌"). If the security is not found in the cache, do
     // not ignore it here — we keep the generated code in the list.
-    if let Some(info) = crate::instruments::get_security_info(code) {
+    if let Some(info) = crate::markets::get_security_info(code) {
         const IGNORED_KEYWORDS: [&str; 3] = ["ST", "退", "摘牌"];
         let upper_name = info.name.to_uppercase();
         for kw in IGNORED_KEYWORDS.iter() {

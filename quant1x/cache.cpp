@@ -96,7 +96,7 @@ namespace cache {
         }
     }
 
-    int update_with_adapters(const std::vector<cache::DataAdapter*> &adapters, const exchange::timestamp& feature_date) {
+    int update_with_adapters(const std::vector<data::DataAdapter*> &adapters, const exchange::timestamp& feature_date) {
         auto const & config = config::global_config();
         auto const & cfg_concurrency = config.data.concurrency;
         // 隐藏终端光标以获得更流畅的显示效果，使用 RAII 确保恢复
@@ -198,10 +198,10 @@ namespace cache {
             // 初始化特征适配器
             bool is_feature_adapter = false;
             std::string cache_filename;
-            cache::FeatureAdapter *featureAdapter = nullptr;
+            data::FeatureAdapter *featureAdapter = nullptr;
 
-            if((adapter->Kind() & cache::PluginMaskFeature) == cache::PluginMaskFeature) {
-                featureAdapter = dynamic_cast<cache::FeatureAdapter*>(adapter);
+            if((adapter->Kind() & data::PluginMaskFeature) == data::PluginMaskFeature) {
+                featureAdapter = dynamic_cast<data::FeatureAdapter*>(adapter);
                 if(featureAdapter) {
                     try {
                         //concurrency = std::min<size_t>(std::thread::hardware_concurrency(), 8);
@@ -453,8 +453,8 @@ namespace cache {
 
         // 执行更新
         if (should_update && !update_phase.empty()) {
-            //factors::SwitchDate(cache::DefaultCanReadDate());
-            auto all_action = cache::Plugins();
+            //factors::SwitchDate(data::DefaultCanReadDate());
+            auto all_action = data::Plugins();
             update_with_adapters(all_action);
             doneUpdate(today, update_phase);
         }

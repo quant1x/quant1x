@@ -8,8 +8,7 @@ import yaml
 from quant1x.std.filepath import expand_user
 from .defaults import apply_defaults
 
-LANGUAGE = "py"
-DEFAULT_BASE_PATH = f"~/.q1x-{LANGUAGE}"
+DEFAULT_BASE_PATH = f"~/.q1x-py"
 QUANT1X_CONFIG_FILENAME = "quant1x.yaml"
 
 @dataclass

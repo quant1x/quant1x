@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <memory>
 
-namespace cache {
+namespace data {
 
     using Kind = uint64_t;
 
@@ -17,13 +17,13 @@ namespace cache {
     constexpr Kind PluginMaskFeature  = 0x2000000000000000; // 特征数据
     constexpr Kind PluginMaskStrategy = 0x3000000000000000; // 策略
 
-    const std::string DefaultDataProvider = "engine";
+    const std::string DefaultDataProvider = "quant1x";
 
     // 缓存的概要信息
     class Schema {
     public:
         virtual ~Schema() = default;
-        virtual Kind Kind() const = 0; // Kind 数据类型
+        virtual data::Kind Kind() const = 0; // Kind 数据类型
         virtual std::string Owner() = 0; // Owner 提供者
         virtual std::string Key() const = 0; // Key 数据关键词, key与cache落地强关联
         virtual std::string Name() const = 0; // Name 特性名称
@@ -64,7 +64,7 @@ namespace cache {
         PluginRegistrar() {
             // 利用多态获取 Kind
             std::unique_ptr<DataAdapter> plugin = std::make_unique<T>();
-            cache::Register(std::move(plugin));
+            Register(std::move(plugin));
         }
     };
 

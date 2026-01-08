@@ -7,7 +7,7 @@ import pandas as pd
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from quant1x import config
-from quant1x.cache import (
+from data import (
     klines, stock_name, securities, block_list, sector_filename,
     get_sector_constituents, get_minutes_data, get_tick_transaction, get_f10
 )

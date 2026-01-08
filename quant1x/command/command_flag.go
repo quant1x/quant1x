@@ -5,7 +5,7 @@ import (
 	"unsafe"
 
 	"gitee.com/quant1x/pkg/tablewriter"
-	"gitee.com/quant1x/quant1x/quant1x/cache"
+	"gitee.com/quant1x/quant1x/quant1x/data"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 	"gitee.com/quant1x/quant1x/quant1x/std/meta"
 	cli "github.com/spf13/cobra"
@@ -82,7 +82,7 @@ type optionUsage struct {
 }
 
 // 获取插件的Usage信息
-func getPluginsUsage(plugins []cache.DataAdapter) string {
+func getPluginsUsage(plugins []data.DataAdapter) string {
 	writer := strings.Builder{}
 	table := tablewriter.NewWriter(&writer)
 	table.SetHeader(meta.GetHeadersByTags(optionUsage{}))

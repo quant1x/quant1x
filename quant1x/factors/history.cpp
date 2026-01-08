@@ -9,12 +9,12 @@ void History::adjust(const factors::CumulativeAdjustment &adj) {
     (void)adj;
 }
 
-cache::Kind HistoryFeature::Kind() const {
+data::Kind HistoryFeature::Kind() const {
     return factors::FeatureHistory;
 }
 
 std::string HistoryFeature::Owner() {
-    return cache::DefaultDataProvider;
+    return data::DefaultDataProvider;
 }
 
 std::string HistoryFeature::Key() const {
@@ -154,7 +154,7 @@ void HistoryFeature::init(const exchange::timestamp &timestamp) {
     (void)timestamp;
 }
 
-std::unique_ptr<cache::FeatureAdapter> HistoryFeature::clone() const {
+std::unique_ptr<data::FeatureAdapter> HistoryFeature::clone() const {
     return std::make_unique<HistoryFeature>(*this);
 }
 

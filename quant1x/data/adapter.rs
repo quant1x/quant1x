@@ -13,7 +13,7 @@ pub const PLUGIN_MASK_BASE_DATA: Kind = 0x1000_0000_0000_0000;
 pub const PLUGIN_MASK_FEATURE: Kind = 0x2000_0000_0000_0000;
 pub const PLUGIN_MASK_STRATEGY: Kind = 0x3000_0000_0000_0000;
 
-pub const DEFAULT_DATA_PROVIDER: &str = "engine";
+pub const DEFAULT_DATA_PROVIDER: &str = "quant1x";
 
 /// 描述插件的 Schema
 pub trait Schema: Send + Sync + Debug {
@@ -124,7 +124,7 @@ pub fn plugins_with_name(plugin_type: Kind, keywords: &[String]) -> Vec<Arc<dyn 
 pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Timestamp) -> usize {
     use indicatif::{ProgressBar, ProgressStyle};
 
-    let all_codes = crate::instruments::get_code_list();
+    let all_codes = crate::markets::get_code_list();
     if all_codes.is_empty() {
         log::warn!("No codes found for update");
     }

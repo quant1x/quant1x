@@ -196,7 +196,7 @@ func (sc *SecurityCode) UnmarshalCSV(val string) error {
 	return nil
 }
 
-// Detect 根据输入的证券代码字符串解析出市场、代码和类型信息
+// DetectSymbol 根据输入的证券代码字符串解析出市场、代码和类型信息
 //
 // 支持多种格式的证券代码输入：
 //  1. 前缀形式：sh600000, hk00700, usappl
@@ -217,7 +217,7 @@ func (sc *SecurityCode) UnmarshalCSV(val string) error {
 //  3. 对于纯数字/字母形式，根据长度和规则匹配市场
 //  4. 对于A股代码，会进一步匹配各交易所的特定规则
 //  5. 返回解析后的SecurityCode结构体，包含市场、代码和类型信息
-func Detect(input string) SecurityCode {
+func DetectSymbol(input string) SecurityCode {
 	raw := strings.TrimSpace(input)
 	if raw == "" {
 		return SecurityCode{Market: ExchangeIdShangHai, Symbol: "", Type: SecurityUnknown}

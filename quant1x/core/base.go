@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	language              = "go"
-	defaultBasePath       = "~/.q1x-" + language
+	defaultBasePath       = "~/.q1x-go"
 	quant1xConfigFilename = "quant1x.yaml"
 )
 

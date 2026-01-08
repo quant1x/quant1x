@@ -12,12 +12,12 @@ namespace datasets {
         f64 sell  = 0;  // 卖出, 成交量, 单位股
     };
 
-    class DataChips : public cache::DataAdapter {
+    class DataChips : public data::DataAdapter {
     public:
 
-        cache::Kind Kind() const override { return BaseChipDistribution; }
+        data::Kind Kind() const override { return BaseChipDistribution; }
 
-        std::string Owner() override { return cache::DefaultDataProvider; }
+        std::string Owner() override { return data::DefaultDataProvider; }
 
         std::string Key() const override { return "chips"; }
 

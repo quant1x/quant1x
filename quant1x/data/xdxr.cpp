@@ -40,12 +40,12 @@ namespace datasets {
         }
     }
 
-    cache::Kind DataXdxr::Kind() const  {
+    data::Kind DataXdxr::Kind() const  {
         return BaseXdxr;
     }
 
     std::string DataXdxr::Owner()  {
-        return cache::DefaultDataProvider;
+        return data::DefaultDataProvider;
     }
 
     std::string DataXdxr::Key() const  {

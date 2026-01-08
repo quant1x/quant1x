@@ -3,7 +3,7 @@
 #define QUANT1X_FEATURES_NO0_H 1
 
 #include <quant1x/std/base.h>
-#include <quant1x/cache/adapter.h>
+#include <quant1x/data/adapter.h>
 #include <quant1x/factors/base.h>
 
 /// 0号策略特征工程结构体
@@ -20,16 +20,16 @@ struct No0 {
     uint64_t    State;       // 样本状态
 };
 
-class DataNo0 : public cache::FeatureAdapter {
+class DataNo0 : public data::FeatureAdapter {
 private:
     No0 feature;
 
 public:
     DataNo0()                   = default;
     DataNo0(const DataNo0 &) = default;
-    cache::Kind Kind() const override { return factors::FeatureNo0; }
+    data::Kind Kind() const override { return factors::FeatureNo0; }
 
-    std::string Owner() override { return cache::DefaultDataProvider; }
+    std::string Owner() override { return data::DefaultDataProvider; }
 
     std::string Key() const override { return "no0"; }
 

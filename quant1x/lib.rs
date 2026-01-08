@@ -72,13 +72,13 @@ mod level1;
 pub use crate::level1::*;
 pub mod exchange;
 pub use crate::exchange::*;
-pub mod instruments;
-pub use crate::instruments::*;
+pub mod markets;
+pub use crate::markets::*;
 pub mod factors;
 pub use crate::factors::*;
 // cache adapter module (port of C++ engine::adapter)
-mod cache;
-pub use crate::cache::*;
+mod data;
+pub use crate::data::*;
 // datasets adapters (Rust ports)
 pub mod datasets;
 pub use crate::datasets::*;

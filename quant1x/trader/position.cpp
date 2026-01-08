@@ -1,5 +1,5 @@
 #include <quant1x/trader/position.h>
-#include <quant1x/instruments/markets.h>
+#include <quant1x/markets/instruments.h>
 #include <quant1x/encoding/csv.h>
 
 namespace trader {

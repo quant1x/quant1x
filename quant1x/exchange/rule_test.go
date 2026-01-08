@@ -81,7 +81,7 @@ func TestDetect_Scenarios(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := Detect(tt.in)
+			got := DetectSymbol(tt.in)
 			if got.Market != tt.want.Market {
 				t.Fatalf("Detect(%q).Market = %d, want %d", tt.in, got.Market, tt.want.Market)
 			}

@@ -14,7 +14,7 @@
 #include <indicators/dynamic_progress.hpp>
 #include <indicators/progress_bar.hpp>
 
-#include <quant1x/instruments/markets.h>
+#include <quant1x/markets/instruments.h>
 
 namespace quant1x {
 

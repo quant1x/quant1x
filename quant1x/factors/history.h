@@ -3,7 +3,7 @@
 #define QUANT1X_FACTOR_HISTORY_H 1
 
 #include <quant1x/std/api.h>
-#include <quant1x/cache/adapter.h>
+#include <quant1x/data/adapter.h>
 #include <quant1x/factors/base.h>
 
 struct History {
@@ -52,14 +52,14 @@ struct History {
     friend std::ostream &operator<<(std::ostream &os, const History &history);
 };
 
-class HistoryFeature : public cache::FeatureAdapter {
+class HistoryFeature : public data::FeatureAdapter {
 private:
     History history;
 
 public:
     HistoryFeature()                       = default;
     HistoryFeature(const HistoryFeature &) = default;
-    cache::Kind Kind() const override;
+    data::Kind Kind() const override;
 
     std::string Owner() override;
 

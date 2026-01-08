@@ -4,9 +4,9 @@
 
 #include <quant1x/std/api.h>
 #include <quant1x/proto/data.h>
-#include <quant1x/cache/adapter.h>
+#include <quant1x/data/adapter.h>
 #include <quant1x/config/config.h>
-#include <quant1x/instruments/markets.h>
+#include <quant1x/markets/instruments.h>
 
 namespace cache {
     constexpr const char *const trains_begin_date = "2024-10-01";
@@ -20,7 +20,7 @@ namespace cache {
     /// 更新所有数据
     void update_all();
     /// 完成数据处理的适配器数
-    int update_with_adapters(const std::vector<cache::DataAdapter*> &adapters, const exchange::timestamp& feature_date = exchange::last_trading_day());
+    int update_with_adapters(const std::vector<data::DataAdapter*> &adapters, const exchange::timestamp& feature_date = exchange::last_trading_day());
 
     //============================================================
     // 历史成交记录                                                //

@@ -2,7 +2,7 @@
 #ifndef QUANT1X_FACTOR_F10_H
 #define QUANT1X_FACTOR_F10_H 1
 
-#include "quant1x/cache/adapter.h"
+#include "quant1x/data/adapter.h"
 #include "quant1x/exchange/calendar.h"
 #include "quant1x/std/numeric.h"
 
@@ -113,14 +113,14 @@ struct F10 {
     }
 };
 
-class F10Feature : public cache::FeatureAdapter {
+class F10Feature : public data::FeatureAdapter {
 private:
     F10 f10;
 public:
     F10Feature() = default;
     F10Feature(const F10Feature&) = default;
 
-    cache::Kind Kind() const override;
+    data::Kind Kind() const override;
 
     std::string Owner() override;
 
@@ -133,7 +133,7 @@ public:
     std::vector<std::string> headers() const override;
     std::vector<std::string> values() const override;
 
-    std::unique_ptr<cache::FeatureAdapter> clone() const override;
+    std::unique_ptr<data::FeatureAdapter> clone() const override;
 
     void init(const exchange::timestamp &timestamp) override;
 

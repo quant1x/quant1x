@@ -1,6 +1,6 @@
 #include <quant1x/config/cache.h>
 #include <quant1x/config/base.h>
-#include <quant1x/instruments/markets.h>
+#include <quant1x/markets/instruments.h>
 #include <quant1x/std/filepath.h>
 
 namespace config {

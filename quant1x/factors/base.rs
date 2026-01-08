@@ -72,7 +72,7 @@ impl CumulativeAdjustment {
 ///           如果日期晚于所有K线日期，也返回-1
 ///
 /// # 示例
-/// ```
+/// ```ignore
 /// let klines = vec![...];
 /// let offset = check_kline_offset(&klines, "2023-01-01");
 /// ```

@@ -9,9 +9,9 @@ from quant1x.level1.client import get_std_conn
 from quant1x.exchange import code as exchange_code
 from quant1x.exchange import Timestamp
 from quant1x.config import config
-from quant1x.cache import adapter
-from quant1x.cache.adapter import DataAdapter, DEFAULT_DATA_PROVIDER, register
-from quant1x.datasets.base import BASE_XDXR
+from . import adapter
+from .adapter import DataAdapter, DEFAULT_DATA_PROVIDER
+from .base import BASE_XDXR
 
 log = logging.getLogger(__name__)
 
