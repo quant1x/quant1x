@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_CACHE_ADAPTER_H
-#define QUANT1X_CACHE_ADAPTER_H 1
+#ifndef QUANT1X_DATA_ADAPTER_H
+#define QUANT1X_DATA_ADAPTER_H 1
 
 #include <quant1x/std/api.h>
 #include <quant1x/exchange/timestamp.h>
@@ -76,6 +76,6 @@ namespace data {
     std::vector<DataAdapter*> PluginsWithName(Kind pluginType, const std::vector<std::string>& keywords);
     std::vector<DataAdapter*> Plugins(Kind mask = 0);
 
-} // namespace cache
+} // namespace data
 
-#endif // QUANT1X_CACHE_ADAPTER_H
+#endif // QUANT1X_DATA_ADAPTER_H

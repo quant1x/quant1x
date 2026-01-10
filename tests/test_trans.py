@@ -2,7 +2,7 @@ import unittest
 import os
 import shutil
 import tempfile
-from quant1x.datasets import trans
+from data import trans
 from quant1x.level1.client import init_std_pool
 from quant1x.config import config
 from quant1x.exchange import Timestamp

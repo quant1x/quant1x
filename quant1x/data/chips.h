@@ -1,10 +1,10 @@
 #pragma once
-#ifndef QUANT1X_DATASETS_CHIPS_H
-#define QUANT1X_DATASETS_CHIPS_H 1
+#ifndef QUANT1X_DATA_CHIPS_H
+#define QUANT1X_DATA_CHIPS_H 1
 
-#include "xdxr.h"
+#include "base.h"
 
-namespace datasets {
+namespace data {
 
     struct PriceLine {
         i32 price = 0;  // 价格, 单位厘
@@ -15,7 +15,7 @@ namespace datasets {
     class DataChips : public data::DataAdapter {
     public:
 
-        data::Kind Kind() const override { return BaseChipDistribution; }
+        data::Kind Kind() const override { return data::BaseChipDistribution; }
 
         std::string Owner() override { return data::DefaultDataProvider; }
 
@@ -29,6 +29,6 @@ namespace datasets {
 
         void Update(const std::string &code, const exchange::timestamp &date) override;
     };
-} // namespace datasets
+} // namespace data
 
-#endif //QUANT1X_DATASETS_CHIPS_H
+#endif //QUANT1X_DATA_CHIPS_H

@@ -65,18 +65,16 @@ type SecurityBarsRequest struct {
 }
 
 // NewSecurityBarsRequest constructs a request aligned with the C++ structure.
-func NewSecurityBarsRequest(securityCode string, category KLineType, start, count uint16) SecurityBarsRequest {
+func NewSecurityBarsRequest(sc exchange.SecurityCode, category KLineType, start, count uint16) SecurityBarsRequest {
 	if count == 0 || count > SecurityBarsMax {
 		count = SecurityBarsMax
 	}
 
-	marketID, _, symbol, _ := exchange.DetectMarket(securityCode)
-
 	var code [6]byte
-	copy(code[:], symbol)
+	copy(code[:], sc.Symbol)
 
 	param := SecurityBarsParameter{
-		Market:   uint16(marketID),
+		Market:   uint16(sc.Market),
 		Code:     code,
 		Category: uint16(category),
 		I:        1,
@@ -88,7 +86,7 @@ func NewSecurityBarsRequest(securityCode string, category KLineType, start, coun
 		Param:   param,
 		Padding: make([]byte, 10),
 	}
-	req.IsIndex = exchange.AssertIndexByMarketAndCode(marketID, symbol)
+	req.IsIndex = sc.Type == exchange.SecurityIndex
 	return req
 }
 

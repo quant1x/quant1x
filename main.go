@@ -9,11 +9,8 @@ import (
 	"gitee.com/quant1x/quant1x/quant1x/runtime"
 	"gitee.com/quant1x/quant1x/quant1x/util"
 
-	//_ "gitee.com/quant1x/labs/qlab/factors"
-	//_ "gitee.com/quant1x/labs/services"
-	//_ "gitee.com/quant1x/labs/strategies"
-	_ "gitee.com/quant1x/quant1x/quant1x/datasets" // for dataset plugins
-	_ "gitee.com/quant1x/quant1x/quant1x/markets"  // for go:linkname GetCodeList
+	_ "gitee.com/quant1x/quant1x/quant1x/data/provider" // for data provider plugins
+	_ "gitee.com/quant1x/quant1x/quant1x/markets"       // for go:linkname GetCodeList
 )
 
 var (

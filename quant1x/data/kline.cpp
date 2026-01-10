@@ -1,10 +1,10 @@
-#include <quant1x/datasets/kline.h>
-#include <quant1x/datasets/kline_raw.h>
+#include <quant1x/data/kline.h>
+#include <quant1x/data/kline_raw.h>
 #include <quant1x/factors/base.h>
 #include <quant1x/config/cache.h>
 #include <quant1x/std/filepath.h>
 
-namespace datasets {
+namespace data {
 
     namespace {
 
@@ -73,7 +73,7 @@ namespace datasets {
 
     std::vector<KLine> load_kline(const std::string &code) {
         auto filename = config::get_kline_filename(code);
-        spdlog::debug("[dataset::KLine] kline file: {}", filename);
+        spdlog::debug("[data::KLine] kline file: {}", filename);
         return read_kline_from_csv(filename);
     }
 
@@ -106,12 +106,12 @@ namespace datasets {
             }
             // 2. 确定结束日期
             auto current_end_date = exchange::timestamp::now().pre_market_time();
-            spdlog::debug("[dataset::KLine] [{}]: from {} to {}", code, current_start_date.only_date(), current_end_date.only_date());
+            spdlog::debug("[data::KLine] [{}]: from {} to {}", code, current_start_date.only_date(), current_end_date.only_date());
             auto ts = exchange::date_range(current_start_date, current_end_date);
             auto total = ts.size();
             current_start_date = ts[0];
             current_end_date = ts[total-1];
-            spdlog::debug("[dataset::KLine] [{}]: from {} to {}", code, current_start_date.only_date(), current_end_date.only_date());
+            spdlog::debug("[data::KLine] [{}]: from {} to {}", code, current_start_date.only_date(), current_end_date.only_date());
             u16 step = level1::security_bars_max;
             u16 start = 0;
             // 3. 拉取数据
@@ -195,14 +195,14 @@ namespace datasets {
             // 9. 刷新缓存文件
             save_kline(cache_filename, klines);
         } catch (const std::exception &e) {  // 其他标准异常
-            spdlog::error("[dataset::KLine] - 标准异常: {} (type: {})", e.what(), typeid(e).name());
+            spdlog::error("[data::KLine] - 标准异常: {} (type: {})", e.what(), typeid(e).name());
             // 对于system_error可以记录更多信息
             if (auto se = dynamic_cast<const std::system_error *>(&e)) {
-                spdlog::error("[dataset::KLine] Error code: {}, category: {}", se->code().value(), se->code().category().name());
+                spdlog::error("[data::KLine] Error code: {}, category: {}", se->code().value(), se->code().category().name());
             }
         } catch (...) {
-            spdlog::error("[dataset::KLine] 获取日K线异常");
+            spdlog::error("[data::KLine] 获取日K线异常");
         }
     }
 
-} // namespace datasets
+} // namespace data

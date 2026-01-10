@@ -54,7 +54,7 @@ namespace backtest {
     }
 
     // 创建订单
-    Order BacktestEngine::createOrder(const std::string &code, const datasets::KLine &bar, TradeDirection direction) {
+    Order BacktestEngine::createOrder(const std::string &code, const data::KLine &bar, TradeDirection direction) {
         Order order;
         order.order_id = backtest::generateOrderId();
         order.symbol   = code;
@@ -114,7 +114,7 @@ namespace backtest {
     }
 
     // 记录每日状态
-    void BacktestEngine::recordDailyStatus(const datasets::KLine &bar) {
+    void BacktestEngine::recordDailyStatus(const data::KLine &bar) {
         DailyPositionStatus status;
         status.timestamp = bar.datetime;
 
@@ -317,7 +317,7 @@ namespace backtest {
         }
     }
 
-    void BacktestEngine::finalizeBacktest(const std::string &code, const datasets::KLine &last_bar) {
+    void BacktestEngine::finalizeBacktest(const std::string &code, const data::KLine &last_bar) {
         // 调试：打印开始结算信息
         spdlog::debug("开始结算未平仓头寸...");
         // 检查剩余持仓
@@ -394,7 +394,7 @@ namespace backtest {
 
         // If user provided a start/end date in BacktestConfig, filter the market_data
         // so the engine only iterates bars within [start_date, end_date].
-        std::vector<datasets::KLine> filtered_market_data;
+        std::vector<data::KLine> filtered_market_data;
         if (backtest_data.config.start_time.time_since_epoch().count() != 0 &&
             backtest_data.config.end_time.time_since_epoch().count() != 0) {
             // Convert TimePoint -> exchange::timestamp for date-only comparisons

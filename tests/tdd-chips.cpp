@@ -97,7 +97,7 @@ std::string TechSignalToString(TechSignal ts) {
 
 // DailyData 日线数据结构
 struct DailyData {
-    datasets::KLine kline;
+    data::KLine kline;
     double          TurnoverRate;
     double          Avg;
 };

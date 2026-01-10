@@ -5,7 +5,7 @@
 #include <quant1x/backtest/order.h>
 #include <quant1x/backtest/position.h>
 #include <quant1x/backtest/trade.h>
-#include <quant1x/datasets/kline.h>
+#include <quant1x/data/kline.h>
 #include <quant1x/engine/strategy.h>
 #include <quant1x/std/api.h>
 
@@ -87,16 +87,16 @@ namespace backtest {
         double calculatePositionSize(double price) const;
         double calculateFee(double price, double quantity) const;
         double getPositionQuantity(const std::string &symbol) const;
-        Order  createOrder(const std::string &code, const datasets::KLine &bar, TradeDirection direction);
+        Order  createOrder(const std::string &code, const data::KLine &bar, TradeDirection direction);
         Trade  executeOrder(const Order &order);
 
-        void recordDailyStatus(const datasets::KLine &bar);
+        void recordDailyStatus(const data::KLine &bar);
 
     public:
         BacktestEngine(const BacktestConfig &config, StrategyPtr strategy);
         // 初始化账户
         void initAccount();
-        void finalizeBacktest(const std::string &code, const datasets::KLine &last_bar);
+        void finalizeBacktest(const std::string &code, const data::KLine &last_bar);
         // 加载市场数据
         // void loadMarketData(const std::vector<datasets::KLine> &market_data);
         // 运行回测

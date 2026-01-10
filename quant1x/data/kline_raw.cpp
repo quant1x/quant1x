@@ -1,9 +1,9 @@
-#include <quant1x/datasets/kline_raw.h>
+#include "kline_raw.h"
 #include <quant1x/factors/base.h>
 #include <quant1x/config/cache.h>
 #include <quant1x/std/filepath.h>
 
-namespace datasets {
+namespace data {
 
     namespace detail {
         // 拉取数据
@@ -19,13 +19,13 @@ namespace datasets {
                 }
                 return response.List;
             } catch (const std::exception &e) {  // 其他标准异常
-                spdlog::error("[dataset::KLine] - 标准异常: {} (type: {})", e.what(), typeid(e).name());
+                spdlog::error("[data::KLine] - 标准异常: {} (type: {})", e.what(), typeid(e).name());
                 // 对于system_error可以记录更多信息
                 if (auto se = dynamic_cast<const std::system_error *>(&e)) {
-                    spdlog::error("[dataset::KLine] Error code: {}, category: {}", se->code().value(), se->code().category().name());
+                    spdlog::error("[data::KLine] Error code: {}, category: {}", se->code().value(), se->code().category().name());
                 }
             } catch (...) {
-                spdlog::error("[dataset::KLine] 获取日K线异常");
+                spdlog::error("[data::KLine] 获取日K线异常");
             }
             return {};
         }
@@ -85,7 +85,7 @@ namespace datasets {
 
     std::vector<KLineRaw> load_kline_raw(const std::string &code) {
         auto filename = config::get_kline_filename(code, false);
-        spdlog::debug("[dataset::KLineRaw] kline file: {}", filename);
+        spdlog::debug("[data::KLineRaw] kline file: {}", filename);
         return read_kline_raw_from_csv(filename);
     }
 
@@ -114,7 +114,7 @@ namespace datasets {
             }
             // 2. 确定结束日期
             auto endDate = exchange::timestamp::now().pre_market_time();
-            spdlog::debug("[dataset::KLineRaw] [{}]: from {} to {}", code, startDate.only_date(), endDate.only_date());
+            spdlog::debug("[data::KLineRaw] [{}]: from {} to {}", code, startDate.only_date(), endDate.only_date());
             auto ts = exchange::date_range(startDate, endDate);
             auto total = u16(ts.size());
             startDate = ts[0];
@@ -199,15 +199,15 @@ namespace datasets {
             // 9. 刷新缓存文件
             save_kline_raw(cache_filename, klines);
         } catch (const std::exception &e) {  // 其他标准异常
-            spdlog::error("[dataset::KLineRaw] - 标准异常: {} (type: {})", e.what(), typeid(e).name());
+            spdlog::error("[data::KLineRaw] - 标准异常: {} (type: {})", e.what(), typeid(e).name());
             // 对于system_error可以记录更多信息
             if (auto se = dynamic_cast<const std::system_error *>(&e)) {
-                spdlog::error("[dataset::KLineRaw] Error code: {}, category: {}", se->code().value(), se->code().category().name());
+                spdlog::error("[data::KLineRaw] Error code: {}, category: {}", se->code().value(), se->code().category().name());
             }
         } catch (...) {
-            spdlog::error("[dataset::KLineRaw] 获取日K线异常");
+            spdlog::error("[data::KLineRaw] 获取日K线异常");
         }
     }
 
 
-} // namespace datasets
+} // namespace data

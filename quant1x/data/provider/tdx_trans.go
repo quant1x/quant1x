@@ -1,4 +1,4 @@
-package datasets
+package provider
 
 import (
 	"encoding/csv"
@@ -366,19 +366,19 @@ func CountInflow(list []level1.TickTransaction, securityCode string, featureDate
 // DataTrans 实现了缓存适配器风格的更新器
 type DataTrans struct{}
 
-func (d *DataTrans) Kind() data.Kind { return BaseTransaction }
+func (d *DataTrans) Kind() data.Kind { return data.BaseTransaction }
 func (d *DataTrans) Owner() string   { return data.DefaultDataProvider }
 func (d *DataTrans) Key() string     { return "trans" }
 func (d *DataTrans) Name() string    { return "逐笔成交" }
 func (d *DataTrans) Usage() string   { return "" }
 
-func (d *DataTrans) Print(code string, dates ...exchange.Timestamp) {
+func (d *DataTrans) Print(code exchange.SecurityCode, dates ...exchange.Timestamp) {
 	_ = code
 	_ = dates
 }
 
-func (d *DataTrans) Update(code string, date exchange.Timestamp) {
-	correctedCode := exchange.CorrectSecurityCode(code)
+func (d *DataTrans) Update(code exchange.SecurityCode, date exchange.Timestamp) {
+	correctedCode := code.String()
 	ensureTransactionDataUpdated(correctedCode, date, false)
 }
 

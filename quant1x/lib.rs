@@ -77,11 +77,10 @@ pub use crate::markets::*;
 pub mod factors;
 pub use crate::factors::*;
 // cache adapter module (port of C++ engine::adapter)
-mod data;
+pub mod data;
 pub use crate::data::*;
 // datasets adapters (Rust ports)
-pub mod datasets;
-pub use crate::datasets::*;
+// datasets 已并入 data 模块，移除旧的 datasets 顶级导出
 
 /// Return the filename used for the calendar cache (convenience wrapper around
 /// the internal config helper). This is intentionally a tiny, stable API so

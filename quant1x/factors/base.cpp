@@ -13,7 +13,7 @@ namespace factors {
             // 预分配空间，防止插入时频繁 rehash
             xdxrs_map.reserve(all_codes.size());
             for (auto const &security_code : all_codes) {
-                auto xdxr_infos = datasets::load_xdxr(security_code);
+                auto xdxr_infos = data::load_xdxr(security_code);
                 std::sort(xdxr_infos.begin(), xdxr_infos.end(), [](level1::XdxrInfo &a, level1::XdxrInfo &b) {
                     return a.Date < b.Date;
                 });
@@ -106,7 +106,7 @@ namespace factors {
     // 全局变量
     namespace forward {
         std::mutex                                                    mutex_klines;
-        std::unordered_map<std::string, std::vector<datasets::KLine>> routineLocal_klines;
+        std::unordered_map<std::string, std::vector<data::KLine>> routineLocal_klines;
     }  // namespace forward
 
     /**
@@ -141,7 +141,7 @@ namespace factors {
     }
 
     // 更新缓存K线
-    void UpdateCacheKLines(const std::string &securityCode, const std::vector<datasets::KLine> &klines) {
+    void UpdateCacheKLines(const std::string &securityCode, const std::vector<data::KLine> &klines) {
         if (klines.empty()) {
             return;
         }
@@ -150,13 +150,13 @@ namespace factors {
     }
 
     // 捡出指定日期的K线数据
-    std::vector<datasets::KLine> checkout_klines(const std::string &code, const std::string &date) {
+    std::vector<data::KLine> checkout_klines(const std::string &code, const std::string &date) {
         std::string         securityCode = exchange::CorrectSecurityCode(code);
         exchange::timestamp ts(date);
         std::string         fixed_date = ts.only_date();
 
         // 1. 取缓存的K线
-        std::vector<datasets::KLine> cacheKLines;
+        std::vector<data::KLine> cacheKLines;
         {
             std::lock_guard<std::mutex> lock(forward::mutex_klines);
             auto                        it = forward::routineLocal_klines.find(securityCode);
@@ -166,7 +166,7 @@ namespace factors {
         }
 
         if (cacheKLines.empty()) {
-            cacheKLines = datasets::load_kline(securityCode);
+            cacheKLines = data::load_kline(securityCode);
             UpdateCacheKLines(securityCode, cacheKLines);
         }
 
@@ -176,10 +176,10 @@ namespace factors {
         }
 
         // 1.1 检查是否最新数据
-        datasets::KLine kline = cacheKLines[rows - 1];
+        data::KLine kline = cacheKLines[rows - 1];
         if (kline.date < fixed_date) {
             // 数据太旧, 重新加载
-            cacheKLines = datasets::load_kline(securityCode);
+            cacheKLines = data::load_kline(securityCode);
             UpdateCacheKLines(securityCode, cacheKLines);
         }
 
@@ -190,15 +190,15 @@ namespace factors {
         }
 
         // 3. 返回指定日期前的K线数据
-        std::vector<datasets::KLine> result(cacheKLines.begin(), cacheKLines.end() - offset);
+        std::vector<data::KLine> result(cacheKLines.begin(), cacheKLines.end() - offset);
         return result;
     }
 
     namespace raw {
         std::mutex                                                       mutex_raw_klines;
-        std::unordered_map<std::string, std::vector<datasets::KLineRaw>> routineLocal_raw_klines;
+        std::unordered_map<std::string, std::vector<data::KLineRaw>> routineLocal_raw_klines;
 
-        void update_cache_raw_klines(const std::string &securityCode, const std::vector<datasets::KLineRaw> &klines) {
+        void update_cache_raw_klines(const std::string &securityCode, const std::vector<data::KLineRaw> &klines) {
             if (klines.empty()) {
                 return;
             }
@@ -207,14 +207,14 @@ namespace factors {
         }
     }  // namespace raw
 
-    std::vector<datasets::KLine> convert_to_klines(const std::vector<datasets::KLineRaw> &raws, int offset) {
+    std::vector<data::KLine> convert_to_klines(const std::vector<data::KLineRaw> &raws, int offset) {
         size_t                       fixed_count = raws.size() - offset;
-        std::vector<datasets::KLine> result;
+        std::vector<data::KLine> result;
         result.reserve(fixed_count);
 
         for (size_t i = 0; i < fixed_count; ++i) {
             const auto &raw = raws[i];
-            result.emplace_back(datasets::KLine{raw.date,
+            result.emplace_back(data::KLine{raw.date,
                                                 raw.open,
                                                 raw.close,
                                                 raw.high,
@@ -231,7 +231,7 @@ namespace factors {
     }
 
     // 原始数据一次性复权
-    std::vector<datasets::KLine> klines_forward_adjusted_to_date(const std::string &code, const std::string &date) {
+    std::vector<data::KLine> klines_forward_adjusted_to_date(const std::string &code, const std::string &date) {
         // 1. 获取 securityCode
         // 2. 获取缓存或加载原始数据
         // 3. 检查是否需要更新
@@ -243,7 +243,7 @@ namespace factors {
         std::string         fixed_date = ts.only_date();
 
         // 1. 取缓存的K线
-        std::vector<datasets::KLineRaw> cache_raw_klines;
+        std::vector<data::KLineRaw> cache_raw_klines;
         {
             std::lock_guard<std::mutex> lock(raw::mutex_raw_klines);
             auto                        it = raw::routineLocal_raw_klines.find(securityCode);
@@ -253,7 +253,7 @@ namespace factors {
         }
 
         if (cache_raw_klines.empty()) {
-            cache_raw_klines = datasets::load_kline_raw(securityCode);
+            cache_raw_klines = data::load_kline_raw(securityCode);
             raw::update_cache_raw_klines(securityCode, cache_raw_klines);
         }
 
@@ -263,10 +263,10 @@ namespace factors {
         }
 
         // 1.1 检查是否最新数据
-        datasets::KLineRaw last_kline = cache_raw_klines[rows - 1];
+        data::KLineRaw last_kline = cache_raw_klines[rows - 1];
         if (last_kline.date < fixed_date) {
             // 数据太旧, 重新加载
-            cache_raw_klines = datasets::load_kline_raw(securityCode);
+            cache_raw_klines = data::load_kline_raw(securityCode);
             raw::update_cache_raw_klines(securityCode, cache_raw_klines);
         }
 

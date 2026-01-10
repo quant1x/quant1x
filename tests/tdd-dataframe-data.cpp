@@ -579,7 +579,7 @@ std::vector<std::string> csv_row_to_vector(
     return values;
 }
 
-#include <quant1x/datasets/kline.h>
+#include <quant1x/data/kline.h>
 
 void process_csv(const std::string& filename) {
     csv2::Reader<csv2::delimiter<','>> reader;
@@ -597,7 +597,7 @@ void process_csv(const std::string& filename) {
     // 处理数据行
     for (auto it = reader.begin(); it != reader.end(); ++it) {
         auto row_data = csv_row_to_vector(*it);
-        datasets::KLine data = AutoCSVMapper<datasets::KLine>::map_row(row_data, col_index);
+        data::KLine data = AutoCSVMapper<data::KLine>::map_row(row_data, col_index);
         // 使用data...
     }
 }
@@ -608,7 +608,7 @@ TEST_CASE("struct-load-csv", "[dataframe]") {
     std::string cache_filename = config::get_kline_filename(code);
     std::cout << "code=" << code << ", cache=" << cache_filename << std::endl;
     // b. 初始化mapper（全局唯一）
-    using Mapper = AutoCSVMapper<datasets::KLine>;
+    using Mapper = AutoCSVMapper<data::KLine>;
     std::unordered_map<std::string, size_t> global_col_index;
     bool is_first = true;
 
@@ -628,7 +628,7 @@ TEST_CASE("struct-load-csv", "[dataframe]") {
     // d. 处理所有行
     for (auto && it : reader) {
         auto row_data = csv_row_to_vector(it);
-        datasets::KLine data = Mapper::map_row(row_data, global_col_index);
+        data::KLine data = Mapper::map_row(row_data, global_col_index);
         std::cout << data << std::endl;
         // 使用data...
     }
@@ -733,12 +733,12 @@ TEST_CASE("rows-load-csv", "[dataframe]") {
     }
 
     // 3. 构建映射关系（只需一次）
-    auto mapper = csvToStructMapperWithLine<datasets::KLine>::build(headers);
+    auto mapper = csvToStructMapperWithLine<data::KLine>::build(headers);
 
     // 4. 处理数据行
-    std::vector<datasets::KLine> dataset;
+    std::vector<data::KLine> dataset;
     for (auto it = reader.begin(); it != reader.end(); ++it) {
-        datasets::KLine row;
+        data::KLine row;
         mapper.load_row(row, csv_row_to_vector(*it));
         dataset.push_back(row);
     }
@@ -932,7 +932,7 @@ TEST_CASE("load-csv-to-columns") {
     }
 
     // 加载为列式存储
-    ColumnMap columns = load_csv_to_columns<datasets::KLine>(reader, headers);
+    ColumnMap columns = load_csv_to_columns<data::KLine>(reader, headers);
     std::cout << "column num=" << columns.size() << std::endl;
 
     // 访问某一列
@@ -994,7 +994,7 @@ TEST_CASE("Case-insensitive CSV loading") {
     REQUIRE(reader.mmap(cache_filename)); // 确保文件存在
 
     // 使用修改后的CsvStructMapper
-    auto mapper = CsvStructMapper<datasets::KLine>::build(headers);
+    auto mapper = CsvStructMapper<data::KLine>::build(headers);
 
     // 验证字段匹配
     REQUIRE(mapper.required_columns.size() == headers.size());

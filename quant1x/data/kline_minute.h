@@ -1,13 +1,14 @@
 #pragma once
-#ifndef QUANT1X_DATASETS_KLINE_H
-#define QUANT1X_DATASETS_KLINE_H 1
+#ifndef QUANT1X_DATA_KLINE_MINUTE_H
+#define QUANT1X_DATA_KLINE_MINUTE_H 1
 
-#include <quant1x/datasets/xdxr.h>
+#include <quant1x/data/xdxr.h>
+#include <quant1x/pandas/rule.h>
 
-namespace datasets {
+namespace data {
 
     // 日K线 结构体
-    struct KLine {
+    struct MinuteKLine {
         std::string date;                 // 日期
         double      open   = 0;           // 开盘价
         double      close  = 0;           // 收盘价
@@ -18,9 +19,9 @@ namespace datasets {
         int         up     = 0;           // 上涨家数 / 外盘
         int         down   = 0;           // 下跌家数 / 内盘
         std::string datetime;             // 时间
-        int         adjustment_count = 0; // 新增：除权除息次数
+        int         adjustment_count = 0;  // 新增：除权除息次数
 
-        void adjust(const factors::CumulativeAdjustment &adj);
+        //void adjust(double m, double a, int number);
 
         static std::vector<std::string> headers() {
             return {"date",
@@ -36,7 +37,7 @@ namespace datasets {
                     "adjustment_count"};
         }
 
-        friend std::ostream &operator<<(std::ostream &os, const KLine &line) {
+        friend std::ostream &operator<<(std::ostream &os, const MinuteKLine &line) {
             os << "date: " << line.date << " open: " << line.open << " close: " << line.close << " high: " << line.high
                << " low: " << line.low << " volume: " << line.volume << " amount: " << line.amount << " up: " << line.up
                << " down: " << line.down << " datetime: " << line.datetime
@@ -45,26 +46,41 @@ namespace datasets {
         }
     };
 
-    std::vector<KLine> read_kline_from_csv(const std::string &filename);
-    std::vector<KLine> load_kline(const std::string &code);
+    std::vector<MinuteKLine> read_minute_kline_from_csv(const std::string &filename);
+    std::vector<MinuteKLine> load_minute_kline(const std::string &code, const std::string &freq);
 
-    class DataKLine : public data::DataAdapter {
+    class DataMinuteKLine : public data::DataAdapter {
     public:
-        data::Kind Kind() const override { return BaseKLine; }
+        DataMinuteKLine(const config::MinuteKLineConfig &config) : mkc_(config) {}
+
+        DataMinuteKLine(const std::string &freq) {
+            auto [minutes, freq_] = pandas::parse_frequency(freq);
+            auto cfg              = config::MinuteKLineConfig{};
+            cfg.minutes           = minutes;
+            cfg.frequency         = freq_;
+            cfg.enabled           = true;
+            mkc_                  = cfg;
+        }
+
+    public:
+        data::Kind Kind() const override { return BaseMinuteKLine; }
 
         std::string Owner() override { return data::DefaultDataProvider; }
 
-        std::string Key() const override { return "day"; }
+        std::string Key() const override { return "min"; }
 
-        std::string Name() const override { return "日K线"; }
+        std::string Name() const override { return "分钟级K线"; }
 
-        std::string Usage() const override { return "日K线"; }
+        std::string Usage() const override { return "分钟级K线"; }
 
         void Print(const std::string &code, const std::vector<exchange::timestamp> &dates) override;
 
         void Update(const std::string &code, const exchange::timestamp &date) override;
+
+    private:
+        config::MinuteKLineConfig mkc_;
     };
 
-}  // namespace datasets
+}  // namespace data
 
-#endif  // QUANT1X_DATASETS_KLINE_H
+#endif  // QUANT1X_DATA_KLINE_MINUTE_H

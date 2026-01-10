@@ -1,6 +1,6 @@
 #include <quant1x/factors/history.h>
 #include <quant1x/formula.h>
-#include <quant1x/datasets/trans.h>
+#include <quant1x/data/trans.h>
 #include <quant1x/pandas/dataframe.h>
 #include <boost/pfr.hpp>
 #include <quant1x/encoding/csv.h>
@@ -139,11 +139,11 @@ void HistoryFeature::Update(const std::string &code, const exchange::timestamp &
     history.NewLowN = formula::at(newLowN, -1);
 
     // 成交统计概要数据
-    auto list = datasets::CheckoutTransactionData(code, date, true);
+    auto list = data::CheckoutTransactionData(code, date, true);
     if(list.empty()) {
         spdlog::warn("[HistoryFeature] code={},date={}, 分笔成交数据为空", code, feature_date);
     }
-    auto summary = datasets::CountInflow(list, code, ts_cache);
+    auto summary = data::CountInflow(list, code, ts_cache);
     history.OpenVolume = summary.OpenVolume;
 
     history.UpdateTime = api::get_timestamp();

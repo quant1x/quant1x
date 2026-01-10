@@ -1,10 +1,10 @@
 #pragma once
-#ifndef QUANT1X_DATASETS_MINUTE_H
-#define QUANT1X_DATASETS_MINUTE_H 1
+#ifndef QUANT1X_DATA_MINUTE_H
+#define QUANT1X_DATA_MINUTE_H 1
 
-#include <quant1x/datasets/xdxr.h>
+#include <quant1x/data/xdxr.h>
 
-namespace datasets {
+namespace data {
 
     /**
      * @brief 分时数据, 每天固定条数
@@ -21,4 +21,4 @@ namespace datasets {
     };
 }
 
-#endif //QUANT1X_DATASETS_MINUTE_H
+#endif //QUANT1X_DATA_MINUTE_H

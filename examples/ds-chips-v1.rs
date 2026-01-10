@@ -1,6 +1,6 @@
 use csv::ReaderBuilder;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
-use quant1x::datasets as data;
+use quant1x::data;
 use quant1x::exchange;
 use quant1x::exchange::code as symbol;
 use serde::{Deserialize, Serialize};

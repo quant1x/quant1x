@@ -8,7 +8,7 @@ from quant1x.exchange import Timestamp
 from quant1x.exchange.code import correct_security_code
 from quant1x.level1.xdxr_info import XdxrInfo
 import quant1x.datasets.xdxr as xdxr_module
-from quant1x.datasets.kline_raw import KLineRaw
+from data.kline_raw import KLineRaw
 
 T = TypeVar('T')
 
@@ -215,8 +215,8 @@ def get_cross_section_forward_adjusted_klines(code: str, as_of_date: str) -> Lis
         2. 会对原始K线数据进行日期对齐和过滤
         3. 会应用前复权计算调整价格数据
     """
-    from quant1x.datasets.kline import KLine
-    from quant1x.datasets.kline_raw import checkout_kline_raw
+    from data.kline import KLine
+    from data.kline_raw import checkout_kline_raw
     
     security_code = correct_security_code(code)
     ts = Timestamp.parse(as_of_date)
@@ -280,7 +280,7 @@ def get_cross_section_forward_adjusted_klines(code: str, as_of_date: str) -> Lis
 
 if __name__ == "__main__":
     import pandas as pd
-    from quant1x.datasets.kline_raw import checkout_kline_raw
+    from data.kline_raw import checkout_kline_raw
 
 
     # 获取未复权K线数据
@@ -372,7 +372,7 @@ if __name__ == "__main__":
     print(f"\n=== 对比 get_cross_section_forward_adjusted_klines 与 datasets.kline 缓存 ===")
     
     # 获取 datasets.kline 缓存数据
-    from quant1x.datasets.kline import load_kline
+    from data.kline import load_kline
     cached_klines = load_kline(code)
     
     if cached_klines:

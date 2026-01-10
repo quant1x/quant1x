@@ -1,9 +1,9 @@
-#include <quant1x/datasets/minute.h>
+#include <quant1x/data/minute.h>
 #include <quant1x/config/base.h>
 #include <quant1x/config/cache.h>
 #include <quant1x/std/filepath.h>
 
-namespace datasets {
+namespace data {
 
     data::Kind DataMinute::Kind() const {
         return BaseMinutes;

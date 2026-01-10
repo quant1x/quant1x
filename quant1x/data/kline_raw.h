@@ -1,10 +1,10 @@
 #pragma once
-#ifndef QUANT1X_DATASETS_KLINE_RAW_H
-#define QUANT1X_DATASETS_KLINE_RAW_H 1
+#ifndef QUANT1X_DATA_KLINE_RAW_H
+#define QUANT1X_DATA_KLINE_RAW_H 1
 
-#include <quant1x/datasets/xdxr.h>
+#include <quant1x/data/xdxr.h>
 
-namespace datasets {
+namespace data {
 
     namespace detail {
         // 日线最小容错回溯(偏移)天数
@@ -141,6 +141,6 @@ namespace datasets {
         void Update(const std::string &code, const exchange::timestamp &date) override;
     };
 
-}  // namespace datasets
+}  // namespace data
 
-#endif  // QUANT1X_DATASETS_KLINE_RAW_H
+#endif  // QUANT1X_DATA_KLINE_RAW_H

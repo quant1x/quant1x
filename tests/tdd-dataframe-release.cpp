@@ -354,12 +354,12 @@ TEST_CASE("v1_struct-to-dataframe-print", "[dataframe]") {
     std::cout << df.to_string() << std::endl;;
 }
 
-#include <quant1x/datasets/kline.h>
+#include <quant1x/data/kline.h>
 
 TEST_CASE("v2_struct-to-dataframe-print", "[dataframe]") {
     std::string code = "sh603338";
     std::string cache_filename = config::get_kline_filename(code);
-    auto klines = datasets::read_kline_from_csv(cache_filename);
+    auto klines = data::read_kline_from_csv(cache_filename);
 
     DataFrame df = DataFrame::from_struct_vector(klines);
     std::cout << df.to_string() << std::endl;
@@ -368,7 +368,7 @@ TEST_CASE("v2_struct-to-dataframe-print", "[dataframe]") {
 TEST_CASE("v3_struct-to-dataframe-print", "[dataframe]") {
     std::string code = "sh603338";
     std::string cache_filename = config::get_kline_filename(code);
-    auto klines = datasets::read_kline_from_csv(cache_filename);
+    auto klines = data::read_kline_from_csv(cache_filename);
 
     // 1. 验证原始数据
     REQUIRE_FALSE(klines.empty());

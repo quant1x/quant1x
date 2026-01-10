@@ -1,16 +1,15 @@
 #pragma once
-#ifndef QUANT1X_DATASETS_XDXR_H
-#define QUANT1X_DATASETS_XDXR_H 1
+#ifndef QUANT1X_DATA_XDXR_H
+#define QUANT1X_DATA_XDXR_H 1
 
-#include <quant1x/datasets/base.h>
+#include "base.h"
 #include <quant1x/level1/client.h>
-#include <quant1x/data/adapter.h>
 
 namespace factors {
     struct CumulativeAdjustment;
 }
 
-namespace datasets {
+namespace data {
 
     // 加载除权除息记录
     std::vector<level1::XdxrInfo> load_xdxr(const std::string& code);
@@ -28,6 +27,7 @@ namespace datasets {
     private:
         //void save_xdxr(const std::string &code, const std::string &date, const std::vector<level1::XdxrInfo>& values);
     };
+
 }
 
-#endif //QUANT1X_DATASETS_XDXR_H
+#endif //QUANT1X_DATA_XDXR_H

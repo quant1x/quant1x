@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/datasets"
+	"gitee.com/quant1x/quant1x/quant1x/data"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 )
 
@@ -43,7 +43,7 @@ func (c CumulativeAdjustment) Inverse(adjustedPrice float64) float64 {
 //
 //	如果找到目标日期，返回其在数组中的偏移量(从末尾开始计数)
 //	如果目标日期不存在或比所有K线日期都早，返回-1
-func CheckKlineOffset(klines []datasets.KLineRaw, date string) int {
+func CheckKlineOffset(klines []data.KLineRaw, date string) int {
 	rows := len(klines)
 	offset := 0
 	for i := 0; i < rows; i++ {
@@ -62,7 +62,7 @@ func CheckKlineOffset(klines []datasets.KLineRaw, date string) int {
 	return offset
 }
 
-func IpoDateFromXdxrs(xdxrList []datasets.XdxrInfo) *string {
+func IpoDateFromXdxrs(xdxrList []data.XdxrInfo) *string {
 	for _, v := range xdxrList {
 		if v.Category != 5 {
 			continue
@@ -74,7 +74,7 @@ func IpoDateFromXdxrs(xdxrList []datasets.XdxrInfo) *string {
 	return nil
 }
 
-func CombineAdjustmentsInPeriod(xdxrList []datasets.XdxrInfo, startDate, endDate exchange.Timestamp) []CumulativeAdjustment {
+func CombineAdjustmentsInPeriod(xdxrList []data.XdxrInfo, startDate, endDate exchange.Timestamp) []CumulativeAdjustment {
 	result := []CumulativeAdjustment{}
 
 	for _, info := range xdxrList {
@@ -122,7 +122,7 @@ func CombineAdjustmentsInPeriod(xdxrList []datasets.XdxrInfo, startDate, endDate
 	return result
 }
 
-func ApplyForwardAdjustmentIncrementally(klines []*datasets.KLine, xdxrList []datasets.XdxrInfo, lastAdjustedDate, asOfDate exchange.Timestamp, truncateToAsOfDate bool) {
+func ApplyForwardAdjustmentIncrementally(klines []*data.KLine, xdxrList []data.XdxrInfo, lastAdjustedDate, asOfDate exchange.Timestamp, truncateToAsOfDate bool) {
 	if len(klines) == 0 {
 		return
 	}
@@ -158,7 +158,7 @@ func ApplyForwardAdjustmentIncrementally(klines []*datasets.KLine, xdxrList []da
 			}
 
 			if currentDate.Less(factor.Timestamp) {
-				adj := datasets.CumulativeAdjustment{
+				adj := data.CumulativeAdjustment{
 					M:                    factor.M,
 					A:                    factor.A,
 					ShareAdjustmentRatio: factor.ShareAdjustmentRatio,
@@ -178,7 +178,7 @@ func ApplyForwardAdjustmentIncrementally(klines []*datasets.KLine, xdxrList []da
 	}
 }
 
-func CalculatePreAdjust(klines []*datasets.KLine, xdxrList []datasets.XdxrInfo) {
+func CalculatePreAdjust(klines []*data.KLine, xdxrList []data.XdxrInfo) {
 	if len(klines) == 0 {
 		return
 	}
@@ -190,39 +190,39 @@ func CalculatePreAdjust(klines []*datasets.KLine, xdxrList []datasets.XdxrInfo) 
 	ApplyForwardAdjustmentIncrementally(klines, xdxrList, startTs, endTs, true)
 }
 
-func GetCrossSectionForwardAdjustedKlines(securityCode, asOfDate string) []*datasets.KLine {
+func GetCrossSectionForwardAdjustedKlines(securityCode, asOfDate string) []*data.KLine {
 	correctedCode := exchange.CorrectSecurityCode(securityCode)
 	ts, _ := exchange.ParseTimestamp(asOfDate)
 	fixedDate := ts.OnlyDate()
 
-	rawKlines, err := datasets.LoadKlineRaw(correctedCode)
+	rawKlines, err := data.LoadKlineRaw(correctedCode)
 	if err != nil || len(rawKlines) == 0 {
-		return []*datasets.KLine{}
+		return []*data.KLine{}
 	}
 
 	lastKline := rawKlines[len(rawKlines)-1]
 	if lastKline.Date < fixedDate {
-		rawKlines, err = datasets.LoadKlineRaw(correctedCode)
+		rawKlines, err = data.LoadKlineRaw(correctedCode)
 		if err != nil {
-			return []*datasets.KLine{}
+			return []*data.KLine{}
 		}
 	}
 
 	offset := CheckKlineOffset(rawKlines, fixedDate)
 	if offset < 0 {
-		return []*datasets.KLine{}
+		return []*data.KLine{}
 	}
 
 	fixedCount := len(rawKlines) - offset
 	filteredKlines := rawKlines[:fixedCount]
 
 	if len(filteredKlines) == 0 {
-		return []*datasets.KLine{}
+		return []*data.KLine{}
 	}
 
-	klines := []*datasets.KLine{}
+	klines := []*data.KLine{}
 	for _, rawKline := range filteredKlines {
-		kline := &datasets.KLine{
+		kline := &data.KLine{
 			Date:            rawKline.Date,
 			Open:            rawKline.Open,
 			Close:           rawKline.Close,
@@ -238,7 +238,7 @@ func GetCrossSectionForwardAdjustedKlines(securityCode, asOfDate string) []*data
 		klines = append(klines, kline)
 	}
 
-	xdxrList, err := datasets.LoadXdxr(correctedCode)
+	xdxrList, err := data.LoadXdxr(correctedCode)
 	if err != nil {
 		return klines // return unadjusted if no xdxr
 	}

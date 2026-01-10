@@ -15,7 +15,7 @@ pub struct DataTrans;
 
 impl crate::data::Schema for DataTrans {
     fn kind(&self) -> crate::Kind {
-        crate::datasets::BaseTransaction
+        crate::data::BaseTransaction
     }
     fn owner(&self) -> String {
         crate::data::DEFAULT_DATA_PROVIDER.to_string()

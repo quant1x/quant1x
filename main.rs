@@ -135,9 +135,9 @@ fn main() {
         log::error!("runtime::global_init failed: {}", e);
     }
 
-    // datasets::init() 等效调用
+    // data::init() 等效调用
     if let Err(e) = call_datasets_init() {
-        log::error!("datasets::init failed: {}", e);
+        log::error!("data::init failed: {}", e);
     }
 
     // 初始化日志系统

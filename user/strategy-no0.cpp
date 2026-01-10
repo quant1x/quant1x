@@ -63,7 +63,7 @@ void No0Strategy::Evaluate(const SecurityCode &code, ResultInfo &result) const {
         spdlog::warn("[No0Strategy::updateIndicators] {} 日线数据不足: {} < {}", securityCode, klines.size(), factors::KLineMin);
         return;
     }
-    klines = std::vector<datasets::KLine>(klines.begin(), klines.end() -1);
+    klines = std::vector<data::KLine>(klines.begin(), klines.end() -1);
 
     auto current_price = numeric::decimal(klines[klines.size() -1].close);
     auto prev_close = numeric::decimal(klines[klines.size() - 2].close);
@@ -90,7 +90,7 @@ void No0Strategy::updateIndicators(const SecurityCode &code) {
         return;
     }
     //auto next_close = klines[klines.size() - 1].Close;
-    market_data_ = std::vector<datasets::KLine>(klines.begin(), klines.end() -1);
+    market_data_ = std::vector<data::KLine>(klines.begin(), klines.end() -1);
 
     // Compute simple moving averages and fill buys_/sells_ for signaling
     size_t n = market_data_.size();

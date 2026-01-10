@@ -1,11 +1,11 @@
-#include <quant1x/datasets/chips.h>
-#include <quant1x/datasets/trans.h>
+#include "chips.h"
+#include "trans.h"
 #include <quant1x/proto/data.h>
 #include <quant1x/config/base.h>
 #include <quant1x/config/cache.h>
 #include <filesystem>
 
-namespace datasets {
+namespace data {
     namespace fs = std::filesystem;
 
     void DataChips::Print(const std::string &code, const std::vector<exchange::timestamp> &dates) {
@@ -101,4 +101,4 @@ namespace datasets {
         (void)result;
     }
 
-} // namespace datasets
+} // namespace data

@@ -3,6 +3,7 @@ use crate::Timestamp;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use crate::data::adapter::DataAdapter;
+use crate::apply_forward_adjustment_for_event;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct KLine {
@@ -53,7 +54,7 @@ pub struct DataKLine;
 
 impl crate::data::Schema for DataKLine {
     fn kind(&self) -> crate::Kind {
-        crate::datasets::BaseKLine
+        crate::data::BaseKLine
     }
     fn owner(&self) -> String {
         crate::data::DEFAULT_DATA_PROVIDER.to_string()
@@ -141,7 +142,7 @@ impl crate::data::DataAdapter for DataKLine {
             let remaining = total - start_idx;
             let count = std::cmp::min(step, remaining) as u16;
             // 注意：start 使用日期索引，datasets 层直接调度 SecurityBars 请求
-            match crate::datasets::kline_raw::fetch_kline(
+            match crate::data::kline_raw::fetch_kline(
                 code,
                 start_idx as u32,
                 count,
@@ -207,7 +208,7 @@ impl crate::data::DataAdapter for DataKLine {
         // 判断是否仅针对最新抓取的那一部分需要做预除权调整
         let is_fresh_fetch_require_adjustment = adjust_times == 1;
         // 仅从本地缓存加载除权除息数据（与 C++ 行为一致）
-        let dividends = crate::datasets::xdxr::load_xdxr(code);
+        let dividends = crate::data::xdxr::load_xdxr(code);
         if is_fresh_fetch_require_adjustment {
             apply_forward_adjustment_for_event!(&mut incremental_klines, ts_range[0], &dividends);
         }

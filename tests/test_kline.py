@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 import os
 import pandas as pd
-from quant1x.datasets import kline
+from data import kline
 from quant1x.level1 import security_bars
 from quant1x.exchange import Timestamp
 from quant1x.factors import base as factors

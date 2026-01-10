@@ -2,8 +2,8 @@
 #ifndef QUANT1X_FACTOR_BASE_H
 #define QUANT1X_FACTOR_BASE_H 1
 
-#include <quant1x/datasets/kline.h>
-#include <quant1x/datasets/kline_raw.h>
+#include <quant1x/data/kline.h>
+#include <quant1x/data/kline_raw.h>
 
 namespace factors {
 
@@ -156,7 +156,7 @@ namespace factors {
      * @param date 日期
      * @return 从上市第一天起到date的全部K线记录
      */
-    std::vector<datasets::KLine> checkout_klines(const std::string &code, const std::string &date);
+    std::vector<data::KLine> checkout_klines(const std::string &code, const std::string &date);
 
     /**
      * @brief 捡出截至指定日期date的K线记录, 并前复权
@@ -164,7 +164,7 @@ namespace factors {
      * @param date 日期
      * @return 从上市第一天起到date的全部K线记录
      */
-    std::vector<datasets::KLine> klines_forward_adjusted_to_date(const std::string &code, const std::string &date);
+    std::vector<data::KLine> klines_forward_adjusted_to_date(const std::string &code, const std::string &date);
 
 }  // namespace factors
 

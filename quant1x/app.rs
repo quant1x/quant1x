@@ -9,9 +9,9 @@ pub fn global_init() {
 pub fn datasets_init() {
     // 初始化数据集并注册 Rust 实现的适配器
     if let Err(e) = std::panic::catch_unwind(|| {
-        crate::datasets::init();
+        crate::data::init();
     }) {
-        log::error!("datasets::init() panicked: {:?}", e);
+        log::error!("data::init() panicked: {:?}", e);
     }
 }
 

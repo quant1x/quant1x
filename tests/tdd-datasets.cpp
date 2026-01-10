@@ -4,7 +4,7 @@
 #include <quant1x/proto/data.h>
 #include <random>
 
-#include "quant1x/datasets/trans.h"
+#include "quant1x/data/trans.h"
 
 TEST_CASE("lower-upper", "[strings]") {
     spdlog::set_level(spdlog::level::debug);
@@ -329,19 +329,19 @@ TEST_CASE("session-check", "[exchange]") {
     std::cout << "            status = " << status << std::endl;
 }
 
-#include <quant1x/datasets/xdxr.h>
+#include <quant1x/data/xdxr.h>
 
-TEST_CASE("xdxr-factor", "[datasets]") {
+TEST_CASE("xdxr-factor", "[data]") {
     spdlog::set_level(spdlog::level::debug);
     std::string code = "sz000048";
-    auto list = datasets::load_xdxr(code);
+    auto list = data::load_xdxr(code);
     for (auto const & v: list) {
         std::cout << v << std::endl;
     }
 }
 
 #include <filesystem>
-#include <quant1x/datasets/kline_raw.h>
+#include <quant1x/data/kline_raw.h>
 
 namespace fs = std::filesystem;
 
@@ -409,7 +409,7 @@ std::vector<level1::SecurityBar> fetch(const std::string &code, u16 start, u16 c
 // void update_pb(const std::string &code, const std::string &date) {
 //     (void)date;
 //     // 1. 确定本地有效数据最后1条数据作为拉取数据的开始日期
-//     auto startDate = datasets::market_first_date;
+//     auto startDate = data::market_first_date;
 //     try {
 //         std::string cache_filename = config::get_kline_filename(code) + ".pb";
 //         KLine cacheKLines = {};
@@ -723,11 +723,11 @@ TEST_CASE("xtensor-add-v1", "[xtensor]") {
     std::cout << result << std::endl;
 }
 
-TEST_CASE("trans-v1", "[datasets]") {
+TEST_CASE("trans-v1", "[data]") {
     runtime::global_init();
     std::string code = "sz300773";
     exchange::timestamp now = exchange::last_trading_day();
 
-    const auto adapter = std::make_unique<datasets::DataTrans>();
+    const auto adapter = std::make_unique<data::DataTrans>();
     adapter->Update(code, now);
 }

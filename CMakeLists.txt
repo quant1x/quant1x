@@ -440,9 +440,6 @@ set(quant1x-headers
     quant1x/config/trader_parameter.h
     quant1x/config/trading_session.h
 
-    # 缓存
-    quant1x/data/adapter.h
-
     # 网络相关
     quant1x/io/base.h
     quant1x/io/connection_pool.h
@@ -476,15 +473,18 @@ set(quant1x-headers
     quant1x/ta/type_default.h
     quant1x/ta/sma.h
 
-    # 数据集
-    quant1x/datasets/base.h
-    quant1x/datasets/xdxr.h
-    quant1x/datasets/kline_raw.h
-    quant1x/datasets/kline.h
-    quant1x/datasets/trans.h
-    quant1x/datasets/minute.h
-    quant1x/datasets/chips.h
-    quant1x/datasets/kline_minute.h
+    # 数据
+    quant1x/data/adapter.h
+    quant1x/data/base.h
+    quant1x/data/xdxr.h
+    quant1x/data/chips.h
+    
+    # 数据集 (migrated to quant1x/data)
+    quant1x/data/kline_raw.h
+    quant1x/data/kline.h
+    quant1x/data/trans.h
+    quant1x/data/minute.h
+    quant1x/data/kline_minute.h
 
     # 实时模块
     quant1x/realtime/snapshot.h
@@ -625,9 +625,6 @@ set(quant1x-sources
     quant1x/command.cpp
     quant1x/formula.cpp
 
-    # 缓存
-    quant1x/data/adapter.cpp
-
     # 回测
     quant1x/backtest/backtest.cpp
     quant1x/backtest/position.cpp
@@ -635,14 +632,17 @@ set(quant1x-sources
     quant1x/backtest/stats.cpp
     quant1x/backtest/trade.cpp
 
-    # 数据集
-    quant1x/datasets/xdxr.cpp
-    quant1x/datasets/kline.cpp
-    quant1x/datasets/kline_raw.cpp
-    quant1x/datasets/minute.cpp
-    quant1x/datasets/trans.cpp
-    quant1x/datasets/chips.cpp
-    quant1x/datasets/kline_minute.cpp
+    # 数据
+    quant1x/data/adapter.cpp
+    quant1x/data/xdxr.cpp
+    quant1x/data/chips.cpp
+    
+    # 数据集 (migrated to quant1x/data)
+    quant1x/data/kline.cpp
+    quant1x/data/kline_raw.cpp
+    quant1x/data/minute.cpp
+    quant1x/data/trans.cpp
+    quant1x/data/kline_minute.cpp
     quant1x/datasets.cpp
 
     # 交易所相关

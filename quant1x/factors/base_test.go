@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"gitee.com/quant1x/quant1x/quant1x/config"
-	"gitee.com/quant1x/quant1x/quant1x/datasets"
+	"gitee.com/quant1x/quant1x/quant1x/data"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 )
 
@@ -47,7 +47,7 @@ func TestGetCrossSectionForwardAdjustedKlines(t *testing.T) {
 
 func TestCombineAdjustmentsInPeriod(t *testing.T) {
 	// Load some test XDXR data
-	xdxrList, err := datasets.LoadXdxr("sh600000")
+	xdxrList, err := data.LoadXdxr("sh600000")
 	if err != nil {
 		t.Skipf("Skipping test due to missing XDXR data: %v", err)
 		return
@@ -79,7 +79,7 @@ func TestCombineAdjustmentsInPeriod(t *testing.T) {
 
 func TestCheckKlineOffset(t *testing.T) {
 	// Create mock kline data
-	klines := []datasets.KLineRaw{
+	klines := []data.KLineRaw{
 		{Date: "2024-01-01"},
 		{Date: "2024-01-02"},
 		{Date: "2024-01-03"},
@@ -107,7 +107,7 @@ func TestCheckKlineOffset(t *testing.T) {
 
 func TestIpoDateFromXdxrs(t *testing.T) {
 	// Load XDXR data
-	xdxrList, err := datasets.LoadXdxr("sh600000")
+	xdxrList, err := data.LoadXdxr("sh600000")
 	if err != nil {
 		t.Skipf("Skipping test due to missing XDXR data: %v", err)
 		return
@@ -159,7 +159,7 @@ func TestCompareWithCachedKlines(t *testing.T) {
 
 	// Load cached kline data
 	cacheFilename := config.GetKlineFilename(code, true)
-	cachedKlines, err := datasets.ReadKlineFromCSV(cacheFilename)
+	cachedKlines, err := data.ReadKlineFromCSV(cacheFilename)
 	if err != nil || len(cachedKlines) == 0 {
 		t.Skipf("Skipping test due to missing cached kline data: %v", err)
 		return
@@ -167,7 +167,7 @@ func TestCompareWithCachedKlines(t *testing.T) {
 
 	firstCachedDate := cachedKlines[0].Date
 	lastCachedDate := cachedKlines[len(cachedKlines)-1].Date
-	fmt.Printf("datasets.kline cache date range: %s to %s\n", firstCachedDate, lastCachedDate)
+	fmt.Printf("data.kline cache date range: %s to %s\n", firstCachedDate, lastCachedDate)
 
 	// Use GetCrossSectionForwardAdjustedKlines to get adjusted data for the same date range
 	adjustedKlines := GetCrossSectionForwardAdjustedKlines(code, lastCachedDate)
@@ -178,7 +178,7 @@ func TestCompareWithCachedKlines(t *testing.T) {
 	}
 
 	// Find the first data with the same date
-	var firstAdjusted *datasets.KLine
+	var firstAdjusted *data.KLine
 	firstCached := cachedKlines[0]
 
 	for i := range adjustedKlines {
@@ -202,7 +202,7 @@ func TestCompareWithCachedKlines(t *testing.T) {
 	fmt.Printf("  Open: %.4f, High: %.4f, Low: %.4f, Close: %.4f\n", firstAdjusted.Open, firstAdjusted.High, firstAdjusted.Low, firstAdjusted.Close)
 	fmt.Printf("  Volume: %.0f, Amount: %.0f\n", firstAdjusted.Volume, firstAdjusted.Amount)
 
-	fmt.Printf("datasets.kline cache:\n")
+	fmt.Printf("data.kline cache:\n")
 	fmt.Printf("  Open: %.4f, High: %.4f, Low: %.4f, Close: %.4f\n", firstCached.Open, firstCached.High, firstCached.Low, firstCached.Close)
 	fmt.Printf("  Volume: %.0f, Amount: %.0f\n", firstCached.Volume, firstCached.Amount)
 
@@ -228,6 +228,6 @@ func TestCompareWithCachedKlines(t *testing.T) {
 		// Check adjustment count
 		fmt.Printf("Adjustment count comparison:\n")
 		fmt.Printf("  GetCrossSectionForwardAdjustedKlines: %d\n", firstAdjusted.AdjustmentCount)
-		fmt.Printf("  datasets.kline: %d\n", firstCached.AdjustmentCount)
+		fmt.Printf("  data.kline: %d\n", firstCached.AdjustmentCount)
 	}
 }

@@ -1,15 +1,15 @@
-#include <quant1x/datasets.h>
-#include <quant1x/datasets/xdxr.h>
-#include <quant1x/datasets/kline.h>
-#include <quant1x/datasets/minute.h>
-#include <quant1x/datasets/chips.h>
-#include <quant1x/datasets/trans.h>
-#include <quant1x/datasets/kline_minute.h>
+#include <quant1x/data.h>
+#include <quant1x/data/xdxr.h>
+#include <quant1x/data/kline.h>
+#include <quant1x/data/minute.h>
+#include <quant1x/data/chips.h>
+#include <quant1x/data/trans.h>
+#include <quant1x/data/kline_minute.h>
 #include <quant1x/factors/f10.h>
 #include <quant1x/factors/history.h>
 #include <quant1x/pandas/rule.h>
 
-namespace datasets {
+namespace data {
 
     config::MinuteKLineConfig get_minute_kline_config() {
         config::MinuteKLineConfig config{};
@@ -58,4 +58,4 @@ namespace datasets {
         data::Register(std::make_unique<HistoryFeature>());
     }
 
-} // namespace datasets
+} // namespace data

@@ -1,10 +1,10 @@
 #include <quant1x/level1/client.h>
-#include <quant1x/datasets/xdxr.h>
+#include "xdxr.h"
 #include <quant1x/config/base.h>
 #include <quant1x/config/cache.h>
 #include <quant1x/std/filepath.h>
 
-namespace datasets {
+namespace data {
 
     std::vector<level1::XdxrInfo> load_xdxr(const std::string& code) {
         std::vector<level1::XdxrInfo> result;
@@ -81,13 +81,13 @@ namespace datasets {
                 save_xdxr(code, date, response.List);
             }
         } catch (const std::exception &e) {  // 其他标准异常
-            spdlog::error("[dataset::xdxr] - 标准异常: {} (type: {})", e.what(), typeid(e).name());
+            spdlog::error("[data::xdxr] - 标准异常: {} (type: {})", e.what(), typeid(e).name());
             // 对于system_error可以记录更多信息
             if (auto se = dynamic_cast<const std::system_error *>(&e)) {
                 spdlog::error("[dataset::xdxr] Error code: {}, category: {}", se->code().value(), se->code().category().name());
             }
         } catch (...) {
-            spdlog::error("[dataset::xdxr] 获取除权除息异常");
+            spdlog::error("[data::xdxr] 获取除权除息异常");
         }
     }
 

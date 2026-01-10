@@ -1,7 +1,7 @@
 #include <quant1x/encoding/csv.h>
 #include <quant1x/markets/instruments.h>
 #include <quant1x/level1/client.h>
-#include <quant1x/datasets/xdxr.h>
+#include <quant1x/data/xdxr.h>
 #include <quant1x/factors/f10.h>
 #include <quant1x/factors/base.h>
 #include <quant1x/factors/notice.h>
@@ -22,7 +22,7 @@ static std::tuple<f64, f64, std::string, std::string> get_finance_info(const std
                                                                        const std::string &feature_date) {
     f64 capital = 0, totalCapital = 0;
     std::string ipo_date, update_date;
-    u32 base_date = datasets::market_first_date.yyyymmdd();
+    u32 base_date = data::market_first_date.yyyymmdd();
     try {
         level1::FinanceRequest request(security_code);
         level1::FinanceResponse response{};
@@ -74,7 +74,7 @@ struct f10SecurityInfo {
 
 static f10SecurityInfo checkoutSecurityBasicInfo(const std::string &security_code, const std::string &feature_date) {
     f10SecurityInfo info{};
-    auto list = datasets::load_xdxr(security_code);
+    auto list = data::load_xdxr(security_code);
     std::sort(list.begin(), list.end(), [](const level1::XdxrInfo &a, const level1::XdxrInfo& b){
         return a.Date > b.Date;
     });
@@ -174,7 +174,7 @@ struct Top10ShareHolder {
 static std::unique_ptr<Top10ShareHolder> checkoutShareHolder(const std::string &securityCode,
                                                              const std::string &featureDate) {
     // 获取除权除息列表并排序
-    auto xdxrs = datasets::load_xdxr(securityCode);
+    auto xdxrs = data::load_xdxr(securityCode);
     std::sort(xdxrs.begin(), xdxrs.end(), [](const level1::XdxrInfo& a, const level1::XdxrInfo& b) {
         return a.Date > b.Date;
     });

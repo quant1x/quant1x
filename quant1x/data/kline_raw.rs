@@ -76,7 +76,7 @@ pub fn fetch_kline(
                     Ok(()) => {
                         if resp.list.is_empty() {
                             log::warn!(
-                                    "[datasets::kline_raw] empty response from {} for {} start={} count={} cat={} zip={} unzip={} resp_count={}",
+                                    "[data::kline_raw] empty response from {} for {} start={} count={} cat={} zip={} unzip={} resp_count={}",
                                     endpoint,
                                     code,
                                     start,
@@ -101,7 +101,7 @@ pub fn fetch_kline(
 
                         if is_connection_error && attempt < MAX_RETRIES {
                             log::warn!(
-                                "[datasets::kline_raw] connection error to {} for {} start={} count={} (attempt {}/{}): {}",
+                                "[data::kline_raw] connection error to {} for {} start={} count={} (attempt {}/{}): {}",
                                 endpoint,
                                 code,
                                 start,
@@ -114,7 +114,7 @@ pub fn fetch_kline(
                             continue;
                         } else {
                             log::error!(
-                                "[datasets::kline_raw] process failed for {} from {} start={} count={}: {}",
+                                "[data::kline_raw] process failed for {} from {} start={} count={}: {}",
                                 code,
                                 endpoint,
                                 start,
@@ -129,7 +129,7 @@ pub fn fetch_kline(
             Err(e) => {
                 if attempt < MAX_RETRIES {
                     log::warn!(
-                        "[datasets::kline_raw] failed to acquire level1 client for {} (attempt {}/{}): {}",
+                        "[data::kline_raw] failed to acquire level1 client for {} (attempt {}/{}): {}",
                         code,
                         attempt + 1,
                         MAX_RETRIES + 1,
@@ -139,7 +139,7 @@ pub fn fetch_kline(
                     continue;
                 } else {
                     log::error!(
-                        "[datasets::kline_raw] failed to acquire level1 client for {}: {}",
+                        "[data::kline_raw] failed to acquire level1 client for {}: {}",
                         code,
                         e
                     );

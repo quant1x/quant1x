@@ -1,12 +1,12 @@
 #pragma once
-#ifndef QUANT1X_DATASETS_TRANS_H
-#define QUANT1X_DATASETS_TRANS_H 1
+#ifndef QUANT1X_DATA_TRANS_H
+#define QUANT1X_DATA_TRANS_H 1
 
-#include <quant1x/datasets/base.h>
+#include <quant1x/data/base.h>
 #include <quant1x/level1/transaction_data.h>
 
 
-namespace datasets {
+namespace data {
     constexpr const char *const HistoricalTransactionDataFirstTime        = "09:25"; // 第一个时间
     constexpr const char *const HistoricalTransactionDataStartTime        = "09:30"; // 开盘时间
     constexpr const char *const HistoricalTransactionDataFinalBiddingTime = "14:57"; // 尾盘集合竞价时间
@@ -60,6 +60,6 @@ namespace datasets {
         void Update(const std::string &code, const exchange::timestamp &date) override;
     };
 
-} // namespace datasets
+} // namespace data
 
-#endif //QUANT1X_DATASETS_TRANS_H
+#endif //QUANT1X_DATA_TRANS_H

@@ -2,6 +2,7 @@ use crate::Timestamp;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use crate::data::adapter::DataAdapter;
+use crate::apply_forward_adjustment_for_event;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct MinuteKLine {
@@ -92,7 +93,7 @@ pub struct DataMinuteKLine;
 
 impl crate::data::Schema for DataMinuteKLine {
     fn kind(&self) -> crate::Kind {
-        crate::datasets::BaseMinuteKLine
+        crate::data::BaseMinuteKLine
     }
     fn owner(&self) -> String {
         crate::data::DEFAULT_DATA_PROVIDER.to_string()
@@ -273,7 +274,7 @@ impl crate::data::DataAdapter for DataMinuteKLine {
                 count,
                 total
             );
-            match crate::datasets::kline_raw::fetch_kline(code, start_idx as u32, count, kline_type)
+            match crate::data::kline_raw::fetch_kline(code, start_idx as u32, count, kline_type)
             {
                 Some(resp) if !resp.list.is_empty() => {
                     let response_len = resp.list.len();
@@ -330,7 +331,7 @@ impl crate::data::DataAdapter for DataMinuteKLine {
         }
 
         let is_fresh_fetch_require_adjustment = adjust_times == 1;
-        let dividends = crate::datasets::xdxr::load_xdxr(code);
+        let dividends = crate::data::xdxr::load_xdxr(code);
         if is_fresh_fetch_require_adjustment {
             apply_forward_adjustment_for_event!(
                 &mut incremental_klines,

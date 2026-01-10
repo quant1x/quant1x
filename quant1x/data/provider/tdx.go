@@ -28,7 +28,8 @@ func (p *tdxProvider) GetKLines(code string, startDate, endDate, period string, 
 		return klines, nil
 	}
 	// 2. 尝试更新缓存
-	tdxUpdateKLine(code, exchange.NowTimestamp())
+	sc := exchange.DetectSymbol(code)
+	tdxUpdateKLine(sc, exchange.NowTimestamp())
 	// 3. 重新读取缓存文件
 	klines = []data.KLine{}
 	err = encoding.CsvToSlices(cacheFilename, &klines)

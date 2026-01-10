@@ -3,14 +3,11 @@
 #define QUANT1X_DATASETS_CACHE_H 1
 
 #include <quant1x/std/api.h>
+#include <quant1x/data.h>
 
 namespace datasets {
-
-    /**
-     * @brief 初始化并注册所有数据插件
-     */
-    void init();
-
-} // namespace datasets
+    // Deprecated shim: forward to `data` namespace. Use `data::init()` instead.
+    inline void init() { return data::init(); }
+}
 
 #endif //QUANT1X_DATASETS_CACHE_H

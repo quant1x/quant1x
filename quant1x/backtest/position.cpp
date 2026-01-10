@@ -127,7 +127,7 @@ namespace backtest {
     }
 
     // 更新持仓市值
-    void PositionManager::updatePositions(const std::string &code, const datasets::KLine &market_data) {
+    void PositionManager::updatePositions(const std::string &code, const data::KLine &market_data) {
         for (auto &[symbol, pos] : positions_) {
             // 找到对应标的的市场数据
             if (symbol != code) {

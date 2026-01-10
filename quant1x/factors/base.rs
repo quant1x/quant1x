@@ -1,7 +1,6 @@
-use crate::datasets::{kline::KLine, kline_raw::KLineRaw};
+use crate::data::{KLine, KLineRaw, load_xdxr};
 use crate::exchange::{correct_security_code, Timestamp};
 use crate::level1::XdxrInfo;
-use crate::xdxr::load_xdxr;
 use chrono::{Datelike, NaiveDate};
 use std::cmp::Ordering;
 
@@ -426,7 +425,7 @@ mod tests {
     #[test]
     fn test_compare_with_cached_klines() {
         use crate::config;
-        use crate::datasets::kline;
+        use crate::data::kline;
 
         let code = "sh600000";
 

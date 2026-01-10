@@ -1,4 +1,4 @@
-#include <quant1x/datasets/trans.h>
+#include <quant1x/data/trans.h>
 #include <quant1x/level1/transaction_history.h>
 #include <quant1x/cache.h>
 #include <quant1x/encoding/csv.h>
@@ -8,7 +8,7 @@
 #include <quant1x/config/cache.h>
 #include <quant1x/std/filepath.h>
 
-namespace datasets {
+namespace data {
 
     std::once_flag _historical_trading_data_once;
     std::mutex _historical_trading_data_mutex;
@@ -52,11 +52,11 @@ namespace datasets {
         std::vector<level1::TickTransaction> list;
         u32 tradeDate = featureDate.yyyymmdd();
 
-        if (ignorePreviousData) {
+            if (ignorePreviousData) {
             // 在默认日期之前的数据直接返回空
             auto startDate = GetBeginDateOfHistoricalTradingData();
             if (tradeDate < startDate.yyyymmdd()) {
-                spdlog::error("[dataset::trans] code={}, trade-date={}, start-date={}, 没有数据", correctedCode, tradeDate, startDate.toString());
+                    spdlog::error("[data::trans] code={}, trade-date={}, start-date={}, 没有数据", correctedCode, tradeDate, startDate.toString());
                 return {list, HistoricalTransactionDataFirstTime};
             }
         }
@@ -106,7 +106,7 @@ namespace datasets {
                     list.resize(cacheLength - skipCount);
                 }
             } else {
-                spdlog::error("[dataset::trans] code={}, trade-date={}, 没有有效数据", correctedCode, tradeDate);
+                spdlog::error("[data::trans] code={}, trade-date={}, 没有有效数据", correctedCode, tradeDate);
             }
         }
 
@@ -135,7 +135,7 @@ namespace datasets {
                 auto conn = level1::get_std_conn();
                 auto err = level1::process(conn->socket(), request, response);
                 if (err) {
-                    spdlog::error("[dataset::trans] code={}, tradeDate={}, error={}", correctedCode, tradeDate, std::string(err.message()));
+                    spdlog::error("[data::trans] code={}, tradeDate={}, error={}", correctedCode, tradeDate, std::string(err.message()));
                     break;
                 }
 
@@ -169,7 +169,7 @@ namespace datasets {
                 auto conn = level1::get_std_conn();
                 auto err = level1::process(conn->socket(), request, response);
                 if (err) {
-                    spdlog::error("[dataset::trans] code={}, tradeDate={}, error={}", correctedCode, tradeDate, std::string(err.message()));
+                    spdlog::error("[data::trans] code={}, tradeDate={}, error={}", correctedCode, tradeDate, std::string(err.message()));
                     break;
                 }
 
@@ -227,10 +227,10 @@ namespace datasets {
             }
         }
         // 原子重命名
-        try {
+            try {
             std::filesystem::rename(tmp, filename);
         } catch (const std::filesystem::filesystem_error& e) {
-            spdlog::error("[dataset::trans] 重命名失败: {} -> {}: {}", tmp, filename, e.what());
+            spdlog::error("[data::trans] 重命名失败: {} -> {}: {}", tmp, filename, e.what());
             // 尝试删除临时文件
             std::filesystem::remove(tmp);
         }
@@ -345,4 +345,4 @@ namespace datasets {
         std::string correctedCode = exchange::CorrectSecurityCode(code);
         EnsureTransactionDataUpdated(correctedCode, date, false);
     }
-} // namespace datasets
+} // namespace data

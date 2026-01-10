@@ -3,6 +3,7 @@
 #define QUANT1X_BACKTEST_POSITION_H 1
 
 #include <quant1x/backtest/trade.h>
+#include <quant1x/data/kline.h>
 
 namespace backtest {
 
@@ -94,7 +95,7 @@ namespace backtest {
         // 获取特定标的的持仓数量
         double getPositionQuantity(const std::string &symbol) const;
 
-        void updatePositions(const std::string &code, const datasets::KLine &market_data);
+        void updatePositions(const std::string &code, const data::KLine &market_data);
 
         void processTrade(const Trade &trade);
 

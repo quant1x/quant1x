@@ -3,7 +3,7 @@
 #include "user/no0.h"
 #include "user/strategy-no0.h"
 #include <quant1x/command.h>
-#include <quant1x/datasets.h>
+#include <quant1x/data.h>
 #include <private/build-info.h>
 #include <quant1x/config/config.h>
 #include <quant1x/cache.h>
@@ -118,7 +118,7 @@ int main(const int argc, const char *const argv[]) {
     // 存储子命令名称与对应解析器的映射
     std::map<std::string, argparse::ArgumentParser *> subparser_map;
     runtime::global_init();
-    datasets::init();
+    data::init();
     {
         auto const &config = config::TraderConfig();
         (void)config;

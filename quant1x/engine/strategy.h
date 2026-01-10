@@ -11,7 +11,7 @@
 #include <quant1x/std/except.h>
 #include <quant1x/std/numeric.h>
 #include <quant1x/trader/fee.h>
-#include <quant1x/datasets/kline.h>
+#include <quant1x/data/kline.h>
 
 // 前向声明
 struct ResultInfo;
@@ -141,10 +141,10 @@ private:
     exchange::timestamp timestamp_;
 
 protected:
-    std::vector<datasets::KLine> market_data_;
+    std::vector<data::KLine> market_data_;
 
 public:
-    const std::vector<datasets::KLine> &market_data() const { return market_data_; }
+    const std::vector<data::KLine> &market_data() const { return market_data_; }
 
     const exchange::timestamp &getTimestamp() const { return timestamp_; }
 

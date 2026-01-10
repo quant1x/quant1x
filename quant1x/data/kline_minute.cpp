@@ -1,5 +1,5 @@
-#include <quant1x/datasets/kline_minute.h>
-#include <quant1x/datasets/kline_raw.h>
+#include <quant1x/data/kline_minute.h>
+#include <quant1x/data/kline_raw.h>
 #include <quant1x/pandas/rule.h>
 #include <quant1x/std/filepath.h>
 
@@ -10,7 +10,7 @@
 #include <quant1x/config/base.h>
 #include <quant1x/config/cache.h>
 
-namespace datasets {
+namespace data {
 
     namespace {
 
@@ -150,7 +150,7 @@ namespace datasets {
     std::vector<MinuteKLine> load_minute_kline(const std::string &code, const std::string &freq) {
         auto [minutes, frequency] = pandas::parse_frequency(freq);
         auto filename             = config::get_kline_filename_ex(code, frequency);
-        spdlog::debug("[dataset::MinuteKLine] kline file: {}", filename);
+        spdlog::debug("[data::MinuteKLine] kline file: {}", filename);
         return read_minute_kline_from_csv(filename);
     }
 
@@ -225,7 +225,7 @@ namespace datasets {
                 // （业务上若要求严格为交易日首条，应在此处添加向前回退到当天首条的逻辑；
                 // 但那将打破"(klines_length - klines_offset) 为整块大小"的约束，两者需明确优先级。）
                 if (aligned > 0 && cacheMinuteKLines[aligned - 1].date == cacheMinuteKLines[aligned].date) {
-                    spdlog::warn("[dataset::MinuteKLine] aligned index {} is not day-first for {} (date={})",
+                    spdlog::warn("[data::MinuteKLine] aligned index {} is not day-first for {} (date={})",
                                  aligned,
                                  code,
                                  cacheMinuteKLines[aligned].date);
@@ -233,7 +233,7 @@ namespace datasets {
             }
             // 2. 确定结束日期
             auto current_trading_date = exchange::timestamp::now().pre_market_time();
-            spdlog::debug("[dataset::MinuteKLine] [{}]: from {} to {}",
+            spdlog::debug("[data::MinuteKLine] [{}]: from {} to {}",
                           code,
                           current_start_date.only_date(),
                           current_trading_date.only_date());
@@ -246,7 +246,7 @@ namespace datasets {
             auto incremental_total = days_ * numberOfDay;
             current_start_date     = ts[total_days - days_];
             auto current_end_date  = ts[total_days - 1];
-            spdlog::debug("[dataset::MinuteKLine] [{}]: from {} to {}",
+            spdlog::debug("[data::MinuteKLine] [{}]: from {} to {}",
                           code,
                           current_start_date.only_date(),
                           current_end_date.only_date());
@@ -341,7 +341,7 @@ namespace datasets {
             // 9. 刷新缓存文件
             save_kline(cache_filename, klines);
         } catch (const std::exception &e) {  // 其他标准异常
-            spdlog::error("[dataset::MinuteKLine] - 标准异常: {} (type: {})", e.what(), typeid(e).name());
+            spdlog::error("[data::MinuteKLine] - 标准异常: {} (type: {})", e.what(), typeid(e).name());
             // 对于system_error可以记录更多信息
             if (auto se = dynamic_cast<const std::system_error *>(&e)) {
                 spdlog::error("[dataset::MinuteKLine] Error code: {}, category: {}",
@@ -349,8 +349,8 @@ namespace datasets {
                               se->code().category().name());
             }
         } catch (...) {
-            spdlog::error("[dataset::MinuteKLine] 获取分钟级别K线异常");
+            spdlog::error("[data::MinuteKLine] 获取分钟级别K线异常");
         }
     }
 
-}  // namespace datasets
+}  // namespace data
