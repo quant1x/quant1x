@@ -1,5 +1,5 @@
 import unittest
-from data import kline
+from quant1x.data import kline
 from quant1x.level1.client import init_std_pool
 from quant1x.level1.security_bars import KLineType
 

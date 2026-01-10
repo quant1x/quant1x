@@ -3,7 +3,7 @@
 #include "user/no0.h"
 #include "user/strategy-no0.h"
 #include <quant1x/command.h>
-#include <quant1x/data.h>
+#include <quant1x/datasets.h>
 #include <private/build-info.h>
 #include <quant1x/config/config.h>
 #include <quant1x/cache.h>

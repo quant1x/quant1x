@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import os
 import shutil
 import tempfile
-import quant1x.datasets.xdxr as xdxr_module
+import quant1x.data.xdxr as xdxr_module
 from quant1x.level1 import xdxr_info
 from quant1x.config import config
 from quant1x.exchange import Timestamp

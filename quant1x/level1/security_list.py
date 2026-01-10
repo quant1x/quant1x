@@ -12,8 +12,8 @@ import struct
 import logging
 from typing import Optional, List, Dict
 
-from quant1x.level1 import client as l1client
-from quant1x.level1 import protocol
+from . import client
+from . import protocol
 
 log = logging.getLogger(__name__)
 
@@ -99,7 +99,7 @@ def fetch_security_list(market: int, start: int, count: int) -> Optional[List[Di
         req = SecurityListRequest(market, start, count)
         resp = SecurityListResponse()
 
-        with l1client.get_std_conn() as conn:
+        with client.get_std_conn() as conn:
             protocol.process(conn, req, resp)
         
         body = resp.body

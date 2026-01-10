@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 import os
 import pandas as pd
-from data import kline
+from quant1x.data import kline
 from quant1x.level1 import security_bars
 from quant1x.exchange import Timestamp
 from quant1x.factors import base as factors
@@ -37,8 +37,8 @@ class TestKLine(unittest.TestCase):
         self.assertEqual(k.Amount, 1200.0)
         self.assertEqual(k.AdjustmentCount, 1)
 
-    @patch('quant1x.datasets.kline.client.client')
-    @patch('quant1x.datasets.kline.protocol.process')
+    @patch('quant1x.data.kline.client.client')
+    @patch('quant1x.data.kline.protocol.process')
     def test_fetch_kline(self, mock_process, mock_client):
         mock_conn = MagicMock()
         mock_client.return_value.__enter__.return_value = mock_conn
@@ -52,7 +52,7 @@ class TestKLine(unittest.TestCase):
         bar.Open = 10.0
         resp.list = [bar]
         
-        with patch('quant1x.datasets.kline.SecurityBarsResponse') as MockResp:
+                with patch('quant1x.data.kline.SecurityBarsResponse') as MockResp:
             instance = MockResp.return_value
             instance.list = [bar]
             
@@ -110,12 +110,12 @@ class TestKLine(unittest.TestCase):
         self.assertEqual(klines[2].Open, 10.0)
         self.assertEqual(klines[2].AdjustmentCount, 0)
 
-    @patch('quant1x.datasets.kline.save_kline')
-    @patch('quant1x.datasets.kline.read_kline_from_csv')
-    @patch('quant1x.datasets.kline.config.get_kline_filename')
-    @patch('quant1x.datasets.kline.fetch_kline')
-    @patch('quant1x.datasets.kline.xdxr.load_xdxr')
-    @patch('quant1x.datasets.kline.Timestamp.now')
+    @patch('quant1x.data.kline.save_kline')
+    @patch('quant1x.data.kline.read_kline_from_csv')
+    @patch('quant1x.data.kline.config.get_kline_filename')
+    @patch('quant1x.data.kline.fetch_kline')
+    @patch('quant1x.data.kline.xdxr.load_xdxr')
+    @patch('quant1x.data.kline.Timestamp.now')
     def test_data_kline_update(self, mock_now, mock_load_xdxr, mock_fetch_kline, mock_get_filename, mock_read_csv, mock_save_kline):
         # Setup
         code = "SH600000"

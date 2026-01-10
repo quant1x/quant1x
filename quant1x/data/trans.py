@@ -13,10 +13,10 @@ from quant1x import exchange
 from quant1x.exchange import Timestamp
 from quant1x.config import config
 #from quant1x.factors import f10
-from data import trains_begin_date
-from data import adapter
-from data.adapter import DataAdapter, PLUGIN_MASK_BASE_DATA, register, DEFAULT_DATA_PROVIDER
-from quant1x.datasets.base import BASE_TRANSACTION
+from quant1x.data import trains_begin_date
+from quant1x.data import adapter
+from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASE_DATA, register, DEFAULT_DATA_PROVIDER
+from quant1x.data.base import BASE_TRANSACTION
 from quant1x.std import numeric
 
 log = logging.getLogger(__name__)

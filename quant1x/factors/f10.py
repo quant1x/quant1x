@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Optional, Tuple, List, Dict
 
 import pandas as pd
-import quant1x.datasets.xdxr as xdxr_module
+import quant1x.data.xdxr as xdxr_module
 from quant1x.exchange import detect_market, correct_security_code, is_margin_trading_target
 from quant1x.instruments.security import get_security_info
 from quant1x.factors import share_holder, financial_report, safety_score, notice
