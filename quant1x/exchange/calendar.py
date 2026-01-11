@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 import os
 import time
-from functools import lru_cache
+from turtle import up
+#from functools import lru_cache
 from .. import config
 from . import session
-from .timestamp import Timestamp
+from .timestamp import Timestamp, PRE_MARKET_HOUR, PRE_MARKET_MINUTE
 import numpy as np
 import pandas as pd
 from typing import List, Optional
@@ -12,6 +13,7 @@ import bisect
 import requests
 import csv
 from .sina.decoder import FinanceDecoder
+from ..runtime.once import RollingOnce
 
 # 新浪财经交易日历URL
 SINA_CALENDAR_URL = "https://finance.sina.com.cn/realstock/company/klc_td_sh.txt"
@@ -21,6 +23,21 @@ exchange_start_time = '09:15:00'
 exchange_end_time = '15:00:00'
 # time_range = "09:15:00~11:30:00,13:00:00~15:00:00"
 trade_session = session.TimeRange(f'{exchange_start_time}~{exchange_end_time}')
+
+# in-memory caches (match Go implementation)
+globalCalendarsString = []
+globalCalendarsTimestamp = []
+
+
+# persistent rolling once created at module import, resets daily at pre-market time
+calendarRollingOnce = RollingOnce.daily(PRE_MARKET_HOUR, PRE_MARKET_MINUTE, marker=_calendar_marker_path())
+
+def _calendar_marker_path() -> str:
+    return os.path.join(config.meta_path, "calendar.updated")
+
+def calendar_file_path() -> str:
+    """Return the path to the cached calendar file."""
+    return os.path.join(config.meta_path, "calendar")
 
 def __preprocess(text: str) -> str:
     """预处理JS-like响应文本（去除赋值、尾部分号和引号）"""
@@ -54,61 +71,113 @@ def __decode(text: str) -> List[str]:
 
 def __update_calendar():
     """下载交易日历数据并缓存到磁盘"""
-    fn = os.path.join(config.meta_path, "calendar")
-
+    fn = calendar_file_path()
     try:
-        # 发送HTTP请求下载数据
-        response = requests.get(SINA_CALENDAR_URL, timeout=15)
-        response.raise_for_status()
+        # conditional GET using file mtime to avoid unnecessary downloads
+        headers = {}
+        if os.path.exists(fn):
+            try:
+                mtime = os.path.getmtime(fn)
+                # format in RFC1123
+                from email.utils import formatdate
 
-        body = response.text
+                headers['If-Modified-Since'] = formatdate(mtime, usegmt=True)
+            except Exception:
+                pass
 
-        # 解码数据
+        resp = requests.get(SINA_CALENDAR_URL, timeout=15, headers=headers)
+        if resp.status_code == 304:
+            return
+        resp.raise_for_status()
+
+        body = resp.text
         dates = __decode(body)
-
         if not dates:
-            # 如果解码失败，抛出异常
             raise ValueError("解码交易日历数据失败")
 
-        # 确保缺失日期存在
-        if CALENDAR_MISSING_DATE not in dates:
-            # 插入缺失日期并保持排序
-            dates.append(CALENDAR_MISSING_DATE)
-            dates.sort()
+        # Ensure missing date present, insert preserving order (do not resort)
+        idx = bisect.bisect_left(dates, CALENDAR_MISSING_DATE)
+        if idx == len(dates) or dates[idx] != CALENDAR_MISSING_DATE:
+            dates.insert(idx, CALENDAR_MISSING_DATE)
 
-        # 创建目录
+        # write CSV cache
         os.makedirs(os.path.dirname(fn), exist_ok=True)
-
-        # 写入CSV文件
         with open(fn, 'w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             writer.writerow(["date", "source"])
             for date in dates:
                 writer.writerow([date, "sina"])
 
+        # set file mtime based on Last-Modified header if present
+        lm = resp.headers.get('Last-Modified')
+        if lm:
+            try:
+                from email.utils import parsedate_to_datetime
+
+                dt = parsedate_to_datetime(lm)
+                # set both atime and mtime
+                os.utime(fn, (dt.timestamp(), dt.timestamp()))
+            except Exception:
+                pass
     except Exception as e:
-        # 抛出异常而不是创建默认文件
+        # match Go behaviour: let caller decide; raise to caller
         raise RuntimeError(f"更新交易日历失败: {e}")
 
-@lru_cache(maxsize=None)
+
+def lazy_load_calendar():
+    """Load calendar into in-memory caches. Swallow update errors like Go's lazyLoadCalendar."""
+    try:
+        # attempt update but ignore errors (Go does `_ = updateCalendar()`)
+        __update_calendar()
+    except Exception:
+        pass
+
+    fn = calendar_file_path()
+    if not os.path.exists(fn):
+        return
+
+    try:
+        with open(fn, newline='', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            # skip header
+            try:
+                next(reader)
+            except StopIteration:
+                return
+            ss = []
+            ts = []
+            for rec in reader:
+                if not rec:
+                    continue
+                date = rec[0].strip()
+                if not date:
+                    continue
+                ss.append(date)
+                try:
+                    t = Timestamp.parse(date)
+                    ts.append(t.get_pre_market_time())
+                except Exception:
+                    pass
+    except Exception:
+        return
+
+    global globalCalendarsString, globalCalendarsTimestamp
+    globalCalendarsString = ss
+    globalCalendarsTimestamp = ts
+
+#@lru_cache(maxsize=None)
 def __calendar() -> pd.Series:
     """
     交易日历
     """
-    fn = os.path.join(config.meta_path, "calendar")
+    # Ensure in-memory cache is loaded using the persistent rolling once (do -> swallow exceptions)
+    calendarRollingOnce.do(lazy_load_calendar)
+    if not globalCalendarsString:
+        raise RuntimeError("exchange calendar is empty")
+    # return a pandas Series for compatibility
+    return pd.Series(globalCalendarsString)
 
-    # 检查文件是否存在且不为空
-    if not os.path.exists(fn) or os.path.getsize(fn) == 0:
-        # 文件不存在或为空，下载并缓存
-        __update_calendar()
-
-    try:
-        df = pd.read_csv(fn)
-        return df['date']
-    except Exception as e:
-        raise RuntimeError(f"读取交易日历文件失败: {e}")
-
-@lru_cache(maxsize=None)
+#@lru_cache(maxsize=None)
 def __calendar_timestamps() -> List[Timestamp]:
     """
     交易日历 (Timestamp对象列表)

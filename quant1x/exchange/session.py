@@ -6,7 +6,8 @@ from enum import IntFlag, auto
 from typing import List, Optional
 from datetime import datetime
 
-from .timestamp import Timestamp
+from .timestamp import Timestamp, PRE_MARKET_HOUR, PRE_MARKET_MINUTE
+from ..runtime.once import RollingOnce
 
 # 仅日期格式: 2022-11-28
 FORMAT_ONLY_DATE = '%Y-%m-%d'
@@ -318,8 +319,23 @@ def init_session() -> TradingSession:
     return TradingSession(tr1, tr2, tr3, tr4, tr5, tr6)
 
 
-# 全局单例
+# 全局单例（由 RollingOnce 每日重建）
 ts_today_session = init_session()
+
+# Separate RollingOnce instance for reinitializing today's TradingSession daily
+ts_today_session_once = RollingOnce.daily(PRE_MARKET_HOUR, PRE_MARKET_MINUTE)
+
+
+def get_today_session() -> TradingSession:
+    """Return today's TradingSession, reinitialized once per day by RollingOnce."""
+    global ts_today_session
+
+    def do_init():
+        global ts_today_session
+        ts_today_session = init_session()
+
+    ts_today_session_once.do(do_init)
+    return ts_today_session
 
 
 @dataclass
@@ -379,7 +395,7 @@ def CheckTradingTimestamp(last_modified: Optional[Timestamp] = None) -> RuntimeS
     rs.cache_after_init_time = True
 
     # 5. trading not started
-    session = ts_today_session
+    session = get_today_session()
     # convert timestamp to time-only string for existing string-based session
     tstr = ts.to_string(FORMAT_ONLY_TIME)
     if session.is_trading_not_started(tstr):
@@ -393,16 +409,23 @@ def CheckTradingTimestamp(last_modified: Optional[Timestamp] = None) -> RuntimeS
     return rs
 
 
-_ts_today_init: Optional[Timestamp] = None
+_ts_today_init: Timestamp = Timestamp.zero()
+
+# persistent rolling once to initialize today's pre-market timestamp at pre-market time
+ts_today_init_once = RollingOnce.daily(PRE_MARKET_HOUR, PRE_MARKET_MINUTE)
 
 
 def GetTodayInit() -> Timestamp:
-    """Return today's pre-market Timestamp (cached)."""
+    """Return today's pre-market Timestamp (cached), initialized via RollingOnce.daily."""
     global _ts_today_init
-    if _ts_today_init is None:
+
+    # Use rolling once to set _ts_today_init exactly once per day at pre-market reset
+    def do_init():
+        global _ts_today_init
         now = Timestamp.now()
-        y, m, d = now.extract()
-        _ts_today_init = Timestamp.pre_market_time(y, m, d)
+        _ts_today_init = now.get_pre_market_time()
+
+    ts_today_init_once.do(do_init)
     return _ts_today_init
 
 

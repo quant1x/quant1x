@@ -183,7 +183,7 @@ func (ts *TradingSession) IsTradingEnded(t Timestamp) bool {
 
 var (
 	tsTodaySession     *TradingSession
-	tsTodaySessionOnce sync.Once
+	tsTodaySessionOnce = runtime.RollingOnceDaily(PreMarketHour, PreMarketMinute)
 )
 
 // InitSession 初始化当日的交易会话时段
@@ -284,12 +284,12 @@ func CanInitialize(lastModified *Timestamp) bool {
 }
 
 var (
-	tsTodayInit        Timestamp
-	tsTodayInitRolling = runtime.RollingOnceDaily(PreMarketHour, PreMarketMinute)
+	tsTodayInit     Timestamp
+	tsTodayInitOnce = runtime.RollingOnceDaily(PreMarketHour, PreMarketMinute)
 )
 
 func GetTodayInit() Timestamp {
-	tsTodayInitRolling.Do(func() {
+	tsTodayInitOnce.Do(func() {
 		tsTodayInit = NowTimestamp().PreMarketTime()
 	})
 	return tsTodayInit

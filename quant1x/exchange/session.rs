@@ -1,8 +1,13 @@
 use crate::timestamp::Timestamp;
+use crate::timestamp::{PRE_MARKET_HOUR, PRE_MARKET_MINUTE};
 use chrono::Datelike;
 use once_cell::sync::Lazy;
 use std::cmp::min;
 use std::sync::Mutex;
+use std::sync::MutexGuard;
+use std::path::PathBuf;
+use std::sync::Arc;
+use crate::runtime::RollingOnce;
 
 pub const MASK_CLOSED: u8 = 0x00;
 pub const MASK_ACTIVE: u8 = 0x01;
@@ -175,6 +180,20 @@ fn init_session() -> TradingSession {
 
 static TS_TODAY_SESSION: Lazy<Mutex<TradingSession>> = Lazy::new(|| Mutex::new(init_session()));
 
+// Separate RollingOnce instance for reinitializing today's TradingSession daily.
+static TS_TODAY_SESSION_ONCE: Lazy<Arc<RollingOnce>> = Lazy::new(|| {
+    let marker = PathBuf::from("calendar.updated");
+    let ro = RollingOnce::with_daily_reset(marker, PRE_MARKET_HOUR as u32, PRE_MARKET_MINUTE as u32);
+    // execute once immediately to set TS_TODAY_SESSION to today's session
+    let _ = ro.do_once_try(|| -> Result<(), ()> {
+        let mut s = TS_TODAY_SESSION.lock().unwrap();
+        *s = init_session();
+        Ok(())
+    });
+    ro
+});
+
+
 // ts_today_init: approximate pre-market timestamp (today at pre-market hour)
 fn init_ts_today() -> Timestamp {
     Timestamp::pre_market_time(
@@ -185,7 +204,24 @@ fn init_ts_today() -> Timestamp {
     .unwrap_or(Timestamp::now())
 }
 
-static TS_TODAY_INIT: Lazy<Mutex<Timestamp>> = Lazy::new(|| Mutex::new(init_ts_today()));
+// Use the existing runtime's RollingOnce to schedule a daily reset and ensure
+// the Do/DoOnce semantics are used to provide today's pre-market timestamp once per day.
+// TS_TODAY_INIT holds the pre-market timestamp for today (initialized by RollingOnce.do_once)
+static TS_TODAY_INIT: Lazy<Mutex<Timestamp>> = Lazy::new(|| Mutex::new(Timestamp::zero()));
+
+// Use the existing runtime's RollingOnce to schedule a daily reset and ensure
+// the Do/DoOnce semantics are used for initializing `TS_TODAY_INIT` once per day.
+static TS_TODAY_ONCE: Lazy<Arc<RollingOnce>> = Lazy::new(|| {
+    let marker = PathBuf::from("calendar.updated");
+    let ro = RollingOnce::with_daily_reset(marker, PRE_MARKET_HOUR as u32, PRE_MARKET_MINUTE as u32);
+    // execute once immediately to set TS_TODAY_INIT to today's pre-market time
+    let _ = ro.do_once_try(|| -> Result<(), ()> {
+        let mut t = TS_TODAY_INIT.lock().unwrap();
+        *t = init_ts_today();
+        Ok(())
+    });
+    ro
+});
 
 #[derive(Debug, Clone)]
 pub struct RuntimeStatus {
@@ -218,7 +254,15 @@ pub fn check_trading_timestamp(last_modified: Option<Timestamp>) -> RuntimeStatu
     let now = Timestamp::now();
     let ts = last_modified.unwrap_or(now);
 
-    let last_day = calendar::last_trading_day(*TS_TODAY_INIT.lock().unwrap());
+    // Ensure the rolling initializer is active and let it set the module variable.
+    let ro = &*TS_TODAY_ONCE;
+    let _ = ro.do_once_try(|| -> Result<(), ()> {
+        let mut t = TS_TODAY_INIT.lock().unwrap();
+        *t = init_ts_today();
+        Ok(())
+    });
+    let ts_today_init = *TS_TODAY_INIT.lock().unwrap();
+    let last_day = calendar::last_trading_day(ts_today_init);
     // 1. timestamp before last trading day
     if ts < last_day {
         rs.before_last_trade_day = true;
@@ -233,7 +277,7 @@ pub fn check_trading_timestamp(last_modified: Option<Timestamp>) -> RuntimeStatu
     }
 
     // 3. before init
-    if ts < *TS_TODAY_INIT.lock().unwrap() {
+    if ts < ts_today_init {
         rs.before_init_time = true;
         return rs;
     }
@@ -242,17 +286,29 @@ pub fn check_trading_timestamp(last_modified: Option<Timestamp>) -> RuntimeStatu
     rs.cache_after_init_time = true;
 
     // 5. trading not started
-    if TS_TODAY_SESSION.lock().unwrap().is_trading_not_started(ts) {
-        return rs;
+    if get_today_session().is_trading_not_started(ts) {
+        return rs
     }
 
     rs.update_in_real_time = true;
 
-    rs.status = TS_TODAY_SESSION.lock().unwrap().in_session(ts);
+    rs.status = get_today_session().in_session(ts);
     if is_trading_disabled(rs.status) {
         rs.update_in_real_time = false;
     }
     rs
+}
+
+/// 返回对全局 `TS_TODAY_SESSION` 的互斥锁保护的访问，语义上与 Go/C++ 的 `GetTodaySession()` 一致。
+pub fn get_today_session() -> MutexGuard<'static, TradingSession> {
+    // Ensure the session RollingOnce has run for today before returning the session.
+    let ro = &*TS_TODAY_SESSION_ONCE;
+    let _ = ro.do_once_try(|| -> Result<(), ()> {
+        let mut s = TS_TODAY_SESSION.lock().unwrap();
+        *s = init_session();
+        Ok(())
+    });
+    TS_TODAY_SESSION.lock().unwrap()
 }
 
 pub fn can_update_in_realtime(last_modified: Option<Timestamp>) -> (bool, TimeStatus) {
