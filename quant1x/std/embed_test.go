@@ -14,7 +14,7 @@ func TestEmbed(t *testing.T) {
 	file, err := OpenEmbed(resources, filename)
 	fmt.Println(file, err)
 
-	target := "embed1.go"
+	target := "embed.go.copy"
 	err1 := Export(resources, filename, target)
 	fmt.Println(err1)
 }
