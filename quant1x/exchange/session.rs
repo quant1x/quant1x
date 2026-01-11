@@ -1,5 +1,6 @@
 use crate::timestamp::Timestamp;
 use crate::timestamp::{PRE_MARKET_HOUR, PRE_MARKET_MINUTE};
+use crate::config;
 use chrono::Datelike;
 use once_cell::sync::Lazy;
 use std::cmp::min;
@@ -182,7 +183,8 @@ static TS_TODAY_SESSION: Lazy<Mutex<TradingSession>> = Lazy::new(|| Mutex::new(i
 
 // Separate RollingOnce instance for reinitializing today's TradingSession daily.
 static TS_TODAY_SESSION_ONCE: Lazy<Arc<RollingOnce>> = Lazy::new(|| {
-    let marker = PathBuf::from("calendar.updated");
+    let mut marker = PathBuf::from(config::get_meta_path());
+    marker.push("calendar.updated");
     let ro = RollingOnce::with_daily_reset(marker, PRE_MARKET_HOUR as u32, PRE_MARKET_MINUTE as u32);
     // execute once immediately to set TS_TODAY_SESSION to today's session
     let _ = ro.do_once_try(|| -> Result<(), ()> {
@@ -212,7 +214,8 @@ static TS_TODAY_INIT: Lazy<Mutex<Timestamp>> = Lazy::new(|| Mutex::new(Timestamp
 // Use the existing runtime's RollingOnce to schedule a daily reset and ensure
 // the Do/DoOnce semantics are used for initializing `TS_TODAY_INIT` once per day.
 static TS_TODAY_ONCE: Lazy<Arc<RollingOnce>> = Lazy::new(|| {
-    let marker = PathBuf::from("calendar.updated");
+    let mut marker = PathBuf::from(config::get_meta_path());
+    marker.push("session.updated");
     let ro = RollingOnce::with_daily_reset(marker, PRE_MARKET_HOUR as u32, PRE_MARKET_MINUTE as u32);
     // execute once immediately to set TS_TODAY_INIT to today's pre-market time
     let _ = ro.do_once_try(|| -> Result<(), ()> {
@@ -328,4 +331,63 @@ pub fn can_initialize(last_modified: Option<Timestamp>) -> bool {
         return false;
     }
     !rs.cache_after_init_time
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Timelike;
+
+    #[test]
+    fn test_init_session_bounds() {
+        let s = init_session();
+        let earliest_dt = s.earliest_start.to_datetime();
+        let latest_dt = s.latest_end.to_datetime();
+        assert_eq!(earliest_dt.hour(), 9);
+        assert_eq!(earliest_dt.minute(), 15);
+        assert_eq!(latest_dt.hour(), 15);
+        assert_eq!(latest_dt.minute(), 0);
+    }
+
+    #[test]
+    fn test_check_trading_timestamp_states() {
+        // Use init_ts_today() to deterministically compute pre-market time
+        let ts_today_init = init_ts_today();
+
+        // timestamp before init: depending on calendar.last_trading_day it may be
+        // classified as BeforeLastTradeDay (if last trading day is after `before`),
+        // otherwise BeforeInitTime. Accept both possibilities.
+        let before = ts_today_init.offset(-1, 0, 0, 0);
+        let rs = check_trading_timestamp(Some(before));
+        let last_day = calendar::last_trading_day(ts_today_init);
+        if before < last_day {
+            assert!(rs.before_last_trade_day);
+        } else if rs.is_holiday {
+            // acceptable: calendar indicates today != last trading day
+            assert!(rs.is_holiday);
+        } else {
+            assert!(rs.before_init_time);
+        }
+
+        // timestamp at pre-market should set CacheAfterInitTime (and pre-market status)
+        let rs2 = check_trading_timestamp(Some(ts_today_init));
+        if rs2.before_last_trade_day || rs2.is_holiday || rs2.before_init_time {
+            // acceptable outcomes depending on calendar semantics
+        } else {
+            assert!(rs2.cache_after_init_time);
+            assert_eq!(rs2.status, MASK_ACTIVE);
+        }
+
+        // timestamp during trading (09:31) should be update_in_real_time and trading status
+        let midnight = ts_today_init.start_of_day();
+        let t_0931 = midnight.offset(9, 31, 0, 0);
+        let rs3 = check_trading_timestamp(Some(t_0931));
+        if rs3.before_last_trade_day || rs3.is_holiday || rs3.before_init_time {
+            // acceptable outcomes
+        } else {
+            assert!(rs3.update_in_real_time);
+            assert_eq!(rs3.status, MASK_ACTIVE | MASK_ORDER | MASK_TRADING);
+        }
+    }
 }

@@ -8,6 +8,8 @@ from datetime import datetime
 
 from .timestamp import Timestamp, PRE_MARKET_HOUR, PRE_MARKET_MINUTE
 from ..runtime.once import RollingOnce
+from .. import config
+import os
 
 # 仅日期格式: 2022-11-28
 FORMAT_ONLY_DATE = '%Y-%m-%d'
@@ -322,8 +324,19 @@ def init_session() -> TradingSession:
 # 全局单例（由 RollingOnce 每日重建）
 ts_today_session = init_session()
 
+# RollingOnce instances using configured meta path for marker persistence
+ts_today_init_once = RollingOnce.daily(
+    PRE_MARKET_HOUR,
+    PRE_MARKET_MINUTE,
+    marker=os.path.join(config.meta_path, "calendar.updated"),
+)
+
 # Separate RollingOnce instance for reinitializing today's TradingSession daily
-ts_today_session_once = RollingOnce.daily(PRE_MARKET_HOUR, PRE_MARKET_MINUTE)
+ts_today_session_once = RollingOnce.daily(
+    PRE_MARKET_HOUR,
+    PRE_MARKET_MINUTE,
+    marker=os.path.join(config.meta_path, "session.updated"),
+)
 
 
 def get_today_session() -> TradingSession:
