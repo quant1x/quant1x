@@ -24,6 +24,12 @@ func CalendarFilename() string {
 	return filepath.Join(core.GetMetaPath(), "calendar")
 }
 
+// calendarMarkerFilename returns the path to the marker file used to record
+// the last successful calendar update. Kept private to this package.
+func calendarMarkerFilename() string {
+	return filepath.Join(core.GetMetaPath(), "calendar.updated")
+}
+
 const (
 	sinaCalendarURL     = "https://finance.sina.com.cn/realstock/company/klc_td_sh.txt"
 	calendarMissingDate = "1992-05-04"
@@ -162,13 +168,49 @@ func updateCalendar() error {
 			_ = os.Chtimes(fname, t, t)
 		}
 	}
+
+	// create/update marker file next to calendar cache so callers can
+	// decide whether a remote update is necessary without hitting the
+	// network. Use the local completion time (now) as the marker mtime —
+	// the marker indicates when we last successfully updated the cache,
+	// not when the remote resource claims to have been last-modified.
+	marker := calendarMarkerFilename()
+	markerTime := time.Now()
+	if mf, err := os.Create(marker); err == nil {
+		_ = mf.Close()
+		_ = os.Chtimes(marker, markerTime, markerTime)
+	}
 	return nil
 }
 
 // lazyLoadCalendar ensures the calendar cache exists and loads it into memory.
 func lazyLoadCalendar() {
-	_ = updateCalendar()
 	fname := CalendarFilename()
+	// marker file lives next to calendar cache
+	marker := calendarMarkerFilename()
+
+	// Determine today's pre-market timestamp via session.GetTodayInit()
+	tsTodayInit := GetTodayInit()
+	nowTs := NowTimestamp()
+
+	// If current time is past today's pre-market time, skip remote update and
+	// just load existing cache (avoid remote calls during/after market open).
+	if !nowTs.Less(tsTodayInit) {
+		// past pre-market: skip update
+	} else {
+		// before pre-market: update only if marker not updated since today's pre-market
+		if fi, err := os.Stat(marker); err == nil {
+			modTs := NewTimestampFromTime(fi.ModTime())
+			if !modTs.Less(tsTodayInit) {
+				// marker updated at/after today's pre-market: skip
+			} else {
+				_ = updateCalendar()
+			}
+		} else {
+			// marker missing: attempt update
+			_ = updateCalendar()
+		}
+	}
 	f, err := os.Open(fname)
 	if err != nil {
 		return

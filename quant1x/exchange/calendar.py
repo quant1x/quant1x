@@ -30,10 +30,10 @@ globalCalendarsTimestamp = []
 
 
 # persistent rolling once created at module import, resets daily at pre-market time
-calendarRollingOnce = RollingOnce.daily(PRE_MARKET_HOUR, PRE_MARKET_MINUTE, marker=_calendar_marker_path())
-
 def _calendar_marker_path() -> str:
     return os.path.join(config.meta_path, "calendar.updated")
+
+calendarRollingOnce = RollingOnce.daily(PRE_MARKET_HOUR, PRE_MARKET_MINUTE, marker=_calendar_marker_path())
 
 def calendar_file_path() -> str:
     """Return the path to the cached calendar file."""
@@ -108,17 +108,44 @@ def __update_calendar():
             for date in dates:
                 writer.writerow([date, "sina"])
 
-        # set file mtime based on Last-Modified header if present
+        # set file mtime: prefer HTTP Last-Modified when present; fall back to now.
+        now_ts = time.time()
         lm = resp.headers.get('Last-Modified')
         if lm:
             try:
                 from email.utils import parsedate_to_datetime
 
                 dt = parsedate_to_datetime(lm)
-                # set both atime and mtime
-                os.utime(fn, (dt.timestamp(), dt.timestamp()))
+                secs = int(dt.timestamp())
+                os.utime(fn, (secs, secs))
+            except Exception:
+                try:
+                    secs = int(now_ts)
+                    os.utime(fn, (secs, secs))
+                except Exception:
+                    pass
+        else:
+            try:
+                secs = int(now_ts)
+                os.utime(fn, (secs, secs))
             except Exception:
                 pass
+
+        # update the calendar marker next to the cache so RollingOnce and
+        # other processes can decide when the last successful update occurred.
+        try:
+            marker = _calendar_marker_path()
+            os.makedirs(os.path.dirname(marker), exist_ok=True)
+            # create or truncate marker file
+            with open(marker, 'w') as mf:
+                mf.write('')
+            # marker mtime reflects local completion time
+            try:
+                os.utime(marker, (int(now_ts), int(now_ts)))
+            except Exception:
+                pass
+        except Exception:
+            pass
     except Exception as e:
         # match Go behaviour: let caller decide; raise to caller
         raise RuntimeError(f"更新交易日历失败: {e}")
