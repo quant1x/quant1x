@@ -33,7 +33,7 @@ type SecurityInfo struct {
 
 var (
 	// use fixed pre-market time here to avoid importing exchange (prevent cycles)
-	securityRollingOnce = runtime.CreateDaily(9, 0)
+	securityRollingOnce = runtime.RollingOnceDaily(9, 0)
 	securityMap         = map[string]*SecurityInfo{}
 )
 

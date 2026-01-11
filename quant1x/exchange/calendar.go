@@ -35,7 +35,7 @@ var (
 	globalCalendarsTimestamp []Timestamp
 	// Initialize a default RollingOnce using the central `runtime` package so call sites can invoke it directly
 	// and behavior matches C++'s global_calendar_once->Do(...).
-	calendarRollingOnce = runtime.CreateDaily(PreMarketHour, PreMarketMinute)
+	calendarRollingOnce = runtime.RollingOnceDaily(PreMarketHour, PreMarketMinute)
 )
 
 // preprocess JS-like response text (strip assignment, trailing semicolon, and quotes)

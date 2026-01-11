@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"math"
 	"sync"
-	"time"
+
+	"gitee.com/quant1x/quant1x/quant1x/runtime"
 )
 
 // ======================================================================
@@ -227,10 +228,8 @@ func CheckTradingTimestamp(lastModified *Timestamp) RuntimeStatus {
 		ts = now
 	}
 
-	// TODO: 需要实现 Calendar 模块的 LastTradingDay
-	// lastDay := LastTradingDay(GetTodayInit())
-	// 暂时使用 Today 作为 LastTradingDay 的占位符
-	lastDay := GetTodayInit()
+	// Use LastTradingDay from calendar to get most recent trading day <= today (align with C++)
+	lastDay := LastTradingDay(GetTodayInit())
 
 	// 1. timestamp before last trading day
 	if ts.Less(lastDay) {
@@ -285,15 +284,13 @@ func CanInitialize(lastModified *Timestamp) bool {
 }
 
 var (
-	tsTodayInit     Timestamp
-	tsTodayInitOnce sync.Once
+	tsTodayInit        Timestamp
+	tsTodayInitRolling = runtime.RollingOnceDaily(PreMarketHour, PreMarketMinute)
 )
 
 func GetTodayInit() Timestamp {
-	tsTodayInitOnce.Do(func() {
-		now := Now()
-		t := time.UnixMilli(int64(now))
-		tsTodayInit = PreMarketTimestamp(t.Year(), int(t.Month()), t.Day())
+	tsTodayInitRolling.Do(func() {
+		tsTodayInit = NowTimestamp().PreMarketTime()
 	})
 	return tsTodayInit
 }

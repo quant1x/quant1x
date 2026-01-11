@@ -57,8 +57,8 @@ type RollingOnce struct {
 	wg     sync.WaitGroup
 }
 
-// CreateSeconds constructs a RollingOnce that resets every `seconds` seconds.
-func CreateSeconds(seconds int) *RollingOnce {
+// RollingOnceSeconds constructs a RollingOnce that resets every `seconds` seconds.
+func RollingOnceSeconds(seconds int) *RollingOnce {
 	if seconds <= 0 {
 		seconds = 5
 	}
@@ -68,8 +68,8 @@ func CreateSeconds(seconds int) *RollingOnce {
 	return r
 }
 
-// CreateDaily constructs a RollingOnce that resets daily at hour:minute (local time).
-func CreateDaily(hour, minute int) *RollingOnce {
+// RollingOnceDaily constructs a RollingOnce that resets daily at hour:minute (local time).
+func RollingOnceDaily(hour, minute int) *RollingOnce {
 	r := &RollingOnce{stopCh: make(chan struct{})}
 	r.wg.Add(1)
 	go r.dailyLoop(hour, minute)
@@ -81,12 +81,12 @@ func CreateDaily(hour, minute int) *RollingOnce {
 //   - "0 M H * * *" -> daily at H:M
 //
 // If spec cannot be parsed, it returns a RollingOnce without background scheduling.
-func CreateFromSpec(spec string) *RollingOnce {
+func RollingOnceFromSpec(spec string) *RollingOnce {
 	spec = strings.TrimSpace(spec)
 	// try seconds pattern: */N ... (we only look at prefix)
 	if m := regexp.MustCompile(`^\*/(\d+)`).FindStringSubmatch(spec); len(m) == 2 {
 		if n, err := strconv.Atoi(m[1]); err == nil && n > 0 {
-			return CreateSeconds(n)
+			return RollingOnceSeconds(n)
 		}
 	}
 	// try daily pattern: 0 M H ...
@@ -94,7 +94,7 @@ func CreateFromSpec(spec string) *RollingOnce {
 	if len(parts) >= 3 && parts[0] == "0" {
 		if mi, err1 := strconv.Atoi(parts[1]); err1 == nil {
 			if hi, err2 := strconv.Atoi(parts[2]); err2 == nil {
-				return CreateDaily(hi, mi)
+				return RollingOnceDaily(hi, mi)
 			}
 		}
 	}

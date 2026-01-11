@@ -296,7 +296,7 @@ type BlockInfo struct {
 }
 
 var (
-	__onceBlockFiles    = runtime.CreateFromSpec(config.CronExprDaily9am)
+	__onceBlockFiles    = runtime.RollingOnceFromSpec(config.CronExprDaily9am)
 	__global_block_list = []BlockInfo{}
 	__mapBlock          = map[string]BlockInfo{}
 )
