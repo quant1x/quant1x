@@ -50,7 +50,7 @@ class Schema(ABC):
 
 
 class DataAdapter(Schema):
-    """数据适配器接口"""
+    """基础数据适配器接口"""
 
     @abstractmethod
     def print(self, code: str, dates: Optional[List[Timestamp]] = None) -> None:

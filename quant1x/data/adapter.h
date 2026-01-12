@@ -30,7 +30,7 @@ namespace data {
         virtual std::string Usage() const = 0; // Usage 控制台参数提示信息, 数据描述(data description)
     };
 
-    // 数据适配器
+    // 基础数据适配器
     class DataAdapter : public Schema {
     public:
         virtual ~DataAdapter() = default;

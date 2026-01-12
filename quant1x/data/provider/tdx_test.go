@@ -7,7 +7,7 @@ import (
 )
 
 func TestTdxProvider(t *testing.T) {
-	code := "sh000001"
+	code := "sh510050"
 	api := GetTdxProvider()
 	klines, err := api.GetKLines(code, "", "", "1d", data.AdjustForward)
 	if err != nil {

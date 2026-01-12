@@ -32,7 +32,7 @@ type Schema interface {
 	Usage() string
 }
 
-// DataAdapter 数据适配器接口
+// DataAdapter 基础数据适配器接口
 type DataAdapter interface {
 	Schema
 	// Print 控制台打印，dates 可选

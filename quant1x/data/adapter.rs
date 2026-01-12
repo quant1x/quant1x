@@ -24,7 +24,7 @@ pub trait Schema: Send + Sync + Debug {
     fn usage(&self) -> String;
 }
 
-/// DataAdapter 特征：对应 C++ 中的 DataAdapter（包含 Schema + Update/Print）
+/// DataAdapter 基础数据：对应 C++ 中的 DataAdapter（包含 Schema + Update/Print）
 pub trait DataAdapter: Schema + Send + Sync {
     fn print(&self, code: &str, dates: &[Timestamp]);
     fn update(&self, code: &str, date: Timestamp);
