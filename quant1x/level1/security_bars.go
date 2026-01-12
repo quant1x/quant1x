@@ -152,10 +152,23 @@ func (r *SecurityBarsResponse) Deserialize(body []byte) error {
 
 func (r *SecurityBarsResponse) parseBar(reader *bytes.Reader, preDiffBase *int64) (SecurityBar, error) {
 	var bar SecurityBar
-	year, month, day, hour, minute, err := decodeBarDateTime(reader, r.category)
-	if err != nil {
-		return bar, err
+	var zipday32 uint32
+	var tminutes uint16
+	if r.category < 4 || r.category == 7 || r.category == 8 {
+		var zipday16 uint16
+		if err := binary.Read(reader, binary.LittleEndian, &zipday16); err != nil {
+			return bar, err
+		}
+		zipday32 = uint32(zipday16)
+		if err := binary.Read(reader, binary.LittleEndian, &tminutes); err != nil {
+			return bar, err
+		}
+	} else {
+		if err := binary.Read(reader, binary.LittleEndian, &zipday32); err != nil {
+			return bar, err
+		}
 	}
+	year, month, day, hour, minute := GetDatetimeFromUint32(int(r.category), zipday32, tminutes)
 	bar.Year, bar.Month, bar.Day, bar.Hour, bar.Minute = year, month, day, hour, minute
 	bar.DateTime = fmt.Sprintf("%04d-%02d-%02d %02d:%02d:00", year, month, day, hour, minute)
 
@@ -213,32 +226,7 @@ func (r *SecurityBarsResponse) String() string {
 	return fmt.Sprintf("SecurityBarsResponse{Count:%d}", r.Count)
 }
 
-func decodeBarDateTime(reader *bytes.Reader, category uint16) (int, int, int, int, int, error) {
-	if category < 4 || category == 7 || category == 8 {
-		var zipday, tminutes uint16
-		if err := binary.Read(reader, binary.LittleEndian, &zipday); err != nil {
-			return 0, 0, 0, 0, 0, err
-		}
-		if err := binary.Read(reader, binary.LittleEndian, &tminutes); err != nil {
-			return 0, 0, 0, 0, 0, err
-		}
-		year := int(zipday>>11) + 2004
-		month := int(zipday%2048) / 100
-		day := int(zipday%2048) % 100
-		hour := int(tminutes / 60)
-		minute := int(tminutes % 60)
-		return year, month, day, hour, minute, nil
-	}
 
-	var zipday uint32
-	if err := binary.Read(reader, binary.LittleEndian, &zipday); err != nil {
-		return 0, 0, 0, 0, 0, err
-	}
-	year := int(zipday / 10000)
-	month := int(zipday%10000) / 100
-	day := int(zipday % 100)
-	return year, month, day, 15, 0, nil
-}
 
 func varintRead(reader *bytes.Reader) (int64, error) {
 	first, err := reader.ReadByte()
