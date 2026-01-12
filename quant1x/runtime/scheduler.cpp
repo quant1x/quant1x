@@ -53,8 +53,9 @@ void AsyncScheduler::scheduler_loop() {
 
         if (task_queue_.empty()) {
             condition_.wait(lock, [this] { return !task_queue_.empty() || !running_; });
-            if (!running_)
+            if (!running_) {
                 break;
+            }
             continue;
         }
 
@@ -62,8 +63,9 @@ void AsyncScheduler::scheduler_loop() {
         auto        now      = Clock::now();
         if (now < top_task.next_run) {
             condition_.wait_until(lock, top_task.next_run, [this] { return !running_; });
-            if (!running_)
+            if (!running_) {
                 break;
+            }
             continue;
         }
 
@@ -71,8 +73,9 @@ void AsyncScheduler::scheduler_loop() {
         task_queue_.pop();
         lock.unlock();
 
-        if (!running_)
+        if (!running_) {
             break;
+        }
         // 如果是 cron 任务且已经标记取消, 不执行
         if (auto it = cron_tasks_.find(task_to_run.id); it != cron_tasks_.end() && it->second.canceled) {
             spdlog::debug("跳过取消任务 id={}, name={}", task_to_run.id, task_to_run.name);
@@ -99,9 +102,12 @@ void AsyncScheduler::scheduler_loop() {
 
 void AsyncScheduler::reschedule_cron(runtime::task_id id, const std::string &name, const cron::cronexpr &cron) {
     std::lock_guard lock(mutex_);
-    if (auto it = cron_tasks_.find(id); it == cron_tasks_.end() || it->second.canceled)
+    if (!running_) {
+        return;
+    }
+    if (auto it = cron_tasks_.find(id); it == cron_tasks_.end() || it->second.canceled) {
         return;  // 已删除或已取消
-
+    }
     try {
         const auto next_time = cron::cron_next(cron, Clock::now());
         enqueue_task(ScheduledTask{next_time, [this, id, name] { execute_cron_task(id, name); }, id, name});
@@ -141,8 +147,9 @@ void AsyncScheduler::stop() {
     {
         std::lock_guard lock(mutex_);
         cron_tasks_.clear();
-        while (!task_queue_.empty())
+        while (!task_queue_.empty()) {
             task_queue_.pop();
+        }
     }
 }
 
@@ -154,11 +161,13 @@ void AsyncScheduler::execute_cron_task(runtime::task_id id, const std::string &n
     {
         std::lock_guard lock(mutex_);
         auto            it = cron_tasks_.find(id);
-        if (it == cron_tasks_.end())
+        if (it == cron_tasks_.end()) {
             return;  // 已被stop清理或不存在
+        }
         auto &ct = it->second;
-        if (ct.canceled)
+        if (ct.canceled) {
             return;  // 已取消
+        }
         if (ct.cron_running) {
             spdlog::warn("Task {} skipped: previous execution still running", id);
             ++st_skipped_running_;
