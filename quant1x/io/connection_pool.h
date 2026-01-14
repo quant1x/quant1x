@@ -415,6 +415,8 @@ public:
 
         closeAllConnections();
 
+        work_guard_.reset();  // 允许 io_context 停止
+
         asio::post(*io_context_, [this]() { asio::dispatch(*io_context_, [this]() { io_context_->poll(); }); });
 
         io_context_->stop();
