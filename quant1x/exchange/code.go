@@ -93,6 +93,26 @@ func (e ExchangeId) String() string {
 	}
 }
 
+// MIC 返回交易所对应的市场识别码(Market Identifier Code)
+//
+//	对于未知交易所返回 ExchangeUnknown 字符串
+func (e ExchangeId) MIC() string {
+	switch e {
+	case ExchangeIdShenZhen:
+		return "XSHG"
+	case ExchangeIdShangHai:
+		return "XSHE"
+	case ExchangeIdBeiJing:
+		return "XBJSE"
+	case ExchangeIdHongKong:
+		return "XHKG"
+	case ExchangeIdUSA:
+		return "XNAS" // 纳斯达克为例, 具体可根据需要调整
+	default:
+		return string(ExchangeUnknown)
+	}
+}
+
 func (e *ExchangeId) UnmarshalCSV(val string) error {
 	text := strings.TrimSpace(val)
 	exchangeCode := ExchangeCode(text)
