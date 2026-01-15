@@ -11,13 +11,13 @@ import (
 
 func TestSecurityEntity(t *testing.T) {
 	se := SecurityEntity{
-		Code:           exchange.SecurityCode{Market: exchange.ExchangeIdShangHai, Symbol: "600000", Type: exchange.SecurityStock},
+		Code:           exchange.SecurityCode{Exchange: exchange.ExchangeIdShangHai, Symbol: "600000", Type: exchange.SecurityStock},
 		Name:           "Test Security",
 		LotSize:        100,
 		PricePrecision: 2,
 	}
 
-	if se.Code.Market != exchange.ExchangeIdShangHai || se.Code.Symbol != "600000" || se.Code.Type != exchange.SecurityStock {
+	if se.Code.Exchange != exchange.ExchangeIdShangHai || se.Code.Symbol != "600000" || se.Code.Type != exchange.SecurityStock {
 		t.Fatalf("expected code sh600000, got %v", se.Code)
 	}
 	if se.Name != "Test Security" {
@@ -34,19 +34,19 @@ func TestSecurityEntity(t *testing.T) {
 func TestGetSecurityFilename(t *testing.T) {
 	codeList := []SecurityEntity{
 		{
-			Code:           exchange.SecurityCode{Market: exchange.ExchangeIdShangHai, Symbol: "600000", Type: exchange.SecurityStock},
+			Code:           exchange.SecurityCode{Exchange: exchange.ExchangeIdShangHai, Symbol: "600000", Type: exchange.SecurityStock},
 			Name:           "Test Security 1",
 			LotSize:        100,
 			PricePrecision: 2,
 		},
 		{
-			Code:           exchange.SecurityCode{Market: exchange.ExchangeIdShenZhen, Symbol: "000001", Type: exchange.SecurityStock},
+			Code:           exchange.SecurityCode{Exchange: exchange.ExchangeIdShenZhen, Symbol: "000001", Type: exchange.SecurityStock},
 			Name:           "Test Security 2",
 			LotSize:        100,
 			PricePrecision: 3,
 		},
 		{
-			Code:           exchange.SecurityCode{Market: exchange.ExchangeIdBeiJing, Symbol: "920000", Type: exchange.SecurityStock},
+			Code:           exchange.SecurityCode{Exchange: exchange.ExchangeIdBeiJing, Symbol: "920000", Type: exchange.SecurityStock},
 			Name:           "Test Security 3",
 			LotSize:        100,
 			PricePrecision: 4,

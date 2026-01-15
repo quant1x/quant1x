@@ -22,12 +22,21 @@ namespace exchange {
         }
     }
 
-    bool should_update_file(const std::string &fname) {
+    bool should_initialize_file(const std::string &fname) {
         auto mt = get_filename_modified_time(fname);
         if (!mt.has_value()) {
             return true;
         }
         return exchange::can_initialize(mt);
+    }
+
+    bool should_update_file(const std::string &fname) {
+        auto mt = get_filename_modified_time(fname);
+        if (!mt.has_value()) {
+            return true;
+        }
+        auto [canUpdate, status] = exchange::can_update_in_realtime(mt.value());
+        return canUpdate;
     }
 
 } // namespace exchange

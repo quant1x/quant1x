@@ -74,7 +74,7 @@ func NewSecurityBarsRequest(sc exchange.SecurityCode, category KLineType, start,
 	copy(code[:], sc.Symbol)
 
 	param := SecurityBarsParameter{
-		Market:   uint16(sc.Market),
+		Market:   uint16(sc.Exchange),
 		Code:     code,
 		Category: uint16(category),
 		I:        1,

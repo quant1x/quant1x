@@ -148,14 +148,14 @@ func NewExchange(code, name, desc string, id ExchangeId) ExchangeInfo {
 
 // SecurityCode 表示证券代码及其所属交易所
 type SecurityCode struct {
-	Market ExchangeId   // 交易所ID
-	Symbol string       // 证券代码
-	Type   SecurityType // 证券类型
+	Exchange ExchangeId   // 交易所ID
+	Symbol   string       // 证券代码
+	Type     SecurityType // 证券类型
 }
 
 // String 返回证券代码的字符串表示形式，格式为"市场代码+证券代码"
 func (sc SecurityCode) String() string {
-	return fmt.Sprintf("%s%s", sc.Market, sc.Symbol)
+	return fmt.Sprintf("%s%s", sc.Exchange, sc.Symbol)
 }
 
 // Validate 检查证券代码的有效性
@@ -171,7 +171,7 @@ func (sc *SecurityCode) MarshalCSV() (string, error) {
 		return "", nil
 	}
 
-	return fmt.Sprintf("%s%s", sc.Market, sc.Symbol), nil
+	return fmt.Sprintf("%s%s", sc.Exchange, sc.Symbol), nil
 }
 
 func (sc *SecurityCode) UnmarshalCSV(val string) error {
@@ -190,7 +190,7 @@ func (sc *SecurityCode) UnmarshalCSV(val string) error {
 
 	tmp := DetectWithExchangeId(exchangeId, symbol)
 
-	sc.Market = tmp.Market
+	sc.Exchange = tmp.Exchange
 	sc.Symbol = tmp.Symbol
 	sc.Type = tmp.Type
 	return nil
@@ -220,7 +220,7 @@ func (sc *SecurityCode) UnmarshalCSV(val string) error {
 func DetectSymbol(input string) SecurityCode {
 	raw := strings.TrimSpace(input)
 	if raw == "" {
-		return SecurityCode{Market: ExchangeIdShangHai, Symbol: "", Type: SecurityUnknown}
+		return SecurityCode{Exchange: ExchangeIdShangHai, Symbol: "", Type: SecurityUnknown}
 	}
 	pureCode := strings.ToLower(raw)
 	symbol := ""                    // 纯代码部分
@@ -267,7 +267,7 @@ func DetectSymbol(input string) SecurityCode {
 				symbol = pureCode
 				exchangeCode = ExchangeSSE
 				exchangeId = ExchangeIdShangHai
-				return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ_}
+				return SecurityCode{Exchange: exchangeId, Symbol: symbol, Type: typ_}
 			}
 			// 2. 按市场匹配规则
 			// 2.1 深交所
@@ -276,7 +276,7 @@ func DetectSymbol(input string) SecurityCode {
 				symbol = pureCode
 				exchangeCode = ExchangeSZSE
 				exchangeId = ExchangeIdShenZhen
-				return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ_}
+				return SecurityCode{Exchange: exchangeId, Symbol: symbol, Type: typ_}
 			}
 			// 2.2 北交所
 			if typ_, desc := matchRule(pureCode, bjseRules); typ_ != SecurityUnknown {
@@ -284,7 +284,7 @@ func DetectSymbol(input string) SecurityCode {
 				symbol = pureCode
 				exchangeCode = ExchangeBJSE
 				exchangeId = ExchangeIdBeiJing
-				return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ_}
+				return SecurityCode{Exchange: exchangeId, Symbol: symbol, Type: typ_}
 			}
 			// 2.3 上交所
 			if typ_, desc := matchRule(pureCode, sseRules); typ_ != SecurityUnknown {
@@ -292,14 +292,14 @@ func DetectSymbol(input string) SecurityCode {
 				symbol = pureCode
 				exchangeCode = ExchangeSSE
 				exchangeId = ExchangeIdShangHai
-				return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ_}
+				return SecurityCode{Exchange: exchangeId, Symbol: symbol, Type: typ_}
 			}
 		}
 	}
 
 	if exchangeId == ExchangeIdUnknown {
 		// 无法识别市场
-		return SecurityCode{Market: ExchangeIdUnknown, Symbol: "", Type: SecurityUnknown}
+		return SecurityCode{Exchange: ExchangeIdUnknown, Symbol: "", Type: SecurityUnknown}
 	}
 
 	if typ == SecurityUnknown {
@@ -316,20 +316,20 @@ func DetectSymbol(input string) SecurityCode {
 			rules = hkseRules
 		case ExchangeIdUSA:
 			typ = SecurityStock // 美股默认股票
-			return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ}
+			return SecurityCode{Exchange: exchangeId, Symbol: symbol, Type: typ}
 		default:
-			return SecurityCode{Market: ExchangeIdUnknown, Symbol: "", Type: SecurityUnknown}
+			return SecurityCode{Exchange: ExchangeIdUnknown, Symbol: "", Type: SecurityUnknown}
 		}
 		if typ_, _ := matchRule(symbol, rules); typ_ != SecurityUnknown {
 			typ = typ_
-			return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ}
+			return SecurityCode{Exchange: exchangeId, Symbol: symbol, Type: typ}
 		} else {
-			return SecurityCode{Market: ExchangeIdUnknown, Symbol: "", Type: SecurityUnknown}
+			return SecurityCode{Exchange: ExchangeIdUnknown, Symbol: "", Type: SecurityUnknown}
 		}
 	} else {
 		// 已识别类型，直接返回, 不进行规则匹配
 		// 适用于美股等市场
-		return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ}
+		return SecurityCode{Exchange: exchangeId, Symbol: symbol, Type: typ}
 	}
 }
 
@@ -366,13 +366,13 @@ func DetectWithExchangeId(exchangeId ExchangeId, symbol string) SecurityCode {
 		rules = hkseRules
 	case ExchangeIdUSA:
 		typ := SecurityStock // 美股默认股票
-		return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ}
+		return SecurityCode{Exchange: exchangeId, Symbol: symbol, Type: typ}
 	default:
-		return SecurityCode{Market: ExchangeIdUnknown, Symbol: "", Type: SecurityUnknown}
+		return SecurityCode{Exchange: ExchangeIdUnknown, Symbol: "", Type: SecurityUnknown}
 	}
 	if typ, _ := matchRule(symbol, rules); typ != SecurityUnknown {
-		return SecurityCode{Market: exchangeId, Symbol: symbol, Type: typ}
+		return SecurityCode{Exchange: exchangeId, Symbol: symbol, Type: typ}
 	} else {
-		return SecurityCode{Market: ExchangeIdUnknown, Symbol: "", Type: SecurityUnknown}
+		return SecurityCode{Exchange: ExchangeIdUnknown, Symbol: "", Type: SecurityUnknown}
 	}
 }

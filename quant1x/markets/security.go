@@ -94,7 +94,7 @@ func initSecurities() {
 	fname := GetSecurityFilename()
 
 	// Decide whether to refresh from Level1
-	bUpdate := exchange.ShouldUpdateFile(fname)
+	bUpdate := exchange.ShouldInitializeFile(fname)
 
 	if bUpdate {
 		updateSecurities(fname)

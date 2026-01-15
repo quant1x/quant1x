@@ -23,13 +23,10 @@ func TestExchangeIdString_Valid(t *testing.T) {
 }
 
 func TestExchangeIdString_PanicOnUnknown(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatalf("expected panic for unknown ExchangeId")
-		}
-	}()
 	var x ExchangeId = 99
-	_ = x.String()
+	if got := x.String(); got != "unknown" {
+		t.Fatalf("expected unknown got %s", got)
+	}
 }
 
 func TestExchangeInfoValidateAndNewExchange(t *testing.T) {
@@ -48,14 +45,14 @@ func TestExchangeInfoValidateAndNewExchange(t *testing.T) {
 }
 
 func TestSecurityCodeStringAndValidate(t *testing.T) {
-	sc := SecurityCode{Market: ExchangeIdShangHai, Symbol: "600000"}
+	sc := SecurityCode{Exchange: ExchangeIdShangHai, Symbol: "600000"}
 	if sc.String() != "sh600000" {
 		t.Fatalf("expected sh600000 got %s", sc.String())
 	}
 	if err := sc.Validate(); err != nil {
 		t.Fatalf("unexpected validate error: %v", err)
 	}
-	bad := SecurityCode{Market: ExchangeIdShangHai, Symbol: ""}
+	bad := SecurityCode{Exchange: ExchangeIdShangHai, Symbol: ""}
 	if err := bad.Validate(); err == nil {
 		t.Fatalf("expected validate error for empty symbol")
 	}

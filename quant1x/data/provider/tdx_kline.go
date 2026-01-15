@@ -54,7 +54,7 @@ func tdxUpdateKLine(securityCode exchange.SecurityCode, _date exchange.Timestamp
 	adjustTimes := 0
 
 	// 默认起始日期（使用 datasets.MarketFirstDate，与 C++ 的 market_first_date 等价）
-	currentStartDate := exchange.GetFirstMarketDate(securityCode.Market)
+	currentStartDate := exchange.GetFirstMarketDate(securityCode.Exchange)
 	if klinesLength > 0 {
 		if klinesOffsetDays > klinesLength {
 			klinesOffsetDays = klinesLength

@@ -6,21 +6,21 @@ from .code import ExchangeId, ExchangeSSE, ExchangeSZSE, ExchangeBJSE, ExchangeH
 
 
 class SecurityType(Enum):
-    Unknown = 0
-    Stock = 1
-    ETF = 2
-    Fund = 3
-    Bond = 4
-    BStock = 5
-    IPO = 6
-    Index = 7
-    Block = 8
-    Option = 9
-    Future = 10
-    Warrant = 11
-    Forex = 12
-    Commodity = 13
-    Other = 255
+    Unknown = 0 # 未知类型
+    Stock = 1 # 股票
+    ETF = 2 # ETF
+    Fund = 3 # 基金
+    Bond = 4 # 债券
+    BStock = 5 # B股
+    IPO = 6 # IPO
+    Index = 7 # 指数
+    Block = 8 # 板块
+    Option = 9 # 期权
+    Future = 10 # 期货
+    Warrant = 11 # 权证
+    Forex = 12 # 外汇
+    Commodity = 13 # 商品
+    Other = 255 # 其他类型
 
 
 @dataclass

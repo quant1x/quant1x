@@ -11,24 +11,6 @@ import (
 	"gitee.com/quant1x/quant1x/quant1x/std"
 )
 
-const (
-	TickTransactionPerRequestMax = 1800
-)
-
-// TickTransaction mirrors the C++ TickTransaction structure.
-type TickTransaction struct {
-	Time      string  // 成交时间 HH:MM
-	Price     float64 // 成交价格
-	Vol       int64   // 成交量(股)
-	Num       int64   // 成交笔数
-	Amount    float64 // 成交金额
-	Direction int64   // 买卖方向
-}
-
-func (t TickTransaction) String() string {
-	return fmt.Sprintf("time: %s price: %v vol: %d num: %d amount: %v direction: %d", t.Time, t.Price, t.Vol, t.Num, t.Amount, t.Direction)
-}
-
 // TransactionRequest builds a TRANSACTION_DATA request payload.
 type TransactionRequest struct {
 	Market uint16
@@ -72,8 +54,7 @@ func (r TransactionRequest) String() string {
 // TransactionResponse parses TRANSACTION_DATA responses.
 type TransactionResponse struct {
 	ResponseBase
-	Count uint16
-	List  []TickTransaction
+	Reply TransactionReply
 	sc    exchange.SecurityCode
 }
 
@@ -83,24 +64,24 @@ func NewTransactionResponse(code exchange.SecurityCode) *TransactionResponse {
 
 func (r *TransactionResponse) Deserialize(body []byte) error {
 	reader := bytes.NewReader(body)
-	if err := binary.Read(reader, binary.LittleEndian, &r.Count); err != nil {
+	if err := binary.Read(reader, binary.LittleEndian, &r.Reply.Count); err != nil {
 		return err
 	}
-	if cap(r.List) < int(r.Count) {
-		r.List = make([]TickTransaction, 0, int(r.Count))
+	if cap(r.Reply.List) < int(r.Reply.Count) {
+		r.Reply.List = make([]TickTransaction, 0, int(r.Reply.Count))
 	} else {
-		r.List = r.List[:0]
+		r.Reply.List = r.Reply.List[:0]
 	}
 
 	baseUnit := DefaultBaseUnit(int(r.sc.Exchange), r.sc.Symbol)
 	isIndex := r.sc.Type == exchange.SecurityIndex
 	var lastPrice int64 = 0
 
-	for i := 0; i < int(r.Count); i++ {
+	for i := 0; i < int(r.Reply.Count); i++ {
 		var seconds uint16
 		if err := binary.Read(reader, binary.LittleEndian, &seconds); err != nil {
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
-				r.Count = uint16(len(r.List))
+				r.Reply.Count = uint16(len(r.Reply.List))
 				return nil
 			}
 			return err
@@ -111,7 +92,7 @@ func (r *TransactionResponse) Deserialize(body []byte) error {
 		rawPrice, err := varintRead(reader)
 		if err != nil {
 			if err == io.EOF {
-				r.Count = uint16(len(r.List))
+				r.Reply.Count = uint16(len(r.Reply.List))
 				return nil
 			}
 			return err
@@ -155,18 +136,18 @@ func (r *TransactionResponse) Deserialize(body []byte) error {
 		// skip reserved varint
 		if _, err := varintRead(reader); err != nil {
 			if err == io.EOF {
-				r.List = append(r.List, ele)
-				r.Count = uint16(len(r.List))
+				r.Reply.List = append(r.Reply.List, ele)
+				r.Reply.Count = uint16(len(r.Reply.List))
 				return nil
 			}
 			return err
 		}
 
-		r.List = append(r.List, ele)
+		r.Reply.List = append(r.Reply.List, ele)
 	}
 	return nil
 }
 
 func (r *TransactionResponse) String() string {
-	return fmt.Sprintf("TransactionResponse{Count:%d}", r.Count)
+	return fmt.Sprintf("TransactionResponse{Reply{Count:%d}}", r.Reply.Count)
 }

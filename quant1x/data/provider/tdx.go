@@ -1,12 +1,15 @@
 package provider
 
 import (
+	_ "unsafe" // for go:linkname
+
 	"gitee.com/quant1x/quant1x/quant1x/config"
 	"gitee.com/quant1x/quant1x/quant1x/data"
 	"gitee.com/quant1x/quant1x/quant1x/encoding"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 )
 
+//go:linkname GetTdxProvider gitee.com/quant1x/quant1x/quant1x/data.DataHandler
 func GetTdxProvider() data.DataSource {
 	return new(tdxProvider)
 }
@@ -54,5 +57,11 @@ func (p *tdxProvider) GetTradeTicks(code string, date string) ([]data.Transactio
 }
 
 func (p *tdxProvider) GetTradeDetails(code string, date string) ([]data.Transaction, error) {
-	return nil, data.ErrNotImplemented
+	sc := exchange.DetectSymbol(code)
+	ts, err := exchange.NewTimestampFromString(date)
+	if err != nil {
+		return nil, err
+	}
+	list := CheckoutTransactionData(sc, ts, true)
+	return list, nil
 }

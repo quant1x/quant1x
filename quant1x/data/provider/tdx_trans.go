@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"sync"
 
 	"gitee.com/quant1x/quant1x/quant1x/config"
 	"gitee.com/quant1x/quant1x/quant1x/data"
+	"gitee.com/quant1x/quant1x/quant1x/encoding"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 	"gitee.com/quant1x/quant1x/quant1x/level1"
+	"gitee.com/quant1x/quant1x/quant1x/logger"
 	"gitee.com/quant1x/quant1x/quant1x/std"
 )
 
@@ -75,9 +76,8 @@ type TurnoverDataSummary struct {
 }
 
 // loadTransactionDataFromCache 从 CSV 缓存读取逐笔数据并返回数据列表及起始时间字符串。
-func loadTransactionDataFromCache(correctedCode string, featureDate exchange.Timestamp, ignorePreviousData bool) ([]level1.TickTransaction, string) {
-	list := make([]level1.TickTransaction, 0)
-	//tradeDate := featureDate.YYYYMMDD()
+func loadTransactionDataFromCache(sc exchange.SecurityCode, featureDate exchange.Timestamp, ignorePreviousData bool) ([]data.Transaction, string) {
+	list := make([]data.Transaction, 0)
 
 	if ignorePreviousData {
 		startDate := getBeginDateOfHistoricalTradingData()
@@ -88,67 +88,41 @@ func loadTransactionDataFromCache(correctedCode string, featureDate exchange.Tim
 	}
 
 	startTime := HistoricalTransactionDataFirstTime
+	correctedCode := sc.String()
 	filename := config.GetHistoricalTradeFilename(correctedCode, featureDate.OnlyDate())
 
-	if _, err := os.Stat(filename); err == nil {
-		f, err := os.Open(filename)
-		if err == nil {
-			defer f.Close()
-			r := csv.NewReader(f)
-			rows, err := r.ReadAll()
-			if err == nil && len(rows) > 0 {
-				// 期望第一行为表头
-				for i := 1; i < len(rows); i++ {
-					rec := rows[i]
-					// 确保至少 6 列
-					for len(rec) < 6 {
-						rec = append(rec, "")
-					}
-					price, _ := strconv.ParseFloat(rec[1], 64)
-					vol, _ := strconv.ParseInt(rec[2], 10, 64)
-					num, _ := strconv.ParseInt(rec[3], 10, 64)
-					amount, _ := strconv.ParseFloat(rec[4], 64)
-					buyOrSell, _ := strconv.ParseInt(rec[5], 10, 64)
-					list = append(list, level1.TickTransaction{
-						Time:      rec[0],
-						Price:     price,
-						Vol:       vol,
-						Num:       num,
-						Amount:    amount,
-						BuyOrSell: buyOrSell,
-					})
-				}
+	err := encoding.CsvToSlices(filename, &list)
+	if err != nil {
+		return list, startTime
+	}
 
-				if len(list) > 0 {
-					lastTime := list[len(list)-1].Time
-					if lastTime == HistoricalTransactionDataLastTime {
-						return list, startTime
-					}
+	if len(list) > 0 {
+		lastTime := list[len(list)-1].Time
+		if lastTime == HistoricalTransactionDataLastTime {
+			return list, startTime
+		}
 
-					// 从尾部扫描以确定 startTime 并截取已缓存的尾部重复部分
-					cacheLength := len(list)
-					firstTime := ""
-					skipCount := 0
-					for i := 1; i <= cacheLength; i++ {
-						tm := list[cacheLength-i].Time
-						if firstTime == "" {
-							firstTime = tm
-							startTime = firstTime
-							skipCount++
-							continue
-						}
-						if tm < firstTime {
-							startTime = firstTime
-							break
-						} else {
-							skipCount++
-						}
-					}
-					if skipCount > 0 {
-						list = list[:cacheLength-skipCount]
-					}
-				}
+		// 从尾部扫描以确定 startTime 并截取已缓存的尾部重复部分
+		cacheLength := len(list)
+		firstTime := ""
+		skipCount := 0
+		for i := 1; i <= cacheLength; i++ {
+			tm := list[cacheLength-i].Time
+			if firstTime == "" {
+				firstTime = tm
+				startTime = firstTime
+				skipCount++
+				continue
 			}
+			if tm < firstTime {
+				startTime = firstTime
+				break
+			} else {
+				skipCount++
+			}
+		}
+		if skipCount > 0 {
+			list = list[:cacheLength-skipCount]
 		}
 	}
 
@@ -156,92 +130,75 @@ func loadTransactionDataFromCache(correctedCode string, featureDate exchange.Tim
 }
 
 // updateTransactionData 从 level1 拉取逐笔数据并写入合并后的 CSV 缓存。
-func updateTransactionData(correctedCode string, featureDate exchange.Timestamp, startTime string) {
+func updateTransactionData(securityCode exchange.SecurityCode, featureDate exchange.Timestamp, startTime string) {
 	tradeDate := featureDate.YYYYMMDD()
 	todayIsLastTradingDate := featureDate.IsSameDate(exchange.NowTimestamp())
 	offset := int(level1.TickTransactionPerRequestMax)
 	start := 0
-	history := make([]level1.TickTransaction, 0)
-	hs := make([][]level1.TickTransaction, 0)
-	marketId, _, pureCode, _ := exchange.DetectMarket(correctedCode)
+	history := make([]data.Transaction, 0)
+	hs := make([][]data.Transaction, 0)
+	u32Date := uint32(tradeDate)
+	conn, release, err := level1.GetStdConnection()
+	if err != nil {
+		logger.Errorf("level1 client acquire failed: %v", err)
+		return
+	}
+	if release != nil {
+		defer release()
+	}
+	if conn == nil || conn.Conn() == nil {
+		logger.Errorf("nil connection from level1 client")
+		return
+	}
+	for {
+		var reply *level1.TransactionReply
+		if todayIsLastTradingDate {
+			req := level1.NewTransactionRequest(securityCode, start, offset)
+			resp := level1.NewTransactionResponse(securityCode)
+			if err := level1.Process(conn, req, resp); err != nil {
+				logger.Errorf("[tdx::trans] code=%s, tradeDate=%d, error=%v", securityCode.String(), tradeDate, err)
+				break
+			}
+			if resp.Reply.Count == 0 || len(resp.Reply.List) == 0 {
+				break
+			}
+			reply = &resp.Reply
+		} else {
+			req := level1.NewHistoryTransactionRequest(securityCode, u32Date, start, offset)
+			resp := level1.NewHistoryTransactionResponse(securityCode)
+			if err := level1.Process(conn, req, resp); err != nil {
+				logger.Errorf("[tdx::trans] code=%s, tradeDate=%d, error=%v", securityCode.String(), tradeDate, err)
+				break
+			}
+			if resp.Reply.Count == 0 || len(resp.Reply.List) == 0 {
+				break
+			}
+			reply = &resp.Reply
+		}
+		var incremental []data.Transaction // 临时存储本次请求的数据
+		var incrementalCount int           // 记录增量数据数量
+		tmpList := std.Reverse(reply.List)
+		for _, td := range tmpList {
+			if td.Time >= startTime {
+				incrementalCount += 1
+				incremental = append(incremental, data.Transaction{
+					Time:      td.Time,
+					Price:     td.Price,
+					Volume:    td.Vol,
+					Num:       td.Num,
+					Amount:    td.Amount,
+					Direction: td.Direction,
+				})
 
-	if todayIsLastTradingDate {
-		for {
-			req := level1.NewTransactionRequest(correctedCode, start, offset)
-			resp := level1.NewTransactionResponse(int(marketId), pureCode)
-			conn, release, err := level1.GetStdConnection()
-			if err != nil {
-				fmt.Printf("level1 client acquire failed: %v\n", err)
-				break
 			}
-			if release != nil {
-				defer release()
-			}
-			if conn == nil || conn.Conn() == nil {
-				fmt.Printf("nil connection from level1 client\n")
-				break
-			}
-			if err := level1.Process(conn, req, resp); err != nil {
-				fmt.Printf("[dataset::trans] code=%s, tradeDate=%d, error=%v\n", correctedCode, tradeDate, err)
-				break
-			}
-			if resp.Count == 0 || len(resp.List) == 0 {
-				break
-			}
-			var tmp level1.TransactionResponse
-			tmpList := std.Reverse(resp.List)
-			for _, td := range tmpList {
-				if td.Time >= startTime {
-					tmp.Count += 1
-					tmp.List = append(tmp.List, td)
-				}
-			}
-			tmp.List = std.Reverse(tmp.List)
-			hs = append(hs, tmp.List)
-			if len(tmp.List) < offset {
-				break
-			}
-			start += offset
 		}
-	} else {
-		u32Date := uint32(tradeDate)
-		for {
-			req := level1.NewHistoryTransactionRequest(correctedCode, u32Date, start, offset)
-			resp := level1.NewHistoryTransactionResponse(int(marketId), pureCode)
-			conn, release, err := level1.GetStdConnection()
-			if err != nil {
-				fmt.Printf("level1 client acquire failed: %v\n", err)
-				break
-			}
-			if release != nil {
-				defer release()
-			}
-			if conn == nil || conn.Conn() == nil {
-				fmt.Printf("nil connection from level1 client\n")
-				break
-			}
-			if err := level1.Process(conn, req, resp); err != nil {
-				fmt.Printf("[dataset::trans] code=%s, tradeDate=%d, error=%v\n", correctedCode, tradeDate, err)
-				break
-			}
-			if resp.Count == 0 || len(resp.List) == 0 {
-				break
-			}
-			var tmp level1.TransactionResponse
-			tmpList := std.Reverse(resp.List)
-			for _, td := range tmpList {
-				if td.Time >= startTime {
-					tmp.Count += 1
-					tmp.List = append(tmp.List, td)
-				}
-			}
-			tmp.List = std.Reverse(tmp.List)
-			hs = append(hs, tmp.List)
-			if len(tmp.List) < offset {
-				break
-			}
-			start += offset
+		incremental = std.Reverse(incremental)
+		hs = append(hs, incremental)
+
+		if len(incremental) < offset {
+			break
 		}
+		start += offset
 	}
 
 	// 将分段数据反转并展开（服务器返回最新到最旧）
@@ -252,9 +209,9 @@ func updateTransactionData(correctedCode string, featureDate exchange.Timestamp,
 	if len(history) == 0 {
 		return
 	}
-
+	correctedCode := securityCode.String()
 	// 与现有缓存合并
-	existingList, _ := loadTransactionDataFromCache(correctedCode, featureDate, false)
+	existingList, _ := loadTransactionDataFromCache(securityCode, featureDate, false)
 	existingList = append(existingList, history...)
 
 	filename := config.GetHistoricalTradeFilename(correctedCode, featureDate.OnlyDate())
@@ -275,10 +232,10 @@ func updateTransactionData(correctedCode string, featureDate exchange.Timestamp,
 		_ = w.Write([]string{
 			rec.Time,
 			fmt.Sprintf("%g", rec.Price),
-			fmt.Sprintf("%d", rec.Vol),
+			fmt.Sprintf("%d", rec.Volume),
 			fmt.Sprintf("%d", rec.Num),
 			fmt.Sprintf("%g", rec.Amount),
-			fmt.Sprintf("%d", rec.BuyOrSell),
+			fmt.Sprintf("%d", rec.Direction),
 		})
 	}
 	w.Flush()
@@ -293,19 +250,18 @@ func updateTransactionData(correctedCode string, featureDate exchange.Timestamp,
 	}
 }
 
-func ensureTransactionDataUpdated(correctedCode string, featureDate exchange.Timestamp, ignorePreviousData bool) {
-	list, startTime := loadTransactionDataFromCache(correctedCode, featureDate, ignorePreviousData)
+func ensureTransactionDataUpdated(securityCode exchange.SecurityCode, featureDate exchange.Timestamp, ignorePreviousData bool) {
+	list, startTime := loadTransactionDataFromCache(securityCode, featureDate, ignorePreviousData)
 	needsUpdate := len(list) == 0 || (list[len(list)-1].Time != HistoricalTransactionDataLastTime)
 	if needsUpdate {
-		updateTransactionData(correctedCode, featureDate, startTime)
+		updateTransactionData(securityCode, featureDate, startTime)
 	}
 }
 
 // CheckoutTransactionData 导出：检出指定日期的逐笔成交数据
-func CheckoutTransactionData(securityCode string, featureDate exchange.Timestamp, ignorePreviousData bool) []level1.TickTransaction {
-	correctedCode := exchange.CorrectSecurityCode(securityCode)
-	ensureTransactionDataUpdated(correctedCode, featureDate, ignorePreviousData)
-	list, _ := loadTransactionDataFromCache(correctedCode, featureDate, ignorePreviousData)
+func CheckoutTransactionData(securityCode exchange.SecurityCode, featureDate exchange.Timestamp, ignorePreviousData bool) []data.Transaction {
+	ensureTransactionDataUpdated(securityCode, featureDate, ignorePreviousData)
+	list, _ := loadTransactionDataFromCache(securityCode, featureDate, ignorePreviousData)
 	return list
 }
 
@@ -319,7 +275,7 @@ func CountInflow(list []level1.TickTransaction, securityCode string, featureDate
 	var lastPrice float64
 	for _, v := range list {
 		tm := v.Time
-		direction := v.BuyOrSell
+		direction := v.Direction
 		price := v.Price
 		if lastPrice == 0 {
 			lastPrice = price
@@ -378,8 +334,7 @@ func (d *DataTrans) Print(code exchange.SecurityCode, dates ...exchange.Timestam
 }
 
 func (d *DataTrans) Update(code exchange.SecurityCode, date exchange.Timestamp) {
-	correctedCode := code.String()
-	ensureTransactionDataUpdated(correctedCode, date, false)
+	ensureTransactionDataUpdated(code, date, false)
 }
 
 func init() {

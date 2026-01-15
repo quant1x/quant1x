@@ -57,8 +57,7 @@ func (r HistoryTransactionRequest) String() string {
 // HistoryTransactionResponse parses HISTORY_TRANSACTION_DATA responses.
 type HistoryTransactionResponse struct {
 	ResponseBase
-	Count uint16
-	List  []TickTransaction
+	Reply TransactionReply
 	code  exchange.SecurityCode
 }
 
@@ -68,29 +67,31 @@ func NewHistoryTransactionResponse(code exchange.SecurityCode) *HistoryTransacti
 
 func (r *HistoryTransactionResponse) Deserialize(body []byte) error {
 	reader := bytes.NewReader(body)
-	if err := binary.Read(reader, binary.LittleEndian, &r.Count); err != nil {
+	if err := binary.Read(reader, binary.LittleEndian, &r.Reply.Count); err != nil {
 		return err
 	}
-	if cap(r.List) < int(r.Count) {
-		r.List = make([]TickTransaction, 0, int(r.Count))
+	if cap(r.Reply.List) < int(r.Reply.Count) {
+		r.Reply.List = make([]TickTransaction, 0, int(r.Reply.Count))
 	} else {
-		r.List = r.List[:0]
+		r.Reply.List = r.Reply.List[:0]
 	}
 
 	baseUnit := DefaultBaseUnit(int(r.code.Exchange), r.code.Symbol)
 	isIndex := r.code.Type == exchange.SecurityIndex
 	var lastPrice int64 = 0
 
-	// skip 4 bytes as in C++ implementation
-	if _, err := reader.Seek(4, io.SeekCurrent); err != nil {
+	var date uint32
+	if err := binary.Read(reader, binary.LittleEndian, &date); err != nil {
 		return err
+	} else {
+		fmt.Printf("data: %d\n", date)
 	}
 
-	for i := 0; i < int(r.Count); i++ {
+	for i := 0; i < int(r.Reply.Count); i++ {
 		var minutes uint16
 		if err := binary.Read(reader, binary.LittleEndian, &minutes); err != nil {
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
-				r.Count = uint16(len(r.List))
+				r.Reply.Count = uint16(len(r.Reply.List))
 				return nil
 			}
 			return err
@@ -101,7 +102,7 @@ func (r *HistoryTransactionResponse) Deserialize(body []byte) error {
 		rawPrice, err := varintRead(reader)
 		if err != nil {
 			if err == io.EOF {
-				r.Count = uint16(len(r.List))
+				r.Reply.Count = uint16(len(r.Reply.List))
 				return nil
 			}
 			return err
@@ -144,18 +145,18 @@ func (r *HistoryTransactionResponse) Deserialize(body []byte) error {
 		// skip reserved varint
 		if _, err := varintRead(reader); err != nil {
 			if err == io.EOF {
-				r.List = append(r.List, ele)
-				r.Count = uint16(len(r.List))
+				r.Reply.List = append(r.Reply.List, ele)
+				r.Reply.Count = uint16(len(r.Reply.List))
 				return nil
 			}
 			return err
 		}
 
-		r.List = append(r.List, ele)
+		r.Reply.List = append(r.Reply.List, ele)
 	}
 	return nil
 }
 
 func (r *HistoryTransactionResponse) String() string {
-	return fmt.Sprintf("HistoryTransactionResponse{Count:%d}", r.Count)
+	return fmt.Sprintf("HistoryTransactionResponse{Reply{Count:%d}}", r.Reply.Count)
 }

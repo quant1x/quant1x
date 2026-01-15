@@ -23,6 +23,27 @@ func getFilenameModifiedTime(fname string) (*Timestamp, error) {
 	return &tp, nil
 }
 
+// ShouldInitializeFile 检查指定文件是否需要初始化
+//
+// 参数:
+//
+//	fname - 要检查的文件路径
+//
+// 返回值:
+//
+//	bool - 如果文件需要更新则返回true，否则返回false
+//
+// 注意:
+//
+//	如果获取文件修改时间失败，默认返回true
+func ShouldInitializeFile(fname string) bool {
+	modTime, err := getFilenameModifiedTime(fname)
+	if err != nil {
+		return true
+	}
+	return CanInitialize(modTime)
+}
+
 // ShouldUpdateFile 检查指定文件是否需要更新
 //
 // 参数:
@@ -41,5 +62,6 @@ func ShouldUpdateFile(fname string) bool {
 	if err != nil {
 		return true
 	}
-	return CanInitialize(modTime)
+	rs := CheckTradingTimestamp(modTime)
+	return rs.UpdateInRealTime
 }

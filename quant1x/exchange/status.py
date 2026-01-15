@@ -16,7 +16,7 @@ from typing import Optional
 from .timestamp import Timestamp
 
 
-def get_filename_modified_time(fname: str) -> Optional[Timestamp]:
+def get_filename_modified_time(fname: str) -> Timestamp:
     """Get the modification time of a file as a `Timestamp`.
 
     Raises `OSError` if the file metadata cannot be read.
@@ -26,23 +26,35 @@ def get_filename_modified_time(fname: str) -> Optional[Timestamp]:
     return Timestamp.from_datetime(dt)
 
 
-def should_update_file(fname: str) -> bool:
-    """Check whether the given file should be updated.
+def should_initialize_file(fname: str) -> bool:
+    """Check whether the given file should be initialized.
 
-    - If reading file metadata fails, returns True (conservative).
-    - If `CanInitialize` exists in `exchange.session`, delegates decision to it.
-    - If `CanInitialize` is not available, returns True.
+    Mirrors `ShouldInitializeFile` in Go: returns True on metadata error
+    and otherwise delegates to `session.CanInitialize`.
     """
     try:
         mod_time = get_filename_modified_time(fname)
     except OSError:
         return True
 
-    try:
-        from .session import CanInitialize
+    from .session import CanInitialize
 
-        return CanInitialize(mod_time)
-    except Exception:
-        # If session.CanInitialize is not implemented in Python yet,
-        # conservatively signal that the file should be updated.
+    return CanInitialize(mod_time)
+
+
+def should_update_file(fname: str) -> bool:
+    """Check whether the given file should be updated.
+
+    Mirrors `ShouldUpdateFile` in Go: on metadata error returns True,
+    otherwise uses `session.CheckTradingTimestamp` and returns
+    the `update_in_real_time` flag.
+    """
+    try:
+        mod_time = get_filename_modified_time(fname)
+    except OSError:
         return True
+
+    from .session import CheckTradingTimestamp
+
+    rs = CheckTradingTimestamp(mod_time)
+    return rs.update_in_real_time

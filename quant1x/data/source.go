@@ -1,6 +1,8 @@
 package data
 
 import (
+	_ "unsafe" // for go:linkname
+
 	"gitee.com/quant1x/quant1x/quant1x/std"
 )
 
@@ -45,3 +47,6 @@ type DataSource interface {
 	// 数据来源于 Level-2 成交明细（分笔）流，非人为聚合。
 	GetTradeDetails(code string, date string) ([]Transaction, error)
 }
+
+//go:linkname DataHandler
+func DataHandler() DataSource

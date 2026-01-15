@@ -7,10 +7,10 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
+	"gitee.com/quant1x/quant1x/quant1x/core"
 	qio "gitee.com/quant1x/quant1x/quant1x/io"
 	"gitee.com/quant1x/quant1x/quant1x/logger"
 	"gitee.com/quant1x/quant1x/quant1x/std"
@@ -218,54 +218,12 @@ func initStandardConnectionPool() (*qio.TcpConnectionPool, error) {
 }
 
 func ensureServerCachePath() (string, error) {
-	home := defaultHomePath()
+	home := core.GetMetaPath()
 	meta := filepath.Join(home, "meta")
 	if err := std.MkDirs(meta, true); err != nil {
 		return "", err
 	}
 	return filepath.Join(meta, serverCacheFileName), nil
-}
-
-const (
-	projectKeyword     = ".q1x-go"
-	projectDefaultHome = "~/" + projectKeyword
-)
-
-func defaultHomePath() string {
-	candidates := []string{
-		strings.TrimSpace(os.Getenv("QUANT1X_HOME")),
-		strings.TrimSpace(os.Getenv("QUANT1X_DATA_HOME")),
-		projectDefaultHome,
-	}
-	for _, c := range candidates {
-		if c == "" {
-			continue
-		}
-		expanded := expandHome(c)
-		if expanded != "" {
-			return filepath.Clean(expanded)
-		}
-	}
-	if home, err := os.UserHomeDir(); err == nil {
-		return filepath.Join(home, projectKeyword)
-	}
-	return projectDefaultHome
-}
-
-func expandHome(path string) string {
-	if path == "~" {
-		if h, err := os.UserHomeDir(); err == nil {
-			return h
-		}
-		return ""
-	}
-	if strings.HasPrefix(path, "~/") {
-		if h, err := os.UserHomeDir(); err == nil {
-			return filepath.Join(h, path[2:])
-		}
-		return ""
-	}
-	return path
 }
 
 func loadCachedServers(path string) ([]serverInfo, os.FileInfo, error) {

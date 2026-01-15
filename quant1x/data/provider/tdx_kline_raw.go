@@ -37,7 +37,7 @@ func (d *DataKLineRaw) Update(code exchange.SecurityCode, _date exchange.Timesta
 	klinesOffsetDays := data.MaxCachedDaysToDropOnIncrementalUpdate
 
 	// 默认起始日期（使用 datasets.MarketFirstDate，与 C++ 的 market_first_date 等价）
-	currentStartDate := exchange.GetFirstMarketDate(code.Market)
+	currentStartDate := exchange.GetFirstMarketDate(code.Exchange)
 	if klinesLength > 0 {
 		if klinesOffsetDays > klinesLength {
 			klinesOffsetDays = klinesLength

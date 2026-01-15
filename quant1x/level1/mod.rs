@@ -16,7 +16,6 @@ pub mod finance_info;
 mod heartbeat;
 mod hello1;
 mod hello2;
-mod index_bars;
 mod minute_time;
 pub mod protocol;
 mod security_bars;

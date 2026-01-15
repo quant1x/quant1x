@@ -28,7 +28,7 @@ enum class SecurityType : std::uint8_t {
     Fund = 3,       // 基金
     Bond = 4,       // 债券
     BStock = 5,     // B股
-    IPO = 6,        // 新股
+    IPO = 6,        // 新股申购
     Index = 7,      // 指数
     Block = 8,      // 板块
     Option = 9,     // 期权

@@ -7,11 +7,11 @@ import (
 	"testing"
 
 	"gitee.com/quant1x/num"
-	"gitee.com/quant1x/quant1x/quant1x/datasets"
+	"gitee.com/quant1x/quant1x/quant1x/data"
+	_ "gitee.com/quant1x/quant1x/quant1x/data/provider"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
-	"gitee.com/quant1x/quant1x/quant1x/instruments"
 	"gitee.com/quant1x/quant1x/quant1x/learn/preprocessing"
-	"gitee.com/quant1x/quant1x/quant1x/level1"
+	"gitee.com/quant1x/quant1x/quant1x/markets"
 )
 
 func TestDBSCAN_Basic(t *testing.T) {
@@ -122,16 +122,14 @@ func TestDBSCAN_TickData(t *testing.T) {
 	//date = "2025-07-01"
 	//date = "2025-07-02"
 	date = "2025-09-12"
+	//date = "2026-01-15"
+	D := data.DataHandler()
 	securityCode := exchange.CorrectSecurityCode(code)
-	securityName := instruments.GetStockName(securityCode)
+	securityName := markets.GetStockName(securityCode)
 	fmt.Printf("%s(%s) - %s\n", securityName, securityCode, date)
-	ts, err := exchange.NewTimestampFromString(date)
-	if err != nil {
-		t.Fatal(err)
-	}
-	ticks := datasets.CheckoutTransactionData(securityCode, ts, false)
-	if len(ticks) == 0 {
-		t.Fatal("❌ 无数据")
+	ticks, err := D.GetTradeDetails(securityCode, date)
+	if len(ticks) == 0 || err != nil {
+		t.Fatalf("❌ 无数据: %v", err)
 	}
 	fmt.Printf("✅ 获取 %d 条分笔数据\n", len(ticks))
 
@@ -151,16 +149,16 @@ func TestDBSCAN_TickData(t *testing.T) {
 		if num == 0 {
 			num = 1 // 处理除零
 		}
-		vol := tick.Vol
+		vol := tick.Volume
 		if vol == 0 {
 			vol = 1
 		}
 
 		X_scaled[i] = []float64{
-			math.Log1p(tick.Amount),       // amount_log
-			math.Log1p(float64(tick.Vol)), // vol_log
-			tick.Amount / float64(num),    // amount_per_trade
-			tick.Amount / float64(vol),    // amount_per_vol
+			math.Log1p(tick.Amount),          // amount_log
+			math.Log1p(float64(tick.Volume)), // vol_log
+			tick.Amount / float64(num),       // amount_per_trade
+			tick.Amount / float64(vol),       // amount_per_vol
 		}
 		totalAmount += tick.Amount
 	}
@@ -198,7 +196,7 @@ type ClusterStat struct {
 	SellCount   int
 }
 
-func analyzeResults(ticks []level1.TickTransaction, labels []int) {
+func analyzeResults(ticks []data.Transaction, labels []int) {
 	// 1. 方向预处理（严格匹配Python）
 	dirNums, buyCount, sellCount := preprocessDirection(ticks)
 	fmt.Printf("\n买卖方向分布:\nB    %d\nS    %d\n", buyCount, sellCount)
@@ -364,11 +362,11 @@ func analyzeResults(ticks []level1.TickTransaction, labels []int) {
 	}
 }
 
-func preprocessDirection(ticks []level1.TickTransaction) (dirNums []int, buyCount, sellCount int) {
+func preprocessDirection(ticks []data.Transaction) (dirNums []int, buyCount, sellCount int) {
 	dirNums = make([]int, len(ticks))
 
 	for i := 0; i < len(ticks); i++ {
-		switch ticks[i].BuyOrSell {
+		switch ticks[i].Direction {
 		case 0: // 买入
 			dirNums[i] = 1
 			buyCount++
@@ -416,7 +414,7 @@ func preprocessDirection(ticks []level1.TickTransaction) (dirNums []int, buyCoun
 func printMoneyFlowAnalysis(
 	clusters map[float64]*ClusterStat,
 	sortedClusters []*ClusterStat,
-	ticks []level1.TickTransaction,
+	ticks []data.Transaction,
 ) {
 	// 第一部分：买卖金额表格
 	fmt.Println("\n===== 各资金规模买卖方向分析 =====")
