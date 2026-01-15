@@ -22,11 +22,11 @@ type TickTransaction struct {
 	Vol       int64   // 成交量(股)
 	Num       int64   // 成交笔数
 	Amount    float64 // 成交金额
-	BuyOrSell int64   // 买卖方向
+	Direction int64   // 买卖方向
 }
 
 func (t TickTransaction) String() string {
-	return fmt.Sprintf("time: %s price: %v vol: %d num: %d amount: %v buyOrSell: %d", t.Time, t.Price, t.Vol, t.Num, t.Amount, t.BuyOrSell)
+	return fmt.Sprintf("time: %s price: %v vol: %d num: %d amount: %v direction: %d", t.Time, t.Price, t.Vol, t.Num, t.Amount, t.Direction)
 }
 
 // TransactionRequest builds a TRANSACTION_DATA request payload.
@@ -124,7 +124,7 @@ func (r *TransactionResponse) Deserialize(body []byte) error {
 		if err != nil {
 			return err
 		}
-		buyOrSell, err := varintRead(reader)
+		direction, err := varintRead(reader)
 		if err != nil {
 			return err
 		}
@@ -137,7 +137,7 @@ func (r *TransactionResponse) Deserialize(body []byte) error {
 		ele.Price = price
 		ele.Vol = vol
 		ele.Num = num
-		ele.BuyOrSell = buyOrSell
+		ele.Direction = direction
 
 		if isIndex {
 			amount := ele.Vol * 100

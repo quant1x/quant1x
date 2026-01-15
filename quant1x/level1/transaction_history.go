@@ -28,8 +28,6 @@ func NewHistoryTransactionRequest(securityCode exchange.SecurityCode, date uint3
 		offset = 0
 	}
 
-	// var code [6]byte
-	// copy(code[:], symbol)
 	return HistoryTransactionRequest{
 		Date:   date,
 		Market: uint16(securityCode.Exchange),
@@ -115,7 +113,8 @@ func (r *HistoryTransactionResponse) Deserialize(body []byte) error {
 		}
 
 		// historical record has no 'num' field
-		buyOrSell, err := varintRead(reader)
+
+		direction, err := varintRead(reader)
 		if err != nil {
 			return err
 		}
@@ -127,7 +126,7 @@ func (r *HistoryTransactionResponse) Deserialize(body []byte) error {
 		ele.Time = fmt.Sprintf("%02d:%02d", h, m)
 		ele.Price = price
 		ele.Vol = vol
-		ele.BuyOrSell = buyOrSell
+		ele.Direction = direction
 
 		if isIndex {
 			amount := ele.Vol * 100
