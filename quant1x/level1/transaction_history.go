@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"gitee.com/quant1x/quant1x/quant1x/std"
 )
 
 // HistoryTransactionRequest mirrors the C++ HistoryTransactionRequest.
@@ -19,20 +20,20 @@ type HistoryTransactionRequest struct {
 	Count  uint16
 }
 
-func NewHistoryTransactionRequest(securityCode string, date uint32, offset, size int) HistoryTransactionRequest {
+func NewHistoryTransactionRequest(securityCode exchange.SecurityCode, date uint32, offset, size int) HistoryTransactionRequest {
 	if size <= 0 || size > TickTransactionPerRequestMax {
 		size = TickTransactionPerRequestMax
 	}
 	if offset < 0 {
 		offset = 0
 	}
-	mid, _, symbol, _ := exchange.DetectMarket(securityCode)
-	var code [6]byte
-	copy(code[:], symbol)
+
+	// var code [6]byte
+	// copy(code[:], symbol)
 	return HistoryTransactionRequest{
 		Date:   date,
-		Market: uint16(mid),
-		Code:   code,
+		Market: uint16(securityCode.Exchange),
+		Code:   [6]byte(std.String2Bytes(securityCode.Symbol)),
 		Start:  uint16(offset),
 		Count:  uint16(size),
 	}
@@ -58,14 +59,13 @@ func (r HistoryTransactionRequest) String() string {
 // HistoryTransactionResponse parses HISTORY_TRANSACTION_DATA responses.
 type HistoryTransactionResponse struct {
 	ResponseBase
-	Count  uint16
-	List   []TickTransaction
-	market int
-	code   string
+	Count uint16
+	List  []TickTransaction
+	code  exchange.SecurityCode
 }
 
-func NewHistoryTransactionResponse(market int, code string) *HistoryTransactionResponse {
-	return &HistoryTransactionResponse{market: market, code: code}
+func NewHistoryTransactionResponse(code exchange.SecurityCode) *HistoryTransactionResponse {
+	return &HistoryTransactionResponse{code: code}
 }
 
 func (r *HistoryTransactionResponse) Deserialize(body []byte) error {
@@ -79,8 +79,8 @@ func (r *HistoryTransactionResponse) Deserialize(body []byte) error {
 		r.List = r.List[:0]
 	}
 
-	baseUnit := DefaultBaseUnit(r.market, r.code)
-	isIndex := exchange.AssertIndexByMarketAndCode(exchange.ExchangeId(r.market), r.code)
+	baseUnit := DefaultBaseUnit(int(r.code.Exchange), r.code.Symbol)
+	isIndex := r.code.Type == exchange.SecurityIndex
 	var lastPrice int64 = 0
 
 	// skip 4 bytes as in C++ implementation

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"gitee.com/quant1x/quant1x/quant1x/std"
 )
 
 const (
@@ -36,19 +37,17 @@ type TransactionRequest struct {
 	Count  uint16
 }
 
-func NewTransactionRequest(securityCode string, offset, size int) TransactionRequest {
+func NewTransactionRequest(securityCode exchange.SecurityCode, offset, size int) TransactionRequest {
 	if size <= 0 || size > TickTransactionPerRequestMax {
 		size = TickTransactionPerRequestMax
 	}
 	if offset < 0 {
 		offset = 0
 	}
-	mid, _, symbol, _ := exchange.DetectMarket(securityCode)
-	var code [6]byte
-	copy(code[:], symbol)
+
 	return TransactionRequest{
-		Market: uint16(mid),
-		Code:   code,
+		Market: uint16(securityCode.Exchange),
+		Code:   [6]byte(std.String2Bytes(securityCode.Symbol)),
 		Start:  uint16(offset),
 		Count:  uint16(size),
 	}
@@ -73,14 +72,13 @@ func (r TransactionRequest) String() string {
 // TransactionResponse parses TRANSACTION_DATA responses.
 type TransactionResponse struct {
 	ResponseBase
-	Count  uint16
-	List   []TickTransaction
-	market int
-	code   string
+	Count uint16
+	List  []TickTransaction
+	sc    exchange.SecurityCode
 }
 
-func NewTransactionResponse(market int, code string) *TransactionResponse {
-	return &TransactionResponse{market: market, code: code}
+func NewTransactionResponse(code exchange.SecurityCode) *TransactionResponse {
+	return &TransactionResponse{sc: code}
 }
 
 func (r *TransactionResponse) Deserialize(body []byte) error {
@@ -94,8 +92,8 @@ func (r *TransactionResponse) Deserialize(body []byte) error {
 		r.List = r.List[:0]
 	}
 
-	baseUnit := DefaultBaseUnit(r.market, r.code)
-	isIndex := exchange.AssertIndexByMarketAndCode(exchange.ExchangeId(r.market), r.code)
+	baseUnit := DefaultBaseUnit(int(r.sc.Exchange), r.sc.Symbol)
+	isIndex := r.sc.Type == exchange.SecurityIndex
 	var lastPrice int64 = 0
 
 	for i := 0; i < int(r.Count); i++ {
