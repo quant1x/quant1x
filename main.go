@@ -29,7 +29,7 @@ func main() {
 	mainStart := time.Now()
 	resetVersions()
 	defer func() {
-		runtime.WaitForShutdown(1)
+		runtime.WaitForShutdown(1) // 等待最多1秒钟,以完成优雅退出
 		runtime.CatchPanic("")
 		elapsedTime := time.Since(mainStart) / time.Millisecond
 		fmt.Printf("\n总耗时: %.3fs\n", float64(elapsedTime)/1000)
