@@ -115,7 +115,7 @@ func (r *SecurityListResponse) Deserialize(body []byte) error {
 		if err := binary.Read(reader, binary.LittleEndian, &tmp); err != nil {
 			return err
 		}
-		entry.PreClose = IntToFloat64(tmp)
+		entry.PreClose = integerToFloat64(tmp)
 
 		if _, err := io.ReadFull(reader, entry.Reversed3[:]); err != nil {
 			return err

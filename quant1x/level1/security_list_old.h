@@ -77,7 +77,7 @@ namespace level1 {
                 buf.get_array(e.Reversed1);
                 e.DecimalPoint = buf.get_u8();
                 u32 tmp        = buf.get_u32();
-                e.PreClose     = helpers::IntToFloat64(tmp);
+                e.PreClose     = helpers::integerToFloat64(tmp);
                 buf.get_array(e.Reversed2);
                 List.push_back(e);
             }

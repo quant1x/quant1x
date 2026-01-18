@@ -19,7 +19,7 @@ type TransactionRequest struct {
 	Count  uint16
 }
 
-func NewTransactionRequest(securityCode exchange.SecurityCode, offset, size int) TransactionRequest {
+func NewTransactionRequest(instrument exchange.InstrumentInfo, offset, size int) TransactionRequest {
 	if size <= 0 || size > TickTransactionPerRequestMax {
 		size = TickTransactionPerRequestMax
 	}
@@ -28,8 +28,8 @@ func NewTransactionRequest(securityCode exchange.SecurityCode, offset, size int)
 	}
 
 	return TransactionRequest{
-		Market: uint16(securityCode.Exchange),
-		Code:   [6]byte(std.String2Bytes(securityCode.Symbol)),
+		Market: uint16(exchangeToMarketId(instrument.Exchange)),
+		Code:   [6]byte(std.String2Bytes(instrument.Ticker)),
 		Start:  uint16(offset),
 		Count:  uint16(size),
 	}
@@ -55,10 +55,10 @@ func (r TransactionRequest) String() string {
 type TransactionResponse struct {
 	ResponseBase
 	Reply TransactionReply
-	sc    exchange.SecurityCode
+	sc    exchange.InstrumentInfo
 }
 
-func NewTransactionResponse(code exchange.SecurityCode) *TransactionResponse {
+func NewTransactionResponse(code exchange.InstrumentInfo) *TransactionResponse {
 	return &TransactionResponse{sc: code}
 }
 
@@ -73,8 +73,8 @@ func (r *TransactionResponse) Deserialize(body []byte) error {
 		r.Reply.List = r.Reply.List[:0]
 	}
 
-	baseUnit := DefaultBaseUnit(int(r.sc.Exchange), r.sc.Symbol)
-	isIndex := r.sc.Type == exchange.SecurityIndex
+	baseUnit := defaultBaseUnit(int(exchangeToMarketId(r.sc.Exchange)), r.sc.Ticker)
+	isIndex := r.sc.Type.IsIndex()
 	var lastPrice int64 = 0
 
 	for i := 0; i < int(r.Reply.Count); i++ {

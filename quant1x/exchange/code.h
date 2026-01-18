@@ -54,16 +54,16 @@ private:
 static inline constexpr ExchangeCode ExchangeUnknown{"unknown"};
 static inline constexpr ExchangeCode ExchangeSSE{"sh"};
 static inline constexpr ExchangeCode ExchangeSZSE{"sz"};
-static inline constexpr ExchangeCode ExchangeBJSE{"bj"};
-static inline constexpr ExchangeCode ExchangeHK{"hk"};
+static inline constexpr ExchangeCode ExchangeBSE{"bj"};
+static inline constexpr ExchangeCode ExchangeHKEX{"hk"};
 static inline constexpr ExchangeCode ExchangeUS{"us"};
 
 // AllExchangeCodes as strings (align with Go's []string)
 static inline const std::vector<std::string> AllExchangeCodes = {
     ExchangeSSE.String(),
     ExchangeSZSE.String(),
-    ExchangeBJSE.String(),
-    ExchangeHK.String(),
+    ExchangeBSE.String(),
+    ExchangeHKEX.String(),
     ExchangeUS.String(),
 };
 

@@ -16,34 +16,7 @@ const (
 
 // FinanceRequest 请求结构
 type FinanceRequest struct {
-	Count  uint16
-	Market uint8
-	Code   [6]byte
-	Codes  []string
-}
-
-// NewFinanceRequest 构建请求，securityCode 可传入任意形式的代码
-func NewFinanceRequest(securityCode string) FinanceRequest {
-	var req FinanceRequest
-	req.Count = 1
-	mid, _, symbol, err := exchange.DetectMarket(securityCode)
-	if err == nil {
-		req.Market = uint8(mid)
-		// copy up to 6 bytes
-		sym := symbol
-		if len(sym) > 6 {
-			sym = sym[:6]
-		}
-		copy(req.Code[:], []byte(sym))
-	} else {
-		// fallback: fill code with trimmed input
-		s := securityCode
-		if len(s) > 6 {
-			s = s[:6]
-		}
-		copy(req.Code[:], []byte(s))
-	}
-	return req
+	Codes []exchange.InstrumentInfo // 证券代码列表
 }
 
 func (r FinanceRequest) Serialize() []byte {
@@ -53,14 +26,10 @@ func (r FinanceRequest) Serialize() []byte {
 	_ = binary.Write(buf, binary.LittleEndian, count)
 	// 遍历 Codes 列表，写入每个代码
 	for _, code := range r.Codes {
-		mid, _, symbol, err := exchange.DetectMarket(code)
-		if err != nil {
-			continue
-		}
 		// 写入市场代码
-		_ = buf.WriteByte(uint8(mid))
+		_ = buf.WriteByte(uint8(exchangeToMarketId(code.Exchange)))
 		// 写入证券代码，固定6字节
-		sym := std.String2Bytes(symbol)
+		sym := std.String2Bytes(code.Ticker)
 		if len(sym) > 6 {
 			sym = sym[:6]
 		}
@@ -72,7 +41,8 @@ func (r FinanceRequest) Serialize() []byte {
 func (FinanceRequest) Command() StdCommand { return StdCommandFinanceInfo }
 
 func (r FinanceRequest) String() string {
-	return fmt.Sprintf("FinanceRequest{Count:%d,Market:%d,Code:%s}", r.Count, r.Market, std.Bytes2String(r.Code[:]))
+	count := len(r.Codes)
+	return fmt.Sprintf("FinanceRequest{Count:%d,Codes:%s}", count, instrumentsToString(r.Codes))
 }
 
 // RawFinanceInfo 对应二进制原始结构（按 finance_info.h 定义）
@@ -308,42 +278,45 @@ func (r *FinanceResponse) Deserialize(body []byte) error {
 		}
 		var info FinanceInfo
 		const baseUnit = 10000.0
-		code := std.Bytes2String(raw.Code[:])
-		info.Code = exchange.GetSecurityCode(exchange.ExchangeId(raw.Market), code)
-		info.LiuTongGuBen = NumberToFloat64(raw.LiuTongGuBen) * baseUnit
+
+		ex := marketIdToExchange(int(raw.Market))
+		ticker := std.Bytes2String(raw.Code[:])
+
+		info.Code = exchange.BuildInstrument(ex, ticker)
+		info.LiuTongGuBen = numberToFloat64(raw.LiuTongGuBen) * baseUnit
 		info.Province = raw.Province
 		info.Industry = raw.Industry
 		info.UpdatedDate = raw.UpdatedDate
 		info.IPODate = raw.IPODate
-		info.ZongGuBen = NumberToFloat64(raw.ZongGuBen) * baseUnit
-		info.GuoJiaGu = NumberToFloat64(raw.GuoJiaGu) * baseUnit
-		info.FaQiRenFaRenGu = NumberToFloat64(raw.FaQiRenFaRenGu) * baseUnit
-		info.FaRenGu = NumberToFloat64(raw.FaRenGu) * baseUnit
-		info.BGu = NumberToFloat64(raw.BGu) * baseUnit
-		info.HGu = NumberToFloat64(raw.HGu) * baseUnit
-		info.ZhiGongGu = NumberToFloat64(raw.ZhiGongGu) * baseUnit
-		info.ZongZiChan = NumberToFloat64(raw.ZongZiChan) * baseUnit
-		info.LiuDongZiChan = NumberToFloat64(raw.LiuDongZiChan) * baseUnit
-		info.GuDingZiChan = NumberToFloat64(raw.GuDingZiChan) * baseUnit
-		info.WuXingZiChan = NumberToFloat64(raw.WuXingZiChan) * baseUnit
-		info.GuDongRenShu = NumberToFloat64(raw.GuDongRenShu)
-		info.LiuDongFuZhai = NumberToFloat64(raw.LiuDongFuZhai) * baseUnit
-		info.ChangQiFuZhai = NumberToFloat64(raw.ChangQiFuZhai) * baseUnit
-		info.ZiBenGongJiJin = NumberToFloat64(raw.ZiBenGongJiJin) * baseUnit
-		info.JingZiChan = NumberToFloat64(raw.JingZiChan) * baseUnit
-		info.ZhuYingShouRu = NumberToFloat64(raw.ZhuYingShouRu) * baseUnit
-		info.ZhuYingLiRun = NumberToFloat64(raw.ZhuYingLiRun) * baseUnit
-		info.YingShouZhangKuan = NumberToFloat64(raw.YingShouZhangKuan) * baseUnit
-		info.YingYeLiRun = NumberToFloat64(raw.YingYeLiRun) * baseUnit
-		info.TouZiShouYu = NumberToFloat64(raw.TouZiShouYu) * baseUnit
-		info.JingYingXianJinLiu = NumberToFloat64(raw.JingYingXianJinLiu) * baseUnit
-		info.ZongXianJinLiu = NumberToFloat64(raw.ZongXianJinLiu) * baseUnit
-		info.CunHuo = NumberToFloat64(raw.CunHuo) * baseUnit
-		info.LiRunZongHe = NumberToFloat64(raw.LiRunZongHe) * baseUnit
-		info.ShuiHouLiRun = NumberToFloat64(raw.ShuiHouLiRun) * baseUnit
-		info.JingLiRun = NumberToFloat64(raw.JingLiRun) * baseUnit
-		info.WeiFenLiRun = NumberToFloat64(raw.WeiFenLiRun) * baseUnit
-		info.MeiGuJingZiChan = NumberToFloat64(raw.BaoLiu1) * baseUnit
+		info.ZongGuBen = numberToFloat64(raw.ZongGuBen) * baseUnit
+		info.GuoJiaGu = numberToFloat64(raw.GuoJiaGu) * baseUnit
+		info.FaQiRenFaRenGu = numberToFloat64(raw.FaQiRenFaRenGu) * baseUnit
+		info.FaRenGu = numberToFloat64(raw.FaRenGu) * baseUnit
+		info.BGu = numberToFloat64(raw.BGu) * baseUnit
+		info.HGu = numberToFloat64(raw.HGu) * baseUnit
+		info.ZhiGongGu = numberToFloat64(raw.ZhiGongGu) * baseUnit
+		info.ZongZiChan = numberToFloat64(raw.ZongZiChan) * baseUnit
+		info.LiuDongZiChan = numberToFloat64(raw.LiuDongZiChan) * baseUnit
+		info.GuDingZiChan = numberToFloat64(raw.GuDingZiChan) * baseUnit
+		info.WuXingZiChan = numberToFloat64(raw.WuXingZiChan) * baseUnit
+		info.GuDongRenShu = numberToFloat64(raw.GuDongRenShu)
+		info.LiuDongFuZhai = numberToFloat64(raw.LiuDongFuZhai) * baseUnit
+		info.ChangQiFuZhai = numberToFloat64(raw.ChangQiFuZhai) * baseUnit
+		info.ZiBenGongJiJin = numberToFloat64(raw.ZiBenGongJiJin) * baseUnit
+		info.JingZiChan = numberToFloat64(raw.JingZiChan) * baseUnit
+		info.ZhuYingShouRu = numberToFloat64(raw.ZhuYingShouRu) * baseUnit
+		info.ZhuYingLiRun = numberToFloat64(raw.ZhuYingLiRun) * baseUnit
+		info.YingShouZhangKuan = numberToFloat64(raw.YingShouZhangKuan) * baseUnit
+		info.YingYeLiRun = numberToFloat64(raw.YingYeLiRun) * baseUnit
+		info.TouZiShouYu = numberToFloat64(raw.TouZiShouYu) * baseUnit
+		info.JingYingXianJinLiu = numberToFloat64(raw.JingYingXianJinLiu) * baseUnit
+		info.ZongXianJinLiu = numberToFloat64(raw.ZongXianJinLiu) * baseUnit
+		info.CunHuo = numberToFloat64(raw.CunHuo) * baseUnit
+		info.LiRunZongHe = numberToFloat64(raw.LiRunZongHe) * baseUnit
+		info.ShuiHouLiRun = numberToFloat64(raw.ShuiHouLiRun) * baseUnit
+		info.JingLiRun = numberToFloat64(raw.JingLiRun) * baseUnit
+		info.WeiFenLiRun = numberToFloat64(raw.WeiFenLiRun) * baseUnit
+		info.MeiGuJingZiChan = numberToFloat64(raw.BaoLiu1) * baseUnit
 		r.List = append(r.List, info)
 	}
 	return nil

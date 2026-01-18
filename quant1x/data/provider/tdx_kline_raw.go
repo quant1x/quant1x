@@ -20,14 +20,14 @@ func (d *DataKLineRaw) Name() string    { return "日K线RAW" }
 func (d *DataKLineRaw) Usage() string   { return "日K线RAW" }
 
 // Print 实现 DataAdapter.Print（可变参数日期）
-func (d *DataKLineRaw) Print(code exchange.SecurityCode, dates ...exchange.Timestamp) {
+func (d *DataKLineRaw) Print(code exchange.InstrumentInfo, dates ...exchange.Timestamp) {
 	_ = code
 	_ = dates
 }
 
 // Update 对应 C++ DataKLineRaw::Update 的行为：读取本地缓存、确定时间窗口、分页拉取 level1 数据、
 // 反转与合并结果，并写回缓存文件。
-func (d *DataKLineRaw) Update(code exchange.SecurityCode, _date exchange.Timestamp) {
+func (d *DataKLineRaw) Update(code exchange.InstrumentInfo, _date exchange.Timestamp) {
 	// 1. 确定缓存文件并读取本地缓存
 	cacheFilename := config.GetKlineFilename(code.String(), false)
 	var cacheKLines []data.KLineRaw

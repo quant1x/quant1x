@@ -14,8 +14,8 @@ import (
 // 并通过 config 包确定的文件名保存到本地缓存，然后返回加载的切片。
 // 调用者无需注册 resolver；该函数会使用 config.GetXdxrFilename 生成路径。
 // 该操作会发起真实的网络请求。
-func tdxFetchXdxrList(sc exchange.SecurityCode) ([]data.XdxrInfo, error) {
-	if sc.Type == exchange.SecurityUnknown {
+func tdxFetchXdxrList(sc exchange.InstrumentInfo) ([]data.XdxrInfo, error) {
+	if sc.Type == exchange.SecurityTypeUnknown {
 		return nil, fmt.Errorf("unknown security type for code %s", sc.String())
 	}
 	code := sc.String()
@@ -34,7 +34,7 @@ func tdxFetchXdxrList(sc exchange.SecurityCode) ([]data.XdxrInfo, error) {
 		return nil, fmt.Errorf("nil connection from level1 client")
 	}
 
-	req := level1.NewXdxrInfoRequest(code)
+	req := level1.XdxrInfoRequest{Code: sc}
 	resp := level1.NewXdxrInfoResponse()
 	if err := level1.Process(conn, req, resp); err != nil {
 		return nil, fmt.Errorf("xdxr request failed: %w", err)
@@ -66,8 +66,8 @@ func tdxFetchXdxrList(sc exchange.SecurityCode) ([]data.XdxrInfo, error) {
 	return out, err
 }
 
-func tdxGetXdxrList(sc exchange.SecurityCode) ([]data.XdxrInfo, error) {
-	if sc.Type == exchange.SecurityUnknown {
+func tdxGetXdxrList(sc exchange.InstrumentInfo) ([]data.XdxrInfo, error) {
+	if sc.Type == exchange.SecurityTypeUnknown {
 		return nil, fmt.Errorf("unknown security type for code %s", sc.String())
 	}
 	// 1. 确定缓存文件并读取本地缓存
@@ -101,11 +101,11 @@ func (d *DataXdxr) Key() string     { return "xdxr" }
 func (d *DataXdxr) Name() string    { return "除权除息" }
 func (d *DataXdxr) Usage() string   { return "" }
 
-func (d *DataXdxr) Print(code exchange.SecurityCode, dates ...exchange.Timestamp) {
+func (d *DataXdxr) Print(code exchange.InstrumentInfo, dates ...exchange.Timestamp) {
 	// No-op for now; could be extended to pretty-print loaded XDXR rows.
 }
 
-func (d *DataXdxr) Update(code exchange.SecurityCode, date exchange.Timestamp) {
+func (d *DataXdxr) Update(code exchange.InstrumentInfo, date exchange.Timestamp) {
 	// Delegate to UpdateXdxr which fetches and writes CSV data.
 	_, _ = tdxFetchXdxrList(code)
 }

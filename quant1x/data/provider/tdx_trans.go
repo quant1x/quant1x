@@ -76,7 +76,7 @@ type TurnoverDataSummary struct {
 }
 
 // loadTransactionDataFromCache 从 CSV 缓存读取逐笔数据并返回数据列表及起始时间字符串。
-func loadTransactionDataFromCache(sc exchange.SecurityCode, featureDate exchange.Timestamp, ignorePreviousData bool) ([]data.Transaction, string) {
+func loadTransactionDataFromCache(sc exchange.InstrumentInfo, featureDate exchange.Timestamp, ignorePreviousData bool) ([]data.Transaction, string) {
 	list := make([]data.Transaction, 0)
 
 	if ignorePreviousData {
@@ -130,7 +130,7 @@ func loadTransactionDataFromCache(sc exchange.SecurityCode, featureDate exchange
 }
 
 // updateTransactionData 从 level1 拉取逐笔数据并写入合并后的 CSV 缓存。
-func updateTransactionData(securityCode exchange.SecurityCode, featureDate exchange.Timestamp, startTime string) {
+func updateTransactionData(securityCode exchange.InstrumentInfo, featureDate exchange.Timestamp, startTime string) {
 	tradeDate := featureDate.YYYYMMDD()
 	todayIsLastTradingDate := featureDate.IsSameDate(exchange.NowTimestamp())
 	offset := int(level1.TickTransactionPerRequestMax)
@@ -250,7 +250,7 @@ func updateTransactionData(securityCode exchange.SecurityCode, featureDate excha
 	}
 }
 
-func ensureTransactionDataUpdated(securityCode exchange.SecurityCode, featureDate exchange.Timestamp, ignorePreviousData bool) {
+func ensureTransactionDataUpdated(securityCode exchange.InstrumentInfo, featureDate exchange.Timestamp, ignorePreviousData bool) {
 	list, startTime := loadTransactionDataFromCache(securityCode, featureDate, ignorePreviousData)
 	needsUpdate := len(list) == 0 || (list[len(list)-1].Time != HistoricalTransactionDataLastTime)
 	if needsUpdate {
@@ -259,7 +259,7 @@ func ensureTransactionDataUpdated(securityCode exchange.SecurityCode, featureDat
 }
 
 // CheckoutTransactionData 导出：检出指定日期的逐笔成交数据
-func CheckoutTransactionData(securityCode exchange.SecurityCode, featureDate exchange.Timestamp, ignorePreviousData bool) []data.Transaction {
+func CheckoutTransactionData(securityCode exchange.InstrumentInfo, featureDate exchange.Timestamp, ignorePreviousData bool) []data.Transaction {
 	ensureTransactionDataUpdated(securityCode, featureDate, ignorePreviousData)
 	list, _ := loadTransactionDataFromCache(securityCode, featureDate, ignorePreviousData)
 	return list
@@ -271,7 +271,7 @@ func CountInflow(list []level1.TickTransaction, securityCode string, featureDate
 	if len(list) == 0 {
 		return summary
 	}
-	correctedCode := exchange.CorrectSecurityCode(securityCode)
+	//correctedCode := exchange.CorrectSecurityCode(securityCode)
 	var lastPrice float64
 	for _, v := range list {
 		tm := v.Time
@@ -314,7 +314,7 @@ func CountInflow(list []level1.TickTransaction, securityCode string, featureDate
 	}
 
 	// F10 尚未在此模块移植到 Go，保留 TurnZ 为零。
-	_ = correctedCode
+	//_ = correctedCode
 	_ = featureDate
 	return summary
 }
@@ -328,12 +328,12 @@ func (d *DataTrans) Key() string     { return "trans" }
 func (d *DataTrans) Name() string    { return "逐笔成交" }
 func (d *DataTrans) Usage() string   { return "" }
 
-func (d *DataTrans) Print(code exchange.SecurityCode, dates ...exchange.Timestamp) {
+func (d *DataTrans) Print(code exchange.InstrumentInfo, dates ...exchange.Timestamp) {
 	_ = code
 	_ = dates
 }
 
-func (d *DataTrans) Update(code exchange.SecurityCode, date exchange.Timestamp) {
+func (d *DataTrans) Update(code exchange.InstrumentInfo, date exchange.Timestamp) {
 	ensureTransactionDataUpdated(code, date, false)
 }
 

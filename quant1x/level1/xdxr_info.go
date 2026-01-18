@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"strings"
 
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 )
@@ -69,32 +68,25 @@ func (c XdxrCategory) ToString() string {
 
 // XdxrInfoRequest encodes the XDXR_INFO request payload.
 type XdxrInfoRequest struct {
-	Padding []byte
-	Market  uint8
-	Code    [6]byte
-}
-
-// NewXdxrInfoRequest constructs a request like the C++ XdxrInfoRequest.
-func NewXdxrInfoRequest(securityCode string) XdxrInfoRequest {
-	mid, _, symbol, _ := exchange.DetectMarket(securityCode)
-	var code [6]byte
-	copy(code[:], symbol)
-	return XdxrInfoRequest{Padding: []byte{0x01, 0x00}, Market: uint8(mid), Code: code}
+	//Market uint8
+	//Code   [6]byte
+	Code exchange.InstrumentInfo
 }
 
 func (r XdxrInfoRequest) Serialize() []byte {
 	payload := &bytes.Buffer{}
-	payload.Write(r.Padding)
-	payload.WriteByte(r.Market)
-	payload.Write(r.Code[:])
+	padding := []byte{0x01, 0x00}
+	payload.Write(padding)
+	market := uint8(exchangeToMarketId(r.Code.Exchange))
+	payload.WriteByte(market)
+	payload.Write([]byte(r.Code.Ticker)[:6])
 	return buildRequest(StdCommandXdxrInfo, packetTypeRequest, payload.Bytes())
 }
 
 func (r XdxrInfoRequest) Command() StdCommand { return StdCommandXdxrInfo }
 
 func (r XdxrInfoRequest) String() string {
-	code := strings.TrimRight(string(r.Code[:]), "\x00 ")
-	return fmt.Sprintf("XdxrInfoRequest{Market:%d,Code:%s}", r.Market, code)
+	return fmt.Sprintf("XdxrInfoRequest{%s}", r.Code.String())
 }
 
 // XdxrInfo represents a parsed XDXR event returned by the server.
@@ -253,7 +245,7 @@ func (r *XdxrInfoResponse) Deserialize(body []byte) error {
 			return err
 		}
 
-		y, m, d, _, _ := GetDatetimeFromUint32(9, dateRaw, 0)
+		y, m, d, _, _ := getDatetimeFromUint32(9, dateRaw, 0)
 		xi := XdxrInfo{Date: fmt.Sprintf("%04d-%02d-%02d", y, m, d), Category: int(category), Name: XdxrCategory(category).ToString()}
 
 		// parse data per category similar to C++ logic
@@ -288,13 +280,13 @@ func (r *XdxrInfoResponse) Deserialize(body []byte) error {
 		default:
 			var v uint32
 			_ = binary.Read(db, binary.LittleEndian, &v)
-			xi.QianLiuTong = IntToFloat64(v)
+			xi.QianLiuTong = integerToFloat64(v)
 			_ = binary.Read(db, binary.LittleEndian, &v)
-			xi.QianZongGuBen = IntToFloat64(v)
+			xi.QianZongGuBen = integerToFloat64(v)
 			_ = binary.Read(db, binary.LittleEndian, &v)
-			xi.HouLiuTong = IntToFloat64(v)
+			xi.HouLiuTong = integerToFloat64(v)
 			_ = binary.Read(db, binary.LittleEndian, &v)
-			xi.HouZongGuBen = IntToFloat64(v)
+			xi.HouZongGuBen = integerToFloat64(v)
 		}
 
 		r.List = append(r.List, xi)

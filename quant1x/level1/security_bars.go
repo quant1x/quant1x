@@ -65,16 +65,16 @@ type SecurityBarsRequest struct {
 }
 
 // NewSecurityBarsRequest constructs a request aligned with the C++ structure.
-func NewSecurityBarsRequest(sc exchange.SecurityCode, category KLineType, start, count uint16) SecurityBarsRequest {
+func NewSecurityBarsRequest(sc exchange.InstrumentInfo, category KLineType, start, count uint16) SecurityBarsRequest {
 	if count == 0 || count > SecurityBarsMax {
 		count = SecurityBarsMax
 	}
 
 	var code [6]byte
-	copy(code[:], sc.Symbol)
+	copy(code[:], sc.Ticker)
 
 	param := SecurityBarsParameter{
-		Market:   uint16(sc.Exchange),
+		Market:   uint16(exchangeToMarketId(sc.Exchange)),
 		Code:     code,
 		Category: uint16(category),
 		I:        1,
@@ -86,7 +86,7 @@ func NewSecurityBarsRequest(sc exchange.SecurityCode, category KLineType, start,
 		Param:   param,
 		Padding: make([]byte, 10),
 	}
-	req.IsIndex = sc.Type == exchange.SecurityIndex
+	req.IsIndex = sc.Type.IsIndex()
 	return req
 }
 
@@ -168,7 +168,7 @@ func (r *SecurityBarsResponse) parseBar(reader *bytes.Reader, preDiffBase *int64
 			return bar, err
 		}
 	}
-	year, month, day, hour, minute := GetDatetimeFromUint32(int(r.category), zipday32, tminutes)
+	year, month, day, hour, minute := getDatetimeFromUint32(int(r.category), zipday32, tminutes)
 	bar.Year, bar.Month, bar.Day, bar.Hour, bar.Minute = year, month, day, hour, minute
 	bar.DateTime = fmt.Sprintf("%04d-%02d-%02d %02d:%02d:00", year, month, day, hour, minute)
 
@@ -193,13 +193,13 @@ func (r *SecurityBarsResponse) parseBar(reader *bytes.Reader, preDiffBase *int64
 	if err := binary.Read(reader, binary.LittleEndian, &volRaw); err != nil {
 		return bar, err
 	}
-	bar.Vol = IntToFloat64(volRaw)
+	bar.Vol = integerToFloat64(volRaw)
 
 	var amountRaw uint32
 	if err := binary.Read(reader, binary.LittleEndian, &amountRaw); err != nil {
 		return bar, err
 	}
-	bar.Amount = IntToFloat64(amountRaw)
+	bar.Amount = integerToFloat64(amountRaw)
 
 	base := *preDiffBase + openDiff
 	bar.Open = float64(base) / 1000.0
@@ -225,8 +225,6 @@ func (r *SecurityBarsResponse) parseBar(reader *bytes.Reader, preDiffBase *int64
 func (r *SecurityBarsResponse) String() string {
 	return fmt.Sprintf("SecurityBarsResponse{Count:%d}", r.Count)
 }
-
-
 
 func varintRead(reader *bytes.Reader) (int64, error) {
 	first, err := reader.ReadByte()

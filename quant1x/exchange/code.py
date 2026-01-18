@@ -9,8 +9,8 @@ MarketCnFirstListTime = "1990-12-19"
 # Exchange codes
 ExchangeSSE = "sh"
 ExchangeSZSE = "sz"
-ExchangeBJSE = "bj"
-ExchangeHK = "hk"
+ExchangeBSE = "bj"
+ExchangeHKEX = "hk"
 ExchangeUS = "us"
 
 
@@ -28,9 +28,9 @@ class ExchangeId(IntEnum):
         if self == ExchangeId.ShangHai:
             return ExchangeSSE
         if self == ExchangeId.BeiJing:
-            return ExchangeBJSE
+            return ExchangeBSE
         if self == ExchangeId.HongKong:
-            return ExchangeHK
+            return ExchangeHKEX
         if self == ExchangeId.USA:
             return ExchangeUS
         raise ValueError(f"unknown ExchangeId: {int(self)}")
@@ -80,20 +80,20 @@ from typing import Tuple, List
 # Canonical exchange flag aliases (use these for cross-language consistency)
 EXCHANGE_SSE = "sh"
 EXCHANGE_SZSE = "sz"
-EXCHANGE_BJSE = "bj"
-EXCHANGE_HK = "hk"
+EXCHANGE_BSE = "bj"
+EXCHANGE_HKEX = "hk"
 EXCHANGE_US = "us"
 
 MARKET_FLAGS = [
     EXCHANGE_SSE,
     EXCHANGE_SZSE,
-    EXCHANGE_BJSE,
-    EXCHANGE_HK,
+    EXCHANGE_BSE,
+    EXCHANGE_HKEX,
     EXCHANGE_US,
     EXCHANGE_SSE.upper(),
     EXCHANGE_SZSE.upper(),
-    EXCHANGE_BJSE.upper(),
-    EXCHANGE_HK.upper(),
+    EXCHANGE_BSE.upper(),
+    EXCHANGE_HKEX.upper(),
     EXCHANGE_US.upper(),
 ]
 
@@ -156,9 +156,9 @@ def get_security_code(market: MarketType, symbol: str) -> str:
     if market == MarketType.USA:
         return EXCHANGE_US + symbol
     elif market == MarketType.HongKong:
-        return EXCHANGE_HK + symbol[:5]
+        return EXCHANGE_HKEX + symbol[:5]
     elif market == MarketType.BeiJing:
-        return EXCHANGE_BJSE + symbol[:6]
+        return EXCHANGE_BSE + symbol[:6]
     elif market == MarketType.ShenZhen:
         return EXCHANGE_SZSE + symbol[:6]
     else:
@@ -195,7 +195,7 @@ def get_market(symbol: str) -> str:
     elif starts_with(code, SECTOR_PREFIXES):
         market = EXCHANGE_SSE
     elif starts_with(code, BEIJING_MAIN_BOARD_PREFIXES):
-        market = EXCHANGE_BJSE
+        market = EXCHANGE_BSE
     elif code.isalpha():
         market = EXCHANGE_US
     
@@ -222,9 +222,9 @@ def get_market_id(symbol: str) -> MarketType:
         return MarketType.ShangHai
     if market == EXCHANGE_SZSE:
         return MarketType.ShenZhen
-    if market == EXCHANGE_BJSE:
+    if market == EXCHANGE_BSE:
         return MarketType.BeiJing
-    if market == EXCHANGE_HK:
+    if market == EXCHANGE_HKEX:
         return MarketType.HongKong
     if market == EXCHANGE_US:
         return MarketType.USA
@@ -240,17 +240,17 @@ def get_market_flag(market_id: MarketType) -> str:
     Returns:
         str: 对应市场的标志字符串，可能的返回值包括:
             - EXCHANGE_SZSE: 深圳市场
-            - EXCHANGE_BJSE: 北京市场
-            - EXCHANGE_HK: 香港市场
+            - EXCHANGE_BSE: 北京市场
+            - EXCHANGE_HKEX: 香港市场
             - EXCHANGE_US: 美国市场
             - EXCHANGE_SSE: 上海市场(默认值)
     """
     if market_id == MarketType.ShenZhen:
         return EXCHANGE_SZSE
     elif market_id == MarketType.BeiJing:
-        return EXCHANGE_BJSE
+        return EXCHANGE_BSE
     elif market_id == MarketType.HongKong:
-        return EXCHANGE_HK
+        return EXCHANGE_HKEX
     elif market_id == MarketType.USA:
         return EXCHANGE_US
     else:
@@ -297,16 +297,16 @@ def detect_market(symbol: str) -> Tuple[MarketType, str, str]:
     elif starts_with(pure_code, SECTOR_PREFIXES):
         market_code = EXCHANGE_SSE
     elif starts_with(pure_code, BEIJING_MAIN_BOARD_PREFIXES):
-        market_code = EXCHANGE_BJSE
+        market_code = EXCHANGE_BSE
 
     market_id = MarketType.ShangHai
     if market_code == EXCHANGE_SSE:
         market_id = MarketType.ShangHai
     elif market_code == EXCHANGE_SZSE:
         market_id = MarketType.ShenZhen
-    elif market_code == EXCHANGE_BJSE:
+    elif market_code == EXCHANGE_BSE:
         market_id = MarketType.BeiJing
-    elif market_code == EXCHANGE_HK:
+    elif market_code == EXCHANGE_HKEX:
         market_id = MarketType.HongKong
     elif market_code == EXCHANGE_US:
         market_id = MarketType.USA

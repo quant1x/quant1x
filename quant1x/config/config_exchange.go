@@ -9,8 +9,8 @@ import (
 
 // 缓存id, 由市场代码+证券代码组成
 func CacheId(code string) string {
-	_, marketCode, code_, _ := exchange.DetectMarket(code)
-	return marketCode + code_
+	symbol := exchange.DetectSymbol(code)
+	return symbol.Instrument()
 }
 
 func CacheIdPath(code string) string {

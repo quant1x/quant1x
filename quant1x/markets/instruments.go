@@ -9,20 +9,20 @@ import (
 )
 
 // AShareIndexList A股指数列表
-var AShareIndexList = []exchange.SecurityCode{
-	exchange.SecurityCode{Exchange: exchange.ExchangeIdShangHai, Symbol: "000001", Type: exchange.SecurityIndex}, // 上证指数
-	exchange.SecurityCode{Exchange: exchange.ExchangeIdShangHai, Symbol: "000002", Type: exchange.SecurityIndex}, // 上证A股指数
-	exchange.SecurityCode{Exchange: exchange.ExchangeIdShangHai, Symbol: "000300", Type: exchange.SecurityIndex}, // 沪深300指数
-	exchange.SecurityCode{Exchange: exchange.ExchangeIdShangHai, Symbol: "000688", Type: exchange.SecurityIndex}, // 科创50指数
-	exchange.SecurityCode{Exchange: exchange.ExchangeIdShangHai, Symbol: "000905", Type: exchange.SecurityIndex}, // 中证500指数
-	exchange.SecurityCode{Exchange: exchange.ExchangeIdShenZhen, Symbol: "399001", Type: exchange.SecurityIndex}, // 深证成份指数
-	exchange.SecurityCode{Exchange: exchange.ExchangeIdShenZhen, Symbol: "399006", Type: exchange.SecurityIndex}, // 创业板指
-	exchange.SecurityCode{Exchange: exchange.ExchangeIdShenZhen, Symbol: "399107", Type: exchange.SecurityIndex}, // 深证A指
-	exchange.SecurityCode{Exchange: exchange.ExchangeIdBeiJing, Symbol: "899050", Type: exchange.SecurityIndex},  // 北证50指数
-	exchange.SecurityCode{Exchange: exchange.ExchangeIdShangHai, Symbol: "880005", Type: exchange.SecurityBlock}, // 通达信板块-涨跌家数
-	exchange.SecurityCode{Exchange: exchange.ExchangeIdShangHai, Symbol: "510050", Type: exchange.SecurityETF},   // 上证50ETF
-	exchange.SecurityCode{Exchange: exchange.ExchangeIdShangHai, Symbol: "510300", Type: exchange.SecurityETF},   // 沪深300ETF
-	exchange.SecurityCode{Exchange: exchange.ExchangeIdShangHai, Symbol: "510900", Type: exchange.SecurityETF},   // H股ETF
+var AShareIndexList = []exchange.InstrumentInfo{
+	{Exchange: exchange.ExchangeSSE, Ticker: "000001", Type: exchange.SecurityTypeIndex},  // 上证指数
+	{Exchange: exchange.ExchangeSSE, Ticker: "000002", Type: exchange.SecurityTypeIndex},  // 上证A股指数
+	{Exchange: exchange.ExchangeSSE, Ticker: "000300", Type: exchange.SecurityTypeIndex},  // 沪深300指数
+	{Exchange: exchange.ExchangeSSE, Ticker: "000688", Type: exchange.SecurityTypeIndex},  // 科创50指数
+	{Exchange: exchange.ExchangeSSE, Ticker: "000905", Type: exchange.SecurityTypeIndex},  // 中证500指数
+	{Exchange: exchange.ExchangeSZSE, Ticker: "399001", Type: exchange.SecurityTypeIndex}, // 深证成份指数
+	{Exchange: exchange.ExchangeSZSE, Ticker: "399006", Type: exchange.SecurityTypeIndex}, // 创业板指
+	{Exchange: exchange.ExchangeSZSE, Ticker: "399107", Type: exchange.SecurityTypeIndex}, // 深证A指
+	{Exchange: exchange.ExchangeBSE, Ticker: "899050", Type: exchange.SecurityTypeIndex},  // 北证50指数
+	{Exchange: exchange.ExchangeSSE, Ticker: "880005", Type: exchange.SecurityTypeBlock},  // 通达信板块-涨跌家数
+	{Exchange: exchange.ExchangeSSE, Ticker: "510050", Type: exchange.SecurityTypeETF},    // 上证50ETF
+	{Exchange: exchange.ExchangeSSE, Ticker: "510300", Type: exchange.SecurityTypeETF},    // 沪深300ETF
+	{Exchange: exchange.ExchangeSSE, Ticker: "510900", Type: exchange.SecurityTypeETF},    // H股ETF
 }
 
 // IsNeedIgnore 证券代码是否需要忽略, 这是一个不参与数据和策略处理的开关
@@ -49,15 +49,15 @@ func IsNeedIgnore(code string) bool {
 }
 
 // GetStockCodeList 获取证券代码列表, 过滤退市、摘牌和ST标记的个股
-func GetStockCodeList() []exchange.SecurityCode {
-	var allCodes []exchange.SecurityCode
+func GetStockCodeList() []exchange.InstrumentInfo {
+	var allCodes []exchange.InstrumentInfo
 
 	// 上海证券交易所 (sh600000-sh609999)
 	for i := 600000; i <= 609999; i++ {
-		sc := exchange.SecurityCode{
-			Exchange: exchange.ExchangeIdShangHai,
-			Symbol:   fmt.Sprintf("%06d", i),
-			Type:     exchange.SecurityStock,
+		sc := exchange.InstrumentInfo{
+			Exchange: exchange.ExchangeSSE,
+			Ticker:   fmt.Sprintf("%06d", i),
+			Type:     exchange.SecurityTypeStock,
 		}
 		if !IsNeedIgnore(sc.String()) {
 			allCodes = append(allCodes, sc)
@@ -67,10 +67,10 @@ func GetStockCodeList() []exchange.SecurityCode {
 
 	// 科创板 (sh688000-sh689999)
 	for i := 688000; i <= 689999; i++ {
-		sc := exchange.SecurityCode{
-			Exchange: exchange.ExchangeIdShangHai,
-			Symbol:   fmt.Sprintf("%06d", i),
-			Type:     exchange.SecurityStock,
+		sc := exchange.InstrumentInfo{
+			Exchange: exchange.ExchangeSSE,
+			Ticker:   fmt.Sprintf("%06d", i),
+			Type:     exchange.SecurityTypeStock,
 		}
 		if !IsNeedIgnore(sc.String()) {
 			allCodes = append(allCodes, sc)
@@ -79,10 +79,10 @@ func GetStockCodeList() []exchange.SecurityCode {
 
 	// 深圳主板 (sz000000-sz000999)
 	for i := 0; i <= 999; i++ {
-		sc := exchange.SecurityCode{
-			Exchange: exchange.ExchangeIdShenZhen,
-			Symbol:   fmt.Sprintf("%06d", i),
-			Type:     exchange.SecurityStock,
+		sc := exchange.InstrumentInfo{
+			Exchange: exchange.ExchangeSZSE,
+			Ticker:   fmt.Sprintf("%06d", i),
+			Type:     exchange.SecurityTypeStock,
 		}
 		if !IsNeedIgnore(sc.String()) {
 			allCodes = append(allCodes, sc)
@@ -91,10 +91,10 @@ func GetStockCodeList() []exchange.SecurityCode {
 
 	// 中小板 (sz001000-sz009999)
 	for i := 1000; i <= 9999; i++ {
-		sc := exchange.SecurityCode{
-			Exchange: exchange.ExchangeIdShenZhen,
-			Symbol: fmt.Sprintf("%06d", i),
-			Type:   exchange.SecurityStock,
+		sc := exchange.InstrumentInfo{
+			Exchange: exchange.ExchangeSZSE,
+			Ticker:   fmt.Sprintf("%06d", i),
+			Type:     exchange.SecurityTypeStock,
 		}
 		if !IsNeedIgnore(sc.String()) {
 			allCodes = append(allCodes, sc)
@@ -103,10 +103,10 @@ func GetStockCodeList() []exchange.SecurityCode {
 
 	// 创业板 (sz300000-sz300999)
 	for i := 300000; i <= 309999; i++ {
-		sc := exchange.SecurityCode{
-			Exchange: exchange.ExchangeIdShenZhen,
-			Symbol: fmt.Sprintf("%06d", i),
-			Type:   exchange.SecurityStock,
+		sc := exchange.InstrumentInfo{
+			Exchange: exchange.ExchangeSZSE,
+			Ticker:   fmt.Sprintf("%06d", i),
+			Type:     exchange.SecurityTypeStock,
 		}
 		if !IsNeedIgnore(sc.String()) {
 			allCodes = append(allCodes, sc)
@@ -115,10 +115,10 @@ func GetStockCodeList() []exchange.SecurityCode {
 
 	// 北交所 (bj920000-bj920999)
 	for i := 920000; i <= 920999; i++ {
-		sc := exchange.SecurityCode{
-			Exchange: exchange.ExchangeIdBeiJing,
-			Symbol: fmt.Sprintf("%06d", i),
-			Type:   exchange.SecurityStock,
+		sc := exchange.InstrumentInfo{
+			Exchange: exchange.ExchangeBSE,
+			Ticker:   fmt.Sprintf("%06d", i),
+			Type:     exchange.SecurityTypeStock,
 		}
 		if !IsNeedIgnore(sc.String()) {
 			allCodes = append(allCodes, sc)
@@ -129,8 +129,8 @@ func GetStockCodeList() []exchange.SecurityCode {
 }
 
 // GetCodeList 加载全部指数、板块和个股的代码
-func GetCodeList() []exchange.SecurityCode {
-	var list []exchange.SecurityCode
+func GetCodeList() []exchange.InstrumentInfo {
+	var list []exchange.InstrumentInfo
 	// 1. 指数
 	list = append(list, AShareIndexList...)
 
@@ -138,10 +138,10 @@ func GetCodeList() []exchange.SecurityCode {
 	sectors := BlockList()
 	for _, v := range sectors {
 		symbol_ := v.Code[2:]
-		sc := exchange.SecurityCode{
-			Exchange: exchange.ExchangeIdShangHai,
-			Symbol: symbol_,
-			Type:   exchange.SecurityBlock,
+		sc := exchange.InstrumentInfo{
+			Exchange: exchange.ExchangeSSE,
+			Type:     exchange.SecurityTypeBlock,
+			Ticker:   symbol_,
 		}
 		list = append(list, sc)
 	}

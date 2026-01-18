@@ -314,14 +314,14 @@ static const std::vector<CodeRule> szseRules = {
     {"36", SecurityType::Other, "投票", ""},
     {"37", SecurityType::Other, "增发/可转债申购", ""},
     {"38", SecurityType::Other, "配股/可转债优先权", ""},
-    //{"50", SecurityType::Bond, "资产支持证券ABS", ""},
-    //{"56", SecurityType::Bond, "资产支持证券ABS", ""},
-    //{"5", SecurityType::Bond, "资产支持证券ABS", ""},
-    //{"700", SecurityType::Warrant, "B股增发", ""},
-    //{"730", SecurityType::Warrant, "跨市场申购", ""},
+    {"50", SecurityType::Bond, "资产支持证券ABS", ""},
+    {"56", SecurityType::Bond, "资产支持证券ABS", ""},
+    {"5", SecurityType::Bond, "资产支持证券ABS", ""},
+    {"700", SecurityType::Warrant, "B股增发", ""},
+    {"730", SecurityType::Warrant, "跨市场申购", ""},
 };
 
-static const std::vector<CodeRule> bjseRules = {
+static const std::vector<CodeRule> bseRules = {
     {"899", SecurityType::Index, "指数", "证券指数首三位代码为899"},
     {"920", SecurityType::Stock, "北交所新上市", "2024-04-22 起新上市使用920号段；已上市公司继续沿用原代码直到统一切换"},
     {"92", SecurityType::Stock, "上市公司普通股", "首两位92：上市公司普通股票；920号段自2024-04-22起用于新上市公司"},
@@ -340,7 +340,7 @@ static const std::vector<CodeRule> bjseRules = {
     {"850", SecurityType::Option, "股权激励期权", "股权激励期权首三位代码为850，简称后缀如 JLC1/JLC2 等"},
 };
 
-static const std::vector<CodeRule> hkseRules = {
+static const std::vector<CodeRule> hkexRules = {
     {"HSI", SecurityType::Index, "恒生指数", ""},
     {"HSCEI", SecurityType::Index, "国企指数", ""},
     {"HSCCI", SecurityType::Index, "红筹指数", ""},
@@ -419,14 +419,14 @@ SecurityCode detect(const std::string &input) {
                 exchangeCode = ExchangeSZSE;
                 exchangeId = ExchangeId::ShenZhen;
             } else if (pureCode.rfind("8", 0) == 0 || pureCode.rfind("92", 0) == 0) {
-                exchangeCode = ExchangeBJSE;
+                exchangeCode = ExchangeBSE;
                 exchangeId = ExchangeId::BeiJing;
             } else {
                 return {ExchangeId::Unknown, "", SecurityType::Unknown};
             }
         } else if (std::regex_match(pureCode, std::regex("^\\d{5}$"))) {
             symbol = pureCode;
-            exchangeCode = ExchangeHK;
+            exchangeCode = ExchangeHKEX;
             exchangeId = ExchangeId::HongKong;
         } else {
             symbol = pureCode;
@@ -466,8 +466,8 @@ SecurityCode detect(const std::string &input) {
         switch (exchangeId) {
         case ExchangeId::ShangHai: rules = &sseRules; break;
         case ExchangeId::ShenZhen: rules = &szseRules; break;
-        case ExchangeId::BeiJing: rules = &bjseRules; break;
-        case ExchangeId::HongKong: rules = &hkseRules; break;
+        case ExchangeId::BeiJing: rules = &bseRules; break;
+        case ExchangeId::HongKong: rules = &hkexRules; break;
         case ExchangeId::USA: return {exchangeId, symbol, SecurityType::Stock};
         default: return {ExchangeId::Unknown, "", SecurityType::Unknown};
         }

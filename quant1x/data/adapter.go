@@ -36,9 +36,9 @@ type Schema interface {
 type DataAdapter interface {
 	Schema
 	// Print 控制台打印，dates 可选
-	Print(code exchange.SecurityCode, dates ...exchange.Timestamp)
+	Print(code exchange.InstrumentInfo, dates ...exchange.Timestamp)
 	// Update 更新数据
-	Update(code exchange.SecurityCode, date exchange.Timestamp)
+	Update(code exchange.InstrumentInfo, date exchange.Timestamp)
 }
 
 // FeatureAdapter 特征数据适配器接口

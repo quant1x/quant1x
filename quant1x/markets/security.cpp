@@ -127,7 +127,7 @@ namespace instruments {
     double get_up_limit_rate(const std::string& security_code) {
         auto [mid, mcode, symbol] = exchange::DetectMarket(security_code);
 
-        if (mcode == exchange::ExchangeBJSE.String()) {
+        if (mcode == exchange::ExchangeBSE.String()) {
             return BeijingLimit;
         }
 

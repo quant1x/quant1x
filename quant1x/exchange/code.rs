@@ -21,8 +21,8 @@ impl ExchangeCode {
         match self.0 {
             x if x == EXCHANGE_SZSE.as_str() => ExchangeId::ShenZhen,
             x if x == EXCHANGE_SSE.as_str() => ExchangeId::ShangHai,
-            x if x == EXCHANGE_BJSE.as_str() => ExchangeId::BeiJing,
-            x if x == EXCHANGE_HK.as_str() => ExchangeId::HongKong,
+            x if x == EXCHANGE_BSE.as_str() => ExchangeId::BeiJing,
+            x if x == EXCHANGE_HKEX.as_str() => ExchangeId::HongKong,
             x if x == EXCHANGE_US.as_str() => ExchangeId::USA,
             _ => ExchangeId::Unknown,
         }
@@ -39,8 +39,8 @@ impl std::fmt::Display for ExchangeCode {
 pub const EXCHANGE_UNKNOWN: ExchangeCode = ExchangeCode::new("unknown");
 pub const EXCHANGE_SSE: ExchangeCode = ExchangeCode::new("sh");
 pub const EXCHANGE_SZSE: ExchangeCode = ExchangeCode::new("sz");
-pub const EXCHANGE_BJSE: ExchangeCode = ExchangeCode::new("bj");
-pub const EXCHANGE_HK: ExchangeCode = ExchangeCode::new("hk");
+pub const EXCHANGE_BSE: ExchangeCode = ExchangeCode::new("bj");
+pub const EXCHANGE_HKEX: ExchangeCode = ExchangeCode::new("hk");
 pub const EXCHANGE_US: ExchangeCode = ExchangeCode::new("us");
 
 #[repr(u8)]
@@ -60,8 +60,8 @@ impl fmt::Display for ExchangeId {
             ExchangeId::Unknown => "unknown",
             ExchangeId::ShenZhen => EXCHANGE_SZSE.as_str(),
             ExchangeId::ShangHai => EXCHANGE_SSE.as_str(),
-            ExchangeId::BeiJing => EXCHANGE_BJSE.as_str(),
-            ExchangeId::HongKong => EXCHANGE_HK.as_str(),
+            ExchangeId::BeiJing => EXCHANGE_BSE.as_str(),
+            ExchangeId::HongKong => EXCHANGE_HKEX.as_str(),
             ExchangeId::USA => EXCHANGE_US.as_str(),
         };
         write!(f, "{}", s)

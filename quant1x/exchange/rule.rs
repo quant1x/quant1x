@@ -1,5 +1,5 @@
 use crate::exchange::{
-    ExchangeId, SecurityCode, EXCHANGE_BJSE, EXCHANGE_HK, EXCHANGE_SSE, EXCHANGE_SZSE, EXCHANGE_US,
+    ExchangeId, SecurityCode, EXCHANGE_BSE, EXCHANGE_HKEX, EXCHANGE_SSE, EXCHANGE_SZSE, EXCHANGE_US,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -375,14 +375,14 @@ const SZSE_RULES: &[CodeRule] = &[
     CodeRule { prefix: "36", typ: SecurityType::Other, desc: "投票", note: "" },
     CodeRule { prefix: "37", typ: SecurityType::Other, desc: "增发/可转债申购", note: "" },
     CodeRule { prefix: "38", typ: SecurityType::Other, desc: "配股/可转债优先权", note: "" },
-    //CodeRule { prefix: "50", typ: SecurityType::Bond, desc: "资产支持证券ABS", note: "" },
-    //CodeRule { prefix: "56", typ: SecurityType::Bond, desc: "资产支持证券ABS", note: "" },
-    //CodeRule { prefix: "5", typ: SecurityType::Bond, desc: "资产支持证券ABS", note: "" },
-    //CodeRule { prefix: "700", typ: SecurityType::Warrant, desc: "B股增发", note: "" },
-    //CodeRule { prefix: "730", typ: SecurityType::Warrant, desc: "跨市场申购", note: "" },
+    CodeRule { prefix: "50", typ: SecurityType::Bond, desc: "资产支持证券ABS", note: "" },
+    CodeRule { prefix: "56", typ: SecurityType::Bond, desc: "资产支持证券ABS", note: "" },
+    CodeRule { prefix: "5", typ: SecurityType::Bond, desc: "资产支持证券ABS", note: "" },
+    CodeRule { prefix: "700", typ: SecurityType::Warrant, desc: "B股增发", note: "" },
+    CodeRule { prefix: "730", typ: SecurityType::Warrant, desc: "跨市场申购", note: "" },
 ];
 
-const BJSE_RULES: &[CodeRule] = &[
+const BSE_RULES: &[CodeRule] = &[
     CodeRule { prefix: "899", typ: SecurityType::Index, desc: "指数", note: "证券指数首三位代码为899" },
     CodeRule { prefix: "920", typ: SecurityType::Stock, desc: "北交所新上市", note: "2024-04-22 起新上市使用920号段；已上市公司继续沿用原代码直到统一切换" },
     CodeRule { prefix: "92", typ: SecurityType::Stock, desc: "上市公司普通股", note: "首两位92：上市公司普通股票；920号段自2024-04-22起用于新上市公司" },
@@ -401,7 +401,7 @@ const BJSE_RULES: &[CodeRule] = &[
     CodeRule { prefix: "850", typ: SecurityType::Option, desc: "股权激励期权", note: "股权激励期权首三位代码为850，简称后缀如 JLC1/JLC2 等" },
 ];
 
-const HKSE_RULES: &[CodeRule] = &[
+const HKEX_RULES: &[CodeRule] = &[
     CodeRule { prefix: "HSI", typ: SecurityType::Index, desc: "恒生指数", note: "" },
     CodeRule { prefix: "HSCEI", typ: SecurityType::Index, desc: "国企指数", note: "" },
     CodeRule { prefix: "HSCCI", typ: SecurityType::Index, desc: "红筹指数", note: "" },
@@ -463,8 +463,8 @@ pub fn detect(input: &str) -> SecurityCode {
     let flags = [
         EXCHANGE_SSE.as_str(),
         EXCHANGE_SZSE.as_str(),
-        EXCHANGE_BJSE.as_str(),
-        EXCHANGE_HK.as_str(),
+        EXCHANGE_BSE.as_str(),
+        EXCHANGE_HKEX.as_str(),
         EXCHANGE_US.as_str(),
     ];
 
@@ -476,9 +476,9 @@ pub fn detect(input: &str) -> SecurityCode {
             ExchangeId::ShangHai
         } else if flag == EXCHANGE_SZSE.as_str() {
             ExchangeId::ShenZhen
-        } else if flag == EXCHANGE_BJSE.as_str() {
+        } else if flag == EXCHANGE_BSE.as_str() {
             ExchangeId::BeiJing
-        } else if flag == EXCHANGE_HK.as_str() {
+        } else if flag == EXCHANGE_HKEX.as_str() {
             ExchangeId::HongKong
         } else if flag == EXCHANGE_US.as_str() {
             ExchangeId::USA
@@ -497,9 +497,9 @@ pub fn detect(input: &str) -> SecurityCode {
             ExchangeId::ShangHai
         } else if flag == EXCHANGE_SZSE.as_str() {
             ExchangeId::ShenZhen
-        } else if flag == EXCHANGE_BJSE.as_str() {
+        } else if flag == EXCHANGE_BSE.as_str() {
             ExchangeId::BeiJing
-        } else if flag == EXCHANGE_HK.as_str() {
+        } else if flag == EXCHANGE_HKEX.as_str() {
             ExchangeId::HongKong
         } else if flag == EXCHANGE_US.as_str() {
             ExchangeId::USA
@@ -533,7 +533,7 @@ pub fn detect(input: &str) -> SecurityCode {
                 if let Some(t) = match_rule(&pure_code, SZSE_RULES) {
                     return SecurityCode::new(ExchangeId::ShenZhen, &pure_code, t);
                 }
-                if let Some(t) = match_rule(&pure_code, BJSE_RULES) {
+                if let Some(t) = match_rule(&pure_code, BSE_RULES) {
                     return SecurityCode::new(ExchangeId::BeiJing, &pure_code, t);
                 }
                 if let Some(t) = match_rule(&pure_code, SSE_RULES) {
@@ -555,8 +555,8 @@ pub fn detect(input: &str) -> SecurityCode {
         let rules = match exchange_id {
             ExchangeId::ShangHai => SSE_RULES,
             ExchangeId::ShenZhen => SZSE_RULES,
-            ExchangeId::BeiJing => BJSE_RULES,
-            ExchangeId::HongKong => HKSE_RULES,
+            ExchangeId::BeiJing => BSE_RULES,
+            ExchangeId::HongKong => HKEX_RULES,
             ExchangeId::USA => &[],
             _ => &[],
         };

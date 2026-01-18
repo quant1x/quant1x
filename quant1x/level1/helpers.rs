@@ -7,7 +7,7 @@ pub fn sequence_id() -> u32 {
     SEQ_ID.fetch_add(1, Ordering::SeqCst).wrapping_add(1)
 }
 
-/// 对应 C++ helpers::GetDatetimeFromUint32，用于从压缩的日期/分钟编码中恢复年月日时分
+/// 对应 C++ helpers::getDatetimeFromUint32，用于从压缩的日期/分钟编码中恢复年月日时分
 pub fn get_datetime_from_u32(
     category: i32,
     zipday: u32,
@@ -29,7 +29,7 @@ pub fn get_datetime_from_u32(
     }
 }
 
-/// 对应 C++ helpers::IntToFloat64，将整数编码解码为浮点价格值
+/// 对应 C++ helpers::integerToFloat64，将整数编码解码为浮点价格值
 pub fn int_to_float64(v: u32) -> f64 {
     if v == 0 {
         return 0.0;

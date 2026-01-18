@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from enum import Enum
 import re
-from .code import ExchangeId, ExchangeSSE, ExchangeSZSE, ExchangeBJSE, ExchangeHK, ExchangeUS
+from .code import ExchangeId, ExchangeSSE, ExchangeSZSE, ExchangeBSE, ExchangeHKEX, ExchangeUS
 
 
 class SecurityType(Enum):
@@ -34,8 +34,8 @@ class SecurityCode:
 ALL_EXCHANGE_CODES = {
     ExchangeSSE: ExchangeId.ShangHai,
     ExchangeSZSE: ExchangeId.ShenZhen,
-    ExchangeBJSE: ExchangeId.BeiJing,
-    ExchangeHK: ExchangeId.HongKong,
+    ExchangeBSE: ExchangeId.BeiJing,
+    ExchangeHKEX: ExchangeId.HongKong,
     ExchangeUS: ExchangeId.USA,
 }
 
@@ -336,14 +336,14 @@ szse_rules = [
     ("36", SecurityType.Other, "投票", ""),
     ("37", SecurityType.Other, "增发/可转债申购", ""),
     ("38", SecurityType.Other, "配股/可转债优先权", ""),
-    #("50", SecurityType.Bond, "资产支持证券ABS", ""),
-    #("56", SecurityType.Bond, "资产支持证券ABS", ""),
-    #("5", SecurityType.Bond, "资产支持证券ABS", ""),
-    #("700", SecurityType.Warrant, "B股增发", ""),
-    #("730", SecurityType.Warrant, "跨市场申购", ""),
+    ("50", SecurityType.Bond, "资产支持证券ABS", ""),
+    ("56", SecurityType.Bond, "资产支持证券ABS", ""),
+    ("5", SecurityType.Bond, "资产支持证券ABS", ""),
+    ("700", SecurityType.Warrant, "B股增发", ""),
+    ("730", SecurityType.Warrant, "跨市场申购", ""),
 ]
 
-bjse_rules = [
+bse_rules = [
     ("899", SecurityType.Index, "指数", "证券指数首三位代码为899"),
     ("920", SecurityType.Stock, "北交所新上市", "2024-04-22 起新上市使用920号段；已上市公司继续沿用原代码直到统一切换"),
     ("92", SecurityType.Stock, "上市公司普通股", "首两位92：上市公司普通股票；920号段自2024-04-22起用于新上市公司"),
@@ -362,7 +362,7 @@ bjse_rules = [
     ("850", SecurityType.Option, "股权激励期权", "股权激励期权首三位代码为850"),
 ]
 
-hkse_rules = [
+hkex_rules = [
     ("HSI", SecurityType.Index, "恒生指数", ""),
     ("HSCEI", SecurityType.Index, "国企指数", ""),
     ("HSCCI", SecurityType.Index, "红筹指数", ""),
@@ -462,9 +462,9 @@ def detect(input_str: str) -> SecurityCode:
         elif exchange_id == ExchangeId.ShenZhen:
             rules = szse_rules
         elif exchange_id == ExchangeId.BeiJing:
-            rules = bjse_rules
+            rules = bse_rules
         elif exchange_id == ExchangeId.HongKong:
-            rules = hkse_rules
+            rules = hkex_rules
         elif exchange_id == ExchangeId.USA:
             return SecurityCode(exchange_id, symbol, SecurityType.Stock)
         else:

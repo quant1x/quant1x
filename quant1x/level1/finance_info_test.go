@@ -15,11 +15,11 @@ func TestFinanceInfo(t *testing.T) {
 	defer release()
 
 	req := &FinanceRequest{
-		Count:  2,
-		Market: uint8(exchange.ExchangeIdShangHai),
-		Codes:  []string{"sh600600", "sz000001"},
+		Codes: []exchange.InstrumentInfo{
+			{Exchange: exchange.ExchangeSSE, Ticker: "600600"},
+			{Exchange: exchange.ExchangeSZSE, Ticker: "000001"},
+		},
 	}
-	copy(req.Code[:], "600000")
 	resp := &FinanceResponse{}
 	if err := Process(conn, req, resp); err != nil {
 		t.Fatalf("Process() returned error: %v", err)

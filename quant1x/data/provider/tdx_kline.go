@@ -12,7 +12,7 @@ import (
 )
 
 // tdxFetchRawSecurityBars 执行底层 level1 SecurityBars 请求并返回原始响应列表（未转换）。
-func tdxFetchRawSecurityBars(securityCode exchange.SecurityCode, category level1.KLineType, start, count uint16) ([]level1.SecurityBar, error) {
+func tdxFetchRawSecurityBars(securityCode exchange.InstrumentInfo, category level1.KLineType, start, count uint16) ([]level1.SecurityBar, error) {
 	conn, release, err := level1.GetStdConnection()
 	if err != nil {
 		return nil, fmt.Errorf("level1 client acquire failed: %w", err)
@@ -34,9 +34,9 @@ func tdxFetchRawSecurityBars(securityCode exchange.SecurityCode, category level1
 
 // Update 对应 C++ DataKLine::Update 的行为：读取本地缓存、确定时间窗口、分页拉取 level1 数据、
 // 反转与合并结果、在适当时机应用前复权，并写回缓存文件。
-func tdxUpdateKLine(securityCode exchange.SecurityCode, _date exchange.Timestamp) {
+func tdxUpdateKLine(securityCode exchange.InstrumentInfo, _date exchange.Timestamp) {
 	_ = _date
-	if securityCode.Type == exchange.SecurityUnknown {
+	if securityCode.Type == exchange.SecurityTypeUnknown {
 		logger.Debugf("[DataKLine] unknown security type for code %s", securityCode.String())
 		return
 	}
@@ -200,7 +200,7 @@ func (d *DataKLine) Key() string     { return "day" }
 func (d *DataKLine) Name() string    { return "日K线" }
 func (d *DataKLine) Usage() string   { return "日K线" }
 
-func (d *DataKLine) Print(code exchange.SecurityCode, dates ...exchange.Timestamp) {
+func (d *DataKLine) Print(code exchange.InstrumentInfo, dates ...exchange.Timestamp) {
 	// no-op, matches C++ stub
 	_ = code
 	_ = dates
@@ -209,7 +209,7 @@ func (d *DataKLine) Print(code exchange.SecurityCode, dates ...exchange.Timestam
 // Update mirrors the C++ DataKLine::Update behavior: read local cache, determine
 // date window, page-fetch from level1, reverse/merge results, apply forward
 // adjustments when appropriate, and save back the cache file.
-func (d *DataKLine) Update(code exchange.SecurityCode, _date exchange.Timestamp) {
+func (d *DataKLine) Update(code exchange.InstrumentInfo, _date exchange.Timestamp) {
 	tdxUpdateKLine(code, _date)
 }
 

@@ -23,7 +23,7 @@ namespace level1 {
         // @param tminutes 压缩的时间（分钟）
         // @return 返回一个包含年、月、日、小时和分钟的元组
         inline std::tuple<int, int, int, int, int>
-        GetDatetimeFromUint32(int category, uint32_t zipday, uint16_t tminutes) {
+        getDatetimeFromUint32(int category, uint32_t zipday, uint16_t tminutes) {
             int year = 0, month = 0, day = 0, hour = 15, minute = 0;
 
             if (category < 4 || category == 7 || category == 8) {
@@ -194,7 +194,7 @@ namespace level1 {
         // 该函数假设输入为 32 位无符号整数，并将其分解为 4 个字节部分，计算出对应的 float64 值
         // 注意: 此函数仅适用于整数类型，且不处理负数或非整数输入
         template <typename T>
-        inline f64 IntToFloat64(T integer) {
+        inline f64 integerToFloat64(T integer) {
             // 确保输入为整数类型
             static_assert(std::is_integral_v<T>, "T must be an integer type");
 
@@ -252,16 +252,16 @@ namespace level1 {
         }
 
         // 判断 float64 是否为 NaN 或 Inf
-        inline bool Float64IsNaN(double f) {
+        inline bool float64IsNaN(double f) {
             return std::isnan(f) || std::isinf(f);
         }
 
         // 模板函数: 将数值类型转换为 double
         template <typename T>
-        inline double NumberToFloat64(T v) {
+        inline double numberToFloat64(T v) {
             // 确保输入类型是 uint16_t, uint32_t 或 float
             static_assert(std::is_same_v<T, uint16_t> || std::is_same_v<T, uint32_t> || std::is_same_v<T, float>,
-                          "Unsupported type for NumberToFloat64");
+                          "Unsupported type for numberToFloat64");
 
             return static_cast<double>(v);
         }

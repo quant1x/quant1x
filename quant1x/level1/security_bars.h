@@ -209,10 +209,10 @@ namespace level1 {
                 auto price_low_diff = bs.varint_decode();
 
                 u32 ivol = bs.get_u32();
-                e.Vol = helpers::IntToFloat64(ivol);
+                e.Vol = helpers::integerToFloat64(ivol);
 
                 u32 dbvol = bs.get_u32();
-                e.Amount = helpers::IntToFloat64(i64(dbvol));
+                e.Amount = helpers::integerToFloat64(i64(dbvol));
 
                 e.Open = f64(price_open_diff+pre_diff_base) / 1000.0;
                 price_open_diff += pre_diff_base;

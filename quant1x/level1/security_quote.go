@@ -250,7 +250,7 @@ func (r *SecurityQuoteResponse) Deserialize(data []byte) error {
 		ele.Code = code
 		pos += 6
 
-		baseUnit := DefaultBaseUnit(int(ele.Market), ele.Code)
+		baseUnit := defaultBaseUnit(int(ele.Market), ele.Code)
 
 		if pos+2 > len(data) {
 			return fmt.Errorf("unexpected EOF for active1")
@@ -258,44 +258,44 @@ func (r *SecurityQuoteResponse) Deserialize(data []byte) error {
 		ele.Active1 = binary.LittleEndian.Uint16(data[pos : pos+2])
 		pos += 2
 
-		priceBase := VarintDecode(data, &pos)
+		priceBase := varintDecode(data, &pos)
 		ele.Price = getPrice(baseUnit, priceBase, 0)
 
-		tmp := VarintDecode(data, &pos)
+		tmp := varintDecode(data, &pos)
 		ele.LastClose = getPrice(baseUnit, priceBase, tmp)
 
-		ele.Open = getPrice(baseUnit, priceBase, VarintDecode(data, &pos))
-		ele.High = getPrice(baseUnit, priceBase, VarintDecode(data, &pos))
-		ele.Low = getPrice(baseUnit, priceBase, VarintDecode(data, &pos))
+		ele.Open = getPrice(baseUnit, priceBase, varintDecode(data, &pos))
+		ele.High = getPrice(baseUnit, priceBase, varintDecode(data, &pos))
+		ele.Low = getPrice(baseUnit, priceBase, varintDecode(data, &pos))
 
-		ele.ReversedBytes0 = VarintDecode(data, &pos)
+		ele.ReversedBytes0 = varintDecode(data, &pos)
 		if ele.ReversedBytes0 > 0 {
-			ele.ServerTime = FormatTime(ele.ReversedBytes0)
+			ele.ServerTime = formatTimestamp(ele.ReversedBytes0)
 		} else {
 			ele.ServerTime = "0"
 		}
 
-		ele.ReversedBytes1 = VarintDecode(data, &pos)
+		ele.ReversedBytes1 = varintDecode(data, &pos)
 
-		vol := VarintDecode(data, &pos)
+		vol := varintDecode(data, &pos)
 		ele.Vol = vol * 100
 
-		ele.CurVol = VarintDecode(data, &pos)
+		ele.CurVol = varintDecode(data, &pos)
 
 		if pos+4 > len(data) {
 			return fmt.Errorf("unexpected EOF amount")
 		}
 		rawAmount := binary.LittleEndian.Uint32(data[pos : pos+4])
 		pos += 4
-		ele.Amount = IntToFloat64(uint32(rawAmount))
+		ele.Amount = integerToFloat64(uint32(rawAmount))
 
-		ele.SVol = VarintDecode(data, &pos)
-		ele.BVol = VarintDecode(data, &pos)
+		ele.SVol = varintDecode(data, &pos)
+		ele.BVol = varintDecode(data, &pos)
 
-		ele.IndexOpenAmount = VarintDecode(data, &pos) * 100
-		ele.StockOpenAmount = VarintDecode(data, &pos) * 100
-
-		isIndexOrBlock := exchange.AssertIndexByMarketAndCode(exchange.ExchangeId(ele.Market), ele.Code)
+		ele.IndexOpenAmount = varintDecode(data, &pos) * 100
+		ele.StockOpenAmount = varintDecode(data, &pos) * 100
+		ex := marketIdToExchange(int(ele.Market))
+		isIndexOrBlock := exchange.AssertIndexByMarketAndCode(ex, ele.Code)
 
 		var tmpOpenVolume float64
 		if isIndexOrBlock {
@@ -318,10 +318,10 @@ func (r *SecurityQuoteResponse) Deserialize(data []byte) error {
 		var bidVols [5]int64
 		var askVols [5]int64
 		for l := 0; l < 5; l++ {
-			bidDiff := VarintDecode(data, &pos)
-			askDiff := VarintDecode(data, &pos)
-			bidVol := VarintDecode(data, &pos)
-			askVol := VarintDecode(data, &pos)
+			bidDiff := varintDecode(data, &pos)
+			askDiff := varintDecode(data, &pos)
+			bidVol := varintDecode(data, &pos)
+			askVol := varintDecode(data, &pos)
 			bidPrices[l] = getPrice(baseUnit, bidDiff, priceBase)
 			askPrices[l] = getPrice(baseUnit, askDiff, priceBase)
 			bidVols[l] = bidVol
@@ -342,10 +342,10 @@ func (r *SecurityQuoteResponse) Deserialize(data []byte) error {
 		ele.ReversedBytes4 = binary.LittleEndian.Uint16(data[pos : pos+2])
 		pos += 2
 
-		ele.ReversedBytes5 = VarintDecode(data, &pos)
-		ele.ReversedBytes6 = VarintDecode(data, &pos)
-		ele.ReversedBytes7 = VarintDecode(data, &pos)
-		ele.ReversedBytes8 = VarintDecode(data, &pos)
+		ele.ReversedBytes5 = varintDecode(data, &pos)
+		ele.ReversedBytes6 = varintDecode(data, &pos)
+		ele.ReversedBytes7 = varintDecode(data, &pos)
+		ele.ReversedBytes8 = varintDecode(data, &pos)
 
 		if pos+2 > len(data) {
 			return fmt.Errorf("unexpected EOF for rate")

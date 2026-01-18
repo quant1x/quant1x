@@ -326,7 +326,7 @@ namespace level1 {
                 ele.vol *= 100;
                 ele.curVol = stream.varint_decode();
                 u32 rawAmount = stream.get_u32();
-                ele.amount = helpers::IntToFloat64(int(rawAmount));
+                ele.amount = helpers::integerToFloat64(int(rawAmount));
 
                 ele.sVol = stream.varint_decode();
                 ele.bVol = stream.varint_decode();

@@ -13,7 +13,6 @@ import (
 	"gitee.com/quant1x/quant1x/quant1x/core"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 	"gitee.com/quant1x/quant1x/quant1x/logger"
-	"gitee.com/quant1x/quant1x/quant1x/markets"
 )
 
 const (
@@ -87,7 +86,7 @@ func CleanExpiredStateFiles() error {
 
 // UpdateWithAdapters runs adapters (feature adapters produce CSV files).
 // This is a simplified, concurrency-limited translation of cache.cpp logic.
-func UpdateWithAdapters(adapters []DataAdapter, featureDate exchange.Timestamp) int {
+func UpdateWithAdapters(adapters []DataAdapter, featureDate exchange.Timestamp, allCodes []exchange.InstrumentInfo) int {
 	defaultConcurrency := runtime.NumCPU()
 	if defaultConcurrency > 8 {
 		defaultConcurrency = 8
@@ -96,7 +95,7 @@ func UpdateWithAdapters(adapters []DataAdapter, featureDate exchange.Timestamp) 
 	// cache date uses featureDate as-is; consumers can pass next-trading-day if needed
 	cacheDate := featureDate
 
-	allCodes := markets.GetCodeList()
+	//allCodes := markets.GetCodeList()
 
 	count := len(adapters)
 	for idx, adapter := range adapters {
@@ -112,7 +111,7 @@ func UpdateWithAdapters(adapters []DataAdapter, featureDate exchange.Timestamp) 
 
 		// worker pool
 		numThreads := defaultConcurrency
-		jobs := make(chan exchange.SecurityCode)
+		jobs := make(chan exchange.InstrumentInfo)
 		var wg sync.WaitGroup
 
 		// results for feature adapter
@@ -200,7 +199,7 @@ func UpdateWithAdapters(adapters []DataAdapter, featureDate exchange.Timestamp) 
 
 // UpdateAll decides if an update should run (based on trading day and times)
 // and invokes UpdateWithAdapters for registered plugins.
-func UpdateAll() {
+func UpdateAll(codes []exchange.InstrumentInfo) {
 	today := exchange.NowTimestamp().OnlyDate()
 	lastTradingDay := exchange.LastTradingDay(exchange.NowTimestamp()).OnlyDate()
 	currentTime := exchange.NowTimestamp().ToString("15:04:05")
@@ -232,7 +231,7 @@ func UpdateAll() {
 	if shouldUpdate && !updatePhase.IsEmpty() {
 		plugins := Plugins(0)
 		// feature date: use NowTimestamp() as placeholder
-		_ = UpdateWithAdapters(plugins, exchange.NowTimestamp())
+		_ = UpdateWithAdapters(plugins, exchange.NowTimestamp(), codes)
 		_ = DoneUpdate(today, updatePhase)
 	}
 }

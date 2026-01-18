@@ -3,9 +3,13 @@ package level1
 import (
 	"sync"
 	"testing"
+
+	"gitee.com/quant1x/quant1x/quant1x/data"
 )
 
 func TestSecurityListReal(t *testing.T) {
+	D := data.DataHandler()
+	_ = D
 	if testing.Short() {
 		t.Skip("skipping real security list test in short mode")
 	}
