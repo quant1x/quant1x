@@ -15,8 +15,7 @@ const (
 
 	// 明确表示竞价时段
 
-	TickTransactionAuctionOpen  = 8 // 开盘集合竞价
-	TickTransactionAuctionClose = 9 // 收盘集合竞价
+	TickTransactionAuctionClose = 8 // 收盘集合竞价
 )
 
 // TickTransaction mirrors the C++ TickTransaction structure.
