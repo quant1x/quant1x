@@ -8,14 +8,15 @@ import (
 )
 
 // 缓存id, 由市场代码+证券代码组成
-func CacheId(code string) string {
-	symbol := exchange.DetectSymbol(code)
-	return symbol.Instrument()
+func CacheId(symbol string) string {
+	instrument := exchange.DetectSymbol(symbol)
+	return instrument.Symbol()
+
 }
 
-func CacheIdPath(code string) string {
+func CacheIdPath(symbol string) string {
 	const N = 3
-	cacheId := CacheId(code)
+	cacheId := CacheId(symbol)
 	if len(cacheId) <= N {
 		return cacheId
 	}
@@ -23,8 +24,8 @@ func CacheIdPath(code string) string {
 	return prefix + "/" + cacheId
 }
 
-func Top10HoldersFilename(code, date string) string {
-	idPath := CacheIdPath(code)
+func Top10HoldersFilename(symbol, date string) string {
+	idPath := CacheIdPath(symbol)
 	quarter, _, _ := std.GetQuarterByDate(date, 0)
 	return filepath.Join(GetHoldingPath(), quarter, idPath+".csv")
 }

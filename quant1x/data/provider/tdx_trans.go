@@ -76,7 +76,7 @@ type TurnoverDataSummary struct {
 }
 
 // loadTransactionDataFromCache 从 CSV 缓存读取逐笔数据并返回数据列表及起始时间字符串。
-func loadTransactionDataFromCache(sc exchange.InstrumentInfo, featureDate exchange.Timestamp, ignorePreviousData bool) ([]data.Transaction, string) {
+func loadTransactionDataFromCache(instrument exchange.InstrumentInfo, featureDate exchange.Timestamp, ignorePreviousData bool) ([]data.Transaction, string) {
 	list := make([]data.Transaction, 0)
 
 	if ignorePreviousData {
@@ -88,7 +88,8 @@ func loadTransactionDataFromCache(sc exchange.InstrumentInfo, featureDate exchan
 	}
 
 	startTime := HistoricalTransactionDataFirstTime
-	correctedCode := sc.String()
+	correctedCode := instrument.Symbol()
+	logger.Debugf("loading transaction data from cache for %s on %s", correctedCode, featureDate.OnlyDate())
 	filename := config.GetHistoricalTradeFilename(correctedCode, featureDate.OnlyDate())
 
 	err := encoding.CsvToSlices(filename, &list)
@@ -130,7 +131,7 @@ func loadTransactionDataFromCache(sc exchange.InstrumentInfo, featureDate exchan
 }
 
 // updateTransactionData 从 level1 拉取逐笔数据并写入合并后的 CSV 缓存。
-func updateTransactionData(securityCode exchange.InstrumentInfo, featureDate exchange.Timestamp, startTime string) {
+func updateTransactionData(instrument exchange.InstrumentInfo, featureDate exchange.Timestamp, startTime string) {
 	tradeDate := featureDate.YYYYMMDD()
 	todayIsLastTradingDate := featureDate.IsSameDate(exchange.NowTimestamp())
 	offset := int(level1.TickTransactionPerRequestMax)
@@ -153,10 +154,10 @@ func updateTransactionData(securityCode exchange.InstrumentInfo, featureDate exc
 	for {
 		var reply *level1.TransactionReply
 		if todayIsLastTradingDate {
-			req := level1.NewTransactionRequest(securityCode, start, offset)
-			resp := level1.NewTransactionResponse(securityCode)
+			req := level1.NewTransactionRequest(instrument, start, offset)
+			resp := level1.NewTransactionResponse(instrument)
 			if err := level1.Process(conn, req, resp); err != nil {
-				logger.Errorf("[tdx::trans] code=%s, tradeDate=%d, error=%v", securityCode.String(), tradeDate, err)
+				logger.Errorf("[tdx::trans] code=%s, tradeDate=%d, error=%v", instrument.Symbol(), tradeDate, err)
 				break
 			}
 			if resp.Reply.Count == 0 || len(resp.Reply.List) == 0 {
@@ -164,10 +165,10 @@ func updateTransactionData(securityCode exchange.InstrumentInfo, featureDate exc
 			}
 			reply = &resp.Reply
 		} else {
-			req := level1.NewHistoryTransactionRequest(securityCode, u32Date, start, offset)
-			resp := level1.NewHistoryTransactionResponse(securityCode)
+			req := level1.NewHistoryTransactionRequest(instrument, u32Date, start, offset)
+			resp := level1.NewHistoryTransactionResponse(instrument)
 			if err := level1.Process(conn, req, resp); err != nil {
-				logger.Errorf("[tdx::trans] code=%s, tradeDate=%d, error=%v", securityCode.String(), tradeDate, err)
+				logger.Errorf("[tdx::trans] code=%s, tradeDate=%d, error=%v", instrument.Symbol(), tradeDate, err)
 				break
 			}
 			if resp.Reply.Count == 0 || len(resp.Reply.List) == 0 {
@@ -209,9 +210,9 @@ func updateTransactionData(securityCode exchange.InstrumentInfo, featureDate exc
 	if len(history) == 0 {
 		return
 	}
-	correctedCode := securityCode.String()
+	correctedCode := instrument.Symbol()
 	// 与现有缓存合并
-	existingList, _ := loadTransactionDataFromCache(securityCode, featureDate, false)
+	existingList, _ := loadTransactionDataFromCache(instrument, featureDate, false)
 	existingList = append(existingList, history...)
 
 	filename := config.GetHistoricalTradeFilename(correctedCode, featureDate.OnlyDate())
@@ -250,18 +251,18 @@ func updateTransactionData(securityCode exchange.InstrumentInfo, featureDate exc
 	}
 }
 
-func ensureTransactionDataUpdated(securityCode exchange.InstrumentInfo, featureDate exchange.Timestamp, ignorePreviousData bool) {
-	list, startTime := loadTransactionDataFromCache(securityCode, featureDate, ignorePreviousData)
+func ensureTransactionDataUpdated(instrument exchange.InstrumentInfo, featureDate exchange.Timestamp, ignorePreviousData bool) {
+	list, startTime := loadTransactionDataFromCache(instrument, featureDate, ignorePreviousData)
 	needsUpdate := len(list) == 0 || (list[len(list)-1].Time != HistoricalTransactionDataLastTime)
 	if needsUpdate {
-		updateTransactionData(securityCode, featureDate, startTime)
+		updateTransactionData(instrument, featureDate, startTime)
 	}
 }
 
 // CheckoutTransactionData 导出：检出指定日期的逐笔成交数据
-func CheckoutTransactionData(securityCode exchange.InstrumentInfo, featureDate exchange.Timestamp, ignorePreviousData bool) []data.Transaction {
-	ensureTransactionDataUpdated(securityCode, featureDate, ignorePreviousData)
-	list, _ := loadTransactionDataFromCache(securityCode, featureDate, ignorePreviousData)
+func CheckoutTransactionData(instrument exchange.InstrumentInfo, featureDate exchange.Timestamp, ignorePreviousData bool) []data.Transaction {
+	ensureTransactionDataUpdated(instrument, featureDate, ignorePreviousData)
+	list, _ := loadTransactionDataFromCache(instrument, featureDate, ignorePreviousData)
 	return list
 }
 
@@ -328,13 +329,13 @@ func (d *DataTrans) Key() string     { return "trans" }
 func (d *DataTrans) Name() string    { return "逐笔成交" }
 func (d *DataTrans) Usage() string   { return "" }
 
-func (d *DataTrans) Print(code exchange.InstrumentInfo, dates ...exchange.Timestamp) {
-	_ = code
+func (d *DataTrans) Print(instrument exchange.InstrumentInfo, dates ...exchange.Timestamp) {
+	_ = instrument
 	_ = dates
 }
 
-func (d *DataTrans) Update(code exchange.InstrumentInfo, date exchange.Timestamp) {
-	ensureTransactionDataUpdated(code, date, false)
+func (d *DataTrans) Update(instrument exchange.InstrumentInfo, date exchange.Timestamp) {
+	ensureTransactionDataUpdated(instrument, date, false)
 }
 
 func init() {

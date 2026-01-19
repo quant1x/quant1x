@@ -57,17 +57,17 @@ func RegisterHook(name string, cb func()) context.Context {
 	go func() {
 		<-ctx.Done()
 		if logger != nil {
-			logger.Debugf("x/context: stopping %s", name)
+			logger.Debugf("runtime/context: stopping %s", name)
 		}
 		// 执行回调
 		cb()
 		if logger != nil {
-			logger.Debugf("x/context: %s stopped", name)
+			logger.Debugf("runtime/context: %s stopped", name)
 		}
 		// cancel 子context
 		cancel()
 		if logger != nil {
-			logger.Debugf("x/context: %s finished", name)
+			logger.Debugf("runtime/context: %s finished", name)
 		}
 		globalWaitGroup.Done()
 	}()

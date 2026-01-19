@@ -34,19 +34,19 @@ func tdxFetchRawSecurityBars(securityCode exchange.InstrumentInfo, category leve
 
 // Update 对应 C++ DataKLine::Update 的行为：读取本地缓存、确定时间窗口、分页拉取 level1 数据、
 // 反转与合并结果、在适当时机应用前复权，并写回缓存文件。
-func tdxUpdateKLine(securityCode exchange.InstrumentInfo, _date exchange.Timestamp) {
+func tdxUpdateKLine(symbol exchange.InstrumentInfo, _date exchange.Timestamp) {
 	_ = _date
-	if securityCode.Type == exchange.SecurityTypeUnknown {
-		logger.Debugf("[DataKLine] unknown security type for code %s", securityCode.String())
+	if symbol.Type == exchange.SecurityTypeUnknown {
+		logger.Debugf("[DataKLine] unknown security type for code %s", symbol.Symbol())
 		return
 	}
 
 	// 1. 确定缓存文件并读取本地缓存
-	cacheFilename := config.GetKlineFilename(securityCode.String(), true)
+	cacheFilename := config.GetKlineFilename(symbol.Symbol(), true)
 	var cacheKLines []data.KLine
 	err := encoding.CsvToSlices(cacheFilename, &cacheKLines)
 	if err != nil {
-		logger.Debugf("[DataKLine] load cache failed for %s: %v", securityCode.String(), err)
+		logger.Debugf("[DataKLine] load cache failed for %s: %v", symbol.Symbol(), err)
 		// 继续更新
 	}
 	klinesLength := len(cacheKLines)
@@ -54,7 +54,7 @@ func tdxUpdateKLine(securityCode exchange.InstrumentInfo, _date exchange.Timesta
 	adjustTimes := 0
 
 	// 默认起始日期（使用 datasets.MarketFirstDate，与 C++ 的 market_first_date 等价）
-	currentStartDate := exchange.GetFirstMarketDate(securityCode.Exchange)
+	currentStartDate := exchange.GetFirstMarketDate(symbol.Exchange)
 	if klinesLength > 0 {
 		if klinesOffsetDays > klinesLength {
 			klinesOffsetDays = klinesLength
@@ -81,7 +81,7 @@ func tdxUpdateKLine(securityCode exchange.InstrumentInfo, _date exchange.Timesta
 		firstNotAdjustedBar := cacheKLines[firstNotAdjustedIdx]
 		adjustTimes = firstNotAdjustedBar.AdjustmentCount
 		currentStartDate, _ = exchange.ParseTimestamp(firstNotAdjustedBar.Date)
-		logger.Debugf("[DataKLine] [%s]: cached klines=%d, adjustTimes=%d, start from %s", securityCode.String(), klinesLength, adjustTimes, currentStartDate.OnlyDate())
+		logger.Debugf("[DataKLine] [%s]: cached klines=%d, adjustTimes=%d, start from %s", symbol.Symbol(), klinesLength, adjustTimes, currentStartDate.OnlyDate())
 	}
 
 	// 2. 确定结束日期
@@ -95,7 +95,7 @@ func tdxUpdateKLine(securityCode exchange.InstrumentInfo, _date exchange.Timesta
 	}
 	total := len(ts)
 	if total == 0 {
-		logger.Debugf("[DataKLine] empty date range for %s", securityCode.String())
+		logger.Debugf("[DataKLine] empty date range for %s", symbol.Symbol())
 		return
 	}
 
@@ -114,9 +114,9 @@ func tdxUpdateKLine(securityCode exchange.InstrumentInfo, _date exchange.Timesta
 		if count == 0 {
 			break
 		}
-		reply, err := tdxFetchRawSecurityBars(securityCode, level1.KLineDaily, start, count)
+		reply, err := tdxFetchRawSecurityBars(symbol, level1.KLineDaily, start, count)
 		if err != nil {
-			logger.Debugf("[DataKLine] fetch error for %s start=%d count=%d: %v", securityCode.String(), start, count, err)
+			logger.Debugf("[DataKLine] fetch error for %s start=%d count=%d: %v", symbol.Symbol(), start, count, err)
 			break
 		}
 		if len(reply) == 0 {
@@ -165,7 +165,7 @@ func tdxUpdateKLine(securityCode exchange.InstrumentInfo, _date exchange.Timesta
 
 	// 6. 判断是否需要复权处理
 	isFreshFetchRequireAdjustment := adjustTimes == 1
-	dividends, _ := tdxGetXdxrList(securityCode)
+	dividends, _ := tdxGetXdxrList(symbol)
 	if isFreshFetchRequireAdjustment {
 		data.ApplyForwardAdjustmentForEvent(incremental, currentStartDate.OnlyDate(), dividends)
 	}

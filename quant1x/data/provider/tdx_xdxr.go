@@ -14,11 +14,11 @@ import (
 // 并通过 config 包确定的文件名保存到本地缓存，然后返回加载的切片。
 // 调用者无需注册 resolver；该函数会使用 config.GetXdxrFilename 生成路径。
 // 该操作会发起真实的网络请求。
-func tdxFetchXdxrList(sc exchange.InstrumentInfo) ([]data.XdxrInfo, error) {
-	if sc.Type == exchange.SecurityTypeUnknown {
-		return nil, fmt.Errorf("unknown security type for code %s", sc.String())
+func tdxFetchXdxrList(instrument exchange.InstrumentInfo) ([]data.XdxrInfo, error) {
+	if instrument.Type == exchange.SecurityTypeUnknown {
+		return nil, fmt.Errorf("unknown security type for code %s", instrument.Symbol())
 	}
-	code := sc.String()
+	code := instrument.Symbol()
 	// Compute filename via config package
 	if len(code) != 8 {
 		return nil, fmt.Errorf("invalid security code length: %s", code)
@@ -34,7 +34,7 @@ func tdxFetchXdxrList(sc exchange.InstrumentInfo) ([]data.XdxrInfo, error) {
 		return nil, fmt.Errorf("nil connection from level1 client")
 	}
 
-	req := level1.XdxrInfoRequest{Code: sc}
+	req := level1.XdxrInfoRequest{Instrument: instrument}
 	resp := level1.NewXdxrInfoResponse()
 	if err := level1.Process(conn, req, resp); err != nil {
 		return nil, fmt.Errorf("xdxr request failed: %w", err)
@@ -61,6 +61,9 @@ func tdxFetchXdxrList(sc exchange.InstrumentInfo) ([]data.XdxrInfo, error) {
 		}
 		out = append(out, xi)
 	}
+	if len(out) == 0 {
+		return nil, data.ErrNoData
+	}
 	fname := config.GetXdxrFilename(code)
 	err = encoding.SlicesToCsv(fname, out)
 	return out, err
@@ -68,10 +71,10 @@ func tdxFetchXdxrList(sc exchange.InstrumentInfo) ([]data.XdxrInfo, error) {
 
 func tdxGetXdxrList(sc exchange.InstrumentInfo) ([]data.XdxrInfo, error) {
 	if sc.Type == exchange.SecurityTypeUnknown {
-		return nil, fmt.Errorf("unknown security type for code %s", sc.String())
+		return nil, fmt.Errorf("unknown security type for code %s", sc.Symbol())
 	}
 	// 1. 确定缓存文件并读取本地缓存
-	cacheFilename := config.GetXdxrFilename(sc.String())
+	cacheFilename := config.GetXdxrFilename(sc.Symbol())
 	var xdxr_list []data.XdxrInfo
 	err := encoding.CsvToSlices(cacheFilename, &xdxr_list)
 	if err == nil && len(xdxr_list) > 0 {
@@ -101,13 +104,13 @@ func (d *DataXdxr) Key() string     { return "xdxr" }
 func (d *DataXdxr) Name() string    { return "除权除息" }
 func (d *DataXdxr) Usage() string   { return "" }
 
-func (d *DataXdxr) Print(code exchange.InstrumentInfo, dates ...exchange.Timestamp) {
+func (d *DataXdxr) Print(instrument exchange.InstrumentInfo, dates ...exchange.Timestamp) {
 	// No-op for now; could be extended to pretty-print loaded XDXR rows.
 }
 
-func (d *DataXdxr) Update(code exchange.InstrumentInfo, date exchange.Timestamp) {
+func (d *DataXdxr) Update(instrument exchange.InstrumentInfo, date exchange.Timestamp) {
 	// Delegate to UpdateXdxr which fetches and writes CSV data.
-	_, _ = tdxFetchXdxrList(code)
+	_, _ = tdxFetchXdxrList(instrument)
 }
 
 func init() {

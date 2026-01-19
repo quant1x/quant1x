@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"gitee.com/quant1x/quant1x/quant1x/encoding"
+	"gitee.com/quant1x/quant1x/quant1x/exchange"
 )
 
 const (
@@ -22,7 +23,7 @@ type SecurityListRequest struct {
 	Unknown uint32
 }
 
-func NewSecurityListRequest(market int, start, count int) SecurityListRequest {
+func NewSecurityListRequest(market exchange.Exchange, start, count int) SecurityListRequest {
 	if count <= 0 || count > SecurityListPerRequestMax {
 		count = SecurityListPerRequestMax
 	}
@@ -30,7 +31,7 @@ func NewSecurityListRequest(market int, start, count int) SecurityListRequest {
 		start = 0
 	}
 	return SecurityListRequest{
-		Market:  uint16(market),
+		Market:  uint16(exchangeToMarketId(market)),
 		Start:   uint32(start),
 		Count:   uint32(count),
 		Unknown: 0,

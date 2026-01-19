@@ -89,6 +89,8 @@ func IsTradingDisabled(status TimeStatus) bool {
 	return status == ExchangeClosing || status == ExchangeSuspend || (status&TimeStatus(MaskHalt)) != 0
 }
 
+const LayoutSession = "15:04:05" // 交易会话时间格式
+
 // TimeRange 交易时段, 左闭右开区间
 type TimeRange struct {
 	Begin  Timestamp
@@ -295,8 +297,6 @@ func GetTodayInit() Timestamp {
 	return tsTodayInit
 }
 
-const LayoutSession = "15:04:05"
-
 var (
 	onceFirstMarketDate sync.Once
 	firstMarketDate     Timestamp
@@ -317,4 +317,11 @@ func GetFirstMarketDate(exchange Exchange) Timestamp {
 	onceFirstMarketDate.Do(initFirstMarketDate)
 	_ = exchange
 	return firstMarketDate
+}
+
+// GetInitTime 返回指定交易所的初始交易时间（小时和分钟）
+// 当前实现返回预设的市场开盘时间 PreMarketHour 和 PreMarketMinute
+func GetInitTime(exchange Exchange) (hour, minute int) {
+	_ = exchange
+	return PreMarketHour, PreMarketMinute
 }

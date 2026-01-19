@@ -8,22 +8,27 @@ import (
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 )
 
-// AShareIndexList A股指数列表
-var AShareIndexList = []exchange.InstrumentInfo{
-	{Exchange: exchange.ExchangeSSE, Ticker: "000001", Type: exchange.SecurityTypeIndex},  // 上证指数
-	{Exchange: exchange.ExchangeSSE, Ticker: "000002", Type: exchange.SecurityTypeIndex},  // 上证A股指数
-	{Exchange: exchange.ExchangeSSE, Ticker: "000300", Type: exchange.SecurityTypeIndex},  // 沪深300指数
-	{Exchange: exchange.ExchangeSSE, Ticker: "000688", Type: exchange.SecurityTypeIndex},  // 科创50指数
-	{Exchange: exchange.ExchangeSSE, Ticker: "000905", Type: exchange.SecurityTypeIndex},  // 中证500指数
-	{Exchange: exchange.ExchangeSZSE, Ticker: "399001", Type: exchange.SecurityTypeIndex}, // 深证成份指数
-	{Exchange: exchange.ExchangeSZSE, Ticker: "399006", Type: exchange.SecurityTypeIndex}, // 创业板指
-	{Exchange: exchange.ExchangeSZSE, Ticker: "399107", Type: exchange.SecurityTypeIndex}, // 深证A指
-	{Exchange: exchange.ExchangeBSE, Ticker: "899050", Type: exchange.SecurityTypeIndex},  // 北证50指数
-	{Exchange: exchange.ExchangeSSE, Ticker: "880005", Type: exchange.SecurityTypeBlock},  // 通达信板块-涨跌家数
-	{Exchange: exchange.ExchangeSSE, Ticker: "510050", Type: exchange.SecurityTypeETF},    // 上证50ETF
-	{Exchange: exchange.ExchangeSSE, Ticker: "510300", Type: exchange.SecurityTypeETF},    // 沪深300ETF
-	{Exchange: exchange.ExchangeSSE, Ticker: "510900", Type: exchange.SecurityTypeETF},    // H股ETF
-}
+var (
+	// AShareIndexList A股指数列表
+	AShareIndexList = []exchange.InstrumentInfo{
+		{Exchange: exchange.ExchangeSSE, Ticker: "000001", Type: exchange.SecurityTypeIndex},  // 上证指数
+		{Exchange: exchange.ExchangeSSE, Ticker: "000002", Type: exchange.SecurityTypeIndex},  // 上证A股指数
+		{Exchange: exchange.ExchangeSSE, Ticker: "000300", Type: exchange.SecurityTypeIndex},  // 沪深300指数
+		{Exchange: exchange.ExchangeSSE, Ticker: "000688", Type: exchange.SecurityTypeIndex},  // 科创50指数
+		{Exchange: exchange.ExchangeSSE, Ticker: "000905", Type: exchange.SecurityTypeIndex},  // 中证500指数
+		{Exchange: exchange.ExchangeSZSE, Ticker: "399001", Type: exchange.SecurityTypeIndex}, // 深证成份指数
+		{Exchange: exchange.ExchangeSZSE, Ticker: "399006", Type: exchange.SecurityTypeIndex}, // 创业板指
+		{Exchange: exchange.ExchangeSZSE, Ticker: "399107", Type: exchange.SecurityTypeIndex}, // 深证A指
+		{Exchange: exchange.ExchangeBSE, Ticker: "899050", Type: exchange.SecurityTypeIndex},  // 北证50指数
+		{Exchange: exchange.ExchangeSSE, Ticker: "880005", Type: exchange.SecurityTypeBlock},  // 通达信板块-涨跌家数
+		{Exchange: exchange.ExchangeSSE, Ticker: "510050", Type: exchange.SecurityTypeETF},    // 上证50ETF
+		{Exchange: exchange.ExchangeSSE, Ticker: "510300", Type: exchange.SecurityTypeETF},    // 沪深300ETF
+		{Exchange: exchange.ExchangeSSE, Ticker: "510900", Type: exchange.SecurityTypeETF},    // H股ETF
+	}
+
+	// 需要检查的关键字列表
+	ignoredKeywords = []string{"ST", "退", "摘牌"}
+)
 
 // IsNeedIgnore 证券代码是否需要忽略, 这是一个不参与数据和策略处理的开关
 func IsNeedIgnore(code string) bool {
@@ -32,9 +37,6 @@ func IsNeedIgnore(code string) bool {
 		// 没找到直接忽略
 		return true
 	}
-
-	// 需要检查的关键字列表
-	ignoredKeywords := []string{"ST", "退", "摘牌"}
 
 	// 转换名称为大写
 	upperName := strings.ToUpper(p.Name)
@@ -48,7 +50,15 @@ func IsNeedIgnore(code string) bool {
 	return false
 }
 
-// GetStockCodeList 获取证券代码列表, 过滤退市、摘牌和ST标记的个股
+// GetStockCodeList 返回所有A股股票代码列表，包括：
+//   - 上海证券交易所（600000-609999）
+//   - 科创板（688000-689999）
+//   - 深圳主板（000000-000999）
+//   - 中小板（001000-009999）
+//   - 创业板（300000-309999）
+//   - 北交所（920000-920999）
+//
+// 返回的列表会过滤掉需要忽略的股票代码
 func GetStockCodeList() []exchange.InstrumentInfo {
 	var allCodes []exchange.InstrumentInfo
 
@@ -59,7 +69,7 @@ func GetStockCodeList() []exchange.InstrumentInfo {
 			Ticker:   fmt.Sprintf("%06d", i),
 			Type:     exchange.SecurityTypeStock,
 		}
-		if !IsNeedIgnore(sc.String()) {
+		if !IsNeedIgnore(sc.Symbol()) {
 			allCodes = append(allCodes, sc)
 
 		}
@@ -72,7 +82,7 @@ func GetStockCodeList() []exchange.InstrumentInfo {
 			Ticker:   fmt.Sprintf("%06d", i),
 			Type:     exchange.SecurityTypeStock,
 		}
-		if !IsNeedIgnore(sc.String()) {
+		if !IsNeedIgnore(sc.Symbol()) {
 			allCodes = append(allCodes, sc)
 		}
 	}
@@ -84,7 +94,7 @@ func GetStockCodeList() []exchange.InstrumentInfo {
 			Ticker:   fmt.Sprintf("%06d", i),
 			Type:     exchange.SecurityTypeStock,
 		}
-		if !IsNeedIgnore(sc.String()) {
+		if !IsNeedIgnore(sc.Symbol()) {
 			allCodes = append(allCodes, sc)
 		}
 	}
@@ -96,7 +106,7 @@ func GetStockCodeList() []exchange.InstrumentInfo {
 			Ticker:   fmt.Sprintf("%06d", i),
 			Type:     exchange.SecurityTypeStock,
 		}
-		if !IsNeedIgnore(sc.String()) {
+		if !IsNeedIgnore(sc.Symbol()) {
 			allCodes = append(allCodes, sc)
 		}
 	}
@@ -108,7 +118,7 @@ func GetStockCodeList() []exchange.InstrumentInfo {
 			Ticker:   fmt.Sprintf("%06d", i),
 			Type:     exchange.SecurityTypeStock,
 		}
-		if !IsNeedIgnore(sc.String()) {
+		if !IsNeedIgnore(sc.Symbol()) {
 			allCodes = append(allCodes, sc)
 		}
 	}
@@ -120,7 +130,7 @@ func GetStockCodeList() []exchange.InstrumentInfo {
 			Ticker:   fmt.Sprintf("%06d", i),
 			Type:     exchange.SecurityTypeStock,
 		}
-		if !IsNeedIgnore(sc.String()) {
+		if !IsNeedIgnore(sc.Symbol()) {
 			allCodes = append(allCodes, sc)
 		}
 	}

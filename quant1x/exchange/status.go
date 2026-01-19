@@ -4,7 +4,7 @@ import (
 	"os"
 )
 
-// getFilenameModifiedTime 获取指定文件的最后修改时间
+// GetFilenameModifiedTime 获取指定文件的最后修改时间
 //
 // 参数:
 //
@@ -14,7 +14,7 @@ import (
 //
 //	*exchange.Timestamp: 文件修改时间的时间戳
 //	error: 获取文件信息失败时返回的错误
-func getFilenameModifiedTime(fname string) (*Timestamp, error) {
+func GetFilenameModifiedTime(fname string) (*Timestamp, error) {
 	info, err := os.Lstat(fname)
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func getFilenameModifiedTime(fname string) (*Timestamp, error) {
 //
 //	如果获取文件修改时间失败，默认返回true
 func ShouldInitializeFile(fname string) bool {
-	modTime, err := getFilenameModifiedTime(fname)
+	modTime, err := GetFilenameModifiedTime(fname)
 	if err != nil {
 		return true
 	}
@@ -58,7 +58,7 @@ func ShouldInitializeFile(fname string) bool {
 //
 //	如果获取文件修改时间失败，默认返回true
 func ShouldUpdateFile(fname string) bool {
-	modTime, err := getFilenameModifiedTime(fname)
+	modTime, err := GetFilenameModifiedTime(fname)
 	if err != nil {
 		return true
 	}

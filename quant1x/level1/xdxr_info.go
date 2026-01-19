@@ -70,23 +70,23 @@ func (c XdxrCategory) ToString() string {
 type XdxrInfoRequest struct {
 	//Market uint8
 	//Code   [6]byte
-	Code exchange.InstrumentInfo
+	Instrument exchange.InstrumentInfo
 }
 
 func (r XdxrInfoRequest) Serialize() []byte {
 	payload := &bytes.Buffer{}
 	padding := []byte{0x01, 0x00}
 	payload.Write(padding)
-	market := uint8(exchangeToMarketId(r.Code.Exchange))
+	market := uint8(exchangeToMarketId(r.Instrument.Exchange))
 	payload.WriteByte(market)
-	payload.Write([]byte(r.Code.Ticker)[:6])
+	payload.Write([]byte(r.Instrument.Ticker)[:6])
 	return buildRequest(StdCommandXdxrInfo, packetTypeRequest, payload.Bytes())
 }
 
 func (r XdxrInfoRequest) Command() StdCommand { return StdCommandXdxrInfo }
 
 func (r XdxrInfoRequest) String() string {
-	return fmt.Sprintf("XdxrInfoRequest{%s}", r.Code.String())
+	return fmt.Sprintf("XdxrInfoRequest{%s}", r.Instrument.Symbol())
 }
 
 // XdxrInfo represents a parsed XDXR event returned by the server.

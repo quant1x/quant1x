@@ -129,7 +129,7 @@ type InstrumentInfo struct {
 	Type           SecurityType `csv:"type"`            // 证券类型（股票、债券、期货等）
 	Ticker         string       `csv:"code"`            // 交易所分配的证券代码（ticker）
 	Name           string       `csv:"name"`            // 证券名称
-	LotSize        int          `csv:"lotsize"`         // 每手股数
+	LotSize        int          `csv:"lot_size"`        // 每手股数
 	PricePrecision int          `csv:"price_precision"` // 价格小数位数
 }
 
@@ -138,12 +138,12 @@ func (info InstrumentInfo) String() string {
 		info.Exchange, info.Type.String(), info.Ticker, info.Name, info.LotSize, info.PricePrecision)
 }
 
-// Instrument 根据交易所信息返回格式化后的证券代码字符串
+// Symbol 根据交易所信息返回格式化后的证券代码字符串
 //
 // 格式说明:
 //   - 对于美国交易所(ExchangeUS)，返回格式为"交易所.股票代码", 如 "nasdaq.aapl"
 //   - 对于其他交易所，返回格式为"交易所股票代码", 如 "sh600000"
-func (info InstrumentInfo) Instrument() string {
+func (info InstrumentInfo) Symbol() string {
 	if info.Exchange == ExchangeUS {
 		return fmt.Sprintf("%s.%s", info.Exchange, info.Ticker)
 	}

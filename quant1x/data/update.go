@@ -155,7 +155,7 @@ func UpdateWithAdapters(adapters []DataAdapter, featureDate exchange.Timestamp, 
 			// sort finalData by code order to match markets.GetCodeList order
 			order := make(map[string]int)
 			for i, c := range allCodes {
-				order[c.String()] = i
+				order[c.Symbol()] = i
 			}
 			sort.SliceStable(finalData, func(i, j int) bool {
 				if len(finalData[i]) == 0 || len(finalData[j]) == 0 {

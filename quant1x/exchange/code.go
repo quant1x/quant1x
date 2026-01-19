@@ -54,6 +54,10 @@ func NewExchange(id Exchange, code, name, desc string) ExchangeInfo {
 	}
 }
 
+var (
+	regexUSCode = regexp.MustCompile(`^[a-z]{4}$`) // 美股代码正则，4位字母
+)
+
 // DetectSymbol 根据输入的证券代码字符串解析出市场、代码和类型信息
 //
 // 支持多种格式的证券代码输入：
@@ -99,7 +103,7 @@ func DetectSymbol(input string) InstrumentInfo {
 		switch codeLength {
 		case 4: // 可能为美股代码（4位字母），否则视为未知
 			// 仅当全部为字母时认定为美股代码
-			if regexp.MustCompile(`^[a-z]{4}$`).MatchString(pureCode) {
+			if regexUSCode.MatchString(pureCode) {
 				exchange = ExchangeUS
 				ticker = pureCode
 				typ = SecurityTypeStock
@@ -195,8 +199,8 @@ func DetectSymbol(input string) InstrumentInfo {
 // 支持以下交易所:
 //   - 上海证券交易所 (SSE)
 //   - 深圳证券交易所 (SZSE)
-//   - 北京证券交易所 (BJSE)
-//   - 香港交易所 (HKSE)
+//   - 北京证券交易所 (BSE)
+//   - 香港交易所 (HKEX)
 //   - 美国市场 (USA)
 //
 // 对于不支持的交易所返回未知类型

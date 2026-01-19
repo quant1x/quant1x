@@ -5,6 +5,7 @@ import (
 
 	"gitee.com/quant1x/quant1x/quant1x/data"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"gitee.com/quant1x/quant1x/quant1x/markets"
 	cli "github.com/spf13/cobra"
 )
 
@@ -71,14 +72,22 @@ func initUpdate() {
 				_ = cmd.Usage()
 				return
 			}
+			if len(plugins) == 0 {
+				// 1. 获取全部注册的数据集插件
+				mask := data.PluginMaskBaseData
+				plugins = data.Plugins(mask)
+			}
+			fmt.Println("plugin num:", len(plugins))
 			ts := exchange.DateRange(tsStart, tsEnd, false)
-			fmt.Println("data count:", len(ts))
-			for _, d := range ts {
-				fmt.Println("处理日期:", d.OnlyDate())
-				data.UpdateWithAdapters(plugins, d)
+			fmt.Println(ts)
+			fmt.Println("date count:", len(ts))
+			codes := markets.GetCodeList()
+			fmt.Println("code count:", len(codes))
+			for _, date := range ts {
+				fmt.Println("处理日期:", date.OnlyDate())
+				data.UpdateWithAdapters(plugins, date, codes)
 			}
 			_ = currentDate
-
 		},
 	}
 	commandInit(CmdUpdate, &flagAll)

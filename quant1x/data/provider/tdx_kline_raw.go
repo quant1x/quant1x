@@ -29,7 +29,7 @@ func (d *DataKLineRaw) Print(code exchange.InstrumentInfo, dates ...exchange.Tim
 // 反转与合并结果，并写回缓存文件。
 func (d *DataKLineRaw) Update(code exchange.InstrumentInfo, _date exchange.Timestamp) {
 	// 1. 确定缓存文件并读取本地缓存
-	cacheFilename := config.GetKlineFilename(code.String(), false)
+	cacheFilename := config.GetKlineFilename(code.Symbol(), false)
 	var cacheKLines []data.KLineRaw
 	encoding.CsvToSlices(cacheFilename, &cacheKLines)
 

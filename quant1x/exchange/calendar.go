@@ -191,25 +191,22 @@ func lazyLoadCalendar() {
 
 	// Determine today's pre-market timestamp via session.GetTodayInit()
 	tsTodayInit := GetTodayInit()
-	nowTs := NowTimestamp()
+	//nowTs := NowTimestamp()
 
-	// If current time is past today's pre-market time, skip remote update and
-	// just load existing cache (avoid remote calls during/after market open).
-	if !nowTs.Less(tsTodayInit) {
-		// past pre-market: skip update
+	ensureUpdated := false
+	tsMarkerModified, err := GetFilenameModifiedTime(marker)
+	if err != nil {
+		// marker missing: ensure update
+		ensureUpdated = true
 	} else {
-		// before pre-market: update only if marker not updated since today's pre-market
-		if fi, err := os.Stat(marker); err == nil {
-			modTs := NewTimestampFromTime(fi.ModTime())
-			if !modTs.Less(tsTodayInit) {
-				// marker updated at/after today's pre-market: skip
-			} else {
-				_ = updateCalendar()
-			}
-		} else {
-			// marker missing: attempt update
-			_ = updateCalendar()
+		// if marker modified time < today's pre-market time, ensure update
+		if tsMarkerModified.Less(tsTodayInit) {
+			ensureUpdated = true
 		}
+	}
+
+	if ensureUpdated {
+		_ = updateCalendar()
 	}
 	f, err := os.Open(fname)
 	if err != nil {
