@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_LOGGER_LOGGER_H
-#define QUANT1X_LOGGER_LOGGER_H 1
+#ifndef QUANT1X_LOG_LOGGER_H
+#define QUANT1X_LOG_LOGGER_H 1
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/daily_file_sink.h>
@@ -12,4 +12,4 @@
 namespace logger = spdlog;
 
 
-#endif //QUANT1X_LOGGER_LOGGER_H
+#endif // QUANT1X_LOG_LOGGER_H

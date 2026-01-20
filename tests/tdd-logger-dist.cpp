@@ -5,9 +5,9 @@
 #include <spdlog/sinks/dist_sink.h>
 #include <filesystem>
 
-#include "spdlog/spdlog.h"
+#include <spdlog/spdlog.h>
 // include reusable router sink
-#include "quant1x/logger/router_sink.h"
+#include "quant1x/log/router_sink.h"
 
 using namespace std::literals;
 

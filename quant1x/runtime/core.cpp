@@ -13,16 +13,17 @@
 #include <signal.h>
 #endif
 
+#include <filesystem>
+
 #include <quant1x/io/file.h>
 #include <quant1x/runtime/crash.h>
 #include <quant1x/runtime/scheduler.h>
 #include <quant1x/std/except.h>
 // router sink for per-level file routing
-#include <quant1x/logger/router_sink.h>
+#include <quant1x/log/router_sink.h>
 // lazy daily sink wrapper (creates files on first write)
-#include <quant1x/logger/lazy_daily_sink.h>
+#include <quant1x/log/lazy_daily_sink.h>
 
-#include <filesystem>
 // rotating file sink
 #include <spdlog/sinks/rotating_file_sink.h>
 // daily file sink

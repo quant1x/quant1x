@@ -2,7 +2,7 @@
 #include <quant1x/test/test.h>
 #include <quant1x/std/strings.h>
 #include <quant1x/io/file.h>
-#include <quant1x/logger/lazy_daily_sink.h>
+#include <quant1x/log/lazy_daily_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/daily_file_sink.h>
 #include <filesystem>
@@ -11,7 +11,7 @@
 #include <chrono>
 #include <cstdio>
 
-#include "spdlog/spdlog.h"
+#include <spdlog/spdlog.h>
 
 using quant1x::log::make_lazy_daily_sink;
 

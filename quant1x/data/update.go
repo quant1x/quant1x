@@ -12,7 +12,7 @@ import (
 
 	"gitee.com/quant1x/quant1x/quant1x/core"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
-	"gitee.com/quant1x/quant1x/quant1x/logger"
+	"gitee.com/quant1x/quant1x/quant1x/log"
 )
 
 const (
@@ -73,7 +73,7 @@ func CleanExpiredStateFiles() error {
 		if os.IsNotExist(err) {
 			return nil
 		}
-		logger.Errorf("error reading state dir: %v", err)
+		log.Errorf("error reading state dir: %v", err)
 		return err
 	}
 	for _, e := range entries {
@@ -100,7 +100,7 @@ func UpdateWithAdapters(adapters []DataAdapter, featureDate exchange.Timestamp, 
 	count := len(adapters)
 	for idx, adapter := range adapters {
 		moduleName := fmt.Sprintf("%s(%d/%d)", adapter.Key(), idx+1, count)
-		logger.Infof("[update] plugin=%s start", moduleName)
+		log.Infof("[update] plugin=%s start", moduleName)
 
 		// detect feature adapter
 		var featureAdapter FeatureAdapter
@@ -182,16 +182,16 @@ func UpdateWithAdapters(adapters []DataAdapter, featureDate exchange.Timestamp, 
 					_ = w.WriteAll(rows)
 					w.Flush()
 					_ = f.Close()
-					logger.Infof("wrote %d rows to %s", len(rows), fname)
+					log.Infof("wrote %d rows to %s", len(rows), fname)
 				} else {
-					logger.Errorf("unable to create feature file %s: %v", fname, err)
+					log.Errorf("unable to create feature file %s: %v", fname, err)
 				}
 			} else {
-				logger.Errorf("unable to mkdir for %s: %v", fname, err)
+				log.Errorf("unable to mkdir for %s: %v", fname, err)
 			}
 		}
 
-		logger.Infof("[update] plugin=%s end", moduleName)
+		log.Infof("[update] plugin=%s end", moduleName)
 	}
 
 	return count
