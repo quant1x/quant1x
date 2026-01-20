@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"gitee.com/quant1x/quant1x/quant1x/core"
+	"gitee.com/quant1x/quant1x/quant1x/exchange"
 	qio "gitee.com/quant1x/quant1x/quant1x/io"
 	"gitee.com/quant1x/quant1x/quant1x/logger"
 	"gitee.com/quant1x/quant1x/quant1x/std"
@@ -175,6 +176,8 @@ func initStandardConnectionPool() (*qio.TcpConnectionPool, error) {
 		needDetect = true
 	} else if shouldRefreshCache(info) {
 		needDetect = true
+	} else if tp := exchange.NewTimestampFromTime(info.ModTime()); err == nil && exchange.CanInitialize(&tp) {
+		needDetect = true
 	}
 
 	if needDetect {
@@ -217,6 +220,11 @@ func initStandardConnectionPool() (*qio.TcpConnectionPool, error) {
 	return pool, nil
 }
 
+// ensureServerCachePath 确保服务器缓存路径存在，并返回缓存文件路径
+// 返回:
+//
+//	string - 服务器缓存文件完整路径
+//	error - 如果创建目录失败则返回错误
 func ensureServerCachePath() (string, error) {
 	home := core.GetMetaPath()
 	meta := filepath.Join(home, "meta")
@@ -231,7 +239,7 @@ func loadCachedServers(path string) ([]serverInfo, os.FileInfo, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	info, err := os.Stat(path)
+	info, err := os.Lstat(path)
 	if err != nil {
 		return nil, nil, err
 	}
