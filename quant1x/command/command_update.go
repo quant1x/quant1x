@@ -55,27 +55,30 @@ func initUpdate() {
 				// 全部更新
 				//handleUpdateAll(cacheDate, featureDate)
 				plugins = data.Plugins(0)
-			} else if len(flagBaseData.Value) > 0 {
-				all, keywords := parseFields(flagBaseData.Value)
-				if all || len(keywords) == 0 {
-					clear(keywords)
-				}
-				plugins = append(plugins, data.PluginsWithName(data.PluginMaskBaseData, keywords...)...)
-			} else if len(flagFeatures.Value) > 0 {
-				all, keywords := parseFields(flagFeatures.Value)
-				if all || len(keywords) == 0 {
-					clear(keywords)
-				}
-				plugins = append(plugins, data.PluginsWithName(data.PluginMaskFeature, keywords...)...)
 			} else {
-				fmt.Println("Error: 非全部更新, 必须携带--features或--base")
-				_ = cmd.Usage()
-				return
-			}
-			if len(plugins) == 0 {
-				// 1. 获取全部注册的数据集插件
-				mask := data.PluginMaskBaseData
-				plugins = data.Plugins(mask)
+				var basePlugins []data.DataAdapter
+				var featurePlugins []data.DataAdapter
+				if len(flagBaseData.Value) > 0 {
+					all, keywords := parseFields(flagBaseData.Value)
+					if all {
+						basePlugins = data.Plugins(data.PluginMaskBaseData)
+					} else if len(keywords) > 0 {
+						basePlugins = data.PluginsWithName(data.PluginMaskBaseData, keywords...)
+					}
+				} else if len(flagFeatures.Value) > 0 {
+					all, keywords := parseFields(flagFeatures.Value)
+					if all {
+						featurePlugins = data.Plugins(data.PluginMaskFeature)
+					} else if len(keywords) > 0 {
+						featurePlugins = data.PluginsWithName(data.PluginMaskFeature, keywords...)
+					}
+				} else {
+					fmt.Println("Error: 非全部更新, 必须携带--features或--base")
+					_ = cmd.Usage()
+					return
+				}
+				plugins = append(plugins, basePlugins...)
+				plugins = append(plugins, featurePlugins...)
 			}
 			fmt.Println("plugin num:", len(plugins))
 			ts := exchange.DateRange(tsStart, tsEnd, false)
