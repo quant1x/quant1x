@@ -58,5 +58,9 @@
     "chat.editor.fontFamily": "default",
     "chat.fontFamily": "default",
     "terminal.integrated.scrollback": 10000,
-    "go.diagnostic.vulncheck": "Imports"
+    "go.diagnostic.vulncheck": "Imports",
+    "code-runner.executorMap": {
+    "python": "python scripts/run_module.py $fullFileName"
+    },
+    "code-runner.runInTerminal": true,
 }
