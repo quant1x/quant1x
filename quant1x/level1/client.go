@@ -13,7 +13,7 @@ import (
 	"gitee.com/quant1x/quant1x/quant1x/core"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 	qio "gitee.com/quant1x/quant1x/quant1x/io"
-	"gitee.com/quant1x/quant1x/quant1x/logger"
+	"gitee.com/quant1x/quant1x/quant1x/log"
 	"gitee.com/quant1x/quant1x/quant1x/std"
 	"gopkg.in/yaml.v3"
 )
@@ -101,7 +101,7 @@ func (h *StandardProtocolHandler) Handshake(conn *net.TCPConn) (bool, error) {
 	req1 := Hello1Request{}
 	body1, _, err := h.processRequest(conn, req1.Bytes())
 	if err != nil {
-		logger.Errorf("level1 handshake Hello1 failed: %v", err)
+		log.Errorf("level1 handshake Hello1 failed: %v", err)
 		return false, err
 	}
 	if len(body1) == 0 {
@@ -109,14 +109,14 @@ func (h *StandardProtocolHandler) Handshake(conn *net.TCPConn) (bool, error) {
 	}
 	var resp1 Hello1Response
 	if err := resp1.Deserialize(body1); err != nil {
-		logger.Errorf("level1 handshake Hello1 validation failed: %v", err)
+		log.Errorf("level1 handshake Hello1 validation failed: %v", err)
 		return false, err
 	}
 
 	req2 := Hello2Request{}
 	body2, _, err := h.processRequest(conn, req2.Bytes())
 	if err != nil {
-		logger.Errorf("level1 handshake Hello2 failed: %v", err)
+		log.Errorf("level1 handshake Hello2 failed: %v", err)
 		return false, err
 	}
 	if len(body2) == 0 {
@@ -124,7 +124,7 @@ func (h *StandardProtocolHandler) Handshake(conn *net.TCPConn) (bool, error) {
 	}
 	var resp2 Hello2Response
 	if err := resp2.Deserialize(body2); err != nil {
-		logger.Errorf("level1 handshake Hello2 validation failed: %v", err)
+		log.Errorf("level1 handshake Hello2 validation failed: %v", err)
 		return false, err
 	}
 	return true, nil
@@ -140,7 +140,7 @@ func (h *StandardProtocolHandler) Keepalive(conn *net.TCPConn) (bool, error) {
 	}
 	var resp HeartbeatResponse
 	if err := resp.Deserialize(body); err != nil {
-		logger.Errorf("level1 keepalive response invalid: %v", err)
+		log.Errorf("level1 keepalive response invalid: %v", err)
 		return false, err
 	}
 	return true, nil
@@ -172,7 +172,7 @@ func initStandardConnectionPool() (*qio.TcpConnectionPool, error) {
 	servers, info, err := loadCachedServers(cachePath)
 	needDetect := false
 	if err != nil {
-		logger.Debugf("level1: cached server list missing or invalid: %v", err)
+		log.Debugf("level1: cached server list missing or invalid: %v", err)
 		needDetect = true
 	} else if shouldRefreshCache(info) {
 		needDetect = true
@@ -181,15 +181,15 @@ func initStandardConnectionPool() (*qio.TcpConnectionPool, error) {
 	}
 
 	if needDetect {
-		logger.Infof("level1: refreshing server cache via detection")
+		log.Infof("level1: refreshing server cache via detection")
 		detected := detectServers(handler, latencyThreshold, maxConnections, defaultConnectTimeout)
 		if len(detected) > 0 {
 			servers = detected
 			if err := saveCachedServers(cachePath, servers); err != nil {
-				logger.Errorf("level1: failed to save detected servers: %v", err)
+				log.Errorf("level1: failed to save detected servers: %v", err)
 			}
 		} else if len(servers) == 0 {
-			logger.Infof("level1: detection returned no servers, falling back to standard list")
+			log.Infof("level1: detection returned no servers, falling back to standard list")
 			servers = standardServerList()
 		}
 	}
@@ -213,7 +213,7 @@ func initStandardConnectionPool() (*qio.TcpConnectionPool, error) {
 			break
 		}
 		if added := pool.AddEndpoint(srv.Host, int(srv.Port), 0); !added {
-			logger.Debugf("level1: endpoint %s:%d already registered", srv.Host, srv.Port)
+			log.Debugf("level1: endpoint %s:%d already registered", srv.Host, srv.Port)
 		}
 	}
 
@@ -226,8 +226,7 @@ func initStandardConnectionPool() (*qio.TcpConnectionPool, error) {
 //	string - 服务器缓存文件完整路径
 //	error - 如果创建目录失败则返回错误
 func ensureServerCachePath() (string, error) {
-	home := core.GetMetaPath()
-	meta := filepath.Join(home, "meta")
+	meta := core.GetMetaPath()
 	if err := std.MkDirs(meta, true); err != nil {
 		return "", err
 	}

@@ -10,7 +10,7 @@ import (
 	"gitee.com/quant1x/quant1x/quant1x/util"
 
 	_ "gitee.com/quant1x/quant1x/quant1x/data/provider" // for data provider plugins
-	_ "gitee.com/quant1x/quant1x/quant1x/markets"       // for go:linkname GetCodeList
+	_ "gitee.com/quant1x/quant1x/quant1x/market"        // for go:linkname GetCodeList
 )
 
 var (

@@ -5,7 +5,7 @@ import (
 
 	"gitee.com/quant1x/quant1x/quant1x/data"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
-	"gitee.com/quant1x/quant1x/quant1x/markets"
+	"gitee.com/quant1x/quant1x/quant1x/market"
 	cli "github.com/spf13/cobra"
 )
 
@@ -84,7 +84,7 @@ func initUpdate() {
 			ts := exchange.DateRange(tsStart, tsEnd, false)
 			fmt.Println(ts)
 			fmt.Println("date count:", len(ts))
-			codes := markets.GetCodeList()
+			codes := market.GetCodeList()
 			fmt.Println("code count:", len(codes))
 			for _, date := range ts {
 				fmt.Println("处理日期:", date.OnlyDate())

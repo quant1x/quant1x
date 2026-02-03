@@ -278,7 +278,7 @@ namespace level1 {
          */
         inline f64 defaultBaseUnit(int marketId, const char *const code) {
             // auto security_code = exchange::GetSecurityCode(static_cast<exchange::ExchangeId>(marketId), code);
-            // auto info = instruments::get_security_info(security_code);
+            // auto info = instruments::get_instrument_info(security_code);
             // if (info.has_value()) {
             //     return std::pow(10, info->pricePrecision);
             // }

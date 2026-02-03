@@ -10,7 +10,7 @@ from typing import Optional, Tuple, List, Dict
 import pandas as pd
 import quant1x.data.xdxr as xdxr_module
 from quant1x.exchange import detect_market, correct_security_code, is_margin_trading_target
-from quant1x.instruments.security import get_security_info
+from quant1x.instruments.security import get_instrument_info
 from quant1x.factors import share_holder, financial_report, safety_score, notice
 from quant1x.level1.client import get_std_conn
 from quant1x.level1.finance_info import FinanceRequest, FinanceResponse
@@ -138,7 +138,7 @@ def checkout_security_basic_info(security_code: str, feature_date: str) -> dict:
         except Exception:
             pass
             
-    sec_info = get_security_info(security_code)
+    sec_info = get_instrument_info(security_code)
     if sec_info:
         info["VolUnit"] = sec_info.lot_size
         info["DecimalPoint"] = sec_info.price_precision

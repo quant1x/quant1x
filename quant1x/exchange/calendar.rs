@@ -386,13 +386,17 @@ mod tests {
         let td = tempdir().unwrap();
         let home = td.path().to_path_buf();
         // ensure dirs::home_dir() will return our tempdir on Windows and Unix
-        env::set_var("HOME", &home);
-        env::set_var("USERPROFILE", &home);
+        unsafe {
+            env::set_var("HOME", &home);
+            env::set_var("USERPROFILE", &home);
+        }
 
         // make the crate config point to our tempdir by ensuring the default home expands
         // The config module uses lazy init; to force it to use our tempdir, set QUANT1X_HOME
         // which the crate homedir helper checks first.
-        env::set_var("QUANT1X_HOME", &home);
+        unsafe {
+            env::set_var("QUANT1X_HOME", &home);
+        }
 
         // get the calendar path from crate config
         let cal_path = crate::config::get_calendar_filename();

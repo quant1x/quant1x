@@ -1,5 +1,5 @@
 #include <quant1x/config/strategy_parameter.h>
-#include <quant1x/markets/instruments.h>
+#include <quant1x/market/instruments.h>
 #include <quant1x/exchange/margin_trading.h>
 
 namespace config {

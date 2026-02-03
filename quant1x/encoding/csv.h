@@ -3,7 +3,7 @@
 #define QUANT1X_ENCODING_CSV_H 1
 
 #include <quant1x/std/api.h>
-#include <quant1x/std/filepath.h>
+#include <quant1x/std/filesystem.h>
 #include <csv2/reader.hpp>
 #include <csv2/writer.hpp>
 #include <boost/pfr.hpp>

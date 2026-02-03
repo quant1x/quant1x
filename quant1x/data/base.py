@@ -1,11 +1,13 @@
 # -*- coding: UTF-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 """
 基础数据类型定义
 """
 
 from .adapter import PLUGIN_MASK_BASE_DATA
-from quant1x.exchange import Timestamp
-from quant1x.exchange.code import MarketCnFirstListTime
+from .timestamp import Timestamp
 
 # baseKind is the local offset for base data kinds (mirrors C++ baseKind)
 BASE_KIND = 0
@@ -22,6 +24,9 @@ BASE_WIDE_KLINE           = PLUGIN_MASK_BASE_DATA | (BASE_KIND +  8)  # 基础�
 BASE_PERFORMANCE_FORECAST = PLUGIN_MASK_BASE_DATA | (BASE_KIND +  9)  # 基础数据-业绩预告
 BASE_CHIP_DISTRIBUTION    = PLUGIN_MASK_BASE_DATA | (BASE_KIND + 10)  # 基础数据-筹码分布
 BASE_MINUTE_KLINE         = PLUGIN_MASK_BASE_DATA | (BASE_KIND + 11)  # 基础数据-分钟级别K线
+
+# Market first list time
+MarketCnFirstListTime = "1990-12-19"
 
 # MarketFirstDate is the market first-listing date as a pre-market Timestamp
 market_first_date: Timestamp

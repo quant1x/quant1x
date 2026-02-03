@@ -1,7 +1,6 @@
 # -*- coding: UTF-8 -*-
 import os
 import json
-from functools import lru_cache
 import pandas as pd
 from .. import exchange, config
 
@@ -20,7 +19,6 @@ def sector_filename(date: str = '') -> str:
         filename = os.path.join(config.meta_path, 'blocks.csv')
     return filename
 
-@lru_cache(maxsize=None)
 def get_sector_list() -> pd.DataFrame:
     """
     获取板块列表
@@ -45,7 +43,6 @@ def get_sector_list() -> pd.DataFrame:
     df['code'] = s.where(s.str.startswith('sh'), 'sh' + s)
     return df
 
-@lru_cache(maxsize=None)
 def block_list():
     """
     板块列表

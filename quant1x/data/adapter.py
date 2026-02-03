@@ -1,11 +1,15 @@
 # -*- coding: UTF-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 """
 缓存适配器接口定义
 """
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
 import threading
-from ..exchange import Timestamp
+from .timestamp import Timestamp
+from .market import Instrument
 
 
 # Kind 表示插件类型标识
@@ -13,8 +17,8 @@ Kind = int
 
 # 插件类型掩码
 PLUGIN_MASK_BASE_DATA = 0x1000000000000000  # 基础数据
-PLUGIN_MASK_FEATURE = 0x2000000000000000   # 特征数据
-PLUGIN_MASK_STRATEGY = 0x3000000000000000  # 策略
+PLUGIN_MASK_FEATURE   = 0x2000000000000000   # 特征数据
+PLUGIN_MASK_STRATEGY  = 0x3000000000000000  # 策略
 
 # 默认数据提供者
 DEFAULT_DATA_PROVIDER = "quant1x"
@@ -53,15 +57,14 @@ class DataAdapter(Schema):
     """基础数据适配器接口"""
 
     @abstractmethod
-    def print(self, code: str, dates: Optional[List[Timestamp]] = None) -> None:
+    def print(self, inst: Instrument, date: Optional[Timestamp] = None) -> None:
         """控制台打印"""
         pass
 
     @abstractmethod
-    def update(self, code: str, date: Optional[Timestamp] = None) -> None:
+    def update(self, inst: Instrument, date: Optional[Timestamp] = None) -> None:
         """更新数据"""
-        pass
-
+        raise NotImplementedError("Subclass of DataAdapter must implement `update` method")
 
 class FeatureAdapter(DataAdapter):
     """特征数据适配器接口"""
@@ -69,7 +72,7 @@ class FeatureAdapter(DataAdapter):
     @abstractmethod
     def filename(self, timestamp: Optional[Timestamp] = None) -> str:
         """返回对应的聚合文件路径"""
-        pass
+        raise NotImplementedError("Subclass of FeatureAdapter must implement `filename` method")
 
     @abstractmethod
     def init(self, timestamp: Timestamp) -> None:
@@ -84,12 +87,12 @@ class FeatureAdapter(DataAdapter):
     @abstractmethod
     def headers(self) -> List[str]:
         """表头"""
-        pass
+        raise NotImplementedError("Subclass of FeatureAdapter must implement `headers` method")
 
     @abstractmethod
     def values(self) -> List[str]:
         """值"""
-        pass
+        raise NotImplementedError("Subclass of FeatureAdapter must implement `values` method")
 
 
 # 插件注册管理

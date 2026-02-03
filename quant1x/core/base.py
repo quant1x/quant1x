@@ -5,7 +5,7 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Any, Dict
 import yaml
-from quant1x.std.filepath import expand_user
+from quant1x.std.filesystem import expand_user
 from .defaults import apply_defaults
 
 DEFAULT_BASE_PATH = f"~/.q1x-py"

@@ -124,7 +124,7 @@ pub fn plugins_with_name(plugin_type: Kind, keywords: &[String]) -> Vec<Arc<dyn 
 pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Timestamp) -> usize {
     use indicatif::{ProgressBar, ProgressStyle};
 
-    let all_codes = crate::markets::get_code_list();
+    let all_codes = crate::market::get_code_list();
     if all_codes.is_empty() {
         log::warn!("No codes found for update");
     }

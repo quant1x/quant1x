@@ -11,14 +11,14 @@ namespace pandas {
 
     std::tuple<int, std::string> parse_frequency(const std::string& freq) {
         const auto frequency = strings::trim(freq);
-        const auto d = ParseTimeRule(frequency);
+        const auto d = parse_time_rule(frequency);
         const auto minutes = std::chrono::duration_cast<std::chrono::minutes>(d);
         return std::tuple<int, std::string>(minutes.count(), frequency);
     }
 
     // 解析频率字符串并返回对应的duration
     // frequencies, from pandas.tseries.frequencies import to_offset
-    std::chrono::duration<long long, std::nano> ParseTimeRule(const std::string& freq) {
+    std::chrono::duration<long long, std::nano> parse_time_rule(const std::string& freq) {
         const std::string frequency = strings::trim(freq);
 
         if (frequency.empty()) {
@@ -80,7 +80,7 @@ namespace pandas {
         const int periods,
         const std::string& freqStr)
     {
-        const auto dur = ParseTimeRule(freqStr);
+        const auto dur = parse_time_rule(freqStr);
         
         std::vector<std::chrono::system_clock::time_point> result;
         std::chrono::system_clock::time_point t = start;

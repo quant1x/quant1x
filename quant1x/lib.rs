@@ -72,8 +72,8 @@ mod level1;
 pub use crate::level1::*;
 pub mod exchange;
 pub use crate::exchange::*;
-pub mod markets;
-pub use crate::markets::*;
+pub mod market;
+pub use crate::market::*;
 pub mod factors;
 pub use crate::factors::*;
 // cache adapter module (port of C++ engine::adapter)

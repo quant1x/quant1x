@@ -15,7 +15,7 @@ import dotenv
 import logging
 from yarg import get
 from quant1x import system
-from quant1x.std import filepath
+from quant1x.std import filesystem
 from datetime import datetime
 
 # 加载环境变量
@@ -64,7 +64,7 @@ def get_quant1x_config_filename() -> Tuple[str, str]:
             quant1x_root = os.path.join(user_home, f'.{default_quant1x_work}')
             yaml_filename = os.path.join(quant1x_root, default_config_filename)
 
-    yaml_filename = filepath.expand_user(yaml_filename)
+    yaml_filename = filesystem.expand_user(yaml_filename)
     return yaml_filename, quant1x_work
 
 
@@ -130,7 +130,7 @@ class Quant1XConfig:
 
         if not self.data_path:
             self.data_path = self.__default_main_path
-        self.data_path = filepath.expand_user(self.data_path)
+        self.data_path = filesystem.expand_user(self.data_path)
 
         # 解析 logdir，保证为字符串并去除空白
         log_path_raw = self.__config.get('logdir', '') or ''
@@ -139,7 +139,7 @@ class Quant1XConfig:
 
         if not self.log_path:
             self.log_path = os.path.join(self.__default_main_path, 'logs')
-        self.log_path = filepath.expand_user(self.log_path)
+        self.log_path = filesystem.expand_user(self.log_path)
         
         # 数据路径
         self.kline_path = os.path.join(self.data_path, 'day')

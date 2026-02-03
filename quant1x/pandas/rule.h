@@ -8,7 +8,7 @@ namespace pandas {
     std::tuple<int, std::string> parse_frequency(const std::string& freq);
 
     // 解析频率字符串并返回对应的duration
-    std::chrono::duration<long long, std::nano> ParseTimeRule(const std::string& freq);
+    std::chrono::duration<long long, std::nano> parse_time_rule(const std::string& freq);
 } // namespace pandas
 
 #endif //QUANT1X_PANDAS_RULE_H

@@ -6,7 +6,7 @@
 #include <quant1x/proto/data.h>
 #include <quant1x/data/adapter.h>
 #include <quant1x/config/config.h>
-#include <quant1x/markets/instruments.h>
+#include <quant1x/market/instruments.h>
 
 namespace cache {
     constexpr const char *const trains_begin_date = "2024-10-01";

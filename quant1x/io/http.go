@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/logger"
+	"gitee.com/quant1x/quant1x/quant1x/log"
 	"gitee.com/quant1x/quant1x/quant1x/std"
 )
 
@@ -215,7 +215,7 @@ func Request(url string, method string, content string, header ...map[string]any
 		case "gzip":
 			reader, err = gzip.NewReader(bytes.NewBuffer(body))
 			if err != nil {
-				logger.Error(err)
+				log.Error(err)
 				reader = nil
 			}
 		case "deflate":

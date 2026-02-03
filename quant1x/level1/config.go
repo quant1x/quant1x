@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/logger"
+	"gitee.com/quant1x/quant1x/quant1x/log"
 )
 
 func standardServerList() []serverInfo {
@@ -181,7 +181,7 @@ func detectServers(handler *StandardProtocolHandler, threshold time.Duration, li
 			addr := stdnet.JoinHostPort(srv.Host, strconv.Itoa(int(srv.Port)))
 			conn, err := stdnet.DialTimeout("tcp", addr, connectTimeout)
 			if err != nil {
-				logger.Debugf("level1 detect: dial %s failed: %v", addr, err)
+				log.Debugf("level1 detect: dial %s failed: %v", addr, err)
 				return
 			}
 			tcpConn, ok := conn.(*stdnet.TCPConn)
@@ -194,12 +194,12 @@ func detectServers(handler *StandardProtocolHandler, threshold time.Duration, li
 			_ = tcpConn.SetNoDelay(true)
 			start := time.Now()
 			if ok, err := handler.Handshake(tcpConn); err != nil || !ok {
-				logger.Debugf("level1 detect: handshake %s failed: %v", addr, err)
+				log.Debugf("level1 detect: handshake %s failed: %v", addr, err)
 				return
 			}
 			latency := time.Since(start)
 			if latency >= threshold {
-				logger.Debugf("level1 detect: latency %s = %v exceeds threshold", addr, latency)
+				log.Debugf("level1 detect: latency %s = %v exceeds threshold", addr, latency)
 				return
 			}
 			srv.LatencyMS = latency.Milliseconds()
