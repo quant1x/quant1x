@@ -8,7 +8,7 @@ from datetime import datetime
 from quant1x.contrib.calendar import next_trading_day
 from quant1x.data import adapter
 from quant1x.data.base import BASE_KLINE, BASE_RAW_DAILY_KLINE, MarketCnFirstListTime
-from quant1x.data.frequency import Frequency, TimeUnit
+from quant1x.data.frequency import Frequency, TimeUnit, FREQ_DAILY
 from quant1x.data.market import Instrument, detect_symbol
 from quant1x.data import config, Timestamp, KLine, MaxCachedDaysToDropOnIncrementalUpdate, CumulativeAdjustment, XdxrInfo
 from .client import get_std_conn
@@ -134,13 +134,13 @@ def read_kline_from_csv(filename: str) -> List[KLine]:
     
     return klines
 
-def get_kline_filename(inst: Instrument, freq: Frequency=Frequency(1, TimeUnit.DAY)) -> str:
+def get_kline_filename(inst: Instrument, freq: Frequency=FREQ_DAILY) -> str:
     module_name = freq.cache_key()
     symbol = inst.symbol()
     symbol_path = symbol[:-3]
     return f'{config.data_path}/{module_name}/{symbol_path}/{symbol}.csv' 
     
-def load_kline(inst: Instrument, freq: Frequency=Frequency(1, TimeUnit.DAY)) -> List[KLine]:
+def load_kline(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[KLine]:
     filename = get_kline_filename(inst, freq)
     logger.debug(f"[dataset::KLine] kline file: {filename}")
     return read_kline_from_csv(filename)
@@ -267,7 +267,19 @@ class DataKLine(adapter.DataAdapter):
 _data_kline_plugin = adapter.register(DataKLine)
     
 
-def check_kline_offset(klines: List[Any], date: str, freq: Frequency=Frequency(1, TimeUnit.DAY)) -> int:
+def check_kline_offset(klines: List[Any], date: str, freq: Frequency=FREQ_DAILY) -> int:
+    """
+    检查给定日期在K线数据中的偏移位置
+    
+    Args:
+        klines (List[Any]): K线数据列表，每个元素应包含date字段, 元素类型是鸭子类型, 可以是KLine, KLineRaw, SecurityBar
+        date (str): 要查找的目标日期
+        freq (Frequency): K线频率，默认为日线
+    
+    Returns:
+        int: 目标日期在K线中的偏移量（从最新数据开始计数），
+             如果未找到或日期早于最早数据则返回-1
+    """
     rows = len(klines)
     offset = 0
     for i in range(rows):

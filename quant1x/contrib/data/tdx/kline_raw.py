@@ -14,7 +14,7 @@ from .client import get_std_conn
 from .level1.security_bars import SecurityBarsRequest, SecurityBarsResponse, KLineType, SecurityBar, SECURITY_BARS_PRE_REQUEST_MAX
 from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASE_DATA, register, DEFAULT_DATA_PROVIDER
 from quant1x.data.base import BASE_RAW_DAILY_KLINE, MarketCnFirstListTime
-from quant1x.data.frequency import Frequency, TimeUnit
+from quant1x.data.frequency import Frequency, TimeUnit, FREQ_DAILY
 from quant1x.data.market import Instrument, detect_symbol
 
 def frequency_to_kline_type(freq: Frequency) -> KLineType:
@@ -215,13 +215,13 @@ def read_kline_raw_from_csv(filename: str) -> List[KLineRaw]:
 
     return klines
 
-def get_kline_raw_filename(inst: Instrument, freq: Frequency=Frequency(1, TimeUnit.DAY)) -> str:
+def get_kline_raw_filename(inst: Instrument, freq: Frequency=FREQ_DAILY) -> str:
     module_name = freq.cache_key()
     symbol = inst.symbol()
     symbol_path = symbol[:-3]
     return f'{config.data_path}/{module_name}/{symbol_path}/{symbol}.raw' 
 
-def load_kline_raw(inst: Instrument, freq: Frequency=Frequency(1, TimeUnit.DAY)) -> List[KLineRaw]:
+def load_kline_raw(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[KLineRaw]:
     """
     从缓存文件加载指定证券代码的K线原始数据
     
@@ -234,7 +234,7 @@ def load_kline_raw(inst: Instrument, freq: Frequency=Frequency(1, TimeUnit.DAY))
     cache_filename = get_kline_raw_filename(inst, freq)
     return read_kline_raw_from_csv(cache_filename)
 
-def ensure_kline_raw_updated(inst: Instrument, freq: Frequency=Frequency(1, TimeUnit.DAY)):
+def ensure_kline_raw_updated(inst: Instrument, freq: Frequency=FREQ_DAILY):
     """
     确保指定证券代码的K线原始数据是最新的
     
@@ -245,7 +245,7 @@ def ensure_kline_raw_updated(inst: Instrument, freq: Frequency=Frequency(1, Time
     data_adapter = DataKLineRaw()
     data_adapter.update(inst)
 
-def checkout_kline_raw(inst: Instrument, freq: Frequency=Frequency(1, TimeUnit.DAY)) -> List[KLineRaw]:
+def checkout_kline_raw(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[KLineRaw]:
     """
     获取指定证券的未复权K线数据，如果数据不存在则下载
     

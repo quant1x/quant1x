@@ -69,6 +69,15 @@ class Frequency(NamedTuple):
             return 'day'
         return f"{self.num}{self.unit.value}"
 
+# 日线频率的常量
+FREQ_DAILY = Frequency(num=1, unit=TimeUnit.DAY)
+"""日线"""
+FREQ_WEEKLY = Frequency(num=1, unit=TimeUnit.WEEK)
+"""周线"""
+FREQ_MONTHLY = Frequency(num=1, unit=TimeUnit.MONTH)
+"""月线"""
+FREQ_YEARLY = Frequency(num=1, unit=TimeUnit.YEAR)
+"""年线"""
 
 # pandas 单位别名映射表（只读）
 _PANDAS_UNIT_ALIASES = {
