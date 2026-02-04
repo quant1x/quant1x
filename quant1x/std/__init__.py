@@ -10,4 +10,4 @@
 """
 
 from .time import get_quarter_by_date
-
+from .dataclass_utils import get_field_names
