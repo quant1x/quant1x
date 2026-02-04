@@ -16,18 +16,26 @@ logger = logging.getLogger(__name__)
 
 class SingletonInitPolicy(Enum):
     """单例初始化策略"""
-    LAZY = auto()      # 懒加载（默认）
-    EAGER = auto()     # 提前初始化
-    ON_DEMAND = auto() # 按需初始化
+    LAZY = auto()
+    """延迟初始化"""
+    EAGER = auto()
+    """提前初始化"""
+    ON_DEMAND = auto()
+    """按需初始化"""
 
 
 class ThreadSafeStrategy(Enum):
     """线程安全策略"""
-    LOCK = auto()          # 简单锁
-    DOUBLE_CHECKED = auto()  # 双重检查锁定
-    CLASS_LOCK = auto()    # 类级别锁
-    THREAD_LOCAL = auto()  # 线程本地存储
-    NO_LOCK = auto()       # 无锁（仅单线程）
+    LOCK = auto()
+    """简单锁"""
+    DOUBLE_CHECKED = auto()
+    """双重检查锁定"""
+    CLASS_LOCK = auto()
+    """类级别锁"""
+    THREAD_LOCAL = auto()
+    """线程本地存储"""
+    NO_LOCK = auto()
+    """无锁"""
 
 
 class SingletonInitializationError(Exception):
@@ -322,288 +330,344 @@ def synchronized(lock_attr: str = '_instance_lock'):
 def singleton_method(method):
     """
     标记单例关键方法
-    主要用于文档和调试
+    
+    功能:
+    1. 记录方法调用日志
+    2. 验证方法是否在单例实例上调用
+    3. 可选地添加线程安全保护
+    
+    用法:
+        @singleton_method
+        def get_config(self) -> dict:
+            return {"key": "value"}
     """
     @wraps(method)
     def wrapper(self, *args, **kwargs):
+        # 记录方法调用
         logger.debug(f"调用单例方法: {method.__name__} on {self}")
+        
+        # 验证是否在单例实例上调用
+        cls = self.__class__
+        if hasattr(cls, '_instances') and cls in cls._instances:
+            if self is not cls._instances[cls]:
+                logger.warning(
+                    f"方法 {method.__name__} 在非单例实例上调用! "
+                    f"实例ID: {id(self)}, 单例ID: {id(cls._instances[cls])}"
+                )
+        elif hasattr(cls, 'is_initialized') and cls.is_initialized():
+            logger.warning(
+                f"方法 {method.__name__} 可能不在正确的单例实例上调用"
+            )
+        
         return method(self, *args, **kwargs)
-    wrapper._is_singleton_method = True
+    
+    # 标记为单例方法，可用于反射和检查
+    setattr(wrapper, '_is_singleton_method', True)  # type: ignore[attr-defined]
     return wrapper
 
 
-# 使用示例
-class DatabaseConfig(ThreadSafeSingletonABC):
+def is_singleton_method(method) -> bool:
     """
-    数据库配置管理器示例
-    使用双重检查锁定策略
+    检查方法是否被 singleton_method 装饰器标记
+    
+    Args:
+        method: 要检查的方法
+    
+    Returns:
+        bool: 如果方法被标记为单例方法则返回 True
     """
-    
-    _thread_safe_strategy = ThreadSafeStrategy.DOUBLE_CHECKED
-    
-    def initialize(self) -> None:
-        """初始化数据库配置"""
-        self.host = "localhost"
-        self.port = 3306
-        self.username = "admin"
-        self.password = "secret"
-        self.connection_pool = []
-        self._connection_count = 0
-        logger.info("数据库配置已初始化")
-    
-    def cleanup(self) -> None:
-        """清理数据库连接"""
-        for conn in self.connection_pool:
-            try:
-                # 模拟关闭连接
-                pass
-            except Exception as e:
-                logger.error(f"关闭连接时出错: {e}")
-        self.connection_pool.clear()
-        logger.info("数据库连接已清理")
-    
-    @synchronized()
-    def get_connection(self) -> dict:
-        """获取数据库连接（线程安全）"""
-        self._connection_count += 1
-        conn = {
-            "id": self._connection_count,
-            "host": self.host,
-            "port": self.port
-        }
-        self.connection_pool.append(conn)
-        return conn
-    
-    @singleton_method
-    def get_config(self) -> dict:
-        """获取配置信息"""
-        return {
-            "host": self.host,
-            "port": self.port,
-            "username": self.username,
-            "connections": len(self.connection_pool)
-        }
+    return getattr(method, '_is_singleton_method', False)
 
 
-class Logger(ThreadSafeSingletonABC):
+def get_singleton_methods(cls: Type) -> list:
     """
-    线程本地日志记录器示例
-    每个线程有自己的实例
+    获取类中所有被标记为单例的方法
+    
+    Args:
+        cls: 要检查的类
+    
+    Returns:
+        list: 单例方法列表 (method_name, method)
     """
+    methods = []
+    for name, member in cls.__dict__.items():
+        if callable(member) and is_singleton_method(member):
+            methods.append((name, member))
+    return methods
+
+
+# # 使用示例
+# class DatabaseConfig(ThreadSafeSingletonABC):
+#     """
+#     数据库配置管理器示例
+#     使用双重检查锁定策略
+#     """
     
-    _thread_safe_strategy = ThreadSafeStrategy.THREAD_LOCAL
+#     _thread_safe_strategy = ThreadSafeStrategy.DOUBLE_CHECKED
     
-    def initialize(self) -> None:
-        """初始化日志记录器"""
-        self.logs = []
-        self.thread_id = threading.get_ident()
-        logger.info(f"日志记录器已初始化 (线程: {self.thread_id})")
+#     def initialize(self) -> None:
+#         """初始化数据库配置"""
+#         self.host = "localhost"
+#         self.port = 3306
+#         self.username = "admin"
+#         self.password = "secret"
+#         self.connection_pool = []
+#         self._connection_count = 0
+#         logger.info("数据库配置已初始化")
     
-    def cleanup(self) -> None:
-        """清理日志"""
-        self.logs.clear()
-        logger.info(f"日志已清理 (线程: {self.thread_id})")
+#     def cleanup(self) -> None:
+#         """清理数据库连接"""
+#         for conn in self.connection_pool:
+#             try:
+#                 # 模拟关闭连接
+#                 pass
+#             except Exception as e:
+#                 logger.error(f"关闭连接时出错: {e}")
+#         self.connection_pool.clear()
+#         logger.info("数据库连接已清理")
     
-    @synchronized('_log_lock')
-    def log(self, message: str, level: str = "INFO") -> None:
-        """记录日志（使用单独的锁）"""
-        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-        log_entry = f"[{timestamp}] [{level}] {message}"
-        self.logs.append(log_entry)
+#     @synchronized()
+#     def get_connection(self) -> dict:
+#         """获取数据库连接（线程安全）"""
+#         self._connection_count += 1
+#         conn = {
+#             "id": self._connection_count,
+#             "host": self.host,
+#             "port": self.port
+#         }
+#         self.connection_pool.append(conn)
+#         return conn
+    
+#     @singleton_method
+#     def get_config(self) -> dict:
+#         """获取配置信息"""
+#         return {
+#             "host": self.host,
+#             "port": self.port,
+#             "username": self.username,
+#             "connections": len(self.connection_pool)
+#         }
+
+
+# class Logger(ThreadSafeSingletonABC):
+#     """
+#     线程本地日志记录器示例
+#     每个线程有自己的实例
+#     """
+    
+#     _thread_safe_strategy = ThreadSafeStrategy.THREAD_LOCAL
+    
+#     def initialize(self) -> None:
+#         """初始化日志记录器"""
+#         self.logs = []
+#         self.thread_id = threading.get_ident()
+#         logger.info(f"日志记录器已初始化 (线程: {self.thread_id})")
+    
+#     def cleanup(self) -> None:
+#         """清理日志"""
+#         self.logs.clear()
+#         logger.info(f"日志已清理 (线程: {self.thread_id})")
+    
+#     @synchronized('_log_lock')
+#     def log(self, message: str, level: str = "INFO") -> None:
+#         """记录日志（使用单独的锁）"""
+#         timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+#         log_entry = f"[{timestamp}] [{level}] {message}"
+#         self.logs.append(log_entry)
         
-        # 模拟输出到控制台
-        print(log_entry)
+#         # 模拟输出到控制台
+#         print(log_entry)
     
-    def get_logs(self) -> list:
-        """获取日志记录"""
-        return self.logs.copy()
+#     def get_logs(self) -> list:
+#         """获取日志记录"""
+#         return self.logs.copy()
 
 
-class CacheManager(ThreadSafeSingletonABC):
-    """
-    缓存管理器示例
-    使用提前初始化策略
-    """
+# class CacheManager(ThreadSafeSingletonABC):
+#     """
+#     缓存管理器示例
+#     使用提前初始化策略
+#     """
     
-    _init_policy = SingletonInitPolicy.EAGER
-    _thread_safe_strategy = ThreadSafeStrategy.DOUBLE_CHECKED
+#     _init_policy = SingletonInitPolicy.EAGER
+#     _thread_safe_strategy = ThreadSafeStrategy.DOUBLE_CHECKED
     
-    def initialize(self) -> None:
-        """初始化缓存"""
-        self.cache = {}
-        self.hits = 0
-        self.misses = 0
-        logger.info("缓存管理器已提前初始化")
+#     def initialize(self) -> None:
+#         """初始化缓存"""
+#         self.cache = {}
+#         self.hits = 0
+#         self.misses = 0
+#         logger.info("缓存管理器已提前初始化")
     
-    def cleanup(self) -> None:
-        """清理缓存"""
-        self.cache.clear()
-        logger.info("缓存已清理")
+#     def cleanup(self) -> None:
+#         """清理缓存"""
+#         self.cache.clear()
+#         logger.info("缓存已清理")
     
-    @synchronized()
-    def get(self, key: str, default=None):
-        """从缓存获取数据"""
-        if key in self.cache:
-            self.hits += 1
-            return self.cache[key]
-        self.misses += 1
-        return default
+#     @synchronized()
+#     def get(self, key: str, default=None):
+#         """从缓存获取数据"""
+#         if key in self.cache:
+#             self.hits += 1
+#             return self.cache[key]
+#         self.misses += 1
+#         return default
     
-    @synchronized()
-    def set(self, key: str, value) -> None:
-        """设置缓存数据"""
-        self.cache[key] = value
+#     @synchronized()
+#     def set(self, key: str, value) -> None:
+#         """设置缓存数据"""
+#         self.cache[key] = value
     
-    @singleton_method
-    def get_stats(self) -> dict:
-        """获取缓存统计"""
-        return {
-            "size": len(self.cache),
-            "hits": self.hits,
-            "misses": self.misses,
-            "hit_rate": self.hits / (self.hits + self.misses) if (self.hits + self.misses) > 0 else 0
-        }
+#     @singleton_method
+#     def get_stats(self) -> dict:
+#         """获取缓存统计"""
+#         return {
+#             "size": len(self.cache),
+#             "hits": self.hits,
+#             "misses": self.misses,
+#             "hit_rate": self.hits / (self.hits + self.misses) if (self.hits + self.misses) > 0 else 0
+#         }
 
 
-# 多线程测试函数
-def test_database_config(thread_id: int):
-    """测试数据库配置的单例性"""
-    config = DatabaseConfig.get_instance()
-    conn = config.get_connection()
-    print(f"线程 {thread_id}: 获取连接 {conn['id']}")
-    time.sleep(0.1)
-    return config
+# # 多线程测试函数
+# def test_database_config(thread_id: int):
+#     """测试数据库配置的单例性"""
+#     config = DatabaseConfig.get_instance()
+#     conn = config.get_connection()
+#     print(f"线程 {thread_id}: 获取连接 {conn['id']}")
+#     time.sleep(0.1)
+#     return config
 
 
-def test_thread_local_logger(thread_id: int):
-    """测试线程本地单例"""
-    logger = Logger.get_instance()
-    logger.log(f"来自线程 {thread_id} 的消息")
-    return logger
+# def test_thread_local_logger(thread_id: int):
+#     """测试线程本地单例"""
+#     logger = Logger.get_instance()
+#     logger.log(f"来自线程 {thread_id} 的消息")
+#     return logger
 
 
-def test_concurrent_access():
-    """测试并发访问"""
-    print("\n=== 测试并发访问 ===")
+# def test_concurrent_access():
+#     """测试并发访问"""
+#     print("\n=== 测试并发访问 ===")
     
-    # 测试数据库配置（全局单例）
-    print("\n1. 测试全局单例（DatabaseConfig）:")
-    threads = []
-    configs = []
+#     # 测试数据库配置（全局单例）
+#     print("\n1. 测试全局单例（DatabaseConfig）:")
+#     threads = []
+#     configs = []
     
-    for i in range(5):
-        t = threading.Thread(
-            target=lambda idx=i: configs.append(test_database_config(idx)),
-            daemon=True
-        )
-        threads.append(t)
-        t.start()
+#     for i in range(5):
+#         t = threading.Thread(
+#             target=lambda idx=i: configs.append(test_database_config(idx)),
+#             daemon=True
+#         )
+#         threads.append(t)
+#         t.start()
     
-    for t in threads:
-        t.join()
+#     for t in threads:
+#         t.join()
     
-    # 检查是否是同一个实例
-    if all(c is configs[0] for c in configs):
-        print("✓ 所有线程获取到同一个实例")
-    else:
-        print("✗ 实例不一致！")
+#     # 检查是否是同一个实例
+#     if all(c is configs[0] for c in configs):
+#         print("✓ 所有线程获取到同一个实例")
+#     else:
+#         print("✗ 实例不一致！")
     
-    # 测试线程本地单例
-    print("\n2. 测试线程本地单例（Logger）:")
-    threads.clear()
-    loggers = []
+#     # 测试线程本地单例
+#     print("\n2. 测试线程本地单例（Logger）:")
+#     threads.clear()
+#     loggers = []
     
-    for i in range(3):
-        t = threading.Thread(
-            target=lambda idx=i: loggers.append(test_thread_local_logger(idx)),
-            daemon=True
-        )
-        threads.append(t)
-        t.start()
+#     for i in range(3):
+#         t = threading.Thread(
+#             target=lambda idx=i: loggers.append(test_thread_local_logger(idx)),
+#             daemon=True
+#         )
+#         threads.append(t)
+#         t.start()
     
-    for t in threads:
-        t.join()
+#     for t in threads:
+#         t.join()
     
-    # 检查是否是不同实例
-    unique_instances = len(set(id(l) for l in loggers))
-    print(f"✓ 创建了 {unique_instances} 个不同的 Logger 实例（每个线程一个）")
+#     # 检查是否是不同实例
+#     unique_instances = len(set(id(l) for l in loggers))
+#     print(f"✓ 创建了 {unique_instances} 个不同的 Logger 实例（每个线程一个）")
     
-    # 测试缓存管理器
-    print("\n3. 测试缓存管理器（提前初始化）:")
-    cache1 = CacheManager.get_instance()
-    cache2 = CacheManager.get_instance()
+#     # 测试缓存管理器
+#     print("\n3. 测试缓存管理器（提前初始化）:")
+#     cache1 = CacheManager.get_instance()
+#     cache2 = CacheManager.get_instance()
     
-    print(f"cache1 is cache2: {cache1 is cache2}")
-    print(f"缓存统计: {cache1.get_stats()}")
+#     print(f"cache1 is cache2: {cache1 is cache2}")
+#     print(f"缓存统计: {cache1.get_stats()}")
 
 
-def demonstrate_features():
-    """演示各种特性"""
-    print("=== 线程安全单例抽象类特性演示 ===\n")
+# def demonstrate_features():
+#     """演示各种特性"""
+#     print("=== 线程安全单例抽象类特性演示 ===\n")
     
-    # 1. 测试抽象类不能实例化
-    print("1. 测试抽象类不能实例化:")
-    try:
-        # 这会失败，因为 ThreadSafeSingletonABC 是抽象类
-        abstract_instance = ThreadSafeSingletonABC()
-    except TypeError as e:
-        print(f"   预期异常: {e}\n")
+#     # 1. 测试抽象类不能实例化
+#     print("1. 测试抽象类不能实例化:")
+#     try:
+#         # 这会失败，因为 ThreadSafeSingletonABC 是抽象类
+#         abstract_instance = ThreadSafeSingletonABC()
+#     except TypeError as e:
+#         print(f"   预期异常: {e}\n")
     
-    # 2. 测试单例性
-    print("2. 测试单例性:")
-    config1 = DatabaseConfig.get_instance()
-    config2 = DatabaseConfig.get_instance()
-    config3 = DatabaseConfig()  # 也可以直接调用
+#     # 2. 测试单例性
+#     print("2. 测试单例性:")
+#     config1 = DatabaseConfig.get_instance()
+#     config2 = DatabaseConfig.get_instance()
+#     config3 = DatabaseConfig()  # 也可以直接调用
     
-    print(f"   config1 is config2: {config1 is config2}")
-    print(f"   config2 is config3: {config2 is config3}")
-    print(f"   所有引用指向同一个实例: {config1 is config2 is config3}\n")
+#     print(f"   config1 is config2: {config1 is config2}")
+#     print(f"   config2 is config3: {config2 is config3}")
+#     print(f"   所有引用指向同一个实例: {config1 is config2 is config3}\n")
     
-    # 3. 测试初始化
-    print("3. 测试初始化状态:")
-    print(f"   DatabaseConfig 已初始化: {DatabaseConfig.is_initialized()}")
-    print(f"   CacheManager 已初始化: {CacheManager.is_initialized()}\n")
+#     # 3. 测试初始化
+#     print("3. 测试初始化状态:")
+#     print(f"   DatabaseConfig 已初始化: {DatabaseConfig.is_initialized()}")
+#     print(f"   CacheManager 已初始化: {CacheManager.is_initialized()}\n")
     
-    # 4. 测试实例重置
-    print("4. 测试实例重置（用于测试）:")
-    original_config = DatabaseConfig.get_instance()
-    DatabaseConfig.reset_instance()
-    new_config = DatabaseConfig.get_instance()
+#     # 4. 测试实例重置
+#     print("4. 测试实例重置（用于测试）:")
+#     original_config = DatabaseConfig.get_instance()
+#     DatabaseConfig.reset_instance()
+#     new_config = DatabaseConfig.get_instance()
     
-    print(f"   重置前后是不同实例: {original_config is not new_config}")
-    print(f"   新实例已初始化: {DatabaseConfig.is_initialized()}\n")
+#     print(f"   重置前后是不同实例: {original_config is not new_config}")
+#     print(f"   新实例已初始化: {DatabaseConfig.is_initialized()}\n")
     
-    # 5. 测试配置获取
-    print("5. 测试配置获取:")
-    config = DatabaseConfig.get_instance()
-    conn1 = config.get_connection()
-    conn2 = config.get_connection()
+#     # 5. 测试配置获取
+#     print("5. 测试配置获取:")
+#     config = DatabaseConfig.get_instance()
+#     conn1 = config.get_connection()
+#     conn2 = config.get_connection()
     
-    print(f"   创建的连接: {conn1['id']}, {conn2['id']}")
-    print(f"   配置信息: {config.get_config()}")
+#     print(f"   创建的连接: {conn1['id']}, {conn2['id']}")
+#     print(f"   配置信息: {config.get_config()}")
 
 
-# 主测试函数
-def main():
-    """主测试函数"""
-    print("=" * 60)
-    print("线程安全单例抽象基类测试")
-    print("=" * 60)
+# # 主测试函数
+# def main():
+#     """主测试函数"""
+#     print("=" * 60)
+#     print("线程安全单例抽象基类测试")
+#     print("=" * 60)
     
-    # 演示基本特性
-    demonstrate_features()
+#     # 演示基本特性
+#     demonstrate_features()
     
-    # 测试并发访问
-    test_concurrent_access()
+#     # 测试并发访问
+#     test_concurrent_access()
     
-    # 清理
-    print("\n" + "=" * 60)
-    print("清理所有单例实例:")
-    DatabaseConfig.reset_instance()
-    CacheManager.reset_instance()
-    print("测试完成！")
-    print("=" * 60)
+#     # 清理
+#     print("\n" + "=" * 60)
+#     print("清理所有单例实例:")
+#     DatabaseConfig.reset_instance()
+#     CacheManager.reset_instance()
+#     print("测试完成！")
+#     print("=" * 60)
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
