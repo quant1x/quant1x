@@ -160,12 +160,11 @@ class TdxDataSource(DataHandler):
         加载全部指数、板块和个股的代码
         """
         code_list:List[Instrument] = []
-        # 1. 指数
+        # 1. 指数, 包括指数、重要板块以及ETF
         code_list.extend(self.get_index_list())
         
         # 2. 板块
         sectors = self.get_sector_list()
-        # 简化：直接按 `blocks.get_sector_list()` 返回的 list[BlockInfo] 处理
         for s in sectors:
             if s.code in A_SHARE_INDEX_LIST:
                 continue
@@ -177,7 +176,7 @@ class TdxDataSource(DataHandler):
             except Exception:
                 continue
 
-        # 3. 个股, 包括场内开放式ETF基金
+        # 3. 个股, 包括只包含上市公司股票
         stock_list = self.get_stock_list()
         code_list.extend(stock_list)
         
