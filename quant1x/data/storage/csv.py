@@ -5,11 +5,13 @@
 from __future__ import annotations
 import csv
 from pathlib import Path
-from typing import Any, List, Type, Union, get_type_hints
+from typing import List, Type, Union, get_type_hints
 from dataclasses import dataclass, fields, is_dataclass
-from quant1x.std import strings
+from quant1x.types import T
+from quant1x.std import get_field_names, strings
 
-def csv_to_slice(filepath: Union[str, Path], cls: Type) -> List[Any]:
+
+def csv_to_slice(filepath: Union[str, Path], cls: Type[T]) -> List[T]:
     """
     从 CSV 加载为 dataclass 实例列表
     
@@ -24,11 +26,20 @@ def csv_to_slice(filepath: Union[str, Path], cls: Type) -> List[Any]:
     if not filepath.exists():
         return []
 
-    cls_fields = fields(cls)
-    field_names = [f.name for f in cls_fields]
+    #field_names = get_field_names(cls)
     # 使用 get_type_hints 解析字符串注解为实际类型
-    field_types = get_type_hints(cls)
-
+    original_field_types = get_type_hints(cls)
+    print(f'field_types={original_field_types}')
+    # 转换为字段名称 -> 类型映射
+    field_map = {}
+    field_names = []
+    field_types = {}
+    for cls_field_name, v in original_field_types.items():
+        csv_field_name = strings.to_snake_case(cls_field_name)
+        field_types[cls_field_name]=v
+        field_map[csv_field_name] = cls_field_name
+        field_names.append(csv_field_name)
+    
     instances = []
     with open(filepath, 'r', encoding='utf-8', newline='') as f:
         reader = csv.reader(f)
@@ -49,7 +60,9 @@ def csv_to_slice(filepath: Union[str, Path], cls: Type) -> List[Any]:
                 raise ValueError(f"Row {row_index} has {len(row)} columns, expected {len(field_names)}")
 
             kwargs = {}
-            for name, value_str in zip(field_names, row):
+            for csv_field_name, value_str in zip(field_names, row):
+                name = field_map[csv_field_name]
+                print(f'name={name}, value_str={value_str}')
                 target_type = field_types[name]
                 try:
                     # 基本类型自动转换
@@ -74,7 +87,7 @@ def csv_to_slice(filepath: Union[str, Path], cls: Type) -> List[Any]:
 
     return instances
 
-def slice_to_csv(filepath: Union[str, Path],  data: List[Any]) -> None:
+def slice_to_csv(filepath: Union[str, Path],  data: List[T]) -> None:
     """保存 dataclass 实例列表到 CSV"""
     if not data:
         # 空列表：无法推断结构，拒绝保存（或可创建空 header？）
@@ -82,13 +95,13 @@ def slice_to_csv(filepath: Union[str, Path],  data: List[Any]) -> None:
         return
     
     first = data[0]
-    if not is_dataclass(first):
+    cls = type(first)
+    if not is_dataclass(cls):
         raise TypeError("Only dataclass instances are supported. "
                         "Each item must be created with @dataclass.")
     
-    cls = type(first)
     cls_fields = fields(cls)
-    header = [f.name for f in cls_fields]
+    header = get_field_names(cls)
     
     # 将每个实例转为行（按字段顺序）
     rows = []
@@ -109,18 +122,20 @@ def slice_to_csv(filepath: Union[str, Path],  data: List[Any]) -> None:
 if __name__ == "__main__":
     @dataclass
     class Person:
-        name: str
-        age: int
+        Name: str
+        Age: int
 
+    filename = "people.csv"
+    
     # 保存
     people = [Person("Alice", 30), Person("Bob", 25)]
-    CsvStorage.save("people.csv", people)
+    slice_to_csv("people.csv", people)
 
     # 加载
-    loaded: List[Person] = CsvStorage.load("people.csv", Person)
+    loaded: List[Person] = csv_to_slice("people.csv", Person)
     print(loaded)  # [Person(name='Alice', age=30), Person(name='Bob', age=25)]
 
     # 验证类型
     assert isinstance(loaded[0], Person)
-    print(f'age={loaded[0].age}')
-    assert loaded[0].age == 30
+    print(f'age={loaded[0].Age}')
+    assert loaded[0].Age == 30
