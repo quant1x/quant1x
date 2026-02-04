@@ -3,7 +3,8 @@ from typing import Any, List, Type, TypeVar, Generic, overload
 
 from .csv import csv_to_slice, slice_to_csv
 from quant1x.types import T
-from quant1x.data.timestamp import Timestamp
+from quant1x.data import Timestamp
+from quant1x.data import Instrument
 
 class FileStorage(ABC, Generic[T]):
     """文件存储接口（专用于单一 dataclass 类型）"""
@@ -43,3 +44,11 @@ class FileStorage(ABC, Generic[T]):
         if self.should_initialize() or self.should_update():
             self.update()
         return self.load()
+
+class BasedataFileStorage(FileStorage, Generic[T]):
+    """基础数据文件存储类"""
+    
+    def __init__(self, data_type: Type[T], inst: Instrument) -> None:
+        self._inst = inst
+        super().__init__(data_type) # 调用父类构造函数
+        
