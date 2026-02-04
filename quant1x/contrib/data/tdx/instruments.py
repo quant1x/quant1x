@@ -121,10 +121,10 @@ def init_securities():
         _ = _load_securities()
 
 
-def get_instrument_info(security_code: str) -> Optional[Instrument]:
+def get_instrument_info(symbol: str) -> Optional[Instrument]:
     _SECURITY_ONCE.do(init_securities)
-    code = market.correct_security_code(security_code)
-    return _SECURITY_MAP.get(code)
+    security_code = market.correct_security_code(symbol)
+    return _SECURITY_MAP.get(security_code)
 
 
 __all__ = [
