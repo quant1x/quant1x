@@ -4,9 +4,12 @@
 
 from __future__ import annotations
 from typing import List, Union
-from quant1x.data import DataHandler, Exchange, Instrument, InstrumentType, Sector, PlateCategory
+from quant1x.data import DataHandler, Exchange, Instrument, InstrumentType, Sector, PlateCategory, Timestamp
 from . import sector
 from .instruments import get_instrument_info
+from .kline import get_cross_section_forward_adjusted_klines
+from .trans import checkout_transaction_data
+
 
 def is_need_ignore(code: str) -> bool:
     """
@@ -179,6 +182,48 @@ class TdxDataSource(DataHandler):
         code_list.extend(stock_list)
         
         return code_list
+    
+    def get_instrument(self, symbol: str) -> Instrument:
+        """
+        获取指定代码的合约信息
+        
+        Args:
+            symbol (str): 合约代码字符串
+        
+        Returns:
+            Instrument: 对应的合约对象
+        
+        Raises:
+            ValueError: 当找不到指定代码的合约时抛出
+        """
+        inst = get_instrument_info(symbol)
+        if inst is not None:
+            return inst
+        raise ValueError(f"Instrument not found: {symbol}")
+    
+    def klines(self, symbol: str, start_date: str | None, end_date: str | None, freq: str | None):
+        """
+        获取指定日期范围的K线数据
+        """
+        _ = start_date
+        _ = freq
+        if end_date is None:
+            as_of_ts = Timestamp.now()
+        else:
+            as_of_ts = Timestamp.parse(end_date)
+        as_of_date = as_of_ts.only_date()
+        return get_cross_section_forward_adjusted_klines(symbol, as_of_date)
+    
+    def transactions(self, symbol: str, date: str | None, **kwargs):
+        """
+        获取指定日期的交易数据
+        """
+        if date is None:
+            timestamp = Timestamp.now()
+        else: 
+            timestamp = Timestamp.parse(date)
+        return checkout_transaction_data(symbol, timestamp, ignore_previous_data=False)
+
     
 if __name__ == "__main__":
     D = TdxDataSource()

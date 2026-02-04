@@ -96,4 +96,55 @@ class DataHandler(ABC):
         """
         raise NotImplementedError("Subclass of DataHandler must implement `list_instruments` method")
 
-
+    @abstractmethod
+    def get_instrument(self, symbol: str) -> Instrument:
+        """
+        获取指定证券代码对应的证券信息
+        
+        Args:
+            symbol (str): 证券代码，如"sh600000"
+        
+        Returns:
+            Instrument: 包含指定证券信息的Instrument对象
+        
+        Raises:
+            NotImplementedError: 如果子类未实现此方法
+            ValueError: 当找不到指定代码的合约时抛出
+        """
+        raise NotImplementedError("Subclass of DataHandler must implement `get_instrument` method")
+    
+    @abstractmethod
+    def klines(self, symbol: str, start_date: str|None, end_date: str|None, freq: str|None):
+        """
+        获取指定证券代码的K线数据
+        
+        Args:
+            symbol (str): 证券代码，如"sh600000"
+            start_date (str): 起始日期，如"2020-01-01"
+            end_date (str): 结束日期，如"2020-12-31"
+            freq (str): 周期，如"1d"
+        
+        Returns:
+            DataFrame: 包含K线数据的DataFrame
+        
+        Raises:
+            NotImplementedError: 如果子类未实现此方法
+        """
+        raise NotImplementedError("Subclass of DataHandler must implement `klines` method")
+    
+    @abstractmethod
+    def transactions(self, symbol: str, date: str|None):
+        """
+        获取指定证券代码的交易数据
+        
+        Args:
+            symbol (str): 证券代码，如"sh600000"
+            date (str): 交易日期，如"2020-01-01", 默认None表示当天
+        
+        Returns:
+            DataFrame: 包含交易数据的DataFrame
+        
+        Raises:
+            NotImplementedError: 如果子类未实现此方法
+        """
+        raise NotImplementedError("Subclass of DataHandler must implement `trans` method")
