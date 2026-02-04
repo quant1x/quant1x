@@ -3,6 +3,7 @@
 # Licensed under the MIT License.
 
 import atexit
+from math import log
 import signal
 import threading
 import time
@@ -14,6 +15,11 @@ from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.job import Job
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from quant1x.log import logger
+import logging
+
+logger = logging.getLogger('apscheduler')
+logger.setLevel(logging.CRITICAL)
+logger.propagate = False  # 阻止日志向上传播到父 logger
 
 # 全局单例
 _GLOBAL_SCHEDULER: Optional['Scheduler'] = None
@@ -57,7 +63,8 @@ class Scheduler:
             timezone=timezone,
             job_defaults=job_defaults,
             executor_defaults=executor_defaults,
-            daemon=daemon
+            daemon=daemon,
+            logger=None,
         )
         
         # 任务注册表
