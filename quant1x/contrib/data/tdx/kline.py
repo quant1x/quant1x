@@ -5,6 +5,7 @@
 import os
 from typing import Optional, Any, List
 from datetime import datetime
+from quant1x.contrib.calendar import next_trading_day
 from quant1x.data import adapter
 from quant1x.data.base import BASE_KLINE, BASE_RAW_DAILY_KLINE, MarketCnFirstListTime
 from quant1x.data.frequency import Frequency, TimeUnit
@@ -29,8 +30,8 @@ def apply_forward_adjustment_for_event(klines: List[KLine],
     # 转成时间戳且对齐时间
     ts_last_day = Timestamp.parse(last_day).get_pre_market_time()
     # 计算最后一根K线的下一个交易日的日期
-    # TODO: Implement next_trading_day properly. For now, use +1 day approximation or just rely on date comparison
-    last_day_next = ts_last_day.offset(hour=24).only_date() # Approximation
+    last_trading_day_ts = next_trading_day(ts_last_day)
+    last_day_next = last_trading_day_ts.only_date()
     start_date_str = current_start_date.only_date()
     
     # Filter dividends
