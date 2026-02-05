@@ -1,6 +1,11 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 from abc import ABC, abstractmethod
 from typing import List, Union, Literal
-from .market import Exchange, Instrument, Sector
+from .market import Exchange, Instrument
+from quant1x.data.schema import Sector
 from enum import Enum
 
 class PlateCategory(Enum):

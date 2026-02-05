@@ -8,8 +8,9 @@ import os
 import csv
 from typing import Optional
 from quant1x.std import filesystem as fs
-from quant1x.data import config, XdxrInfo, status
-from quant1x.data.timestamp import Timestamp
+from quant1x.data import config, status
+from quant1x.data.schema import XdxrInfo
+from quant1x.data.meta.timestamp import Timestamp
 from quant1x.data.market import Instrument, Exchange
 from .instruments import get_instrument_info
 from .level1 import XdxrInfoRequest, XdxrInfoResponse

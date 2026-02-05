@@ -5,21 +5,22 @@
 import os
 from typing import Optional, Any, List
 from datetime import datetime
-from quant1x.contrib.calendar import next_trading_day
+from quant1x.data.meta.calendar import next_trading_day
 from quant1x.data import adapter
-from quant1x.data.base import BASE_KLINE, BASE_RAW_DAILY_KLINE, MarketCnFirstListTime
-from quant1x.data.frequency import Frequency, TimeUnit, FREQ_DAILY
+from quant1x.data.base import BASE_KLINE, MarketCnFirstListTime
+from quant1x.data.meta import Timestamp, Frequency, TimeUnit, FREQ_DAILY
 from quant1x.data.market import Instrument, detect_symbol
-from quant1x.data import config, Timestamp, KLine, MaxCachedDaysToDropOnIncrementalUpdate, CumulativeAdjustment, XdxrInfo
+from quant1x.data import config, MaxCachedDaysToDropOnIncrementalUpdate
+from quant1x.data.schema import Bar, CumulativeAdjustment, XdxrInfo
 from .client import get_std_conn
 from . import protocol
-from .level1 import KLineType, SecurityBar, SecurityBarsRequest, SecurityBarsResponse, SECURITY_BARS_PRE_REQUEST_MAX
+from .level1 import KLineType, SecurityBar, SECURITY_BARS_PRE_REQUEST_MAX
 import pandas as pd
 from quant1x.log import logger
-from .kline_raw import KLineRaw, checkout_kline_raw, fetch_kline_raw
+from .kline_raw import BarRaw, checkout_kline_raw, fetch_kline_raw
 
 
-def apply_forward_adjustment_for_event(klines: List[KLine], 
+def apply_forward_adjustment_for_event(klines: List[Bar], 
                                        current_start_date: Timestamp, 
                                        dividends: List[XdxrInfo]):
     if not klines:
@@ -74,7 +75,7 @@ def apply_forward_adjustment_for_event(klines: List[KLine],
         times -= 1
 
 
-def save_kline(filename: str, values: List[KLine]):
+def save_kline(filename: str, values: List[Bar]):
     if not values:
         return
         
@@ -99,10 +100,10 @@ def save_kline(filename: str, values: List[KLine]):
         for v in values
     ]
     
-    df = pd.DataFrame(data, columns=KLine.headers())
+    df = pd.DataFrame(data, columns=Bar.headers())
     df.to_csv(filename, index=False)
 
-def read_kline_from_csv(filename: str) -> List[KLine]:
+def read_kline_from_csv(filename: str) -> List[Bar]:
     klines = []
     if not os.path.exists(filename):
         return klines
@@ -110,12 +111,12 @@ def read_kline_from_csv(filename: str) -> List[KLine]:
     try:
         df = pd.read_csv(filename)
         # Ensure columns exist
-        required_cols = KLine.headers()
+        required_cols = Bar.headers()
         if not all(col in df.columns for col in required_cols):
             return klines
             
         for _, row in df.iterrows():
-            kline = KLine(
+            kline = Bar(
                 date=str(row['date']),
                 open=float(row['open']),
                 close=float(row['close']),
@@ -140,9 +141,9 @@ def get_kline_filename(inst: Instrument, freq: Frequency=FREQ_DAILY) -> str:
     symbol_path = symbol[:-3]
     return f'{config.data_path}/{module_name}/{symbol_path}/{symbol}.csv' 
     
-def load_kline(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[KLine]:
+def load_kline(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[Bar]:
     filename = get_kline_filename(inst, freq)
-    logger.debug(f"[dataset::KLine] kline file: {filename}")
+    logger.debug(f"[dataset::Bar] kline file: {filename}")
     return read_kline_from_csv(filename)
 
 
@@ -189,7 +190,7 @@ class DataKLine(adapter.DataAdapter):
             
         # 2. Determine end date
         current_end_date = Timestamp.now().get_pre_market_time()
-        logger.debug(f"[dataset::KLine] [{inst.symbol()}]: from {current_start_date.only_date()} to {current_end_date.only_date()}")
+        logger.debug(f"[dataset::Bar] [{inst.symbol()}]: from {current_start_date.only_date()} to {current_end_date.only_date()}")
         
         step = SECURITY_BARS_PRE_REQUEST_MAX
         start = 0
@@ -218,7 +219,7 @@ class DataKLine(adapter.DataAdapter):
             
         hs.reverse()
         
-        incremental_klines: List[KLine] = []
+        incremental_klines: List[Bar] = []
         
         for vec in hs:
             for row in vec:
@@ -226,7 +227,7 @@ class DataKLine(adapter.DataAdapter):
                 if date_time < current_start_date or date_time > current_end_date:
                     continue
                     
-                kx = KLine(
+                kx = Bar(
                     date=date_time.only_date(),
                     open=row.Open,
                     close=row.Close,
@@ -272,7 +273,7 @@ def check_kline_offset(klines: List[Any], date: str, freq: Frequency=FREQ_DAILY)
     检查给定日期在K线数据中的偏移位置
     
     Args:
-        klines (List[Any]): K线数据列表，每个元素应包含date字段, 元素类型是鸭子类型, 可以是KLine, KLineRaw, SecurityBar
+        klines (List[Any]): K线数据列表，每个元素应包含date字段, 元素类型是鸭子类型, 可以是KLine, BarRaw, SecurityBar
         date (str): 要查找的目标日期
         freq (Frequency): K线频率，默认为日线
     
@@ -319,8 +320,7 @@ def combine_adjustments_in_period(xdxr_list: List[XdxrInfo],
             continue
 
         # 统一盘前时间
-        event_date = datetime.strptime(info.Date, '%Y-%m-%d')
-        event_ts = Timestamp.pre_market_time(event_date.year, event_date.month, event_date.day)
+        event_ts = Timestamp.parse(info.Date)
         if event_ts < start_date or event_ts > end_date:
             continue
 
@@ -361,7 +361,7 @@ def combine_adjustments_in_period(xdxr_list: List[XdxrInfo],
     return result
 
 
-def apply_forward_adjustment_incrementally(klines: List[KLine],
+def apply_forward_adjustment_incrementally(klines: List[Bar],
                                            xdxr_list: List[XdxrInfo],
                                            last_adjusted_date: Timestamp,
                                            as_of_date: Timestamp,
@@ -418,7 +418,7 @@ def apply_forward_adjustment_incrementally(klines: List[KLine],
             if current_date < factor.timestamp:
                 # Assuming kline has an adjust method or we modify it directly
                 # In C++, kline->adjust(factor) is called.
-                # We need to ensure the KLine object has this method.
+                # We need to ensure the Bar object has this method.
                 if hasattr(kline, 'adjust'):
                     kline.adjust(factor)
             elif not truncate_to_as_of_date:
@@ -430,7 +430,7 @@ def apply_forward_adjustment_incrementally(klines: List[KLine],
     if truncate_to_as_of_date:
         del klines[rows:]
 
-def calculate_pre_adjust(klines: List[KLine], xdxr_list: List[XdxrInfo]):
+def calculate_pre_adjust(klines: List[Bar], xdxr_list: List[XdxrInfo]):
     """
     对K线数据进行前复权计算
     """
@@ -454,7 +454,7 @@ def get_cross_section_forward_adjusted_klines(code: str, as_of_date: str) -> Lis
         as_of_date (str): 截止日期，格式为YYYY-MM-DD
     
     Returns:
-        List[KLine]: 从上市首日至截止日期的所有前复权K线记录列表，包含日期、开盘价、收盘价、最高价、最低价、成交量等字段
+        List[Bar]: 从上市首日至截止日期的所有前复权K线记录列表，包含日期、开盘价、收盘价、最高价、最低价、成交量等字段
     
     Note:
         1. 会自动处理证券代码格式转换
@@ -491,7 +491,7 @@ def get_cross_section_forward_adjusted_klines(code: str, as_of_date: str) -> Lis
     # 将KLineRaw转换为KLine
     klines = []
     for raw_kline in filtered_klines:
-        kline = KLine(
+        kline = Bar(
             date=raw_kline.date,
             open=raw_kline.open,
             close=raw_kline.close,
@@ -532,7 +532,7 @@ if __name__ == "__main__":
     symbol = inst.symbol()
     
     raw_klines = checkout_kline_raw(inst)
-    klines = [KLine(
+    klines = [Bar(
         date=k.date, open=k.open, close=k.close, high=k.high, low=k.low,
         volume=k.volume, amount=k.amount, up=k.up, down=k.down, datetime=k.datetime, adjustment_count=0
     ) for k in raw_klines]
@@ -547,7 +547,7 @@ if __name__ == "__main__":
     print(f"Loaded {len(xdxr_list)} xdxr records for {symbol}")
 
     # 创建原始数据的副本用于对比
-    original_klines = [KLine(
+    original_klines = [Bar(
         date=k.date, open=k.open, close=k.close, high=k.high, low=k.low,
         volume=k.volume, amount=k.amount, up=k.up, down=k.down, datetime=k.datetime
     ) for k in klines]

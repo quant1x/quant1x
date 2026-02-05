@@ -15,7 +15,7 @@ from .command import (
 from . import helpers
 
 from quant1x.data.market import Exchange
-from quant1x.data.cache import XdxrInfo, XdxrCategory
+from quant1x.data.schema import XdxrInfo, XdxrCategory
 
 class XdxrInfoRequest:
     def __init__(self, exchange: Exchange, code: str):

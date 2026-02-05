@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 import unittest
 from quant1x.data import kline
 from quant1x.level1.client import init_std_pool

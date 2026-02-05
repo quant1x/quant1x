@@ -10,7 +10,7 @@ from quant1x.std import ThreadSafeSingletonABC, ThreadSafeStrategy
 from .sina.decoder import FinanceDecoder
 from quant1x.runtime.once import RollingOnce
 from quant1x.data import market, layout, cache, config
-from quant1x.data.timestamp import Timestamp
+from quant1x.data.meta import Timestamp
 from quant1x.std import filesystem as fs
 from quant1x.log import logger
 

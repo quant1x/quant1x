@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 """
 Finance Decoder - Python implementation converted from Go
 用于解码新浪财经数据的解码器

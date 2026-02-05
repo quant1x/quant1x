@@ -8,13 +8,14 @@ from dataclasses import dataclass
 from typing import List, Optional
 from quant1x.log import logger
 
-from quant1x.data import Timestamp, config, adapter, MaxCachedDaysToDropOnIncrementalUpdate
+from quant1x.data.meta import Timestamp
+from quant1x.data import config, adapter, MaxCachedDaysToDropOnIncrementalUpdate
 from . import protocol
 from .client import get_std_conn
 from .level1.security_bars import SecurityBarsRequest, SecurityBarsResponse, KLineType, SecurityBar, SECURITY_BARS_PRE_REQUEST_MAX
 from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASE_DATA, register, DEFAULT_DATA_PROVIDER
 from quant1x.data.base import BASE_RAW_DAILY_KLINE, MarketCnFirstListTime
-from quant1x.data.frequency import Frequency, TimeUnit, FREQ_DAILY
+from quant1x.data.meta import Frequency, TimeUnit, FREQ_DAILY
 from quant1x.data.market import Instrument, detect_symbol
 
 def frequency_to_kline_type(freq: Frequency) -> KLineType:
@@ -110,7 +111,7 @@ def clean_column_names(df: pd.DataFrame) -> List[str]:
     return df.columns.str.strip().tolist()
 
 @dataclass
-class KLineRaw:
+class BarRaw:
     date: str = ""
     open: float = 0.0
     close: float = 0.0
@@ -145,7 +146,7 @@ class KLineRaw:
             self.high = self.high * factor.m + factor.a
             self.low = self.low * factor.m + factor.a
 
-def save_kline_raw(filename: str, values: List[KLineRaw]):
+def save_kline_raw(filename: str, values: List[BarRaw]):
     if not values:
         return
         
@@ -169,10 +170,10 @@ def save_kline_raw(filename: str, values: List[KLineRaw]):
         for v in values
     ]
     
-    df = pd.DataFrame(data, columns=KLineRaw.headers())
+    df = pd.DataFrame(data, columns=BarRaw.headers())
     df.to_csv(filename, index=False)
 
-def read_kline_raw_from_csv(filename: str) -> List[KLineRaw]:
+def read_kline_raw_from_csv(filename: str) -> List[BarRaw]:
     """
     从CSV文件读取K线原始数据，包含完整的列名验证
     """
@@ -184,7 +185,7 @@ def read_kline_raw_from_csv(filename: str) -> List[KLineRaw]:
         df = pd.read_csv(filename)
 
         # 使用通用列名验证函数，默认保持原始格式
-        required_cols = KLineRaw.headers()
+        required_cols = BarRaw.headers()
         if not validate_csv_columns(df, required_cols, filename, strict_order=True):
             return klines
 
@@ -194,7 +195,7 @@ def read_kline_raw_from_csv(filename: str) -> List[KLineRaw]:
         # 数据类型验证和转换
         for _, row in df.iterrows():
             try:
-                kline = KLineRaw(
+                kline = BarRaw(
                     date=str(row['date']),
                     open=float(row['open']),
                     close=float(row['close']),
@@ -221,7 +222,7 @@ def get_kline_raw_filename(inst: Instrument, freq: Frequency=FREQ_DAILY) -> str:
     symbol_path = symbol[:-3]
     return f'{config.data_path}/{module_name}/{symbol_path}/{symbol}.raw' 
 
-def load_kline_raw(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[KLineRaw]:
+def load_kline_raw(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[BarRaw]:
     """
     从缓存文件加载指定证券代码的K线原始数据
     
@@ -229,7 +230,7 @@ def load_kline_raw(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[KLineRa
         code (str): 证券代码
         
     Returns:
-        List[KLineRaw]: K线原始数据列表
+        List[BarRaw]: K线原始数据列表
     """
     cache_filename = get_kline_raw_filename(inst, freq)
     return read_kline_raw_from_csv(cache_filename)
@@ -245,7 +246,7 @@ def ensure_kline_raw_updated(inst: Instrument, freq: Frequency=FREQ_DAILY):
     data_adapter = DataKLineRaw()
     data_adapter.update(inst)
 
-def checkout_kline_raw(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[KLineRaw]:
+def checkout_kline_raw(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[BarRaw]:
     """
     获取指定证券的未复权K线数据，如果数据不存在则下载
     
@@ -253,7 +254,7 @@ def checkout_kline_raw(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[KLi
         code (str): 证券代码
         
     Returns:
-        List[KLineRaw]: 未复权K线数据列表
+        List[BarRaw]: 未复权K线数据列表
     """
     # 确保数据是最新的
     ensure_kline_raw_updated(inst, freq)
@@ -319,7 +320,7 @@ class DataKLineRaw(DataAdapter):
         
         # 2. Determine end date
         current_end_date = Timestamp.now().get_pre_market_time()
-        logger.debug(f"[dataset::KLineRaw] [{symbol}]: from {current_start_date.only_date()} to {current_end_date.only_date()}")
+        logger.debug(f"[dataset::BarRaw] [{symbol}]: from {current_start_date.only_date()} to {current_end_date.only_date()}")
         
         step = SECURITY_BARS_PRE_REQUEST_MAX
         start = 0
@@ -348,7 +349,7 @@ class DataKLineRaw(DataAdapter):
             
         hs.reverse()
         
-        incremental_klines: List[KLineRaw] = []
+        incremental_klines: List[BarRaw] = []
         
         for vec in hs:
             for row in vec:
@@ -357,7 +358,7 @@ class DataKLineRaw(DataAdapter):
                 if date_time < current_start_date or date_time > current_end_date:
                     continue
                     
-                kx = KLineRaw(
+                kx = BarRaw(
                     date=date_time.only_date(),
                     open=row.Open,
                     close=row.Close,

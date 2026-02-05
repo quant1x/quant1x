@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 from abc import ABC, ABCMeta, abstractmethod
 from typing import Type, Any, Dict, Optional, ClassVar, final
 import threading

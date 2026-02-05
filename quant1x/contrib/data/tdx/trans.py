@@ -16,9 +16,9 @@ from .level1 import (
     TransactionRequest, TransactionResponse,
     HistoricalTransactionRequest, HistoricalTransactionResponse
 )
-from quant1x.data.cache import Transaction
-from quant1x.contrib.calendar import last_trading_day
-from quant1x.data import Timestamp
+from quant1x.data.schema import Transaction
+from quant1x.data.meta.calendar import last_trading_day
+from quant1x.data.meta import Timestamp
 from quant1x.log import logger
 
 # Constants
@@ -315,4 +315,4 @@ if __name__ == "__main__":
     code = "sh600000"
     date = Timestamp.parse("2023-01-04")
     transactions = checkout_transaction_data(code, date, False)
-    #print(transactions)
+    print(transactions)

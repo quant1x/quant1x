@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 from quant1x.level1.hello1 import Hello1Response
 from quant1x.level1.hello2 import Hello2Response
 from quant1x.level1.protocol import HeartbeatResponse

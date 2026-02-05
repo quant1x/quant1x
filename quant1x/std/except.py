@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 """
 异常处理模块 - Python implementation converted from Go
 提供统一的异常处理机制

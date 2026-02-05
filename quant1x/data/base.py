@@ -7,7 +7,7 @@
 """
 
 from .adapter import PLUGIN_MASK_BASE_DATA
-from .timestamp import Timestamp
+from .meta.timestamp import Timestamp
 
 # baseKind is the local offset for base data kinds (mirrors C++ baseKind)
 BASE_KIND = 0

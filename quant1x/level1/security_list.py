@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 """从 level1 服务器获取 SECURITY_LIST 页面（Python 实现）。
 
 本模块提供一个小工具函数 `fetch_security_list(market, start, count)`，

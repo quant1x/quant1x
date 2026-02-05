@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 """
 Dataclass 序列化与反射工具
 提供 CSV 与 dataclass 实例列表之间的双向转换，以及字段元信息提取。

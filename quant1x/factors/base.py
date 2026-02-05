@@ -1,4 +1,7 @@
 # -*- coding: UTF-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 from dataclasses import dataclass
 from typing import List, Optional, TypeVar, Generic, Any
 import math

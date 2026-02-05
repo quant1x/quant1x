@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 # MyTT 麦语言-通达信-同花顺指标实现     https://github.com/mpquant/MyTT
 # 高级函数版本，本文件函数计算结果经过验证完全正确，可以正常使用，但代码比较复杂，做为进阶使用。
 # MyTT团队对每个函数精益求精，力争效率速度，代码优雅的完美统一，如果您有更好的实现方案，请不吝赐教！

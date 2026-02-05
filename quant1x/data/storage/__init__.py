@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 from .storage import FileStorage
 from .csv import csv_to_slice, slice_to_csv
 __all__ = [

@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 from quant1x import config
 from quant1x.market.blocks import parse_raw_block_file, get_sector_filename
 import os, json, datetime

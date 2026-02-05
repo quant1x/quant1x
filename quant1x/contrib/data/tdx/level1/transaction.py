@@ -11,7 +11,7 @@ from .command import (
 from . import helpers
 
 from quant1x.data.market import Exchange
-from quant1x.data.cache import Transaction
+from quant1x.data.schema import Transaction
 
 # Constants
 TICK_BUY = 0

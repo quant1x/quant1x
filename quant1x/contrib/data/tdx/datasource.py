@@ -4,7 +4,8 @@
 
 from __future__ import annotations
 from typing import List, Union
-from quant1x.data import DataHandler, Exchange, Instrument, InstrumentType, Sector, PlateCategory, Timestamp
+from quant1x.data import DataHandler, PlateCategory
+from quant1x.data.meta import Exchange, Instrument, InstrumentType
 from . import sector
 from .instruments import get_instrument_info
 from .kline import get_cross_section_forward_adjusted_klines

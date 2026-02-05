@@ -8,7 +8,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
 import threading
-from .timestamp import Timestamp
+from .meta.timestamp import Timestamp
 from .market import Instrument
 
 

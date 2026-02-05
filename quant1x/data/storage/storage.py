@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 from abc import ABC, abstractmethod
 from typing import Any, List, Type, TypeVar, Generic, overload
 

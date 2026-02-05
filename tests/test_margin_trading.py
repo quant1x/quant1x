@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
 
 import unittest
 from quant1x.exchange.margin_trading import is_margin_trading_target, margin_trading_list, lazy_load_margin_trading

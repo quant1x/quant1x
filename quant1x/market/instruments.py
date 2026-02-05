@@ -1,4 +1,7 @@
 # -*- coding: UTF-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 from typing import List
 from .security import get_instrument_info
 from .blocks import get_sector_list

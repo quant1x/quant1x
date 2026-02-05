@@ -1,4 +1,7 @@
 # -*- coding: UTF-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 import os
 from functools import lru_cache
 from typing import Dict, Any

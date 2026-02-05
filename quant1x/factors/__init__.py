@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
 
 from .share_holder import fetch_share_holder, cache_share_holder, get_cache_share_holder
 from .safety_score import get_safety_score

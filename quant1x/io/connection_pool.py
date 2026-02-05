@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 """TcpConnectionPool 的 Python 实现（参考 C++ 设计）。
 
 本模块实现：

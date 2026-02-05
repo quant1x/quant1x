@@ -1,4 +1,7 @@
 # -*- coding: UTF-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 from ipaddress import IPv4Address
 
 # 代表所有可能的被访问的地址
