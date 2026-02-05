@@ -1,7 +1,7 @@
 # 1. project build tools: setuptools, twine, wheel
-setuptools~=78.0.0
-twine~=6.1.0
-wheel~=0.45.1
+#setuptools~=78.0.0
+#twine~=6.1.0
+#wheel~=0.45.1
 requests-toolbelt~=1.0.0
 # 2. logger
 loguru~=0.7.3

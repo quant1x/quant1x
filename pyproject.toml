@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=61", "wheel", "setuptools_scm[toml]>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quant1x"
+dynamic = ["version"]  # 仅保留 version 为动态（由 setuptools_scm 提供）
+description = "Quant1X量化研究"
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {text = "MIT License"}
+authors = [{name = "Quant1X", email = "wangfengxy@sina.cn"}]
+keywords = ["quant1x", "python"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "requests-toolbelt~=1.0.0",
+    "loguru~=0.7.3",
+    "icecream~=2.1.5",
+    "PyYAML~=6.0.2",
+    "numpy~=2.3.0",
+    "pandas~=2.3.0",
+    "numba~=0.62.1",
+    "gitpython~=3.1.44",
+    "python-dateutil~=2.9.0.post0",
+    "matplotlib~=3.10.5",
+    "akshare~=1.18.21",
+    "mootdx~=0.11.7",
+    "findpeaks~=2.7.4",
+    "requests==2.32.0",
+    "tqdm~=4.67.1",
+    "xgboost~=3.0.0",
+    "scikit-learn~=1.7.1",
+    "scipy~=1.16.0",
+    "caerus~=1.0.1",
+    "joblib~=1.5.1",
+    "inflection~=0.5.1",
+]
+
+[project.urls]
+Homepage = "https://gitee.com/quant1x/quant1x"
+
+[project.entry-points."console_scripts"]
+# quant1x = "quant1x.__main__:entry"
+# quant1x-qmt = "quant1x.trader.qmt:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["quant1x*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.dll", "*.pyd", "*.ini", "*.log4cxx"]
+
+[tool.setuptools]
+zip-safe = false
+
+[tool.setuptools_scm]
+version_scheme = "guess-next-dev"
+local_scheme = "no-local-version"
+#version_file = "quant1x/_version.py"
