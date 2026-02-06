@@ -2,10 +2,8 @@
 # Copyright (c) Quant1X <wangfengxy@sina.cn>.
 # Licensed under the MIT License.
 
-# .vscode/run_module.py
-import sys
 import os
-import pathlib
+import sys
 
 def get_module_path(file_path: str) -> str:
     """将文件路径转换为模块路径"""
