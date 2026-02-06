@@ -4,13 +4,15 @@
 
 import struct
 from enum import Enum
+from typing import List
 from dataclasses import dataclass
 from .command import (
     FLAG_UNCOMPRESSED,
     COMMAND_SECURITY_BARS,
 )
 from . import helpers
-from quant1x.data.market import Exchange
+from quant1x.data.meta import Exchange
+from quant1x.data.schema import Bar
 
 SECURITY_BARS_PRE_REQUEST_MAX = 800
 
@@ -32,30 +34,6 @@ class KLineType(Enum):
     @staticmethod
     def to_string(ktype: 'KLineType') -> str:
         return ktype.name
-
-@dataclass
-class SecurityBar:
-    """K线数据"""
-    Open: float = 0.0
-    Close: float = 0.0
-    High: float = 0.0
-    Low: float = 0.0
-    Vol: float = 0.0
-    Amount: float = 0.0
-    Year: int = 0
-    Month: int = 0
-    Day: int = 0
-    Hour: int = 0
-    Minute: int = 0
-    DateTime: str = ""
-    UpCount: int = 0 # 上涨家数, 仅指数有效, 且数据不准确
-    DownCount: int = 0 # 下跌家数, 仅指数有效, 且数据不准确
-
-    def __str__(self):
-        return (f"Open: {self.Open} Close: {self.Close} High: {self.High} Low: {self.Low} "
-                f"Vol: {self.Vol} Amount: {self.Amount} Year: {self.Year} Month: {self.Month} "
-                f"Day: {self.Day} Hour: {self.Hour} Minute: {self.Minute} DateTime: {self.DateTime} "
-                f"UpCount: {self.UpCount} DownCount: {self.DownCount}")
 
 class SecurityBarsRequest:
     def __init__(self, exchange: Exchange, code: str, category: KLineType, start: int, count: int):
@@ -97,7 +75,7 @@ class SecurityBarsRequest:
 class SecurityBarsResponse:
     def __init__(self, is_index: bool, category: KLineType):
         self.count = 0
-        self.list: list[SecurityBar] = []
+        self.list: List[Bar] = []
         self.is_index = is_index
         self.category = category.value
 
@@ -114,7 +92,7 @@ class SecurityBarsResponse:
             if pos >= len(data):
                 break
                 
-            e = SecurityBar()
+            e = Bar()
             year = 0
             month = 0
             day = 0
@@ -136,13 +114,10 @@ class SecurityBarsResponse:
                 year = int(zipday / 10000)
                 month = int((zipday % 10000) / 100)
                 day = int(zipday % 100)
-                
-            e.Year = year
-            e.Month = month
-            e.Day = day
-            e.Hour = hour
-            e.Minute = minute
-            e.DateTime = f"{year:04d}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:00"
+            # 日期
+            e.date = f"{year:04d}-{month:02d}-{day:02d}"
+            # TODO: 处理时间戳
+            e.timestamp = f"{year:04d}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:00"
             
             price_open_diff, pos = helpers.varint_decode(data, pos)
             price_close_diff, pos = helpers.varint_decode(data, pos)
@@ -152,26 +127,35 @@ class SecurityBarsResponse:
             if pos + 8 > len(data): break
             ivol = struct.unpack('<I', data[pos:pos+4])[0]
             pos += 4
-            e.Vol = helpers.int_to_float64(ivol)
+            # 成交量
+            e.volume = helpers.int_to_float64(ivol)
             
             dbvol = struct.unpack('<I', data[pos:pos+4])[0]
             pos += 4
-            e.Amount = helpers.int_to_float64(dbvol)
+            # 成交额
+            e.amount = helpers.int_to_float64(dbvol)
             
-            e.Open = float(price_open_diff + pre_diff_base) / 1000.0
+            # 开盘价
+            e.open = float(price_open_diff + pre_diff_base) / 1000.0
             price_open_diff += pre_diff_base
             
-            e.Close = float(price_open_diff + price_close_diff) / 1000.0
-            e.High = float(price_open_diff + price_high_diff) / 1000.0
-            e.Low = float(price_open_diff + price_low_diff) / 1000.0
+            # 收盘价
+            e.close = float(price_open_diff + price_close_diff) / 1000.0
+            # 最高价
+            e.high = float(price_open_diff + price_high_diff) / 1000.0
+            # 最低价
+            e.low = float(price_open_diff + price_low_diff) / 1000.0
             
             pre_diff_base = price_open_diff + price_close_diff
             
+            # 指数数据
             if self.is_index:
                 if pos + 4 > len(data): break
-                e.UpCount = struct.unpack('<H', data[pos:pos+2])[0]
+                # 上涨家数
+                e.up = struct.unpack('<H', data[pos:pos+2])[0]
                 pos += 2
-                e.DownCount = struct.unpack('<H', data[pos:pos+2])[0]
+                # 下跌家数
+                e.down = struct.unpack('<H', data[pos:pos+2])[0]
                 pos += 2
                 
             self.list.append(e)
