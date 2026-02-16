@@ -3,6 +3,8 @@
 # Licensed under the MIT License.
 
 import math
+import bisect
+from typing import Union, List, Tuple, Iterable
 import numpy as np
 
 
@@ -73,3 +75,154 @@ def decimal(f: float, digits: int = 2) -> float:
     scaled = f * nj1 + half
     truncated = math.trunc(scaled / 10.0)
     return truncated / (nj1 / 10.0)
+
+class NumberRange:
+    def __init__(self, *args, **kwargs):
+        self._ranges = []
+        self._starts = []
+        
+        default_include_start = kwargs.get('include_start', True)
+        default_include_end = kwargs.get('include_end', True)
+        
+        # 如果没有参数，返回空范围
+        if not args:
+            return
+        
+        # 情况1: 两个数值参数 NumberRange(1, 100)
+        if len(args) == 2 and all(isinstance(x, (int, float)) for x in args):
+            self.add_range(args[0], args[1], default_include_start, default_include_end)
+            return
+        
+        # 情况2: 处理其他参数
+        for arg in args:
+            if isinstance(arg, (list, tuple)):
+                # 如果是元组 (1, 100)，直接作为范围
+                if len(arg) == 2 and all(isinstance(x, (int, float)) for x in arg):
+                    self.add_range(arg[0], arg[1], default_include_start, default_include_end)
+                else:
+                    # 如果是列表/元组包含多个元素
+                    for item in arg:
+                        if isinstance(item, (list, tuple)) and len(item) == 2:
+                            self.add_range(item[0], item[1], default_include_start, default_include_end)
+                        elif isinstance(item, (int, float)):
+                            self.add_range(item, item, True, True)
+            elif isinstance(arg, set):
+                # 离散值集合
+                for item in arg:
+                    self.add_range(item, item, True, True)
+            elif isinstance(arg, NumberRange):
+                # 复制
+                for r in arg._ranges:
+                    self.add_range(*r)
+    
+    # 保持其他方法不变
+    def add_range(self, start, end, include_start=True, include_end=True):
+        if start > end:
+            raise ValueError("start > end")
+        if start == end and not (include_start and include_end):
+            return
+        
+        new_range = (start, end, include_start, include_end)
+        
+        if not self._ranges:
+            self._ranges.append(new_range)
+            self._starts.append(start)
+            return
+        
+        idx = bisect.bisect_left(self._starts, start)
+        self._ranges.insert(idx, new_range)
+        self._starts.insert(idx, start)
+        self._merge_ranges()
+    
+    def _merge_ranges(self):
+        if len(self._ranges) <= 1:
+            return
+        
+        merged = []
+        merged_starts = []
+        current = self._ranges[0]
+        
+        for i in range(1, len(self._ranges)):
+            next_range = self._ranges[i]
+            s1, e1, inc1_s, inc1_e = current
+            s2, e2, inc2_s, inc2_e = next_range
+            
+            if e1 >= s2 or (e1 == s2 and (inc1_e or inc2_s)):
+                new_start = min(s1, s2)
+                new_end = max(e1, e2)
+                include_start = inc1_s if s1 == new_start else inc2_s
+                include_end = inc1_e if e1 == new_end else inc2_e
+                current = (new_start, new_end, include_start, include_end)
+            else:
+                merged.append(current)
+                merged_starts.append(current[0])
+                current = next_range
+        
+        merged.append(current)
+        merged_starts.append(current[0])
+        self._ranges = merged
+        self._starts = merged_starts
+    
+    def __contains__(self, value):
+        if not self._ranges:
+            return False
+        
+        idx = bisect.bisect_right(self._starts, value) - 1
+        if idx < 0:
+            return False
+        
+        for i in range(idx, len(self._ranges)):
+            start, end, inc_start, inc_end = self._ranges[i]
+            if start > value:
+                break
+            left_ok = (value > start) or (value == start and inc_start)
+            right_ok = (value < end) or (value == end and inc_end)
+            if left_ok and right_ok:
+                return True
+        
+        return False
+    
+    def __repr__(self):
+        ranges_str = []
+        for start, end, inc_s, inc_e in self._ranges:
+            left = '[' if inc_s else '('
+            right = ']' if inc_e else ')'
+            ranges_str.append(f"{left}{start}, {end}{right}")
+        return f"NumberRange({', '.join(ranges_str)})"
+
+if __name__ == '__main__':
+    # 1. 单个范围
+    nr1 = NumberRange(1, 100)
+    print(nr1)  # NumberRange([1, 100])
+
+    # 2. 多个范围元组
+    nr2 = NumberRange((1, 100), (200, 300))
+    print(nr2)  # NumberRange([1, 100], [200, 300])
+
+    # 3. 范围列表
+    ranges = [(1, 100), (200, 300), (150, 180)]  # 会自动合并
+    nr3 = NumberRange(ranges)
+    print(nr3)  # NumberRange([1, 100], [150, 180], [200, 300])
+
+    # 4. 离散值集合（自动转换为单点区间）
+    discrete_set = {1, 3, 5, 7, 9}
+    nr4 = NumberRange(discrete_set)
+    print(nr4)  # NumberRange([1, 1], [3, 3], [5, 5], [7, 7], [9, 9])
+
+    # 5. 复制构造
+    nr5 = NumberRange(nr4)
+    print(nr5)  # 与nr4相同
+
+    # 6. 混合输入
+    nr6 = NumberRange((1, 50), {60, 70, 80}, (90, 100))
+    print(nr6)  # NumberRange([1, 50], [60, 60], [70, 70], [80, 80], [90, 100])
+
+    # 7. 指定边界包含性
+    nr7 = NumberRange((1, 100), include_start=False, include_end=False)
+    print(nr7)  # NumberRange((1, 100))
+
+    # 测试匹配
+    print(1 in nr7)   # False (开区间)
+    print(50 in nr7)  # True
+    print(100 in nr7) # False
+    print(99 in nr7)  # True
