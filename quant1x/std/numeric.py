@@ -104,21 +104,25 @@ class NumberRange:
         if not args:
             return
         
-        # 情况1: 两个数值参数 NumberRange(1, 100)
-        if len(args) == 2 and all(isinstance(x, (int, float)) for x in args):
-            self.add_range(args[0], args[1], default_include_start, default_include_end)
-            return
+        # 情况1: 两个数值参数 NumberRange(1, 100) 或两个字符串参数 NumberRange("00001", "02799")
+        if len(args) == 2:
+            if all(isinstance(x, (int, float)) for x in args):
+                self.add_range(args[0], args[1], default_include_start, default_include_end)
+                return
+            if all(isinstance(x, str) for x in args):
+                self.add_range(args[0], args[1], default_include_start, default_include_end)
+                return
         
         # 情况2: 处理其他参数
         for arg in args:
             if isinstance(arg, (list, tuple)):
-                # 如果是元组 (1, 100)，直接作为范围
-                if len(arg) == 2 and all(isinstance(x, (int, float)) for x in arg):
+                # 如果是元组 (1, 100) 或 ("00001", "02799")，直接作为范围
+                if len(arg) == 2 and all(isinstance(x, (int, float, str)) for x in arg):
                     self.add_range(arg[0], arg[1], default_include_start, default_include_end)
                 else:
                     # 如果是列表/元组包含多个元素
                     for item in arg:
-                        if isinstance(item, (list, tuple)) and len(item) == 2:
+                        if isinstance(item, (list, tuple)) and len(item) == 2 and all(isinstance(x, (int, float, str)) for x in item):
                             self.add_range(item[0], item[1], default_include_start, default_include_end)
                         elif isinstance(item, (int, float)):
                             self.add_range(item, item, True, True)
@@ -200,7 +204,7 @@ class NumberRange:
             value: 要检查的值
         
         Returns:
-            bool: 如果值在任何范围内则返回True，否则返回False
+            bool: 如果值在任何范围内则返回True, 否则返回False
         
         Note:
             范围检查包含以下逻辑：
