@@ -78,6 +78,22 @@ def decimal(f: float, digits: int = 2) -> float:
 
 class NumberRange:
     def __init__(self, *args, **kwargs):
+        """
+        初始化数值范围对象，支持多种参数格式
+        
+        Args:
+            *args: 可变参数，支持以下格式：
+                - 两个数值 (start, end)
+                - 列表/元组包含多个数值或范围对
+                - 集合包含多个离散值
+                - 另一个 NumberRange 对象
+            **kwargs: 可选参数，包含：
+                include_start (bool): 默认包含范围起始值，默认为 True
+                include_end (bool): 默认包含范围结束值，默认为 True
+        
+        Raises:
+            TypeError: 如果参数类型不符合要求
+        """
         self._ranges = []
         self._starts = []
         
@@ -135,6 +151,19 @@ class NumberRange:
         self._merge_ranges()
     
     def _merge_ranges(self):
+        """
+        合并重叠或相邻的范围区间
+        
+        将内部存储的多个范围区间(_ranges)合并为不重叠的连续区间，并更新对应的起始点列表(_starts)。
+        每个范围区间由四元组(start, end, include_start, include_end)表示，其中include_start和include_end表示是否包含端点。
+        
+        处理逻辑：
+        1. 当两个区间重叠或相邻且至少有一个包含端点时，将它们合并为一个新区间
+        2. 新区间的起止点为合并区间的最早开始和最晚结束
+        3. 新区间的端点包含性由原区间中对应端点的包含性决定
+        
+        注意：此方法会直接修改实例的_ranges和_starts属性
+        """
         if len(self._ranges) <= 1:
             return
         
@@ -164,6 +193,21 @@ class NumberRange:
         self._starts = merged_starts
     
     def __contains__(self, value):
+        """
+        检查给定值是否在当前范围集合中
+        
+        Args:
+            value: 要检查的值
+        
+        Returns:
+            bool: 如果值在任何范围内则返回True，否则返回False
+        
+        Note:
+            范围检查包含以下逻辑：
+            - 值大于起始且小于结束
+            - 如果值等于起始，则检查是否包含起始(inc_start)
+            - 如果值等于结束，则检查是否包含结束(inc_end)
+        """
         if not self._ranges:
             return False
         
@@ -189,6 +233,18 @@ class NumberRange:
             right = ']' if inc_e else ')'
             ranges_str.append(f"{left}{start}, {end}{right}")
         return f"NumberRange({', '.join(ranges_str)})"
+    
+    def max_value_length(self) -> int:
+        """
+        获取所有范围中最大数值的字符串长度
+        
+        Returns:
+            最大数值的字符串长度
+        """
+        max_len = 0
+        for start, end, _, _ in self._ranges:
+            max_len = max(max_len, len(str(start)), len(str(end)))
+        return max_len
 
 if __name__ == '__main__':
     # 1. 单个范围
