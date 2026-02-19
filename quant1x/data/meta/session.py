@@ -3,18 +3,19 @@
 # Licensed under the MIT License.
 
 import re
+from sqlite3 import Time
 import time
-import os
 from dataclasses import dataclass
-from enum import IntFlag, auto
+from enum import IntFlag
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from .. import layout, market
 from .timestamp import Timestamp
 from quant1x.runtime.once import RollingOnce
 from quant1x.data.meta import calendar
 
+# TODO: https://www.tradinghours.com/markets
 
 def seconds_to_timestamp(x: int):
     """
@@ -24,72 +25,164 @@ def seconds_to_timestamp(x: int):
     """
     return time.strftime(layout.FORMAT_DATETIME, time.localtime(x))
 
-# ======================================================================
-# 状态掩码标志（bitmask flags）
-# ======================================================================
-MaskClosed      = 0x00  # 无任何状态, 收盘, 休市
-MaskActive      = 0x01  # 是否活跃（可用于处理订单）
-MaskTrading     = 0x02  # 正常连续竞价阶段
-MaskCallAuction = 0x04  # 集合竞价阶段
-MaskOrder       = 0x08  # 是否可委托
-MaskCancelable  = 0x10  # 是否允许撤单
-MaskOpening     = 0x20  # 开盘, 集合竞价, 09:15~09:25
-MaskClosing     = 0x40  # 收盘, 集合竞价, 14:57~15:00
-MaskHalt        = 0x80  # 暂停交易（市场活跃但不能撮合, 熔断或临时停牌）
+# ==========================================
+# 1. 权限位掩码 (全属性统一)
+# ==========================================
+class Permission(IntFlag):
+    """
+    全球统一交易状态位掩码
+    所有状态信息用一个整数表示
+    
+    位分配:
+    - Bit 0-5: 订单操作权限
+    - Bit 6-7: 状态性质 (临时/异常)
+    - Bit 8-15: 预留扩展
+    """
+    # ========== 订单操作权限 (Bit 0-3) ==========
+    NONE                = 0         # 0b00000000
+    CANCEL              = 1 << 0    # 0b00000001 - 允许撤单
+    """允许撤单"""
+    MODIFY              = 1 << 1    # 0b00000010 - 允许改单
+    """允许改单"""
+    MARKET              = 1 << 2    # 0b00000100 - 允许市价单
+    """允许市价单"""
+    LIMIT               = 1 << 3    # 0b00001000 - 允许限价单
+    """允许限价单"""
+    
+    # ========== 撮合机制 (Bit 4) ==========
+    MATCHING            = 1 << 4    # 0b00010000 - 匹配中
+    """匹配中"""
+    
+    # ========== 成交机制 (Bit 5) ==========
+    FILL                = 1 << 5    # 0b00100000 - 会产生成交记录
+    """成交"""
+    
+    # ========== 统计标志 (Bit 6) ==========
+    OPEN                = 1 << 6    # 0b01000000 - 计入交易分钟数
+    
+    # ========== 状态性质 (Bit 7) ==========
+    IS_TEMPORARY        = 1 << 7    # 0b10000000 - 临时状态 (可自动恢复)
+    
+    # ========== 常用组合 ==========
+    MATCHING_TRANSACTION= MATCHING | FILL
+    """撮合成交, 正在撮合中, 会产生成交记录"""
+    
+    # 连续交易：市价 + 限价 + 可成交 + 撤单 + 改单 + 计入分钟数
+    CONTINUOUS_TRADING  = MARKET | LIMIT |  CANCEL | MODIFY | OPEN | MATCHING_TRANSACTION
+    
+    INITIALIZING        = IS_TEMPORARY
+    """初始化阶段"""
+    
+    # 盘前
+    PRE_MARKET          = IS_TEMPORARY | CANCEL | LIMIT
+    """盘前, 允许下单、撤单, 但不允许市价单"""
+    AFTER_HOURS         = IS_TEMPORARY | CANCEL | LIMIT
+    """盘后, 允许下单、撤单, 但不允许市价单"""
+    
+    # 早盘集合竞价 = POS (Pre-Opening Session)
+    # 收盘竞价时段 = CAS Closing Auction Session)
+    
+    # 集合竞价：限价 + 撤单 + 撮合
+    CALL_AUCTION        = LIMIT | MATCHING | IS_TEMPORARY
+    """集合竞价, 仅限价单, 临时状态 (可自动恢复)"""
+    
+    CALL_AUCTION_PRE    = CALL_AUCTION | CANCEL
+    """集合竞价, 可撤单阶段"""
+    CALL_AUCTION_ORDER  = CALL_AUCTION
+    """集合竞价, 不可撤单阶段"""
+    CALL_AUCTION_FILL   = CALL_AUCTION | FILL
+    """集合竞价, 随机对盘阶段"""
+    
+    # 只挂单不成交 (午间休市) - 无 MATCHING
+    ACCEPT_ORDER_ONLY   = LIMIT
+    
+    # 只读状态 (停牌)
+    READ_ONLY           = CANCEL
+    
+    # 完全关闭
+    CLOSED              = NONE
+    
+    # 紧急停牌 (只有 OPEN 位)
+    EMERGENCY_HALT      = OPEN
+    """紧急停牌 (市场活跃但不能撮合, 只有 OPEN 位)"""
+    
+    LUNCH_BREAK         = ACCEPT_ORDER_ONLY | IS_TEMPORARY
+    """交易日休息时段 (允许下单、撤单, 但不允许市价单)"""
+    
+    def can_match(self) -> bool:
+        """是否允许成交 (连续或集合竞价)"""
+        return bool(self & Permission.MATCHING)
+    
+    def can_cancel(self) -> bool:
+        return bool(self & Permission.CANCEL)
+    
+    def can_modify(self) -> bool:
+        return bool(self & Permission.MODIFY)
+    
+    def can_market_order(self) -> bool:
+        return bool(self & Permission.MARKET)
+    
+    def can_limit_order(self) -> bool:
+        return bool(self & Permission.LIMIT)
+    
+    def is_suspended(self) -> bool:
+        """是否暂停交易 (不允许撮合)"""
+        return not self.can_match()
+    
+    def is_continuous_trading(self) -> bool:
+        """是否计入交易分钟数"""
+        return bool(self & Permission.OPEN)
 
 # ======================================================================
 # 时间状态枚举（使用掩码组合）
 # ======================================================================
 class TimeStatus(IntFlag):
-    ExchangeClosing               = MaskClosed                                  # 当日收盘（默认状态，不可交易）
-    ExchangePreMarket             = MaskActive                                  # 盘前（活跃但未开始交易）
-    ExchangeSuspend               = MaskHalt                                    # 休市中（非活跃，不可交易）
-    ExchangeContinuousTrading     = MaskActive | MaskOrder | MaskTrading        # 连续竞价（上午/下午，可撤单）
+    """全球统一交易时间状态枚举, 使用掩码组合表示不同状态"""
+    OPEN                          = Permission.OPEN
+    ExchangeClosed                = Permission.CLOSED                           # 当日收盘（默认状态，不可交易）
+    ExchangePreMarket             = Permission.PRE_MARKET                       # 盘前（活跃但未开始交易）
+    ExchangeSuspend               = Permission.LUNCH_BREAK                      # 休市中（非活跃，不可交易）
+    ExchangeContinuousTrading     = Permission.CONTINUOUS_TRADING               # 连续竞价（上午/下午，可撤单）
     ExchangeTrading               = ExchangeContinuousTrading                   # 连续竞价, 盘中交易别名
-    ExchangeCallAuction           = MaskActive | MaskOrder | MaskCallAuction    # 集合竞价
-    ExchangeCallAuctionOpening    = ExchangeCallAuction | MaskOpening           # 早盘集合竞价
-    ExchangeCallAuctionOpenPhase1 = ExchangeCallAuctionOpening | MaskCancelable # 9:15~9:20，开盘集合竞价，可撤单
-    ExchangeCallAuctionOpenPhase2 = ExchangeCallAuctionOpening                  # 9:20~9:25，开盘集合竞价，不可撤单
-    ExchangeCallAuctionClosePhase = ExchangeCallAuction | MaskClosing           # 14:57~15:00，收盘集合竞价，不可撤单
-    ExchangeHaltTrading           = MaskActive | MaskHalt                       # 市场活跃但暂停交易（如临时停牌、熔断等）
-
-# ======================================================================
-# 辅助判断函数
-# ======================================================================
-
-def is_market_closed(status: int) -> bool:
-    return status == TimeStatus.ExchangeClosing
-
-def is_market_suspended(status: int) -> bool:
-    return status == TimeStatus.ExchangeSuspend
-
-def is_trading_halted(status: int) -> bool:
-    return (status & MaskHalt) != 0
-
-def is_market_active(status: int) -> bool:
-    return (status & MaskActive) != 0
-
-def is_in_continuous_trading(status: int) -> bool:
-    return (status & MaskTrading) != 0
-
-def is_in_call_auction(status: int) -> bool:
-    return (status & MaskCallAuction) != 0
-
-def is_call_auction_open_phase(status: int) -> bool:
-    return (status & (TimeStatus.ExchangeCallAuction | MaskOpening)) == (TimeStatus.ExchangeCallAuction | MaskOpening)
-
-def is_call_auction_close_phase(status: int) -> bool:
-    return (status & (TimeStatus.ExchangeCallAuction | MaskClosing)) == (TimeStatus.ExchangeCallAuction | MaskClosing)
-
-def is_order_cancelable(status: int) -> bool:
-    return (status & MaskCancelable) != 0
-
-def is_trading_disabled(status: int) -> bool:
-    return (
-        status == TimeStatus.ExchangeClosing
-        or status == TimeStatus.ExchangeSuspend
-        or ((status & MaskHalt) != 0)
-    )
+    CALL_AUCTION                  = Permission.CALL_AUCTION
+    """集合竞价"""
+    # 早盘集合竞价 = POS (Pre-Opening Session)
+    # 收盘竞价时段 = CAS Closing Auction Session)
+    AUCTION_ORDER_INPUT_PERIOD    = CALL_AUCTION | Permission.CANCEL
+    """集合竞价, 订单输入 阶段, 可撤单"""
+    AUCTION_NO_CANCELLATION_PERIOD= CALL_AUCTION
+    """集合竞价, 不可撤销 阶段"""
+    AUCTION_MATCHING_FILL_PERIOD  = CALL_AUCTION | Permission.FILL
+    """集合竞价, 竞价撮合/随机对盘 阶段"""
+    
+    AUCTION_MATCHING_TO_OPENING = CALL_AUCTION | Permission.FILL
+    """集合竞价开盘 阶段"""
+    AUCTION_MATCHING_TO_CLOSING = CALL_AUCTION | Permission.FILL # CLOSING_AUCTION_MATCHING
+    """集合竞价收盘 阶段"""
+        
+    ExchangeHaltTrading           = OPEN                         # 市场活跃但暂停交易（如临时停牌、熔断等）
+    
+    
+    def is_market_active(self) -> bool:
+        """市场是否活跃 (允许下单或撤单)"""
+        return self.has_realtime_data()
+    
+    def is_open(self) -> bool:
+        """市场是否开盘"""
+        return (self & Permission.OPEN) == Permission.OPEN
+    
+    def is_continuous_trading(self) -> bool:
+        """是否在连续竞价阶段 (计入交易分钟数)"""
+        return (self & Permission.CONTINUOUS_TRADING) == Permission.CONTINUOUS_TRADING
+    
+    def is_trading_disabled(self) -> bool:
+        """是否禁止交易 (不允许下单或成交)"""
+        return (self & Permission.MATCHING) == 0
+    
+    # 有实时数据
+    def has_realtime_data(self) -> bool:
+        """是否有实时数据"""
+        return bool(self & Permission.MATCHING)
 
 
 @dataclass
@@ -148,13 +241,13 @@ class TimeRange(object):
 
     def is_trading(self, timestamp: str = "") -> bool:
         """
-        是否交易中 (兼容旧接口)
+        是否连续竞价交易中
         :param timestamp: %H:%M:%S
         :return:
         """
         status = self.in_range(timestamp)
         if status is not None:
-            return is_in_continuous_trading(status) or is_in_call_auction(status)
+            return (status & TimeStatus.ExchangeTrading) == TimeStatus.ExchangeTrading
         return False
 
     def is_valid(self) -> bool:
@@ -190,6 +283,36 @@ class TimeRange(object):
         if len(timestamp) == 0:
             timestamp = time.strftime(layout.FORMAT_ONLY_TIME)
         return timestamp >= self.end # 右开区间，所以 >= end 就是盘后
+    
+    def get_duration_minutes(self) -> int:
+        """计算时段总时长 (分钟)"""
+        ts_begin = Timestamp.parse_time(self.begin)
+        ts_end = Timestamp.parse_time(self.end)
+        
+        
+        start_minutes = ts_begin.value() // 60000 # 转换为分钟
+        end_minutes = ts_end.value() // 60000
+        
+        if end_minutes > start_minutes:
+            return end_minutes - start_minutes
+        else:
+            return (24 * 60 - start_minutes) + end_minutes
+    
+    def get_elapsed_minutes(self, current_time: Timestamp) -> int:
+        """时段已经开始多少分钟"""
+        # t = current_time.time()
+        # if not self.contains(t):
+        #     return 0
+        
+        ts_begin = Timestamp.parse_time(self.begin)
+        
+        current_minutes = current_time.value() // 60000 # 转换为分钟
+        start_minutes = ts_begin.value() // 60000
+        
+        if current_minutes >= start_minutes:
+            return int(current_minutes - start_minutes)
+        else:
+            return int((24 * 60 - start_minutes) + current_minutes)
 
 
 @dataclass
@@ -199,7 +322,9 @@ class TradingSession:
     """
     sessions: List[TimeRange]
     earliest_start: str = "23:59:59"
+    """最早开始时间"""
     latest_end: str = "00:00:00"
+    """最晚结束时间"""
 
     def __init__(self, *args):
         """
@@ -255,6 +380,8 @@ class TradingSession:
             if status is not None:
                 return status
         
+        # 不在任何交易时段内, 进一步判断是盘前、盘后还是休市
+        
         # 全天交易开始前
         if timestamp < self.earliest_start:
             return TimeStatus.ExchangePreMarket
@@ -264,7 +391,7 @@ class TradingSession:
             return TimeStatus.ExchangeHaltTrading
             
         # 不在任何交易时段内, 返回已收盘
-        return TimeStatus.ExchangeClosing
+        return TimeStatus.ExchangeClosed
 
     def is_trading(self, timestamp: str = "") -> bool:
         """
@@ -273,7 +400,7 @@ class TradingSession:
         :return:
         """
         status = self.check_status(timestamp)
-        return is_in_continuous_trading(status) or is_in_call_auction(status)
+        return (status & TimeStatus.ExchangeTrading) == TimeStatus.ExchangeTrading
 
     def is_valid(self) -> bool:
         """
@@ -292,16 +419,33 @@ class TradingSession:
     def is_trading_ended(self, timestamp: str = "") -> bool:
         timestamp = timestamp.strip() or time.strftime(layout.FORMAT_ONLY_TIME)
         return timestamp > self.latest_end
-
+    
+    def minutes(self, timestamp: str = "") -> int:
+        """
+        计算当前时间距离最近的交易时间的分钟数
+        :param timestamp:
+        :return:
+        """
+        timestamp = timestamp.strip() or time.strftime(layout.FORMAT_ONLY_TIME)
+        
+        return 0
+    
+    def get_trading_minutes(self) -> int:
+        """当日可交易时段总时长 (分钟)"""
+        return sum(
+            tr.get_duration_minutes() 
+            for tr in self.sessions 
+            if tr.status.is_open()
+        )
 
 def init_session() -> TradingSession:
     """
     初始化当日的交易会话时段 (A股)
     """
     # 9:15~9:20，开盘集合竞价，可撤单
-    tr1 = TimeRange("09:15:00 ~ 09:20:00", TimeStatus.ExchangeCallAuctionOpenPhase1)
+    tr1 = TimeRange("09:15:00 ~ 09:20:00", TimeStatus.AUCTION_ORDER_INPUT_PERIOD)
     # 9:20~9:25，开盘集合竞价，不可撤单
-    tr2 = TimeRange("09:20:00 ~ 09:25:00", TimeStatus.ExchangeCallAuctionOpenPhase2)
+    tr2 = TimeRange("09:20:00 ~ 09:25:00", TimeStatus.AUCTION_MATCHING_TO_OPENING)
     # 9:25~9:30，休市 (实际上是撮合时间，但对外部来说是不可交易的)
     tr3 = TimeRange("09:25:00 ~ 09:30:00", TimeStatus.ExchangeSuspend)
     # 9:30~11:30，连续竞价
@@ -309,7 +453,7 @@ def init_session() -> TradingSession:
     # 13:00~14:57，连续竞价
     tr5 = TimeRange("13:00:00 ~ 14:57:00", TimeStatus.ExchangeTrading)
     # 14:57~15:00，收盘集合竞价
-    tr6 = TimeRange("14:57:00 ~ 15:00:00", TimeStatus.ExchangeCallAuctionClosePhase)
+    tr6 = TimeRange("14:57:00 ~ 15:00:00", TimeStatus.AUCTION_MATCHING_TO_CLOSING | Permission.OPEN)
     
     return TradingSession(tr1, tr2, tr3, tr4, tr5, tr6)
 
@@ -338,12 +482,12 @@ class RuntimeStatus:
     before_init_time: bool = False     # 初始化时间前
     cache_after_init_time: bool = False # 缓存在初始化时间之后
     update_in_real_time: bool = False   # 是否可以实时更新
-    status: TimeStatus = TimeStatus.ExchangeClosing
+    status: TimeStatus = TimeStatus.ExchangeClosed
 
 
 def check_trading_timestamp(last_modified: Optional[Timestamp] = None) -> RuntimeStatus:
     rs = RuntimeStatus()
-    rs.status = TimeStatus.ExchangeClosing
+    rs.status = TimeStatus.ExchangeClosed
 
     now = Timestamp.now()
     if last_modified is not None:
@@ -382,7 +526,7 @@ def check_trading_timestamp(last_modified: Optional[Timestamp] = None) -> Runtim
     rs.update_in_real_time = True
 
     rs.status = session.check_status(tstr)
-    if is_trading_disabled(rs.status):
+    if rs.status.is_trading_disabled():
         rs.update_in_real_time = False
     return rs
 
@@ -420,9 +564,9 @@ if __name__ == '__main__':
 
     session = init_session()
     print(f"Earliest: {session.earliest_start}, Latest: {session.latest_end}")
-    
+    print(f"Trading minutes: {session.get_trading_minutes()}")
     test_times = ["09:00:00", "09:16:00", "09:22:00", "09:28:00", "09:35:00", "12:00:00", "13:30:00", "14:58:00", "15:01:00"]
     for t in test_times:
         status = session.check_status(t)
-        print(f"Time: {t}, Status: {status.name} ({status.value}), Active: {is_market_active(status)}, Trading: {is_in_continuous_trading(status)}")
+        print(f"Time: {t}, Status: {status.name} ({status.value}), Active: {status.is_market_active()}, Trading: {status.is_continuous_trading()}")
 
