@@ -3,12 +3,11 @@
 # Licensed under the MIT License.
 
 import re
-from sqlite3 import Time
 import time
 from dataclasses import dataclass
 from enum import IntFlag
-from typing import List, Optional
-from datetime import datetime, timedelta
+from typing import List, Optional, Union
+from datetime import datetime
 
 from .. import layout, market
 from .timestamp import Timestamp
@@ -138,29 +137,32 @@ class Permission(IntFlag):
 # ======================================================================
 class TimeStatus(IntFlag):
     """全球统一交易时间状态枚举, 使用掩码组合表示不同状态"""
-    OPEN                          = Permission.OPEN
-    ExchangeClosed                = Permission.CLOSED                           # 当日收盘（默认状态，不可交易）
-    ExchangePreMarket             = Permission.PRE_MARKET                       # 盘前（活跃但未开始交易）
-    ExchangeSuspend               = Permission.LUNCH_BREAK                      # 休市中（非活跃，不可交易）
-    ExchangeContinuousTrading     = Permission.CONTINUOUS_TRADING               # 连续竞价（上午/下午，可撤单）
-    ExchangeTrading               = ExchangeContinuousTrading                   # 连续竞价, 盘中交易别名
-    CALL_AUCTION                  = Permission.CALL_AUCTION
+    OPEN                           = Permission.OPEN
+    """开盘"""
+    CLOSED                         = Permission.CLOSED              # 当日收盘（默认状态，不可交易）
+    """当日收盘（默认状态，不可交易）"""
+    PRE_MARKET                     = Permission.PRE_MARKET          # 盘前（活跃但未开始交易）
+    SUSPEND                        = Permission.LUNCH_BREAK         # 休市中(非活跃，不可交易)
+    CONTINUOUS_TRADING             = Permission.CONTINUOUS_TRADING  # 连续竞价(上午/下午，可撤单)
+    TRADING                        = CONTINUOUS_TRADING             # 连续竞价, 盘中交易别名
+    CALL_AUCTION                   = Permission.CALL_AUCTION        # 集合竞价(开盘/收盘)
     """集合竞价"""
     # 早盘集合竞价 = POS (Pre-Opening Session)
     # 收盘竞价时段 = CAS Closing Auction Session)
-    AUCTION_ORDER_INPUT_PERIOD    = CALL_AUCTION | Permission.CANCEL
+    AUCTION_ORDER_INPUT_PERIOD     = CALL_AUCTION | Permission.CANCEL
     """集合竞价, 订单输入 阶段, 可撤单"""
-    AUCTION_NO_CANCELLATION_PERIOD= CALL_AUCTION
+    AUCTION_NO_CANCELLATION_PERIOD = CALL_AUCTION
     """集合竞价, 不可撤销 阶段"""
-    AUCTION_MATCHING_FILL_PERIOD  = CALL_AUCTION | Permission.FILL
+    AUCTION_MATCHING_FILL_PERIOD   = CALL_AUCTION | Permission.FILL
     """集合竞价, 竞价撮合/随机对盘 阶段"""
     
-    AUCTION_MATCHING_TO_OPENING = CALL_AUCTION | Permission.FILL
+    AUCTION_MATCHING_TO_OPENING    = CALL_AUCTION | Permission.FILL
     """集合竞价开盘 阶段"""
-    AUCTION_MATCHING_TO_CLOSING = CALL_AUCTION | Permission.FILL # CLOSING_AUCTION_MATCHING
+    AUCTION_MATCHING_TO_CLOSING    = CALL_AUCTION | Permission.FILL # CLOSING_AUCTION_MATCHING
     """集合竞价收盘 阶段"""
-        
-    ExchangeHaltTrading           = OPEN                         # 市场活跃但暂停交易（如临时停牌、熔断等）
+    
+    ExchangeHaltTrading            = OPEN                         # 市场活跃但暂停交易(如临时停牌、熔断等)
+    """市场活跃但暂停交易(如午间休市、临时停牌、熔断等)"""
     
     
     def is_market_active(self) -> bool:
@@ -190,18 +192,18 @@ class TimeRange(object):
     """
     时间范围, 用~或-间隔HH-MM-SS
     """
-    begin: str
-    end: str
+    begin: Timestamp
+    end: Timestamp
     status: TimeStatus
 
-    def __init__(self, time_range: str, status: TimeStatus = TimeStatus.ExchangeTrading):
+    def __init__(self, time_range: str, status: TimeStatus = TimeStatus.TRADING):
         """
         构造
         :param time_range:
         :return:
         """
-        self.begin = ''
-        self.end = ''
+        self.begin = Timestamp.zero()
+        self.end = Timestamp.zero()
         self.status = status
 
         time_range = time_range.strip()
@@ -219,35 +221,43 @@ class TimeRange(object):
             # But here we take one string.
             # Let's assume the input is "09:30:00 ~ 11:30:00"
             raise RuntimeError(f"非法的时间格式: {time_range}")
-        
+
         # 时间排序
-        self.begin = list_[0].strip()
-        self.end = list_[1].strip()
+        begin_str = list_[0].strip()
+        end_str = list_[1].strip()
+        self.begin = Timestamp.parse_time(begin_str)
+        self.end = Timestamp.parse_time(end_str)
         if self.begin > self.end:
             self.begin, self.end = self.end, self.begin
 
-    def in_range(self, timestamp: str = "") -> Optional[TimeStatus]:
+    def in_range(self, timestamp: Union[Timestamp, str] = "") -> Optional[TimeStatus]:
         """
         是否在本交易时段
         """
-        timestamp = timestamp.strip()
-        if len(timestamp) == 0:
-            timestamp = time.strftime(layout.FORMAT_ONLY_TIME)
-        
-        # 简单的字符串比较，假设格式一致 (HH:MM:SS)
+        # 将字符串转换为 Timestamp
+        if isinstance(timestamp, str):
+            timestamp = timestamp.strip()
+            if len(timestamp) == 0:
+                timestamp = Timestamp.parse_time(time.strftime(layout.FORMAT_ONLY_TIME))
+            else:
+                timestamp = Timestamp.parse_time(timestamp)
+        elif not isinstance(timestamp, Timestamp):
+            timestamp = Timestamp.now()
+
+        # 比较 Timestamp
         if self.begin <= timestamp < self.end: # 左闭右开
              return self.status
         return None
 
-    def is_trading(self, timestamp: str = "") -> bool:
+    def is_trading(self, timestamp: Union[Timestamp, str] = "") -> bool:
         """
         是否连续竞价交易中
-        :param timestamp: %H:%M:%S
+        :param timestamp: %H:%M:%S 或 Timestamp
         :return:
         """
         status = self.in_range(timestamp)
         if status is not None:
-            return (status & TimeStatus.ExchangeTrading) == TimeStatus.ExchangeTrading
+            return (status & TimeStatus.TRADING) == TimeStatus.TRADING
         return False
 
     def is_valid(self) -> bool:
@@ -255,44 +265,54 @@ class TimeRange(object):
         时段是否有效
         :return:
         """
-        return self.begin != '' and self.end != ''
+        return not self.begin.is_empty() and not self.end.is_empty()
 
-    def is_session_pre(self, timestamp: str = "") -> bool:
+    def is_session_pre(self, timestamp: Union[Timestamp, str] = "") -> bool:
         """
         是否盘前
-        :param timestamp: %H:%M:%S
+        :param timestamp: %H:%M:%S 或 Timestamp
         """
-        timestamp = timestamp.strip()
-        if len(timestamp) == 0:
-            timestamp = time.strftime(layout.FORMAT_ONLY_TIME)
+        # 将字符串转换为 Timestamp
+        if isinstance(timestamp, str):
+            timestamp = timestamp.strip()
+            if len(timestamp) == 0:
+                timestamp = Timestamp.parse_time(time.strftime(layout.FORMAT_ONLY_TIME))
+            else:
+                timestamp = Timestamp.parse_time(timestamp)
+        elif not isinstance(timestamp, Timestamp):
+            timestamp = Timestamp.now()
+
         return timestamp < self.begin
 
-    def is_session_reg(self, timestamp: str = "") -> bool:
+    def is_session_reg(self, timestamp: Union[Timestamp, str] = "") -> bool:
         """
         是否盘中
-        :param timestamp: %H:%M:%S
+        :param timestamp: %H:%M:%S 或 Timestamp
         """
         return self.is_trading(timestamp)
 
-    def is_session_post(self, timestamp: str = "") -> bool:
+    def is_session_post(self, timestamp: Union[Timestamp, str] = "") -> bool:
         """
         是否盘后
-        :param timestamp: %H:%M:%S
+        :param timestamp: %H:%M:%S 或 Timestamp
         """
-        timestamp = timestamp.strip()
-        if len(timestamp) == 0:
-            timestamp = time.strftime(layout.FORMAT_ONLY_TIME)
+        # 将字符串转换为 Timestamp
+        if isinstance(timestamp, str):
+            timestamp = timestamp.strip()
+            if len(timestamp) == 0:
+                timestamp = Timestamp.parse_time(time.strftime(layout.FORMAT_ONLY_TIME))
+            else:
+                timestamp = Timestamp.parse_time(timestamp)
+        elif not isinstance(timestamp, Timestamp):
+            timestamp = Timestamp.now()
+
         return timestamp >= self.end # 右开区间，所以 >= end 就是盘后
     
     def get_duration_minutes(self) -> int:
         """计算时段总时长 (分钟)"""
-        ts_begin = Timestamp.parse_time(self.begin)
-        ts_end = Timestamp.parse_time(self.end)
-        
-        
-        start_minutes = ts_begin.value() // 60000 # 转换为分钟
-        end_minutes = ts_end.value() // 60000
-        
+        start_minutes = self.begin.value() // 60000 # 转换为分钟
+        end_minutes = self.end.value() // 60000
+
         if end_minutes > start_minutes:
             return end_minutes - start_minutes
         else:
@@ -300,19 +320,17 @@ class TimeRange(object):
     
     def get_elapsed_minutes(self, current_time: Timestamp) -> int:
         """时段已经开始多少分钟"""
-        # t = current_time.time()
-        # if not self.contains(t):
+        # if self.begin > current_time or current_time >= self.end:
         #     return 0
-        
-        ts_begin = Timestamp.parse_time(self.begin)
-        
-        current_minutes = current_time.value() // 60000 # 转换为分钟
-        start_minutes = ts_begin.value() // 60000
-        
+        current = min(current_time, self.end) # 不超过结束时间
+        start = min(self.begin, current) # 不早于开始时间
+        current_minutes = current.value() // 60000 # 转换为分钟
+        start_minutes = start.value() // 60000
+
         if current_minutes >= start_minutes:
             return int(current_minutes - start_minutes)
         else:
-            return int((24 * 60 - start_minutes) + current_minutes)
+            return 0
 
 
 @dataclass
@@ -321,10 +339,17 @@ class TradingSession:
     交易时段
     """
     sessions: List[TimeRange]
-    earliest_start: str = "23:59:59"
+    earliest_start: Optional[Timestamp] = None
     """最早开始时间"""
-    latest_end: str = "00:00:00"
+    latest_end: Optional[Timestamp] = None
     """最晚结束时间"""
+
+    def __post_init__(self):
+        """初始化时设置默认值"""
+        if self.earliest_start is None:
+            self.earliest_start = Timestamp.parse_time("23:59:59")
+        if self.latest_end is None:
+            self.latest_end = Timestamp.parse_time("00:00:00")
 
     def __init__(self, *args):
         """
@@ -339,7 +364,7 @@ class TradingSession:
             list_ = re.split(r",\s*", time_range_str)
             for v in list_:
                 v = v.strip()
-                r = TimeRange(v) # 默认为 ExchangeTrading
+                r = TimeRange(v) # 默认为 TRADING
                 self.sessions.append(r)
         else:
             # 传入 TimeRange 对象列表
@@ -351,12 +376,12 @@ class TradingSession:
 
     def update_time_bounds(self):
         if not self.sessions:
-            self.earliest_start = "23:59:59"
-            self.latest_end = "00:00:00"
+            self.earliest_start = Timestamp.parse_time("23:59:59")
+            self.latest_end = Timestamp.parse_time("00:00:00")
             return
-        
-        self.earliest_start = "23:59:59"
-        self.latest_end = "00:00:00"
+
+        self.earliest_start = Timestamp.parse_time("23:59:59")
+        self.latest_end = Timestamp.parse_time("00:00:00")
         for session in self.sessions:
             if session.begin < self.earliest_start:
                 self.earliest_start = session.begin
@@ -367,40 +392,46 @@ class TradingSession:
         self.sessions.append(range)
         self.update_time_bounds()
 
-    def check_status(self, timestamp: str = "") -> TimeStatus:
+    def check_status(self, timestamp: Union[Timestamp, str] = "") -> TimeStatus:
         """
         判断当前时间的状态
         """
-        timestamp = timestamp.strip()
-        if len(timestamp) == 0:
-            timestamp = time.strftime(layout.FORMAT_ONLY_TIME)
-            
+        # 将字符串转换为 Timestamp
+        if isinstance(timestamp, str):
+            timestamp = timestamp.strip()
+            if len(timestamp) == 0:
+                timestamp = Timestamp.parse_time(time.strftime(layout.FORMAT_ONLY_TIME))
+            else:
+                timestamp = Timestamp.parse_time(timestamp)
+        elif not isinstance(timestamp, Timestamp):
+            timestamp = Timestamp.now()
+
         for session in self.sessions:
             status = session.in_range(timestamp)
             if status is not None:
                 return status
-        
+
         # 不在任何交易时段内, 进一步判断是盘前、盘后还是休市
-        
+
         # 全天交易开始前
         if timestamp < self.earliest_start:
-            return TimeStatus.ExchangePreMarket
-        
+            return TimeStatus.PRE_MARKET
+
         # 全天交易结束前, 则会休市 (例如中午休市)
         if timestamp < self.latest_end:
             return TimeStatus.ExchangeHaltTrading
-            
-        # 不在任何交易时段内, 返回已收盘
-        return TimeStatus.ExchangeClosed
 
-    def is_trading(self, timestamp: str = "") -> bool:
+        # 不在任何交易时段内, 返回已收盘
+        return TimeStatus.CLOSED
+
+    def is_trading(self, timestamp: Union[Timestamp, str] = "") -> bool:
         """
         是否交易中
-        :param timestamp:
+        :param timestamp: %H:%M:%S 或 Timestamp
         :return:
         """
         status = self.check_status(timestamp)
-        return (status & TimeStatus.ExchangeTrading) == TimeStatus.ExchangeTrading
+        return (status & TimeStatus.TRADING) == TimeStatus.TRADING
 
     def is_valid(self) -> bool:
         """
@@ -412,23 +443,52 @@ class TradingSession:
                 return False
         return True
     
-    def is_trading_not_started(self, timestamp: str = "") -> bool:
-        timestamp = timestamp.strip() or time.strftime(layout.FORMAT_ONLY_TIME)
+    def is_trading_not_started(self, timestamp: Union[Timestamp, str] = "") -> bool:
+        # 将字符串转换为 Timestamp
+        if isinstance(timestamp, str):
+            timestamp = timestamp.strip()
+            if len(timestamp) == 0:
+                timestamp = Timestamp.parse_time(time.strftime(layout.FORMAT_ONLY_TIME))
+            else:
+                timestamp = Timestamp.parse_time(timestamp)
+        elif not isinstance(timestamp, Timestamp):
+            timestamp = Timestamp.now()
+
         return timestamp < self.earliest_start
 
-    def is_trading_ended(self, timestamp: str = "") -> bool:
-        timestamp = timestamp.strip() or time.strftime(layout.FORMAT_ONLY_TIME)
+    def is_trading_ended(self, timestamp: Union[Timestamp, str] = "") -> bool:
+        # 将字符串转换为 Timestamp
+        if isinstance(timestamp, str):
+            timestamp = timestamp.strip()
+            if len(timestamp) == 0:
+                timestamp = Timestamp.parse_time(time.strftime(layout.FORMAT_ONLY_TIME))
+            else:
+                timestamp = Timestamp.parse_time(timestamp)
+        elif not isinstance(timestamp, Timestamp):
+            timestamp = Timestamp.now()
+
         return timestamp > self.latest_end
     
-    def minutes(self, timestamp: str = "") -> int:
+    def minutes(self, timestamp: Union[Timestamp, str] = "") -> int:
         """
         计算当前时间距离最近的交易时间的分钟数
-        :param timestamp:
+        :param timestamp: %H:%M:%S 或 Timestamp
         :return:
         """
-        timestamp = timestamp.strip() or time.strftime(layout.FORMAT_ONLY_TIME)
-        
-        return 0
+        # 将字符串转换为 Timestamp
+        if isinstance(timestamp, str):
+            timestamp = timestamp.strip()
+            if len(timestamp) == 0:
+                timestamp = Timestamp.parse_time(time.strftime(layout.FORMAT_ONLY_TIME))
+            else:
+                timestamp = Timestamp.parse_time(timestamp)
+        elif not isinstance(timestamp, Timestamp):
+            timestamp = Timestamp.now()
+        return sum(
+            tr.get_elapsed_minutes(timestamp) 
+            for tr in self.sessions 
+            if tr.status.is_open()
+        )
     
     def get_trading_minutes(self) -> int:
         """当日可交易时段总时长 (分钟)"""
@@ -447,11 +507,11 @@ def init_session() -> TradingSession:
     # 9:20~9:25，开盘集合竞价，不可撤单
     tr2 = TimeRange("09:20:00 ~ 09:25:00", TimeStatus.AUCTION_MATCHING_TO_OPENING)
     # 9:25~9:30，休市 (实际上是撮合时间，但对外部来说是不可交易的)
-    tr3 = TimeRange("09:25:00 ~ 09:30:00", TimeStatus.ExchangeSuspend)
+    tr3 = TimeRange("09:25:00 ~ 09:30:00", TimeStatus.SUSPEND)
     # 9:30~11:30，连续竞价
-    tr4 = TimeRange("09:30:00 ~ 11:30:00", TimeStatus.ExchangeTrading)
+    tr4 = TimeRange("09:30:00 ~ 11:30:00", TimeStatus.TRADING)
     # 13:00~14:57，连续竞价
-    tr5 = TimeRange("13:00:00 ~ 14:57:00", TimeStatus.ExchangeTrading)
+    tr5 = TimeRange("13:00:00 ~ 14:57:00", TimeStatus.TRADING)
     # 14:57~15:00，收盘集合竞价
     tr6 = TimeRange("14:57:00 ~ 15:00:00", TimeStatus.AUCTION_MATCHING_TO_CLOSING | Permission.OPEN)
     
@@ -482,12 +542,12 @@ class RuntimeStatus:
     before_init_time: bool = False     # 初始化时间前
     cache_after_init_time: bool = False # 缓存在初始化时间之后
     update_in_real_time: bool = False   # 是否可以实时更新
-    status: TimeStatus = TimeStatus.ExchangeClosed
+    status: TimeStatus = TimeStatus.CLOSED
 
 
 def check_trading_timestamp(last_modified: Optional[Timestamp] = None) -> RuntimeStatus:
     rs = RuntimeStatus()
-    rs.status = TimeStatus.ExchangeClosed
+    rs.status = TimeStatus.CLOSED
 
     now = Timestamp.now()
     if last_modified is not None:
@@ -513,7 +573,7 @@ def check_trading_timestamp(last_modified: Optional[Timestamp] = None) -> Runtim
         rs.before_init_time = True
         return rs
 
-    rs.status = TimeStatus.ExchangePreMarket
+    rs.status = TimeStatus.PRE_MARKET
     rs.cache_after_init_time = True
 
     # 5. trading not started
@@ -568,5 +628,8 @@ if __name__ == '__main__':
     test_times = ["09:00:00", "09:16:00", "09:22:00", "09:28:00", "09:35:00", "12:00:00", "13:30:00", "14:58:00", "15:01:00"]
     for t in test_times:
         status = session.check_status(t)
+        ts = Timestamp.parse_time(t)
+        print(f'{t} -> {ts} -> {ts.to_string()}')
+        print(f'elapsed: {t} -> {session.minutes(ts)}, trading: {session.is_trading(ts)}')
         print(f"Time: {t}, Status: {status.name} ({status.value}), Active: {status.is_market_active()}, Trading: {status.is_continuous_trading()}")
 
