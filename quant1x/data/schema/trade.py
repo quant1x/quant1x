@@ -22,8 +22,20 @@ class Transaction:
     amount: float = 0.0 # 成交额
     direction: int = 2 # 交易方向
 
-    @staticmethod
-    def headers() -> List[str]:
+    @classmethod
+    def headers(cls) -> List[str]:
         """逐笔交易数据头部"""
         return ["time", "price", "volume", "num", "amount", "direction"]    
+
+    def to_dict(self):
+        """转为扁平字典，适配 DataFrame"""
+
+        return {
+            "time": self.time,
+            "price": self.price,
+            "volume": self.volume,
+            "num": self.num,
+            "amount": self.amount,
+            "direction": self.direction,
+        }
 
