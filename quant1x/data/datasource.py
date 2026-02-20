@@ -4,7 +4,8 @@
 
 from abc import ABC, abstractmethod
 from typing import List, Union, Literal
-from .market import Exchange, Instrument
+from .meta.exchange import Exchange
+from .meta.instrument import Instrument
 from quant1x.data.schema import Sector
 from enum import Enum
 
@@ -119,7 +120,7 @@ class DataHandler(ABC):
         raise NotImplementedError("Subclass of DataHandler must implement `get_instrument` method")
     
     @abstractmethod
-    def klines(self, symbol: str, start_date: str|None, end_date: str|None, freq: str|None):
+    def klines(self, symbol: str, start_date: str | None = None, end_date: str | None = None, freq: str | None = None):
         """
         获取指定证券代码的K线数据
         
@@ -138,7 +139,7 @@ class DataHandler(ABC):
         raise NotImplementedError("Subclass of DataHandler must implement `klines` method")
     
     @abstractmethod
-    def transactions(self, symbol: str, date: str|None):
+    def transactions(self, symbol: str, date: str | None = None):
         """
         获取指定证券代码的交易数据
         
