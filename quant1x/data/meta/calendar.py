@@ -9,7 +9,8 @@ from typing import List, Optional
 from quant1x.std import ThreadSafeSingletonABC, ThreadSafeStrategy
 from .sina.decoder import FinanceDecoder
 from quant1x.runtime.once import RollingOnce
-from quant1x.data import market, layout, cache, config
+from quant1x.config import config
+from quant1x.data import market, layout, cache
 from quant1x.data.meta import Timestamp
 from quant1x.std import filesystem as fs
 from quant1x.log import logger
