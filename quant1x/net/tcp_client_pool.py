@@ -86,7 +86,7 @@ class TcpConnectionPool:
             if self._idle_connections:
                 raw_conn = self._idle_connections.popleft()
                 self.idle_connection_count -= 1
-                logger.debug("Reused connection from pool: %s", raw_conn)
+                logger.debug("Reused connection from pool: {}", raw_conn)
 
         # 2. 若无空闲连接则创建新连接
         endpoint = None
@@ -119,11 +119,11 @@ class TcpConnectionPool:
                 if not ok:
                     sock.close()
                     self.endpoint_manager.release_endpoint(endpoint)
-                    logger.error("Handshake failed with %s:%s", endpoint[0], endpoint[1])
+                    logger.error("Handshake failed with {}:{}", endpoint[0], endpoint[1])
                     raise RuntimeError("Handshake failed")
 
                 raw_conn = Connection(sock, endpoint)
-                logger.debug("Created new connection %s", raw_conn)
+                logger.debug("Created new connection {}", raw_conn)
             except Exception:
                 if sock is not None:
                     try:
@@ -149,20 +149,20 @@ class TcpConnectionPool:
         if conn is None:
             return
         conn_id = id(conn)
-        logger.debug("Returning connection %s", conn_id)
+        logger.debug("Returning connection {}", conn_id)
 
         # 注意：此处不要释放端点（与 C++ 的语义一致）
         with self._connections_mutex:
             self._idle_connections.append(conn)
             self.idle_connection_count += 1
             self.active_connection_count -= 1
-            logger.debug("Connection %s returned to pool", conn_id)
+            logger.debug("Connection {} returned to pool", conn_id)
 
     def close_connection(self, conn: Optional[Connection]) -> None:
         if conn is None:
             return
         conn_id = id(conn)
-        logger.debug("Closing connection %s", conn_id)
+        logger.debug("Closing connection {}", conn_id)
         # 1. 释放端点
         try:
             self.endpoint_manager.release_endpoint(conn.endpoint)
@@ -243,7 +243,7 @@ class TcpConnectionPool:
         while self.active_connection_count + self.idle_connection_count < self.min_connections and retry_count < max_retries:
             available = self.endpoint_manager.get_available_resources()
             if available == 0:
-                logger.warning("endpoint resources exhausted, retry %s/%s", retry_count, max_retries)
+                logger.warning("endpoint resources exhausted, retry {}/{}", retry_count, max_retries)
                 time.sleep(0.1)
                 retry_count += 1
                 continue
