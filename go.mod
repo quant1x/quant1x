@@ -1,6 +1,6 @@
 module gitee.com/quant1x/quant1x
 
-go 1.26rc2
+go 1.26.0
 
 require (
 	gitee.com/quant1x/num v0.7.13
