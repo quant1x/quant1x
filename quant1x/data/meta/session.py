@@ -9,8 +9,13 @@ from enum import IntFlag
 from typing import List, Optional, Union
 from datetime import datetime
 
+from quant1x.std.time import get_timezone_offset_standard
+from quant1x.log import logger
+
 from .. import layout, market
 from .timestamp import Timestamp
+from .exchange import Exchange
+from .region import Region
 from quant1x.runtime.once import RollingOnce
 from quant1x.data.meta import calendar
 
@@ -142,6 +147,7 @@ class TimeStatus(IntFlag):
     CLOSED                         = Permission.CLOSED              # 当日收盘（默认状态，不可交易）
     """当日收盘（默认状态，不可交易）"""
     PRE_MARKET                     = Permission.PRE_MARKET          # 盘前（活跃但未开始交易）
+    AFTER_HOURS                    = Permission.AFTER_HOURS         # 盘后（活跃但已结束交易）
     SUSPEND                        = Permission.LUNCH_BREAK         # 休市中(非活跃，不可交易)
     CONTINUOUS_TRADING             = Permission.CONTINUOUS_TRADING  # 连续竞价(上午/下午，可撤单)
     TRADING                        = CONTINUOUS_TRADING             # 连续竞价, 盘中交易别名
@@ -196,7 +202,7 @@ class TimeRange(object):
     end: Timestamp
     status: TimeStatus
 
-    def __init__(self, time_range: str, status: TimeStatus = TimeStatus.TRADING):
+    def __init__(self, time_range: str, status: TimeStatus = TimeStatus.TRADING, reg: Region = Region.CN):
         """
         构造
         :param time_range:
@@ -205,7 +211,9 @@ class TimeRange(object):
         self.begin = Timestamp.zero()
         self.end = Timestamp.zero()
         self.status = status
-
+        self.reg = reg
+        zone_offset_hours = get_timezone_offset_standard(reg.timezone)*-1
+        
         time_range = time_range.strip()
         # 支持直接传入 begin, end 格式 (e.g. "09:30:00", "11:30:00")
         # 这里为了兼容旧代码，仍然解析字符串
@@ -225,8 +233,8 @@ class TimeRange(object):
         # 时间排序
         begin_str = list_[0].strip()
         end_str = list_[1].strip()
-        self.begin = Timestamp.parse_time(begin_str)
-        self.end = Timestamp.parse_time(end_str)
+        self.begin = Timestamp.parse_time(begin_str).offset(zone_offset_hours)
+        self.end = Timestamp.parse_time(end_str).offset(zone_offset_hours)
         if self.begin > self.end:
             self.begin, self.end = self.end, self.begin
 
@@ -343,6 +351,9 @@ class TradingSession:
     """最早开始时间"""
     latest_end: Optional[Timestamp] = None
     """最晚结束时间"""
+    # 收盘时间点 (例如 15:00:00)，用于判断是否已收盘 (timestamp >= closing_time 就认为已收盘)
+    closing_time: Optional[Timestamp] = None
+    """收盘时间点"""
 
     def __post_init__(self):
         """初始化时设置默认值"""
@@ -350,6 +361,8 @@ class TradingSession:
             self.earliest_start = Timestamp.parse_time("23:59:59")
         if self.latest_end is None:
             self.latest_end = Timestamp.parse_time("00:00:00")
+        if self.closing_time is None:
+            self.closing_time = Timestamp.parse_time("00:00:00")
 
     def __init__(self, *args):
         """
@@ -375,18 +388,32 @@ class TradingSession:
         self.update_time_bounds()
 
     def update_time_bounds(self):
+        """
+        更新交易时段的时间边界，计算所有交易时段中的最早开始时间和最晚结束时间。
+        
+        如果没有交易时段(sessions为空)，则设置默认时间边界为23:59:59和00:00:00。
+        否则遍历所有交易时段，找到最早的开始时间(begin)和最晚的结束时间(end)。
+        
+        Attributes Updated:
+            earliest_start (Timestamp): 所有交易时段中最小的开始时间
+            latest_end (Timestamp): 所有交易时段中最大的结束时间
+        """
         if not self.sessions:
             self.earliest_start = Timestamp.parse_time("23:59:59")
             self.latest_end = Timestamp.parse_time("00:00:00")
+            self.closing_time = Timestamp.parse_time("00:00:00")
             return
 
         self.earliest_start = Timestamp.parse_time("23:59:59")
         self.latest_end = Timestamp.parse_time("00:00:00")
+        self.closing_time = Timestamp.parse_time("00:00:00")
         for session in self.sessions:
             if session.begin < self.earliest_start:
                 self.earliest_start = session.begin
             if session.end > self.latest_end:
                 self.latest_end = session.end
+                if session.status.is_open():
+                    self.closing_time = session.end
 
     def add_session(self, range: TimeRange):
         self.sessions.append(range)
@@ -498,7 +525,7 @@ class TradingSession:
             if tr.status.is_open()
         )
 
-def init_session() -> TradingSession:
+def init_cn_session() -> TradingSession:
     """
     初始化当日的交易会话时段 (A股)
     """
@@ -517,25 +544,99 @@ def init_session() -> TradingSession:
     
     return TradingSession(tr1, tr2, tr3, tr4, tr5, tr6)
 
+def init_hk_session() -> TradingSession:
+    """
+    初始化当日的交易会话时段 (港股)
+    https://www.futunn.com/learn/detail-before-entering-the-market-understand-the-trading-rules-of-the-hong-kong-stock-market-83831-230556033
+    """
+    # 1. 输入买卖盘时段：上午9:00-9:15,这段时间可以随时输入下单(竞价市价单及竞价限价单)，且期间随时可以撤单。
+    tr1 = TimeRange("09:00:00 ~ 09:15:00", TimeStatus.AUCTION_ORDER_INPUT_PERIOD)
+    # 2. 不可取消时段：上午9:15-9:20，这段时间随时可以下单，但不可撤单。
+    tr2 = TimeRange("09:15:00 ~ 09:20:00", TimeStatus.AUCTION_NO_CANCELLATION_PERIOD)
+    # 3. 随机对盘时段：上午9:20-9:22，在这段时间如果对盘成功，会产生集合竞价的价格，也就是开盘价。开盘价涨跌幅限制在15%以内。
+    tr3 = TimeRange("09:20:00 ~ 09:22:00", TimeStatus.AUCTION_MATCHING_TO_OPENING)
+    # 4. 暂停时段：完成对盘后-上午9:30，这段时间的竞价限价单，将自动转为限价单，并于持续交易时继续等待成交。系统在9:28公布开盘价。
+    tr4 = TimeRange("09:22:00 ~ 09:30:00", TimeStatus.SUSPEND)
+    tr5 = TimeRange("09:30:00 ~ 12:00:00", TimeStatus.CONTINUOUS_TRADING)
+    tr6 = TimeRange("12:00:00 ~ 13:00:00", TimeStatus.SUSPEND)
+    tr7 = TimeRange("13:00:00 ~ 16:00:00", TimeStatus.CONTINUOUS_TRADING)
+    #tr8 = TimeRange("16:00:00 ~ 16:10:00", TimeStatus.CALL_AUCTION_CLOSING)
+    
+    # 收盘竞价 - 参考价定价阶段(Reference Price) (16:00-16:01)
+    tr8 = TimeRange("16:00:00 ~ 16:01:00", TimeStatus.AUCTION_ORDER_INPUT_PERIOD)
+    
+    # 收盘竞价 - 输入订单阶段 (16:01-16:06)
+    tr9 = TimeRange("16:01:00 ~ 16:06:00", TimeStatus.AUCTION_ORDER_INPUT_PERIOD)
+    
+    # 收盘竞价 - 不可撤销阶段 (16:06-16:10)
+    tr10 = TimeRange("16:06:00 ~ 16:08:00", TimeStatus.AUCTION_NO_CANCELLATION_PERIOD)
+    # 收盘竞价 - 随机收盘 (16:06-16:10)
+    tr11 = TimeRange("16:06:00 ~ 16:10:00", TimeStatus.AUCTION_MATCHING_TO_CLOSING)
+    
+    return TradingSession(tr1, tr2, tr3, tr4, tr5, tr6, tr7, tr8, tr9, tr10, tr11)
+
+def init_us_session() -> TradingSession:
+    """
+    初始化当日的交易会话时段 (美股)
+    """
+    tr1 = TimeRange("04:00:00 ~ 09:30:00", TimeStatus.PRE_MARKET, Region.US)  # 盘前
+    tr2 = TimeRange("09:30:00 ~ 16:00:00", TimeStatus.TRADING, Region.US)     # 盘中
+    tr3 = TimeRange("16:00:00 ~ 20:00:00", TimeStatus.AFTER_HOURS, Region.US) # 盘后
+    
+    return TradingSession(tr1, tr2, tr3)
+
 
 # 全局单例（由 RollingOnce 每日重建）
-_ts_today_session = init_session()
+_trading_hours_map = {}
+_trading_hours_default = init_cn_session() # 默认中国市场时段
 _ts_today_session_once = RollingOnce(name='sessions_init', cron=market.cn_cron_expr_daily_init)
 
 
-def get_today_session() -> TradingSession:
-    """Return today's TradingSession, reinitialized once per day by RollingOnce."""
-    global _ts_today_session
+def _ts_today_session_init():
+    """
+    初始化今日各市场交易时段信息
+    
+    该函数负责初始化中国(CN)、香港(HK)和美国(US)市场的当日交易时段，
+    并将这些信息存储到全局变量 `_trading_hours_map` 中。
+    
+    注意:
+        该函数会修改全局变量 `_trading_hours_map`，
+        键名为市场代码('cn', 'hk', 'us')，
+        值为对应市场的交易时段对象
+    """
+    global _trading_hours_map
+    _ts_today_cn_session = init_cn_session()
+    _ts_today_hk_session = init_hk_session()
+    _ts_today_us_session = init_us_session()
+    _trading_hours_map['cn'] = _ts_today_cn_session
+    _trading_hours_map['hk'] = _ts_today_hk_session
+    _trading_hours_map['us'] = _ts_today_us_session
 
-    def do_init():
-        global _ts_today_session
-        _ts_today_session = init_session()
+def latest_session_by_exchange(exchange: Exchange = Exchange.SSE) -> TradingSession:
+    """
+    获取指定交易所当天的交易时段信息
+    
+    Args:
+        exchange (Exchange): 交易所枚举，默认为SSE（上海证券交易所）
+    
+    Returns:
+        TradingSession: 返回对应交易所的交易时段对象
+    
+    Note:
+        如果找不到指定交易所的配置，会使用默认的中国市场交易时段并记录警告
+    """
+    global _trading_hours_map
 
-    _ts_today_session_once.do(do_init)
-    return _ts_today_session
+    _ts_today_session_once.do(_ts_today_session_init)
+    key = exchange.region.value.lower() if exchange.region else 'cn'
+    session_ = _trading_hours_map.get(key)
+    if session_ is None:
+        #raise ValueError(f"Unsupported exchange: {exchange}")
+        logger.warning(f"Unsupported exchange: {exchange}")
+        session_ = _trading_hours_default  # default to CN if not found
+    return session_
 
 
-@dataclass
 class RuntimeStatus:
     before_last_trade_day: bool = False # 最后交易日前
     is_holiday: bool = False          # 是否节假日休市
@@ -545,7 +646,7 @@ class RuntimeStatus:
     status: TimeStatus = TimeStatus.CLOSED
 
 
-def check_trading_timestamp(last_modified: Optional[Timestamp] = None) -> RuntimeStatus:
+def check_trading_timestamp(exchange: Exchange = Exchange.SSE, last_modified: Optional[Timestamp] = None) -> RuntimeStatus:
     rs = RuntimeStatus()
     rs.status = TimeStatus.CLOSED
 
@@ -577,7 +678,7 @@ def check_trading_timestamp(last_modified: Optional[Timestamp] = None) -> Runtim
     rs.cache_after_init_time = True
 
     # 5. trading not started
-    session = get_today_session()
+    session = latest_session_by_exchange(exchange)
     # convert timestamp to time-only string for existing string-based session
     tstr = ts.to_string(layout.FORMAT_ONLY_TIME)
     if session.is_trading_not_started(tstr):
@@ -607,8 +708,8 @@ def get_today() -> Timestamp:
     return _ts_today_init
 
 
-def can_initialize(last_modified: Optional[Timestamp]) -> bool:
-    rs = check_trading_timestamp(last_modified)
+def can_initialize(exchange: Exchange = Exchange.SSE, last_modified: Optional[Timestamp] = None) -> bool:
+    rs = check_trading_timestamp(exchange, last_modified)
     if rs.before_last_trade_day:
         return True
     if rs.is_holiday:
@@ -622,8 +723,8 @@ if __name__ == '__main__':
     dt = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print(dt)
 
-    session = init_session()
-    print(f"Earliest: {session.earliest_start}, Latest: {session.latest_end}")
+    session = latest_session_by_exchange(Exchange.USA)
+    print(f"Earliest: {session.earliest_start}, Latest: {session.latest_end}, Closing: {session.closing_time}")
     print(f"Trading minutes: {session.get_trading_minutes()}")
     test_times = ["09:00:00", "09:16:00", "09:22:00", "09:28:00", "09:35:00", "12:00:00", "13:30:00", "14:58:00", "15:01:00"]
     for t in test_times:
