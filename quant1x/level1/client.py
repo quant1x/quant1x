@@ -19,28 +19,28 @@ log = logging.getLogger(__name__)
 
 
 class StandardProtocolHandler(NetworkOperationHandler):
-    """标准协议处理器，执行Hello1/Hello2握手和心跳。
+    """标准协议处理器，执行Synchronize1/Synchronize2握手和心跳。
 
     此实现调用`level1.protocol`来序列化请求，并在提供的套接字上执行阻塞读/写。
     """
 
     def handshake(self, sock) -> bool:
-        # 使用阻塞请求助手执行Hello1然后Hello2
+        # 使用阻塞请求助手执行Synchronize1然后Synchronize2
         try:
-            from quant1x.level1.hello1 import Hello1Request, Hello1Response
-            from quant1x.level1.hello2 import Hello2Request, Hello2Response
+            from quant1x.level1.hello1 import Synchronize1Request, Synchronize1Response
+            from quant1x.level1.hello2 import Synchronize2Request, Synchronize2Response
             from quant1x.level1.protocol import process
 
-            req1 = Hello1Request()
-            resp1 = Hello1Response()
+            req1 = Synchronize1Request()
+            resp1 = Synchronize1Response()
             process(sock, req1, resp1)
-            # 接受任何没有反序列化错误的Hello1响应。
+            # 接受任何没有反序列化错误的Synchronize1响应。
             # C++实现不需要非空的Info字段。
 
-            req2 = Hello2Request()
-            resp2 = Hello2Response()
+            req2 = Synchronize2Request()
+            resp2 = Synchronize2Response()
             process(sock, req2, resp2)
-            # 接受任何没有反序列化错误的Hello2响应。
+            # 接受任何没有反序列化错误的Synchronize2响应。
             # 如果两个阶段都没有异常完成，则返回True。
             return True
         except Exception as e:

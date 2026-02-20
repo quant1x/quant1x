@@ -2,10 +2,11 @@
 # Copyright (c) Quant1X <wangfengxy@sina.cn>.
 # Licensed under the MIT License.
 
-from __future__ import annotations
+import struct
+from tkinter import E
 from typing import Tuple
 import threading
-from quant1x.data.market import Exchange
+from quant1x.data.meta import Exchange
 
 _seq_lock = threading.Lock()
 _seq_id = 0
@@ -15,7 +16,7 @@ def msg_sequence_id() -> int:
     """
     生成并返回一个全局唯一的序列ID
     
-    每次调用时，序列ID会递增1，并保证在32位无符号整数范围内循环（0xFFFFFFFF）
+    每次调用时, 序列ID会递增1, 并保证在32位无符号整数范围内循环(0xFFFFFFFF)
     
     Returns:
         int: 32位无符号整数范围内的唯一序列ID
@@ -89,7 +90,7 @@ def default_base_unit(market_id: int, code: str) -> float:
     获取价格计算所用的默认基数（单位）。
 
     参数：
-        market_id: 市场编号（例如 0=深市，1=沪市）
+        market_id: 市场编号（例如 0=深市, 1=沪市）
         code: 证券代码
 
     返回：基数（`100.0` 或 `1000.0`）。
@@ -126,6 +127,31 @@ def get_datetime_from_uint32(category: int, zipday: int, tminutes: int) -> Tuple
         day = int(zipday % 100)
 
     return year, month, day, hour, minute
+
+def get_datetime(category, buffer, pos):
+    year = 0
+    month = 0
+    day = 0
+    hour = 15
+    minute = 0
+    if category < 4 or category == 7 or category == 8:
+        (zipday, tminutes) = struct.unpack("<HH", buffer[pos: pos + 4])
+        year = (zipday >> 11) + 2004
+        month = int((zipday % 2048) / 100)
+        day = (zipday % 2048) % 100
+
+        hour = int(tminutes / 60)
+        minute = tminutes % 60
+    else:
+        (zipday,) = struct.unpack("<I", buffer[pos: pos + 4])
+
+        year = int(zipday / 10000);
+        month = int((zipday % 10000) / 100)
+        day = zipday % 100
+
+    pos += 4
+
+    return year, month, day, hour, minute, pos
 
 def int_to_float64(integer: int) -> float:
     """
@@ -182,9 +208,12 @@ def int_to_float64(integer: int) -> float:
 
 
 _EXCHANGE_TO_MARKET = {
-    Exchange.SSE: 1,
-    Exchange.SZSE: 0,
-    Exchange.BSE: 2,
+    Exchange.SSE:   1, # 标准行情
+    Exchange.SZSE:  0, # 标准行情
+    Exchange.BSE:   2, # 标准行情
+    Exchange.HKEX: 31, # 扩展行情
+    Exchange.HKFE: 27, # 扩展行情
+    Exchange.USA:  74, # 扩展行情
 }
 
 _MARKET_TO_EXCHANGE = {v: k for k, v in _EXCHANGE_TO_MARKET.items()}

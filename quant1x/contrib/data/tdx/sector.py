@@ -16,10 +16,11 @@ from quant1x.log import logger
 from quant1x.runtime.once import RollingOnce
 from quant1x.data.meta import Timestamp
 from quant1x.data.schema import Sector
-from quant1x.data import market, status as market_status, config
+from quant1x.config import config
+from quant1x.data import market, status as market_status
 
 from .client import get_std_conn
-from .level1.block_info import BlockInfoRequest, BlockInfoResponse, BLOCK_CHUNKS_SIZE
+from .level1 import BlockInfoRequest, BlockInfoResponse, BLOCK_CHUNKS_SIZE
 from . import protocol as l1protocol
 from quant1x.data.meta.calendar import last_trading_day
 
@@ -464,7 +465,7 @@ def get_sector_list() -> List[Sector]:
 def get_sector_info(symbol: str) -> Optional[Sector]:
     _onceBlockFiles.do(load_cache_block_infos)
     inst = market.detect_symbol(symbol)
-    return _map_block.get(str(inst))
+    return _map_block.get(inst.symbol())
 
 if __name__ == '__main__':
     list = get_sector_list()

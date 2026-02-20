@@ -11,7 +11,7 @@ from quant1x.level1.protocol import (
     sequence_id,
 )
 
-class Hello2Request:
+class Synchronize2Request:
     """
     第二次协议握手请求
     """
@@ -31,7 +31,7 @@ class Hello2Request:
         header = struct.pack('<B I B H H H', self.zip_flag, self.seq_id, self.packet_type, self.pkg_len1, self.pkg_len2, self.method)
         return header + self.padding
 
-class Hello2Response:
+class Synchronize2Response:
     """
     第二次协议握手响应
     """

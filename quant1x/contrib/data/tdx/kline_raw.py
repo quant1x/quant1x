@@ -6,17 +6,20 @@ import os
 import pandas as pd
 from dataclasses import dataclass
 from typing import List, Optional
+from quant1x.contrib.data.tdx.instruments import get_instrument_info
 from quant1x.log import logger
 
+from quant1x.config import config
 from quant1x.data.meta import Timestamp
-from quant1x.data import config, adapter, MaxCachedDaysToDropOnIncrementalUpdate
+from quant1x.data.schema import Bar
+from quant1x.data import adapter, MaxCachedDaysToDropOnIncrementalUpdate
 from . import protocol
 from .client import get_std_conn
-from .level1.security_bars import SecurityBarsRequest, SecurityBarsResponse, KLineType, SecurityBar, SECURITY_BARS_PRE_REQUEST_MAX
-from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASE_DATA, register, DEFAULT_DATA_PROVIDER
-from quant1x.data.base import BASE_RAW_DAILY_KLINE, MarketCnFirstListTime
-from quant1x.data.meta import Frequency, TimeUnit, FREQ_DAILY
-from quant1x.data.market import Instrument, detect_symbol
+from .level1 import SecurityBarsRequest, SecurityBarsResponse, KLineType, SECURITY_BARS_PRE_REQUEST_MAX
+from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASEDATA_DATA, register, DEFAULT_DATA_PROVIDER
+from quant1x.data.base import BASEDATA_RAW_DAILY_KLINE, MarketCnFirstListTime
+from quant1x.data.meta import Instrument, Frequency, TimeUnit, FREQ_DAILY
+from quant1x.data.market import detect_symbol
 
 def frequency_to_kline_type(freq: Frequency) -> KLineType:
     """
@@ -121,11 +124,11 @@ class BarRaw:
     amount: float = 0.0
     up: int = 0
     down: int = 0
-    datetime: str = ""
+    timestamp: str = ""
 
     @staticmethod
     def headers() -> List[str]:
-        return ["date", "open", "close", "high", "low", "volume", "amount", "up", "down", "datetime"]
+        return ["date", "open", "close", "high", "low", "volume", "amount", "up", "down", "timestamp"]
 
     def adjust(self, factor):
         """
@@ -165,7 +168,7 @@ def save_kline_raw(filename: str, values: List[BarRaw]):
             "amount": v.amount,
             "up": v.up,
             "down": v.down,
-            "datetime": v.datetime
+            "timestamp": v.timestamp
         }
         for v in values
     ]
@@ -205,7 +208,7 @@ def read_kline_raw_from_csv(filename: str) -> List[BarRaw]:
                     amount=float(row['amount']),
                     up=int(row['up']),
                     down=int(row['down']),
-                    datetime=str(row['datetime'])
+                    timestamp=str(row['timestamp'])
                 )
                 klines.append(kline)
             except (ValueError, TypeError) as e:
@@ -261,7 +264,7 @@ def checkout_kline_raw(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[Bar
     # 从缓存加载数据
     return load_kline_raw(inst, freq)
 
-def fetch_kline_raw(inst: Instrument, start: int, count: int, freq: Frequency) -> list[SecurityBar]:
+def fetch_kline_raw(inst: Instrument, start: int, count: int, freq: Frequency) -> list[Bar]:
     try:
         kline_type = frequency_to_kline_type(freq)
         with get_std_conn() as conn:
@@ -270,12 +273,12 @@ def fetch_kline_raw(inst: Instrument, start: int, count: int, freq: Frequency) -
             protocol.process(conn, req, resp)
             return resp.list
     except Exception as e:
-        logger.error(f"[dataset::KLine] fetch_kline_raw error: {e}")
+        logger.error(f"[basedata::KLine] fetch_kline_raw error: {e}")
         return []
 
 class DataKLineRaw(DataAdapter):
     def kind(self) -> int:
-        return BASE_RAW_DAILY_KLINE  # 基础数据-未复权K线
+        return BASEDATA_RAW_DAILY_KLINE  # 基础数据-未复权K线
 
     def owner(self) -> str:
         return DEFAULT_DATA_PROVIDER
@@ -320,11 +323,11 @@ class DataKLineRaw(DataAdapter):
         
         # 2. Determine end date
         current_end_date = Timestamp.now().get_pre_market_time()
-        logger.debug(f"[dataset::BarRaw] [{symbol}]: from {current_start_date.only_date()} to {current_end_date.only_date()}")
+        logger.debug(f"[basedata::BarRaw] [{symbol}]: from {current_start_date.only_date()} to {current_end_date.only_date()}")
         
         step = SECURITY_BARS_PRE_REQUEST_MAX
         start = 0
-        hs: List[List[SecurityBar]] = []
+        hs: List[List[Bar]] = []
         element_count = 0
         
         while True:
@@ -337,7 +340,7 @@ class DataKLineRaw(DataAdapter):
             hs.append(reply)
             
             last_bar = reply[-1]
-            last_bar_date = Timestamp.parse(f"{last_bar.Year}-{last_bar.Month:02d}-{last_bar.Day:02d}").get_pre_market_time()
+            last_bar_date = Timestamp.parse(last_bar.date).get_pre_market_time()
             
             if last_bar_date < current_start_date:
                 break
@@ -353,22 +356,21 @@ class DataKLineRaw(DataAdapter):
         
         for vec in hs:
             for row in vec:
-                date_time = Timestamp.parse(f"{row.Year}-{row.Month:02d}-{row.Day:02d}").get_pre_market_time()
-                
+                date_time = Timestamp.parse(row.date).get_pre_market_time()
                 if date_time < current_start_date or date_time > current_end_date:
                     continue
                     
                 kx = BarRaw(
                     date=date_time.only_date(),
-                    open=row.Open,
-                    close=row.Close,
-                    high=row.High,
-                    low=row.Low,
-                    volume=row.Vol * 100,  # Convert to shares
-                    amount=row.Amount,
-                    up=row.UpCount,
-                    down=row.DownCount,
-                    datetime=row.DateTime
+                    open=row.open,
+                    close=row.close,
+                    high=row.high,
+                    low=row.low,
+                    volume=row.volume * 100,  # Convert to shares
+                    amount=row.amount,
+                    up=row.up,
+                    down=row.down,
+                    timestamp=row.timestamp
                 )
                 incremental_klines.append(kx)
                 
@@ -393,6 +395,9 @@ if __name__ == "__main__":
     # Example usage
     code = "sh600004"
     inst = detect_symbol(code)
+    symbol = inst.symbol()
+    inst = get_instrument_info(symbol)
+    print(inst)
     klines = checkout_kline_raw(inst)
     print(f"Loaded {len(klines)} kline records for {code}")
     if klines:

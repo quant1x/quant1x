@@ -11,7 +11,7 @@ from quant1x.level1.protocol import (
     sequence_id,
 )
 
-class Hello1Request:
+class Synchronize1Request:
     """
     第一次协议握手请求
     """
@@ -31,7 +31,7 @@ class Hello1Request:
         header = struct.pack('<B I B H H H', self.zip_flag, self.seq_id, self.packet_type, self.pkg_len1, self.pkg_len2, self.method)
         return header + self.padding
 
-class Hello1Response:
+class Synchronize1Response:
     """
     第一次协议握手响应
     """

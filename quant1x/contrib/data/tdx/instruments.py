@@ -6,12 +6,15 @@ from __future__ import annotations
 import os, csv
 from typing import Optional, List
 
-from quant1x.data import config, market, status
-from quant1x.data.market import Exchange, Instrument, InstrumentType
+from quant1x.config import config
+from quant1x.data import status
+from quant1x.data import market
+from quant1x.data.meta import Exchange, Instrument, InstrumentType
 from quant1x.runtime.once import RollingOnce
 from quant1x.log import logger
 from . import config as tdx_config, client, protocol
 from .level1 import SecurityListRequest, SecurityListResponse, SECURITY_LIST_PRE_REQUEST_MAX
+
 
 # in-memory cache and synchronization
 _SECURITY_MAP = {}
@@ -31,16 +34,20 @@ def _load_securities() -> bool:
         with open(fname, newline='', encoding='utf-8') as fh:
             reader = csv.DictReader(fh)
             for row in reader:
-                tmp = row.get('exchange') or 'sh'
-                exchange = Exchange(tmp)  # 假设 Exchange 是 Enum
+                tmp = row.get('exchange') or 'unknown'
+                exchange = Exchange.parse(tmp)  # 假设 Exchange 是 Enum
                 tmp = row.get('type') or 'unknown'
                 type = InstrumentType.from_string(tmp)
                 code = row.get('code') or ''
                 name = row.get('name') or ''
-                lot_size = row.get('lot_size') or 100
-                price_precision = row.get('price_precision') or 2
+                lot_size = int(row.get('lot_size') or '100')
+                price_precision = int(row.get('price_precision') or '2')
+                
+                code = code.lower()
                 inst = Instrument(exchange=exchange, type=type, ticker=code, name=name, lot_size=lot_size, price_precision=price_precision)
-                symbol = str(inst)
+                symbol = inst.symbol()
+                if code == 'hsi':
+                    print(f"{symbol} -> {inst}")
                 _SECURITY_MAP[symbol] = inst
     except FileNotFoundError:
         # file not present: leave map empty but record load time to avoid hot-loop
@@ -52,11 +59,11 @@ def _load_securities() -> bool:
         return True
     return False
 
-def fetch_security_list(exchange: market.Exchange, start: int, count: int) -> List[Instrument]:
-    """从 level1 服务器获取一页 SECURITY_LIST。
+def fetch_security_list(exchange: Exchange, start: int, count: int) -> List[Instrument]:
+    """从 level1 服务器获取一页 SECURITY_LIST.
 
-    返回一个字典列表，字典包含字段：`Code`（6 字符字符串）、`VolUnit`（整数）、
-    `DecimalPoint`（整数）、`Name`（字符串）、`PreClose`（浮点）。出现错误时返回 `None`。
+    返回一个字典列表, 字典包含字段: `Code`(6 字符字符串), `VolUnit`(整数),
+    `DecimalPoint`(整数), `Name`(字符串), `PreClose`(浮点). 出现错误时返回 `None`.
     """
     try:
         conn = client.get_std_conn()
@@ -77,6 +84,7 @@ def init_securities():
     logger.debug(f"init_securities ensure_updated={ensure_updated}")
     if ensure_updated:
         instruments: List[Instrument] = []
+        # 1. 标准行情: A股
         markets = [Exchange.SSE, Exchange.SZSE, Exchange.BSE]
         for m in markets:
             start = 0
@@ -100,22 +108,58 @@ def init_securities():
             rows.sort(key=lambda x: x.ticker)
             # 合并市场
             instruments.extend(rows)
+        # 2. 扩展行情: 港股等
+        from .level1.ext import InstrumentInfo
+        markets = [Exchange.HKEX]
+        offset = InstrumentInfo.PRE_REQUEST_MAX
+        for m in markets:
+            start = 0
+            rows = []
+            conn = client.get_ext_conn()
+            while True:
+                page = []
+                try:
+                    ii = InstrumentInfo(start, offset)
+                    protocol.process_level1_new(conn, ii)
+                    if ii.reply['count'] > 0:
+                        page = ii.reply['list']
+                except Exception:
+                    logger.exception('fetch_security_list failed')
+                    break
+                rows.extend(page)
+                if len(page) < offset:
+                    break
+                start += offset
+            # 相同市场按照代码排序
+            rows.sort(key=lambda x: (
+                (x.ext_market is None, x.ext_market),
+                (x.ext_category is None, x.ext_category),
+                (x.ticker is None, x.ticker or '')
+                )
+            )
+            # 合并市场
+            instruments.extend(rows)
+        
         # write CSV if we have instruments
         if instruments:
             try:
                 os.makedirs(os.path.dirname(fname), exist_ok=True)
                 with open(fname, 'w', newline='', encoding='utf-8') as fh:
                     writer = csv.writer(fh)
-                    writer.writerow(['exchange','type','code','name','lot_size','price_precision'])
+                    headers = Instrument.headers()
+                    writer.writerow(headers)
                     for r in instruments:
-                        writer.writerow([
-                            r.exchange.value,      # 假设 Exchange 是 Enum
-                            r.type,          # 假设 InstrumentType 是 Enum
-                            r.ticker,
-                            r.name,
-                            r.lot_size,
-                            r.price_precision
-                        ])
+                        # writer.writerow([
+                        #     r.exchange.identifier,      # 假设 Exchange 是 Enum
+                        #     r.type,          # 假设 InstrumentType 是 Enum
+                        #     r.ticker,
+                        #     r.name,
+                        #     r.lot_size,
+                        #     r.price_precision,
+                        #     r.ext_market,
+                        #     r.ext_category
+                        # ])
+                        writer.writerow(r.to_iterable())
             except Exception:
                 pass
         _ = _load_securities()
@@ -124,6 +168,7 @@ def init_securities():
 def get_instrument_info(symbol: str) -> Optional[Instrument]:
     _SECURITY_ONCE.do(init_securities)
     security_code = market.correct_security_code(symbol)
+    logger.debug(f"get_instrument_info: symbol={symbol}, security_code={security_code}")
     return _SECURITY_MAP.get(security_code)
 
 
@@ -134,7 +179,8 @@ __all__ = [
 
 if __name__ == '__main__':
     # Minimal required test (as you requested): print security info for sh000001
-    code = "000001.SH"
+    code = "sz000737"
+    code = "00700.hk"
     info = get_instrument_info(code)
     print(f"Security info for {code}: {info}")
     if info is not None:

@@ -8,11 +8,11 @@ import os
 import csv
 from typing import Optional
 from quant1x.std import filesystem as fs
-from quant1x.data import config, status
+from quant1x.config import config
+from quant1x.data import status
 from quant1x.data.schema import XdxrInfo
 from quant1x.data.meta.timestamp import Timestamp
 from quant1x.data.market import Instrument, Exchange
-from .instruments import get_instrument_info
 from .level1 import XdxrInfoRequest, XdxrInfoResponse
 from .protocol import process
 from .client import get_std_conn
@@ -89,11 +89,11 @@ def get_xdxr_list(inst: Instrument) -> list[XdxrInfo]:
 
 from quant1x.data import adapter
 from quant1x.data.adapter import DataAdapter, DEFAULT_DATA_PROVIDER
-from quant1x.data.base import BASE_XDXR
+from quant1x.data.base import BASEDATA_XDXR
 
 class DataXdxr(DataAdapter):
     def kind(self):
-        return BASE_XDXR
+        return BASEDATA_XDXR
         
     def owner(self):
         return DEFAULT_DATA_PROVIDER
@@ -117,6 +117,8 @@ class DataXdxr(DataAdapter):
 _data_xdxr_plugin = adapter.register(DataXdxr)
 
 if __name__ == "__main__":
+    from .instruments import get_instrument_info
+
     code = "600000"
     inst = get_instrument_info(code)
     print(inst)

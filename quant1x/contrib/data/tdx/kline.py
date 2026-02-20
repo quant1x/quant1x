@@ -7,14 +7,16 @@ from typing import Optional, Any, List
 from datetime import datetime
 from quant1x.data.meta.calendar import next_trading_day
 from quant1x.data import adapter
-from quant1x.data.base import BASE_KLINE, MarketCnFirstListTime
+from quant1x.data.base import BASEDATA_KLINE, MarketCnFirstListTime
 from quant1x.data.meta import Timestamp, Frequency, TimeUnit, FREQ_DAILY
-from quant1x.data.market import Instrument, detect_symbol
-from quant1x.data import config, MaxCachedDaysToDropOnIncrementalUpdate
+from quant1x.data.meta import Instrument
+from quant1x.data.market import detect_symbol
+from quant1x.config import config
+from quant1x.data import MaxCachedDaysToDropOnIncrementalUpdate
 from quant1x.data.schema import Bar, CumulativeAdjustment, XdxrInfo
 from .client import get_std_conn
 from . import protocol
-from .level1 import KLineType, SecurityBar, SECURITY_BARS_PRE_REQUEST_MAX
+from .level1 import KLineType, SECURITY_BARS_PRE_REQUEST_MAX
 import pandas as pd
 from quant1x.log import logger
 from .kline_raw import BarRaw, checkout_kline_raw, fetch_kline_raw
@@ -94,7 +96,7 @@ def save_kline(filename: str, values: List[Bar]):
             "amount": v.amount,
             "up": v.up,
             "down": v.down,
-            "datetime": v.datetime,
+            "timestamp": v.timestamp,
             "adjustment_count": v.adjustment_count
         }
         for v in values
@@ -126,7 +128,7 @@ def read_kline_from_csv(filename: str) -> List[Bar]:
                 amount=float(row['amount']),
                 up=int(row['up']),
                 down=int(row['down']),
-                datetime=str(row['datetime']),
+                timestamp=str(row['timestamp']),
                 adjustment_count=int(row['adjustment_count'])
             )
             klines.append(kline)
@@ -152,7 +154,7 @@ from .xdxr import get_xdxr_list
 
 class DataKLine(adapter.DataAdapter):
     def kind(self) -> int:
-        return BASE_KLINE
+        return BASEDATA_KLINE
         
     def owner(self) -> str:
         return adapter.DEFAULT_DATA_PROVIDER
@@ -194,7 +196,7 @@ class DataKLine(adapter.DataAdapter):
         
         step = SECURITY_BARS_PRE_REQUEST_MAX
         start = 0
-        hs: List[List[SecurityBar]] = []
+        hs: List[List[Bar]] = []
         element_count = 0
         
         while True:
@@ -207,7 +209,7 @@ class DataKLine(adapter.DataAdapter):
             hs.append(reply)
             
             last_bar = reply[-1]
-            last_bar_date = Timestamp.parse(f"{last_bar.Year}-{last_bar.Month:02d}-{last_bar.Day:02d}").get_pre_market_time()
+            last_bar_date = Timestamp.parse(last_bar.date).get_pre_market_time()
             
             if last_bar_date < current_start_date:
                 break
@@ -223,21 +225,21 @@ class DataKLine(adapter.DataAdapter):
         
         for vec in hs:
             for row in vec:
-                date_time = Timestamp.parse(f"{row.Year}-{row.Month:02d}-{row.Day:02d}").get_pre_market_time()
+                date_time = Timestamp.parse(row.date).get_pre_market_time()
                 if date_time < current_start_date or date_time > current_end_date:
                     continue
                     
                 kx = Bar(
                     date=date_time.only_date(),
-                    open=row.Open,
-                    close=row.Close,
-                    high=row.High,
-                    low=row.Low,
-                    volume=row.Vol * 100, # Convert to shares
-                    amount=row.Amount,
-                    up=row.UpCount,
-                    down=row.DownCount,
-                    datetime=row.DateTime,
+                    open=row.open,
+                    close=row.close,
+                    high=row.high,
+                    low=row.low,
+                    volume=row.volume * 100, # Convert to shares
+                    amount=row.amount,
+                    up=row.up,
+                    down=row.down,
+                    timestamp=row.timestamp,
                     adjustment_count=0
                 )
                 incremental_klines.append(kx)
@@ -501,7 +503,7 @@ def get_cross_section_forward_adjusted_klines(code: str, as_of_date: str) -> Lis
             amount=raw_kline.amount,
             up=raw_kline.up,
             down=raw_kline.down,
-            datetime=raw_kline.datetime,
+            timestamp=raw_kline.timestamp,
             adjustment_count=0
         )
         klines.append(kline)
@@ -525,7 +527,7 @@ if __name__ == "__main__":
     import pandas as pd
     
     # 获取未复权K线数据
-    code = "300773"
+    code = "000001.SH"
     inst = detect_symbol(code)
     cache = DataKLine()
     cache.update(inst)
@@ -534,7 +536,7 @@ if __name__ == "__main__":
     raw_klines = checkout_kline_raw(inst)
     klines = [Bar(
         date=k.date, open=k.open, close=k.close, high=k.high, low=k.low,
-        volume=k.volume, amount=k.amount, up=k.up, down=k.down, datetime=k.datetime, adjustment_count=0
+        volume=k.volume, amount=k.amount, up=k.up, down=k.down, timestamp=k.timestamp, adjustment_count=0
     ) for k in raw_klines]
     print(f"Loaded {len(klines)} raw kline records for {code}")
 
@@ -549,7 +551,7 @@ if __name__ == "__main__":
     # 创建原始数据的副本用于对比
     original_klines = [Bar(
         date=k.date, open=k.open, close=k.close, high=k.high, low=k.low,
-        volume=k.volume, amount=k.amount, up=k.up, down=k.down, datetime=k.datetime
+        volume=k.volume, amount=k.amount, up=k.up, down=k.down, timestamp=k.timestamp
     ) for k in klines]
 
     # 进行前复权
