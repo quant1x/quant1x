@@ -7,8 +7,8 @@ from typing import Any, List, Type, TypeVar, Generic, overload
 
 from .csv import csv_to_slice, slice_to_csv
 from quant1x.types import T
-from quant1x.data import Timestamp
-from quant1x.data import Instrument
+from ..meta.timestamp import Timestamp
+from ..meta.instrument import Instrument
 
 class FileStorage(ABC, Generic[T]):
     """文件存储接口（专用于单一 dataclass 类型）"""
@@ -55,4 +55,13 @@ class BasedataFileStorage(FileStorage, Generic[T]):
     def __init__(self, data_type: Type[T], inst: Instrument) -> None:
         self._inst = inst
         super().__init__(data_type) # 调用父类构造函数
-        
+    
+class MetaFileStorage(FileStorage, Generic[T]):
+
+    """元数据文件存储类"""
+    
+    def __init__(self, data_type: Type[T]) -> None:
+        super().__init__(data_type)
+    
+    def file_name(self) -> str:
+        return f"{self._data_type.__name__}.csv"
