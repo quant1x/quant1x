@@ -14,7 +14,7 @@ from quant1x.exchange import Timestamp
 from quant1x.config import config
 from . import adapter
 from .adapter import DataAdapter, DEFAULT_DATA_PROVIDER
-from .base import BASE_XDXR
+from .base import BASEDATA_XDXR
 
 log = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ def save_xdxr(code: str, date: Timestamp, values: List[xdxr_info.XdxrInfo]):
 
 class DataXdxr(DataAdapter):
     def kind(self):
-        return BASE_XDXR
+        return BASEDATA_XDXR
         
     def owner(self):
         return DEFAULT_DATA_PROVIDER

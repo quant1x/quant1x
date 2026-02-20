@@ -11,7 +11,7 @@ from quant1x import exchange
 from quant1x.exchange import Timestamp
 
 # Constants
-ERROR_BASE_NOTICE = 91000
+ERROR_BASEDATA_NOTICE = 91000
 URL_EASTMONEY_NOTICES = "https://np-anotice-stock.eastmoney.com/api/security/ann"
 URL_EASTMONEY_WARNING = "https://datacenter.eastmoney.com/securities/api/data/get"
 EASTMONEY_NOTICES_PAGE_SIZE = 100
@@ -27,8 +27,8 @@ class NoticeException(Exception):
         self.message = message
         super().__init__(f"[{code}] {message}")
 
-ERR_NOTICE_BAD_API = NoticeException(ERROR_BASE_NOTICE, "接口异常")
-ERR_NOTICE_NOT_FOUND = NoticeException(ERROR_BASE_NOTICE + 1, "没有数据")
+ERR_NOTICE_BAD_API = NoticeException(ERROR_BASEDATA_NOTICE, "接口异常")
+ERR_NOTICE_NOT_FOUND = NoticeException(ERROR_BASEDATA_NOTICE + 1, "没有数据")
 
 @dataclass
 class NoticeDetail:

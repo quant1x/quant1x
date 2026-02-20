@@ -14,8 +14,8 @@ from quant1x.level1.client import get_std_conn
 from quant1x.level1.security_bars import SecurityBarsRequest, SecurityBarsResponse, KLineType, SecurityBar, SECURITY_BARS_MAX
 from quant1x.config import config
 from quant1x.data import adapter
-from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASE_DATA, register, DEFAULT_DATA_PROVIDER
-from quant1x.data.base import BASE_RAW_DAILY_KLINE
+from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASEDATA_DATA, register, DEFAULT_DATA_PROVIDER
+from quant1x.data.base import BASEDATA_RAW_DAILY_KLINE
 
 logger = logging.getLogger(__name__)
 
@@ -230,7 +230,7 @@ def fetch_kline(code: str, start: int, count: int, kline_type: KLineType = KLine
 
 class DataKLineRaw(DataAdapter):
     def kind(self) -> int:
-        return BASE_RAW_DAILY_KLINE  # 基础数据-未复权K线
+        return BASEDATA_RAW_DAILY_KLINE  # 基础数据-未复权K线
 
     def owner(self) -> str:
         return DEFAULT_DATA_PROVIDER

@@ -18,8 +18,8 @@ from quant1x.config import config
 #from quant1x.factors import f10
 from quant1x.data import trains_begin_date
 from quant1x.data import adapter
-from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASE_DATA, register, DEFAULT_DATA_PROVIDER
-from quant1x.data.base import BASE_TRANSACTION
+from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASEDATA_DATA, register, DEFAULT_DATA_PROVIDER
+from quant1x.data.base import BASEDATA_TRANSACTION
 from quant1x.std import numeric
 
 log = logging.getLogger(__name__)
@@ -443,7 +443,7 @@ def checkout_transaction_data(security_code: str, feature_date: Timestamp, ignor
 
 class DataTrans(DataAdapter):
     def kind(self) -> int:
-        return BASE_TRANSACTION
+        return BASEDATA_TRANSACTION
         
     def owner(self):
         return DEFAULT_DATA_PROVIDER
