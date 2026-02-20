@@ -11,7 +11,7 @@ import yaml
 from quant1x.std.filesystem import expand_user
 from .defaults import apply_defaults
 
-DEFAULT_BASE_PATH = f"~/.q1x-py"
+DEFAULT_BASEDATA_PATH = f"~/.q1x-py"
 QUANT1X_CONFIG_FILENAME = "quant1x.yaml"
 
 @dataclass
@@ -22,16 +22,16 @@ class BaseConfig:
     filename: str = ""
     config_map: Dict[str, Any] = field(default_factory=dict)
 
-_QUANT1X_BASE_PATH = None
+_QUANT1X_BASEDATA_PATH = None
 
 def get_base_path() -> str:
     """
     返回默认的基础路径，如果无法展开用户目录则返回默认路径
     """
-    global _QUANT1X_BASE_PATH
-    if _QUANT1X_BASE_PATH is None:
-        _QUANT1X_BASE_PATH = expand_user(DEFAULT_BASE_PATH)
-    return _QUANT1X_BASE_PATH
+    global _QUANT1X_BASEDATA_PATH
+    if _QUANT1X_BASEDATA_PATH is None:
+        _QUANT1X_BASEDATA_PATH = expand_user(DEFAULT_BASEDATA_PATH)
+    return _QUANT1X_BASEDATA_PATH
 
 def get_meta_path() -> str:
     """
