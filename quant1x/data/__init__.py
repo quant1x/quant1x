@@ -2,12 +2,10 @@
 # Copyright (c) Quant1X <wangfengxy@sina.cn>.
 # Licensed under the MIT License.
 
-from .config import base_config as config
 from .cache import MaxCachedDaysToDropOnIncrementalUpdate
 from .market import detect_symbol, detect_instrument_type_by_rule
 from .datasource import PlateCategory, DataHandler
 __all__ = [
-    "config",
     "MaxCachedDaysToDropOnIncrementalUpdate",
     "detect_symbol", "detect_instrument_type_by_rule",
     "PlateCategory", "DataHandler",
