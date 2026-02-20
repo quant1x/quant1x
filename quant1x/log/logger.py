@@ -7,7 +7,7 @@ import atexit
 import sys
 from loguru import logger as __logger
 
-from quant1x.data.config import base_config as config
+from quant1x.config.config import base_config as config
 from quant1x.std import filesystem as fs, system
 
 # ========== 防护：仅当未配置时执行 ==========
@@ -20,6 +20,8 @@ if not getattr(__logger, "_quant1x_configured", False):
     _, filename, _ = system.application()
     _LOG_NAME = f"{filename}_service" if filename == "pythonservice" else filename
     _LOG_FILE = f"{__LOG_DIR}/{_LOG_NAME}.log"
+    
+    _LOG_LEVEL = "DEBUG"
 
     # 日志格式
     _LOG_FORMAT = (
@@ -36,7 +38,7 @@ if not getattr(__logger, "_quant1x_configured", False):
         __logger.add(
             sys.stderr,
             format=_LOG_FORMAT,
-            level="INFO",
+            level=_LOG_LEVEL,
             enqueue=True,
             catch=True,
         )
@@ -52,7 +54,7 @@ if not getattr(__logger, "_quant1x_configured", False):
         backtrace=True,
         diagnose=True,
         format=_LOG_FORMAT,
-        level="DEBUG",
+        level=_LOG_LEVEL,
         catch=True,
     )
 
