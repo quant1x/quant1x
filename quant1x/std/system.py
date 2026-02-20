@@ -5,9 +5,37 @@
 import os
 import sys
 from typing import Tuple
+import inspect
 
-from matplotlib.pylab import f
 from . import filesystem
+
+def _detect_main_module_name():
+    # 方法1: 尝试从 __main__.__spec__
+    main_mod = sys.modules.get('__main__')
+    if (main_mod and hasattr(main_mod, '__spec__') and 
+        main_mod.__spec__ and main_mod.__spec__.name and 
+        main_mod.__spec__.name != '__main__'):
+        return main_mod.__spec__.name.rsplit('.', 1)[-1]
+
+    # 方法2: 从调用栈找第一个非标准库、非 frozen 的 .py 文件
+    try:
+        for frame_info in inspect.stack():
+            filename = frame_info.filename
+            
+            if (filename and not filename.startswith('<') and 
+                'site-packages' not in filename and 
+                'frozen' not in filename and
+                os.path.isfile(filename)):
+                print(f"Checking file: {filename}")
+                # 检查是否属于 quant1x 项目
+                if 'quant1x' in filename.replace('\\', '/'):
+                    basename = os.path.splitext(os.path.basename(filename))[0]
+                    #return basename
+    except Exception:
+        pass
+
+    # 方法3: fallback
+    return 'main'
 
 def application() -> Tuple[str, str, str]:
     """
@@ -16,13 +44,21 @@ def application() -> Tuple[str, str, str]:
     Returns:
         Tuple[str, str, str]: 返回包含目录路径、文件名(不含扩展名)和扩展名的元组
     """
+    #print(f"sys.argv: {sys.argv}")
+    #print(f"sys.modules: {sys.modules}")
+    #print(f"sys.modules['__main__']: {sys.modules['__main__']}")
+    #print(f'__spec__.name: {__spec__.name}')
+    #print(f'_detect_main_module_name: {_detect_main_module_name()}')
     # 处理 python -m 方式运行的情况
     if sys.argv[0] == '-m':
+        #print(f"sys.argv: {sys.argv}")
         # 找到 __main__ 模块
         main_module = sys.modules.get('__main__')
+        #print(f"main_module: {main_module}")
         if main_module:
             # 检查 __main__ 的 __package__ 属性
             package_name = getattr(main_module, '__package__', '')
+            #print(f"package_name: {package_name}")
             if package_name:
                 # __package__ 会包含实际的模块路径，如 quant1x.log.logger
                 # 从包名提取文件名（最后一部分）
@@ -37,6 +73,7 @@ def application() -> Tuple[str, str, str]:
         for module_name, module in sys.modules.items():
             if module_name.startswith('quant1x') and hasattr(module, '__file__') and module.__file__:
                 depth = module_name.count('.')
+                #print(f"module_name: {module_name}, depth: {depth}")
                 if depth > max_depth:
                     max_depth = depth
                     target_module = (module_name, module)
