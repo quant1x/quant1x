@@ -2,13 +2,9 @@
 # Copyright (c) Quant1X <wangfengxy@sina.cn>.
 # Licensed under the MIT License.
 
-#from calendar import c
 import abc
 import struct
-from tkinter import N
 import zlib
-
-from pyparsing import C
 
 from quant1x.net.conn import ConnectionHandle
 from quant1x.log import logger
