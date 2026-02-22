@@ -178,7 +178,7 @@ def save_kline_raw(filename: str, values: List[BarRaw]):
 
 def read_kline_raw_from_csv(filename: str) -> List[BarRaw]:
     """
-    从CSV文件读取K线原始数据，包含完整的列名验证
+    从CSV文件读取K线原始数据, 包含完整的列名验证
     """
     klines = []
     if not os.path.exists(filename):
