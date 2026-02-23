@@ -222,9 +222,9 @@ def read_kline_raw_from_csv(filename: str) -> List[BarRaw]:
 def get_kline_raw_filename(inst: Instrument, freq: Frequency=FREQ_DAILY) -> str:
     module_name = freq.cache_key()
     symbol = inst.symbol()
-    symbol_path = symbol[:-3]
-    return f'{config.data_path}/{module_name}/{symbol_path}/{symbol}.raw' 
-
+    sub=f"{module_name}/{inst.cache_dir()}"
+    return f'{config.data_path}/{sub}/{symbol}.raw' 
+    
 def load_kline_raw(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[BarRaw]:
     """
     从缓存文件加载指定证券代码的K线原始数据

@@ -19,8 +19,17 @@ from .client import get_std_conn
 from quant1x.log import logger
 
 def _get_xdxr_filename(inst: Instrument) -> str:
+    """
+    根据股票代码生成对应的除权除息数据文件路径
+    
+    Args:
+        inst (Instrument): 股票代码对象，包含股票符号信息
+    
+    Returns:
+        str: 除权除息数据文件的完整路径，格式为 {数据目录}/xdxr/{股票代码}.csv
+    """
     dir = config.data_path
-    sub = 'xdxr'
+    sub = f'xdxr/{inst.cache_dir()}'
     symbol = inst.symbol()
     return f'{dir}/{sub}/{symbol}.csv'
 
@@ -82,7 +91,7 @@ def update_xdxr(inst: Instrument):
 
 def get_xdxr_list(inst: Instrument) -> list[XdxrInfo]:
     filename = _get_xdxr_filename(inst)
-    create_or_update = status.should_initialize_file(filename)
+    create_or_update = status.should_initialize_file(fname=filename, exchange=inst.exchange)
     if create_or_update:
         update_xdxr(inst)
     return load_xdxr(inst)

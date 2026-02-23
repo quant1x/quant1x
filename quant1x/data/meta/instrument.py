@@ -174,6 +174,18 @@ class Instrument:
             return f"{self.exchange.identifier}{self.ticker}"
         return f"{self.ticker}.{self.exchange.identifier}"
     
+    def cache_dir(self) -> str:
+        """
+        获取缓存目录路径，用于存储交易所相关数据文件
+        
+        Note:
+            返回的路径包含交易所标识符作为目录名的一部分，以便区分不同交易所的数据
+        
+        Returns:
+            str: 缓存目录路径
+        """
+        return f'{self.exchange.name.lower()}'
+    
     def to_string(self) -> str:
         return f"Instrument(exchange={self.exchange}, type={self.type}, ticker={self.ticker}, name={self.name}, lot_size={self.lot_size}, price_precision={self.price_precision}, ext_market={self.ext_market}, ext_category={self.ext_category})"
     

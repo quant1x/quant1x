@@ -72,7 +72,7 @@ def get_historical_trade_filename(inst: Instrument, date: str) -> str:
     """
     date_str = date.replace('-', '').replace('/', '')
     year = date_str[:4]
-    base_path = os.path.join(config.data_path, 'trans')
+    base_path = os.path.join(config.data_path, 'trans', inst.cache_dir())
     code = inst.symbol()
     return os.path.join(base_path, year, date_str, f"{code}.csv")
 

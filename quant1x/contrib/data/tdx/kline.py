@@ -140,14 +140,13 @@ def read_kline_from_csv(filename: str) -> List[Bar]:
 def get_kline_filename(inst: Instrument, freq: Frequency=FREQ_DAILY) -> str:
     module_name = freq.cache_key()
     symbol = inst.symbol()
-    symbol_path = symbol[:-3]
-    return f'{config.data_path}/{module_name}/{symbol_path}/{symbol}.csv' 
+    sub=f"{module_name}/{inst.cache_dir()}"
+    return f'{config.data_path}/{sub}/{symbol}.csv' 
     
 def load_kline(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[Bar]:
     filename = get_kline_filename(inst, freq)
     logger.debug(f"[dataset::Bar] kline file: {filename}")
     return read_kline_from_csv(filename)
-
 
 
 from .xdxr import get_xdxr_list
@@ -275,12 +274,12 @@ def check_kline_offset(klines: List[Any], date: str, freq: Frequency=FREQ_DAILY)
     检查给定日期在K线数据中的偏移位置
     
     Args:
-        klines (List[Any]): K线数据列表，每个元素应包含date字段, 元素类型是鸭子类型, 可以是KLine, BarRaw, SecurityBar
+        klines (List[Any]): K线数据列表, 每个元素应包含date字段, 元素类型是鸭子类型, 可以是KLine, BarRaw, SecurityBar
         date (str): 要查找的目标日期
-        freq (Frequency): K线频率，默认为日线
+        freq (Frequency): K线频率, 默认为日线
     
     Returns:
-        int: 目标日期在K线中的偏移量（从最新数据开始计数），
+        int: 目标日期在K线中的偏移量（从最新数据开始计数）, 
              如果未找到或日期早于最早数据则返回-1
     """
     rows = len(klines)
@@ -349,7 +348,7 @@ def combine_adjustments_in_period(xdxr_list: List[XdxrInfo],
             factor.monetary_adjustment = new_monetary_adjustment
             factor.share_adjustment_ratio = new_share_adjustment_ratio
 
-        # 将当前事件作为新的累计因子条目加入，并设置其货币/股本字段
+        # 将当前事件作为新的累计因子条目加入, 并设置其货币/股本字段
         entry = CumulativeAdjustment(
             timestamp=event_ts,
             m=m,
@@ -369,20 +368,20 @@ def apply_forward_adjustment_incrementally(klines: List[Bar],
                                            as_of_date: Timestamp,
                                            truncate_to_as_of_date: bool = True):
     """
-    对K线数据进行增量式前复权处理，按时间顺序逐步应用复权因子。
+    对K线数据进行增量式前复权处理, 按时间顺序逐步应用复权因子。
     
     Args:
-        klines (List[Any]): 待复权的K线数据列表，会被原地修改
+        klines (List[Any]): 待复权的K线数据列表, 会被原地修改
         xdxr_list (List[XdxrInfo]): 除权除息信息列表
         last_adjusted_date (Timestamp): 复权开始时间
         as_of_date (Timestamp): 复权结束时间
-        truncate_to_as_of_date (bool, optional): 是否截断处理后的数据到as_of_date，默认为True
+        truncate_to_as_of_date (bool, optional): 是否截断处理后的数据到as_of_date, 默认为True
     
     Note:
         1. 会自动将时间统一转换为盘前时间
         2. 当遇到不再需要复权的数据且truncate_to_as_of_date为False时会提前终止循环
         3. 会原地修改klines列表中的数据
-        4. 如果时间范围内没有需要处理的除权记录，则直接返回
+        4. 如果时间范围内没有需要处理的除权记录, 则直接返回
     """
     if not klines:
         return
@@ -424,7 +423,7 @@ def apply_forward_adjustment_incrementally(klines: List[Bar],
                 if hasattr(kline, 'adjust'):
                     kline.adjust(factor)
             elif not truncate_to_as_of_date:
-                # 如果不截断数据, 那么, 对于已经没有需要复权的因子来说，后面的klines数据就没必要继续循环了
+                # 如果不截断数据, 那么, 对于已经没有需要复权的因子来说, 后面的klines数据就没必要继续循环了
                 break
         
         rows += 1
@@ -452,11 +451,11 @@ def get_cross_section_forward_adjusted_klines(code: str, as_of_date: str) -> Lis
     获取指定证券代码截至指定日期的前复权K线数据
     
     Args:
-        code (str): 证券代码，支持多种格式输入
-        as_of_date (str): 截止日期，格式为YYYY-MM-DD
+        code (str): 证券代码, 支持多种格式输入
+        as_of_date (str): 截止日期, 格式为YYYY-MM-DD
     
     Returns:
-        List[Bar]: 从上市首日至截止日期的所有前复权K线记录列表，包含日期、开盘价、收盘价、最高价、最低价、成交量等字段
+        List[Bar]: 从上市首日至截止日期的所有前复权K线记录列表, 包含日期、开盘价、收盘价、最高价、最低价、成交量等字段
     
     Note:
         1. 会自动处理证券代码格式转换
@@ -527,7 +526,7 @@ if __name__ == "__main__":
     import pandas as pd
     
     # 获取未复权K线数据
-    code = "000001.SH"
+    code = "600600.SH"
     inst = detect_symbol(code)
     cache = DataKLine()
     cache.update(inst)
@@ -598,7 +597,7 @@ if __name__ == "__main__":
         print(f"日期: {orig.date}")
         print(f"  原始: 开={orig.open:.2f}, 高={orig.high:.2f}, 低={orig.low:.2f}, 收={orig.close:.2f}")
         print(f"  复权: 开={adj.open:.2f}, 高={adj.high:.2f}, 低={adj.low:.2f}, 收={adj.close:.2f}")
-        if abs(orig.close - adj.close) > 0.01:  # 如果有差异，显示调整因子
+        if abs(orig.close - adj.close) > 0.01:  # 如果有差异, 显示调整因子
             factor = adj.close / orig.close if orig.close != 0 else 1.0
             print(f"  调整因子: {factor:.4f}")
         print()

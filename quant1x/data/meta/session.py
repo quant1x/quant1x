@@ -647,6 +647,7 @@ class RuntimeStatus:
 
 
 def check_trading_timestamp(exchange: Exchange = Exchange.SSE, last_modified: Optional[Timestamp] = None) -> RuntimeStatus:
+    print(f"check_trading_timestamp called with exchange={exchange}, last_modified={last_modified}")
     rs = RuntimeStatus()
     rs.status = TimeStatus.CLOSED
 
@@ -655,6 +656,8 @@ def check_trading_timestamp(exchange: Exchange = Exchange.SSE, last_modified: Op
         ts = last_modified
     else:
         ts = now
+    
+    print(f"check_trading_timestamp: {ts}")
     
     last_day = calendar.last_trading_day(now)
 
