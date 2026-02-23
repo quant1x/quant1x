@@ -23,7 +23,7 @@ namespace data {
         const auto minute_kline_config = local_cfg.begin();
         const auto key = minute_kline_config->first;
         const auto value = minute_kline_config->second;
-        const auto d = pandas::ParseTimeRule(key);
+        const auto d = pandas::parse_time_rule(key);
         const auto minutes = std::chrono::duration_cast<std::chrono::minutes>(d);
         config.minutes = minutes.count();
         config.frequency = key;

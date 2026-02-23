@@ -72,7 +72,7 @@ namespace exchange {
                 list.insert(it, calendarMissingDate);
             }
             {
-                auto ec = filepath::check_filepath(cache_filename, true);
+                auto ec = filesystem::check_filepath(cache_filename, true);
                 ec.clear();
                 io::CSVWriter writer(cache_filename);
                 writer.write_row("date", "source");
@@ -89,7 +89,7 @@ namespace exchange {
         spdlog::info("初始化交易日历...");
         update_calendar();
         auto cache_filename = config::get_calendar_filename();
-        auto ec             = filepath::check_filepath(cache_filename, true);
+        auto ec             = filesystem::check_filepath(cache_filename, true);
         ec.clear();
         io::CSVReader<1> in(cache_filename);
         in.read_header(io::ignore_extra_column, "date");

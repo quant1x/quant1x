@@ -21,7 +21,7 @@ namespace data {
         // }
 
         void save_kline(const std::string &filename, const std::vector<KLine>& values) {
-            filepath::check_filepath(filename, true);
+            filesystem::check_filepath(filename, true);
             io::CSVWriter writer(filename);
             writer.write_row("date", "open", "close", "high", "low", "volume", "amount", "up", "down", "datetime", "adjustment_count");
             for (const auto &row: values) {

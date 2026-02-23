@@ -74,7 +74,7 @@ namespace cache {
 
     void doneUpdate(const std::string& date, const exchange::timestamp& timestamp) {
         std::string filename = stateFilename(date, timestamp);
-        auto err = filepath::check_filepath(filename, true);
+        auto err = filesystem::check_filepath(filename, true);
         err.clear();
         io::write_file(filename);
     }
@@ -381,7 +381,7 @@ namespace cache {
                         if (cache_filename.empty()) {
                             spdlog::error("cache filename empty for plugin {}, skip writing", module_name);
                         } else {
-                            auto ec = filepath::check_filepath(cache_filename, true);
+                            auto ec = filesystem::check_filepath(cache_filename, true);
                             ec.clear();
                             std::ofstream out_file(cache_filename, std::ios::binary|std::ios::out | std::ios::trunc);
                             if (out_file) {

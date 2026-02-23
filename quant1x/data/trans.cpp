@@ -215,7 +215,7 @@ namespace data {
         // 手动写入CSV，避免packed结构体问题
         std::string filename = config::get_historical_trade_filename(correctedCode, featureDate.only_date());
         std::string tmp = filename + ".tmp";
-        auto ec = filepath::check_filepath(tmp, true);
+        auto ec = filesystem::check_filepath(tmp, true);
         ec.clear();  // 忽略错误，已处理
         {
             io::CSVWriter writer(tmp);

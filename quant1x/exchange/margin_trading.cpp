@@ -284,7 +284,7 @@ namespace exchange {
         std::lock_guard<std::mutex> lock(_margin_trading_cache_mutex);
 
         std::string cache_filename = config::get_meta_path() + "/" + marginTradingFilename;
-        filepath::check_filepath(cache_filename, true);
+        filesystem::check_filepath(cache_filename, true);
         // 1. 获取缓存文件状态
         i64 lastModified = 0;
         if (std::filesystem::exists(cache_filename)) {

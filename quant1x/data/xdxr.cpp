@@ -32,7 +32,7 @@ namespace data {
         (void)factor_date;
 
         auto ofn = config::get_xdxr_filename(securityCode);
-        filepath::check_filepath(ofn, true);
+        filesystem::check_filepath(ofn, true);
         io::CSVWriter writer(ofn);
         writer.write_row("date","category","name","fen_hong","pei_gu_jia","song_zhuan_gu","pei_gu","suo_gu","qian_liu_tong","hou_liu_tong","qian_zong_gu_ben","hou_zong_gu_ben","fen_shu","xing_quan_jia");
         for (const auto &v: values) {

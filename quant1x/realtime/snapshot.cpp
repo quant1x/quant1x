@@ -123,7 +123,7 @@ namespace realtime {
     void sync_snapshots() {
         auto all_codes = instruments::GetCodeList();
         auto count = all_codes.size();
-        filepath::check_filepath(capnp_cache_filename, true);
+        filesystem::check_filepath(capnp_cache_filename, true);
         // 确保文件存在且大小合适
         ensure_file_size(capnp_cache_filename, capnp_cache_size);
 

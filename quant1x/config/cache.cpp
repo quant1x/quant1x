@@ -184,7 +184,7 @@ namespace config {
         auto qmtOrderPath = defaultQmtCachePath();
         auto const &traderParameter = TraderConfig();
         auto &orderPath = traderParameter->OrderPath;
-        if (!orderPath.empty() && !filepath::check_filepath(orderPath, true)) {
+        if (!orderPath.empty() && !filesystem::check_filepath(orderPath, true)) {
             qmtOrderPath = orderPath;
         }
         return qmtOrderPath;

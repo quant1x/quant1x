@@ -34,7 +34,7 @@ namespace data {
     namespace {
 
         void save_kline_raw(const std::string &filename, const std::vector<KLineRaw>& values) {
-            auto ec = filepath::check_filepath(filename, true);
+            auto ec = filesystem::check_filepath(filename, true);
             ec.clear();
             io::CSVWriter writer(filename);
             writer.write_row("date", "open", "close", "high", "low", "volume", "amount", "up", "down", "datetime");

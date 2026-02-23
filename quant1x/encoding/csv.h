@@ -173,7 +173,7 @@ namespace encoding {
         // 将结构体vector写入CSV文件
         template <typename T>
         bool slices_to_csv(const std::vector<T>& data, const std::string& filename) {
-            filepath::check_filepath(filename, true);
+            filesystem::check_filepath(filename, true);
             std::ofstream out_file(filename, std::ios::binary|std::ios::out | std::ios::trunc); // 必须以二进制方式写文件
             if (!out_file.is_open()) {
                 spdlog::error("Failed to open file: {}", filename);

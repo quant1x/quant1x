@@ -18,7 +18,7 @@ namespace {
 
     // 使用Lazy模板实现线程安全的延迟初始化
     Lazy<std::string> base_path_lazy([]() -> std::string {
-        std::string path = filepath::expand_user(DEFAULT_BASE_PATH);
+        std::string path = filesystem::expand_user(DEFAULT_BASE_PATH);
         if (path.empty()) {
             return DEFAULT_BASE_PATH;
         } else {
@@ -74,14 +74,14 @@ bool parse_yaml_config(const std::string& filename, BaseConfig& config) {
             config.basedir = get_base_path();
         } else {
             // 展开用户目录
-            config.basedir = filepath::expand_user(config.basedir);
+            config.basedir = filesystem::expand_user(config.basedir);
         }
 
         // 处理logdir
         if (config.logdir.empty()) {
             config.logdir = (std::filesystem::path(config.basedir) / "logs").string();
         } else {
-            config.logdir = filepath::expand_user(config.logdir);
+            config.logdir = filesystem::expand_user(config.logdir);
         }
 
         // 归一化后的值写回 map

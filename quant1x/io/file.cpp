@@ -298,7 +298,7 @@ namespace io {
 
     bool write_file(const std::string& filename, const char *data, size_t size) {
         try {
-            filepath::check_filepath(filename, true);
+            filesystem::check_filepath(filename, true);
             std::ofstream file(filename, std::ios::binary | std::ios::out | std::ios::trunc);
             if(!file.is_open()) {
                 return false;
