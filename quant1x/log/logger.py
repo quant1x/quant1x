@@ -21,7 +21,7 @@ if not getattr(__logger, "_quant1x_configured", False):
     _LOG_NAME = f"{filename}_service" if filename == "pythonservice" else filename
     _LOG_FILE = f"{__LOG_DIR}/{_LOG_NAME}.log"
     
-    _LOG_LEVEL = "DEBUG"# if config.debug else "INFO"
+    _LOG_LEVEL = "DEBUG" if config.debug else "INFO"
 
     # 日志格式
     _LOG_FORMAT = (

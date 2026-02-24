@@ -530,15 +530,14 @@ class ExtensionProtocolHandler(NetworkOperationHandler):
             return False
 
     def keepalive(self, conn) -> bool:
-        # try:
-        #     from .level1.heartbeat import HeartbeatRequest, HeartbeatResponse
-        #
-        #     req = HeartbeatRequest()
-        #     resp = HeartbeatResponse()
-        #     process(conn, req, resp)
-        #     return True
-        # except Exception as e:
-        #     logger.exception('ExtensionProtocolHandler.keepalive failed: {}', e)
-        #     return False
-        return True
+        try:
+            from .level1.ext import InstrumentCount
+            
+            req = InstrumentCount()
+            process_level1_new(conn, req)
+            return req.reply > 0
+        except Exception as e:
+            # 使用调试日志以避免在服务器检测期间产生噪音
+            logger.exception('ExtensionProtocolHandler.keepalive failed: {}', e)
+            return False
 

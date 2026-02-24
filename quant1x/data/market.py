@@ -15,6 +15,7 @@ from .meta.ticker_rules.market_sse import sse_rules
 from .meta.ticker_rules.market_szse import szse_rules
 from .meta.ticker_rules.market_bse import bse_rules
 from .meta.ticker_rules.market_hkex import hkex_rules
+from .meta.ticker_rules.market_usa import usa_rules
 
 def match_rule(code: str, rules: List[CodeRule]) -> CodeRule:
     """
@@ -79,6 +80,8 @@ def detect_instrument_type_by_rule(exchange: Exchange, code: str) -> InstrumentT
             rules = bse_rules
         case Exchange.HKEX:
             rules = hkex_rules
+        case Exchange.USA:
+            rules = usa_rules
         case _:
             return InstrumentType.Unknown
 
@@ -145,7 +148,7 @@ def detect_symbol(input_str: str) -> Instrument:
         suffix_code = pure_code[-2:]
         exchange = Exchange.parse(suffix_code)
         # 走指定市场规则
-        #print(f"ticker: {ticker}, exchange: {exchange}")
+        print(f"ticker: {ticker}, exchange: {exchange}")
     else:
         # 纯数字或者字母
         code_len = len(pure_code)
@@ -219,6 +222,8 @@ def detect_symbol(input_str: str) -> Instrument:
         elif exchange == Exchange.HKEX:
             rules = hkex_rules
         elif exchange == Exchange.USA:
+            rules = usa_rules
+        elif exchange == Exchange.USA:
             return Instrument(exchange, InstrumentType.STOCK, pure_code, "", 0, 0)
         else:
             return Instrument(Exchange.UNKNOWN, InstrumentType.Unknown, "", "", 0, 0)
@@ -275,3 +280,6 @@ if __name__ == "__main__":
     
     symbol = detect_symbol("85000.hk")
     print(symbol.to_string())
+    
+    symbol = detect_symbol("a_ixic.us")
+    print(symbol.to_string(), symbol.symbol())

@@ -3,6 +3,7 @@
 # Licensed under the MIT License.
 
 from __future__ import annotations
+from sqlite3 import Time
 from typing import List, Union
 
 import pandas as pd
@@ -10,7 +11,7 @@ import pandas as pd
 from quant1x.config import config
 from quant1x.data import DataHandler, PlateCategory
 from quant1x.data.meta import Exchange, Instrument, InstrumentType, Timestamp
-from quant1x.data.meta.calendar import last_trading_day
+from quant1x.data.meta.calendar import last_trading_day, prev_trading_day
 from quant1x.data.schema import Sector, Bar, Transaction, Direction
 from quant1x.log import logger
 from . import sector
@@ -212,15 +213,22 @@ class TdxDataSource(DataHandler):
         """
         获取指定日期范围的K线数据.
         """
+        inst = self.get_instrument(symbol)
         _ = start_date
         _ = freq
+        from quant1x.data.meta.session import can_initialize
         if end_date is None:
-            as_of_ts = last_trading_day()
+            as_of_ts = last_trading_day() if inst.exchange in(Exchange.SSE, Exchange.SZSE, Exchange.BSE) else Timestamp.now().offset(hour=-24)
         else:
             as_of_ts = Timestamp.parse(end_date)
         as_of_date = as_of_ts.only_date()
+        #print(f"Getting klines for {symbol} as of {as_of_date}")
+        
         logger.debug(f"Getting klines for {symbol} as of {as_of_date}")
-        return get_cross_section_forward_adjusted_klines(symbol, as_of_date)
+        list = get_cross_section_forward_adjusted_klines(inst, as_of_date)
+        df = pd.DataFrame([bar.to_dict() for bar in list], columns=Bar.headers())
+        logger.debug(f"Klines DataFrame shape: {df.shape}")
+        return df
 
     def transactions(self, symbol: str, date: str | None = None):
         """
@@ -237,25 +245,24 @@ class TdxDataSource(DataHandler):
 if __name__ == "__main__":
     config.debug = True
     D = TdxDataSource()
-    sectors = D.get_sector_list()
-    print(sectors)
-    indexes = D.get_index_list()
-    print("index: ", len(indexes))
-    sectors = D.get_sector_list()
-    print("sector: ", len(sectors))
-    stocks = D.get_stock_list()
-    print("stock: ", len(stocks))
-    codes = D.list_instruments()
-    print("total: ", len(codes))
+    # sectors = D.get_sector_list()
+    # print(sectors)
+    # indexes = D.get_index_list()
+    # print("index: ", len(indexes))
+    # sectors = D.get_sector_list()
+    # print("sector: ", len(sectors))
+    # stocks = D.get_stock_list()
+    # print("stock: ", len(stocks))
+    # codes = D.list_instruments()
+    # print("total: ", len(codes))
     code = 'sh562500'
     code = 'hsi.hk'
+    code = 'a_ixic.us'
     date = '2026-02-06'
     inst = D.get_instrument(code)
     #print(inst)
-    bars = D.klines(code)
-    #print(bars)
-    df = pd.DataFrame([bar.to_dict() for bar in bars], columns=Bar.headers())
+    df = D.klines(code)
     print(df)
-    trans = D.transactions(code, date)
-    df = pd.DataFrame([t.to_dict() for t in trans], columns=Transaction.headers())
-    print(df)
+    # trans = D.transactions(code, date)
+    # df = pd.DataFrame([t.to_dict() for t in trans], columns=Transaction.headers())
+    # print(df)

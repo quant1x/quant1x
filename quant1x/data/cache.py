@@ -31,3 +31,23 @@ MaxCachedDaysToDropOnIncrementalUpdate = 1
     由于 A 股的复权处理以交易日为单位，且同一天内可能多次更新数据，
     因此需先删除缓存中已有的当日记录，再插入最新增量数据。
 """
+
+def get_period_name(period: str = 'D') -> str:
+    """
+    根据周期标识返回中文名称
+
+    Parameters:
+    period (str): 周期标识 'W', 'M', 'Q', 'Y'
+
+    Returns:
+    str: 中文周期名称
+    """
+    period_names = {
+        'W': '周',
+        'M': '月',
+        'Q': '季',
+        'Y': '年',
+        'D': '日'
+    }
+    period = period.upper()
+    return period_names.get(period, period)

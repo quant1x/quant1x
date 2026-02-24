@@ -5,6 +5,8 @@
 import os
 from typing import Optional, Any, List
 from datetime import datetime
+
+from sanic import raw
 from quant1x.data.meta.calendar import next_trading_day
 from quant1x.data import adapter
 from quant1x.data.base import BASEDATA_KLINE, MarketCnFirstListTime
@@ -447,7 +449,7 @@ def calculate_pre_adjust(klines: List[Bar], xdxr_list: List[XdxrInfo]):
     apply_forward_adjustment_incrementally(klines, xdxr_list, start_ts, end_ts, True)
 
 
-def get_cross_section_forward_adjusted_klines(code: str, as_of_date: str) -> List[Any]:
+def get_cross_section_forward_adjusted_klines(inst: Instrument, as_of_date: str) -> List[Any]:
     """
     获取指定证券代码截至指定日期的前复权K线数据
     
@@ -463,17 +465,16 @@ def get_cross_section_forward_adjusted_klines(code: str, as_of_date: str) -> Lis
         2. 会对原始K线数据进行日期对齐和过滤
         3. 会应用前复权计算调整价格数据
     """
-    inst = detect_symbol(code)
-    inst = get_instrument_info(inst.symbol())
+    #inst = detect_symbol(code)
+    logger.debug(f"Getting forward adjusted klines for instrument: {inst} as of {as_of_date}")
     if inst is None:
-        logger.error(f"Instrument not found for code: {code}")
+        logger.error(f"Instrument not found for code: {inst}")
         return []
     ts = Timestamp.parse(as_of_date)
     fixed_date = ts.only_date()
     
     # 获取所有原始K线数据
     raw_klines = checkout_kline_raw(inst)
-    
     if not raw_klines:
         return []
     
@@ -637,7 +638,7 @@ if __name__ == "__main__":
         
         # 使用 get_cross_section_forward_adjusted_klines 获取相同日期范围的复权数据
         # 使用最后一条数据的日期作为截止日期
-        adjusted_klines = get_cross_section_forward_adjusted_klines(code, last_cached_date)
+        adjusted_klines = get_cross_section_forward_adjusted_klines(inst, last_cached_date)
         
         if adjusted_klines and len(adjusted_klines) > 0:
             # 找到相同日期的第一条数据进行对比

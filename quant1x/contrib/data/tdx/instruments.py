@@ -190,6 +190,7 @@ if __name__ == '__main__':
     # Minimal required test (as you requested): print security info for sh000001
     code = "sz000737"
     code = "hsi.hk"
+    code = 'a_ixic.us'
     info = get_instrument_info(code)
     print(f"Security info for {code}: {info}")
     if info is not None:
