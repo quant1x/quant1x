@@ -210,3 +210,46 @@ func GetQuarterByDate(dateStr string, diff int) (string, string, string) {
 
 	return quarter, firstOfQuarter, lastOfQuarter
 }
+
+// GetTimezoneOffsetStandard 计算两个时区之间的标准时间差（以小时为单位）
+//
+// Args:
+//   targetZone: 目标时区名称（如"Asia/Shanghai"、"America/New_York"）
+//   localZone: 本地时区名称，如果为空则使用系统本地时区
+//
+// Returns:
+//   int: 目标时区相对于本地时区的时间差（小时），正数表示目标时区比本地快
+//
+// Example:
+//   offset := GetTimezoneOffsetStandard("America/New_York", "")
+//   offset := GetTimezoneOffsetStandard("Asia/Tokyo", "UTC")
+func GetTimezoneOffsetStandard(targetZone string, localZone string) int {
+	now := time.Now()
+
+	// 获取目标时区
+	targetLocation, err := time.LoadLocation(targetZone)
+	if err != nil {
+		// 如果加载失败，使用 UTC
+		targetLocation = time.UTC
+	}
+
+	// 获取本地时区
+	var localLocation *time.Location
+	if localZone == "" {
+		localLocation = time.Local
+	} else {
+		localLocation, err = time.LoadLocation(localZone)
+		if err != nil {
+			// 如果加载失败，使用本地系统时区
+			localLocation = time.Local
+		}
+	}
+
+	// 计算两个时区的 UTC 偏移
+	_, targetOffset := now.In(targetLocation).Zone()
+	_, localOffset := now.In(localLocation).Zone()
+
+	// 计算时差（秒转小时）
+	offsetSeconds := targetOffset - localOffset
+	return offsetSeconds / 3600
+}
