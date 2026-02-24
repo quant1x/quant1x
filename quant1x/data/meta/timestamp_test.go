@@ -1,20 +1,9 @@
-package exchange
+package meta
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
-
-func TestTimestamp(t *testing.T) {
-	ts := ZeroTimestamp()
-	if !ts.IsEmpty() {
-		t.Error("Zero timestamp should be empty")
-	}
-	fmt.Println(ts.String())
-
-	ts = NewTimestamp(1640995200000)
-}
 
 func TestTimestampCompatLayer(t *testing.T) {
 	// 测试基本创建和转换
@@ -184,6 +173,150 @@ func TestTimestampCompatLayer(t *testing.T) {
 		tsPreMarketTime := tsPreMarket.OnlyTime()
 		if tsPreMarketTime != "09:00:00" {
 			t.Errorf("Pre-market time should be '09:00:00', got '%s'", tsPreMarketTime)
+		}
+	})
+}
+
+// 测试Python兼容性 - 这些测试用例来自Python实现
+func TestPythonCompatibility(t *testing.T) {
+	// 基本解析测试 - 对应Python测试
+	t.Run("BasicParsing", func(t *testing.T) {
+		// 1970-01-01 00:00:00
+		ts, err := ParseTimestamp("1970-01-01")
+		if err != nil {
+			t.Errorf("Failed to parse '1970-01-01': %v", err)
+		}
+		str := ts.String()
+		if str != "1970-01-01 00:00:00.000" {
+			t.Errorf("Expected '1970-01-01 00:00:00.000', got '%s'", str)
+		}
+
+		// 1900-01-01 00:00:00
+		ts, err = ParseTimestamp("1900-01-01")
+		if err != nil {
+			t.Errorf("Failed to parse '1900-01-01': %v", err)
+		}
+		str = ts.String()
+		if str != "1900-01-01 00:00:00.000" {
+			t.Errorf("Expected '1900-01-01 00:00:00.000', got '%s'", str)
+		}
+
+		// 2024-01-01 09:30:00
+		ts, err = ParseTimestamp("2024-01-01 09:30:00")
+		if err != nil {
+			t.Errorf("Failed to parse '2024-01-01 09:30:00': %v", err)
+		}
+		str = ts.String()
+		if str != "2024-01-01 09:30:00.000" {
+			t.Errorf("Expected '2024-01-01 09:30:00.000', got '%s'", str)
+		}
+	})
+
+	// 测试零值
+	t.Run("ZeroValue", func(t *testing.T) {
+		ts := ZeroTimestamp()
+		str := ts.String()
+		if str != "1970-01-01 00:00:00.000" {
+			t.Errorf("Expected Zero() to be '1970-01-01 00:00:00.000', got '%s'", str)
+		}
+	})
+
+	// 测试当前时间
+	t.Run("Now", func(t *testing.T) {
+		ts := NowTimestamp()
+		if ts.IsEmpty() {
+			t.Error("Now() should not be empty")
+		}
+		// Just check it can be converted to string
+		str := ts.String()
+		if len(str) == 0 {
+			t.Error("Now() string should not be empty")
+		}
+	})
+
+	// 测试extract
+	t.Run("Extract", func(t *testing.T) {
+		ts, _ := ParseTimestamp("2024-01-01 09:30:00")
+		year, month, day := ts.Extract()
+		if year != 2024 || month != 1 || day != 1 {
+			t.Errorf("Extract returned wrong date: %d-%d-%d", year, month, day)
+		}
+	})
+
+	// 测试only_date
+	t.Run("OnlyDate", func(t *testing.T) {
+		ts, _ := ParseTimestamp("2024-01-01 09:30:00")
+		dateStr := ts.OnlyDate()
+		if dateStr != "2024-01-01" {
+			t.Errorf("Expected '2024-01-01', got '%s'", dateStr)
+		}
+	})
+
+	// 测试only_time
+	t.Run("OnlyTime", func(t *testing.T) {
+		ts, _ := ParseTimestamp("2024-01-01 09:30:45")
+		timeStr := ts.OnlyTime()
+		if timeStr != "09:30:45" {
+			t.Errorf("Expected '09:30:45', got '%s'", timeStr)
+		}
+	})
+
+	// 测试start_of_day
+	t.Run("StartOfDay", func(t *testing.T) {
+		ts, _ := ParseTimestamp("2024-01-01 15:30:00")
+		startOfDay := ts.StartOfDay()
+		str := startOfDay.String()
+		if str != "2024-01-01 00:00:00.000" {
+			t.Errorf("Expected '2024-01-01 00:00:00.000', got '%s'", str)
+		}
+	})
+
+	// 测试today/since
+	t.Run("TodaySince", func(t *testing.T) {
+		ts, _ := ParseTimestamp("2024-01-01 15:30:00")
+		today9AM := ts.Today(9, 0, 0, 0)
+		str := today9AM.String()
+		if str != "2024-01-01 09:00:00.000" {
+			t.Errorf("Expected '2024-01-01 09:00:00.000', got '%s'", str)
+		}
+
+		since9AM := ts.Since(9, 0, 0, 0)
+		str = since9AM.String()
+		if str != "2024-01-01 09:00:00.000" {
+			t.Errorf("Expected '2024-01-01 09:00:00.000', got '%s'", str)
+		}
+	})
+
+	// 测试floor和ceil
+	t.Run("FloorCeil", func(t *testing.T) {
+		ts, _ := ParseTimestamp("2024-01-01 15:30:45")
+		floor := ts.Floor()
+		str := floor.String()
+		if str != "2024-01-01 15:30:00.000" {
+			t.Errorf("Expected floor '2024-01-01 15:30:00.000', got '%s'", str)
+		}
+
+		ceil := ts.Ceil()
+		str = ceil.String()
+		// ceil应该是15:30:59.999
+		expected := "2024-01-01 15:30:59.999"
+		if str != expected {
+			t.Errorf("Expected ceil '%s', got '%s'", expected, str)
+		}
+	})
+
+	// 测试is_same_date
+	t.Run("IsSameDate", func(t *testing.T) {
+		ts1, _ := ParseTimestamp("2024-01-01 08:00:00")
+		ts2, _ := ParseTimestamp("2024-01-01 20:00:00")
+		ts3, _ := ParseTimestamp("2024-01-02 08:00:00")
+
+		if !ts1.IsSameDate(ts2) {
+			t.Error("ts1 and ts2 should be on same date")
+		}
+
+		if ts1.IsSameDate(ts3) {
+			t.Error("ts1 and ts3 should not be on same date")
 		}
 	})
 }
