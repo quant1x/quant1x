@@ -7,10 +7,12 @@ from typing import List, Union
 
 import pandas as pd
 
+from quant1x.config import config
 from quant1x.data import DataHandler, PlateCategory
 from quant1x.data.meta import Exchange, Instrument, InstrumentType, Timestamp
 from quant1x.data.meta.calendar import last_trading_day
 from quant1x.data.schema import Sector, Bar, Transaction, Direction
+from quant1x.log import logger
 from . import sector
 from .instruments import get_instrument_info
 from .kline import get_cross_section_forward_adjusted_klines
@@ -217,7 +219,7 @@ class TdxDataSource(DataHandler):
         else:
             as_of_ts = Timestamp.parse(end_date)
         as_of_date = as_of_ts.only_date()
-        
+        logger.debug(f"Getting klines for {symbol} as of {as_of_date}")
         return get_cross_section_forward_adjusted_klines(symbol, as_of_date)
 
     def transactions(self, symbol: str, date: str | None = None):
@@ -233,6 +235,7 @@ class TdxDataSource(DataHandler):
 
     
 if __name__ == "__main__":
+    config.debug = True
     D = TdxDataSource()
     sectors = D.get_sector_list()
     print(sectors)
@@ -245,9 +248,10 @@ if __name__ == "__main__":
     codes = D.list_instruments()
     print("total: ", len(codes))
     code = 'sh562500'
+    code = 'hsi.hk'
     date = '2026-02-06'
     inst = D.get_instrument(code)
-    print(inst)
+    #print(inst)
     bars = D.klines(code)
     #print(bars)
     df = pd.DataFrame([bar.to_dict() for bar in bars], columns=Bar.headers())

@@ -20,6 +20,7 @@ from .level1 import KLineType, SECURITY_BARS_PRE_REQUEST_MAX
 import pandas as pd
 from quant1x.log import logger
 from .kline_raw import BarRaw, checkout_kline_raw, fetch_kline_raw
+from .instruments import get_instrument_info
 
 
 def apply_forward_adjustment_for_event(klines: List[Bar], 
@@ -463,6 +464,10 @@ def get_cross_section_forward_adjusted_klines(code: str, as_of_date: str) -> Lis
         3. 会应用前复权计算调整价格数据
     """
     inst = detect_symbol(code)
+    inst = get_instrument_info(inst.symbol())
+    if inst is None:
+        logger.error(f"Instrument not found for code: {code}")
+        return []
     ts = Timestamp.parse(as_of_date)
     fixed_date = ts.only_date()
     

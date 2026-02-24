@@ -204,7 +204,7 @@ class SecurityListResponse:
 from quant1x.data.meta import Exchange
 from quant1x.data.schema import Bar
 
-SECURITY_BARS_PRE_REQUEST_MAX = 800
+SECURITY_BARS_PRE_REQUEST_MAX = 700#800
 
 class KLineType(Enum):
     """K线类型"""

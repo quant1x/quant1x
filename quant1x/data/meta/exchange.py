@@ -176,6 +176,18 @@ class Exchange(Enum):
     #         Exchange.HKEX: "HK",
     #     }
     #     return identifiers.get(self, "UNKNOWN")
+    def is_domestic(self) -> bool:
+        """是否国内交易所"""
+        return self.region in {Region.CN, Region.HK}
+    
+    def is_std_quote(self) -> bool:
+        """是否标准行情接口支持的交易所"""
+        return self in {Exchange.SSE, Exchange.SZSE, Exchange.BSE}
+    
+    def is_ext_quote(self) -> bool:
+        """是否扩展行情接口支持的交易所"""
+        return not self.is_std_quote() and self != Exchange.UNKNOWN
+    
     
 
 if __name__ == "__main__":

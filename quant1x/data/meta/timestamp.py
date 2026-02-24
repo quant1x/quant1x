@@ -17,18 +17,23 @@ MILLISECONDS_PER_MINUTE = 60 * 1000
 MILLISECONDS_PER_HOUR = 60 * 60 * 1000
 MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
 
+
 class Timestamp:
     """
     Timestamp class compatible with C++/Rust/Go implementations.
-    Stores time as milliseconds since epoch (UTC), but provides methods
-    to work with local time.
+    Stores time as LOCAL milliseconds (not UTC!), similar to C++ implementation.
+    Strings are parsed as local time. When converting to/from UTC,
+    use the conversion functions.
     """
     def __init__(self, ms: Union[int, float] = 0):
         self.ms = int(ms)
 
     @staticmethod
     def now() -> 'Timestamp':
-        return Timestamp(time.time() * 1000)
+        """Get current timestamp (LOCAL milliseconds)"""
+        # Get current local datetime, then convert to local milliseconds
+        dt_local = datetime.now()
+        return Timestamp.from_datetime(dt_local)
 
     @staticmethod
     def zero() -> 'Timestamp':
@@ -38,52 +43,59 @@ class Timestamp:
         return self.ms
 
     def to_datetime(self) -> datetime:
-        """Convert to local datetime"""
-        if self.ms == 0:
-            return datetime.fromtimestamp(0)
-        return datetime.fromtimestamp(self.ms / 1000.0)
+        """Convert local milliseconds to local datetime (naive)"""
+        seconds = self.ms / 1000.0
+        # epoch = 1970-01-01 00:00:00 LOCAL time
+        epoch = datetime(1970, 1, 1)
+        return epoch + timedelta(seconds=seconds)
 
     @staticmethod
     def from_datetime(dt: datetime) -> 'Timestamp':
-        return Timestamp(dt.timestamp() * 1000)
+        """Convert local datetime to local milliseconds"""
+        # dt is assumed to be local time (naive)
+        # We want to store as LOCAL milliseconds, not UTC
+        # epoch = 1970-01-01 00:00:00 LOCAL time
+        epoch = datetime(1970, 1, 1)
+        local_seconds = (dt - epoch).total_seconds()
+        return Timestamp(local_seconds * 1000)
 
     def start_of_day(self) -> 'Timestamp':
         """Get the timestamp of 00:00:00 on the same day (Local time)"""
-        dt = self.to_datetime()
-        start = dt.replace(hour=0, minute=0, second=0, microsecond=0)
-        return Timestamp(start.timestamp() * 1000)
+        return Timestamp(self.ms - (self.ms % MILLISECONDS_PER_DAY))
 
     @staticmethod
     def midnight() -> 'Timestamp':
         """Get the timestamp of today's 00:00:00 (Local time)"""
-        return Timestamp.now().start_of_day()
+        ts = Timestamp.now()
+        return Timestamp(ts.ms - (ts.ms % MILLISECONDS_PER_DAY))
 
     def today(self, hour: int = 0, minute: int = 0, second: int = 0, millisecond: int = 0) -> 'Timestamp':
-        """Get timestamp for specific time on the same day"""
-        start = self.start_of_day()
-        offset = (hour * MILLISECONDS_PER_HOUR + 
-                  minute * MILLISECONDS_PER_MINUTE + 
-                  second * MILLISECONDS_PER_SECOND + 
-                  millisecond)
-        return Timestamp(start.value() + offset)
+        """Get timestamp for specific time on the same day (Local time)"""
+        ts = self.start_of_day().value()
+        ts += hour * MILLISECONDS_PER_HOUR
+        ts += minute * MILLISECONDS_PER_MINUTE
+        ts += second * MILLISECONDS_PER_SECOND
+        ts += millisecond
+        return Timestamp(ts)
 
     def since(self, hour: int = 0, minute: int = 0, second: int = 0, millisecond: int = 0) -> 'Timestamp':
         """Alias for today()"""
         return self.today(hour, minute, second, millisecond)
 
     def offset(self, hour: int = 0, minute: int = 0, second: int = 0, millisecond: int = 0) -> 'Timestamp':
-        """Add offset to current timestamp"""
-        offset_ms = (hour * MILLISECONDS_PER_HOUR + 
-                     minute * MILLISECONDS_PER_MINUTE + 
-                     second * MILLISECONDS_PER_SECOND + 
-                     millisecond)
-        return Timestamp(self.ms + offset_ms)
+        """Add offset to current timestamp (in milliseconds)"""
+        ts = self.value()
+        ts += hour * MILLISECONDS_PER_HOUR
+        ts += minute * MILLISECONDS_PER_MINUTE
+        ts += second * MILLISECONDS_PER_SECOND
+        ts += millisecond
+        return Timestamp(ts)
 
     @staticmethod
     def pre_market_time(year: int, month: int, day: int) -> 'Timestamp':
         """Construct pre-market timestamp (09:00:00) for specific date"""
         dt = datetime(year, month, day, PRE_MARKET_HOUR, PRE_MARKET_MINUTE, PRE_MARKET_SECOND)
-        return Timestamp(dt.timestamp() * 1000)
+        return Timestamp.from_datetime(dt)
 
     def get_pre_market_time(self) -> 'Timestamp':
         """Get pre-market timestamp for the same day"""
@@ -91,31 +103,24 @@ class Timestamp:
 
     def floor(self) -> 'Timestamp':
         """Round down to nearest minute (00 seconds, 000 ms)"""
-        # Note: This logic depends on whether we want to floor in UTC or Local.
-        # C++ implementation usually implies flooring the representation.
-        # Here we floor based on the stored value (which is UTC). 
-        # If we want to floor in Local time, we should convert to datetime.
-        # Assuming standard behavior: floor to minute boundary.
-        # Since timezones usually have minute-aligned offsets, flooring UTC ms should work for Local too 
-        # unless offset has seconds.
-        return Timestamp(self.ms - (self.ms % MILLISECONDS_PER_MINUTE))
+        ts = self.value()
+        ts -= (ts % MILLISECONDS_PER_MINUTE)
+        return Timestamp(ts)
 
     def ceil(self) -> 'Timestamp':
         """Round up to end of minute (59 seconds, 999 ms)"""
-        floored = self.ms - (self.ms % MILLISECONDS_PER_MINUTE)
-        return Timestamp(floored + MILLISECONDS_PER_MINUTE - 1)
+        ts = self.value()
+        ts = ts - (ts % MILLISECONDS_PER_MINUTE) + (MILLISECONDS_PER_MINUTE - 1)
+        return Timestamp(ts)
 
     def extract(self) -> Tuple[int, int, int]:
-        """Return (year, month, day)"""
+        """Return (year, month, day) in local time"""
         dt = self.to_datetime()
         return dt.year, dt.month, dt.day
 
     def to_string(self, layout: str = "%Y-%m-%d %H:%M:%S") -> str:
+        """Convert to string in local time"""
         dt = self.to_datetime()
-        if "%f" in layout:
-            # Python's %f is microseconds (000000), we might want milliseconds
-            s = dt.strftime(layout)
-            return s
         return dt.strftime(layout)
 
     def only_date(self) -> str:
@@ -125,18 +130,22 @@ class Timestamp:
         return self.to_string("%Y%m%d")
 
     def only_time(self) -> str:
-        return self.to_string("%H:%M:%S")
+        """Return time only, truncated to seconds"""
+        dt = self.to_datetime()
+        return dt.strftime("%H:%M:%S")
 
     def is_empty(self) -> bool:
         return self.ms == 0
 
     def is_same_date(self, other: 'Timestamp') -> bool:
-        dt1 = self.to_datetime()
-        dt2 = other.to_datetime()
-        return dt1.date() == dt2.date()
+        """Check if two timestamps are on the same day (local time)"""
+        day1 = self.ms // MILLISECONDS_PER_DAY
+        day2 = other.ms // MILLISECONDS_PER_DAY
+        return day1 == day2
 
     @staticmethod
     def parse(time_str: str) -> 'Timestamp':
+        """Parse time string as local time"""
         formats = [
             "%Y-%m-%d %H:%M:%S.%f",
             "%Y-%m-%d %H:%M:%S",
@@ -149,8 +158,7 @@ class Timestamp:
         for fmt in formats:
             try:
                 dt = datetime.strptime(time_str, fmt)
-                # If format has no time, it defaults to 00:00:00
-                return Timestamp(dt.timestamp() * 1000)
+                return Timestamp.from_datetime(dt)
             except ValueError:
                 continue
         raise ValueError(f"Unable to parse timestamp: {time_str}")
@@ -163,7 +171,7 @@ class Timestamp:
             return Timestamp.parse(time_str)
         except ValueError:
             pass
-            
+
         # Try time-only formats
         time_formats = [
             "%H:%M:%S.%f",
@@ -172,13 +180,13 @@ class Timestamp:
             "%H%M%S",
             "%H%M",
         ]
-        
+
         now = datetime.now()
         for fmt in time_formats:
             try:
                 t = datetime.strptime(time_str, fmt).time()
                 dt = datetime.combine(now.date(), t)
-                return Timestamp(dt.timestamp() * 1000)
+                return Timestamp.from_datetime(dt)
             except ValueError:
                 continue
         raise ValueError(f"Unable to parse time string: {time_str}")
@@ -215,3 +223,19 @@ class Timestamp:
     def __str__(self):
         return self.to_string()
 
+
+if __name__ == "__main__":
+    ts = Timestamp.parse("1970-01-01")
+    print(ts)
+
+    ts = Timestamp.parse("1900-01-01")
+    print(ts)
+
+    ts = Timestamp.parse("2024-01-01 09:30:00")
+    print(ts)
+
+    ts = Timestamp.now()
+    print(f"Now: {ts}")
+    
+    ts = Timestamp.zero()
+    print(f"Zero: {ts}")

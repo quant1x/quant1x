@@ -3,6 +3,8 @@ from typing import Dict, List, Tuple
 from collections import OrderedDict
 from datetime import datetime
 
+from more_itertools import one
+
 from quant1x.log import logger
 from .. import protocol
 from .helpers import get_datetime
@@ -159,6 +161,7 @@ class InstrumentInfo(protocol.BaseMessage):
         self.reply = {'count': count, 'list': result}
         #logger.debug("[InstrumentInfo] reply: {}", self.reply)
 
+from quant1x.data.schema import Bar
 
 class InstrumentBars(protocol.BaseMessage):
     """
@@ -176,7 +179,7 @@ class InstrumentBars(protocol.BaseMessage):
         """通过实验发现, 频率为 1 时, 返回的数据是按照category设定的K线周期连续的数据, 大于1时, 返回的数据是则是在category的基础再聚合的数据"""
         self.start = start
         self.count = count
-        self.reply = []
+        self.reply : List[Bar] = []
     
     def serialize_request_body(self) -> bytes:
         ticker = self.ticker.encode("utf-8")
@@ -199,23 +202,33 @@ class InstrumentBars(protocol.BaseMessage):
             (amount, ) = struct.unpack("f", data[pos+16: pos+16+4])
 
             pos += 28
-            one = OrderedDict([
-                ("date","%d-%02d-%02d" % (year, month, day)),
-                ("open", open_price),
-                ("close", close),
-                ("high", high),
-                ("low", low),
-                ("position", position),
-                ("volume", volume),
-                ("price", price),
-                #("year", year),
-                #("month", month),
-                #("day", day),
-                #("hour", hour),
-                #("minute", minute),
-                ("amount", amount),
-                ("timestamp", "%d-%02d-%02d %02d:%02d:%02d" % (year, month, day, hour, minute, second)),
-            ])
+            # one = OrderedDict([
+            #     ("date","%d-%02d-%02d" % (year, month, day)),
+            #     ("open", open_price),
+            #     ("close", close),
+            #     ("high", high),
+            #     ("low", low),
+            #     ("position", position),
+            #     ("volume", volume),
+            #     ("price", price),
+            #     #("year", year),
+            #     #("month", month),
+            #     #("day", day),
+            #     #("hour", hour),
+            #     #("minute", minute),
+            #     ("amount", amount),
+            #     ("timestamp", "%d-%02d-%02d %02d:%02d:%02d" % (year, month, day, hour, minute, second)),
+            # ])
+            one = Bar(
+                date="%d-%02d-%02d" % (year, month, day),
+                open=open_price,
+                close=close,
+                high=high,
+                low=low,
+                volume=volume,
+                amount=amount,
+                timestamp="%d-%02d-%02d %02d:%02d:%02d" % (year, month, day, hour, minute, second)
+            )
             result.append(one)
         
         self.reply = result

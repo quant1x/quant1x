@@ -6,8 +6,6 @@ from enum import Enum, IntEnum
 from dataclasses import dataclass
 from typing import List, Iterable, Any
 
-from sqlalchemy import desc
-
 from .exchange import Exchange
 from .region import Region
 

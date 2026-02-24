@@ -3,10 +3,12 @@
 # Licensed under the MIT License.
 
 from __future__ import annotations
+from math import log
 import os, csv
 from typing import Optional, List
 
 from quant1x.config import config
+from quant1x.contrib.data.tdx.level1 import ext
 from quant1x.data import status
 from quant1x.data import market
 from quant1x.data.meta import Exchange, Instrument, InstrumentType
@@ -42,9 +44,13 @@ def _load_securities() -> bool:
                 name = row.get('name') or ''
                 lot_size = int(row.get('lot_size') or '100')
                 price_precision = int(row.get('price_precision') or '2')
+                tmp = row.get('ext_market') or ''
+                ext_market = int(tmp) if tmp.isdigit() else 0
+                tmp = row.get('ext_category') or ''
+                ext_category = int(tmp) if tmp.isdigit() else 0
                 
                 code = code.lower()
-                inst = Instrument(exchange=exchange, type=type, ticker=code, name=name, lot_size=lot_size, price_precision=price_precision)
+                inst = Instrument(exchange=exchange, type=type, ticker=code, name=name, lot_size=lot_size, price_precision=price_precision, ext_market=ext_market, ext_category=ext_category)
                 symbol = inst.symbol()
                 if code == 'hsi':
                     print(f"{symbol} -> {inst}")
@@ -118,16 +124,18 @@ def init_securities():
             conn = client.get_ext_conn()
             while True:
                 page = []
+                fetch_count = 0
                 try:
                     ii = InstrumentInfo(start, offset)
                     protocol.process_level1_new(conn, ii)
+                    fetch_count = ii.reply.get('count', 0)
                     if ii.reply['count'] > 0:
                         page = ii.reply['list']
                 except Exception:
                     logger.exception('fetch_security_list failed')
                     break
                 rows.extend(page)
-                if len(page) < offset:
+                if fetch_count < offset:
                     break
                 start += offset
             # 相同市场按照代码排序
@@ -137,6 +145,7 @@ def init_securities():
                 (x.ticker is None, x.ticker or '')
                 )
             )
+            logger.debug(f"init_securities rows[ext]={rows}")
             # 合并市场
             instruments.extend(rows)
         
@@ -180,10 +189,10 @@ __all__ = [
 if __name__ == '__main__':
     # Minimal required test (as you requested): print security info for sh000001
     code = "sz000737"
-    code = "00700.hk"
+    code = "hsi.hk"
     info = get_instrument_info(code)
     print(f"Security info for {code}: {info}")
     if info is not None:
-        print(f"Name: {info.name}, Lot Size: {info.lot_size}, Price Precision: {info.price_precision}")
+        print(f"Name: {info.name}, Lot Size: {info.lot_size}, Price Precision: {info.price_precision}, ext_market: {info.ext_market}, ext_category: {info.ext_category}")
     else:
         print("No security info found for", code)

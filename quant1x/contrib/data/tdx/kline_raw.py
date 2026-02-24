@@ -7,6 +7,7 @@ import pandas as pd
 from dataclasses import dataclass
 from typing import List, Optional
 from quant1x.contrib.data.tdx.instruments import get_instrument_info
+from quant1x.contrib.data.tdx.level1.ext import InstrumentBars
 from quant1x.log import logger
 
 from quant1x.config import config
@@ -14,10 +15,10 @@ from quant1x.data.meta import Timestamp
 from quant1x.data.schema import Bar
 from quant1x.data import adapter, MaxCachedDaysToDropOnIncrementalUpdate
 from . import protocol
-from .client import get_std_conn
+from .client import get_std_conn, get_ext_conn
 from .level1 import SecurityBarsRequest, SecurityBarsResponse, KLineType, SECURITY_BARS_PRE_REQUEST_MAX
 from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASEDATA_DATA, register, DEFAULT_DATA_PROVIDER
-from quant1x.data.base import BASEDATA_RAW_DAILY_KLINE, MarketCnFirstListTime
+from quant1x.data.base import BASEDATA_RAW_DAILY_KLINE, GLOBAL_DEFAULT_START_DATE, MarketCnFirstListTime
 from quant1x.data.meta import Instrument, Frequency, TimeUnit, FREQ_DAILY
 from quant1x.data.market import detect_symbol
 
@@ -264,7 +265,7 @@ def checkout_kline_raw(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[Bar
     # 从缓存加载数据
     return load_kline_raw(inst, freq)
 
-def fetch_kline_raw(inst: Instrument, start: int, count: int, freq: Frequency) -> list[Bar]:
+def fetch_kline_raw_from_std(inst: Instrument, start: int, count: int, freq: Frequency) -> List[Bar]:
     try:
         kline_type = frequency_to_kline_type(freq)
         with get_std_conn() as conn:
@@ -275,6 +276,23 @@ def fetch_kline_raw(inst: Instrument, start: int, count: int, freq: Frequency) -
     except Exception as e:
         logger.error(f"[basedata::KLine] fetch_kline_raw error: {e}")
         return []
+    
+def fetch_kline_raw_from_ext(inst: Instrument, start: int, count: int, freq: Frequency) -> List[Bar]:
+    try:
+        kline_type = frequency_to_kline_type(freq)
+        with get_ext_conn() as conn:
+            bars = InstrumentBars(kline_type.value, inst.ext_market, ticker=inst.ticker.upper(), start=start, count=count)
+            protocol.process_level1_new(conn, bars)
+            return bars.reply
+    except Exception as e:
+        logger.error(f"[basedata::KLine] fetch_kline_raw error: {e}")
+        return []
+
+def fetch_kline_raw(inst: Instrument, start: int, count: int, freq: Frequency) -> List[Bar]:
+    if inst.exchange.is_std_quote():
+        return fetch_kline_raw_from_std(inst, start, count, freq)
+    elif inst.exchange.is_ext_quote():
+        return fetch_kline_raw_from_ext(inst, start, count, freq)
 
 class DataKLineRaw(DataAdapter):
     def kind(self) -> int:
@@ -306,9 +324,11 @@ class DataKLineRaw(DataAdapter):
     def update(self, inst: Instrument, date: Optional[Timestamp] = None) -> None:
         symbol = inst.symbol()
         # 1. Determine start date from local cache
-        current_start_date = Timestamp.parse(MarketCnFirstListTime)  # market_first_date
+        #current_start_date = Timestamp.parse(MarketCnFirstListTime)  # market_first_date
+        current_start_date = Timestamp.parse(GLOBAL_DEFAULT_START_DATE)  # fallback to a very early date
         freq = Frequency(num=1, unit=TimeUnit.DAY)
         cache_filename = get_kline_raw_filename(inst, freq)
+        #print(f"Updating KLineRaw for {symbol}, cache file: {cache_filename}")
         cache_klines = read_kline_raw_from_csv(cache_filename)
         
         klines_length = len(cache_klines)
@@ -394,6 +414,7 @@ _data_kline_raw_plugin = adapter.register(DataKLineRaw)
 if __name__ == "__main__":
     # Example usage
     code = "sh600004"
+    code = "hsi.hk"
     inst = detect_symbol(code)
     symbol = inst.symbol()
     inst = get_instrument_info(symbol)

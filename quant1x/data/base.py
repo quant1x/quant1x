@@ -27,6 +27,7 @@ BASEDATA_MINUTE_KLINE         = PLUGIN_MASK_BASEDATA_DATA | (BASEDATA_KIND + 11)
 
 # Market first list time
 MarketCnFirstListTime = "1990-12-19"
+GLOBAL_DEFAULT_START_DATE = "1900-01-01"
 
 # MarketFirstDate is the market first-listing date as a pre-market Timestamp
 market_first_date: Timestamp

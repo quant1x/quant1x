@@ -8,6 +8,7 @@ import threading
 from typing import List, Tuple, Optional, Any
 
 from quant1x.data import status
+from quant1x.data.meta.exchange import Exchange
 from quant1x.net.conn import ConnectionHandle
 from quant1x.net.tcp_client_pool import TcpConnectionPool
 from . import protocol, config
@@ -174,17 +175,19 @@ def _build_ext_pool(*, min_conn: int, max_conn: int, servers: Optional[List[Tupl
             default_concurrency = min(default_concurrency, max(1, len(discovered)))
     except Exception:
         logger.exception("level1._build_pool: failed to read server cache")
-    logger.warning(f"discovered: {discovered}, default_concurrency: {default_concurrency}")
+    logger.warning(f"discovered: {discovered}, default_concurrency: {default_concurrency}, min_conn: {min_conn}, max_conn: {max_conn}")
     pool = TcpConnectionPool(min_conn, default_concurrency, handler)
 
     # 从提供的服务器或发现的缓存中播种端点
     if servers:
+        logger.debug(f"Using provided servers for extension pool: {servers}")
         for host, port in servers:
             pool.add_endpoint(host, port)
     else:
+        logger.debug(f"Using discovered servers for extension pool: {discovered}")
         for h, p in discovered:
             pool.add_endpoint(h, p)
-
+    logger.warning(f"Extension pool initialized with endpoints: min_connections={pool.min_connections}, max_connections={pool.max_connections}")
     return pool
 
 
@@ -223,6 +226,13 @@ def get_ext_conn() -> ConnectionHandle:
     assert _ext_pool is not None
     return _ext_pool.acquire()
 
+def get_conn(exchange: Exchange = Exchange.SSE) -> ConnectionHandle:
+    """根据exchange参数返回对应的连接池连接句柄"""
+    if exchange in (Exchange.SSE, Exchange.SZSE, Exchange.BSE):
+        return get_std_conn()
+    else:
+        return get_ext_conn()
+
 if __name__ == '__main__':
     import pandas as pd
     # 市场代码列表
@@ -260,8 +270,8 @@ if __name__ == '__main__':
     # K线数据
     from .level1.ext import InstrumentBars
     #bars = InstrumentBars(9, 0x17, ticker='HSIL8', start=0, count=700)
-    #bars = InstrumentBars(8, 31, ticker='00700', start=0, count=700)
-    bars = InstrumentBars(9, 12, ticker='A_IXIC', start=0, count=700)
+    bars = InstrumentBars(8, 31, ticker='00700', start=0, count=700)
+    #bars = InstrumentBars(9, 12, ticker='A_IXIC', start=0, count=700)
     protocol.process_level1_new(conn, bars)
     if bars.reply:
         df = pd.DataFrame(bars.reply)
