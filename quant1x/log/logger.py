@@ -60,7 +60,7 @@ if not getattr(__logger, "_quant1x_configured", False):
     
 
     # 标记已配置
-    __logger._quant1x_configured = True
+    __logger.__setattr__("_quant1x_configured", True)
     
     __logger.info(f"日志文件路径: {_LOG_FILE}")
 
