@@ -3,6 +3,7 @@
 # Licensed under the MIT License.
 
 import os
+import re
 import time
 import yaml
 import socket
@@ -18,7 +19,7 @@ class OrderedDictDumper(yaml.SafeDumper):
     """YAML Dumper that preserves OrderedDict order"""
 
     def increase_indent(self, flow: bool = False, indentless: bool = False):
-        # 强制 indentless=False，确保列表项正确缩进
+        # 强制 indentless=False, 确保列表项正确缩进
         return super().increase_indent(flow, False)
 
 
@@ -32,7 +33,7 @@ OrderedDictDumper.add_representer(
     represent_ordereddict
 )
 
-cron_expr_server_init = "0 55 8 * * MON-FRI" # 每个交易日 8:55 AM 运行一次，初始化服务器列表
+cron_expr_server_init = "0 55 8 * * MON-FRI" # 每个交易日 8:55 AM 运行一次, 初始化服务器列表
 
 # Complete server candidate lists copied from the C++ source
 StandardServerList: List[Dict[str, Any]] = [
@@ -173,6 +174,7 @@ StandardServerList: List[Dict[str, Any]] = [
     {"source": "国泰君安", "name": "东莞电信行情七", "host": "183.60.224.148", "port": 7709},
 ]
 
+# 通达信官方的扩展市场服务器列表, 包含港股金融指数
 ExtensionServerList: List[Dict[str, Any]] = [
     # 通达信
     {"source": "通达信", "name": "扩展市场深圳双线1", "host": "112.74.214.43", "port": 7727},
@@ -201,41 +203,44 @@ ExtensionServerList: List[Dict[str, Any]] = [
     {"source": "通达信", "name": "扩展市场上海双线2", "host": "47.102.108.214", "port": 7727},
     {"source": "通达信", "name": "扩展市场上海双线3", "host": "47.103.86.229", "port": 7727},
     {"source": "通达信", "name": "扩展市场上海双线4", "host": "47.103.88.146", "port": 7727},
+]
+
+# 券商版本的扩展市场服务器列表, 不支持港股金融指数
+ExtensionServerList2: List[Dict[str, Any]] = [
+    # 中信证券
+    {"source": "中信证券", "name": "上海电信主站Z1", "host": "180.153.18.176", "port": 7721},
+    {"source": "中信证券", "name": "北京联通主站Z1", "host": "202.108.253.154", "port": 7721},
+    {"source": "中信证券", "name": "杭州电信主站J1", "host": "115.238.56.196", "port": 7721},
+    {"source": "中信证券", "name": "杭州电信主站J2", "host": "115.238.90.170", "port": 7721},
+    {"source": "中信证券", "name": "杭州联通主站J1", "host": "60.12.136.251", "port": 7721},
+    {"source": "中信证券", "name": "杭州华数主站J1", "host": "218.108.98.244", "port": 7721},
+    {"source": "中信证券", "name": "济南联通主站W1", "host": "27.221.115.133", "port": 7721},
+    {"source": "中信证券", "name": "青岛电信主站W1", "host": "58.56.180.60", "port": 7721},
+    {"source": "中信证券", "name": "深圳电信主站Z1", "host": "14.17.75.71", "port": 7721},
+    {"source": "中信证券", "name": "广州云电信主站Z1", "host": "121.201.83.104", "port": 7721},
     
-    # # 中信证券
-    # {"source": "中信证券", "name": "上海电信主站Z1", "host": "180.153.18.176", "port": 7721},
-    # {"source": "中信证券", "name": "北京联通主站Z1", "host": "202.108.253.154", "port": 7721},
-    # {"source": "中信证券", "name": "杭州电信主站J1", "host": "115.238.56.196", "port": 7721},
-    # {"source": "中信证券", "name": "杭州电信主站J2", "host": "115.238.90.170", "port": 7721},
-    # {"source": "中信证券", "name": "杭州联通主站J1", "host": "60.12.136.251", "port": 7721},
-    # {"source": "中信证券", "name": "杭州华数主站J1", "host": "218.108.98.244", "port": 7721},
-    # {"source": "中信证券", "name": "济南联通主站W1", "host": "27.221.115.133", "port": 7721},
-    # {"source": "中信证券", "name": "青岛电信主站W1", "host": "58.56.180.60", "port": 7721},
-    # {"source": "中信证券", "name": "深圳电信主站Z1", "host": "14.17.75.71", "port": 7721},
-    # {"source": "中信证券", "name": "广州云电信主站Z1", "host": "121.201.83.104", "port": 7721},
+    # 华泰证券
+    {"source": "华泰证券", "name": "华泰证券(南京电信一)", "host": "180.101.48.170", "port": 7721},
+    {"source": "华泰证券", "name": "华泰证券(南京电信二)", "host": "180.101.48.171", "port": 7721},
+    {"source": "华泰证券", "name": "华泰证券(南京移动一)", "host": "120.195.71.155", "port": 7721},
+    {"source": "华泰证券", "name": "华泰证券(南京移动二)", "host": "120.195.71.156", "port": 7721},
+    {"source": "华泰证券", "name": "华泰证券(南京联通一)", "host": "122.96.107.242", "port": 7721},
+    {"source": "华泰证券", "name": "华泰证券(南京联通二)", "host": "122.96.107.243", "port": 7721},
+    {"source": "华泰证券", "name": "华泰证券(亚马逊一)", "host": "52.83.39.241", "port": 7721},
+    {"source": "华泰证券", "name": "华泰证券(亚马逊二)", "host": "52.83.199.101", "port": 7721},
+    {"source": "华泰证券", "name": "华泰证券(华南阿里云一)", "host": "8.135.57.58", "port": 7721},
+    {"source": "华泰证券", "name": "华泰证券(华南阿里云二)", "host": "8.135.62.177", "port": 7721},
+    {"source": "华泰证券", "name": "华泰证券(华东华为云一)", "host": "124.70.183.173", "port": 7721},
+    {"source": "华泰证券", "name": "华泰证券(华东华为云二)", "host": "124.71.163.106", "port": 7721},
     
-    # # 华泰证券
-    # {"source": "华泰证券", "name": "华泰证券(南京电信一)", "host": "180.101.48.170", "port": 7721},
-    # {"source": "华泰证券", "name": "华泰证券(南京电信二)", "host": "180.101.48.171", "port": 7721},
-    # {"source": "华泰证券", "name": "华泰证券(南京移动一)", "host": "120.195.71.155", "port": 7721},
-    # {"source": "华泰证券", "name": "华泰证券(南京移动二)", "host": "120.195.71.156", "port": 7721},
-    # {"source": "华泰证券", "name": "华泰证券(南京联通一)", "host": "122.96.107.242", "port": 7721},
-    # {"source": "华泰证券", "name": "华泰证券(南京联通二)", "host": "122.96.107.243", "port": 7721},
-    # {"source": "华泰证券", "name": "华泰证券(亚马逊一)", "host": "52.83.39.241", "port": 7721},
-    # {"source": "华泰证券", "name": "华泰证券(亚马逊二)", "host": "52.83.199.101", "port": 7721},
-    # {"source": "华泰证券", "name": "华泰证券(华南阿里云一)", "host": "8.135.57.58", "port": 7721},
-    # {"source": "华泰证券", "name": "华泰证券(华南阿里云二)", "host": "8.135.62.177", "port": 7721},
-    # {"source": "华泰证券", "name": "华泰证券(华东华为云一)", "host": "124.70.183.173", "port": 7721},
-    # {"source": "华泰证券", "name": "华泰证券(华东华为云二)", "host": "124.71.163.106", "port": 7721},
-    
-    # # 国泰君安
-    # {"source": "国泰君安", "name": "扩展行情主站1", "host": "103.221.142.80", "port": 7721},
-    # {"source": "国泰君安", "name": "扩展行情主站2", "host": "114.118.82.205", "port": 7721},
-    # {"source": "国泰君安", "name": "扩展行情主站3", "host": "117.34.114.31", "port": 7721},
-    # {"source": "国泰君安", "name": "扩展行情主站4", "host": "139.9.52.158", "port": 7721},
-    # {"source": "国泰君安", "name": "扩展行情主站5", "host": "103.251.85.204", "port": 7721},
-    # {"source": "国泰君安", "name": "扩展行情主站6", "host": "114.118.82.204", "port": 7721},
-    # {"source": "国泰君安", "name": "扩展行情主站7", "host": "103.221.142.73", "port": 7721},
+    # 国泰君安
+    {"source": "国泰君安", "name": "扩展行情主站1", "host": "103.221.142.80", "port": 7721},
+    {"source": "国泰君安", "name": "扩展行情主站2", "host": "114.118.82.205", "port": 7721},
+    {"source": "国泰君安", "name": "扩展行情主站3", "host": "117.34.114.31", "port": 7721},
+    {"source": "国泰君安", "name": "扩展行情主站4", "host": "139.9.52.158", "port": 7721},
+    {"source": "国泰君安", "name": "扩展行情主站5", "host": "103.251.85.204", "port": 7721},
+    {"source": "国泰君安", "name": "扩展行情主站6", "host": "114.118.82.204", "port": 7721},
+    {"source": "国泰君安", "name": "扩展行情主站7", "host": "103.221.142.73", "port": 7721},
 ]
 
 
@@ -255,7 +260,7 @@ def write_cache(servers: OrderedDict[str, List[Dict[str, Any]]]) -> None:
                       allow_unicode=True,
                       default_flow_style=False,
                       sort_keys=False,
-                      indent=2,                      # 显式设置缩进（可选，增强一致性）
+                      indent=2,                      # 显式设置缩进（可选, 增强一致性）
                       width=float("inf")             # 避免长行被折行
             )
     except Exception:
@@ -312,6 +317,7 @@ def _try_probe_one(handler: NetworkOperationHandler, candidate: Dict[str, Any], 
     source = str(candidate.get("source") or "")
     start = time.monotonic()
     sock = None
+    logger.debug("Probing {}:{} ({}) - timeout: {} ms", host, port, name, timeout_ms)
     try:
         sock = socket.create_connection((host, port), timeout=timeout_ms / 1000.0)
         # set TCP_NODELAY where possible
@@ -328,10 +334,12 @@ def _try_probe_one(handler: NetworkOperationHandler, candidate: Dict[str, Any], 
             # handler = StandardProtocolHandler()
             ok = handler.handshake(sock)
         except Exception as e:
-            logger.exception("Handshake failed for {}:{}: {}", host, port, e)
+            logger.warning("Handshake failed for {}:{} ({}) - Error: {}", host, port, name, e)
             ok = False
 
-        if ok:
+        if not ok:
+            logger.warning("Handshake failed for {}:{} ({})", host, port, name)
+        else:    
             elapsed = int((time.monotonic() - start) * 1000)
             entry: Dict[str, Any] = OrderedDict([
                 ("source", source),
@@ -342,9 +350,13 @@ def _try_probe_one(handler: NetworkOperationHandler, candidate: Dict[str, Any], 
             ])
             with lock:
                 result_list.append(entry)
-    except Exception:
-        # connect failed or timed out
-        logger.exception("Probe failed for {}:{}", host, port)
+                logger.debug("Probe succeeded for {}:{} ({}) - {} ms", host, port, name, elapsed)
+    except socket.timeout:
+        logger.warning("Probe timed out for {}:{} ({}) after {} ms", host, port, name, timeout_ms)
+    except socket.error as e:
+        logger.warning("Socket error for {}:{} ({}) - Error: {} (Errno: {})", host, port, name, str(e), e.errno if hasattr(e, 'errno') else 'N/A')
+    except Exception as e:
+        logger.warning("Probe failed for {}:{} ({}) - Unexpected error: {}", host, port, name, e)
     finally:
         try:
             if sock is not None:
@@ -353,42 +365,68 @@ def _try_probe_one(handler: NetworkOperationHandler, candidate: Dict[str, Any], 
             pass
 
 
-def detect(elapsed_time_ms: int = 200, conn_limit: int = 10, connect_timeout_ms: int = 1000) -> OrderedDict[str, List[Dict[str, Any]]]:
+def detect(elapsed_time_ms: int = 100 * 1000, conn_limit: int = 10, connect_timeout_ms: int = 1000) -> OrderedDict[str, List[Dict[str, Any]]]:
+    """
+    并行探测并筛选可用的标准服务器和扩展服务器
+
+    Args:
+        elapsed_time_ms (int): 探测超时时间(毫秒), 默认200ms
+        conn_limit (int): 每种协议类型返回的最大服务器数量, 默认10
+        connect_timeout_ms (int): 单个连接的超时时间(毫秒), 默认10s
+
+    Returns:
+        OrderedDict[str, List[Dict[str, Any]]]: 按协议类型分组的服务器列表, 格式为:
+            {
+                "standard": [{"host": str, "port": int, "latency_ms": int}, ...],
+                "extension": [...]
+            }
+            服务器已按延迟(latency_ms)升序排序, 且数量不超过conn_limit
+
+    Note:
+        使用多线程并行探测服务器, 全局超时为elapsed_time_ms
+    """
     from .protocol import StandardProtocolHandler, ExtensionProtocolHandler
-    # {"standard": servers, "extension": []}
     resources = [("standard", StandardServerList, StandardProtocolHandler()), ("extension", ExtensionServerList, ExtensionProtocolHandler())]
+    #resources = [("extension", ExtensionServerList, ExtensionProtocolHandler())]
     selected: OrderedDict[str, List[Dict[str, Any]]] = OrderedDict()
     for key, candidates, handler in resources:
+        logger.info("Starting detection for {} servers, total candidates: {}", key, len(candidates))
         servers: List[Dict[str, Any]] = []
         if not candidates:
             selected[key] = servers
             continue
 
-        num_threads = min(len(candidates), max(1, (os.cpu_count() or 1)))
-        threads: List[threading.Thread] = []
+        max_concurrent = min(len(candidates), max(1, (os.cpu_count() or 1)))
         results: List[Dict[str, Any]] = []
         lock = threading.Lock()
 
-        # round-robin distribute candidates across threads
-        for cand in candidates:
-            t = threading.Thread(target=_try_probe_one, args=(handler, cand, connect_timeout_ms, results, lock), daemon=True)
-            threads.append(t)
-            t.start()
+        def _try_probe_with_timeout(candidate: Dict[str, Any]) -> None:
+            _try_probe_one(handler, candidate, connect_timeout_ms, results, lock)
 
-        # wait for threads with a global timeout (slightly larger than connect timeout)
-        deadline = time.monotonic() + (connect_timeout_ms / 1000.0) + 1.0
-        for t in threads:
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                break
-            t.join(timeout=remaining)
+        # Launch threads with limited concurrency
+        batch_count = 0
+        for i in range(0, len(candidates), max_concurrent):
+            batch_count += 1
+            batch = candidates[i:i + max_concurrent]
+            logger.debug("Starting batch {}/{} with {} servers", batch_count, (len(candidates) + max_concurrent - 1) // max_concurrent, len(batch))
+            batch_threads: List[threading.Thread] = []
+            for cand in batch:
+                t = threading.Thread(target=_try_probe_with_timeout, args=(cand,), daemon=True)
+                batch_threads.append(t)
+                t.start()
+
+            # Wait for this batch to complete with connect_timeout
+            for t in batch_threads:
+                t.join(timeout=connect_timeout_ms / 1000.0)
+            logger.debug("Batch {} completed, total results so far: {}", batch_count, len(results))
 
         # sort by latency and return top conn_limit items
         # ensure the sort key is numeric to satisfy type checkers
         results.sort(key=lambda x: int(x.get("latency_ms", 999999)))
         selected[key] = results[:conn_limit]
+        logger.info("Detection completed for {} servers: {}/{} available", key, len(results), len(candidates))
     return selected
 
 if __name__ == "__main__":
-    servers = detect()
+    servers = detect(connect_timeout_ms=10000)
     print(servers)

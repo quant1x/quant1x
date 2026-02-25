@@ -264,8 +264,7 @@ def _try_probe_one(candidate: Dict[str, Any], timeout_ms: int, result_list: List
             handler = StandardProtocolHandler()
             ok = handler.handshake(sock)
         except Exception as e:
-            # log.debug instead of exception to avoid noisy tracebacks during detection
-            log.debug("Handshake failed for %s:%s: %s", host, port, e)
+            log.debug("Handshake failed for %s:%s (%s) - Error: %s", host, port, name, e)
             ok = False
 
         if ok:
@@ -273,9 +272,13 @@ def _try_probe_one(candidate: Dict[str, Any], timeout_ms: int, result_list: List
             entry: Dict[str, Any] = {"source": source, "name": name, "host": host, "port": port, "latency_ms": elapsed}
             with lock:
                 result_list.append(entry)
-    except Exception:
-        # connect failed or timed out
-        log.debug("Probe failed for %s:%s", host, port)
+            log.debug("Probe succeeded for %s:%s (%s) - %d ms", host, port, name, elapsed)
+    except socket.timeout:
+        log.debug("Probe timed out for %s:%s (%s) after %d ms", host, port, name, timeout_ms)
+    except socket.error as e:
+        log.debug("Socket error for %s:%s (%s) - Error: %s (Errno: %d)", host, port, name, str(e), e.errno)
+    except Exception as e:
+        log.debug("Probe failed for %s:%s (%s) - Unexpected error: %s", host, port, name, e)
     finally:
         try:
             if sock is not None:
@@ -298,24 +301,25 @@ def detect(elapsed_time_ms: int = 200, conn_limit: int = 10, connect_timeout_ms:
     if not candidates:
         return []
 
-    num_threads = min(len(candidates), max(1, (os.cpu_count() or 1)))
-    threads: List[threading.Thread] = []
+    max_concurrent = min(len(candidates), max(1, (os.cpu_count() or 1)))
     results: List[Dict[str, Any]] = []
     lock = threading.Lock()
 
-    # round-robin distribute candidates across threads
-    for cand in candidates:
-        t = threading.Thread(target=_try_probe_one, args=(cand, connect_timeout_ms, results, lock), daemon=True)
-        threads.append(t)
-        t.start()
+    def _try_probe_with_timeout(candidate: Dict[str, Any]) -> None:
+        _try_probe_one(candidate, connect_timeout_ms, results, lock)
 
-    # wait for threads with a global timeout (slightly larger than connect timeout)
-    deadline = time.monotonic() + (connect_timeout_ms / 1000.0) + 1.0
-    for t in threads:
-        remaining = deadline - time.monotonic()
-        if remaining <= 0:
-            break
-        t.join(timeout=remaining)
+    # Launch threads with limited concurrency
+    for i in range(0, len(candidates), max_concurrent):
+        batch = candidates[i:i + max_concurrent]
+        batch_threads: List[threading.Thread] = []
+        for cand in batch:
+            t = threading.Thread(target=_try_probe_with_timeout, args=(cand,), daemon=True)
+            batch_threads.append(t)
+            t.start()
+
+        # Wait for this batch to complete with connect_timeout
+        for t in batch_threads:
+            t.join(timeout=connect_timeout_ms / 1000.0)
 
     # sort by latency and return top conn_limit items
     # ensure the sort key is numeric to satisfy type checkers
