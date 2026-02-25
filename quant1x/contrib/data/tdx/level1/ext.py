@@ -3,8 +3,6 @@ from typing import Dict, List, Tuple
 from collections import OrderedDict
 from datetime import datetime
 
-from more_itertools import one
-
 from quant1x.log import logger
 from .. import protocol
 from .helpers import get_datetime
@@ -24,20 +22,32 @@ class Synchronize(protocol.BaseMessage):
         self.success: bool = False
     
     def serialize_request_body(self) -> bytes:
-        padding = bytes.fromhex("1f 32 c6 e5 d5 3d fb 41 1f 32 c6 e5 d5 3d fb 41 1f 32 c6 e5 d5 3d fb 41 1f 32 c6 e5 d5 3d fb 41 1f 32 c6 e5 d5 3d fb 41 1f 32 c6 e5 d5 3d fb 41 1f 32 c6 e5 d5 3d fb 41 1f 32 c6 e5 d5 3d fb 41 cc e1 6d ff d5 ba 3f b8 cb c5 7a 05 4f 77 48 ea")
+        #padding = bytes.fromhex("1f 32 c6 e5 d5 3d fb 41 1f 32 c6 e5 d5 3d fb 41 1f 32 c6 e5 d5 3d fb 41 1f 32 c6 e5 d5 3d fb 41 1f 32 c6 e5 d5 3d fb 41 1f 32 c6 e5 d5 3d fb 41 1f 32 c6 e5 d5 3d fb 41 1f 32 c6 e5 d5 3d fb 41 cc e1 6d ff d5 ba 3f b8 cb c5 7a 05 4f 77 48 ea")
+        padding = bytearray.fromhex('' \
+        'e5bb1c2fafe52594' \
+        '1f32c6e5d53dfb41' \
+        '5b734cc9cdbf0ac9' \
+        '2021bfdd1eb06d22' \
+        'd008884c1611cb13' \
+        '78f6abd824d899d2' \
+        '1f32c6e5d53dfb41' \
+        '1f32c6e5d53dfb41' \
+        'a9325ac935dc0837' \
+        '335a16e4ce17c1bb')
         return padding
         
     def deserialize_response_body(self, data: bytes) -> None:
         logger.debug(f"Synchronize.deserialize_response_body: {data.hex()}")
-        _, _, year, month, day, minute, hour, ms, second, server_name, u1, u2, u3, u4, u5, desc, u6, u7, u8, ip = struct.unpack('<B52sHBBBBBB21sfBHHH151sBBB52s', data)
-        # print({
-        #     "date_time": datetime(year, month, day, hour, minute, second).strftime('%Y-%m-%d %H:%M:%S'),
-        #     "server_name": server_name.decode('gbk').replace('\x00', ''),
-        #     "desc": desc.decode('gbk').replace('\x00', ''),
-        #     "ip": ip.decode('gbk').replace('\x00', ''),
-        #     "unknown": [u1, u2, u3, u4, u5, u6, u7, u8]
-        # })
+        result_code, result_message, year, month, day, minute, hour, ms, second, server_name, u1, u2, u3, u4, u5, desc, u6, u7, u8, ip = struct.unpack('<B52sHBBBBBB21sfBHHH151sBBB52s', data)
+        
+        result_message = result_message.decode('gbk', errors='ignore').rstrip('\x00')
+        date_time = datetime(year, month, day, hour, minute, second).strftime('%Y-%m-%d %H:%M:%S')
+        server_name = server_name.decode('gbk').replace('\x00', '')
+        desc = desc.decode('gbk').replace('\x00', '')
         ip = ip.decode('gbk').replace('\x00', '')
+        unknown = [u1, u2, u3, u4, u5, u6, u7, u8, ms]
+        logger.debug(f"Synchronize response: result_code={result_code}, result_message={result_message}, date_time={date_time}, server_name={server_name}, desc={desc}, ip={ip}, unknown={unknown}")
+        
         offset = 0
         if len(data) >= offset:
             info_bytes = data[offset:]
@@ -46,7 +56,7 @@ class Synchronize(protocol.BaseMessage):
             except Exception:
                 self.info = info_bytes.decode('utf-8', errors='ignore')
             logger.debug("ExtSynchronizeResponse info={}", self.info)
-        self.success = len(ip)>0
+        self.success = result_code>0
 
 class MarketList(protocol.BaseMessage):
     """

@@ -1,6 +1,7 @@
 import struct
 from enum import Enum
 from typing import List
+
 from .command import FLAG_UNCOMPRESSED
 from .command import Command
 from . import helpers
@@ -55,6 +56,8 @@ class Synchronize2Request:
         self.pkg_len2 = 0
         self.method = Command.STD_SYNCHRONIZE2.value
         self.padding = bytes.fromhex("d5d0c9ccd6a4a8af0000008fc22540130000d500c9ccbdf0d7ea00000002")
+        # padding = bytearray()
+        # padding.extend(bytes.fromhex("d5d0c9ccd6a4a8af0000008fc22540130000d500c9ccbdf0d7ea00000002"))
 
     def serialize(self) -> bytes:
         self.pkg_len1 = 2 + len(self.padding)
