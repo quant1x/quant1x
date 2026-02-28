@@ -148,13 +148,13 @@ class Instrument:
     """证券信息结构体"""
     exchange: Exchange       # 交易所代码(如 SH, SZ, NASDAQ)
     type: InstrumentType     # 证券类型(股票, 债券, 期货等)
-    ticker: str              # 交易所分配的证券代码(ticker)
+    ticker: str              # 交易所分配的证券代码(ticker), 通常为市场普遍使用的代码
     name: str                # 证券名称
     lot_size: int = 100      # 每手股数
     price_precision: int = 2 # 价格小数位数
     ext_market: int = 0      # 扩展市场代码(如 US, HK)
     ext_category: int = 0    # 扩展类别代码(如 STK, FUT, OPT, ...)
-    desc: str = ""           # 证券描述 
+    alias_ticker: str = ""   # 证券代码别名(如美股纳斯达克指数IXIC的别名A_IXIC)
     
     def __str__(self) -> str:
         """
@@ -185,11 +185,11 @@ class Instrument:
         return f'{self.exchange.name.lower()}'
     
     def to_string(self) -> str:
-        return f"Instrument(exchange={self.exchange}, type={self.type}, ticker={self.ticker}, name={self.name}, lot_size={self.lot_size}, price_precision={self.price_precision}, ext_market={self.ext_market}, ext_category={self.ext_category})"
+        return f"Instrument(exchange={self.exchange}, type={self.type}, ticker={self.ticker}, name={self.name}, lot_size={self.lot_size}, price_precision={self.price_precision}, ext_market={self.ext_market}, ext_category={self.ext_category}, alias_ticker={self.alias_ticker})"
     
     @classmethod
     def headers(cls) -> List[str]:
-        return ['exchange', 'type', 'code', 'name', 'lot_size', 'price_precision', 'ext_market', 'ext_category']
+        return ['exchange', 'type', 'code', 'name', 'lot_size', 'price_precision', 'ext_market', 'ext_category', 'alias_ticker']
     
     def to_dict(self) -> dict:
         """
@@ -205,6 +205,7 @@ class Instrument:
                 - price_precision: 价格精度
                 - ext_market: 扩展市场代码
                 - ext_category: 扩展类别代码
+                - alias_ticker: 证券代码别名
         """
         return {
                 'exchange': self.exchange.identifier,
@@ -214,7 +215,8 @@ class Instrument:
                 'lot_size': self.lot_size,
                 'price_precision': self.price_precision,
                 'ext_market': self.ext_market,
-                'ext_category': self.ext_category
+                'ext_category': self.ext_category,
+                'alias_ticker': self.alias_ticker,
             }
     
     
@@ -233,6 +235,7 @@ class Instrument:
                 - price_precision: 价格精度
                 - ext_market: 扩展市场代码
                 - ext_category: 扩展类别代码
+                - alias_ticker: 证券代码别名
         """
 
         return [
@@ -243,7 +246,8 @@ class Instrument:
             self.lot_size,
             self.price_precision,
             self.ext_market,
-            self.ext_category
+            self.ext_category,
+            self.alias_ticker,
         ]
     
     def __repr__(self) -> str:

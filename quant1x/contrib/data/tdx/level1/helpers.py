@@ -159,6 +159,8 @@ def int_to_float64(integer: int) -> float:
 
     该函数把输入分解成四个字节并依照协议的位权与指数规则重建浮点值。
     """
+    if integer == 0:
+        return 0.0
     # Ensure input is treated as 32-bit unsigned integer
     uinteger = integer & 0xFFFFFFFF
 

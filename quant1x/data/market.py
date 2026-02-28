@@ -4,6 +4,7 @@
 
 from typing import List
 
+from quant1x.log import logger
 from quant1x.std.numeric import NumberRange
 
 from .meta.exchange import Exchange
@@ -15,7 +16,7 @@ from .meta.ticker_rules.market_sse import sse_rules
 from .meta.ticker_rules.market_szse import szse_rules
 from .meta.ticker_rules.market_bse import bse_rules
 from .meta.ticker_rules.market_hkex import hkex_rules
-from .meta.ticker_rules.market_usa import usa_rules
+from .meta.ticker_rules.market_usa import usa_rules, usa_ticker_to_code, usa_code_to_ticker
 
 def match_rule(code: str, rules: List[CodeRule]) -> CodeRule:
     """
@@ -36,11 +37,15 @@ def match_rule(code: str, rules: List[CodeRule]) -> CodeRule:
         prefix = entry.prefix
         #print(prefix)
         # 跳过空前缀(可选，根据业务)
-        if not prefix:
-            continue
+        # if not prefix:
+        #     continue
         if isinstance(prefix, str) and code.startswith(prefix) and len(prefix) > best_len:
             best_len = len(prefix)
             best_match = entry
+        elif isinstance(prefix, str) and best_len == 0 and len(prefix) == 0:
+            best_len = 0
+            best_match = entry
+            break
         elif isinstance(prefix, NumberRange):
             prefix_len = prefix.max_value_length()
             if code in prefix and prefix_len > best_len:
@@ -87,6 +92,13 @@ def detect_instrument_type_by_rule(exchange: Exchange, code: str) -> InstrumentT
 
     cr = match_rule(code, rules)
     return cr.type
+
+PREFIX_EXCHANGE_IDENTIFIERS = {
+    Exchange.SSE.identifier,
+    Exchange.SZSE.identifier,
+    Exchange.BSE.identifier,
+    Exchange.HKEX.identifier,
+}
 
 # 所有交易所标识
 ALL_EXCHANGE_IDENTIFIERS = {
@@ -136,8 +148,9 @@ def detect_symbol(input_str: str) -> Instrument:
     exchange = Exchange.UNKNOWN
     typ = InstrumentType.Unknown
 
+    # 确定按照哪个市场规则解析, 有可能exchange会调整
     # 1. 判断前缀: sh600000
-    if len(pure_code) >= 2 and pure_code[:2] in ALL_EXCHANGE_IDENTIFIERS:
+    if len(pure_code) >= 2 and pure_code[:2] in PREFIX_EXCHANGE_IDENTIFIERS:
         ticker = pure_code[2:]
         prefix_code = pure_code[:2]
         exchange = Exchange.parse(prefix_code)
@@ -147,8 +160,9 @@ def detect_symbol(input_str: str) -> Instrument:
         ticker = pure_code[:-3]
         suffix_code = pure_code[-2:]
         exchange = Exchange.parse(suffix_code)
+            
         # 走指定市场规则
-        print(f"ticker: {ticker}, exchange: {exchange}")
+        logger.debug(f"ticker: {ticker}, exchange: {exchange}")
     else:
         # 纯数字或者字母
         code_len = len(pure_code)
@@ -223,13 +237,11 @@ def detect_symbol(input_str: str) -> Instrument:
             rules = hkex_rules
         elif exchange == Exchange.USA:
             rules = usa_rules
-        elif exchange == Exchange.USA:
-            return Instrument(exchange, InstrumentType.STOCK, pure_code, "", 0, 0)
         else:
             return Instrument(Exchange.UNKNOWN, InstrumentType.Unknown, "", "", 0, 0)
 
         cr = match_rule(ticker, rules)
-        #print(f"cr: {cr}")
+        print(f"cr: {cr}")
         if cr.type != InstrumentType.Unknown:
             return Instrument(cr.exchange, cr.type, ticker, "", 0, 0)
         else:
@@ -281,5 +293,11 @@ if __name__ == "__main__":
     symbol = detect_symbol("85000.hk")
     print(symbol.to_string())
     
-    symbol = detect_symbol("a_ixic.us")
+    symbol = detect_symbol("ixic.us")
+    print(symbol.to_string(), symbol.symbol())
+    
+    symbol = detect_symbol("aapl.us")
+    print(symbol.to_string(), symbol.symbol())
+    
+    symbol = detect_symbol("hk01880")
     print(symbol.to_string(), symbol.symbol())

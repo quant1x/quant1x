@@ -54,7 +54,7 @@ def get_period_name(period: str = _default_bar_period) -> str:
         'D': '日'
     }
     period = period.upper()
-    return period_names.get(period, _default_bar_period)
+    return period_names.get(period, period)
 
 def convert_klines_trading(klines, period='D'):
     """

@@ -48,12 +48,22 @@ def _load_securities() -> bool:
                 ext_market = int(tmp) if tmp.isdigit() else 0
                 tmp = row.get('ext_category') or ''
                 ext_category = int(tmp) if tmp.isdigit() else 0
+                tmp = row.get('alias_ticker') or ''
+                alias_ticker = tmp
                 
                 code = code.lower()
-                inst = Instrument(exchange=exchange, type=type, ticker=code, name=name, lot_size=lot_size, price_precision=price_precision, ext_market=ext_market, ext_category=ext_category)
+                inst = Instrument(exchange=exchange,
+                                  type=type,
+                                  ticker=code,
+                                  name=name,
+                                  lot_size=lot_size,
+                                  price_precision=price_precision,
+                                  ext_market=ext_market,
+                                  ext_category=ext_category,
+                                  alias_ticker=alias_ticker)
                 symbol = inst.symbol()
-                if code == 'hsi':
-                    print(f"{symbol} -> {inst}")
+                # if code == 'hsi':
+                #     print(f"{symbol} -> {inst}")
                 _SECURITY_MAP[symbol] = inst
     except FileNotFoundError:
         # file not present: leave map empty but record load time to avoid hot-loop
@@ -190,10 +200,12 @@ if __name__ == '__main__':
     # Minimal required test (as you requested): print security info for sh000001
     code = "sz000737"
     code = "hsi.hk"
-    code = 'a_ixic.us'
+    code = 'ixic.us'
+    code = 'US0487.us'
+    code = 'aapl.us'
     info = get_instrument_info(code)
     print(f"Security info for {code}: {info}")
     if info is not None:
-        print(f"Name: {info.name}, Lot Size: {info.lot_size}, Price Precision: {info.price_precision}, ext_market: {info.ext_market}, ext_category: {info.ext_category}")
+        print(f"Name: {info.name}, Lot Size: {info.lot_size}, Price Precision: {info.price_precision}, ext_market: {info.ext_market}, ext_category: {info.ext_category}, alias_ticker: {info.alias_ticker}")
     else:
         print("No security info found for", code)

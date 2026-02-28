@@ -1,0 +1,430 @@
+import re
+import json
+import datetime
+
+def parse_money(text):
+    """
+    从文本中提取金额和币种。
+    返回 (amount, currency)，如果没有找到则返回 (None, None)
+    """
+    if not text:
+        return None, None
+    
+    # 匹配数字 (整数或小数，支持千分位逗号) 后跟货币单位
+    # 支持：港元、港仙、美元、欧元、人民币/元
+    # 注意顺序：长词优先以避免被短词（如“元”）误匹配
+    pattern = r'(\d{1,3}(?:[,，]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*(港元|港仙|美元|欧元|人民币|元)'
+    matches = re.findall(pattern, text)
+    
+    if matches:
+        # 如果有多个匹配（例如既有股息又有特别股息），取第一个作为主股息
+        amount_str, currency = matches[0]
+        # 规范化金额字符串（去千分位分隔符）
+        amount_str = amount_str.replace(',', '').replace('，', '')
+        # 规范化货币词：'元' -> '人民币'
+        if currency == '元':
+            currency = '人民币'
+        try:
+            amount = float(amount_str)
+        except ValueError:
+            return amount_str, currency
+
+        # 映射本地货币名称到 ISO 3-letter 代码，并处理港仙为港元小数表示
+        currency_map = {
+            '港元': 'HKD',
+            '港仙': 'HKD',
+            '人民币': 'CNY',
+            '美元': 'USD',
+            '欧元': 'EUR'
+        }
+
+        currency_code = currency_map.get(currency, currency)
+
+        # 如果原文是港仙（分），将数值除以100以得到港元
+        if currency == '港仙':
+            try:
+                amount = float(amount) / 100.0
+            except Exception:
+                pass
+
+        return amount, currency_code
+            
+    return None, None
+
+def parse_table_rows(section_text):
+    """
+    解析 ASCII 表格文本，处理多行合并的情况，返回单元格列表的列表
+    """
+    lines = section_text.strip().split('\n')
+    rows = []
+    current_row = None
+    
+    for line in lines:
+        # 跳过分割线 (包含 ─, ┬, ┴, ├, ┼, ┤, ┌, ┐, └, ┘)
+        if any(char in line for char in ['─', '┬', '┴', '├', '┼', '┤', '┌', '┐', '└', '┘']):
+            continue
+        
+        # 只处理包含数据行的符号 │
+        if '│' not in line:
+            continue
+            
+        # 分割单元格，去掉首尾空字符串
+        cells = [c.strip() for c in line.split('│')]
+        # 去掉首尾因为分割产生的空元素
+        if cells and cells[0] == '': cells.pop(0)
+        if cells and cells[-1] == '': cells.pop(-1)
+        
+        # 检查是否是续行 (第一列为空)
+        # 在分红派息表中，第一列是公告日期。如果第一列为空，说明是上一行的续行
+        if len(cells) > 1 and not cells[0]:
+            if current_row:
+                # 将第二列 (方案概述) 的内容追加到上一行
+                # 注意：不同表格列数可能不同，这里假设续行主要是为了补充长文本
+                # 找到非空的单元格追加到对应位置，通常是在第 2 列 (index 1)
+                for i, cell in enumerate(cells):
+                    if cell:
+                        if i < len(current_row):
+                            current_row[i] += " " + cell
+                        else:
+                            current_row.append(cell)
+            continue
+        
+        # 新行
+        if cells:
+            # 只有当行里有实际内容时才保存 (避免空行)
+            if any(c for c in cells):
+                if current_row:
+                    rows.append(current_row)
+                current_row = cells
+    
+    if current_row:
+        rows.append(current_row)
+        
+    return rows
+
+def parse_date_safe(date_str):
+    """尝试将 YYYY-MM-DD 格式字符串解析为 date 对象，失败返回 None"""
+    if not date_str or date_str.strip() in ('---', ''):
+        return None
+    try:
+        return datetime.datetime.strptime(date_str.strip(), "%Y-%m-%d").date()
+    except Exception:
+        # 有时日期可能是其他格式，尝试常见替代
+        try:
+            return datetime.datetime.strptime(date_str.strip(), "%Y/%m/%d").date()
+        except Exception:
+            return None
+
+def parse_dividends(text):
+    """解析分红派息部分"""
+    # 定位 section
+    start_marker = "【1.分红派息】"
+    end_marker = "【2.供股】"
+    
+    # 可能在文首有一行索引性的摘要（例如“本栏包括【1.分红派息】【2.供股】...”），
+    # 因此优先选取第二个出现的章节标题作为实际内容起始点
+    start_idx = text.find(start_marker)
+    if start_idx == -1:
+        return []
+    # 如果同一文档中该标记出现多次，取后一处出现作为真实章节开始
+    next_start = text.find(start_marker, start_idx + 1)
+    if next_start != -1:
+        start_idx = next_start
+
+    end_idx = text.find(end_marker, start_idx)
+
+    section_content = text[start_idx + len(start_marker):end_idx] if end_idx != -1 else text[start_idx + len(start_marker):]
+    
+    rows = parse_table_rows(section_content)
+    results = []
+
+    # 表头：公告日期，方案概述，截止日期，除净日，派付日，暂停过户起，暂停过户止
+    # 索引：0, 1, 2, 3, 4, 5, 6
+
+    for row in rows:
+        if len(row) < 7:
+            continue
+
+        announce = row[0].strip()
+        # 跳过表头行（如表格中重复出现“公告日期”等）
+        if '公告日期' in announce or announce.startswith('公告'):
+            continue
+        overview = row[1]
+        amount, currency = parse_money(overview)
+        # 处理每股/每x股的分母，用于计算单股金额
+        ratio_shares = 1
+        match_ratio = re.search(r'每\s*(\d+)\s*股', overview)
+        if match_ratio:
+            try:
+                ratio_shares = int(match_ratio.group(1))
+            except ValueError:
+                ratio_shares = 1
+
+        dividend_amount_per_share = None
+        if ratio_shares and isinstance(amount, (int, float)):
+            dividend_amount_per_share = amount / ratio_shares
+        # 检测是否包含送股/派股信息
+        bonus_desc = None
+        bonus = False
+        # 常见模式："每 10 股股份获发 1 股" / "派 X 股" / "获发 X 股"
+        m = re.search(r'每\s*(\d+)\s*股[^\n\r]*获发\s*(\d+)\s*股', overview)
+        if m:
+            bonus = True
+            bonus_desc = f"每{m.group(1)}股获发{m.group(2)}股"
+        else:
+            m2 = re.search(r'(获发|派)\s*(\d+)\s*股', overview)
+            if m2:
+                bonus = True
+                bonus_desc = m2.group(0)
+
+        record = {
+            "category": "分红派息",
+            "announce_date": announce,
+            "announce_date_parsed": None,
+            "scheme_overview": overview,
+            "record_date": row[2].strip() if len(row) > 2 else None,
+            "ex_date": row[3].strip() if len(row) > 3 else None,
+            "payment_date": row[4].strip() if len(row) > 4 else None,
+            "closure_start": row[5].strip() if len(row) > 5 else None,
+            "closure_end": row[6].strip() if len(row) > 6 else None,
+            "dividend_amount": amount,
+            "dividend_currency": currency,
+            "ratio_shares": ratio_shares,
+            "dividend_amount_per_share": dividend_amount_per_share,
+            "bonus": bonus,
+            "bonus_description": bonus_desc
+        }
+
+        # 解析 announce_date 为 date 对象，便于排序
+        parsed = parse_date_safe(announce)
+        if parsed:
+            record["announce_date_parsed"] = parsed.isoformat()
+
+        results.append(record)
+
+    return results
+
+def parse_text_to_list(text):
+    """统一返回一个记录列表（分红/送股/拆分合并等均包含），并按公告日期升序排序（最早在前）。
+    支持传入字符串或字符串列表（会将列表以换行符连接）。"""
+    if isinstance(text, list):
+        normalized = []
+        for item in text:
+            if isinstance(item, str):
+                normalized.append(item)
+            elif isinstance(item, dict):
+                # 常见字段名可能包含 'text' 或 'reply'
+                if 'text' in item and isinstance(item['text'], str):
+                    normalized.append(item['text'])
+                elif 'reply' in item and isinstance(item['reply'], str):
+                    normalized.append(item['reply'])
+                else:
+                    normalized.append(json.dumps(item, ensure_ascii=False))
+            else:
+                normalized.append(str(item))
+        text = "\n".join(normalized)
+
+    dividends = parse_dividends(text)
+    rights = parse_rights(text)
+    splits = parse_splits(text)
+
+    # 合并所有记录
+    combined = []
+    combined.extend(dividends)
+    combined.extend(rights)
+    combined.extend(splits)
+
+    # merge records sharing the same announce_date into one dict
+    merged = {}
+    for rec in combined:
+        key = rec.get('announce_date')
+        if key in merged:
+            existing = merged[key]
+            # maintain list of categories
+            cats = existing.get('categories', [existing.get('category')])
+            if rec.get('category') not in cats:
+                cats.append(rec.get('category'))
+            existing['categories'] = cats
+            # merge other fields, preferring non-null/non-empty values
+            for k, v in rec.items():
+                if k in ('announce_date', 'category'):
+                    continue
+                if v is None or v == '' or v == '---':
+                    continue
+                if k not in existing or existing[k] is None or existing[k] == '':
+                    existing[k] = v
+                elif existing[k] != v and k not in ('categories', 'announce_date_parsed'):
+                    # if conflict, convert to list
+                    if not isinstance(existing[k], list):
+                        existing[k] = [existing[k]]
+                    if v not in existing[k]:
+                        existing[k].append(v)
+        else:
+            newrec = rec.copy()
+            newrec['categories'] = [rec.get('category')]
+            merged[key] = newrec
+
+    # produce sorted list from merged values
+    def sort_key(r):
+        d = r.get('announce_date_parsed')
+        if d:
+            try:
+                return datetime.datetime.fromisoformat(d)
+            except Exception:
+                return datetime.datetime.min
+        # if no parsed date, try raw string
+        try:
+            return datetime.datetime.strptime(r.get('announce_date'), "%Y-%m-%d")
+        except Exception:
+            return datetime.datetime.min
+
+    sorted_list = sorted(merged.values(), key=sort_key, reverse=False)
+    return sorted_list
+
+def parse_rights(text):
+    """解析供股部分"""
+    start_marker = "【2.供股】"
+    end_marker = "【3.拆分合并】"
+    
+    start_idx = text.find(start_marker)
+    if start_idx == -1:
+        return []
+    next_start = text.find(start_marker, start_idx + 1)
+    if next_start != -1:
+        start_idx = next_start
+    end_idx = text.find(end_marker, start_idx)
+    if start_idx == -1:
+        return []
+    section_content = text[start_idx + len(start_marker):end_idx] if end_idx != -1 else text[start_idx + len(start_marker):]
+    
+    if "暂无数据" in section_content:
+        return []
+        
+    # 如果有数据，逻辑同分红，但此处根据输入文本为空
+    return []
+
+def parse_splits(text):
+    """解析拆分合并部分"""
+    start_marker = "【3.拆分合并】"
+    # 结束标记可以是免责条款或文本结束
+    end_marker = "〖免责条款〗"
+    
+    start_idx = text.find(start_marker)
+    if start_idx == -1:
+        return []
+    next_start = text.find(start_marker, start_idx + 1)
+    if next_start != -1:
+        start_idx = next_start
+    end_idx = text.find(end_marker, start_idx)
+    if start_idx == -1:
+        return []
+    section_content = text[start_idx + len(start_marker):end_idx] if end_idx != -1 else text[start_idx + len(start_marker):]
+    
+    rows = parse_table_rows(section_content)
+    results = []
+    
+    # 表头：公告日期，重组方式，方案概述，一股合并基数，每股拆细 (股), 除净日，换领股票起，换领股票止，变更说明
+    # 索引：0, 1, 2, 3, 4, 5, 6, 7, 8
+    
+    for row in rows:
+        if len(row) < 9:
+            continue
+        # 跳过可能的表头行
+        if '公告日期' in row[0] or row[0].strip().startswith('公告'):
+            continue
+        record = {
+            "category": "拆分合并",
+            "announce_date": row[0],
+            "restructuring_type": row[1],
+            "scheme_overview": row[2],
+            "consolidation_base": row[3],
+            "split_ratio": row[4],
+            "ex_date": row[5],
+            "cert_exchange_start": row[6],
+            "cert_exchange_end": row[7],
+            "change_description": row[8]
+        }
+        results.append(record)
+        
+    return results
+
+def main():
+    # 原始文本
+    raw_text = """分红送股☆ ◇00700 腾讯控股 更新日期：2026-02-27◇ 通达信港股F10
+★本栏包括【1.分红派息】【2.供股】【3.拆分合并】
+
+【1.分红派息】
+┌─────┬─────────────────────┬─────┬─────┬─────────┬─────┬─────┐
+│公告日期  │方案概述                                  │截止日期  │除净日    │派付日            │暂停过户起│暂停过户止│
+├─────┼─────────────────────┼─────┼─────┼─────────┼─────┼─────┤
+│2025-03-19│末期股息每股4.5港元                       │2024-12-31│2025-05-16│现金：2025-05-30  │2025-05-20│2025-05-21│
+│2024-03-20│末期股息每股3.4港元                       │2023-12-31│2024-05-17│现金：2024-05-31  │2024-05-21│2024-05-22│
+│2023-03-22│末期股息每股2.4港元                       │2022-12-31│2023-05-19│现金：2023-06-05  │2023-05-23│2023-05-24│
+│2022-11-16│每10股股份获发1股美团B类普通股(相当于每股 │---       │2023-01-05│---               │2023-01-09│2023-01-10│
+│          │派息18.13港元)                            │          │          │                  │          │          │
+│2022-03-23│末期股息每股160港仙                       │2021-12-31│2022-05-20│现金：2022-06-06  │2022-05-24│2022-05-25│
+│2021-12-23│21股（00700）派1股京东集团-SW（09618）A类 │---       │2022-01-20│---               │2022-01-24│2022-01-25│
+│          │普通股(相当于每股派息13.4港元)            │          │          │                  │          │          │
+│2021-03-24│末期股息每股160港仙                       │2020-12-31│2021-05-24│现金：2021-06-07  │2021-05-26│2021-05-27│
+│2020-03-18│末期股息每股1.20港元                      │2019-12-31│2020-05-15│现金：2020-05-29  │2020-05-19│2020-05-20│
+│2019-03-21│末期股息每股1.00港元                      │2018-12-31│2019-05-17│现金：2019-05-31  │2019-05-21│2019-05-22│
+│2018-03-21│末期股息每股0.88港元                      │2017-12-31│2018-05-18│现金：2018-06-01  │2018-05-23│2018-05-24│
+│2017-03-22│末期股息每股0.61港元                      │2016-12-31│2017-05-19│现金：2017-06-02  │2017-05-23│2017-05-24│
+│2016-03-17│年度股息每股47港仙                        │2015-12-31│2016-05-20│现金：2016-06-02  │2016-05-24│2016-05-25│
+│2015-03-18│年度股息每股36港仙                        │2014-12-31│2015-05-15│现金：2015-05-29  │2015-05-19│2015-05-20│
+│2014-03-19│年度股息1.2港元                           │2013-12-31│2014-05-15│现金：2014-05-29  │2014-05-19│2014-05-20│
+│2013-03-20│年度股息1港元                             │2012-12-31│2013-05-20│现金：2013-05-30  │2013-05-22│2013-05-23│
+│2012-03-14│年度股息0.75港元                          │2011-12-31│2012-05-18│现金：2012-05-30  │2012-05-22│2012-05-23│
+│2011-03-16│年度股息0.55港元                          │2010-12-31│2011-05-03│现金：2011-05-25  │2011-05-05│2011-05-11│
+│2010-03-17│年度股息0.4港元                           │2009-12-31│2010-05-05│现金：2010-05-26  │2010-05-07│2010-05-12│
+│2009-03-18│年度股息0.25港元，特别股息0.1港元         │2008-12-31│2009-05-06│现金：2009-05-27  │2009-05-08│2009-05-13│
+│2008-03-19│年度股息0.16港元                          │2007-12-31│2008-05-06│现金：2008-05-28  │2008-05-08│2008-05-14│
+│2007-03-21│末期股息0.12港元                          │2006-12-31│2007-05-09│现金：2007-05-30  │2007-05-11│2007-05-16│
+│2006-03-22│末期股息8港仙                             │2005-12-31│2006-05-15│现金：2006-06-07  │2006-05-17│2006-05-24│
+│2005-03-17│末期股息7港仙                             │2004-12-31│2005-04-19│现金：2005-05-17  │2005-04-21│2005-04-27│
+└─────┴─────────────────────┴─────┴─────┴─────────┴─────┴─────┘
+
+【2.供股】 暂无数据
+
+【3.拆分合并】
+┌─────┬────┬──────────┬──────┬──────┬─────┬─────┬─────┬───────┐
+│公告日期  │重组方式│方案概述            │一股合并基数│每股拆细(股)│除净日    │换领股票起│换领股票止│变 更说明      │
+├─────┼────┼──────────┼──────┼──────┼─────┼─────┼─────┼───────┤
+│2014-03-19│拆股    │每1股拆5股          │         ---│      5.0000│2014-05-15│---       │---       │---           │
+└─────┴────┴──────────┴──────┴──────┴─────┴─────┴─────┴───────┘
+
+〖免责条款〗
+ 1、本公司力求但不保证提供的任何信息的真实性、准确性、完整性及原创性等，投资者使
+ 用前请自行予以核实，如有错漏请以上市公司信息披露为准，本公司不对因上述信息全部
+ 或部分内容而引致的盈亏承担任何责任。
+ 2、本公司无法保证该项服务能满足用户的要求，也不担保服务不会受中断，对服务的及时
+ 性、安全性以及出错发生都不作担保。
+ 3、本公司提供的任何信息仅供投资者参考，不作为投资决策的依据，本公司不对投资者依
+ 据上述信息进行投资决策所产生的收益和损失承担任何责任。投资有风险，应谨慎至上。
+"""
+
+    # 执行解析并输出统一结构的列表（按公告日期降序）
+    # 如果结果为空，输出一些调试信息以便定位问题
+    unified = parse_text_to_list(raw_text)
+    if not unified:
+        print('DEBUG: unified list is empty')
+        print('DEBUG: contains start marker?', '【1.分红派息】' in raw_text)
+        # 打印开始附近的文本片段
+        si = raw_text.find('【1.分红派息】')
+        if si != -1:
+            print('DEBUG SNIPPET:', raw_text[si:si+200])
+            # 进一步逐行检查表格内容和管道字符
+            start_marker = "【1.分红派息】"
+            end_marker = "【2.供股】"
+            sidx = raw_text.find(start_marker)
+            eidx = raw_text.find(end_marker)
+            if sidx != -1:
+                section = raw_text[sidx + len(start_marker): eidx if eidx != -1 else None]
+                lines = section.split('\n')
+                print('DEBUG: section line count', len(lines))
+                for i, L in enumerate(lines[:30]):
+                    print(i, repr(L), 'HAS_PIPE:', ('│' in L))
+    print(json.dumps(unified, ensure_ascii=False, indent=2))
+
+if __name__ == "__main__":
+    main()

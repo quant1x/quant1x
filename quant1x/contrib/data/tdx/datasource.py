@@ -257,7 +257,7 @@ if __name__ == "__main__":
     # print("total: ", len(codes))
     code = 'sh562500'
     code = 'hsi.hk'
-    code = 'a_ixic.us'
+    code = 'ixic.us'
     date = '2026-02-06'
     inst = D.get_instrument(code)
     #print(inst)

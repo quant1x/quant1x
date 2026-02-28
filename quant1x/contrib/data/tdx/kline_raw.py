@@ -281,7 +281,8 @@ def fetch_kline_raw_from_ext(inst: Instrument, start: int, count: int, freq: Fre
     try:
         kline_type = frequency_to_kline_type(freq)
         with get_ext_conn() as conn:
-            bars = InstrumentBars(kline_type.value, inst.ext_market, ticker=inst.ticker.upper(), start=start, count=count)
+            code = inst.ticker if inst.alias_ticker=='' else inst.alias_ticker
+            bars = InstrumentBars(kline_type.value, inst.ext_market, ticker=code.upper(), start=start, count=count)
             protocol.process_level1_new(conn, bars)
             return bars.reply
     except Exception as e:
@@ -293,6 +294,7 @@ def fetch_kline_raw(inst: Instrument, start: int, count: int, freq: Frequency) -
         return fetch_kline_raw_from_std(inst, start, count, freq)
     elif inst.exchange.is_ext_quote():
         return fetch_kline_raw_from_ext(inst, start, count, freq)
+    return []
 
 class DataKLineRaw(DataAdapter):
     def kind(self) -> int:
