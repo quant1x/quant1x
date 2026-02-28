@@ -444,6 +444,7 @@ def process_level1(conn_handle: ConnectionHandle, request: Request, response: Re
 def process_level1_new(conn_handle: ConnectionHandle, msg: BaseMessage) -> None:
     logger.debug(f"process_level1: request={msg.request_header.to_string()}")
     req_buf = msg.serialize_request()
+    logger.debug(f"process_level1: req_buf={req_buf.hex()}")
     conn_handle.sendall(req_buf)
 
     # # 读取 16 字节响应头
