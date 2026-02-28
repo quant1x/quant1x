@@ -7,6 +7,7 @@ from __future__ import annotations
 import threading
 from typing import List, Tuple, Optional, Any
 
+from quant1x.contrib.data.tdx.level1.ext import InstrumentBars
 from quant1x.data import status
 from quant1x.data.meta.exchange import Exchange
 from quant1x.net.conn import ConnectionHandle
@@ -238,41 +239,106 @@ if __name__ == '__main__':
     # 市场代码列表
     from .level1.ext import MarketList
     conn = get_ext_conn()
-    market_list = MarketList()
-    protocol.process_level1_new(conn, market_list)
-    if market_list.reply:
-        df = pd.DataFrame(market_list.reply)
-        df.to_csv('ext-markets.csv', index=False)
-        print(df)
+    # # 测试0x2455
+    # from .level1.ext import Synchronize2
+    # unknown = Synchronize2()
+    # protocol.process_level1_new(conn, unknown)
+    # if unknown.reply:
+    #     df = pd.DataFrame(unknown.reply)
+    #     print(df)
+    # market_list = MarketList()
+    # protocol.process_level1_new(conn, market_list)
+    # if market_list.reply:
+    #     df = pd.DataFrame(market_list.reply)
+    #     df.to_csv('ext-markets.csv', index=False)
+    #     print(df)
     
-    # 证券代码总数
-    from .level1.ext import InstrumentCount
-    ic = InstrumentCount()
-    protocol.process_level1_new(conn, ic)
-    print(f'instrument count: {ic.reply}')
+    # # 证券代码总数
+    # from .level1.ext import InstrumentCount
+    # ic = InstrumentCount()
+    # protocol.process_level1_new(conn, ic)
+    # print(f'instrument count: {ic.reply}')
     
-    # 证券代码列表
-    from .level1.ext import InstrumentInfo
-    list =[]
-    start = 0
-    offset = InstrumentInfo.PRE_REQUEST_MAX
-    while True:
-        ii = InstrumentInfo(start, offset)
-        protocol.process_level1_new(conn, ii)
-        if ii.reply['count']>0:
-            list.extend(ii.reply['list'])
-        else:
-            break
-        start += offset
-    df = pd.DataFrame(list)
-    df.to_csv('ext-instruments.csv', index=False)
-    print(df)
-    # K线数据
-    from .level1.ext import InstrumentBars
-    #bars = InstrumentBars(9, 0x17, ticker='HSIL8', start=0, count=700)
-    bars = InstrumentBars(8, 31, ticker='00700', start=0, count=700)
-    #bars = InstrumentBars(9, 12, ticker='A_IXIC', start=0, count=700)
-    protocol.process_level1_new(conn, bars)
-    if bars.reply:
-        df = pd.DataFrame(bars.reply)
+    # # 证券代码列表
+    # from .level1.ext import InstrumentInfo
+    # list =[]
+    # start = 0
+    # offset = InstrumentInfo.PRE_REQUEST_MAX
+    # while True:
+    #     ii = InstrumentInfo(start, offset)
+    #     protocol.process_level1_new(conn, ii)
+    #     if ii.reply['count']>0:
+    #         list.extend(ii.reply['list'])
+    #     else:
+    #         break
+    #     start += offset
+    # df = pd.DataFrame(list)
+    # df.to_csv('ext-instruments.csv', index=False)
+    # print(df)
+    # # K线数据
+    # from .level1.ext import InstrumentBars
+    # #bars = InstrumentBars(9, 0x17, ticker='HSIL8', start=0, count=700)
+    # bars = InstrumentBars(8, 31, ticker='00700', start=0, count=700)
+    # #bars = InstrumentBars(9, 12, ticker='A_IXIC', start=0, count=700)
+    # protocol.process_level1_new(conn, bars)
+    # if bars.reply:
+    #     df = pd.DataFrame(bars.reply)
+    #     print(df)
+    
+    # 公司信息(F10)
+    from .level1.ext import CompanyInfoCategories, CompanyInfoContent
+    categories = CompanyInfoCategories(market=31, ticker='00700')
+    protocol.process_level1_new(conn, categories)
+    if categories.reply:
+        df = pd.DataFrame(categories.reply)
         print(df)
+        latest = categories.reply[-1]
+        content_length = latest.offset + latest.size
+        print(f'content_length: {content_length}')
+        # 捞出分红送股
+        for category in categories.reply:
+            if category.title == '分红送股':
+                #xdxr_info = CompanyInfoContent(market=categories.market, ticker=categories.ticker, filename=category.filename, offset=category.offset, size=category.size)
+                xdxr_info = CompanyInfoContent(market=categories.market, ticker=categories.ticker, filename=category.filename, offset=0, size=content_length)
+                protocol.process_level1_new(conn, xdxr_info)
+                if xdxr_info.reply:
+                    import json
+                    #print(xdxr_info.reply)
+                    print(json.dumps(xdxr_info.reply, ensure_ascii=False, indent=2))
+                    df = pd.DataFrame(xdxr_info.reply)
+                    print(df)
+                break
+    
+    # 除权除息信息
+    from .level1.ext import TodoCmd0X2488, TodoCmd0X2489, TodoCmd0X2459
+    xdxr_info = TodoCmd0X2489(market=31, ticker='00700')
+    protocol.process_level1_new(conn, xdxr_info)
+    if xdxr_info.reply:
+        df = pd.DataFrame(xdxr_info.reply)
+        print(df)
+        
+    # from .level1.ext import InstrumentQuote1
+    # xdxr_info = InstrumentQuote1(market=31, ticker='00700')
+    # protocol.process_level1_new(conn, xdxr_info)
+    # if xdxr_info.reply:
+    #     df = pd.DataFrame(xdxr_info.reply)
+    #     print(df)
+    
+    
+    # from .level1.ext import InstrumentQuote2
+    # req = InstrumentQuote2([(70, 'HK0211'),(70, 'HK0222'), (70, 'HK1061')])
+    # protocol.process_level1_new(conn, req)
+    # if req.reply:
+    #     df = pd.DataFrame(req.reply)
+    #     print(df)
+    
+    # # 期货行情
+    # from .level1.ext import Futures_Quotes
+    # req = Futures_Quotes([(70, 'HK0211'),(70, 'HK0222'), (70, 'HK1061')])
+    # protocol.process_level1_new(conn, req)
+    # if req.reply:
+    #     df = pd.DataFrame(req.reply)
+    #     print(df)
+    
+    
+    conn.release()
