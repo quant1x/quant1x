@@ -1,4 +1,7 @@
+from calendar import c
+from math import log
 import struct
+from turtle import width
 from typing import Dict, List, Tuple
 from collections import OrderedDict
 from datetime import datetime
@@ -6,7 +9,7 @@ from datetime import datetime
 from quant1x.log import logger
 from .. import protocol
 from .helpers import get_datetime
-from .command import Command
+from .command import Command, QuoteType
 from quant1x.data.meta import Exchange, Instrument, InstrumentType
 from quant1x.data import detect_instrument_type_by_rule
 from ..market import find_exchange_by_market_and_category, find_market_by_exchange_and_asset_class
@@ -464,7 +467,7 @@ class CompanyInfoCategories(protocol.BaseMessage):
     def serialize_request_body(self) -> bytes:
         ticker = self.ticker.encode("utf-8")
         body = struct.pack('<BB6s', self.market, 0, ticker)
-        padding = bytes.fromhex('36000000')
+        padding = bytes.fromhex('00000000')
         return body + padding
     
     def deserialize_response_body(self, data: bytes) -> None:
@@ -772,3 +775,82 @@ class Futures_Quotes(protocol.BaseMessage):
             self.reply.append(one)
             pos += step
     
+class IntradayChartSampling(protocol.BaseMessage):
+    """
+    当日分时简图
+    """
+    def __init__(self, market, ticker: str):
+        super().__init__(Command.EXT_INTRADAY_CHART_SAMPLING)
+        self.market = market
+        self.ticker = ticker
+        self.reply = []
+
+    def serialize_request_body(self) -> bytes:
+        ticker = self.ticker.encode("utf-8")
+        symbol = struct.pack('<H22s', self.market, ticker) # 24: 证券代码
+        padding= bytearray.fromhex('01001400000000000000000000') # 13: 未知填充
+        return symbol + padding
+    
+    def deserialize_response_body(self, data: bytes) -> None:
+        data_len = len(data)
+        logger.debug(f"[IntradayChartSampling] deserialize: len={data_len}, data={data.hex()}")
+        (market, ticker) = struct.unpack('<H22s', data[:24])
+        logger.debug(f"[IntradayChartSampling] deserialize: market={market}, ticker={ticker.decode('gbk')}")
+        pos = 24
+        (unknown1, width, height, unknown2) = struct.unpack('<HBBH', data[pos:pos+6])
+        logger.debug(f"[IntradayChartSampling] deserialize: unknown1={unknown1}, width={width}, height={height}, unknown2={unknown2}")
+        pos += 6
+        # year, month, day, hour, minute, pos = helpers.get_datetime(category, data, pos)
+        # logger.debug(f"[IntradayChartSampling] deserialize: year={year}, month={month}, day={day}, hour={hour}, minute={minute}")
+        logger.debug(f"[IntradayChartSampling] deserialize: pos={pos}, data={data[pos:pos+4].hex()}")
+        pos += 4
+        (count, pre_close, unknown1) = struct.unpack('<HfH', data[pos:pos+8])
+        logger.debug(f"[IntradayChartSampling] deserialize: count={count}, pre_close={pre_close}, unknown1={unknown1}")
+        pos += 8
+        for _ in range(count):
+            (f1,) = struct.unpack('<f', data[pos:pos+4])
+            #logger.debug(f"[IntradayChartSampling] deserialize: f1={f1}, ")
+            self.reply.append(f1)
+            pos += 4
+        logger.debug(f"[IntradayChartSampling] deserialize: pos={pos}, data={data[pos:].hex()}")
+
+class TodoCmdUnknown(protocol.BaseMessage):
+    """
+    获取股票的公告信息, html格式
+    """
+    def __init__(self, command:int, market, ticker: str):
+        custom = Command.from_parts(QuoteType.EXTENSION, command & 0xFFFF, "自定义指令")
+        super().__init__(custom)
+        self.market = market
+        self.ticker = ticker
+        self.reply = []
+
+    def serialize_request_body(self) -> bytes:
+        ticker = self.ticker.encode("utf-8")
+        symbol = struct.pack('<H22s', self.market, ticker) # 24: 证券代码
+        padding= bytearray.fromhex('01001400000000000000000000') # 13: 未知填充
+        return symbol + padding
+    
+    def deserialize_response_body(self, data: bytes) -> None:
+        data_len = len(data)
+        logger.debug(f"[TodoCmdUnknown] deserialize: len={data_len}, data={data.hex()}")
+        (market, ticker) = struct.unpack('<H22s', data[:24])
+        logger.debug(f"[TodoCmdUnknown] deserialize: market={market}, ticker={ticker.decode('gbk')}")
+        pos = 24
+        (unknown1, width, height, unknown2) = struct.unpack('<HBBH', data[pos:pos+6])
+        logger.debug(f"[TodoCmdUnknown] deserialize: unknown1={unknown1}, width={width}, height={height}, unknown2={unknown2}")
+        pos += 6
+        # year, month, day, hour, minute, pos = helpers.get_datetime(category, data, pos)
+        # logger.debug(f"[TodoCmdUnknown] deserialize: year={year}, month={month}, day={day}, hour={hour}, minute={minute}")
+        logger.debug(f"[TodoCmdUnknown] deserialize: pos={pos}, data={data[pos:pos+4].hex()}")
+        pos += 4
+        (count, pre_close, unknown1) = struct.unpack('<HfH', data[pos:pos+8])
+        logger.debug(f"[TodoCmdUnknown] deserialize: count={count}, pre_close={pre_close}, unknown1={unknown1}")
+        pos += 8
+        for _ in range(count):
+            (f1,) = struct.unpack('<f', data[pos:pos+4])
+            #logger.debug(f"[TodoCmdUnknown] deserialize: f1={f1}, ")
+            self.reply.append(f1)
+            pos += 4
+        logger.debug(f"[TodoCmdUnknown] deserialize: pos={pos}, data={data[pos:].hex()}")
+
