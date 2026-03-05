@@ -13,6 +13,19 @@ BONUS_SIMPLE_PATTERN = re.compile(r'(获发|派)\s*(\d+)\s*股')
 MONEY_WITH_UNIT_PATTERN = re.compile(r'(港元|港币|美元|欧元|英镑|人民币)\s*(\d{1,3}(?:[,，]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*(分|仙)')
 MONEY_PATTERN = re.compile(r'(\d{1,3}(?:[,，]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*(港元|港仙|港币|美元|美仙|欧元|英镑|人民币|元)')
 SEPARATOR_PATTERN = re.compile(r'[\uff0c,\uff1b;]')
+PREFIX_CURRENCY_PATTERN = re.compile(r'(港元|港币|美元|欧元|英镑|人民币)\s*(\d{1,3}(?:[,，]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)')
+
+# 货币映射表
+CURRENCY_MAP = {
+    '港元': 'HKD',
+    '港仙': 'HKD',
+    '港币': 'HKD',
+    '人民币': 'CNY',
+    '美元': 'USD',
+    '美仙': 'USD',
+    '欧元': 'EUR',
+    '英镑': 'GBP',
+}
 
 
 def parse_money(text):
@@ -70,6 +83,26 @@ def parse_money(text):
     # 匹配数字 (整数或小数，支持千分位逗号) 后跟货币单位
     # 支持：港元、港仙、港币、美元、美仙、欧元、英镑、人民币/元
     # 注意顺序：长词优先以避免被短词（如"元"）误匹配
+
+    # 先尝试匹配"前缀货币词+数字"的情况，例如"美元0.133"（不管后面有没有单位词）
+    # 这种情况下，货币由前缀货币词决定，忽略后面的单位词（如"元"、"cents"等）
+    prefix_match = PREFIX_CURRENCY_PATTERN.search(text)
+    if prefix_match:
+        currency = prefix_match.group(1)
+        amount_str = prefix_match.group(2)
+        amount_str = amount_str.replace(',', '').replace('，', '')
+        # 规范化货币词：'港币' -> '港元'
+        if currency == '港币':
+            currency = '港元'
+
+        try:
+            amount = float(amount_str)
+        except ValueError:
+            return amount_str, currency
+
+        currency_code = CURRENCY_MAP.get(currency, currency)
+        return amount, currency_code
+
     matches = MONEY_PATTERN.findall(text)
 
     if matches:
@@ -90,18 +123,7 @@ def parse_money(text):
             return amount_str, currency
 
         # 映射本地货币名称到 ISO 3-letter 代码，并处理港仙/美仙为小数表示
-        currency_map = {
-            '港元': 'HKD',
-            '港仙': 'HKD',
-            '港币': 'HKD',
-            '人民币': 'CNY',
-            '美元': 'USD',
-            '美仙': 'USD',
-            '欧元': 'EUR',
-            '英镑': 'GBP',
-        }
-
-        currency_code = currency_map.get(currency, currency)
+        currency_code = CURRENCY_MAP.get(currency, currency)
 
         # 如果原文是港仙或美仙（分），将数值除以100以得到对应货币
         if currency in ('港仙', '美仙'):
@@ -129,17 +151,6 @@ def parse_money_all(text):
     # 模式: 货币名称 + 数字 + 分/仙
     context_matches = MONEY_WITH_UNIT_PATTERN.findall(text)
 
-    currency_map = {
-        '港元': 'HKD',
-        '港仙': 'HKD',
-        '港币': 'HKD',
-        '人民币': 'CNY',
-        '美元': 'USD',
-        '美仙': 'USD',
-        '欧元': 'EUR',
-        '英镑': 'GBP',
-    }
-
     for currency, amount_str, unit in context_matches:
         orig = amount_str
         amount_str = amount_str.replace(',', '').replace('，', '')
@@ -159,8 +170,23 @@ def parse_money_all(text):
             except Exception:
                 pass
 
-        currency_code = currency_map.get(currency, currency)
+        currency_code = CURRENCY_MAP.get(currency, currency)
         results.append((amount, currency_code, currency + unit, orig))
+
+    # 先尝试匹配"前缀货币词+数字"的情况，例如"美元0.133"（不管后面有没有单位词）
+    prefix_matches = PREFIX_CURRENCY_PATTERN.findall(text)
+
+    for currency_word, amount_str in prefix_matches:
+        orig = amount_str
+        amount_str = amount_str.replace(',', '').replace('，', '')
+        if currency_word == '港币':
+            currency_word = '港元'
+        try:
+            amount = float(amount_str)
+        except Exception:
+            amount = None
+        currency_code = CURRENCY_MAP.get(currency_word, currency_word)
+        results.append((amount, currency_code, currency_word + '元', orig))
 
     # 然后使用原来的模式匹配其他格式
     matches = MONEY_PATTERN.findall(text)
@@ -182,7 +208,7 @@ def parse_money_all(text):
                 amount = float(amount) / 100.0
             except Exception:
                 pass
-        currency_code = currency_map.get(currency_word, currency_word)
+        currency_code = CURRENCY_MAP.get(currency_word, currency_word)
         results.append((amount, currency_code, currency_word, orig))
     return results
 
@@ -244,6 +270,9 @@ def parse_single_scheme(scheme_text):
     # 提取金额文本（数字+货币单位）
     # 优先匹配"货币+数字+分/仙"格式
     match = MONEY_WITH_UNIT_PATTERN.search(scheme_text)
+    if not match:
+        # 匹配"前缀货币词+数字"格式，如"美元0.133"（不管后面有没有单位词）
+        match = PREFIX_CURRENCY_PATTERN.search(scheme_text)
     if not match:
         # 匹配"数字+货币"格式
         match = MONEY_PATTERN.search(scheme_text)
@@ -317,9 +346,63 @@ def parse_scheme_info(date:str, overview, preferred_currency:str=Region.HK.curre
     }
     fx = ExchangeRateCache(preferred_currency)
     rates = fx.get_rate(date=date)
+
+    # 检查是否为"可选择货币"的互斥方案
+    # 只有当"可选择"后面跟着货币时才是互斥方案（如"可选择货币0.777678港元"）
+    # 而"可选择以股代息"不是互斥的货币方案
+    alternative_schemes_indices = []
+    for i, scheme in enumerate(schemes):
+        if '可选择' in scheme:
+            # 先排除"可选择以股代息"等非货币选项
+            if '以股代息' in scheme or '以股息' in scheme or '股份' in scheme:
+                continue
+            # 检查"可选择"后是否跟着"货币"或"派"，或者直接跟着货币词
+            if re.search(r'可选择\s*(?:货币|派|(?:\d+(?:\.\d+)?\s*(?:港元|港币|美元|欧元|英镑|人民币)))', scheme):
+                alternative_schemes_indices.append(i)
+
+    # 如果存在互斥方案，选择匹配首选货币的方案（优先主方案，其次互斥方案）
+    has_alternative = len(alternative_schemes_indices) > 0
+
     # 收集所有金额组件（每个组件保留原始方案文本，并统一 ratio_shares）
     for i, ps in enumerate(parsed_schemes):
         if ps['amount'] is not None and ps['currency']:
+            # 如果存在互斥方案，需要只选择一个
+            if has_alternative:
+                # 如果当前方案在互斥方案列表中
+                if i in alternative_schemes_indices:
+                    # 检查是否匹配首选货币
+                    scheme_text = schemes[i]
+                    preferred_currency_names = [k for k, v in CURRENCY_MAP.items() if v == preferred_currency]
+
+                    matches_preferred = False
+                    for curr_name in preferred_currency_names:
+                        if curr_name in scheme_text:
+                            matches_preferred = True
+                            break
+
+                    # 如果不匹配首选货币，跳过这个方案
+                    if not matches_preferred:
+                        continue
+                else:
+                    # 当前方案不是互斥方案，检查是否有互斥方案
+                    # 如果有互斥方案，只使用主方案当且仅当主方案匹配首选货币
+                    if alternative_schemes_indices:
+                        # 检查是否有互斥方案匹配首选货币
+                        any_alternative_matches = False
+                        for alt_idx in alternative_schemes_indices:
+                            alt_scheme = schemes[alt_idx]
+                            preferred_currency_names = [k for k, v in CURRENCY_MAP.items() if v == preferred_currency]
+                            for curr_name in preferred_currency_names:
+                                if curr_name in alt_scheme:
+                                    any_alternative_matches = True
+                                    break
+                            if any_alternative_matches:
+                                break
+
+                        # 如果有互斥方案匹配首选货币，跳过主方案（使用互斥方案）
+                        if any_alternative_matches:
+                            continue
+
             # 根据 ratio_shares 转换金额到每股
             scheme_ratio = ps['scheme']['ratio_shares']
             if scheme_ratio > 0 and scheme_ratio != ratio_shares:
@@ -327,18 +410,19 @@ def parse_scheme_info(date:str, overview, preferred_currency:str=Region.HK.curre
                 per_share_amount = ps['amount'] * ratio_shares / scheme_ratio
             else:
                 per_share_amount = ps['amount']
-            
+
             scheme_currency = ps['currency']
             if preferred_currency != scheme_currency:
                 try:
-                    rate = rates[scheme_currency]
+                    rate = rates[scheme_currency] * (1-0.005)
                 except:
                     logger.error(f"无法获取汇率: {scheme_currency}, 回退到1.0")
                     rate = 1.0
+                logger.debug(f"{date}, 汇率: {scheme_currency} -> {preferred_currency}: {rate}")
                 per_share_amount /= rate
                 # 转换为首选货币
                 scheme_currency = preferred_currency
-                
+
             result['dividend_components'].append({
                 'amount': per_share_amount,
                 'currency': scheme_currency,
@@ -366,5 +450,5 @@ if __name__ == '__main__':
     text = '年度股息每股普通股17.04港仙，可以股代息'
     text = '年度股息每股0.123港元，每10股派人民币1元'
     text = '第一中期股息每股派美元0.133元(可选择以股代息)'
-    info = parse_scheme_info('1999-08-16', text)
+    info = parse_scheme_info('1999-08-02', text)
     print(info)
