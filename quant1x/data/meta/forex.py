@@ -2,9 +2,12 @@ import requests
 import csv
 import os
 import bisect
+from typing import Dict, List
 from dataclasses import dataclass
 from datetime import datetime
 
+from quant1x.data import cache
+from quant1x.log import logger
 from quant1x.data.meta.timestamp import Timestamp
 from ...config.config import base_config as config
 from ..storage.storage import MetaFileStorage
@@ -13,7 +16,11 @@ from ..meta.region import Region
 _currencies = ["CNY", "HKD", "USD", "EUR", "GBP", "SGD", "JPY"]
 
 class ExchangeRateCache(MetaFileStorage):
-    """汇率缓存 - 二分查找极简版"""
+    """
+    汇率缓存, Foreign Exchange(FX) Rate Cache
+    """
+    EARLIEST_DATE = "1999-01-04"
+    """最早日期"""
     
     def __init__(self, currency: str = Region.CN.currency):
         self.currency = currency.upper()
@@ -23,9 +30,9 @@ class ExchangeRateCache(MetaFileStorage):
         for c in _currencies:
             if c != self.currency:
                 self.fields.append(c.upper())
-        self.data = {}           # {"YYYY-MM-DD": rate}
+        self.data : Dict[str, Dict[str, float]] = {}
         """汇率数据"""
-        self.sorted_dates = []   # 已排序的日期列表
+        self.sorted_dates: List[str] = []
         """已排序的日期列表"""
         self._load_cache()
     
@@ -33,7 +40,28 @@ class ExchangeRateCache(MetaFileStorage):
         return f'{config.meta_path}/forex_{self.currency.lower()}.csv'
     
     def should_initialize(self, timestamp: Timestamp = Timestamp.now()) -> bool:
-        return True
+        """
+        检查当前是否需要初始化文件
+        
+        Args:
+            timestamp (Timestamp): 可选的时间戳参数，默认为当前时间
+        
+        Returns:
+            bool: 如果满足以下条件则返回True:
+                1. 当前时间大于等于今日初始化时间戳
+                2. 文件修改时间早于今日初始化时间戳
+        """
+        fname = self.file_name()
+        if not os.path.exists(fname):
+            return True
+        now_time = Timestamp.now()
+        today_threshold = cache.get_today_initialized_time()
+        file_modtime = cache.get_filename_modified_time(fname)
+        if file_modtime.is_empty():
+            return True
+        #logger.debug(f"should_initialize: now_time={now_time}, today_init_timestamp={today_init_timestamp}, file_modtime={file_modtime}")
+        is_stale = now_time >= today_threshold and file_modtime < today_threshold
+        return is_stale
     
     def should_update(self, timestamp: Timestamp =Timestamp.now()) -> bool:
         return True
@@ -42,9 +70,15 @@ class ExchangeRateCache(MetaFileStorage):
         """
         加载 CSV 缓存
         """
-        if not os.path.exists(self.file_name()):
+        fname = self.file_name()
+        create_or_update = self.should_initialize()
+        if create_or_update:
+            logger.info(f"汇率缓存: {fname}, 缓存需要更新, 开始更新")
+            self.update()
+            logger.info(f"汇率缓存: {fname}, 缓存需要更新, 更新完成")
+        if not os.path.exists(fname):
             return
-        with open(self.file_name(), 'r', encoding='utf-8', newline='') as f:
+        with open(fname, 'r', encoding='utf-8', newline='') as f:
             reader = csv.DictReader(f)
             header = reader.fieldnames or []
             self.fields = [h if h.lower() == 'date' else h.upper() for h in header]
@@ -71,25 +105,30 @@ class ExchangeRateCache(MetaFileStorage):
                     row.append(entry.get(field, "NaN"))
                 writer.writerow(row)
     
-    def get_rate(self, date: str) -> float:
+    def get_rate(self, date: str, offset: int = 0) -> Dict[str, float]:
         """
-        获取汇率：二分查找 ≤ target_date 的最大日期
-        时间复杂度：O(log n)
+        获取汇率: 二分查找 ≤ target_date 的最大日期
+        时间复杂度: O(log n)
         """
         if not self.sorted_dates:
             raise RuntimeError("缓存为空，请先调用 fetch_all_history()")
         
         date = date.strip()
         
-        # 二分查找：找到插入位置
+        # 二分查找: 找到插入位置
         idx = bisect.bisect_right(self.sorted_dates, date) - 1
         
-        # 边界：早于最早数据 → 返回最早日期汇率
+        # 边界: 早于最早数据 → 返回最早日期汇率
         if idx < 0:
-            return self.data[self.sorted_dates[0]]
+            idx = 0
+        # 边界: 晚于最新数据 → 返回最新日期汇率
+        elif idx >= len(self.sorted_dates) - 1:
+            idx = len(self.sorted_dates) - 1
+        # 确定日期索引
+        date_idx = self.sorted_dates[idx]
         
         # 返回找到的日期汇率
-        return self.data[self.sorted_dates[idx]]
+        return self.data[date_idx]
     
     def get_rates_batch(self, dates: list) -> dict:
         """批量获取汇率"""
@@ -100,7 +139,7 @@ class ExchangeRateCache(MetaFileStorage):
         if end_date is None:
             end_date = datetime.now().strftime('%Y-%m-%d')
         
-        print(f"🔄 获取 {start_date} 至 {end_date}...")
+        logger.debug(f"🔄 获取 {start_date} 至 {end_date}...")
         url = f"https://api.frankfurter.app/{start_date}..{end_date}"
         #params = {"from": "USD", "to": "HKD"}
         params = {"base": self.currency, "symbols": ",".join(self.fields[1:])}
@@ -117,20 +156,23 @@ class ExchangeRateCache(MetaFileStorage):
         self.sorted_dates = sorted(self.data.keys())
         self._save_cache()
         
-        print(f"✅ {len(self.data)} 条记录 | {self.sorted_dates[0]} ~ {self.sorted_dates[-1]}")
+        logger.debug(f"✅ {len(self.data)} 条记录 | {self.sorted_dates[0]} ~ {self.sorted_dates[-1]}")
     
-    def update(self):
+    def update(self, start_date: str = "1999-01-04", end_date: str = None):
         """增量更新"""
-        if not self.sorted_dates:
-            return self.fetch_all_history()
+        if self.sorted_dates:
+            latest = self.sorted_dates[-1]
+            if latest > start_date:
+                start_date = latest
         
-        latest = self.sorted_dates[-1]
-        today = datetime.now().strftime('%Y-%m-%d')
-        if latest >= today:
+        if end_date is None:
+            end_date = datetime.now().strftime('%Y-%m-%d')
+        
+        if start_date >= end_date:
             return
         
-        print(f"🔄 更新 {latest} 至 {today}")
-        url = f"https://api.frankfurter.app/{latest}..{today}"
+        logger.debug(f"🔄 更新 {start_date} 至 {end_date}")
+        url = f"https://api.frankfurter.app/{start_date}..{end_date}"
         params = {"base": self.currency, "symbols": ",".join(self.fields[1:])}
         resp = requests.get(url, params, timeout=60)
         resp.raise_for_status()
@@ -144,20 +186,20 @@ class ExchangeRateCache(MetaFileStorage):
         self.data.update(new_data)
         self.sorted_dates = sorted(self.data.keys())
         self._save_cache()
-        print(f"✅ 共 {len(self.data)} 条记录")
+        logger.debug(f"✅ 共 {len(self.data)} 条记录")
 
 
 # ============================================
 # 使用示例
 # ============================================
 if __name__ == "__main__":
-    cache = ExchangeRateCache("HKD")
+    rate_cache = ExchangeRateCache("HKD")
     
-    # 首次运行获取全量数据
-    if not cache.sorted_dates:
-        cache.fetch_all_history()
-    else:
-        cache.update()
+    # # 首次运行获取全量数据
+    # if not rate_cache.sorted_dates:
+    #     rate_cache.fetch_all_history()
+    # else:
+    #     rate_cache.update()
     
     # 查询测试
     test_dates = [
@@ -170,7 +212,7 @@ if __name__ == "__main__":
     
     print("\n汇率查询测试:")
     for date in test_dates:
-        rate = cache.get_rate(date)
+        rate = rate_cache.get_rate(date)
         print(rate)
         print(f"  {date} → {rate['CNY']}")
     
