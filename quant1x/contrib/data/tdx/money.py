@@ -8,7 +8,7 @@ from quant1x.data.meta.region import Region
 # 预编译正则表达式（与 xdxr_hkex.py 保持一致）
 RATIO_PATTERN = re.compile(r'每\s*(\d+)\s*股')
 SPECIAL_PATTERN = re.compile(r'特别')
-BONUS_PATTERN = re.compile(r'每\s*(\d+)\s*股[^\n\r]*获发\s*(\d+)\s*股')
+BONUS_PATTERN = re.compile(r'每\s*(\d+)\s*股[^\n\r]*(?:送|派|获发|送转)\s*(\d+)\s*股')
 BONUS_SIMPLE_PATTERN = re.compile(r'(获发|派)\s*(\d+)\s*股')
 MONEY_WITH_UNIT_PATTERN = re.compile(r'(港元|港币|美元|欧元|英镑|人民币)\s*(\d{1,3}(?:[,，]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*(分|仙)')
 MONEY_PATTERN = re.compile(r'(\d{1,3}(?:[,，]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*(港元|港仙|港币|美元|美仙|欧元|英镑|人民币|元)')
@@ -248,7 +248,8 @@ def parse_single_scheme(scheme_text):
             'amount_text': str,   # 纯金额描述文本（如 "4.5港元"）
             'has_special': bool,  # 是否特别股息
             'bonus': bool,        # 是否送股
-            'bonus_desc': str     # 送股描述
+            'bonus_desc': str,    # 送股描述
+            'split_number': float # 每股送股数（如 "每10股送1股" -> 0.1）
         }
     """
     result = {
@@ -256,7 +257,8 @@ def parse_single_scheme(scheme_text):
         'amount_text': scheme_text,
         'has_special': False,
         'bonus': False,
-        'bonus_desc': None
+        'bonus_desc': None,
+        'split_number': 0.0
     }
 
     # 提取分配基数（每x股）
@@ -288,12 +290,24 @@ def parse_single_scheme(scheme_text):
     m = BONUS_PATTERN.search(scheme_text)
     if m:
         result['bonus'] = True
-        result['bonus_desc'] = f"每{m.group(1)}股获发{m.group(2)}股"
+        result['bonus_desc'] = f"每{m.group(1)}股送{m.group(2)}股"
+        # split_number 是基于 ratio_shares 的送股数（不是每股送股数）
+        try:
+            ratio_shares = int(m.group(1))
+            bonus_shares = int(m.group(2))
+            result['split_number'] = bonus_shares
+        except ValueError:
+            pass
     else:
         m2 = BONUS_SIMPLE_PATTERN.search(scheme_text)
         if m2:
             result['bonus'] = True
             result['bonus_desc'] = m2.group(0)
+            # 简单模式：如"派1股"，假设基于 ratio_shares 送1股
+            try:
+                result['split_number'] = float(m2.group(2))
+            except ValueError:
+                pass
 
     return result
 
@@ -342,7 +356,8 @@ def parse_scheme_info(date:str, overview, preferred_currency:str=Region.HK.curre
         'bonus_desc': bonus_desc,
         'dividend_components': [],
         'dividend_amount': None,
-        'dividend_currency': None
+        'dividend_currency': None,
+        'split_number': 0.0  # 每股送股总数（所有子方案的和）
     }
     fx = ExchangeRateCache(preferred_currency)
     rates = fx.get_rate(date=date)
@@ -365,45 +380,59 @@ def parse_scheme_info(date:str, overview, preferred_currency:str=Region.HK.curre
 
     # 收集所有金额组件（每个组件保留原始方案文本，并统一 ratio_shares）
     for i, ps in enumerate(parsed_schemes):
-        if ps['amount'] is not None and ps['currency']:
-            # 如果存在互斥方案，需要只选择一个
-            if has_alternative:
-                # 如果当前方案在互斥方案列表中
-                if i in alternative_schemes_indices:
-                    # 检查是否匹配首选货币
-                    scheme_text = schemes[i]
-                    preferred_currency_names = [k for k, v in CURRENCY_MAP.items() if v == preferred_currency]
+        # 如果存在互斥方案，需要只选择一个
+        skip_scheme = False
+        if has_alternative:
+            # 如果当前方案在互斥方案列表中
+            if i in alternative_schemes_indices:
+                # 检查是否匹配首选货币
+                scheme_text = schemes[i]
+                preferred_currency_names = [k for k, v in CURRENCY_MAP.items() if v == preferred_currency]
 
-                    matches_preferred = False
-                    for curr_name in preferred_currency_names:
-                        if curr_name in scheme_text:
-                            matches_preferred = True
+                matches_preferred = False
+                for curr_name in preferred_currency_names:
+                    if curr_name in scheme_text:
+                        matches_preferred = True
+                        break
+
+                # 如果不匹配首选货币，跳过这个方案
+                if not matches_preferred:
+                    skip_scheme = True
+            else:
+                # 当前方案不是互斥方案，检查是否有互斥方案
+                # 如果有互斥方案，只使用主方案当且仅当主方案匹配首选货币
+                if alternative_schemes_indices:
+                    # 检查是否有互斥方案匹配首选货币
+                    any_alternative_matches = False
+                    for alt_idx in alternative_schemes_indices:
+                        alt_scheme = schemes[alt_idx]
+                        preferred_currency_names = [k for k, v in CURRENCY_MAP.items() if v == preferred_currency]
+                        for curr_name in preferred_currency_names:
+                            if curr_name in alt_scheme:
+                                any_alternative_matches = True
+                                break
+                        if any_alternative_matches:
                             break
 
-                    # 如果不匹配首选货币，跳过这个方案
-                    if not matches_preferred:
-                        continue
-                else:
-                    # 当前方案不是互斥方案，检查是否有互斥方案
-                    # 如果有互斥方案，只使用主方案当且仅当主方案匹配首选货币
-                    if alternative_schemes_indices:
-                        # 检查是否有互斥方案匹配首选货币
-                        any_alternative_matches = False
-                        for alt_idx in alternative_schemes_indices:
-                            alt_scheme = schemes[alt_idx]
-                            preferred_currency_names = [k for k, v in CURRENCY_MAP.items() if v == preferred_currency]
-                            for curr_name in preferred_currency_names:
-                                if curr_name in alt_scheme:
-                                    any_alternative_matches = True
-                                    break
-                            if any_alternative_matches:
-                                break
+                    # 如果有互斥方案匹配首选货币，跳过主方案（使用互斥方案）
+                    if any_alternative_matches:
+                        skip_scheme = True
 
-                        # 如果有互斥方案匹配首选货币，跳过主方案（使用互斥方案）
-                        if any_alternative_matches:
-                            continue
+        if skip_scheme:
+            continue
 
-            # 根据 ratio_shares 转换金额到每股
+        # 计算每股送股数（统一转换为每股送股数）
+        split_number = ps['scheme']['split_number']
+        scheme_ratio = ps['scheme']['ratio_shares']
+        if scheme_ratio > 0:
+            per_share_split_number = split_number / scheme_ratio
+        else:
+            per_share_split_number = 0.0
+        result['split_number'] += per_share_split_number
+
+        # 确定金额和货币
+        if ps['amount'] is not None and ps['currency']:
+            # 现金分红方案
             scheme_ratio = ps['scheme']['ratio_shares']
             if scheme_ratio > 0 and scheme_ratio != ratio_shares:
                 # 转换到统一基数：每 ratio_shares 股派息金额
@@ -429,7 +458,19 @@ def parse_scheme_info(date:str, overview, preferred_currency:str=Region.HK.curre
                 'currency_word': ps['currency'],
                 'raw': str(ps['amount']),
                 'source_text': schemes[i],  # 保留拆分后的方案文本
-                'original_ratio': scheme_ratio  # 原始股数基数
+                'original_ratio': scheme_ratio,  # 原始股数基数
+                'split_number': split_number  # 该子方案的每股送股数
+            })
+        elif split_number > 0:
+            # 送转股方案（无金额）
+            result['dividend_components'].append({
+                'amount': 0.0,
+                'currency': preferred_currency,
+                'currency_word': None,
+                'raw': None,
+                'source_text': schemes[i],  # 保留拆分后的方案文本
+                'original_ratio': ps['scheme']['ratio_shares'],  # 原始股数基数
+                'split_number': split_number  # 该子方案的每股送股数
             })
 
     # 累加所有组件的金额
@@ -450,5 +491,6 @@ if __name__ == '__main__':
     text = '年度股息每股普通股17.04港仙，可以股代息'
     text = '年度股息每股0.123港元，每10股派人民币1元'
     text = '第一中期股息每股派美元0.133元(可选择以股代息)'
+    text = '年度股息12港仙，每10股送1股'
     info = parse_scheme_info('1999-08-02', text)
     print(info)
