@@ -1,7 +1,4 @@
-from calendar import c
-from math import log
 import struct
-from turtle import width
 from typing import Dict, List, Tuple
 from collections import OrderedDict
 from datetime import datetime
@@ -356,10 +353,7 @@ class InstrumentQuote2(protocol.BaseMessage):
             pos += step
     
 
-
-
 from quant1x.data.schema import Bar
-
 class InstrumentBars(protocol.BaseMessage):
     """
     K线数据
@@ -431,6 +425,236 @@ class InstrumentBars(protocol.BaseMessage):
         self.reply = result
         #logger.debug("[ExtInstrumentBarResponse] reply: {}", self.reply)
 
+from quant1x.data.schema import Transaction
+from datetime import date as datetime_date, time as datetime_time
+class TransactionData(protocol.BaseMessage):
+    PRE_REQUEST_MAX = 1800
+    """
+    获取最新的(最后一个交易日)成交数据
+    """
+    def __init__(self, market, ticker: str, offset: int=0, size: int=PRE_REQUEST_MAX):
+        super().__init__(Command.EXT_TRANSACTION_DATA)
+        self.market = market
+        self.ticker = ticker
+        self.offset = offset
+        self.size = size
+        self.reply = []
+    
+    def serialize_request_body(self) -> bytes:
+        ticker = self.ticker.encode("utf-8")
+        body = struct.pack('<B9siH', self.market, ticker, self.offset, self.size)
+        logger.debug(f"[TransactionData] serialize: market={self.market}, ticker={self.ticker}, offset={self.offset}, size={self.size}")
+        return body
+    
+    def deserialize_response_body(self, data: bytes) -> None:
+        logger.debug(f"[TransactionData] deserialize: {data.hex()}")
+        pos = 0
+        market, code, _, num = struct.unpack('<B9s4sH', data[pos: pos + 16])
+        pos += 16
+        result = []
+        for i in range(num):
+
+            (raw_time, price, volume, zengcang, direction) = struct.unpack("<HIIiH", data[pos: pos + 16])
+
+            pos += 16
+            hour = raw_time // 60
+            minute = raw_time % 60
+            second = direction % 10000
+            nature = direction ### 保持老接口的兼容性
+
+            if second > 59:
+                second = 0
+
+            date = datetime.combine(datetime_date.today(), datetime_time(hour,minute,second))
+
+            value = direction // 10000
+            nature_name = ""
+            if value == 0:
+                direction = 1
+                if zengcang > 0:
+                    if volume > zengcang:
+                        nature_name = "多开"
+                    elif volume == zengcang:
+                        nature_name = "双开"
+                elif zengcang == 0:
+                    nature_name = "多换"
+                else:
+                    if volume == -zengcang:
+                        nature_name = "双平"
+                    else:
+                        nature_name = "空平"
+            elif value == 1:
+                direction = -1
+                if zengcang > 0:
+                    if volume > zengcang:
+                        nature_name = "空开"
+                    elif volume == zengcang:
+                        nature_name = "双开"
+                elif zengcang == 0:
+                    nature_name = "空换"
+                else:
+                    if volume == -zengcang:
+                        nature_name = "双平"
+                    else:
+                        nature_name = "多平"
+            else:
+                direction = 0
+                if zengcang > 0:
+                    if volume > zengcang:
+                        nature_name = "开仓"
+                    elif volume == zengcang:
+                        nature_name = "双开"
+                elif zengcang < 0:
+                    if volume > -zengcang:
+                        nature_name = "平仓"
+                    elif volume == -zengcang:
+                        nature_name = "双平"
+                else:
+                    nature_name = "换手"
+
+            if market in [31,48]:
+                if nature == 0:
+                    direction = 1
+                    nature_name = 'B'
+                elif nature == 256:
+                    direction = -1
+                    nature_name = 'S'
+                else: #512
+                    direction = 0
+                    nature_name = ''
+
+
+            result.append(OrderedDict([
+                ("date", date),
+                ("hour", hour),
+                ("minute", minute),
+                ("second", second),
+                ("price", price),
+                ("volume", volume),
+                ("zengcang", zengcang),
+                ("nature", nature),
+                ("nature_mark", nature // 10000),
+                ("nature_value", nature % 10000),
+                ("nature_name", nature_name),
+                ("direction", direction),
+            ]))
+        self.reply = result
+
+class DailyTransactionData(protocol.BaseMessage):
+    PRE_REQUEST_MAX = 1800
+    """
+    获取某日的成交数据
+    """
+    def __init__(self, market, ticker: str, date: int, offset: int=0, size: int=PRE_REQUEST_MAX):
+        super().__init__(Command.EXT_DAILY_TRANSACTION_DATA)
+        self.market = market
+        self.ticker = ticker
+        self.date = date
+        self.offset = offset
+        self.size = size
+        self.reply = []
+    
+    def serialize_request_body(self) -> bytes:
+        ticker = self.ticker.encode("utf-8")
+        body = struct.pack('<IB9siH', self.date, self.market, ticker, self.offset, self.size)
+        logger.debug(f"[DailyTransactionData] serialize: market={self.market}, ticker={self.ticker}, offset={self.offset}, size={self.size}")
+        return body
+    
+    def deserialize_response_body(self, data: bytes) -> None:
+        logger.debug(f"[DailyTransactionData] deserialize: {data.hex()}")
+        pos = 0
+        market, code, _, num = struct.unpack('<B9s4sH', data[pos: pos + 16])
+        pos += 16
+        result = []
+        for i in range(num):
+
+            (raw_time, price, volume, zengcang, direction) = struct.unpack("<HIIiH", data[pos: pos + 16])
+
+            pos += 16
+            year = self.date // 10000
+            month = self.date % 10000 // 100
+            day = self.date % 100
+            hour = raw_time // 60
+            minute = raw_time % 60
+            second = direction % 10000
+            nature = direction #### 为了老用户接口的兼容性，已经转换为使用 nature_value
+            value = direction // 10000
+            nature_name = '换手'
+            # 对于大于59秒的值，属于无效数值
+            if second > 59:
+                second = 0
+            date =datetime(year, month, day, hour, minute, second)
+
+            if value == 0:
+                direction = 1
+                if zengcang > 0:
+                    if volume > zengcang:
+                        nature_name = "多开"
+                    elif volume == zengcang:
+                        nature_name = "双开"
+                elif zengcang == 0:
+                    nature_name = "多换"
+                else:
+                    if volume == -zengcang:
+                        nature_name = "双平"
+                    else:
+                        nature_name = "空平"
+            elif value == 1:
+                direction = -1
+                if zengcang > 0:
+                    if volume > zengcang:
+                        nature_name = "空开"
+                    elif volume == zengcang:
+                        nature_name = "双开"
+                elif zengcang == 0:
+                    nature_name = "空换"
+                else:
+                    if volume == -zengcang:
+                        nature_name = "双平"
+                    else:
+                        nature_name = "多平"
+            else:
+                direction = 0
+                if zengcang > 0:
+                    if volume > zengcang:
+                        nature_name = "开仓"
+                    elif volume == zengcang:
+                        nature_name = "双开"
+                elif zengcang < 0:
+                    if volume > -zengcang:
+                        nature_name = "平仓"
+                    elif volume == -zengcang:
+                        nature_name = "双平"
+                else:
+                    nature_name = "换手"
+
+            if market in [31,48]:
+                if nature == 0:
+                    direction = 1
+                    nature_name = 'B'
+                elif nature == 256:
+                    direction = -1
+                    nature_name = 'S'
+                else: #512
+                    direction = 0
+                    nature_name = ''
+
+            result.append(OrderedDict([
+                ("date", date),
+                ("hour", hour),
+                ("minute", minute),
+                ("price", price),
+                ("volume", volume),
+                ("zengcang", zengcang),
+                ("natrue_name", nature_name),
+                ("nature_name", nature_name), #修正了nature_name的拼写错误(natrue), 为了保持兼容性，原有的natrue_name还会保留一段时间
+                ("direction", direction),
+                ("nature", nature),
+
+            ]))
+        self.reply = result
+
+
 class TodoCmd0X2459(protocol.BaseMessage):
     """
     获取股票的公告信息, html格式
@@ -441,6 +665,8 @@ class TodoCmd0X2459(protocol.BaseMessage):
         self.reply = []
 
     def serialize_request_body(self) -> bytes:
+        ticker = self.ticker.encode("utf-8")
+        body = struct.pack('<6s', ticker)
         return bytearray.fromhex('00 00 00 00 60 EA 00 00 69 77 73 68 6F 70 5F 68 6B 2F 30 39 39 38 38 2E 68 74 6D 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00')
     def deserialize_response_body(self, data: bytes) -> None:
         logger.debug(f"[TodoCmd0X2459] deserialize: {data.hex()}")
@@ -456,7 +682,7 @@ class TodoCmd0X2459(protocol.BaseMessage):
 from quant1x.data.schema.company import CompanyInfoChunk
 class CompanyInfoCategories(protocol.BaseMessage):
     """
-    获取操作提示数据文件的块信息, 编码格式为gbk
+    基础F0 数据文件的块信息, 编码格式为gbk
     """
     def __init__(self, market, ticker: str):
         super().__init__(Command.EXT_COMPANY_INFO_CATEGORIES)
@@ -490,10 +716,9 @@ class CompanyInfoCategories(protocol.BaseMessage):
             self.reply.append(e)
             
 
-from .xdxr_hkex import parse_text_to_list
 class CompanyInfoContent(protocol.BaseMessage):
     """
-    公司信息内容
+    基础F0 数据文件的块信息, 编码格式为gbk
     """
     def __init__(self, market, ticker: str, filename: str, offset: int, size: int):
         super().__init__(Command.EXT_COMPANY_INFO_CONTENT)
@@ -502,7 +727,7 @@ class CompanyInfoContent(protocol.BaseMessage):
         self.filename = filename
         self.offset = offset
         self.size = size
-        self.reply = []
+        self.reply = ''
 
     def serialize_request_body(self) -> bytes:
         body = struct.pack('<BB6s', self.market, 0, self.ticker.encode("utf-8"))
@@ -511,10 +736,10 @@ class CompanyInfoContent(protocol.BaseMessage):
         return body + padding + file
     
     def deserialize_response_body(self, data: bytes) -> None:
-        logger.debug(f"[TodoCmd0X24B9] deserialize: {data.hex()}")
+        logger.debug(f"[CompanyInfoContent] deserialize: {data.hex()}")
         (market, ticker, reserved, length) = struct.unpack('<H6sHH', data[:12])
         ticker = ticker.decode('utf-8').replace('\x00', '')
-        logger.debug(f"[TodoCmd0X24B9] deserialize: market={market} ticker={ticker} reserved={reserved} length={length}")
+        logger.debug(f"[CompanyInfoContent] deserialize: market={market} ticker={ticker} reserved={reserved} length={length}")
         pos = 12
         offset = pos
         if len(data) >= offset:
@@ -523,8 +748,8 @@ class CompanyInfoContent(protocol.BaseMessage):
                 info = info_bytes.decode('gbk', errors='ignore')#.replace('\x00', '')
             except Exception:
                 info = info_bytes.decode('utf-8', errors='ignore')#.replace('\x00', '')
-            logger.debug(f"[TodoCmd0X24B9] info={info}")
-            self.reply = parse_text_to_list(info)
+            logger.debug(f"[CompanyInfoContent] info={info}")
+            self.reply = info
 
 
 from quant1x.data.schema import XdxrInfo, XdxrCategory

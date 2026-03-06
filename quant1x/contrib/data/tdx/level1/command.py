@@ -49,6 +49,8 @@ class Command(enum.Enum):
     EXT_INSTRUMENT_INFO          = (QuoteType.EXTENSION, 0x23f5, "证券列表")
     EXT_INSTRUMENT_QUOTE_X1      = (QuoteType.EXTENSION, 0x23fa, "即时行情1")
     EXT_INSTRUMENT_QUOTE_X2      = (QuoteType.EXTENSION, 0x23fb, "即时行情2")
+    EXT_TRANSACTION_DATA         = (QuoteType.EXTENSION, 0x23fc, "分笔成交")
+    EXT_DAILY_TRANSACTION_DATA   = (QuoteType.EXTENSION, 0x2406, "分笔成交-某日")
     EXT_INSTRUMENT_BARS          = (QuoteType.EXTENSION, 0x23ff, "K线")
     EXT_TODO_2458                = (QuoteType.EXTENSION, 0x2458, "除权除息信息")
     EXT_TODO_2459                = (QuoteType.EXTENSION, 0x2459, "除权除息信息")
@@ -57,6 +59,9 @@ class Command(enum.Enum):
     EXT_FUTURES_QUOTES           = (QuoteType.EXTENSION, 0x248a, "期货行情")
     EXT_COMPANY_INFO_CATEGORIES  = (QuoteType.EXTENSION, 0x24b8, "公司信息分类")
     EXT_COMPANY_INFO_CONTENT     = (QuoteType.EXTENSION, 0x24b9, "公司信息数据")
+    EXT_INTRADAY_CHART_SAMPLING  = (QuoteType.EXTENSION, 0x254d, "图形采样")
+    
+    L2_0x0547                    = (QuoteType.LEVEL2, 0x0547, "L2-即时行情")
     
     
     def __new__(cls, type: QuoteType, value, desc):

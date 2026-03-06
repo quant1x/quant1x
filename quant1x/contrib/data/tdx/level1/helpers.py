@@ -3,7 +3,6 @@
 # Licensed under the MIT License.
 
 import struct
-from tkinter import E
 from typing import Tuple
 import threading
 from quant1x.data.meta import Exchange

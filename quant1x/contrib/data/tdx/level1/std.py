@@ -690,3 +690,4 @@ class BlockInfoResponse:
         if self.size > 0:
             # The rest is data
             self.data = bytearray(data[4:])
+
