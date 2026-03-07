@@ -11,7 +11,7 @@ from ..meta.timestamp import Timestamp
 from ..meta.instrument import Instrument
 
 class FileStorage(ABC, Generic[T]):
-    """文件存储接口（专用于单一 dataclass 类型）"""
+    """文件存储接口(专用于单一 dataclass 类型)"""
     
     def __init__(self, data_type: Type[T]) -> None:
         self._data_type = data_type
@@ -32,11 +32,11 @@ class FileStorage(ABC, Generic[T]):
     
     @abstractmethod
     def update(self) -> None:
-        """更新数据（无参，因为类型已固定）"""
+        """更新数据(无参, 因为类型已固定)"""
         raise NotImplementedError("Subclass must implement `update`")
     
     def load(self) -> List[T]:
-        """加载数据（无需传 cls，类型已知）"""
+        """加载数据(无需传 cls, 类型已知)"""
         return csv_to_slice(self._file_name, self._data_type)
     
     def save(self, data: List[T]) -> None:
@@ -44,21 +44,24 @@ class FileStorage(ABC, Generic[T]):
         slice_to_csv(self._file_name, data)
     
     def checkout(self) -> List[T]:
-        """检出数据（自动更新 + 加载）"""
+        """检出数据(自动更新 + 加载)"""
         if self.should_initialize() or self.should_update():
             self.update()
         return self.load()
 
 class BasedataFileStorage(FileStorage, Generic[T]):
-    """基础数据文件存储类"""
+    """
+    基础数据文件存储类
+    """
     
     def __init__(self, data_type: Type[T], inst: Instrument) -> None:
         self._inst = inst
         super().__init__(data_type) # 调用父类构造函数
     
 class MetaFileStorage(FileStorage, Generic[T]):
-
-    """元数据文件存储类"""
+    """
+    元数据文件存储类
+    """
     
     def __init__(self, data_type: Type[T]) -> None:
         super().__init__(data_type)

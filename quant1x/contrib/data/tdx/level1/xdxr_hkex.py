@@ -1,7 +1,16 @@
-from ast import parse
 import re
 import json
 import datetime
+
+# 预编译正则表达式
+PAREN_PATTERN = re.compile(r'\(([^)]*)\)')
+RATIO_PATTERN = re.compile(r'每\s*(\d+)\s*股')
+SPECIAL_PATTERN = re.compile(r'特别')
+BONUS_PATTERN = re.compile(r'每\s*(\d+)\s*股[^\n\r]*获发\s*(\d+)\s*股')
+BONUS_SIMPLE_PATTERN = re.compile(r'(获发|派)\s*(\d+)\s*股')
+MONEY_WITH_UNIT_PATTERN = re.compile(r'(港元|港币|美元|欧元|英镑|人民币)\s*(\d{1,3}(?:[,，]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*(分|仙)')
+MONEY_PATTERN = re.compile(r'(\d{1,3}(?:[,，]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*(港元|港仙|港币|美元|美仙|欧元|英镑|人民币|元)')
+SEPARATOR_PATTERN = re.compile(r'[\uff0c,\uff1b;]')
 
 def parse_money(text):
     """
@@ -13,8 +22,7 @@ def parse_money(text):
 
     # 首先匹配模式: "港币23分" 或 "美元23分" 或 "港币21.1仙" 等
     # 模式: 货币名称 + 数字 + 分/仙
-    pattern_with_context = r'(港元|港币|美元|欧元|英镑|人民币)\s*(\d{1,3}(?:[,，]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*(分|仙)'
-    match = re.search(pattern_with_context, text)
+    match = MONEY_WITH_UNIT_PATTERN.search(text)
 
     if match:
         currency = match.group(1)
@@ -59,8 +67,7 @@ def parse_money(text):
     # 匹配数字 (整数或小数，支持千分位逗号) 后跟货币单位
     # 支持：港元、港仙、港币、美元、美仙、欧元、英镑、人民币/元
     # 注意顺序：长词优先以避免被短词（如"元"）误匹配
-    pattern = r'(\d{1,3}(?:[,，]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*(港元|港仙|港币|美元|美仙|欧元|英镑|人民币|元)'
-    matches = re.findall(pattern, text)
+    matches = MONEY_PATTERN.findall(text)
 
     if matches:
         # 如果有多个匹配（例如既有股息又有特别股息），取第一个作为主股息
@@ -117,8 +124,7 @@ def parse_money_all(text):
 
     # 首先匹配模式: "港币23分"、"港币21.1仙" 或 "美元23分" 等
     # 模式: 货币名称 + 数字 + 分/仙
-    pattern_with_context = r'(港元|港币|美元|欧元|英镑|人民币)\s*(\d{1,3}(?:[,，]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*(分|仙)'
-    context_matches = re.findall(pattern_with_context, text)
+    context_matches = MONEY_WITH_UNIT_PATTERN.findall(text)
 
     currency_map = {
         '港元': 'HKD',
@@ -154,8 +160,7 @@ def parse_money_all(text):
         results.append((amount, currency_code, currency + unit, orig))
 
     # 然后使用原来的模式匹配其他格式
-    pattern = r'(\d{1,3}(?:[,，]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*(港元|港仙|港币|美元|美仙|欧元|英镑|人民币|元)'
-    matches = re.findall(pattern, text)
+    matches = MONEY_PATTERN.findall(text)
 
     for amount_str, currency_word in matches:
         orig = amount_str
@@ -229,6 +234,167 @@ def parse_table_rows(section_text):
         
     return rows
 
+def parse_scheme_schemes(overview):
+    """
+    拆分方案概述文本，识别有多少个子方案。
+
+    参数:
+        overview: 方案概述文本
+
+    返回:
+        list: 子方案文本列表
+    """
+    overview = overview.replace(' ', '').replace('\u3000', '')
+    # 用正则一次性匹配所有分隔符拆分
+    schemes = SEPARATOR_PATTERN.split(overview)
+    schemes = [s.strip() for s in schemes if s.strip()]
+
+    if len(schemes) > 1:
+        return schemes
+
+    # 如果无法拆分，返回原始文本
+    return [overview]
+
+
+def parse_single_scheme(scheme_text):
+    """
+    解析单个方案，抽象出分配方案的股数基数和金额描述两个部分。
+
+    参数:
+        scheme_text: 单个方案文本，例如 "末期股息每股4.5港元" 或 "每10股派息18.13港元"
+
+    返回:
+        dict: {
+            'ratio_shares': int,  # 分配基数（每多少股）
+            'amount_text': str,   # 纯金额描述文本（如 "4.5港元"）
+            'has_special': bool,  # 是否特别股息
+            'bonus': bool,        # 是否送股
+            'bonus_desc': str     # 送股描述
+        }
+    """
+    result = {
+        'ratio_shares': 1,
+        'amount_text': scheme_text,
+        'has_special': False,
+        'bonus': False,
+        'bonus_desc': None
+    }
+
+    # 提取分配基数（每x股）
+    match_ratio = RATIO_PATTERN.search(scheme_text)
+    if match_ratio:
+        try:
+            result['ratio_shares'] = int(match_ratio.group(1))
+        except ValueError:
+            pass
+
+    # 提取金额文本（数字+货币单位）
+    # 优先匹配"货币+数字+分/仙"格式
+    match = MONEY_WITH_UNIT_PATTERN.search(scheme_text)
+    if not match:
+        # 匹配"数字+货币"格式
+        match = MONEY_PATTERN.search(scheme_text)
+
+    if match:
+        result['amount_text'] = match.group(0)
+
+    # 标记特别股息
+    if SPECIAL_PATTERN.search(scheme_text):
+        result['has_special'] = True
+
+    # 检测送股/派股信息
+    m = BONUS_PATTERN.search(scheme_text)
+    if m:
+        result['bonus'] = True
+        result['bonus_desc'] = f"每{m.group(1)}股获发{m.group(2)}股"
+    else:
+        m2 = BONUS_SIMPLE_PATTERN.search(scheme_text)
+        if m2:
+            result['bonus'] = True
+            result['bonus_desc'] = m2.group(0)
+
+    return result
+
+
+def parse_scheme_info(overview, preferred_currency=None):
+    """
+    解析方案概述文本的所有信息。
+
+    参数:
+        overview: 方案概述文本
+        preferred_currency: 首选货币代码
+
+    返回:
+        dict: 包含所有解析字段的字典
+    """
+    # 拆分子方案（可能包含多个货币方案）
+    schemes = parse_scheme_schemes(overview)
+
+    # 解析所有子方案
+    parsed_schemes = []
+    for scheme_text in schemes:
+        scheme = parse_single_scheme(scheme_text)
+        dividend_amount, dividend_currency = parse_money(scheme['amount_text'])
+        parsed_schemes.append({
+            'scheme': scheme,
+            'amount': dividend_amount,
+            'currency': dividend_currency
+        })
+
+    # 使用第一个方案的结构信息（特别股息、送股、股数基数等）
+    first_scheme = parsed_schemes[0]['scheme']
+
+    result = {
+        'preferred_text': schemes[0] if schemes[0] != overview else None,
+        'parse_target': schemes[0],
+        'has_special': first_scheme['has_special'],
+        'ratio_shares': first_scheme['ratio_shares'],
+        'bonus': first_scheme['bonus'],
+        'bonus_desc': first_scheme['bonus_desc'],
+        'dividend_components': [],
+        'dividend_amount': None,
+        'dividend_currency': None,
+        'dividend_selection': None,
+        'preferred_used': None
+    }
+
+    # 收集所有金额组件
+    for ps in parsed_schemes:
+        if ps['amount'] is not None and ps['currency']:
+            result['dividend_components'].append({
+                'amount': ps['amount'],
+                'currency': ps['currency'],
+                'currency_word': ps['currency'],
+                'raw': str(ps['amount'])
+            })
+
+    # 如果有多个货币方案，根据 preferred_currency 选择
+    if len(parsed_schemes) > 1:
+        chosen = None
+        preferred_upper = preferred_currency.upper() if isinstance(preferred_currency, str) else None
+
+        if preferred_upper:
+            matches = [ps for ps in parsed_schemes if ps['currency'] == preferred_upper]
+            if matches:
+                chosen = matches[-1]
+                result['dividend_selection'] = 'preferred_currency_requested'
+                result['preferred_used'] = preferred_upper
+
+        if not chosen:
+            chosen = parsed_schemes[-1]
+            result['dividend_selection'] = 'last_scheme_preferred'
+            result['preferred_used'] = None
+
+        result['dividend_amount'] = chosen['amount']
+        result['dividend_currency'] = chosen['currency']
+    else:
+        # 只有一个方案，直接使用
+        result['dividend_amount'] = parsed_schemes[0]['amount']
+        result['dividend_currency'] = parsed_schemes[0]['currency']
+        result['dividend_selection'] = 'single_scheme'
+
+    return result
+
 def parse_date_safe(date_str):
     """尝试将 YYYY-MM-DD 格式字符串解析为 date 对象，失败返回 None"""
     if not date_str or date_str.strip() in ('---', ''):
@@ -242,155 +408,6 @@ def parse_date_safe(date_str):
         except Exception:
             return None
 
-def parse_scheme_overview(overview, preferred_currency=None):
-    """
-    解析分红派息方案概述文本。
-    
-    参数:
-        overview: 方案概述文本
-        preferred_currency: 首选货币代码（如 'HKD'、'USD'）
-    
-    返回:
-        dict: 包含以下字段的字典:
-            - scheme_parse_source: 用于解析的文本（优先小括号）
-            - scheme_preferred_from_parentheses: 是否从括号中提取
-            - dividend_components: 股息组件列表
-            - dividend_amount: 总股息金额
-            - dividend_currency: 股息货币代码
-            - dividend_selection: 选择策略
-            - preferred_currency_requested: 请求的首选货币
-            - preferred_currency_used: 实际使用的首选货币
-            - has_special_dividend: 是否包含特别股息
-            - ratio_shares: 每股/每x股的分母
-            - dividend_amount_per_share: 单股分红金额
-            - bonus: 是否包含送股/派股信息
-            - bonus_description: 送股/派股描述
-    """
-    result = {
-        'scheme_parse_source': overview,
-        'scheme_preferred_from_parentheses': False,
-        'dividend_components': [],
-        'dividend_amount': None,
-        'dividend_currency': None,
-        'dividend_selection': None,
-        'preferred_currency_requested': preferred_currency if preferred_currency else None,
-        'preferred_currency_used': None,
-        'has_special_dividend': False,
-        'ratio_shares': 1,
-        'dividend_amount_per_share': None,
-        'bonus': False,
-        'bonus_description': None
-    }
-    
-    # 优先使用小括号中的方案文本进行金额/比例解析
-    paren_matches = re.findall(r'\(([^)]*)\)', overview)
-    preferred_text = None
-    for p in paren_matches:
-        if re.search(r'(港元|港仙|港币|美元|美仙|欧元|英镑|人民币|元|分|仙|相当于)', p):
-            preferred_text = p.strip()
-            break
-    
-    # 如果找到了优先的括号内容，就用它解析，否则回退到整段 overview
-    parse_target = preferred_text if preferred_text else overview
-    result['scheme_parse_source'] = parse_target
-    result['scheme_preferred_from_parentheses'] = True if preferred_text else False
-    
-    # 支持同一方案中出现多笔金额（例如：年度股息 + 特别股息）
-    money_items = parse_money_all(parse_target)
-    dividend_components = []
-    
-    if money_items:
-        # 记录每个组件
-        for amt, curcode, curword, orig in money_items:
-            dividend_components.append({
-                'amount': amt,
-                'currency': curcode,
-                'currency_word': curword,
-                'raw': orig
-            })
-        result['dividend_components'] = dividend_components
-        
-        # 如果出现多币种，优先采用外部请求的币种（若提供且存在），否则按最后出现项为准
-        curset = list([c for _, c, _, _ in money_items if c])
-        unique_currencies = set(curset)
-        
-        if len(unique_currencies) > 1:
-            chosen = None
-            preferred_upper = preferred_currency.upper() if isinstance(preferred_currency, str) else None
-            preferred_used = None
-            
-            if preferred_upper:
-                # 若外部请求的币种存在于组件中，选择最后出现的该币种组件
-                matches = [item for item in money_items if item[1] == preferred_upper]
-                if matches:
-                    last_match = matches[-1]
-                    chosen = last_match
-                    dividend_selection = 'preferred_currency_requested'
-                    preferred_used = preferred_upper
-            
-            if not chosen:
-                # fallback: pick the last component in text
-                chosen = money_items[-1]
-                dividend_selection = 'last_component_preferred'
-                preferred_used = None
-            
-            last_amt, last_curcode, _, _ = chosen
-            amount = last_amt
-            currency = last_curcode
-            result['dividend_selection'] = dividend_selection
-            result['preferred_currency_used'] = preferred_used
-        else:
-            # 单一币种，取所有数值相加作为总派息
-            total = 0.0
-            for amt, curcode, _, _ in money_items:
-                if isinstance(amt, (int, float)):
-                    total += float(amt)
-            amount = total
-            currency = money_items[0][1] if money_items else None
-            result['dividend_selection'] = 'sum_components'
-        
-        result['dividend_amount'] = amount
-        result['dividend_currency'] = currency
-    else:
-        amount, currency = parse_money(parse_target)
-        result['dividend_amount'] = amount
-        result['dividend_currency'] = currency
-        result['dividend_selection'] = 'single_parse'
-    
-    # 标记是否存在特别股息关键词
-    if re.search(r'特别', overview) or re.search(r'特别股息', parse_target):
-        result['has_special_dividend'] = True
-    
-    # 处理每股/每x股的分母，用于计算单股金额
-    match_ratio = re.search(r'每\s*(\d+)\s*股', parse_target)
-    if match_ratio:
-        try:
-            ratio_shares = int(match_ratio.group(1))
-            result['ratio_shares'] = ratio_shares
-        except ValueError:
-            pass
-    
-    if result['ratio_shares'] and isinstance(result['dividend_amount'], (int, float)):
-        result['dividend_amount_per_share'] = result['dividend_amount'] / result['ratio_shares']
-    
-    # 检测是否包含送股/派股信息（从原始 overview 中提取，以保留原方案描述）
-    bonus_desc = None
-    bonus = False
-    # 常见模式："每 10 股股份获发 1 股" / "派 X 股" / "获发 X 股"
-    m = re.search(r'每\s*(\d+)\s*股[^\n\r]*获发\s*(\d+)\s*股', overview)
-    if m:
-        bonus = True
-        bonus_desc = f"每{m.group(1)}股获发{m.group(2)}股"
-    else:
-        m2 = re.search(r'(获发|派)\s*(\d+)\s*股', overview)
-        if m2:
-            bonus = True
-            bonus_desc = m2.group(0)
-    
-    result['bonus'] = bonus
-    result['bonus_description'] = bonus_desc
-    
-    return result
 
 def parse_dividends(text, preferred_currency=None):
     """解析分红派息部分"""
@@ -427,115 +444,36 @@ def parse_dividends(text, preferred_currency=None):
         if '公告日期' in announce or announce.startswith('公告'):
             continue
         overview = row[1]
-        # 优先使用小括号中的方案文本进行金额/比例解析（如果小括号中包含金额或"相当于"之类的说明则以其为准）
-        paren_matches = re.findall(r'\(([^)]*)\)', overview)
-        preferred_text = None
-        for p in paren_matches:
-            if re.search(r'(港元|港仙|港币|美元|美仙|欧元|英镑|人民币|元|分|仙|相当于)', p):
-                preferred_text = p.strip()
-                break
-        # 如果找到了优先的括号内容，就用它解析，否则回退到整段 overview
-        parse_target = preferred_text if preferred_text else overview
-        # 支持同一方案中出现多笔金额（例如：年度股息 + 特别股息）
-        money_items = parse_money_all(parse_target)
-        amount = None
-        currency = None
-        dividend_components = []
-        if money_items:
-            # 记录每个组件
-            for amt, curcode, curword, orig in money_items:
-                dividend_components.append({
-                    'amount': amt,
-                    'currency': curcode,
-                    'currency_word': curword,
-                    'raw': orig
-                })
-            # 如果出现多币种，优先采用外部请求的币种（若提供且存在），否则按最后出现项为准
-            curset = list([c for _, c, _, _ in money_items if c])
-            unique_currencies = set(curset)
-            if len(unique_currencies) > 1:
-                chosen = None
-                preferred_upper = preferred_currency.upper() if isinstance(preferred_currency, str) else None
-                if preferred_upper:
-                    # 若外部请求的币种存在于组件中，选择最后出现的该币种组件
-                    matches = [item for item in money_items if item[1] == preferred_upper]
-                    if matches:
-                        last_match = matches[-1]
-                        chosen = last_match
-                        dividend_selection = 'preferred_currency_requested'
-                        preferred_used = preferred_upper
-                if not chosen:
-                    # fallback: pick the last component in text
-                    chosen = money_items[-1]
-                    dividend_selection = 'last_component_preferred'
-                    preferred_used = None
-                last_amt, last_curcode, _, _ = chosen
-                amount = last_amt
-                currency = last_curcode
-            else:
-                # 单一币种，取所有数值相加作为总派息
-                total = 0.0
-                for amt, curcode, _, _ in money_items:
-                    if isinstance(amt, (int, float)):
-                        total += float(amt)
-                amount = total
-                currency = money_items[0][1] if money_items else None
-                dividend_selection = 'sum_components'
-        else:
-            amount, currency = parse_money(parse_target)
-            dividend_selection = 'single_parse'
-            dividend_selection = 'single_parse'
-        # 标记是否存在特别股息关键词
-        has_special = False
-        if re.search(r'特别', overview) or re.search(r'特别股息', parse_target):
-            has_special = True
-        # 处理每股/每x股的分母，用于计算单股金额
-        ratio_shares = 1
-        match_ratio = re.search(r'每\s*(\d+)\s*股', parse_target)
-        if match_ratio:
-            try:
-                ratio_shares = int(match_ratio.group(1))
-            except ValueError:
-                ratio_shares = 1
 
+        # 解析方案信息
+        info = parse_scheme_info(overview, preferred_currency)
+
+        # 计算单股分红金额
         dividend_amount_per_share = None
-        if ratio_shares and isinstance(amount, (int, float)):
-            dividend_amount_per_share = amount / ratio_shares
-        # 检测是否包含送股/派股信息（从原始 overview 中提取，以保留原方案描述）
-        bonus_desc = None
-        bonus = False
-        # 常见模式："每 10 股股份获发 1 股" / "派 X 股" / "获发 X 股"
-        m = re.search(r'每\s*(\d+)\s*股[^\n\r]*获发\s*(\d+)\s*股', overview)
-        if m:
-            bonus = True
-            bonus_desc = f"每{m.group(1)}股获发{m.group(2)}股"
-        else:
-            m2 = re.search(r'(获发|派)\s*(\d+)\s*股', overview)
-            if m2:
-                bonus = True
-                bonus_desc = m2.group(0)
+        if info['ratio_shares'] and isinstance(info['dividend_amount'], (int, float)):
+            dividend_amount_per_share = info['dividend_amount'] / info['ratio_shares']
         record = {
-            "category": "分红派息", # 分红派息
-            "announce_date": announce, # 公告日期
-            "scheme_overview": overview, # 方案概述（原始）
-            "scheme_parse_source": parse_target, # 用于解析的文本（优先小括号）
-            "scheme_preferred_from_parentheses": True if preferred_text else False,
-            "dividend_components": dividend_components, # 若方案包含多笔股息，则列出每项
-            "has_special_dividend": has_special,
-            "dividend_selection": dividend_selection,
+            "category": "分红派息",
+            "announce_date": announce,
+            "scheme_overview": overview,
+            "scheme_parse_source": info['parse_target'],
+            "scheme_preferred_from_parentheses": True if info['preferred_text'] else False,
+            "dividend_components": info['dividend_components'],
+            "has_special_dividend": info['has_special'],
+            "dividend_selection": info['dividend_selection'],
             "preferred_currency_requested": preferred_currency if preferred_currency else None,
-            "preferred_currency_used": (preferred_used if 'preferred_used' in locals() else None),
-            "record_date": row[2].strip() if len(row) > 2 else None, # 记录日期
-            "ex_date": row[3].strip() if len(row) > 3 else None, # 除净日
-            "payment_date": row[4].strip() if len(row) > 4 else None, # 支付日
-            "closure_start": row[5].strip() if len(row) > 5 else None, # 暂停过户起
-            "closure_end": row[6].strip() if len(row) > 6 else None, # 暂停过户止
-            "dividend_amount": amount, # 分红金额
-            "dividend_currency": currency, # 分红金额货币
-            "ratio_shares": ratio_shares, # 每股/每x股的分母
-            "dividend_amount_per_share": dividend_amount_per_share, # 单股分红金额
-            "bonus": bonus, # 是否包含送股/派股信息
-            "bonus_description": bonus_desc # 送股/派股描述
+            "preferred_currency_used": info['preferred_used'],
+            "record_date": row[2].strip() if len(row) > 2 else None,
+            "ex_date": row[3].strip() if len(row) > 3 else None,
+            "payment_date": row[4].strip() if len(row) > 4 else None,
+            "closure_start": row[5].strip() if len(row) > 5 else None,
+            "closure_end": row[6].strip() if len(row) > 6 else None,
+            "dividend_amount": info['dividend_amount'],
+            "dividend_currency": info['dividend_currency'],
+            "ratio_shares": info['ratio_shares'],
+            "dividend_amount_per_share": dividend_amount_per_share,
+            "bonus": info['bonus'],
+            "bonus_description": info['bonus_desc']
         }
 
         # # 解析 announce_date 为 date 对象，便于排序

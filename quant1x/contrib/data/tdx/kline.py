@@ -11,7 +11,7 @@ from quant1x.data.meta.calendar import next_trading_day
 from quant1x.data import adapter
 from quant1x.data.base import BASEDATA_KLINE, MarketCnFirstListTime
 from quant1x.data.meta import Timestamp, Frequency, TimeUnit, FREQ_DAILY
-from quant1x.data.meta import Instrument
+from quant1x.data.meta import Instrument, Exchange
 from quant1x.data.market import detect_symbol
 from quant1x.config import config
 from quant1x.data import MaxCachedDaysToDropOnIncrementalUpdate
@@ -272,13 +272,13 @@ class DataKLine(adapter.DataAdapter):
 _data_kline_plugin = adapter.register(DataKLine)
     
 
-def check_kline_offset(klines: List[Any], date: str, freq: Frequency=FREQ_DAILY) -> int:
+def check_kline_offset(klines: List[Any], as_of_date: str, freq: Frequency=FREQ_DAILY) -> int:
     """
     检查给定日期在K线数据中的偏移位置
     
     Args:
         klines (List[Any]): K线数据列表, 每个元素应包含date字段, 元素类型是鸭子类型, 可以是KLine, BarRaw, SecurityBar
-        date (str): 要查找的目标日期
+        as_of_date (str): 要查找的目标日期
         freq (Frequency): K线频率, 默认为日线
     
     Returns:
@@ -289,9 +289,9 @@ def check_kline_offset(klines: List[Any], date: str, freq: Frequency=FREQ_DAILY)
     offset = 0
     for i in range(rows):
         kline_date = klines[rows - 1 - i].date
-        if kline_date < date:
+        if kline_date < as_of_date:
             return -1
-        elif kline_date == date:
+        elif kline_date == as_of_date:
             break
         else:
             offset += 1
@@ -321,11 +321,12 @@ def combine_adjustments_in_period(xdxr_list: List[XdxrInfo],
     
     for info in xdxr_list:
         if not info.is_adjust():
+            logger.debug(f"[combine_adjustments_in_period]: {info.Date} is not an adjustment")
             continue
-
         # 统一盘前时间
-        event_ts = Timestamp.parse(info.Date)
+        event_ts = Timestamp.parse(info.Date).get_pre_market_time()
         if event_ts < start_date or event_ts > end_date:
+            logger.debug(f"[combine_adjustments_in_period]: {event_ts} is not in range")
             continue
 
         m, a = info.adjust_factor()
@@ -392,7 +393,9 @@ def apply_forward_adjustment_incrementally(klines: List[Bar],
     # 强制统一为盘前时间
     ts_start = last_adjusted_date
     ts_end = as_of_date
+    logger.debug(f'ts_start={ts_start}, ts_end={ts_end}')
     factors = combine_adjustments_in_period(xdxr_list, ts_start, ts_end)
+    #print(factors)
     
     # 如果在时间范围内没有需要除权处理的记录, 则返回
     if not factors:
@@ -486,8 +489,10 @@ def get_cross_section_forward_adjusted_klines(inst: Instrument, as_of_date: str)
     
     # 对齐数据缓存的日期, 过滤可能存在停牌没有数据的情况
     offset = check_kline_offset(raw_klines, fixed_date)
-    if offset < 0:
+    if offset < 0 and inst.exchange in(Exchange.SSE, Exchange.SZSE, Exchange.BSE):
+        # 非A的获取全部数据
         return []
+    logger.debug(f'offset={offset}')
     
     fixed_count = len(raw_klines) - offset
     filtered_klines = raw_klines[:fixed_count]
@@ -530,10 +535,12 @@ def get_cross_section_forward_adjusted_klines(inst: Instrument, as_of_date: str)
 
 if __name__ == "__main__":
     import pandas as pd
+    from .instruments import get_instrument_info
     
     # 获取未复权K线数据
     code = "600600.SH"
-    inst = detect_symbol(code)
+    code = '00008.hk'
+    inst = get_instrument_info(code)
     cache = DataKLine()
     cache.update(inst)
     symbol = inst.symbol()

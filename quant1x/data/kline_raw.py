@@ -14,7 +14,7 @@ from quant1x.level1.client import get_std_conn
 from quant1x.level1.security_bars import SecurityBarsRequest, SecurityBarsResponse, KLineType, SecurityBar, SECURITY_BARS_MAX
 from quant1x.config import config
 from quant1x.data import adapter
-from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASEDATA_DATA, register, DEFAULT_DATA_PROVIDER
+from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASEDATA, register, DEFAULT_DATA_PROVIDER
 from quant1x.data.base import BASEDATA_RAW_DAILY_KLINE
 
 logger = logging.getLogger(__name__)

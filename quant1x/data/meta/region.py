@@ -11,6 +11,7 @@ class Region(Enum):
     HK = "HK"
     US = "US"
     UK = "UK"
+    EU = "EU"
     SG = "SG"
     JP = "JP"
     OFFSHORE = "OS" # 离岸市场
@@ -26,6 +27,7 @@ class Region(Enum):
             Region.HK: "HKD",
             Region.US: "USD",
             Region.UK: "GBP",
+            Region.EU: "EUR", # 欧元区
             Region.SG: "SGD",
             Region.JP: "JPY",
             Region.OFFSHORE: "USD",
@@ -41,6 +43,7 @@ class Region(Enum):
             Region.HK: "Asia/Hong_Kong",
             Region.US: "America/New_York",
             Region.UK: "Europe/London",
+            Region.EU: "Europe/Berlin",
             Region.SG: "Asia/Singapore",
             Region.JP: "Asia/Tokyo",
             Region.OFFSHORE: "America/New_York",

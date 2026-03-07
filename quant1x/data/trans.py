@@ -18,7 +18,7 @@ from quant1x.config import config
 #from quant1x.factors import f10
 from quant1x.data import trains_begin_date
 from quant1x.data import adapter
-from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASEDATA_DATA, register, DEFAULT_DATA_PROVIDER
+from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASEDATA, register, DEFAULT_DATA_PROVIDER
 from quant1x.data.base import BASEDATA_TRANSACTION
 from quant1x.std import numeric
 

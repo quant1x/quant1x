@@ -2,8 +2,6 @@
 # Copyright (c) Quant1X <wangfengxy@sina.cn>.
 # Licensed under the MIT License.
 
-from __future__ import annotations
-from sqlite3 import Time
 from typing import List, Union
 
 import pandas as pd
@@ -222,8 +220,6 @@ class TdxDataSource(DataHandler):
         else:
             as_of_ts = Timestamp.parse(end_date)
         as_of_date = as_of_ts.only_date()
-        #print(f"Getting klines for {symbol} as of {as_of_date}")
-        
         logger.debug(f"Getting klines for {symbol} as of {as_of_date}")
         list = get_cross_section_forward_adjusted_klines(inst, as_of_date)
         df = pd.DataFrame([bar.to_dict() for bar in list], columns=Bar.headers())
@@ -258,10 +254,12 @@ if __name__ == "__main__":
     code = 'sh562500'
     code = 'hsi.hk'
     code = 'ixic.us'
+    code = '00077.hk'
     date = '2026-02-06'
     inst = D.get_instrument(code)
-    #print(inst)
+    print(inst)
     df = D.klines(code)
+    #df = df[df['date'] >= '2020-09-02']
     print(df)
     # trans = D.transactions(code, date)
     # df = pd.DataFrame([t.to_dict() for t in trans], columns=Transaction.headers())

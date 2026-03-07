@@ -53,7 +53,7 @@ def update(update_all: bool, base: list[str] | None, feature: list[str] | None):
         plugins = adapter.plugins(0)
     else:
         if base is not None:
-            plugins.extend(adapter.plugins_with_name(adapter.PLUGIN_MASK_BASE_DATA, base))
+            plugins.extend(adapter.plugins_with_name(adapter.PLUGIN_MASK_BASEDATA, base))
         if feature is not None:
             plugins.extend(adapter.plugins_with_name(adapter.PLUGIN_MASK_FEATURE, feature))
     if not plugins:

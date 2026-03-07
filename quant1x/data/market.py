@@ -241,7 +241,7 @@ def detect_symbol(input_str: str) -> Instrument:
             return Instrument(Exchange.UNKNOWN, InstrumentType.Unknown, "", "", 0, 0)
 
         cr = match_rule(ticker, rules)
-        print(f"cr: {cr}")
+        #print(f"cr: {cr}")
         if cr.type != InstrumentType.Unknown:
             return Instrument(cr.exchange, cr.type, ticker, "", 0, 0)
         else:

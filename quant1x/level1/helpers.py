@@ -5,6 +5,10 @@
 from typing import Tuple
 from quant1x.exchange import code as exchange_code
 
+# 时间戳格式化常量
+TM_H_WIDTH = 1000000
+TM_M_WIDTH = 10000
+
 def varint_encode(value: int) -> bytes:
     """
     将整数编码为 varint 字节序列。
@@ -159,4 +163,38 @@ def int_to_float64(integer: int) -> float:
         dbl_xmm1 *= 2.0
 
     return dbl_xmm6 + dbl_xmm4 + dbl_xmm3 + dbl_xmm1
+
+def format_timestamp(stamp: int) -> str:
+    """
+    将快照中使用的打包时间戳转换为 HH:mm:ss.SSS 格式。
+
+    参数：
+        stamp: 打包的时间戳整数值
+
+    返回：
+        格式化为 HH:mm:ss.SSS 的时间字符串
+    """
+    h = stamp // TM_H_WIDTH
+    tmp1 = stamp % TM_H_WIDTH
+    m1 = tmp1 // TM_M_WIDTH
+    tmp2 = tmp1 % TM_M_WIDTH
+
+    if h > 100:
+        h //= 10
+
+    m = 0
+    st = 0.0
+
+    if m1 < 60:
+        m = m1
+        tmp3 = tmp2 * 60
+        st = float(tmp3) / TM_M_WIDTH
+    else:
+        h += 1
+        tmp3 = tmp1
+        m = tmp3 // TM_H_WIDTH
+        tmp3 = (tmp3 % TM_H_WIDTH) * 60
+        st = float(tmp3) / TM_H_WIDTH
+
+    return f"{h:02d}:{m:02d}:{st:06.3f}"
 

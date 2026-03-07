@@ -17,7 +17,7 @@ from quant1x.level1.xdxr_info import XdxrInfo
 import quant1x.data.xdxr as xdxr_module
 from quant1x.config import config
 from quant1x.data import adapter
-from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASEDATA_DATA, register, DEFAULT_DATA_PROVIDER
+from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASEDATA, register, DEFAULT_DATA_PROVIDER
 from quant1x.data.base import BASEDATA_KLINE
 
 logger = logging.getLogger(__name__)

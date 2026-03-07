@@ -276,5 +276,11 @@ class Instrument:
         """
         return self.exchange != Exchange.UNKNOWN and self.type != InstrumentType.Unknown and self.lot_size > 0 and self.price_precision > 0
     
-    
-
+    def code(self) -> str:
+        """
+        获取证券代码
+        
+        Returns:
+            str: 证券代码
+        """
+        return self.ticker if len(self.alias_ticker)==0 else self.alias_ticker

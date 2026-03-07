@@ -17,7 +17,7 @@ from quant1x.data import adapter, MaxCachedDaysToDropOnIncrementalUpdate
 from . import protocol
 from .client import get_std_conn, get_ext_conn
 from .level1 import SecurityBarsRequest, SecurityBarsResponse, KLineType, SECURITY_BARS_PRE_REQUEST_MAX
-from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASEDATA_DATA, register, DEFAULT_DATA_PROVIDER
+from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASEDATA, register, DEFAULT_DATA_PROVIDER
 from quant1x.data.base import BASEDATA_RAW_DAILY_KLINE, GLOBAL_DEFAULT_START_DATE, MarketCnFirstListTime
 from quant1x.data.meta import Instrument, Frequency, TimeUnit, FREQ_DAILY
 from quant1x.data.market import detect_symbol
@@ -417,6 +417,7 @@ if __name__ == "__main__":
     # Example usage
     code = "sh600004"
     code = "hsi.hk"
+    code = '00700.hk'
     inst = detect_symbol(code)
     symbol = inst.symbol()
     inst = get_instrument_info(symbol)

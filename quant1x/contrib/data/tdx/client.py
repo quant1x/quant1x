@@ -285,37 +285,52 @@ if __name__ == '__main__':
     #     df = pd.DataFrame(bars.reply)
     #     print(df)
     
-    # 公司信息(F10)
-    from .level1.ext import CompanyInfoCategories, CompanyInfoContent
-    categories = CompanyInfoCategories(market=31, ticker='00700')
-    protocol.process_level1_new(conn, categories)
-    if categories.reply:
-        df = pd.DataFrame(categories.reply)
+    # 成交数据
+    from .level1.ext import TransactionData, DailyTransactionData
+    # 1. 最新的成交数据
+    req = TransactionData(market=31, ticker='00700', offset=0)
+    protocol.process_level1_new(conn, req)
+    if req.reply:
+        df = pd.DataFrame(req.reply)
         print(df)
-        latest = categories.reply[-1]
-        content_length = latest.offset + latest.size
-        print(f'content_length: {content_length}')
-        # 捞出分红送股
-        for category in categories.reply:
-            if category.title == '分红送股':
-                #xdxr_info = CompanyInfoContent(market=categories.market, ticker=categories.ticker, filename=category.filename, offset=category.offset, size=category.size)
-                xdxr_info = CompanyInfoContent(market=categories.market, ticker=categories.ticker, filename=category.filename, offset=0, size=content_length)
-                protocol.process_level1_new(conn, xdxr_info)
-                if xdxr_info.reply:
-                    import json
-                    #print(xdxr_info.reply)
-                    print(json.dumps(xdxr_info.reply, ensure_ascii=False, indent=2))
-                    df = pd.DataFrame(xdxr_info.reply)
-                    print(df)
-                break
+    # # 2. 日交易数据
+    # req = DailyTransactionData(market=31, ticker='00700', offset=0, date=20260305)
+    # protocol.process_level1_new(conn, req)
+    # if req.reply:
+    #     df = pd.DataFrame(req.reply)
+    #     print(df)
     
-    # 除权除息信息
-    from .level1.ext import TodoCmd0X2488, TodoCmd0X2489, TodoCmd0X2459
-    xdxr_info = TodoCmd0X2489(market=31, ticker='00700')
-    protocol.process_level1_new(conn, xdxr_info)
-    if xdxr_info.reply:
-        df = pd.DataFrame(xdxr_info.reply)
-        print(df)
+    # # 公司信息(F10)
+    # from .level1.ext import CompanyInfoCategories, CompanyInfoContent
+    # categories = CompanyInfoCategories(market=31, ticker='00700')
+    # protocol.process_level1_new(conn, categories)
+    # if categories.reply:
+    #     df = pd.DataFrame(categories.reply)
+    #     print(df)
+    #     latest = categories.reply[-1]
+    #     content_length = latest.offset + latest.size
+    #     print(f'content_length: {content_length}')
+    #     # 捞出分红送股
+    #     for category in categories.reply:
+    #         if category.title == '分红送股':
+    #             xdxr_info = CompanyInfoContent(market=categories.market, ticker=categories.ticker, filename=category.filename, offset=category.offset, size=category.size)
+    #             #xdxr_info = CompanyInfoContent(market=categories.market, ticker=categories.ticker, filename=category.filename, offset=0, size=content_length)
+    #             protocol.process_level1_new(conn, xdxr_info)
+    #             if xdxr_info.reply:
+    #                 import json
+    #                 #print(xdxr_info.reply)
+    #                 print(json.dumps(xdxr_info.reply, ensure_ascii=False, indent=2))
+    #                 #df = pd.DataFrame(xdxr_info.reply)
+    #                 #print(df)
+    #             break
+    
+    # # 除权除息信息
+    # from .level1.ext import TodoCmd0X2488, TodoCmd0X2489, TodoCmd0X2459
+    # xdxr_info = TodoCmd0X2459(market=31, ticker='00700')
+    # protocol.process_level1_new(conn, xdxr_info)
+    # if xdxr_info.reply:
+    #     df = pd.DataFrame(xdxr_info.reply)
+    #     print(df)
         
     # from .level1.ext import InstrumentQuote1
     # xdxr_info = InstrumentQuote1(market=31, ticker='00700')
@@ -340,5 +355,22 @@ if __name__ == '__main__':
     #     df = pd.DataFrame(req.reply)
     #     print(df)
     
+    # # 合约即时行情缩略图
+    # from .level1.ext import IntradayChartSampling
+    # #req = IntradayChartSampling(0x1f, '00700')
+    # req = IntradayChartSampling(0x46, 'HK0272')
+    # protocol.process_level1_new(conn, req)
+    # if req.reply:
+    #     df = pd.DataFrame(req.reply)
+    #     print(df)
+        
+    # # 未知命令字
+    # from .level1.ext import TodoCmdUnknown
+    # #req = TodoCmdUnknown(0x254D, 0x1f, '00700')
+    # req = TodoCmdUnknown(0x254D, 0x46, 'HK0272')
+    # protocol.process_level1_new(conn, req)
+    # if req.reply:
+    #     df = pd.DataFrame(req.reply)
+    #     print(df)
     
     conn.release()

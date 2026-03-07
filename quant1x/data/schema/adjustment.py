@@ -47,20 +47,22 @@ class XdxrCategory(Enum):
             return f"Unknown({category})"
 @dataclass
 class XdxrInfo:
-    Date: str = ""             # 日期 YYYY-MM-DD格式
-    Category: int = 0          # 类型编号
-    Name: str = ""             # 类型名称
-    FenHong: float = 0.0       # 分红(元)
-    PeiGuJia: float = 0.0      # 配股价(元)
-    SongZhuanGu: float = 0.0   # 送转股(股)
-    PeiGu: float = 0.0         # 配股(股)
-    SuoGu: float = 0.0         # 缩股(股)
-    QianLiuTong: float = 0.0   # 除权前流通股(万股)
-    HouLiuTong: float = 0.0    # 除权后流通股(万股)
-    QianZongGuBen: float = 0.0 # 除权前总股本(万股)
-    HouZongGuBen: float = 0.0  # 除权后总股本(万股)
-    FenShu: float = 0.0        # 权证份数
-    XingQuanJia: float = 0.0   # 行权价格(元)
+    Date: str = ""              # 日期 YYYY-MM-DD格式
+    Category: int = 0           # 类型编号
+    Name: str = ""              # 类型名称
+    FenHong: float = 0.0        # 分红(元)
+    dividend_currency: str = "" # 分红币种
+    PeiGuJia: float = 0.0       # 配股价(元)
+    rights_currency: str = ""   # 配股价币种
+    SongZhuanGu: float = 0.0    # 送转股(股)
+    PeiGu: float = 0.0          # 配股(股)
+    SuoGu: float = 0.0          # 缩股(股)
+    QianLiuTong: float = 0.0    # 除权前流通股(万股)
+    HouLiuTong: float = 0.0     # 除权后流通股(万股)
+    QianZongGuBen: float = 0.0  # 除权前总股本(万股)
+    HouZongGuBen: float = 0.0   # 除权后总股本(万股)
+    FenShu: float = 0.0         # 权证份数
+    XingQuanJia: float = 0.0    # 行权价格(元)
 
     def is_adjust(self) -> bool:
         count = self.FenHong

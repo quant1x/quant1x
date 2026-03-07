@@ -24,7 +24,7 @@ class DividendType(Enum):
     NONE = "无分红"
 
 class BonusType(Enum):
-    """红股类型 - ⭐ 新增"""
+    """红股类型"""
     BONUS_ISSUE = "红股发行"
     STOCK_DIVIDEND = "股票分红"
     CAPITALIZATION = "资本化发行"
@@ -41,7 +41,7 @@ class ActionType(Enum):
     MIXED = "混合方案"
     SPIN_OFF = "分拆上市"
 
-# ================= 核心数据模型（扁平化，含 Bonus）⭐ =================
+# ================= 核心数据模型（扁平化，含 Bonus）=================
 
 @dataclass
 class DividendAdjustmentRecord:
