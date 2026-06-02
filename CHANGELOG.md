@@ -3,6 +3,227 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.6] - 2026-06-02
+### Changed
+- c++: 修复logger路径
+- python: 梳理依赖库
+- c++: 调整头文件宏
+- c++: 优化因子工厂
+- 调整vscode配置文件
+- c++: 调整配置功能函数的路径
+- go: 简化net/http代码
+- c++: 删除废弃的交易配置函数
+- go: 调整日志记录器
+- c++: 补充croncpp库LICENSE
+- go: 基础功能, 新增cron表达式
+- go: 优化调度器
+- go: 去掉cron的独立包路径, 并入base
+- c++: 调整结构体
+- go: 将cron归于std
+- go: 修复homedir测试的错误
+- 将net并入io
+- rust: cargo fmt
+- rust: 修复测试中路径的兼容问题
+- c++: 删除废弃的代码
+- c++: 调整注释格式
+- go: 拆分config中对exchange依赖的函数
+- go: 去掉标准库net的别名stdNet
+- c++: 取消safe的q1x上层命名空间
+- go: 统一季度函数
+- go: 对齐c++的日期格式的常量
+- c++: 补充config初始化函数注释
+- go: 去掉config重复的子目录函数
+- go: 修复logger包路径
+- rust: 当下的连接池作为调整为标准协议的连接池
+- rust: 补充关键函数注释
+- rust: 修订config测试代码中路径的错误设定
+- python: 修订函数注释
+- go: 调整测试代码
+- go: 补充context注释
+- 分离缓存路径，meta作为core的一部分
+- 对齐expanduser函数的路径拼接细节
+- go: c++版本的argparse.hpp迁移
+- go: 补充argparse文档
+- rust: 调整cache模块, 新设置adapter单元
+- rust: 修复单次拉取证券列表的最大条数的常量
+- 配置参数对齐
+- 优化证券代码的检测规则
+- rust: 调整缓存适配器
+- 调整证券代码的规则
+- go: 新增同步板块流程
+- go: 删除从gox复制的字符集工具
+- c++: 补充Fast C++ CSV Parser许可证及文档
+- 完善证券代码规则
+- go: 压缩工具源文件名改为compress
+- go: 抽象本地缓存的是否可更新功能
+- go: 新增上市公司财务信息接口
+- go: 优化缓存证券代码的处理流程
+- 屏蔽深圳市场首位大于3的代码规则
+- c++: 修复时区大小写的bug,
+- c++: 修复crashwindows下不记录日志的问题
+- c++: 修复交易标的的头文件路径
+- go: 删除保留字段
+- go: 交易标的的基本面
+- c++: 将adapter调整到cache
+- go: 构建更新数据流程
+- git仓库删除launch.json
+- c++: crash增加SA_SIGINFO
+- c++: 修复global_terminate_handler可能存在的遗漏异常信息的问题
+- c++: 加固更新流程
+- go: 调整fs的目录检测函数名
+- 新增主要交易所的交易时段文档
+- go: 将缓存可更新状态归于exchange
+- 统一成份股字段名为蛇形命名规则
+- rust: 按交易日期保存板块数据
+- go: 添加部分基础数据
+- python: 打包增加changelog
+- rust: 下一个版本0.7.6
+- csv字段名改成蛇形命名规则
+- python: 调整前复权函数签名
+- 增加示例代码
+- c++: 收敛配置文件名常量到cpp
+- go: 修订基础配置结构体
+- go: 设计数据接口
+- go: 调整累计复权因子
+- vscode修复go插件的异常配置告警
+- go: 代码暂存
+- python: 实现status缓存可更新状态
+- go: 调整获取文件状态的函数
+- rust: 实现缓存更新状态检测功能
+- python: 完善缓存更新状态
+- c++: 实现缓存文件更新检测功能
+- 暂存代码
+- 合并dataset和data
+- 暂存代码
+- go: 修订mic包描述
+- go: 调整RollingOnce函数签名
+- 修订session
+- go: 调整测试文件路径
+- 调整session的rust和python实现
+- 调整calendar更新流程，增加marker状态时间戳
+- c++: 优化调度器销毁流程
+- go: 收敛k线时间的处理函数
+- go: 新增即时行情
+- 修订基础数据适配器的注释，明确是基础数据
+- c++: 优化线程池退出机制
+- go: 成交数据的请求参数证券代码给用exchange.SecurityCode
+- go: 优化成交数据接口
+- 调整的部分代码
+- go: 添加应用退出前的现场清理
+- go: ExchangeId新增mic函数
+- 暂存代码
+- go: 更新go版本到1.26如此
+- go: 分笔成交数据修订集合竞价收盘常量
+- go: 调整证券信息结构
+- go: 优化命令行参数
+- go: 修正服务器列表缓存机制
+- 调整日志模块路径为log
+- rust: 调整edition版本为2024, 调整工具链版本1.93.0
+- python: 新增修复源文件头部信息
+- python: 优化模块运行脚本支持包路径映射
+- vscode新增以模块方式运行python源代码的配置
+- 修改开源协议为MIT
+- 调整模块路径
+- python: 新增AKShare实验代码
+- python: 新增Qlib实验代码
+- python: 禁止APScheduler的logging日志并组织传播
+- python: 优化csv和切片互转函数
+- python: 文件存储抽象类
+- python: 导出dataclass的字段名工具函数
+- python: 线程安全的单例模式
+- python: 剔除演示代码和优化装饰器
+- python: 完成KLine复权中下一个交易日获取方法的todo
+- python: 优化交易日历
+- python: 新增基础数据存储抽象类
+- python: k线周期增加全局常量
+- python: 调整获取证券信息函数签名
+- python: 数据接口新增证券信息、K线和成交数据
+- python: 优化证券列表的组成部分的描述信息
+- python: 调整包路径，添加许可证头部
+- python: 取消开发模式安装包时对quant1x/version.py的依赖，`pip install -e .` 开发模式会安装失败
+- python: 新增quant1x实验笔记
+- python: 格式化常量
+- python: 与pyproject.toml对齐依赖项
+- python: 统一项目的配置
+- python: 调整引入包顺序
+- python: 调整实现K线的源文件名
+- python: 调整全局配置导出
+- python: 新增RFC1123的转换函数
+- python: 扩展行情7727和7721的区别是7721没有期货，属于券商版本，7727是通达信官方扩展双线服务器
+- python: 新增NumberRange
+- python: 优化香港市场的证券代码规则
+- python: 优化NumberRange, 支持字符串范围
+- python: 调整时段权限掩码
+- python: 修订分钟数的计算方法
+- 调整文档, 增加logo
+- 新增港交所代码分配规则
+- 新增上交所2025第5次代码分配规则
+- go: 升级go版本最低1.26.0
+- 明确go版本为1.26+
+- python: 调整美股盘前、收盘以及盘后交易时段
+- python: 增加区域region
+- 新增港交所的价位表
+- 调整交易所规则文件名
+- python: 调整实验性代码
+- python: 删除测试代码
+- python: 删除测试代码
+- python: 调整测试代码
+- python: 调整测试代码
+- python: 新增计算目标时区与本地时区的时间差
+- python: 调整日志记录器
+- python: 新增python以-m 模块方式运行时定位入口模块名的功能
+- python: 新增多进度条封装
+- python: 新增cli模块
+- python: 新增交易代码规则模块
+- python: 调整level1的业务指令类名
+- python: 剔除配置
+- python: 新增bar、trade的数据结构
+- python: 新增资产类型
+- python: 交易日历归属于meta
+- python: 交易所归于meta
+- python: meta数据增加基金fund
+- python: meta新增合约结构
+- python: 新增存储抽象类
+- python: 调整基础数据的关键词, 从base改为basedata
+- python: 确定对外研究接口为DataHandler, 证券代码的参数统一为字符串symbol, 而内部统一使用Instrument合约, Instrument可以转成symbol，而symbol需要通过查询，获得Instrument对象
+- python: 调整关键词base为basedata
+- python: 调整引入代码规则包路径
+- python: 新增初级演示的主应用程序入口
+- python: 删除冗余的引用
+- python: 屏蔽7721的服务器资源
+- python: 调整缓存路径为2级，数据类型和交易所缩写，原需要年份和日期拆分的子目录不变
+- python: 调整测试代码
+- 修订文档中关于项目风险的强调
+- python: 删除顶层的系统功能
+- c++: 调整文件系统命名空间
+- python: 通过配置调整日志级别
+- go: 调整数据源的包路径
+- python: 将默认的开始日期改成1900年1月1日以支持港股和美股
+- go: 新增时区差
+- go: 调整时间戳
+- go: 调整session支持国际化
+- python: k线支持港股和美股
+- python: 补充k线周期转换
+- python: 调整对象设置属性的方法
+- python: 调整服务器配置检测方式
+- python: 优化ext握手协议
+- python: Command允许自定义枚举
+- python: 调整关键日志为warning
+- python: 新增测试代码
+- python: 增加部分协议debug日志
+- python: 支持k线支持港股、美股
+- python: 调整扩展行情代码
+- python: 元数据增加汇率
+- python: 暂时保存解码分红派息
+- python: 新增独立的解析派息方案
+- python: 调整汇率部分代码
+- python: 优化分红多币种的处理方式
+- python: 优化分红派送方案, 00008.hk 2020-09-03的分红方案原数据的分红金额缺少实物分配的货币替代派息方案
+- python: 扩展行情增加分笔成交数据
+- python: 缓存东方财富的港股分红派息接口
+- python: 优化扩展行情的K线分红派息等权益数据
+- python: 新增yyyymmdd格式的整型日期
+
 ## [0.7.5] - 2025-12-05
 ### Changed
 - rust: 下一个版本号0.7.5
@@ -12,6 +233,7 @@ All notable changes to this project will be documented in this file.
 - python: 补充level1的协议实现
 - python: 调整transaction测试代码
 - rust: 补全f10信息, 附带完全了相关的level1的协议以及标准函数库的支持
+- update changelog
 
 ## [0.7.4] - 2025-12-03
 ### Changed
@@ -1288,7 +1510,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.5...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.6...HEAD
+[0.7.6]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.5...v0.7.6
 [0.7.5]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.4...v0.7.5
 [0.7.4]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.3...v0.7.4
 [0.7.3]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.2...v0.7.3
