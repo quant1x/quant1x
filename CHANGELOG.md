@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.9] - 2026-06-03
+### Changed
+- Tighten Python package discovery and update publish scripts for pyproject build
+- Refine MANIFEST.in: separate C/C++ exclusion block and include CMake rules
+
 ## [0.7.8] - 2026-06-03
 ### Changed
 - chore: 统一换行符为LF
@@ -10,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - chore: .gitattributes强制所有源码文件使用LF换行符
 - chore: .gitattributes移除json和capnp的LF约束
 - Update publish scripts for pyproject build and exclude third_party
+- update changelog
 
 ## [0.7.7] - 2026-06-03
 ### Changed
@@ -1525,7 +1531,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.8...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.9...HEAD
+[0.7.9]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.8...v0.7.9
 [0.7.8]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.7...v0.7.8
 [0.7.7]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.6...v0.7.7
 [0.7.6]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.5...v0.7.6
