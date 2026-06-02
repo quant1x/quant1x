@@ -1,2 +1,26 @@
-# Exclude build-time third-party C/C++ sources and artifacts from Python sdist
+# Exclude non-Python source trees from Python sdist
 prune third_party
+prune build
+prune cmake
+prune docs
+prune examples
+prune benches
+prune target
+prune vcpkg_installed
+prune tools
+prune user
+prune scripts
+prune tests
+
+# Exclude compiled and non-Python source files from sdist
+recursive-exclude * *.cpp
+recursive-exclude * *.c
+recursive-exclude * *.h
+recursive-exclude * *.cc
+recursive-exclude * *.rs
+recursive-exclude * *.o
+recursive-exclude * *.obj
+recursive-exclude * *.so
+recursive-exclude * *.a
+recursive-exclude * *.lib
+recursive-exclude * __pycache__

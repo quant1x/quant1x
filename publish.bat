@@ -34,7 +34,7 @@ python -m build --sdist --wheel || (echo [FAIL] build failed & exit /b 1)
 echo [ OK ] Build done
 
 REM ---- Read Version ------------------------------------------------
-for /f "usebackq delims=" %%V in (`python -c "import os,re,sys; d='dist'; files=os.listdir(d) if os.path.isdir(d) else []; for f in files: m=re.match(r'^quant1x-(?P<version>[^-]+(?:[-+][^-]+)*)\.(?:tar\.gz|zip|whl)$', f);  if m: print(m.group('version')); sys.exit(0); sys.exit(1)"`) do set PKG_VERSION=%%V
+for /f "usebackq delims=" %%V in (`python -c "import os,re,sys; d='dist'; files=os.listdir(d) if os.path.isdir(d) else []; m=next((re.match(r'^quant1x-([^-]+(?:[-+][^-]+)*)\.(?:tar\.gz|zip|whl)$', fn) for fn in files), None); sys.stdout.write(m.group(1) if m else ''); sys.exit(0 if m else 1)"`) do set PKG_VERSION=%%V
 if not defined PKG_VERSION (echo [FAIL] cannot determine version from dist artifacts & exit /b 1)
 echo [INFO] Version: %PKG_VERSION%
 

@@ -58,7 +58,22 @@ Homepage = "https://gitee.com/quant1x/quant1x"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["quant1x*"]
+include = ["quant1x", "quant1x.*"]
+exclude = [
+    "third_party",
+    "third_party.*",
+    "tests*",
+    "docs*",
+    "examples*",
+    "cmake*",
+    "build*",
+    "benches*",
+    "target*",
+    "vcpkg_installed*",
+    "scripts*",
+    "tools*",
+    "user*",
+]
 
 [tool.setuptools.package-data]
 "*" = ["*.dll", "*.pyd", "*.ini", "*.log4cxx"]
