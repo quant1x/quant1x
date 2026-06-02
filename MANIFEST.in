@@ -1,4 +1,7 @@
-# Exclude non-Python source trees from Python sdist
+# MANIFEST.in for Python sdist: keep only Python-related source and metadata.
+# The project contains multiple languages, so non-Python directories/files should be excluded.
+
+# 1) Exclude top-level non-Python directories that are not part of the Python package.
 prune third_party
 prune build
 prune cmake
@@ -12,15 +15,32 @@ prune user
 prune scripts
 prune tests
 
-# Exclude compiled and non-Python source files from sdist
-recursive-exclude * *.cpp
-recursive-exclude * *.c
-recursive-exclude * *.h
-recursive-exclude * *.cc
+# 2) Exclude Go-related sources and metadata
+recursive-exclude * *.go
+exclude go.mod
+exclude go.sum
+
+# 3) Exclude Rust-related sources and metadata
 recursive-exclude * *.rs
+recursive-exclude * mod.rs
+recursive-exclude * lib.rs
+recursive-exclude * Cargo.toml
+recursive-exclude * Cargo.lock
+recursive-exclude * rust-toolchain
+recursive-exclude * rust-toolchain.toml
+
+# 4) Exclude C/C++ project sources and configuration files
+recursive-exclude * *.c
+recursive-exclude * *.cpp
+recursive-exclude * *.cc
+recursive-exclude * *.h
 recursive-exclude * *.o
 recursive-exclude * *.obj
 recursive-exclude * *.so
 recursive-exclude * *.a
 recursive-exclude * *.lib
+recursive-exclude * CMakeLists.txt
+recursive-exclude * *.cmake
+
+# 5) Exclude Python bytecode caches and build artifacts
 recursive-exclude * __pycache__
