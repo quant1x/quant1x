@@ -133,6 +133,11 @@ class Timestamp:
         """Return time only, truncated to seconds"""
         dt = self.to_datetime()
         return dt.strftime("%H:%M:%S")
+    
+    def yyyymmdd(self) -> int:
+        """返回日期部分的整数表示，格式为 YYYYMMDD"""
+        dt = self.to_datetime()
+        return dt.year * 10000 + dt.month * 100 + dt.day
 
     def is_empty(self) -> bool:
         return self.ms == 0

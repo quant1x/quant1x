@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 import struct
+
+from quant1x.data.meta import Timestamp
 from quant1x.level1.protocol import (
     FLAG_UNCOMPRESSED,
     COMMAND_SECURITY_COUNT,
@@ -23,7 +25,8 @@ class SecurityCountRequest:
         self.pkg_len2 = 0
         self.method = COMMAND_SECURITY_COUNT
         self.market = market
-        self.padding = bytes.fromhex("75c73301")
+        yyyymmdd = Timestamp.now().yyyymmdd() # 当日日期，格式为 YYYYMMDD
+        self.padding = struct.pack('<I', yyyymmdd) # 4字节日期填充
 
     def serialize(self) -> bytes:
         # Body: Market(2) + Padding(4) = 6 bytes
