@@ -1,0 +1,2 @@
+# Exclude build-time third-party C/C++ sources and artifacts from Python sdist
+prune third_party

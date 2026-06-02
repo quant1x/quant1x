@@ -44,9 +44,27 @@ function Invoke-Step { param([string]$Title,[scriptblock]$Action); Write-Info $T
 try {
     Write-Info "Console CodePage: $([Console]::OutputEncoding.CodePage)"
     Invoke-Step 'Checking required commands...' { Test-Command python; Test-Command twine; Test-Command pip }
+    Invoke-Step 'Checking required Python modules...' { python -c "import build" > $null 2>&1; if ($LASTEXITCODE -ne 0) { throw 'Missing Python module: build (install with pip install build)' } }
     Write-Ok 'All commands ok'
 
-    Invoke-Step 'Reading version...' { $script:Version = (python setup.py --version).Trim(); if (-not $script:Version) { throw 'Version not found'} }
+    Invoke-Step 'Remove old artifacts (if any)' {
+        if (Test-Path dist) { Remove-Item dist -Recurse -Force }
+        if (Test-Path build) { Remove-Item build -Recurse -Force }
+        Get-ChildItem -Filter '*.egg-info' -Directory -ErrorAction SilentlyContinue | ForEach-Object { Remove-Item $_.FullName -Recurse -Force }
+        if (Test-Path .eggs) { Remove-Item .eggs -Recurse -Force }
+    }
+    Write-Ok 'Workspace clean'
+
+    Invoke-Step 'Building sdist + wheel' { python -m build --sdist --wheel }
+    Write-Ok 'Build done'
+
+    Invoke-Step 'Reading version from built artifacts...' {
+        $script:Version = ''
+        $distArtifact = Get-ChildItem -Path dist -File | Where-Object { $_.Name -match '^(?<name>.+?)-(?<version>[^-]+(?:[-+][^-]+)*)\.(tar\.gz|zip|whl)$' } | Select-Object -First 1
+        if (-not $distArtifact) { throw 'Cannot determine version from built artifacts' }
+        $script:Version = $Matches['version']
+        if (-not $script:Version) { throw 'Version not found in artifact name' }
+    }
     Write-Info "Version: $script:Version"
 
     # 版本存在性检查(阻断型)
@@ -68,17 +86,6 @@ try {
     elseif ($existing -and $AllowExisting) {
         Write-Warn "Version $($script:Version) exists; proceeding due to -AllowExisting"
     }
-
-    Invoke-Step 'Remove old artifacts (if any)' {
-        if (Test-Path dist) { Remove-Item dist -Recurse -Force }
-        if (Test-Path build) { Remove-Item build -Recurse -Force }
-        Get-ChildItem -Filter '*.egg-info' -Directory -ErrorAction SilentlyContinue | ForEach-Object { Remove-Item $_.FullName -Recurse -Force }
-        if (Test-Path .eggs) { Remove-Item .eggs -Recurse -Force }
-    }
-    Write-Ok 'Workspace clean'
-
-    Invoke-Step 'Building sdist + wheel' { python setup.py sdist bdist_wheel }
-    Write-Ok 'Build done'
 
     # Progress bar handling (avoid Rich Unicode issues on non-UTF8 consoles)
     if ($NoRich) {
