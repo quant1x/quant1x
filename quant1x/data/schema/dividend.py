@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 from enum import Enum
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any

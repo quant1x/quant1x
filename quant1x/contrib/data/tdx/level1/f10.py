@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 from numpy import fix
 import requests, json, csv
 

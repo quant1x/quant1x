@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 from enum import IntEnum
 
 # 1. 申赎机制(最宏观), 2bit -> 高位 [15:14]

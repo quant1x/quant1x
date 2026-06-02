@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 from quant1x.std.numeric import NumberRange
 from .rule import CodeRule
 from ..exchange import Exchange
