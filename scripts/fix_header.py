@@ -24,7 +24,7 @@ def is_empty_file(filepath):
             return True
         
         # 检查文件内容是否只有空白字符
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, 'r', encoding='utf-8', newline='') as f:
             content = f.read().strip()
             if not content:
                 return True
@@ -42,7 +42,7 @@ def should_add_header(filepath):
         return False
     
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, 'r', encoding='utf-8', newline='') as f:
             content_start = f.read(1000)  # 读取文件开头部分
         
         lines = content_start.split('\n')
@@ -79,7 +79,7 @@ def add_header_smart(filepath):
             print(f"⏭️  跳过空文件: {filepath}")
             return False
             
-        with open(filepath, 'r', encoding='utf-8') as f:
+        with open(filepath, 'r', encoding='utf-8', newline='') as f:
             original_content = f.read()
         
         lines = original_content.split('\n')
@@ -113,7 +113,7 @@ def add_header_smart(filepath):
         
         new_content = '\n'.join(new_lines)
         
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, 'w', encoding='utf-8', newline='\n') as f:
             f.write(new_content)
         
         return True
