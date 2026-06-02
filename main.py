@@ -2,9 +2,10 @@
 # Copyright (c) Quant1X <wangfengxy@sina.cn>.
 # Licensed under the MIT License.
 
+import signal
 import click
 from typing import List, Optional
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, Future
 from rich.console import Console
 from rich.progress import (
     Progress,
@@ -21,6 +22,9 @@ from quant1x.contrib.data.tdx import *  # 导入TDX数据源
 from quant1x.contrib.data.tdx.datasource import TdxDataSource
 
 console = Console()
+
+# 全局中断标志
+_interrupted = False
 
 # ---------------------------------------------------------------------------
 # 并发控制
@@ -71,6 +75,11 @@ def _load_instruments() -> List[Instrument]:
 # ---------------------------------------------------------------------------
 # 命令: update
 # ---------------------------------------------------------------------------
+def _signal_handler(signum, frame):
+    """处理 SIGINT (CTRL+C)，设置中断标志。"""
+    global _interrupted
+    _interrupted = True
+
 @click.command()
 @click.option(
     "--all",
@@ -92,76 +101,114 @@ def _load_instruments() -> List[Instrument]:
     help="Comma-separated feature names to update (e.g., 'ma,macd').",
 )
 def update(update_all: bool, base: Optional[List[str]], feature: Optional[List[str]]):
-    plugins = _resolve_plugins(update_all, base, feature)
-    if not plugins:
-        console.print("[yellow]Nothing to update.[/yellow]")
-        return
+    global _interrupted
+    _interrupted = False
 
-    instruments = _load_instruments()
-    total_instruments = len(instruments)
-    console.print(f"[cyan]Loaded {total_instruments} instruments.[/cyan]")
-    console.print(
-        f"[cyan]Running {len(plugins)} task(s):[/cyan] "
-        + ", ".join(f"{p.key()}:{p.name()}" for p in plugins)
-    )
+    # 注册 CTRL+C 处理器
+    original_handler = signal.signal(signal.SIGINT, _signal_handler)
 
-    # ---- 单 Progress 实例内管理两级进度条 ----
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(bar_width=30),
-        TaskProgressColumn(),
-        TextColumn("•"),
-        TimeElapsedColumn(),
-        console=console,
-        refresh_per_second=8,  # Rich 内置渲染节流，无需手动 throttle
-    ) as progress:
-        # 外层任务：plugin 级别
-        plugin_task = progress.add_task(
-            "[bold]Overall Progress", total=len(plugins)
+    try:
+        plugins = _resolve_plugins(update_all, base, feature)
+        if not plugins:
+            console.print("[yellow]Nothing to update.[/yellow]")
+            return
+
+        instruments = _load_instruments()
+        total_instruments = len(instruments)
+        console.print(f"[cyan]Loaded {total_instruments} instruments.[/cyan]")
+        console.print(
+            f"[cyan]Running {len(plugins)} task(s):[/cyan] "
+            + ", ".join(f"{p.key()}:{p.name()}" for p in plugins)
         )
 
-        for plugin in plugins:
-            kind = plugin.key()
-            name = plugin.name()
-            desc = f"{kind} ({name})"
-
-            # 内层任务：股票级别
-            stock_task = progress.add_task(
-                f"  [cyan]{desc}[/cyan]", total=total_instruments
+        # ---- 单 Progress 实例内管理两级进度条 ----
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(bar_width=30),
+            TaskProgressColumn(),
+            TextColumn("•"),
+            TimeElapsedColumn(),
+            console=console,
+            refresh_per_second=8,  # Rich 内置渲染节流，无需手动 throttle
+        ) as progress:
+            # 外层任务：plugin 级别
+            plugin_task = progress.add_task(
+                "[bold]Overall Progress", total=len(plugins)
             )
 
-            def _update_one(inst: Instrument) -> bool:
-                """更新单只股票，成功返回 True。"""
-                try:
-                    # plugin.update() 签名有两类：Instrument 或 str(code)
+            for plugin in plugins:
+                if _interrupted:
+                    break
+
+                kind = plugin.key()
+                name = plugin.name()
+                desc = f"{kind} ({name})"
+
+                # 内层任务：股票级别
+                stock_task = progress.add_task(
+                    f"  [cyan]{desc}[/cyan]", total=total_instruments
+                )
+
+                def _update_one(inst: Instrument) -> bool:
+                    """更新单只股票，成功返回 True。"""
+                    if _interrupted:
+                        return False
                     try:
-                        plugin.update(inst)
-                    except TypeError:
-                        plugin.update(inst.ticker)  # type: ignore[arg-type]
-                    progress.update(stock_task, advance=1)
-                    return True
-                except Exception:
-                    progress.update(stock_task, advance=1)
-                    return False
+                        # plugin.update() 签名有两类：Instrument 或 str(code)
+                        try:
+                            plugin.update(inst)
+                        except TypeError:
+                            plugin.update(inst.ticker)  # type: ignore[arg-type]
+                        progress.update(stock_task, advance=1)
+                        return True
+                    except Exception:
+                        progress.update(stock_task, advance=1)
+                        return False
 
-            success = 0
-            failed = 0
-            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-                futures = {executor.submit(_update_one, inst): inst for inst in instruments}
-                for future in as_completed(futures):
-                    if future.result():
-                        success += 1
-                    else:
-                        failed += 1
+                success = 0
+                failed = 0
+                with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+                    futures: dict[Future, Instrument] = {
+                        executor.submit(_update_one, inst): inst for inst in instruments
+                    }
+                    try:
+                        for future in as_completed(futures):
+                            if _interrupted:
+                                # 取消所有未完成的 future
+                                for f in futures:
+                                    f.cancel()
+                                break
+                            try:
+                                if future.result():
+                                    success += 1
+                                else:
+                                    failed += 1
+                            except Exception:
+                                failed += 1
+                    except KeyboardInterrupt:
+                        _interrupted = True
+                        for f in futures:
+                            f.cancel()
 
-            # 股票级别任务完成，隐藏
-            progress.update(stock_task, visible=False)
+                # 股票级别任务完成，隐藏
+                progress.update(stock_task, visible=False)
 
-            # 推进外层 plugin 进度
-            progress.update(plugin_task, advance=1, description=f"[bold]Overall Progress[/bold] ({success}/{total_instruments} {kind})")
+                if _interrupted:
+                    # 推进外层 plugin 进度，标记中断
+                    progress.update(plugin_task, advance=1, description=f"[bold yellow]Overall Progress[/bold yellow] (interrupted at {kind})")
+                    break
 
-    console.print("[green]✅ All plugins completed![/green]")
+                # 推进外层 plugin 进度
+                progress.update(plugin_task, advance=1, description=f"[bold]Overall Progress[/bold] ({success}/{total_instruments} {kind})")
+
+        if _interrupted:
+            console.print("[yellow]⚠ Update interrupted by user.[/yellow]")
+        else:
+            console.print("[green]✅ All plugins completed![/green]")
+    finally:
+        # 恢复原始信号处理器
+        signal.signal(signal.SIGINT, original_handler)
 
 cli.add_command(update)
 
