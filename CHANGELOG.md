@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.7] - 2026-06-03
+### Changed
+- refactor: 移除ThrottledMultiProgress，使用Rich原生refresh_per_second节流；优化main.py多级进度条
+- fix: CTRL+C无法终止运行，添加signal中断处理
+
 ## [0.7.6] - 2026-06-02
 ### Changed
 - c++: 修复logger路径
@@ -223,6 +228,7 @@ All notable changes to this project will be documented in this file.
 - python: 缓存东方财富的港股分红派息接口
 - python: 优化扩展行情的K线分红派息等权益数据
 - python: 新增yyyymmdd格式的整型日期
+- update changelog
 
 ## [0.7.5] - 2025-12-05
 ### Changed
@@ -1510,7 +1516,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.6...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.7...HEAD
+[0.7.7]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.6...v0.7.7
 [0.7.6]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.5...v0.7.6
 [0.7.5]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.4...v0.7.5
 [0.7.4]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.3...v0.7.4
