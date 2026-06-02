@@ -3,10 +3,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.8] - 2026-06-03
+### Changed
+- chore: 统一换行符为LF
+- fix: fix_header.py统一输出LF换行符，避免Windows下产生CRLF
+- chore: .gitattributes强制所有源码文件使用LF换行符
+- chore: .gitattributes移除json和capnp的LF约束
+- Update publish scripts for pyproject build and exclude third_party
+
 ## [0.7.7] - 2026-06-03
 ### Changed
 - refactor: 移除ThrottledMultiProgress，使用Rich原生refresh_per_second节流；优化main.py多级进度条
 - fix: CTRL+C无法终止运行，添加signal中断处理
+- update changelog
 
 ## [0.7.6] - 2026-06-02
 ### Changed
@@ -1516,7 +1525,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.7...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.8...HEAD
+[0.7.8]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.7...v0.7.8
 [0.7.7]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.6...v0.7.7
 [0.7.6]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.5...v0.7.6
 [0.7.5]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.4...v0.7.5
