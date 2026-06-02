@@ -123,7 +123,7 @@ class TcpConnectionPool:
                     raise RuntimeError("Handshake failed")
 
                 raw_conn = Connection(sock, endpoint)
-                logger.warning("Created new connection {}({}:{})", raw_conn, endpoint[0], endpoint[1])
+                logger.debug("Created new connection {}({}:{})", raw_conn, endpoint[0], endpoint[1])
             except Exception:
                 if sock is not None:
                     try:
@@ -149,7 +149,7 @@ class TcpConnectionPool:
         if conn is None:
             return
         conn_id = id(conn)
-        logger.warning("Returning connection {}", conn_id)
+        logger.debug("Returning connection {}", conn_id)
 
         # 注意：此处不要释放端点（与 C++ 的语义一致）
         with self._connections_mutex:
@@ -243,7 +243,7 @@ class TcpConnectionPool:
         while self.active_connection_count + self.idle_connection_count < self.min_connections and retry_count < max_retries:
             available = self.endpoint_manager.get_available_resources()
             if available == 0:
-                logger.warning("endpoint resources exhausted, retry {}/{}", retry_count, max_retries)
+                logger.debug("endpoint resources exhausted, retry {}/{}", retry_count, max_retries)
                 time.sleep(0.1)
                 retry_count += 1
                 continue
