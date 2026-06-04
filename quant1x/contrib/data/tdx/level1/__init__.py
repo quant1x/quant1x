@@ -6,9 +6,9 @@
 通达信Level1数据接口实现
 """
 from .std import (
-    Synchronize1Request, Synchronize1Response,
-    Synchronize2Request, Synchronize2Response,
-    HeartbeatRequest, HeartbeatResponse,
+    Synchronize1, Synchronize1Request, Synchronize1Response,
+    Synchronize2, Synchronize2Request, Synchronize2Response,
+    Heartbeat, HeartbeatRequest, HeartbeatResponse,
     BlockInfoRequest, BlockInfoResponse,
     SecurityListRequest, SecurityListResponse, SECURITY_LIST_PRE_REQUEST_MAX,
     XdxrInfoRequest, XdxrInfoResponse, XdxrInfo,
@@ -18,9 +18,9 @@ from .std import (
 )
 
 __all__ = [
-    'Synchronize1Request', 'Synchronize1Response',
-    'Synchronize2Request', 'Synchronize2Response',
-    'HeartbeatRequest', 'HeartbeatResponse',
+    'Synchronize1', 'Synchronize1Request', 'Synchronize1Response',
+    'Synchronize2', 'Synchronize2Request', 'Synchronize2Response',
+    'Heartbeat', 'HeartbeatRequest', 'HeartbeatResponse',
     'BlockInfoRequest', 'BlockInfoResponse',
     'SecurityListRequest', 'SecurityListResponse', 'SECURITY_LIST_PRE_REQUEST_MAX',
     'XdxrInfoRequest', 'XdxrInfoResponse', 'XdxrInfo',

@@ -10,34 +10,19 @@ from .command import FLAG_UNCOMPRESSED
 from .command import Command
 from . import helpers
 
-class Synchronize1Request:
-    """
-    第一次协议握手请求
-    """
-    def __init__(self):
-        self.zip_flag = FLAG_UNCOMPRESSED
-        self.seq_id = helpers.msg_sequence_id()
-        self.packet_type = 0x01
-        self.pkg_len1 = 0
-        self.pkg_len2 = 0
-        self.method = Command.STD_SYNCHRONIZE1.value
-        self.padding = bytes.fromhex("01")
+from .. import protocol
 
-    def serialize(self) -> bytes:
-        self.pkg_len1 = 2 + len(self.padding)
-        self.pkg_len2 = self.pkg_len1
-        
-        header = struct.pack('<B I B H H H', self.zip_flag, self.seq_id, self.packet_type, self.pkg_len1, self.pkg_len2, self.method)
-        return header + self.padding
-
-class Synchronize1Response:
-    """
-    第一次协议握手响应
-    """
+class Synchronize1(protocol.BaseMessage):
+    """第一次协议握手（合并Request和Response）"""
     def __init__(self):
+        super().__init__(Command.STD_SYNCHRONIZE1)
         self.info = ""
+        self._padding = bytes.fromhex("01")
 
-    def deserialize(self, data: bytes) -> None:
+    def serialize_request_body(self) -> bytes:
+        return self._padding
+
+    def deserialize_response_body(self, data: bytes) -> None:
         offset = 68
         if len(data) >= offset:
             info_bytes = data[offset:]
@@ -46,38 +31,23 @@ class Synchronize1Response:
             except Exception:
                 self.info = info_bytes.decode('utf-8', errors='ignore')
 
+# 向后兼容别名
+Synchronize1Request = Synchronize1
+Synchronize1Response = Synchronize1
 
 
-class Synchronize2Request:
-    """
-    第二次协议握手请求
-    """
+
+class Synchronize2(protocol.BaseMessage):
+    """第二次协议握手（合并Request和Response）"""
     def __init__(self):
-        self.zip_flag = FLAG_UNCOMPRESSED
-        self.seq_id = helpers.msg_sequence_id()
-        self.packet_type = 0x01
-        self.pkg_len1 = 0
-        self.pkg_len2 = 0
-        self.method = Command.STD_SYNCHRONIZE2.value
-        self.padding = bytes.fromhex("d5d0c9ccd6a4a8af0000008fc22540130000d500c9ccbdf0d7ea00000002")
-        # padding = bytearray()
-        # padding.extend(bytes.fromhex("d5d0c9ccd6a4a8af0000008fc22540130000d500c9ccbdf0d7ea00000002"))
-
-    def serialize(self) -> bytes:
-        self.pkg_len1 = 2 + len(self.padding)
-        self.pkg_len2 = self.pkg_len1
-        
-        header = struct.pack('<B I B H H H', self.zip_flag, self.seq_id, self.packet_type, self.pkg_len1, self.pkg_len2, self.method)
-        return header + self.padding
-
-class Synchronize2Response:
-    """
-    第二次协议握手响应
-    """
-    def __init__(self):
+        super().__init__(Command.STD_SYNCHRONIZE2)
         self.info = ""
+        self._padding = bytes.fromhex("d5d0c9ccd6a4a8af0000008fc22540130000d500c9ccbdf0d7ea00000002")
 
-    def deserialize(self, data: bytes) -> None:
+    def serialize_request_body(self) -> bytes:
+        return self._padding
+
+    def deserialize_response_body(self, data: bytes) -> None:
         offset = 58
         if len(data) >= offset:
             info_bytes = data[offset:]
@@ -86,43 +56,34 @@ class Synchronize2Response:
             except Exception:
                 self.info = info_bytes.decode('utf-8', errors='ignore')
 
+# 向后兼容别名
+Synchronize2Request = Synchronize2
+Synchronize2Response = Synchronize2
 
-class HeartbeatRequest:
-    """
-    心跳请求
-    """
+
+class Heartbeat(protocol.BaseMessage):
+    """心跳（合并Request和Response）"""
     def __init__(self):
-        self.zip_flag = FLAG_UNCOMPRESSED
-        self.seq_id = helpers.msg_sequence_id()
-        self.packet_type = 0x02
-        self.pkg_len1 = 0
-        self.pkg_len2 = 0
-        self.method = Command.STD_HEARTBEAT.value
-
-    def serialize(self) -> bytes:
-        self.pkg_len1 = 2
-        self.pkg_len2 = 2
-        
-        header = struct.pack('<B I B H H H', self.zip_flag, self.seq_id, self.packet_type, self.pkg_len1, self.pkg_len2, self.method)
-        return header
-
-class HeartbeatResponse:
-    """
-    心跳响应
-    """
-    def __init__(self):
+        super().__init__(Command.STD_HEARTBEAT)
         self.info = ""
+        self.request_header.packet_type = 0x02
 
-    def deserialize(self, data: bytes) -> None:
+    def serialize_request_body(self) -> bytes:
+        return b""
+
+    def deserialize_response_body(self, data: bytes) -> None:
         if len(data) >= 10:
             s = data[:10]
         else:
             s = data
-            
         try:
             self.info = s.decode('gbk', errors='ignore').split('\x00', 1)[0]
         except Exception:
             self.info = s.decode('utf-8', errors='ignore').split('\x00', 1)[0]
+
+# 向后兼容别名
+HeartbeatRequest = Heartbeat
+HeartbeatResponse = Heartbeat
 
 
 from quant1x.data.meta import Exchange, Instrument

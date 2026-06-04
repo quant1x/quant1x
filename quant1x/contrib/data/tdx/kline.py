@@ -6,7 +6,6 @@ import os
 from typing import Optional, Any, List
 from datetime import datetime
 
-from sanic import raw
 from quant1x.data.meta.calendar import next_trading_day
 from quant1x.data import adapter
 from quant1x.data.base import BASEDATA_KLINE, MarketCnFirstListTime
