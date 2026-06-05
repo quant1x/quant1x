@@ -85,7 +85,7 @@ def save_xdxr(inst: Instrument, values: list[XdxrInfo]):
 def update_xdxr_from_std(inst: Instrument):
     try:
         conn = get_std_conn()
-        msg = Xdxr(inst.exchange, inst.ticker)
+        msg = Xdxr(exchange=inst.exchange, ticker=inst.ticker)
         protocol.process_level1_new(conn, msg)
         if msg.count > 0:
             save_xdxr(inst, msg.list)

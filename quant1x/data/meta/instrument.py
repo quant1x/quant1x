@@ -149,7 +149,7 @@ class Instrument:
     exchange: Exchange       # 交易所代码(如 SH, SZ, NASDAQ)
     type: InstrumentType     # 证券类型(股票, 债券, 期货等)
     ticker: str              # 交易所分配的证券代码(ticker), 通常为市场普遍使用的代码
-    name: str                # 证券名称
+    name: str = ''               # 证券名称
     lot_size: int = 100      # 每手股数
     price_precision: int = 2 # 价格小数位数
     ext_market: int = 0      # 扩展市场代码(如 US, HK)
