@@ -4,7 +4,7 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Tuple, Optional, Dict, Any
+from typing import Tuple, Optional, Dict, Any, List
 
 from ..meta.timestamp import Timestamp
 
@@ -126,6 +126,14 @@ class XdxrInfo:
             return (p + xdxr_fen_hong) / (1 + xdxr_gu_shu)
             
         return calculator
+
+from ..meta.exchange import Exchange
+@dataclass
+class XdxrEntry:
+    exchange: Exchange
+    ticker: str
+    count: int = 0
+    list: List[XdxrInfo] = field(default_factory=list)
 
 @dataclass
 class CumulativeAdjustment:

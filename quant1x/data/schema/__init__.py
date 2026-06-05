@@ -13,13 +13,13 @@
 
 这些 schema 与 meta 中的元信息(如合约、频率、日历)协同工作, 共同构成量化系统的数据契约层。
 """
-from .adjustment import XdxrInfo, XdxrCategory, CumulativeAdjustment
+from .adjustment import XdxrInfo, XdxrEntry, XdxrCategory, CumulativeAdjustment
 from .bar import Bar
 from .trade import Direction, Transaction
 from .sector import Sector
 
 __all__ = [
-    "XdxrInfo", "XdxrCategory", "CumulativeAdjustment",
+    "XdxrInfo", "XdxrEntry", "XdxrCategory", "CumulativeAdjustment",
     "Bar",
     "Direction", "Transaction",
     "Sector",

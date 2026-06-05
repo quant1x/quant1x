@@ -31,11 +31,6 @@ class Synchronize1(protocol.BaseMessage):
             except Exception:
                 self.info = info_bytes.decode('utf-8', errors='ignore')
 
-
-
-
-
-
 class Synchronize2(protocol.BaseMessage):
     """第二次协议握手（合并Request和Response）"""
     def __init__(self):
@@ -54,9 +49,6 @@ class Synchronize2(protocol.BaseMessage):
                 self.info = info_bytes.decode('gbk', errors='ignore').rstrip('\x00')
             except Exception:
                 self.info = info_bytes.decode('utf-8', errors='ignore')
-
-
-
 
 
 class Heartbeat(protocol.BaseMessage):
@@ -83,14 +75,14 @@ class Heartbeat(protocol.BaseMessage):
 
 
 
-from quant1x.data.meta import Exchange, Instrument
+from quant1x.data.meta import Exchange, Instrument, InstrumentType
 from quant1x.data.market import detect_instrument_type_by_rule
 from quant1x.log import logger
 
 SECURITY_LIST_PRE_REQUEST_MAX = 1600 # 预请求最大数量
 
 class SecurityList(protocol.BaseMessage):
-    """证券列表（合并Request和Response）"""
+    """证券列表"""
     def __init__(self, exchange: Exchange, start: int = 0, count: int = 0):
         super().__init__(Command.STD_SECURITY_LIST)
         self.exchange = exchange
@@ -277,7 +269,6 @@ class SecurityBars(protocol.BaseMessage):
 
             self.list.append(e)
 
-from quant1x.data.meta import Exchange
 from quant1x.data.schema import Transaction as TransactionRecord
 
 # Constants
@@ -347,7 +338,7 @@ class Transaction(protocol.BaseMessage):
             self.list.append(TransactionRecord(time=time_str, price=price, volume=vol, num=num, amount=amount, direction=buy_or_sell))
 
 class HistoricalTransaction(protocol.BaseMessage):
-    """历史逐笔成交数据（合并Request和Response）"""
+    """历史逐笔成交数据"""
     def __init__(self, exchange: Exchange, code: str, date: int, start: int, count: int,
                  price_precision: int = 2, is_index: bool = False):
         super().__init__(Command.STD_HISTORY_TRANSACTION_DATA)
@@ -406,22 +397,21 @@ class HistoricalTransaction(protocol.BaseMessage):
             self.list.append(TransactionRecord(time=time_str, price=price, volume=vol, num=0, amount=amount, direction=buy_or_sell))
 
 
-from quant1x.data.meta import Exchange
-from quant1x.data.schema import XdxrInfo, XdxrCategory
+from quant1x.data.schema import XdxrInfo, XdxrEntry, XdxrCategory
 
 class Xdxr(protocol.BaseMessage):
-    """除权除息信息（合并Request和Response）"""
-    def __init__(self, exchange: Exchange, code: str):
+    """除权除息信息"""
+    def __init__(self, exchange: Exchange, ticker: str):
         super().__init__(Command.STD_XDXR_INFO)
         self._market = helpers.exchange_to_market(exchange)
-        self._code = code
+        self._ticker = ticker
         self._padding = bytes.fromhex('0100')
 
         self.count = 0
         self.list: List[XdxrInfo] = []
 
     def serialize_request_body(self) -> bytes:
-        code_bytes = self._code.encode('ascii')
+        code_bytes = self._ticker.encode('ascii')
         if len(code_bytes) < 6:
             code_bytes = code_bytes + b'\x00' * (6 - len(code_bytes))
         else:
@@ -482,6 +472,96 @@ class Xdxr(protocol.BaseMessage):
         return helpers.int_to_float64(v)
 
 
+class XdxrBatch(protocol.BaseMessage):
+    """批量获取除权除息信息"""
+    def __init__(self, insts: List[Instrument]):
+        super().__init__(Command.STD_XDXR_INFO)
+        self._insts = insts
+
+        self.count = 0
+        self.list: List[XdxrEntry] = []
+
+    def serialize_request_body(self) -> bytes:
+        inst_count = len(self._insts)
+        data = struct.pack('<H', inst_count)
+        for inst in self._insts:
+            market = helpers.exchange_to_market(inst.exchange)
+            code_bytes = inst.ticker.encode('ascii')
+            if len(code_bytes) < 6:
+                code_bytes = code_bytes + b'\x00' * (6 - len(code_bytes))
+            else:
+                code_bytes = code_bytes[:6]
+            data += struct.pack('<B 6s', market, code_bytes)
+        return data
+
+    def deserialize_response_body(self, data: bytes) -> None:
+        self.list.clear()
+        pos = 0
+        body_len = len(data)
+        if body_len < 2:
+            return
+        
+        self.count = struct.unpack('<H', data[0:2])[0]
+        pos += 2
+        #print(f"data body: pos={pos}")
+        for _ in range(self.count):
+            (market_id_, ticker_, count_) = struct.unpack('<B6sH', data[pos:pos+9])
+            exchange_ = helpers.market_to_exchange(market_id_)
+            #print(f"market_id: {market_id_}, ticker: {ticker_.decode('ascii')}, count: {count_}")
+            pos += 9
+            entry = XdxrEntry(exchange_, ticker_.decode('ascii'))
+            #print('-'*100)
+            for _ in range(count_):
+                if pos + 29 > body_len:
+                    break
+                prev_pos = pos
+                (market_, code_, u1) = struct.unpack('<B 6s B', data[pos:pos+8])
+                #print(f"market: {market_}, code: {code_.decode('ascii')}, u1: {u1}")
+                assert market_ == market_id_ and code_ == ticker_
+                pos += 8
+                date_int = struct.unpack('<I', data[pos:pos+4])[0]
+                pos += 4
+                category = struct.unpack('<B', data[pos:pos+1])[0]
+                pos += 1
+                record_data = data[pos:pos+16]
+                pos += 16
+                year, month, day, _, _ = helpers.get_datetime_from_uint32(9, date_int, 0)
+                info = XdxrInfo()
+                info.Category = category
+                info.Date = f"{year:04d}-{month:02d}-{day:02d}"
+                info.Name = XdxrCategory.to_string(category)
+                if category == 1:
+                    info.FenHong = struct.unpack('<f', record_data[0:4])[0]
+                    info.PeiGuJia = struct.unpack('<f', record_data[4:8])[0]
+                    info.SongZhuanGu = struct.unpack('<f', record_data[8:12])[0]
+                    info.PeiGu = struct.unpack('<f', record_data[12:16])[0]
+                elif category in [11, 12]:
+                    info.SuoGu = struct.unpack('<f', record_data[8:12])[0]
+                elif category in [13, 14]:
+                    info.XingQuanJia = struct.unpack('<f', record_data[0:4])[0]
+                    info.FenShu = struct.unpack('<f', record_data[12:16])[0]
+                else:
+                    v1 = struct.unpack('<I', record_data[0:4])[0]
+                    info.QianLiuTong = self._get_v(v1)
+                    v2 = struct.unpack('<I', record_data[4:8])[0]
+                    info.QianZongGuBen = self._get_v(v2)
+                    v3 = struct.unpack('<I', record_data[8:12])[0]
+                    info.HouLiuTong = self._get_v(v3)
+                    v4 = struct.unpack('<I', record_data[12:16])[0]
+                    info.HouZongGuBen = self._get_v(v4)
+                #print(f"info: {info}")
+                entry.list.append(info)
+                #print(f"body: len={body_len}, pos={pos}, remain={body_len-pos}")
+            self.list.append(entry)
+            #print(f"body: len={body_len}, pos={pos}, remain={body_len-pos}")
+            
+
+    @staticmethod
+    def _get_v(v: int) -> float:
+        if v == 0:
+            return 0.0
+        return helpers.int_to_float64(v)
+
 
 BLOCK_CHUNKS_SIZE = 0x7530
 
@@ -508,3 +588,29 @@ class BlockInfo(protocol.BaseMessage):
         if self.size > 0:
             self.data = bytearray(data[4:])
 
+if __name__ == '__main__':
+    import pandas as pd
+    from ..client import get_std_conn
+    conn = get_std_conn()
+    
+    # # 测试 单个xdxr
+    # req = Xdxr(exchange=Exchange.SZSE, ticker='000001')
+    # protocol.process_level1_new(conn, req)
+    # if req.list:
+    #     print(f"xdxr: count={req.count}")
+    #     df = pd.DataFrame(req.list)
+    #     print(df)
+    
+    # 测试 批量xdxr
+    req = XdxrBatch(insts=[Instrument(exchange=Exchange.SZSE, ticker='000001', type=InstrumentType.STOCK),
+                           Instrument(exchange=Exchange.SZSE, ticker='x00002', type=InstrumentType.STOCK),
+                           ]
+                    )
+    protocol.process_level1_new(conn, req)
+    if req.list:
+        print(f"xdxr: count={req.count}")
+        for entry_ in req.list:
+            print(f"xdxr: count={len(entry_.list)}")
+            df = pd.DataFrame(entry_.list)
+            print(df)
+    
