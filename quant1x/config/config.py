@@ -9,7 +9,7 @@ import dotenv
 import logging
 from datetime import datetime
 
-from quant1x.std import filesystem as fs, system as sys
+from quant1x.std import filesystem as fs, system as sys, strings
 # 加载环境变量
 dotenv.load_dotenv()
 
@@ -17,6 +17,25 @@ logger = logging.getLogger(__name__)
 
 default_workspace_path = 'q1x'
 """默认工作目录关键词"""
+
+def get_quant1x_env(key: str) -> str:
+    key = key.strip()
+    # 1. 尝试从开发环境变量文件.env中读取
+    try:
+        val = sys.read_dotenv(key)
+        if val and len(val) > 0:
+            return val
+    except Exception:
+        pass
+    
+    # 2. 尝试从系统环境变量中读取
+    val = sys.env(key)
+    if val and len(val) > 0:
+        return val
+
+    # 3. 回退到默认值
+
+    return ''
 
 def get_quant1x_work_keyword() -> str:
     """
@@ -146,15 +165,22 @@ class Quant1XConfig:
         """str: 元数据路径"""
 
         # 解析 debug，兼容 bool/int/str 等类型
-        raw_debug = self.__config.get('debug', False)
-        if isinstance(raw_debug, bool):
-            self.debug = raw_debug
-        else:
-            try:
-                dbg_str = str(raw_debug).strip()
-                self.debug = dbg_str.lower() in ['true', '1', 'yes', 'on']
-            except Exception:
-                self.debug = False
+        # 开发环境.env优先
+        # fallback: read project .env in a read-only way via system helper (does not mutate os.environ)
+        dbg_str = get_quant1x_env('QUANT1X_DEBUG')
+        dbg_str = dbg_str.strip()
+        try:
+            if len(dbg_str) > 0:
+                self.debug = strings.str_to_bool(dbg_str)
+            else:
+                raw_debug = self.__config.get('debug', False)
+                if isinstance(raw_debug, bool):
+                    self.debug = raw_debug
+                else:
+                    dbg_str = str(raw_debug).strip()
+                    self.debug = strings.str_to_bool(dbg_str)
+        except Exception:
+            self.debug = False
 
         # 解析 basedir，保证为字符串并去除空白
         data_path_raw = self.__config.get('basedir', '') or ''

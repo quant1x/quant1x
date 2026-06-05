@@ -14,8 +14,7 @@ from .client import get_std_conn
 from . import protocol
 from .level1 import (
     TICK_TRANSACTION_PER_REQUEST_MAX,
-    TransactionRequest, TransactionResponse,
-    HistoricalTransactionRequest, HistoricalTransactionResponse
+    Transaction, HistoricalTransaction
 )
 from quant1x.data.schema import Transaction
 from quant1x.data.meta.calendar import last_trading_day
@@ -186,18 +185,16 @@ def update_transaction_data(inst: Instrument, feature_date: Timestamp, start_tim
     while True:
         try:
             if today_is_last_trading_date:
-                req = TransactionRequest(exchange, code, start, offset)
-                resp = TransactionResponse(price_precision, is_index)
+                msg = Transaction(exchange, code, start, offset, price_precision, is_index)
             else:
-                req = HistoricalTransactionRequest(exchange, code, trade_date_int, start, offset)
-                resp = HistoricalTransactionResponse(price_precision, is_index)
-            protocol.process(conn, req, resp)
+                msg = HistoricalTransaction(exchange, code, trade_date_int, start, offset, price_precision, is_index)
+            protocol.process_level1_new(conn, msg)
 
-            if resp.count == 0 or not resp.list:
+            if msg.count == 0 or not msg.list:
                 break
 
             tmp = []
-            tmp_list = list(resp.list)
+            tmp_list = list(msg.list)
             tmp_list.reverse()
 
             for td in tmp_list:

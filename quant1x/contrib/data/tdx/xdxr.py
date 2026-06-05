@@ -12,7 +12,7 @@ from quant1x.data import status
 from quant1x.data.schema import XdxrInfo, XdxrCategory
 from quant1x.data.meta.timestamp import Timestamp
 from quant1x.data.market import Instrument, Exchange
-from .level1 import XdxrInfoRequest, XdxrInfoResponse
+from .level1 import Xdxr
 from . import protocol
 from .client import get_std_conn, get_ext_conn
 from quant1x.log import logger
@@ -36,7 +36,7 @@ def load_xdxr(inst: Instrument) -> list[XdxrInfo]:
     result = []
     try:
         filename = _get_xdxr_filename(inst)
-        print(f"Loading Xdxr data from {filename}")
+        logger.debug(f"Loading Xdxr data from {filename}")
         if os.path.exists(filename):
             with open(filename, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
@@ -85,11 +85,10 @@ def save_xdxr(inst: Instrument, values: list[XdxrInfo]):
 def update_xdxr_from_std(inst: Instrument):
     try:
         conn = get_std_conn()
-        req = XdxrInfoRequest(inst.exchange, inst.ticker)
-        resp = XdxrInfoResponse()
-        protocol.process(conn, req, resp)
-        if resp.count > 0:
-            save_xdxr(inst, resp.list)
+        msg = Xdxr(inst.exchange, inst.ticker)
+        protocol.process_level1_new(conn, msg)
+        if msg.count > 0:
+            save_xdxr(inst, msg.list)
     except Exception:
         logger.exception(f"[dataset::xdxr] update failed")
 

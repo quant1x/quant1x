@@ -168,7 +168,9 @@ class TdxDataSource(DataHandler):
         """
         code_list:List[Instrument] = []
         # 1. 指数, 包括指数, 重要板块以及ETF
-        code_list.extend(self.get_index_list())
+        index_list = self.get_index_list()
+        logger.debug(f"list_instruments: index_list={index_list}")
+        code_list.extend(index_list)
 
         # 2. 板块
         sectors = self.get_sector_list()
@@ -185,6 +187,7 @@ class TdxDataSource(DataHandler):
 
         # 3. 个股, 包括只包含上市公司股票
         stock_list = self.get_stock_list()
+        logger.debug(f"list_instruments: stock_list={stock_list}")
         code_list.extend(stock_list)
 
         return code_list

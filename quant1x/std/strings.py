@@ -29,3 +29,21 @@ def to_snake_case(word: str) -> str:
     s3 = re.sub(r'[^a-zA-Z0-9]+', '_', s2)
     # 转小写并去除首尾下划线
     return s3.lower().strip('_')
+
+def str_to_bool(s: str) -> bool:
+    """
+    将字符串转换为布尔值
+    
+    Args:
+        s (str): 需要转换的字符串
+    
+    Returns:
+        bool: 转换后的布尔值
+    """
+    s = s.strip()
+    if s.lower() in ['true', '1', 'yes', 'on']:
+        return True
+    elif s.lower() in ['false', '0', 'no', 'off']:
+        return False
+    else:
+        raise ValueError(f"无法将字符串 '{s}' 转换为布尔值")
