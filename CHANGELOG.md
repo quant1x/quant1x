@@ -3,9 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.12] - 2026-06-05
+### Changed
+- python: rename XdxrInfoList to XdxrEntry
+- python: update xdxr caller and instrument default
+
 ## [0.7.11] - 2026-06-05
 ### Changed
 - python: 标准协议统一处理流程
+- update changelog
 
 ## [0.7.10] - 2026-06-05
 ### Changed
@@ -1541,7 +1547,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.11...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.12...HEAD
+[0.7.12]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.11...v0.7.12
 [0.7.11]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.10...v0.7.11
 [0.7.10]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.9...v0.7.10
 [0.7.9]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.8...v0.7.9
