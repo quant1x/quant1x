@@ -82,6 +82,8 @@ exclude = [
 zip-safe = false
 
 [tool.setuptools_scm]
+write_to = "quant1x/_version.py"
+fallback_version = "0.0.0"
 version_scheme = "guess-next-dev"
 local_scheme = "no-local-version"
 #version_file = "quant1x/_version.py"
