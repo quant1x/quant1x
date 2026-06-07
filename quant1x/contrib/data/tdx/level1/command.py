@@ -42,6 +42,9 @@ class Command(enum.Enum):
     STD_HISTORY_MINUTE_DATA      = (QuoteType.STANDARD, 0x0fb4, "历史分时信息")
     STD_HISTORY_TRANSACTION_DATA = (QuoteType.STANDARD, 0x0fb5, "历史分笔成交信息")
     
+    # 集合竞价
+    STD_AUCTION_INFO             = (QuoteType.STANDARD, 0x056a, "集合竞价信息")
+    
     EXT_SYNCHRONIZE              = (QuoteType.EXTENSION, 0x2454, "扩展行情协议握手")
     EXT_SYNCHRONIZE2             = (QuoteType.EXTENSION, 0x2455, "心跳维持")
     EXT_INSTRUMENT_COUNT         = (QuoteType.EXTENSION, 0x23f0, "证券数量")
