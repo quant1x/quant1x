@@ -2,24 +2,28 @@
 # Copyright (c) Quant1X <wangfengxy@sina.cn>.
 # Licensed under the MIT License.
 
-# from setuptools_scm import get_version
+def _get_version() -> str:
+    # 1. 优先读取 setuptools_scm 写入的 _version.py
+    try:
+        from ._version import version as _v
+        return _v
+    except (ImportError, ModuleNotFoundError):
+        pass
 
-# try:
-#     from ._version import version as __version__
-# except ImportError:
-#     __version__ = get_version(root="..", relative_to=__file__)
+    # 2. 已安装时从包元数据获取
+    try:
+        from importlib.metadata import version
+        return version("quant1x")
+    except Exception:
+        pass
 
-try:
-    from importlib.metadata import version, PackageNotFoundError
-except ImportError:
-    # 兼容 Python < 3.8（如仍需支持）
-    from importlib_metadata import version, PackageNotFoundError
-    
-try:
-    __version__ = version("quant1x")
-except (ImportError, PackageNotFoundError):
+    # 3. 开发环境 fallback: setuptools_scm 直接查询 git
     try:
         from setuptools_scm import get_version
-        __version__ = get_version(root="..", relative_to=__file__)
+        return get_version(root="..", relative_to=__file__)
     except Exception:
-        __version__ = "0.0.0-dev"
+        pass
+
+    return "0.0.0-dev"
+
+__version__ = _get_version()
