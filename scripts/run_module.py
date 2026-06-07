@@ -5,15 +5,33 @@
 import os
 import sys
 
+def _find_package_name(start_dir: str) -> str:
+    """从 start_dir 向上查找 LICENSE 文件，返回其父目录名作为 package_name"""
+    current = os.path.abspath(start_dir)
+    for _ in range(10):  # 最多向上查找10层
+        license_path = os.path.join(current, "LICENSE")
+        if os.path.isfile(license_path):
+            return os.path.basename(current)
+        parent = os.path.dirname(current)
+        if parent == current:  # 已到根目录
+            break
+        current = parent
+    raise FileNotFoundError(
+        "无法找到 LICENSE 文件，请确保在项目根目录或其子目录下运行此脚本。"
+        f"当前起始目录: {os.path.abspath(start_dir)}"
+    )
+
+
 def get_module_path(file_path: str) -> str:
     """将文件路径转换为模块路径"""
-    package_name = 'quant1x'
+    # 获取工作目录（项目根目录）
+    workspace_root = os.getcwd()
+    package_name = _find_package_name(workspace_root)
     # 标准化路径
     file_path = os.path.normpath(file_path)
     
-    # 获取工作目录（项目根目录）
-    workspace_root = os.getcwd()
     print(f"\033[90m[run_module] 工作目录: {workspace_root}\033[0m")
+    print(f"\033[90m[run_module] 包名: {package_name}\033[0m")
     print(f"\033[90m[run_module] 文件路径: {file_path}\033[0m")
     top_level_package = os.path.basename(workspace_root)
     print(f"\033[90m[run_module] 顶级包名: {top_level_package}\033[0m")
