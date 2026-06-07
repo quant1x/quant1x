@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.15] - 2026-06-08
+### Changed
+- refactor: 优化run_module.py，package_name改为从LICENSE父目录自动获取，找不到则抛异常
+
 ## [0.7.14] - 2026-06-07
 ### Changed
 - python: 新增集合竞价命令字
+- update changelog
 
 ## [0.7.13] - 2026-06-07
 ### Changed
@@ -1558,7 +1563,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.14...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.15...HEAD
+[0.7.15]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.14...v0.7.15
 [0.7.14]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.13...v0.7.14
 [0.7.13]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.12...v0.7.13
 [0.7.12]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.11...v0.7.12
