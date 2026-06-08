@@ -3,8 +3,8 @@ from enum import Enum
 from typing import List
 from dataclasses import dataclass, field
 
-from .command import Command
-from . import helpers
+from ..command import Command
+from .. import helpers
 from .. import protocol
 from quant1x.data.meta import Exchange, Instrument, InstrumentType
 from quant1x.log import logger
@@ -220,8 +220,8 @@ class HistoryFundFlowDetails(protocol.BaseMessage):
 if __name__ == '__main__':
     import pandas as pd
     from ..client import get_std_conn
-    #conn = get_std_conn([('121.36.248.138', 7709)])
-    conn = get_std_conn()
+    conn = get_std_conn([('121.36.248.138', 7709)])
+    #conn = get_std_conn()
     
     # 测试 批量auction details
     req = HistoryFundFlowDetails_invalid(exchange=Exchange.SZSE, ticker='000001')

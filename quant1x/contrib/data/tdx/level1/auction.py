@@ -3,8 +3,8 @@ from enum import Enum
 from typing import List
 from dataclasses import dataclass, field
 
-from .command import Command
-from . import helpers
+from ..command import Command
+from .. import helpers
 from .. import protocol
 from quant1x.data.meta import Exchange, Instrument, InstrumentType
 from quant1x.log import logger

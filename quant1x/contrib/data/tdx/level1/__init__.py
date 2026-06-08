@@ -6,9 +6,7 @@
 通达信Level1数据接口实现
 """
 from .std import (
-    Synchronize1,
-    Synchronize2,
-    Heartbeat,
+    StdLogin, UpgradeTip, Heartbeat, # 握手协议相关
     SecurityList, SECURITY_LIST_PRE_REQUEST_MAX,
     Xdxr, XdxrInfo,
     FinanceInfo, FinanceInfoRequest,
@@ -18,9 +16,7 @@ from .std import (
 )
 
 __all__ = [
-    'Synchronize1',
-    'Synchronize2',
-    'Heartbeat',
+    'StdLogin', 'UpgradeTip', 'Heartbeat',
     'SecurityList', 'SECURITY_LIST_PRE_REQUEST_MAX',
     'Xdxr', 'XdxrInfo',
     'FinanceInfo', 'FinanceInfoRequest',

@@ -8,9 +8,9 @@ import zlib
 
 from quant1x.net.conn import ConnectionHandle
 from quant1x.log import logger
-from .level1.helpers import msg_sequence_id
-from .level1.command import FLAG_GENERIC, FLAG_UNCOMPRESSED
-from .level1.command import Command
+from .helpers import msg_sequence_id
+from .command import FLAG_GENERIC, FLAG_UNCOMPRESSED
+from .command import Command
 
 class Stringable(abc.ABC):
     @abc.abstractmethod
@@ -145,6 +145,7 @@ class BaseMessage(abc.ABC):
     def __init__(self, command: Command, flags: int = FLAG_UNCOMPRESSED):
         self.request_header = RequestHeader(command=command, flags=flags)
         self.response_header = ResponseHeader()
+        self.reply = None
     
     @abc.abstractmethod
     def serialize_request_body(self) -> bytes:
@@ -242,6 +243,7 @@ def process_level1_new(conn_handle: ConnectionHandle, msg: BaseMessage) -> None:
         resp_body_bytes = zlib.decompress(resp_body_bytes)
     
     msg.deserialize_response_body(resp_body_bytes)
+    logger.debug(f"process_level1: response_body={msg.reply}")
 
 from quant1x.net.handler import NetworkOperationHandler
 
@@ -253,10 +255,10 @@ class StandardProtocolHandler(NetworkOperationHandler):
 
     def handshake(self, conn) -> bool:
         try:
-            from .level1 import Synchronize1, Synchronize2 as  std_Synchronize2
+            from .level1 import StdLogin
             #from .level1.ext import Synchronize as ext_Synchronize2
 
-            msg1 = Synchronize1()
+            msg1 = StdLogin()
             process_level1_new(conn, msg1)
 
             #msg2 = ext_Synchronize2()
