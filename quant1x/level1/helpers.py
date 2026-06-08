@@ -198,3 +198,16 @@ def format_timestamp(stamp: int) -> str:
 
     return f"{h:02d}:{m:02d}:{st:06.3f}"
 
+
+def format_server_time(raw: int) -> str:
+    """将整数时间戳转换为 HH:MM:SS.mmm 字符串。
+
+    该字段编码为"小时 + 百万分之一小时的小数部分"。
+    例如：14999212 -> "14:59:57.163"
+    """
+    hours, fractional_hour = divmod(raw, 1_000_000)
+    total_millis = fractional_hour * 3600 // 1000
+    minutes, remainder = divmod(total_millis, 60_000)
+    seconds, millis = divmod(remainder, 1000)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}.{millis:03d}"
+

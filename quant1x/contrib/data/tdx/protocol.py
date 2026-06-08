@@ -9,7 +9,7 @@ import zlib
 from quant1x.net.conn import ConnectionHandle
 from quant1x.log import logger
 from .level1.helpers import msg_sequence_id
-from .level1.command import FLAG_GENERIC
+from .level1.command import FLAG_GENERIC, FLAG_UNCOMPRESSED
 from .level1.command import Command
 
 class Stringable(abc.ABC):
@@ -37,8 +37,8 @@ class RequestHeader(Stringable, Sizeable, abc.ABC):
     command:     Command # u16
     """命令字, u16"""
 
-    def __init__(self, command: Command):
-        self.zip_flag = FLAG_GENERIC
+    def __init__(self, command: Command, flags: int = FLAG_UNCOMPRESSED):
+        self.zip_flag = flags
         self.message_id = msg_sequence_id()
         self.packet_type = 0x01
         self.pkg_len1 = 0
@@ -142,8 +142,8 @@ class BaseMessage(abc.ABC):
     
     用于处理消息头和消息体的解析和序列化。
     """
-    def __init__(self, command: Command):
-        self.request_header = RequestHeader(command)
+    def __init__(self, command: Command, flags: int = FLAG_UNCOMPRESSED):
+        self.request_header = RequestHeader(command=command, flags=flags)
         self.response_header = ResponseHeader()
     
     @abc.abstractmethod
@@ -217,8 +217,8 @@ def _recv_exact(conn_like: ConnectionHandle, n: int) -> bytes:
 
 
 def process_level1_new(conn_handle: ConnectionHandle, msg: BaseMessage) -> None:
-    logger.debug(f"process_level1: request={msg.request_header.to_string()}")
     req_buf = msg.serialize_request()
+    logger.debug(f"process_level1: request={msg.request_header.to_string()}")
     logger.debug(f"process_level1: req_buf={req_buf.hex()}")
     conn_handle.sendall(req_buf)
 
@@ -253,13 +253,14 @@ class StandardProtocolHandler(NetworkOperationHandler):
 
     def handshake(self, conn) -> bool:
         try:
-            from .level1 import Synchronize1, Synchronize2
+            from .level1 import Synchronize1, Synchronize2 as  std_Synchronize2
+            #from .level1.ext import Synchronize as ext_Synchronize2
 
             msg1 = Synchronize1()
             process_level1_new(conn, msg1)
 
-            msg2 = Synchronize2()
-            process_level1_new(conn, msg2)
+            #msg2 = ext_Synchronize2()
+            #process_level1_new(conn, msg2)
             return True
         except Exception as e:
             logger.exception('StandardProtocolHandler.handshake failed: {}', e)
@@ -301,7 +302,7 @@ class ExtensionProtocolHandler(NetworkOperationHandler):
             
             req = InstrumentCount()
             process_level1_new(conn, req)
-            return req.reply > 0
+            return req.reply.get("count", 0) > 0
         except Exception as e:
             # 使用调试日志以避免在服务器检测期间产生噪音
             logger.exception('ExtensionProtocolHandler.keepalive failed: {}', e)

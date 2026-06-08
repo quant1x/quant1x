@@ -22,7 +22,7 @@ class Synchronize(protocol.BaseMessage):
     协议握手
     """
     def __init__(self):
-        super().__init__(Command.EXT_SYNCHRONIZE)
+        super().__init__(Command.EXT_SYNCHRONIZE, flags=0x01)
         self.info = ''
         self.success: bool = False
     
@@ -68,7 +68,7 @@ class Synchronize2(protocol.BaseMessage):
     协议握手
     """
     def __init__(self):
-        super().__init__(Command.EXT_SYNCHRONIZE2)
+        super().__init__(Command.EXT_SYNCHRONIZE2, flags=0x01)
         self.reply = ''
         self.success: bool = False
     
@@ -115,7 +115,7 @@ class MarketList(protocol.BaseMessage):
     市场信息列表
     """
     def __init__(self):
-        super().__init__(Command.EXT_MARKET_LIST)
+        super().__init__(Command.EXT_MARKET_LIST, flags=0x01)
         self.reply = []
 
     def serialize_request_body(self) -> bytes:
@@ -156,7 +156,7 @@ class InstrumentCount(protocol.BaseMessage):
     市场数量请求
     """
     def __init__(self):
-        super().__init__(Command.EXT_INSTRUMENT_COUNT)
+        super().__init__(Command.EXT_INSTRUMENT_COUNT, flags=0x01)
         self.reply = {}
 
     def serialize_request_body(self) -> bytes:
@@ -186,7 +186,7 @@ class InstrumentInfo(protocol.BaseMessage):
     PRE_REQUEST_MAX = 1021
     
     def __init__(self, start: int=0, count=PRE_REQUEST_MAX):
-        super().__init__(Command.EXT_INSTRUMENT_INFO)
+        super().__init__(Command.EXT_INSTRUMENT_INFO, flags=0x01)
         
         self.start = start
         self.count = count
@@ -243,7 +243,7 @@ class InstrumentInfo(protocol.BaseMessage):
 class InstrumentQuote1(protocol.BaseMessage):
     """即时行情"""
     def __init__(self, market, ticker: str):
-        super().__init__(Command.EXT_INSTRUMENT_QUOTE_X1)
+        super().__init__(Command.EXT_INSTRUMENT_QUOTE_X1, flags=0x01)
         self.market = market
         self.ticker = ticker
         self.reply = []
@@ -318,7 +318,7 @@ class InstrumentQuote1(protocol.BaseMessage):
 class InstrumentQuote2(protocol.BaseMessage):
     """即时行情"""
     def __init__(self, futures: list[tuple[int, str]]):
-        super().__init__(Command.EXT_INSTRUMENT_QUOTE_X2)
+        super().__init__(Command.EXT_INSTRUMENT_QUOTE_X2, flags=0x01)
         self.reply = []
         self.futures = futures
         length = len(futures)
@@ -365,7 +365,7 @@ class InstrumentBars(protocol.BaseMessage):
     PRE_REQUEST_MAX = 700
     
     def __init__(self, category, market, ticker, start: int=0, count=PRE_REQUEST_MAX):
-        super().__init__(Command.EXT_INSTRUMENT_BARS)
+        super().__init__(Command.EXT_INSTRUMENT_BARS, flags=0x01)
         
         self.market = market
         self.ticker = ticker
@@ -437,7 +437,7 @@ class TransactionData(protocol.BaseMessage):
     获取最新的(最后一个交易日)成交数据
     """
     def __init__(self, market, ticker: str, offset: int=0, size: int=PRE_REQUEST_MAX):
-        super().__init__(Command.EXT_TRANSACTION_DATA)
+        super().__init__(Command.EXT_TRANSACTION_DATA, flags=0x01)
         self.market = market
         self.ticker = ticker
         self.offset = offset
@@ -550,7 +550,7 @@ class DailyTransactionData(protocol.BaseMessage):
     获取某日的成交数据
     """
     def __init__(self, market, ticker: str, date: int, offset: int=0, size: int=PRE_REQUEST_MAX):
-        super().__init__(Command.EXT_DAILY_TRANSACTION_DATA)
+        super().__init__(Command.EXT_DAILY_TRANSACTION_DATA, flags=0x01)
         self.market = market
         self.ticker = ticker
         self.date = date
@@ -664,7 +664,7 @@ class TodoCmd0X2459(protocol.BaseMessage):
     获取股票的公告信息, html格式
     """
     def __init__(self, market, ticker: str):
-        super().__init__(Command.EXT_TODO_2459)
+        super().__init__(Command.EXT_TODO_2459, flags=0x01)
         self.ticker = ticker
         self.reply = []
 
@@ -689,7 +689,7 @@ class CompanyInfoCategories(protocol.BaseMessage):
     基础F0 数据文件的块信息, 编码格式为gbk
     """
     def __init__(self, market, ticker: str):
-        super().__init__(Command.EXT_COMPANY_INFO_CATEGORIES)
+        super().__init__(Command.EXT_COMPANY_INFO_CATEGORIES, flags=0x01)
         self.market = market
         self.ticker = ticker
         self.reply = []
@@ -725,7 +725,7 @@ class CompanyInfoContent(protocol.BaseMessage):
     基础F0 数据文件的块信息, 编码格式为gbk
     """
     def __init__(self, market, ticker: str, filename: str, offset: int, size: int):
-        super().__init__(Command.EXT_COMPANY_INFO_CONTENT)
+        super().__init__(Command.EXT_COMPANY_INFO_CONTENT, flags=0x01)
         self.market = market
         self.ticker = ticker
         self.filename = filename
@@ -762,7 +762,7 @@ class TodoCmd0X2488(protocol.BaseMessage):
     待确认命令, 0x2488, 可能是与当日行情有关系的数据
     """
     def __init__(self, ticker: str):
-        super().__init__(Command.EXT_XDXR_INFO)
+        super().__init__(Command.EXT_XDXR_INFO, flags=0x01)
         self.ticker = ticker
         self.reply = []
 
@@ -831,7 +831,7 @@ class TodoCmd0X2489(protocol.BaseMessage):
     K线数据
     """
     def __init__(self, market:int, ticker: str):
-        super().__init__(Command.EXT_TODO_2489)
+        super().__init__(Command.EXT_TODO_2489, flags=0x01)
         self.market = market
         self.ticker = ticker
         self.bar_type = 4
@@ -966,7 +966,7 @@ def unpack_futures(data, code_len: int = 23):
 class Futures_Quotes(protocol.BaseMessage):
     """期货行情"""
     def __init__(self, futures: list[tuple[int, str]]):
-        super().__init__(Command.EXT_FUTURES_QUOTES)
+        super().__init__(Command.EXT_FUTURES_QUOTES, flags=0x01)
         self.reply = []
         self.futures = futures
         length = len(futures)
@@ -1009,7 +1009,7 @@ class IntradayChartSampling(protocol.BaseMessage):
     当日分时简图
     """
     def __init__(self, market, ticker: str):
-        super().__init__(Command.EXT_INTRADAY_CHART_SAMPLING)
+        super().__init__(Command.EXT_INTRADAY_CHART_SAMPLING, flags=0x01)
         self.market = market
         self.ticker = ticker
         self.reply = []
@@ -1049,7 +1049,7 @@ class TodoCmdUnknown(protocol.BaseMessage):
     """
     def __init__(self, command:int, market, ticker: str):
         custom = Command.from_parts(QuoteType.EXTENSION, command & 0xFFFF, "自定义指令")
-        super().__init__(custom)
+        super().__init__(custom, flags=0x01)
         self.market = market
         self.ticker = ticker
         self.reply = []

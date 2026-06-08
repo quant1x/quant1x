@@ -44,6 +44,8 @@ class Command(enum.Enum):
     
     # 集合竞价
     STD_AUCTION_INFO             = (QuoteType.STANDARD, 0x056a, "集合竞价信息")
+    # 资金流向
+    STD_FUND_FLOW                = (QuoteType.STANDARD, 0x1218, "资金流向信息")
     
     EXT_SYNCHRONIZE              = (QuoteType.EXTENSION, 0x2454, "扩展行情协议握手")
     EXT_SYNCHRONIZE2             = (QuoteType.EXTENSION, 0x2455, "心跳维持")

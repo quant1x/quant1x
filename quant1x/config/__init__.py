@@ -12,10 +12,14 @@
 @Desc    : 配置信息
 """
 from .config import (
-    base_config as config
+    base_config as config,
+    top10_holders_filename,
+    reports_filename,
 )
 
 
 __all__ = [
     'config',
+    'top10_holders_filename',
+    'reports_filename',
 ]

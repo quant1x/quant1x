@@ -102,7 +102,7 @@ def init_std_pool(servers: Optional[List[Tuple[str, int]]] = None, *, min_conn: 
         # 构建池并分配；允许异常传播, 以便调用者观察初始化失败(匹配C++行为)
         _std_pool = _build_std_pool(min_conn=min_conn, max_conn=max_conn, servers=servers)
 
-def get_std_conn() -> ConnectionHandle:
+def get_std_conn(servers: Optional[List[Tuple[str, int]]] = None) -> ConnectionHandle:
     """返回一个到level1服务器的池化连接句柄
 
     用法:
@@ -115,7 +115,7 @@ def get_std_conn() -> ConnectionHandle:
     """
     if _std_pool is None:
         # 通过单个公共初始化函数延迟初始化.
-        init_std_pool()
+        init_std_pool(servers=servers)
     assert _std_pool is not None
     return _std_pool.acquire()
 

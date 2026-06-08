@@ -172,13 +172,14 @@ class KLineType(Enum):
     RI_K = 9
     _3MONTH = 10
     YEARLY = 11
+    FundFlow = 22
 
     @staticmethod
     def to_string(ktype: 'KLineType') -> str:
         return ktype.name
 
 class SecurityBars(protocol.BaseMessage):
-    """K线数据（合并Request和Response）"""
+    """K线数据"""
     def __init__(self, exchange: Exchange, code: str, category: KLineType, start: int, count: int, is_index: bool = False):
         super().__init__(Command.STD_SECURITY_BARS)
         self.request_header.packet_type = 0x00
@@ -280,7 +281,7 @@ TICK_UNKNOWN = 3
 TICK_TRANSACTION_PER_REQUEST_MAX = 1800
 
 class Transaction(protocol.BaseMessage):
-    """逐笔成交数据（合并Request和Response）"""
+    """分笔成交数据"""
     def __init__(self, exchange: Exchange, code: str, start: int, count: int,
                  price_precision: int = 2, is_index: bool = False):
         super().__init__(Command.STD_TRANSACTION_DATA)
@@ -338,7 +339,7 @@ class Transaction(protocol.BaseMessage):
             self.list.append(TransactionRecord(time=time_str, price=price, volume=vol, num=num, amount=amount, direction=buy_or_sell))
 
 class HistoricalTransaction(protocol.BaseMessage):
-    """历史逐笔成交数据"""
+    """历史分笔成交数据"""
     def __init__(self, exchange: Exchange, code: str, date: int, start: int, count: int,
                  price_precision: int = 2, is_index: bool = False):
         super().__init__(Command.STD_HISTORY_TRANSACTION_DATA)
@@ -395,6 +396,80 @@ class HistoricalTransaction(protocol.BaseMessage):
                 amount = float(vol) * price
             _, pos = helpers.varint_decode(data, pos)
             self.list.append(TransactionRecord(time=time_str, price=price, volume=vol, num=0, amount=amount, direction=buy_or_sell))
+
+
+from dataclasses import dataclass
+
+@dataclass
+class FinanceInfo:
+    """财务信息数据结构"""
+    code: str = ''
+    liu_tong_gu_ben: float = 0.0
+    province: int = 0
+    industry: int = 0
+    updated_date: int = 0
+    ipo_date: int = 0
+    zong_gu_ben: float = 0.0
+
+    def is_delisting(self) -> bool:
+        return self.ipo_date == 0 and self.zong_gu_ben == 0 and self.liu_tong_gu_ben == 0
+
+
+class FinanceInfoRequest(protocol.BaseMessage):
+    """财务信息请求/响应"""
+
+    def __init__(self, exchange: Exchange, ticker: str):
+        super().__init__(Command.STD_FINANCE_INFO)
+        self._market = helpers.exchange_to_market(exchange)
+        self._ticker = ticker
+
+        self.count = 0
+        self.info: FinanceInfo = FinanceInfo()
+
+    def serialize_request_body(self) -> bytes:
+        code_bytes = self._ticker.encode('ascii')
+        if len(code_bytes) < 6:
+            code_bytes = code_bytes + b'\x00' * (6 - len(code_bytes))
+        else:
+            code_bytes = code_bytes[:6]
+        return struct.pack('<H B 6s', 1, self._market, code_bytes)
+
+    def deserialize_response_body(self, data: bytes) -> None:
+        if len(data) < 2:
+            return
+        self.count = struct.unpack('<H', data[:2])[0]
+        if self.count == 0:
+            return
+
+        offset = 2
+        # struct: < B 6s f H H I I 30f  (143 bytes per record)
+        fmt = '< B 6s f H H I I ' + 'f' * 30
+        struct_size = struct.calcsize(fmt)
+        if len(data) < offset + struct_size:
+            return
+
+        unpacked = struct.unpack(fmt, data[offset:offset + struct_size])
+        raw_market = unpacked[0]
+        raw_code = unpacked[1]
+        raw_liu_tong_gu_ben = unpacked[2]
+        raw_province = unpacked[3]
+        raw_industry = unpacked[4]
+        raw_updated_date = unpacked[5]
+        raw_ipo_date = unpacked[6]
+        raw_floats = unpacked[7:]
+
+        base_unit = 10000.0
+        self.info.code = raw_code.decode('utf-8').rstrip('\x00')
+        if raw_market == 0:
+            self.info.code = f"sz{self.info.code}"
+        elif raw_market == 1:
+            self.info.code = f"sh{self.info.code}"
+        self.info.liu_tong_gu_ben = raw_liu_tong_gu_ben * base_unit
+        self.info.province = raw_province
+        self.info.industry = raw_industry
+        self.info.updated_date = raw_updated_date
+        self.info.ipo_date = raw_ipo_date
+        self.info.zong_gu_ben = raw_floats[0] * base_unit
 
 
 from quant1x.data.schema import XdxrInfo, XdxrEntry, XdxrCategory
@@ -593,6 +668,13 @@ if __name__ == '__main__':
     from ..client import get_std_conn
     conn = get_std_conn()
     
+    # 测试K线
+    req = SecurityBars(exchange=Exchange.SZSE, code='000001', category=KLineType.DAILY, start=0, count=2)
+    protocol.process_level1_new(conn, req)
+    if req.list:
+        print(f"kline: count={req.count}")
+        df = pd.DataFrame(req.list)
+        print(df)
     # # 测试 单个xdxr
     # req = Xdxr(exchange=Exchange.SZSE, ticker='000001')
     # protocol.process_level1_new(conn, req)
@@ -601,16 +683,16 @@ if __name__ == '__main__':
     #     df = pd.DataFrame(req.list)
     #     print(df)
     
-    # 测试 批量xdxr
-    req = XdxrBatch(insts=[Instrument(exchange=Exchange.SZSE, ticker='000001', type=InstrumentType.STOCK),
-                           Instrument(exchange=Exchange.SZSE, ticker='x00002', type=InstrumentType.STOCK),
-                           ]
-                    )
-    protocol.process_level1_new(conn, req)
-    if req.list:
-        print(f"xdxr: count={req.count}")
-        for entry_ in req.list:
-            print(f"xdxr: count={len(entry_.list)}")
-            df = pd.DataFrame(entry_.list)
-            print(df)
-    
+    # # 测试 批量xdxr
+    # req = XdxrBatch(insts=[Instrument(exchange=Exchange.SZSE, ticker='000001', type=InstrumentType.STOCK),
+    #                        Instrument(exchange=Exchange.SZSE, ticker='x00002', type=InstrumentType.STOCK),
+    #                        ]
+    #                 )
+    # protocol.process_level1_new(conn, req)
+    # if req.list:
+    #     print(f"xdxr: count={req.count}")
+    #     for entry_ in req.list:
+    #         print(f"xdxr: count={len(entry_.list)}")
+    #         df = pd.DataFrame(entry_.list)
+    #         print(df)
+    #

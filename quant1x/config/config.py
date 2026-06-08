@@ -238,3 +238,43 @@ class Quant1XConfig:
 
 # 创建配置单例
 base_config = Quant1XConfig()
+
+
+# ===== 缓存路径工具函数 (对齐 C++ config/cache.cpp 和 Rust config.rs) =====
+
+def _cache_id(code: str) -> str:
+    """构建缓存ID: 市场缩写 + 纯代码, 如 'sh600000'"""
+    from quant1x.data.market import detect_symbol
+    inst = detect_symbol(code)
+    market_code = inst.exchange.identifier.lower()
+    return market_code + inst.ticker
+
+
+def _cache_id_path(code: str) -> str:
+    """code从后保留3位, 市场缩写+从头到倒数第3的代码, 确保每个目录只有000~999个代码"""
+    N = 3
+    cache_id = _cache_id(code)
+    if len(cache_id) <= N:
+        return cache_id
+    prefix = cache_id[:len(cache_id) - N]
+    return f"{prefix}/{cache_id}"
+
+
+def top10_holders_filename(code: str, date: str) -> str:
+    """前十大流通股股东缓存文件名 (模块级函数, 供 contrib 层使用)"""
+    from quant1x.std.time import get_quarter_by_date
+    id_path = _cache_id_path(code)
+    quarter_str, _, _ = get_quarter_by_date(date)
+    holding_path = os.path.join(base_config.data_path, "holding")
+    full_path = os.path.join(holding_path, quarter_str, f"{id_path}.csv")
+    os.makedirs(os.path.dirname(full_path), exist_ok=True)
+    return full_path
+
+
+def reports_filename(date: str) -> str:
+    """季报缓存文件名 (模块级函数, 供 contrib 层使用)"""
+    from quant1x.std.time import get_quarter_by_date
+    quarter_str, _, _ = get_quarter_by_date(date)
+    path = os.path.join(base_config.data_path, "infoq", quarter_str)
+    os.makedirs(path, exist_ok=True)
+    return os.path.join(path, "reports.csv")
