@@ -87,10 +87,10 @@ def fetch_security_list(market: int, start: int, count: int) -> Optional[List[Di
                 zip_flag = 0x0C
                 seq_id = protocol.sequence_id()
                 packet_type = 0x01
-                pkg_len1 = 2 + len(payload)
-                pkg_len2 = pkg_len1
+                body_wire_len = 2 + len(payload)
+                body_raw_len = body_wire_len
                 method = 0x044d
-                header = struct.pack('<B I B H H H', zip_flag, seq_id, packet_type, pkg_len1, pkg_len2, method)
+                header = struct.pack('<B I B H H H', zip_flag, seq_id, packet_type, body_wire_len, body_raw_len, method)
                 return header + payload
 
         class SecurityListResponse:

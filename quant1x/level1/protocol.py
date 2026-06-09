@@ -75,13 +75,13 @@ def process(conn_handle, request, response) -> None:
     hdr = _recv_exact(conn_handle, 16)
 
     # 解析头部: <I B I B H H H> => u32, u8, u32, u8, u16, u16, u16
-    i1, zip_flag, seq_id, i2, method, zip_size, unzip_size = struct.unpack('<IBIBHHH', hdr)
+    i1, zip_flag, seq_id, i2, method, body_wire_len, body_raw_len = struct.unpack('<IBIBHHH', hdr)
 
-    if zip_size == 0:
+    if body_wire_len == 0:
         return
 
-    body = _recv_exact(conn_handle, zip_size)
-    if zip_size != unzip_size:
+    body = _recv_exact(conn_handle, body_wire_len)
+    if body_wire_len != body_raw_len:
         # 如果压缩长度与解压长度不一致，则为 zlib 压缩数据，需要解压
         body = zlib.decompress(body)
 

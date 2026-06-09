@@ -293,6 +293,8 @@ if __name__ == '__main__':
     if req.reply:
         df = pd.DataFrame(req.reply)
         print(df)
+    else:
+        print('no transaction data')
     # # 2. 日交易数据
     # req = DailyTransactionData(market=31, ticker='00700', offset=0, date=20260305)
     # protocol.process_level1_new(conn, req)

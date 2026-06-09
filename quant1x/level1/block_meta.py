@@ -36,18 +36,18 @@ class BlockMetaRequest:
         self.zip_flag = FLAG_UNCOMPRESSED
         self.seq_id = sequence_id()
         self.packet_type = 0x01
-        self.pkg_len1 = 0
-        self.pkg_len2 = 0
+        self.body_wire_len = 0
+        self.body_raw_len = 0
         self.method = COMMAND_BLOCK_META
         self.block_filename = filename
 
     def serialize(self) -> bytes:
         # Body: BlockFilename(40)
         # PkgLen = Body + 2 = 42 (0x2A)
-        self.pkg_len1 = 0x2A
-        self.pkg_len2 = 0x2A
+        self.body_wire_len = 0x2A
+        self.body_raw_len = 0x2A
         
-        header = struct.pack('<B I B H H H', self.zip_flag, self.seq_id, self.packet_type, self.pkg_len1, self.pkg_len2, self.method)
+        header = struct.pack('<B I B H H H', self.zip_flag, self.seq_id, self.packet_type, self.body_wire_len, self.body_raw_len, self.method)
         
         # Ensure filename is 40 bytes
         filename_bytes = self.block_filename.encode('ascii')[:40].ljust(40, b'\x00')

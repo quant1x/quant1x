@@ -26,31 +26,31 @@ class Sizeable(abc.ABC):
 class RequestHeader(Stringable, Sizeable, abc.ABC):
     zip_flag:    int # u8
     """压缩标识, u8"""
-    message_id:  int # u32
+    sequence_id:  int # u32
     """消息ID, u32"""
     packet_type: int # u8
     """包类型, u8"""
-    pkg_len1:    int # u16
+    body_wire_len:    int # u16
     """包长度1, u16"""
-    pkg_len2:    int # u16
+    body_raw_len:    int # u16
     """包长度2, u16"""
     command:     Command # u16
     """命令字, u16"""
 
     def __init__(self, command: Command, flags: int = FLAG_UNCOMPRESSED):
         self.zip_flag = flags
-        self.message_id = msg_sequence_id()
+        self.sequence_id = msg_sequence_id()
         self.packet_type = 0x01
-        self.pkg_len1 = 0
-        self.pkg_len2 = 0
+        self.body_wire_len = 0
+        self.body_raw_len = 0
         self.command = command
     
     def to_string(self) -> str:
         class_name = self.__class__.__name__
         return (
-            f"{class_name}(zip_flag: {self.zip_flag}, message_id: {self.message_id}, "
-            f"packet_type: {self.packet_type}, pkg_len1: {self.pkg_len1}, "
-            f"pkg_len2: {self.pkg_len2}, command: {self.command})"
+            f"{class_name}(zip_flag: {self.zip_flag}, sequence_id: {self.sequence_id}, "
+            f"packet_type: {self.packet_type}, body_wire_len: {self.body_wire_len}, "
+            f"body_raw_len: {self.body_raw_len}, command: {self.command})"
         )
     
     def byte_size(self) -> int:
@@ -66,45 +66,45 @@ class RequestHeader(Stringable, Sizeable, abc.ABC):
         Returns:
             bytes: 打包后的二进制数据，包含以下字段按顺序排列：
                 - zip_flag (1字节)
-                - message_id (4字节)
+                - sequence_id (4字节)
                 - packet_type (1字节)
-                - pkg_len1 (2字节)
-                - pkg_len2 (2字节)
+                - body_wire_len (2字节)
+                - body_raw_len (2字节)
                 - command (2字节)
         """
         return struct.pack(
             '<B I B H H H',
             self.zip_flag,
-            self.message_id,
+            self.sequence_id,
             self.packet_type,
-            self.pkg_len1,
-            self.pkg_len2,
+            self.body_wire_len,
+            self.body_raw_len,
             self.command.value & 0xFFFF
         )
     
 
 class ResponseHeader(Stringable, Sizeable, abc.ABC):
-    I1:         int # u32
+    magic_number: int # u32
     """保留字段, u32"""
     zip_flag:   int # u8
     """压缩标识, u8"""
-    message_id: int # u32
+    sequence_id: int # u32
     """消息ID, u32"""
-    I2:         int # u8
+    packet_type:         int # u8
     """保留字段, u8"""
     command:    Command # u16
     """命令字, u16"""
-    zip_size:   int # u16
+    body_wire_len:   int # u16
     """压缩后大小, u16"""
-    unzip_size: int # u16
+    body_raw_len: int # u16
     """解压后/原始大小, u16"""
     
     def to_string(self) -> str:
         class_name = self.__class__.__name__
         return (
-            f"{class_name}(I1: {self.I1}, zip_flag: {self.zip_flag}, message_id: {self.message_id}, "
-            f"I2: {self.I2}, command: {self.command}, zip_size: {self.zip_size}, "
-            f"unzip_size: {self.unzip_size})"
+            f"{class_name}(magic_number: {self.magic_number}, zip_flag: {self.zip_flag}, sequence_id: {self.sequence_id}, "
+            f"packet_type: {self.packet_type}, command: {self.command}, body_wire_len: {self.body_wire_len}, "
+            f"body_raw_len: {self.body_raw_len})"
         )
     
     def byte_size(self) -> int:
@@ -117,11 +117,11 @@ class ResponseHeader(Stringable, Sizeable, abc.ABC):
         Args:
             data: 协议头字节数据
         """
-        # 解析协议头格式：I1(4字节), zip_flag(1字节), message_id(4字节), I2(1字节), command(2字节), zip_size(2字节), unzip_size(2字节)
-        self.I1, self.zip_flag, self.message_id, self.I2, cmd_value, self.zip_size, self.unzip_size = struct.unpack('<I B I B H H H', data)
-        # - I2 (unsigned char): 1字节无符号整数
+        # 解析协议头格式：I1(4字节), zip_flag(1字节), sequence_id(4字节), packet_type(1字节), command(2字节), body_wire_len(2字节), body_raw_len(2字节)
+        self.magic_number, self.zip_flag, self.sequence_id, self.packet_type, cmd_value, self.body_wire_len, self.body_raw_len = struct.unpack('<I B I B H H H', data)
+        # - packet_type (unsigned char): 1字节无符号整数
         # - command (unsigned short): 2字节无符号整数
-        # - zip_size (unsigned short): 2字节无符号整数
+        # - body_wire_len (unsigned short): 2字节无符号整数
         # - command (unsigned short): 2字节无符号整数
         # 将整数命令值转换为 Command 枚举
         
@@ -132,8 +132,8 @@ class ResponseHeader(Stringable, Sizeable, abc.ABC):
             logger.exception(f"警告: 未知的命令值 0x{cmd_value:04x}")
             # 或者设置一个默认值
             self.command = Command.UNKNOWN
-        # - zip_size (unsigned short): 2字节无符号整数
-        # - unzip_size (unsigned short): 2字节无符号整数
+        # - body_wire_len (unsigned short): 2字节无符号整数
+        # - body_raw_len (unsigned short): 2字节无符号整数
 
 
 class BaseMessage(abc.ABC):
@@ -167,8 +167,8 @@ class BaseMessage(abc.ABC):
                 - 消息体(可变长度)
         """
         body_bytes = self.serialize_request_body()  # 安全：子类一定实现了
-        self.request_header.pkg_len1 = 2 + len(body_bytes)
-        self.request_header.pkg_len2 = 2 + len(body_bytes)
+        self.request_header.body_wire_len = 2 + len(body_bytes)
+        self.request_header.body_raw_len = 2 + len(body_bytes)
         return self.request_header.serialize() + body_bytes
     
     def deserialize_response_header(self, data: bytes) -> None:
@@ -227,23 +227,23 @@ def process_level1_new(conn_handle: ConnectionHandle, msg: BaseMessage) -> None:
     # hdr = _recv_exact(conn_handle, 16)
     #
     # # 解析头部: <I B I B H H H> => u32, u8, u32, u8, u16, u16, u16
-    # i1, zip_flag, seq_id, i2, method, zip_size, unzip_size = struct.unpack('<IBIBHHH', hdr)
+    # i1, zip_flag, seq_id, packet_type, method, body_wire_len, body_raw_len = struct.unpack('<IBIBHHH', hdr)
     #
-    # if zip_size == 0:
+    # if body_wire_len == 0:
     #     return
     logger.debug(f"process_level1: response_header.byte_size={msg.response_header.byte_size()}")
     resp_header_bytes = _recv_exact(conn_handle, msg.response_header.byte_size())
     msg.response_header.deserialize(resp_header_bytes)
-    if msg.response_header.zip_size == 0:
+    if msg.response_header.body_wire_len == 0:
         return
     logger.debug(f"process_level1: response_header={msg.response_header.to_string()}")
-    resp_body_bytes = _recv_exact(conn_handle, msg.response_header.zip_size)
-    if msg.response_header.zip_size != msg.response_header.unzip_size:
+    resp_body_bytes = _recv_exact(conn_handle, msg.response_header.body_wire_len)
+    if msg.response_header.body_wire_len != msg.response_header.body_raw_len:
         # 如果压缩长度与解压长度不一致，则为 zlib 压缩数据，需要解压
         resp_body_bytes = zlib.decompress(resp_body_bytes)
     
     msg.deserialize_response_body(resp_body_bytes)
-    logger.debug(f"process_level1: response_body={msg.reply}")
+    #logger.debug(f"process_level1: response_body={msg.reply}")
 
 from quant1x.net.handler import NetworkOperationHandler
 

@@ -31,8 +31,8 @@ class BlockInfoRequest:
         self.zip_flag = FLAG_UNCOMPRESSED
         self.seq_id = sequence_id()
         self.packet_type = 0x01
-        self.pkg_len1 = 0
-        self.pkg_len2 = 0
+        self.body_wire_len = 0
+        self.body_raw_len = 0
         self.method = COMMAND_BLOCK_DATA
         
         self.start = offset
@@ -42,10 +42,10 @@ class BlockInfoRequest:
     def serialize(self) -> bytes:
         # Body: Start(4) + Size(4) + BlockFilename(100) = 108 bytes
         # PkgLen = Body + 2 = 110 (0x6E)
-        self.pkg_len1 = 0x6E
-        self.pkg_len2 = 0x6E
+        self.body_wire_len = 0x6E
+        self.body_raw_len = 0x6E
         
-        header = struct.pack('<B I B H H H', self.zip_flag, self.seq_id, self.packet_type, self.pkg_len1, self.pkg_len2, self.method)
+        header = struct.pack('<B I B H H H', self.zip_flag, self.seq_id, self.packet_type, self.body_wire_len, self.body_raw_len, self.method)
         
         # Ensure filename is 100 bytes
         filename_bytes = self.block_filename.encode('ascii')[:100].ljust(100, b'\x00')

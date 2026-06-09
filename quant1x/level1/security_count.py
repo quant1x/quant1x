@@ -21,8 +21,8 @@ class SecurityCountRequest:
         self.zip_flag = FLAG_UNCOMPRESSED
         self.seq_id = sequence_id()
         self.packet_type = 0x01
-        self.pkg_len1 = 0
-        self.pkg_len2 = 0
+        self.body_wire_len = 0
+        self.body_raw_len = 0
         self.method = COMMAND_SECURITY_COUNT
         self.market = market
         yyyymmdd = Timestamp.now().yyyymmdd() # 当日日期，格式为 YYYYMMDD
@@ -31,10 +31,10 @@ class SecurityCountRequest:
     def serialize(self) -> bytes:
         # Body: Market(2) + Padding(4) = 6 bytes
         # PkgLen = Body + 2 = 8
-        self.pkg_len1 = 2 + 2 + len(self.padding)
-        self.pkg_len2 = self.pkg_len1
+        self.body_wire_len = 2 + 2 + len(self.padding)
+        self.body_raw_len = self.body_wire_len
         
-        header = struct.pack('<B I B H H H', self.zip_flag, self.seq_id, self.packet_type, self.pkg_len1, self.pkg_len2, self.method)
+        header = struct.pack('<B I B H H H', self.zip_flag, self.seq_id, self.packet_type, self.body_wire_len, self.body_raw_len, self.method)
         
         body = struct.pack('<H', self.market) + self.padding
         return header + body

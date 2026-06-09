@@ -19,15 +19,15 @@ class HeartbeatRequest:
         self.zip_flag = FLAG_UNCOMPRESSED
         self.seq_id = sequence_id()
         self.packet_type = 0x02
-        self.pkg_len1 = 0
-        self.pkg_len2 = 0
+        self.body_wire_len = 0
+        self.body_raw_len = 0
         self.method = COMMAND_HEARTBEAT
 
     def serialize(self) -> bytes:
-        self.pkg_len1 = 2
-        self.pkg_len2 = 2
+        self.body_wire_len = 2
+        self.body_raw_len = 2
         
-        header = struct.pack('<B I B H H H', self.zip_flag, self.seq_id, self.packet_type, self.pkg_len1, self.pkg_len2, self.method)
+        header = struct.pack('<B I B H H H', self.zip_flag, self.seq_id, self.packet_type, self.body_wire_len, self.body_raw_len, self.method)
         return header
 
 class HeartbeatResponse:

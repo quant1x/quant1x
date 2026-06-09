@@ -40,7 +40,7 @@ class TransactionRequest:
         self.count = count
 
     def serialize(self) -> bytes:
-        # Header: zip_flag(1), seq_id(4), packet_type(1), pkg_len1(2), pkg_len2(2), method(2)
+        # Header: zip_flag(1), seq_id(4), packet_type(1), body_wire_len(2), body_raw_len(2), method(2)
         # Body: Market(2), Code(6), Start(2), Count(2)
         body_len = 2 + 6 + 2 + 2
         pkg_len = 2 + body_len

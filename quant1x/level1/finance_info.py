@@ -62,8 +62,8 @@ class FinanceRequest:
         self.zip_flag = protocol.FLAG_UNCOMPRESSED
         self.seq_id = protocol.sequence_id()
         self.packet_type = 0x01
-        self.pkg_len1 = 0
-        self.pkg_len2 = 0
+        self.body_wire_len = 0
+        self.body_raw_len = 0
         self.method = protocol.COMMAND_FINANCE_INFO
 
         market_id, _, symbol = detect_market(security_code)
@@ -77,12 +77,12 @@ class FinanceRequest:
         market_val = self.market.value if hasattr(self.market, 'value') else self.market
         body = struct.pack('<H B 6s', self.count, market_val, self.code.encode('utf-8'))
 
-        self.pkg_len1 = 2 + len(body)
-        self.pkg_len2 = self.pkg_len1
+        self.body_wire_len = 2 + len(body)
+        self.body_raw_len = self.body_wire_len
 
         header = struct.pack('<B I B H H H',
                              self.zip_flag, self.seq_id, self.packet_type,
-                             self.pkg_len1, self.pkg_len2, self.method)
+                             self.body_wire_len, self.body_raw_len, self.method)
         return header + body
 
 
