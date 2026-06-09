@@ -16,6 +16,7 @@ from quant1x.data import detect_instrument_type_by_rule
 from ..market import find_exchange_by_market_and_category, find_market_by_exchange_and_asset_class
 from quant1x.data.meta.ticker_rules.market_usa import usa_code_to_ticker
 from .. import helpers
+from quant1x.data.meta.calendar import last_trading_day
 
 class Synchronize(protocol.BaseMessage):
     """
@@ -456,6 +457,7 @@ class TransactionData(protocol.BaseMessage):
         market, code, _, num = struct.unpack('<B9s4sH', data[pos: pos + 16])
         pos += 16
         result = []
+        last_day = last_trading_day().to_datetime()
         for i in range(num):
 
             (raw_time, price, volume, zengcang, direction) = struct.unpack("<HIIiH", data[pos: pos + 16])
@@ -469,7 +471,7 @@ class TransactionData(protocol.BaseMessage):
             if second > 59:
                 second = 0
 
-            date = datetime.combine(datetime_date.today(), datetime_time(hour,minute,second))
+            date = datetime.combine(last_day, datetime_time(hour,minute,second))
 
             value = direction // 10000
             nature_name = ""
