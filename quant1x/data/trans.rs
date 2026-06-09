@@ -36,7 +36,7 @@ impl crate::data::DataAdapter for DataTrans {
 
     fn update(&self, code: &str, date: Timestamp) {
         // 遵循 C++ CheckoutTransactionData 的行为：读取缓存并分页增量拉取
-        let corrected = crate::exchange::correct_security_code(code);
+        let corrected = crate::data::market::correct_security_code(code);
         let mut path = std::path::PathBuf::from(crate::config::default_cache_path());
         path.push("trans");
         // 使用按年/日期目录的组织方式：trans/YYYY/YYYY-MM-DD/<code>.csv
@@ -276,7 +276,7 @@ impl crate::data::DataAdapter for DataTrans {
 /// Return the full filename for a transaction cache file for `code` and `date`.
 /// The date should be in "YYYYMMDD" or "YYYY-MM-DD" format.
 pub fn get_trans_filepath(code: &str, date: &str) -> String {
-    let corrected = crate::exchange::correct_security_code(code);
+    let corrected = crate::data::market::correct_security_code(code);
     let mut path = std::path::PathBuf::from(crate::config::default_cache_path());
     path.push("trans");
     let date_str = date.replace("-", "");

@@ -1,7 +1,8 @@
 use crate::config;
 use crate::data::kline;
+use crate::data::market::detect_symbol;
+use crate::data::meta::Timestamp;
 use crate::data::xdxr;
-use crate::exchange;
 use crate::factors::financial_report;
 use crate::factors::notice;
 use crate::factors::safety_score;
@@ -170,13 +171,13 @@ fn get_finance_info(security_code: &str, feature_date: &str) -> (f64, f64, Strin
             }
 
             if info.ipo_date >= base_date {
-                ipo_date = crate::Timestamp::from_yyyymmdd_int(info.ipo_date).to_string();
+                ipo_date = Timestamp::from_yyyymmdd_int(info.ipo_date).to_string();
             } else {
                 ipo_date = get_ipo_date(security_code, feature_date);
             }
 
             if info.updated_date >= base_date {
-                update_date = crate::Timestamp::from_yyyymmdd_int(info.updated_date).to_string();
+                update_date = Timestamp::from_yyyymmdd_int(info.updated_date).to_string();
             }
         }
     }
@@ -231,11 +232,12 @@ fn checkout_security_basic_info(security_code: &str, feature_date: &str) -> F10S
         info.ipo_date = get_ipo_date(security_code, feature_date);
     }
 
-    // Basic info from exchange
-    if let Some(sec_info) = crate::market::get_instrument_info(security_code) {
-        info.vol_unit = sec_info.lot_size as i32;
-        info.decimal_point = sec_info.price_precision as i32;
-        info.name = sec_info.name.clone();
+    // Basic info from data::market::detect_symbol (replaces deprecated crate::market)
+    let inst = detect_symbol(security_code);
+    if inst.can_construct_symbol() {
+        info.vol_unit = inst.lot_size;
+        info.decimal_point = inst.price_precision;
+        info.name = inst.name;
     }
 
     // SubNew logic

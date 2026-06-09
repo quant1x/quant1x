@@ -1,5 +1,5 @@
 use crate::level1::KLineType;
-use crate::Timestamp;
+use crate::meta::Timestamp;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use crate::data::adapter::DataAdapter;

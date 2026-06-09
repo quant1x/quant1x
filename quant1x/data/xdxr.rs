@@ -1,4 +1,4 @@
-use crate::Timestamp;
+use crate::meta::Timestamp;
 use std::sync::Arc;
 
 /// DataXdxr: query level1 xdxr response and write local CSV cache

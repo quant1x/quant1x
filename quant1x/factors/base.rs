@@ -1,5 +1,6 @@
 use crate::data::{KLine, KLineRaw, load_xdxr};
-use crate::exchange::{correct_security_code, Timestamp};
+use crate::data::market::correct_security_code;
+use crate::data::meta::Timestamp;
 use crate::level1::XdxrInfo;
 use chrono::{Datelike, NaiveDate};
 use std::cmp::Ordering;
@@ -340,7 +341,7 @@ pub fn get_cross_section_forward_adjusted_klines(security_code: &str, as_of_date
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::exchange::Timestamp;
+    use crate::data::meta::Timestamp;
 
     #[test]
     fn test_cumulative_adjustment() {

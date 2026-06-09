@@ -1,4 +1,5 @@
-use crate::exchange;
+use crate::data::market::detect_symbol;
+use crate::data::meta::Timestamp;
 use serde::{Deserialize, Serialize};
 
 const URL_EASTMONEY_NOTICES: &str = "https://np-anotice-stock.eastmoney.com/api/security/ann";
@@ -143,18 +144,28 @@ pub fn stock_notices(
     end_date: &str,
     page_number: i32,
 ) -> Result<(Vec<NoticeDetail>, i32), String> {
-    let fixed_begin_date = crate::Timestamp::parse(begin_date)
+    let fixed_begin_date = Timestamp::parse(begin_date)
         .map(|ts| ts.only_date())
         .unwrap_or_else(|_| begin_date.to_string());
     let fixed_end_date = if end_date.is_empty() {
-        crate::Timestamp::now().only_date()
+        Timestamp::now().only_date()
     } else {
-        crate::Timestamp::parse(end_date)
+        Timestamp::parse(end_date)
             .map(|ts| ts.only_date())
             .unwrap_or_else(|_| end_date.to_string())
     };
 
-    let (market_id, _, code) = exchange::detect_market(security_code);
+    let inst = detect_symbol(security_code);
+    let code = inst.ticker;
+    // map Exchange to eastmoney API market id: SSE=1, SZSE=0, BSE=2, HKEX=21, USA=22
+    let market_id: u8 = match inst.exchange {
+        crate::data::meta::Exchange::SSE => 1,
+        crate::data::meta::Exchange::SZSE => 0,
+        crate::data::meta::Exchange::BSE => 2,
+        crate::data::meta::Exchange::HKEX => 21,
+        crate::data::meta::Exchange::USA => 22,
+        _ => 0,
+    };
     let stock_list = format!("{},{}", code, market_id);
 
     let client = reqwest::blocking::Client::new();
@@ -202,8 +213,15 @@ pub fn stock_notices(
 
                 let code_info = &item.codes[0];
                 let market_code_val = code_info.market_code.parse::<u8>().unwrap_or(0);
-                let security_code_str =
-                    exchange::security_code(market_code_val, &code_info.stock_code);
+                let flag = match market_code_val {
+                    0 => "sz",
+                    1 => "sh",
+                    2 => "bj",
+                    21 => "hk",
+                    22 => "us",
+                    _ => "sh",
+                };
+                let security_code_str = format!("{}{}", flag, code_info.stock_code);
 
                 let mut notice = NoticeDetail {
                     code: security_code_str,
@@ -254,10 +272,10 @@ pub fn stock_notices(
 }
 
 pub fn stock_warning(security_code: &str, page_number: i32) -> Result<RawWarning, String> {
-    let (_market_id, flag, code) = exchange::detect_market(security_code);
+    let inst = detect_symbol(security_code);
+    let flag = inst.exchange.identifier();
+    let code = inst.ticker;
     let flag_upper = flag.to_uppercase();
-    // C++: std::get<2>(marketInfo) + "." + flag + ",02"
-    // detect_market returns (id, flag, code). So it is code + "." + flag + ",02"
     let params_val = format!("{}.{},02", code, flag_upper);
 
     let client = reqwest::blocking::Client::new();
@@ -300,7 +318,7 @@ fn get_annual_report_date(
 
     for v in events {
         let notice_date = v.notice_date.as_deref().unwrap_or("");
-        let date = crate::Timestamp::parse(notice_date)
+        let date = Timestamp::parse(notice_date)
             .map(|ts| ts.only_date())
             .unwrap_or_default();
         if date.len() < 4 {
@@ -338,7 +356,7 @@ fn get_annual_report_date(
 }
 
 pub fn notice_date_for_report(code: &str, date: &str) -> (String, String) {
-    let fixed_date = crate::Timestamp::parse(date)
+    let fixed_date = Timestamp::parse(date)
         .map(|ts| ts.only_date())
         .unwrap_or_else(|_| date.to_string());
     if fixed_date.len() < 4 {
@@ -389,12 +407,13 @@ pub fn notice_date_for_report(code: &str, date: &str) -> (String, String) {
 
 pub fn get_one_notice(security_code: &str, current_date: &str) -> CompanyNotice {
     let mut notice = CompanyNotice::default();
-    if !exchange::assert_stock_by_security_code(security_code) {
+    let inst = detect_symbol(security_code);
+    if !inst.instrument_type.is_stock() {
         return notice;
     }
 
     let timestamp =
-        crate::Timestamp::parse(current_date).unwrap_or_else(|_| crate::Timestamp::now());
+        Timestamp::parse(current_date).unwrap_or_else(|_| Timestamp::now());
     // offset -24 * 30 hours? C++: timestamp.offset(-24 * 30)
     // Assuming offset takes hours in C++, but in Rust Timestamp implementation it might differ.
     // Let's assume we need to go back 30 days.

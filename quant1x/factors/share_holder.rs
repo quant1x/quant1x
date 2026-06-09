@@ -1,4 +1,5 @@
-use crate::exchange;
+use crate::data::market::detect_symbol;
+use crate::data::meta::Timestamp;
 use chrono::{Datelike, NaiveDate};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -130,7 +131,8 @@ fn get_quarter_by_date(date_str: &str, diff: i32) -> (i32, i32, String) {
 pub fn share_holder(security_code: &str, date: &str, diff: i32) -> Vec<CirculatingShareholder> {
     let mut list = Vec::new();
 
-    let (_market_id, _flag, code) = exchange::detect_market(security_code);
+    let inst = detect_symbol(security_code);
+    let code = inst.ticker;
     let (_, _, quarter_end_date) = get_quarter_by_date(date, diff);
 
     let client = reqwest::blocking::Client::new();
@@ -184,10 +186,10 @@ pub fn share_holder(security_code: &str, date: &str, diff: i32) -> Vec<Circulati
                 let mut shareholder = CirculatingShareholder {
                     security_code: v.secucode.unwrap_or_default(),
                     security_name: v.security_name_abbr.unwrap_or_default(),
-                    end_date: crate::Timestamp::parse(&v.end_date.unwrap_or_default())
+                    end_date: Timestamp::parse(&v.end_date.unwrap_or_default())
                         .map(|ts| ts.only_date())
                         .unwrap_or_default(),
-                    update_date: crate::Timestamp::parse(&v.update_date.unwrap_or_default())
+                    update_date: Timestamp::parse(&v.update_date.unwrap_or_default())
                         .map(|ts| ts.only_date())
                         .unwrap_or_default(),
                     holder_type: v.holder_newtype.unwrap_or_default(),
@@ -205,8 +207,10 @@ pub fn share_holder(security_code: &str, date: &str, diff: i32) -> Vec<Circulati
                 };
 
                 // Correct security code
-                let (_mid, mflag, mcode) = exchange::detect_market(&shareholder.security_code);
-                shareholder.security_code = format!("{}{}", mflag, mcode);
+                let inst = detect_symbol(&shareholder.security_code);
+                if inst.can_construct_symbol() {
+                    shareholder.security_code = inst.symbol();
+                }
 
                 // HoldChangeState
                 shareholder.hold_change_state = match shareholder.hold_change_name.as_str() {

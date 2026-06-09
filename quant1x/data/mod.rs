@@ -1,3 +1,9 @@
+pub mod meta;
+pub use meta::*;
+
+pub mod market;
+pub use market::*;
+
 pub mod adapter;
 pub use adapter::*;
 
@@ -28,10 +34,10 @@ macro_rules! apply_forward_adjustment_for_event {
             // nothing to do
         } else {
             let last_day = $klines.last().unwrap().date.clone();
-            let ts_last_day = crate::Timestamp::parse(&last_day).unwrap_or(crate::Timestamp::now());
+            let ts_last_day = crate::data::meta::Timestamp::parse(&last_day).unwrap_or(crate::data::meta::Timestamp::now());
             let ts_last_day =
-                crate::Timestamp::pre_market_time_from_current(&ts_last_day).unwrap_or(ts_last_day);
-            let last_day_next = crate::exchange::next_trading_day(ts_last_day).only_date();
+                crate::data::meta::Timestamp::pre_market_time_from_current(&ts_last_day).unwrap_or(ts_last_day);
+            let last_day_next = crate::data::meta::next_trading_day(ts_last_day).only_date();
             let start_date_only = $start_date.only_date();
 
             let xdxr_infos: Vec<crate::level1::XdxrInfo> = $dividends
@@ -40,7 +46,7 @@ macro_rules! apply_forward_adjustment_for_event {
                     if x.category as i32 != 1 {
                         return false;
                     }
-                    if let Ok(dts) = crate::Timestamp::parse(&x.date) {
+                    if let Ok(dts) = crate::data::meta::Timestamp::parse(&x.date) {
                         return last_day_next >= dts.only_date();
                     }
                     false
