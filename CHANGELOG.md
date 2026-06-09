@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.17] - 2026-06-09
+### Changed
+- python: 删除废弃的market代码
+- refactor: restructure data/meta module with exchange, instrument, region, ticker_rules and timestamp
+
 ## [0.7.16] - 2026-06-09
 ### Changed
 - feat: migrate F10 data modules to contrib layer, add financial_report/share_holder/notice
@@ -25,6 +30,7 @@ All notable changes to this project will be documented in this file.
 - python: 调整包路径
 - python: 调整协议字段名
 - python: 修复当日分笔成交记录的日期
+- update changelog
 
 ## [0.7.15] - 2026-06-08
 ### Changed
@@ -1587,7 +1593,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.16...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.17...HEAD
+[0.7.17]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.16...v0.7.17
 [0.7.16]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.15...v0.7.16
 [0.7.15]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.14...v0.7.15
 [0.7.14]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.13...v0.7.14
