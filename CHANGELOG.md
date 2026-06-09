@@ -3,9 +3,33 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.16] - 2026-06-09
+### Changed
+- feat: migrate F10 data modules to contrib layer, add financial_report/share_holder/notice
+
+- Add financial_report.py: quarterly report fetching from EastMoney API
+  with full-market cache + single-stock fallback
+- Add share_holder.py: top10 shareholders data from TDX F10
+- Add notice.py: annual/quarterly report disclosure dates
+- Add f10.py: unified F10 data aggregation
+- Add fund.py: fund flow data placeholder in level1
+- Add reports_filename/top10_holders_filename to config module
+- Fix quarterly cache path: avoid double-offset bug (2026Q1 -> 2025Q4)
+- Fix SecurityCode comparison with correct_security_code normalization
+- Upgrade exception logging from debug to warning with traceback
+- Move f10.py from level1/ to tdx/ parent directory
+- Update level1 imports and command routing
+- python: 保存python测试数据
+- python: 调整命令字包路径
+- python: 调整辅助函数的包路径
+- python: 调整包路径
+- python: 调整协议字段名
+- python: 修复当日分笔成交记录的日期
+
 ## [0.7.15] - 2026-06-08
 ### Changed
 - refactor: 优化run_module.py，package_name改为从LICENSE父目录自动获取，找不到则抛异常
+- update changelog
 
 ## [0.7.14] - 2026-06-07
 ### Changed
@@ -1563,7 +1587,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.15...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.16...HEAD
+[0.7.16]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.15...v0.7.16
 [0.7.15]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.14...v0.7.15
 [0.7.14]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.13...v0.7.14
 [0.7.13]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.12...v0.7.13
