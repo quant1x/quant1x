@@ -2,7 +2,7 @@ use serde::Serialize;
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 
-use crate::Timestamp;
+use crate::data::meta::Timestamp;
 
 /// 解码器输出的单行记录（用于日历/历史数据行）
 #[derive(Serialize, Debug, Clone, Default)]

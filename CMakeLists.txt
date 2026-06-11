@@ -496,22 +496,24 @@ set(quant1x-headers
     quant1x/backtest/position.h
 
     # 交易所相关
-    quant1x/market/instruments.h
-    quant1x/market/blocks.h
-    quant1x/market/security.h
-    quant1x/exchange/calendar.h
-    quant1x/exchange/code.h
-    quant1x/exchange/rule.h
-    quant1x/exchange/margin_trading.h
-    quant1x/exchange/session.h
-    quant1x/exchange/timestamp.h
-    quant1x/exchange/status.h
+    quant1x/data/market/instruments.h
+    quant1x/data/market/blocks.h
+    quant1x/data/market/security.h
+    quant1x/data/exchange/calendar.h
+    quant1x/data/exchange/code.h
+    quant1x/data/exchange/rule.h
+    quant1x/data/exchange/margin_trading.h
+    quant1x/data/exchange/session.h
+    quant1x/data/exchange/timestamp.h
+    quant1x/data/exchange/status.h
 
+    # 数据客户端
+    quant1x/contrib/data/tdx/client.h
+    
     # level1
-    quant1x/level1/config.h
-    quant1x/level1/minute_time.h
-    quant1x/level1/client.h
-    quant1x/level1/protocol.h
+    quant1x/contrib/data/tdx/level1/config.h
+    quant1x/contrib/data/tdx/level1/minute_time.h
+    quant1x/contrib/data/tdx/level1/protocol.h
 
     # 引擎
     quant1x/engine/strategy.h
@@ -607,11 +609,12 @@ set(quant1x-sources
 
     # 引擎
     
-
+    # 数据客户端
+    quant1x/contrib/data/tdx/client.cpp
+    
     # level1
-    quant1x/level1/config.cpp
-    quant1x/level1/client.cpp
-    quant1x/level1/protocol.cpp
+    quant1x/contrib/data/tdx/level1/config.cpp
+    quant1x/contrib/data/tdx/level1/protocol.cpp
 
 
     # 配置信息
@@ -646,16 +649,16 @@ set(quant1x-sources
     quant1x/datasets.cpp
 
     # 交易所相关
-    quant1x/market/instruments.cpp
-    quant1x/market/blocks.cpp
-    quant1x/market/security.cpp
-    quant1x/exchange/code.cpp
-    quant1x/exchange/rule.cpp
-    quant1x/exchange/calendar.cpp
-    quant1x/exchange/session.cpp
-    quant1x/exchange/timestamp.cpp
-    quant1x/exchange/status.cpp
-    quant1x/exchange/margin_trading.cpp
+    quant1x/data/market/instruments.cpp
+    quant1x/data/market/blocks.cpp
+    quant1x/data/market/security.cpp
+    quant1x/data/exchange/code.cpp
+    quant1x/data/exchange/rule.cpp
+    quant1x/data/exchange/calendar.cpp
+    quant1x/data/exchange/session.cpp
+    quant1x/data/exchange/timestamp.cpp
+    quant1x/data/exchange/status.cpp
+    quant1x/data/exchange/margin_trading.cpp
 
     # 因子
     quant1x/factors/base.cpp

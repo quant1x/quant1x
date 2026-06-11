@@ -4,7 +4,7 @@
 #include <quant1x/runtime/service.h>
 #include <spdlog/spdlog.h>
 #include <quant1x/runtime/core.h>
-#include <quant1x/exchange/timestamp.h>
+#include <quant1x/data/exchange/timestamp.h>
 #include <quant1x/realtime/snapshot.h>
 #include <quant1x/cache.h>
 #include <quant1x/trader/tracker.h>

@@ -3,7 +3,7 @@
 #define QUANT1X_DATA_TRANS_H 1
 
 #include <quant1x/data/base.h>
-#include <quant1x/level1/transaction_data.h>
+#include <quant1x/contrib/data/tdx/level1/transaction_data.h>
 
 
 namespace data {

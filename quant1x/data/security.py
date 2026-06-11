@@ -5,7 +5,9 @@
 import os
 from functools import lru_cache
 import pandas as pd
-from .. import exchange, config
+
+from ..config import config
+from . import market
 
 @lru_cache(maxsize=None)
 def securities() -> pd.DataFrame:
@@ -44,7 +46,7 @@ def securities() -> pd.DataFrame:
     return out
 
 def stock_name(code: str) -> str:
-    corrected_symbol = exchange.correct_security_code(code)
+    corrected_symbol = market.correct_security_code(code)
     df = securities()
     if df.empty:
         return ""

@@ -4,13 +4,23 @@ pub use meta::*;
 pub mod market;
 pub use market::*;
 
+pub mod exchange;
+pub use exchange::*;
+
 pub mod adapter;
 pub use adapter::*;
 
 mod base;
 pub use base::*;
+
+pub mod schema;
+pub use schema::*;
+
 pub mod xdxr;
 pub use xdxr::*;
+
+pub mod datasource;
+pub use datasource::*;
 
 pub mod kline;
 pub use kline::*;
@@ -37,10 +47,10 @@ macro_rules! apply_forward_adjustment_for_event {
             let ts_last_day = crate::data::meta::Timestamp::parse(&last_day).unwrap_or(crate::data::meta::Timestamp::now());
             let ts_last_day =
                 crate::data::meta::Timestamp::pre_market_time_from_current(&ts_last_day).unwrap_or(ts_last_day);
-            let last_day_next = crate::data::meta::next_trading_day(ts_last_day).only_date();
+            let last_day_next = crate::data::meta::calendar::next_trading_day(ts_last_day).only_date();
             let start_date_only = $start_date.only_date();
 
-            let xdxr_infos: Vec<crate::level1::XdxrInfo> = $dividends
+            let xdxr_infos: Vec<crate::contrib::data::tdx::standard::XdxrInfo> = $dividends
                 .iter()
                 .filter(|x| {
                     if x.category as i32 != 1 {

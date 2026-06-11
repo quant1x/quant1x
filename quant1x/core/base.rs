@@ -126,7 +126,8 @@ pub fn get_logs_path() -> &'static str {
 }
 
 pub fn get_data_path() -> &'static str {
-    get_base_path()
+    ensure_initialized();
+    CACHE_CFG.get().unwrap().basedir.as_ref().unwrap().as_str()
 }
 
 pub fn get_config_map() -> HashMap<String, serde_yaml::Value> {

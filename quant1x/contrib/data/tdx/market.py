@@ -3,8 +3,8 @@
 # Licensed under the MIT License.
 
 from typing import Tuple, Dict
-from quant1x.data.meta.exchange import Exchange
-from quant1x.data.meta.instrument import InstrumentType
+from quant1x.data.meta import Exchange
+from quant1x.data.meta import InstrumentType
 
 # 正向映射：(market, category) → (mic, asset_class, protocol_segment)
 TDX_MARKET_CATEGORY_MAPPING: Dict[Tuple[int, int], Tuple[Exchange, InstrumentType]] = {

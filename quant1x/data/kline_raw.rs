@@ -1,5 +1,5 @@
-use crate::level1;
-use crate::level1::protocol::Response;
+use crate::contrib::data::tdx::standard;
+use crate::contrib::data::tdx::standard::protocol::Response;
 use serde::{Deserialize, Serialize};
 use std::thread;
 use std::time::Duration;
@@ -53,24 +53,24 @@ pub fn fetch_kline(
     code: &str,
     start: u32,
     count: u16,
-    kline_type: level1::KLineType,
-) -> Option<level1::SecurityBarsResponse> {
+    kline_type: standard::KLineType,
+) -> Option<standard::SecurityBarsResponse> {
     let category = kline_type as u16;
     let start_u16 = (start.min(u16::MAX as u32)) as u16;
     let frequency = 1u16;
     let mut req =
-        level1::SecurityBarsRequest::with_frequency(code, category, start_u16, count, frequency);
+        standard::SecurityBarsRequest::with_frequency(code, category, start_u16, count, frequency);
     let is_index = req.is_index();
 
     const MAX_RETRIES: usize = 3;
     const RETRY_DELAY_MS: u64 = 1000;
 
     for attempt in 0..=MAX_RETRIES {
-        match level1::get_std_conn() {
+        match crate::contrib::data::tdx::client::get_std_conn() {
             Ok(mut pooled) => {
                 let endpoint = pooled.addr();
-                let mut resp = level1::SecurityBarsResponse::new_with(is_index, category);
-                match level1::protocol::process(pooled.stream(), &mut req, &mut resp)
+                let mut resp = standard::SecurityBarsResponse::new_with(is_index, category);
+                match standard::protocol::process(pooled.stream(), &mut req, &mut resp)
                     .map_err(|s| std::io::Error::new(std::io::ErrorKind::Other, s))
                 {
                     Ok(()) => {

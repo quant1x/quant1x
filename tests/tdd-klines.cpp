@@ -1,5 +1,5 @@
 #include <quant1x/test/test.h>
-#include <quant1x/exchange/timestamp.h>
+#include <quant1x/data/exchange/timestamp.h>
 #include <quant1x/data/kline_raw.h>
 #include <quant1x/data/kline.h>
 #include <quant1x/data/kline_minute.h>

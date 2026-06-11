@@ -1,5 +1,5 @@
 #include <quant1x/test/test.h>
-#include <quant1x/level1/helpers.h>
+#include <quant1x/contrib/data/tdx/level1/helpers.h>
 
 // 测试快照时间戳
 TEST_CASE("encoding-format_time", "[level1]") {

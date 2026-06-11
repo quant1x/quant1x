@@ -12,8 +12,9 @@ from typing import List, Tuple, Optional
 from quant1x.level1 import protocol
 from quant1x.level1.client import get_std_conn
 from quant1x.level1 import transaction
-from quant1x import exchange
-from quant1x.exchange import Timestamp
+from quant1x.data.meta import Timestamp
+from quant1x.data.meta.code import detect_market, correct_security_code
+from quant1x.data.meta.calendar import last_trading_day
 from quant1x.config import config
 #from quant1x.factors import f10
 from quant1x.data import trains_begin_date
@@ -209,14 +210,14 @@ def update_transaction_data(corrected_code: str, feature_date: Timestamp, start_
     trade_date_int = int(trade_date_str)
     
     # Check if today is last trading day
-    today_is_last_trading_date = feature_date.is_same_date(Timestamp.parse(exchange.last_trade_date()))
+    today_is_last_trading_date = feature_date.is_same_date(Timestamp.parse(last_trade_date()))
     
     offset = transaction.TICK_TRANSACTION_PER_REQUEST_MAX
     start = 0
     history: List[transaction.TickTransaction] = []
     hs: List[List[transaction.TickTransaction]] = []
     
-    market_id, market_code, pure_code = exchange.detect_market(corrected_code)
+    market_id, market_code, pure_code = detect_market(corrected_code)
     market_val = market_id.value if hasattr(market_id, 'value') else market_id
     
     if today_is_last_trading_date:
@@ -343,7 +344,7 @@ def checkout_transaction_data(security_code: str, feature_date: Timestamp, ignor
         ValueError: 如果证券代码无效或日期格式不正确
         DataNotAvailableError: 如果请求的数据不可用
     """
-    corrected_code = exchange.correct_security_code(security_code)
+    corrected_code = correct_security_code(security_code)
     ensure_transaction_data_updated(corrected_code, feature_date, ignore_previous_data)
     data_list, _ = load_transaction_data_from_cache(corrected_code, feature_date, ignore_previous_data)
     return data_list
@@ -378,7 +379,7 @@ def checkout_transaction_data(security_code: str, feature_date: Timestamp, ignor
 #     if not data_list:
 #         return summary
         
-#     corrected_code = exchange.correct_security_code(security_code)
+#     corrected_code = correct_security_code(security_code)
 #     last_price = 0.0
     
 #     for v in data_list:
@@ -465,7 +466,7 @@ class DataTrans(DataAdapter):
             # 如果没有提供日期，使用当前日期或其他默认逻辑
             # 这里可能需要根据业务逻辑决定如何处理
             raise ValueError("Date is required for transaction data update")
-        corrected_code = exchange.correct_security_code(code)
+        corrected_code = correct_security_code(code)
         ensure_transaction_data_updated(corrected_code, date, False)
 
 

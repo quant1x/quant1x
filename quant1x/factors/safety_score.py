@@ -6,8 +6,8 @@ import requests
 import threading
 from typing import Tuple, Dict, List, Any
 from enum import Enum
-from quant1x import exchange
-from quant1x.instruments import markets
+from quant1x.data.market import detect_symbol, assert_stock_by_security_code
+from quant1x.contrib.data.tdx.datasource import is_need_ignore
 
 # Constants
 URL_RISK_ASSESSMENT = "http://page3.tdx.com.cn:7615/site/pcwebcall_static/bxb/json/"
@@ -52,16 +52,17 @@ def get_safety_score(security_code: str) -> Tuple[int, str]:
     Returns:
         Tuple[int, str]: (分数, 详情)
     """
-    if not exchange.assert_stock_by_security_code(security_code):
+    if not assert_stock_by_security_code(security_code):
         return DEFAULT_SAFETY_SCORE, ""
 
-    if markets.is_need_ignore(security_code):
+    if is_need_ignore(security_code):
         return DEFAULT_SAFETY_SCORE_OF_IGNORE, ""
 
     score = DEFAULT_SAFETY_SCORE
     detail = ""
     
-    _, _, pure_code = exchange.detect_market(security_code)
+    inst = detect_symbol(security_code)
+    pure_code = inst.ticker
 
     if len(pure_code) == 6:
         url = f"{URL_RISK_ASSESSMENT}{pure_code}.json"
@@ -130,3 +131,11 @@ def get_safety_score(security_code: str) -> Tuple[int, str]:
                 score = _map_safety_score.get(security_code, DEFAULT_SAFETY_SCORE)
 
     return score, detail
+
+
+if __name__ == "__main__":
+    # 测试获取个股安全分
+    test_codes = ["sh600000", "sh600519", "sz000001"]
+    for code in test_codes:
+        score, detail = get_safety_score(code)
+        print(f"{code}: score={score}, detail={detail[:100] if detail else '无风险'}")

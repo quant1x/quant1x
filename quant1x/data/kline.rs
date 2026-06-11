@@ -1,4 +1,5 @@
-use crate::level1::KLineType;
+use crate::data::meta::instrument::Instrument;
+use crate::contrib::data::tdx::level1::std::KLineType;
 use crate::meta::Timestamp;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -71,15 +72,18 @@ impl crate::data::Schema for DataKLine {
 }
 
 impl crate::data::DataAdapter for DataKLine {
-    fn print(&self, _code: &str, _dates: &[Timestamp]) {}
+    fn print(&self, _inst: &Instrument, _dates: &[Timestamp]) {}
 
-    fn update(&self, code: &str, _date: Timestamp) {
-        // 尝试从 level1 获取日线数据；若无法获取则降级为本地缓存（仅写入表头）的行为。
-        // 构建与 C++ 等效的 kline 文件名。
-        // 使用集中式的 config helper 构建 kline 缓存文件路径（与 C++ 保持一致）。
-        let filename = crate::config::get_kline_filename(code, true);
+    fn update(&self, inst: &Instrument, _date: Timestamp) {
+        let symbol = inst.symbol();
+        // 对齐 Python tdx/kline.py: get_kline_filename(inst, freq)
+        //   module_name = freq.cache_key()  # "day"
+        //   symbol = inst.symbol()
+        //   sub = f"{module_name}/{inst.cache_dir()}"
+        //   return f'{config.data_path}/{sub}/{symbol}.csv'
+        let filename = get_kline_filename(inst);
         if filename.is_empty() {
-            log::error!("[DataKLine] cannot build kline filename for {}", code);
+            log::error!("[DataKLine] cannot build kline filename for {}", symbol);
             return;
         }
         log::debug!("[DataKLine] cache filename: {}", filename);
@@ -108,14 +112,14 @@ impl crate::data::DataAdapter for DataKLine {
         let mut adjust_times = 0i32;
         // 默认起始日期：1990-12-19（市场首次上市日期）
         let mut current_start_date =
-            crate::Timestamp::pre_market_time(1990, 12, 19).unwrap_or(crate::Timestamp::zero());
+            crate::meta::Timestamp::pre_market_time(1990, 12, 19).unwrap_or(crate::meta::Timestamp::zero());
         if klines_length > 0 {
             if klines_offset_days > klines_length {
                 klines_offset_days = klines_length;
             }
             let kline = &cache_klines[klines_length - klines_offset_days];
             // parse date back to Timestamp
-            if let Ok(ts) = crate::Timestamp::parse(&kline.date) {
+            if let Ok(ts) = crate::meta::Timestamp::parse(&kline.date) {
                 current_start_date = ts;
             }
             adjust_times = kline.adjustment_count;
@@ -123,19 +127,19 @@ impl crate::data::DataAdapter for DataKLine {
 
         // 从当前时间确定结束日期（尽可能使用今日的盘前时间作为结束日期）
         let current_end_date =
-            crate::Timestamp::pre_market_time_from_current(&crate::Timestamp::now())
-                .unwrap_or(crate::Timestamp::now());
+            crate::meta::Timestamp::pre_market_time_from_current(&crate::meta::Timestamp::now())
+                .unwrap_or(crate::meta::Timestamp::now());
         // 构建日期范围
-        let ts_range = crate::exchange::date_range(current_start_date, current_end_date, false);
+        let ts_range = crate::meta::date_range(current_start_date, current_end_date, false);
         if ts_range.is_empty() {
-            log::debug!("[DataKLine] empty date range for {}", code);
+            log::debug!("[DataKLine] empty date range for {}", symbol);
             return;
         }
 
         let total = ts_range.len();
 
         // 按日期范围分页从 level1 拉取数据（每页作为一个向量，保持页内顺序，之后再翻转页序以匹配 C++）
-        let mut hs: Vec<Vec<crate::level1::SecurityBar>> = Vec::new();
+        let mut hs: Vec<Vec<crate::contrib::data::tdx::standard::SecurityBar>> = Vec::new();
         let step = SECURITY_BARS_MAX;
         let mut start_idx: usize = 0;
         while start_idx < total {
@@ -143,7 +147,7 @@ impl crate::data::DataAdapter for DataKLine {
             let count = std::cmp::min(step, remaining) as u16;
             // 注意：start 使用日期索引，datasets 层直接调度 SecurityBars 请求
             match crate::data::kline_raw::fetch_kline(
-                code,
+                &symbol,
                 start_idx as u32,
                 count,
                 KLineType::RiK,
@@ -162,7 +166,7 @@ impl crate::data::DataAdapter for DataKLine {
                 None => {
                     log::warn!(
                         "[DataKLine] fetch_kline returned None for {} start={}",
-                        code,
+                        symbol,
                         start_idx
                     );
                     break;
@@ -183,8 +187,8 @@ impl crate::data::DataAdapter for DataKLine {
             for row in page.iter() {
                 // 为 bar 日期构造盘前时间戳
                 let date_time =
-                    crate::Timestamp::pre_market_time(row.year, row.month as u32, row.day as u32)
-                        .unwrap_or(crate::Timestamp::now());
+                    crate::meta::Timestamp::pre_market_time(row.year, row.month as u32, row.day as u32)
+                        .unwrap_or(crate::meta::Timestamp::now());
                 if date_time < ts_range[0] || date_time > ts_range[total - 1] {
                     continue;
                 }
@@ -207,8 +211,8 @@ impl crate::data::DataAdapter for DataKLine {
 
         // 判断是否仅针对最新抓取的那一部分需要做预除权调整
         let is_fresh_fetch_require_adjustment = adjust_times == 1;
-        // 仅从本地缓存加载除权除息数据（与 C++ 行为一致）
-        let dividends = crate::data::xdxr::load_xdxr(code);
+        // 仅从本地缓存加载除权除息数据（对齐 Python: get_xdxr_list(inst)）
+        let dividends = crate::data::xdxr::load_xdxr(&symbol);
         if is_fresh_fetch_require_adjustment {
             apply_forward_adjustment_for_event!(&mut incremental_klines, ts_range[0], &dividends);
         }
@@ -299,6 +303,17 @@ fn read_kline_from_csv(filename: &str) -> Vec<KLine> {
     load_klines(filename)
 }
 
+/// 生成 K 线缓存文件路径，与 Python tdx/kline.py 的 get_kline_filename(inst, freq) 对齐
+///   module_name = freq.cache_key()  # "day"
+///   symbol = inst.symbol()
+///   sub = f"{module_name}/{inst.cache_dir()}"
+///   return f'{config.data_path}/{sub}/{symbol}.csv'
+fn get_kline_filename(inst: &Instrument) -> String {
+    let symbol = inst.symbol();
+    let sub = format!("day/{}", inst.cache_dir());
+    format!("{}/{}/{}.csv", crate::config::default_cache_path(), sub, symbol)
+}
+
 pub fn init() {
     let plugin = Arc::new(DataKLine) as Arc<dyn crate::data::DataAdapter>;
     crate::data::register(plugin);
@@ -307,12 +322,15 @@ pub fn init() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::data::market::detect_symbol;
 
     #[test]
     fn test_kline_update() {
         let adapter = DataKLine;
         let code = "sz002350";
+        let inst = detect_symbol(code);
+        assert!(inst.can_construct_symbol());
         let date = Timestamp::now();
-        adapter.update(code, date);
+        adapter.update(&inst, date);
     }
 }

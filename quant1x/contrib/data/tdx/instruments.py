@@ -14,7 +14,7 @@ from quant1x.data import market
 from quant1x.data.meta import Exchange, Instrument, InstrumentType
 from quant1x.runtime.once import RollingOnce
 from quant1x.log import logger
-from . import config as tdx_config, client, protocol
+from . import _config as tdx_config, client, protocol
 from .level1 import SecurityList, SECURITY_LIST_PRE_REQUEST_MAX
 
 

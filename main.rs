@@ -111,10 +111,6 @@ fn main() {
         .subcommand(update_sub);
 
     // 注意：C++ 实现会动态注册来自 `quant1x::subcommands` 的子命令。
-    // Rust 移植版可能尚未暴露该列表。
-    // 我们提供了一个最小的兼容层：如果 crate 提供了
-    // `quant1x::run_subcommand(name, matches)`，可以在这里接入。
-    // 注意：C++ 实现会动态注册来自 `quant1x::subcommands` 的子命令。
     // Rust 移植版可能尚未暴露完整的子命令列表。我们在此提供一个最小兼容层：如果 crate
     // 提供了 `quant1x::run_subcommand(name, matches)`，则可以从这里转发调用。
 

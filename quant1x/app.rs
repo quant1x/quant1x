@@ -706,10 +706,10 @@ pub fn try_run_subcommand(
     if do_servers {
         log::info!("正在探测 level1 服务器（握手探测）...");
         let start = Instant::now();
-        let detected = crate::level1::config::detect(
-            crate::level1::config::MAX_ELAPSED_TIME_MS,
-            crate::level1::config::MAX_CONNECTIONS,
-            crate::level1::config::DEFAULT_CONNECT_TIMEOUT_MS,
+        let detected = crate::contrib::data::tdx::standard::config::detect(
+            crate::contrib::data::tdx::standard::config::MAX_ELAPSED_TIME_MS,
+            crate::contrib::data::tdx::standard::config::MAX_CONNECTIONS,
+            crate::contrib::data::tdx::standard::config::DEFAULT_CONNECT_TIMEOUT_MS,
         );
 
         if detected.is_empty() {
@@ -725,7 +725,7 @@ pub fn try_run_subcommand(
                     srv.latency_ms
                 );
             }
-            crate::level1::config::save_cached_servers(&detected);
+            crate::contrib::data::tdx::standard::config::save_cached_servers(&detected);
             log::info!(
                 "Saved {} servers to cache (elapsed {:?}).",
                 detected.len(),
@@ -749,7 +749,7 @@ pub fn try_run_subcommand(
             let _count = crate::data::update_all_mask(
                 crate::data::PLUGIN_MASK_BASE_DATA,
                 None,
-                crate::exchange::last_trading_day(crate::Timestamp::now()),
+                crate::meta::last_trading_day(crate::meta::Timestamp::now()),
             );
             log::info!("Updated {} base adapters", _count);
         } else {
@@ -758,7 +758,7 @@ pub fn try_run_subcommand(
             let _count = crate::data::update_all_mask(
                 crate::data::PLUGIN_MASK_BASE_DATA,
                 Some(&ks),
-                crate::exchange::last_trading_day(crate::Timestamp::now()),
+                crate::meta::last_trading_day(crate::meta::Timestamp::now()),
             );
             log::info!("Updated {} selected base adapters", _count);
         }
@@ -779,7 +779,7 @@ pub fn try_run_subcommand(
             let _count = crate::data::update_all_mask(
                 crate::data::PLUGIN_MASK_FEATURE,
                 None,
-                crate::exchange::last_trading_day(crate::Timestamp::now()),
+                crate::meta::last_trading_day(crate::meta::Timestamp::now()),
             );
             log::info!("Updated {} feature adapters", _count);
         } else {
@@ -788,7 +788,7 @@ pub fn try_run_subcommand(
             let _count = crate::data::update_all_mask(
                 crate::data::PLUGIN_MASK_FEATURE,
                 Some(&ks),
-                crate::exchange::last_trading_day(crate::Timestamp::now()),
+                crate::meta::last_trading_day(crate::meta::Timestamp::now()),
             );
             log::info!("Updated {} selected feature adapters", _count);
         }

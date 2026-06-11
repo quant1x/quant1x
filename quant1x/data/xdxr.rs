@@ -1,3 +1,4 @@
+use crate::data::meta::instrument::Instrument;
 use crate::meta::Timestamp;
 use std::sync::Arc;
 
@@ -24,14 +25,15 @@ impl crate::data::Schema for DataXdxr {
 }
 
 impl crate::data::DataAdapter for DataXdxr {
-    fn print(&self, _code: &str, _dates: &[Timestamp]) {}
+    fn print(&self, _inst: &Instrument, _dates: &[Timestamp]) {}
 
-    fn update(&self, code: &str, _date: Timestamp) {
+    fn update(&self, inst: &Instrument, _date: Timestamp) {
+        let symbol = inst.symbol();
         // call into level1 client to fetch xdxr (if available)
-        if let Some(resp) = crate::level1::fetch_xdxr(code) {
+        if let Some(resp) = crate::contrib::data::tdx::standard::fetch_xdxr(&symbol) {
             if !resp.list.is_empty() {
                 // write CSV file using C++ header order
-                let filename = crate::config::get_xdxr_filename(code);
+                let filename = crate::config::get_xdxr_filename(&symbol);
                 if let Some(parent) = std::path::Path::new(&filename).parent() {
                     if let Err(e) = std::fs::create_dir_all(parent) {
                         log::error!("Failed to create parent dir {:?}: {}", parent, e);
@@ -41,12 +43,7 @@ impl crate::data::DataAdapter for DataXdxr {
                 let tmp = format!("{}.tmp", filename);
                 match std::fs::File::create(&tmp) {
                     Ok(f) => {
-                        // Use csv::Writer + serde to serialize rows in the same column order as C++ header
                         let mut w = csv::WriterBuilder::new().has_headers(true).from_writer(f);
-                        // if let Err(e) = w.write_record(crate::level1::xdxr::XdxrInfo::headers()) {
-                        //     log::error!("Failed to write header to tmp file {}: {}", tmp, e);
-                        //     return;
-                        // }
                         for v in resp.list.iter() {
                             if let Err(e) = w.serialize(v) {
                                 log::error!("Failed to serialize row to tmp file {}: {}", tmp, e);
@@ -66,7 +63,7 @@ impl crate::data::DataAdapter for DataXdxr {
                 }
             }
         } else {
-            log::warn!("No XDXR response for {} (fetch failed)", code);
+            log::warn!("No XDXR response for {} (fetch failed)", symbol);
         }
     }
 }
@@ -77,13 +74,13 @@ pub fn init() {
 }
 
 /// Load XDXR CSV cache for a given security code. Returns an empty Vec on error or missing file.
-pub fn load_xdxr(code: &str) -> Vec<crate::level1::XdxrInfo> {
+pub fn load_xdxr(code: &str) -> Vec<crate::contrib::data::tdx::standard::XdxrInfo> {
     let filename = crate::config::get_xdxr_filename(code);
-    let mut list: Vec<crate::level1::XdxrInfo> = Vec::new();
+    let mut list: Vec<crate::contrib::data::tdx::standard::XdxrInfo> = Vec::new();
     if let Ok(f) = std::fs::File::open(&filename) {
         let mut rdr = csv::ReaderBuilder::new().has_headers(true).from_reader(f);
         match rdr
-            .deserialize::<crate::level1::XdxrInfo>()
+            .deserialize::<crate::contrib::data::tdx::standard::XdxrInfo>()
             .collect::<Result<Vec<_>, csv::Error>>()
         {
             Ok(v) => list = v,

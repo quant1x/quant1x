@@ -7,10 +7,10 @@ from typing import List, Optional, TypeVar, Generic, Any
 import math
 from datetime import datetime
 
-from quant1x.exchange import Timestamp
-from quant1x.exchange.code import correct_security_code
-from quant1x.level1.xdxr_info import XdxrInfo
-import quant1x.data.xdxr as xdxr_module
+from quant1x.data.meta.timestamp import Timestamp
+from quant1x.data.market import correct_security_code, detect_symbol
+from quant1x.contrib.data.tdx.level1 import XdxrInfo
+import quant1x.contrib.data.tdx.xdxr as xdxr_module
 from quant1x.data.kline_raw import KLineRaw
 
 T = TypeVar('T')
@@ -267,7 +267,7 @@ def get_cross_section_forward_adjusted_klines(code: str, as_of_date: str) -> Lis
         klines.append(kline)
     
     # 获取XDXR数据
-    xdxr_list = xdxr_module.load_xdxr(security_code)
+    xdxr_list = xdxr_module.load_xdxr(detect_symbol(security_code))
     
     # 确定前复权的时间范围
     start_date = datetime.strptime(klines[0].date, '%Y-%m-%d')

@@ -10,7 +10,7 @@
 #include <filesystem>
 #include <spdlog/spdlog.h>
 #include <tsl/robin_map.h>
-#include <quant1x/exchange/timestamp.h>
+#include <quant1x/data/exchange/timestamp.h>
 #include <quant1x/encoding/csv.h>
 #include <quant1x/data/adapter.h>
 #include <quant1x/runtime/once.h>

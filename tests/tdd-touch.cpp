@@ -1,7 +1,7 @@
 #include <quant1x/test/test.h>
 
 #include <quant1x/io/file.h>
-#include <quant1x/exchange/timestamp.h>
+#include <quant1x/data/exchange/timestamp.h>
 
 TEST_CASE("touch-empty", "[io]") {
     std::string filename = "123.txt";

@@ -5,7 +5,8 @@ use std::fmt::Debug;
 use std::path::PathBuf;
 use std::sync::{Arc, Condvar, Mutex};
 
-use crate::Timestamp;
+use crate::data::meta::instrument::Instrument;
+use crate::meta::Timestamp;
 
 pub type Kind = u64;
 
@@ -24,10 +25,11 @@ pub trait Schema: Send + Sync + Debug {
     fn usage(&self) -> String;
 }
 
-/// DataAdapter 基础数据：对应 C++ 中的 DataAdapter（包含 Schema + Update/Print）
+/// DataAdapter 基础数据：对应 Python data/adapter.py 中的 DataAdapter（包含 Schema + Update/Print）
+/// 重构后 update 接受 &Instrument 而非 &str code，与 Python 版本对齐
 pub trait DataAdapter: Schema + Send + Sync {
-    fn print(&self, code: &str, dates: &[Timestamp]);
-    fn update(&self, code: &str, date: Timestamp);
+    fn print(&self, inst: &Instrument, dates: &[Timestamp]);
+    fn update(&self, inst: &Instrument, date: Timestamp);
     /// 可选钩子：如果该适配器是 FeatureAdapter，则返回其 boxed 克隆。
     /// 默认实现返回 None；feature 适配器应重写并返回 Some(clone)。
     fn as_feature_clone(&self) -> Option<Box<dyn FeatureAdapter>> {
@@ -129,6 +131,17 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
         log::warn!("No codes found for update");
     }
 
+    // 将字符串代码转换为 Instrument 列表（与 Python 对齐：所有业务接口以 Instrument 为核心）
+    let all_instruments: Vec<Instrument> = all_codes
+        .iter()
+        .map(|code| crate::data::market::detect_symbol(code))
+        .filter(|inst| inst.can_construct_symbol())
+        .collect();
+    if all_instruments.is_empty() {
+        log::warn!("No valid instruments found for update");
+        return 0;
+    }
+
     // 并发度默认值由每个 adapter 的配置决定（quant1x.yaml 中的 data.concurrency）
 
     let mut processed_adapters = 0usize;
@@ -151,10 +164,10 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
 
     // Determine a global concurrency limit based on level1 pool maximum connections.
     let pool_max = {
-        if let Some(limit) = crate::level1::pool_max_connections() {
+        if let Some(limit) = crate::contrib::data::tdx::client::pool_max_connections() {
             limit
         } else {
-            let fallback = std::cmp::min(crate::level1::config::MAX_CONNECTIONS.max(1), 5);
+            let fallback = std::cmp::min(crate::contrib::data::tdx::standard::config::MAX_CONNECTIONS.max(1), 5);
             log::info!(
                 "[cache] level1 pool not initialized; falling back to concurrency limit {}",
                 fallback
@@ -222,8 +235,9 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
         let module_name = format!("{}({})", adapter.key(), kind);
         log::info!("[update] plugin={}, start", module_name);
 
-        // 为 codes 显示进度条
-        let pb = ProgressBar::new(all_codes.len() as u64);
+        // 为 instruments 显示进度条
+        let total_instruments = all_instruments.len() as u64;
+        let pb = ProgressBar::new(total_instruments);
         pb.set_style(
             ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] {pos}/{len} {msg}")
                 .unwrap(),
@@ -247,46 +261,47 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
             let results: StdArc<StdMutex<Vec<(String, Vec<String>)>>> =
                 StdArc::new(StdMutex::new(Vec::new()));
 
-            // 划分 codes（分块以供线程处理）
+            // 划分 instruments（分块以供线程处理）
             let mut num_threads = crate::config::get_concurrency_for(&adapter.key());
             // Ensure business thread count does not exceed level1 pool capacity
             if num_threads == 0 || num_threads > pool_max {
                 num_threads = pool_max.max(1);
             }
-            let codes = all_codes.clone();
+            let instruments = all_instruments.clone();
             log::info!(
                 "[cache] adapter {} feature threads={} (requested vs capped)",
                 module_name,
                 num_threads
             );
 
-            let chunk_size = (codes.len() + num_threads - 1) / num_threads;
+            let chunk_size = (instruments.len() + num_threads - 1) / num_threads;
             let mut handles = Vec::new();
 
             for t in 0..num_threads {
                 let start = t * chunk_size;
-                let end = std::cmp::min(start + chunk_size, codes.len());
+                let end = std::cmp::min(start + chunk_size, instruments.len());
                 if start >= end {
                     continue;
                 }
-                let codes_slice = codes[start..end].to_vec();
+                let inst_slice = instruments[start..end].to_vec();
                 let adapter_clone = adapter.clone();
                 let results_clone = results.clone();
                 let pb_clone = pb.clone();
 
                 let sem_clone = sem.clone();
                 let handle = std::thread::spawn(move || {
-                    for code in codes_slice.into_iter() {
+                    for inst in inst_slice.into_iter() {
+                        let code = inst.symbol();
                         // 为每个代码克隆一个 feature 实例
                         if let Some(feature_instance) = adapter_clone.as_feature_clone() {
                             // Acquire global semaphore before network/update work
                             let _g = sem_clone.guard();
-                            // 执行更新
-                            feature_instance.update(&code, feature_date);
+                            // 执行更新（传入 Instrument 引用，与 Python 对齐）
+                            feature_instance.update(&inst, feature_date);
                             let vals = feature_instance.values();
                             if !vals.is_empty() {
                                 let mut guard = results_clone.lock().unwrap();
-                                guard.push((code.clone(), vals));
+                                guard.push((code, vals));
                             }
                             // `_g` dropped here, releasing semaphore
                         } else {
@@ -311,8 +326,8 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
             // sort results by code order
             let mut ordered = guard.clone();
             let mut code_order = std::collections::HashMap::new();
-            for (i, c) in all_codes.iter().enumerate() {
-                code_order.insert(c.clone(), i);
+            for (i, inst) in all_instruments.iter().enumerate() {
+                code_order.insert(inst.symbol(), i);
             }
             ordered.sort_by_key(|(code, _)| *code_order.get(code).unwrap_or(&usize::MAX));
             for (_code, vals) in ordered.into_iter() {
@@ -348,8 +363,8 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
 
             pb.finish_with_message(format!("{} done", module_name));
         } else {
-            // base adapter: process codes potentially concurrently
-            let codes = all_codes.clone();
+            // base adapter: process instruments potentially concurrently
+            let instruments = all_instruments.clone();
             let mut num_threads = crate::config::get_concurrency_for(&adapter.key());
             // Ensure business thread count does not exceed level1 pool capacity
             if num_threads == 0 || num_threads > pool_max {
@@ -361,22 +376,22 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
                 num_threads
             );
 
-            let chunk_size = (codes.len() + num_threads - 1) / num_threads;
+            let chunk_size = (instruments.len() + num_threads - 1) / num_threads;
             let mut handles = Vec::new();
             for t in 0..num_threads {
                 let start = t * chunk_size;
-                let end = std::cmp::min(start + chunk_size, codes.len());
+                let end = std::cmp::min(start + chunk_size, instruments.len());
                 if start >= end {
                     continue;
                 }
-                let slice = codes[start..end].to_vec();
+                let slice = instruments[start..end].to_vec();
                 let adapter_clone = adapter.clone();
                 let pb_clone = pb.clone();
                 let sem_clone = sem.clone();
                 let handle = std::thread::spawn(move || {
-                    for code in slice.into_iter() {
+                    for inst in slice.into_iter() {
                         let _g = sem_clone.guard();
-                        adapter_clone.update(&code, feature_date);
+                        adapter_clone.update(&inst, feature_date);
                         // `_g` released here
                         pb_clone.inc(1);
                     }
@@ -413,7 +428,7 @@ pub fn clone_feature_adapter(a: &dyn FeatureAdapter) -> Box<dyn FeatureAdapter> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::timestamp::Timestamp as Ts;
+    use crate::data::meta::timestamp::Timestamp as Ts;
 
     #[derive(Debug)]
     struct DummyAdapter;
@@ -436,8 +451,8 @@ mod tests {
         }
     }
     impl DataAdapter for DummyAdapter {
-        fn print(&self, _code: &str, _dates: &[Timestamp]) {}
-        fn update(&self, _code: &str, _date: Timestamp) {}
+        fn print(&self, _inst: &Instrument, _dates: &[Timestamp]) {}
+        fn update(&self, _inst: &Instrument, _date: Timestamp) {}
     }
 
     #[test]

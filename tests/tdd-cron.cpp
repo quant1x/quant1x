@@ -2,8 +2,8 @@
 #include <quant1x/runtime/scheduler.h>
 #include <quant1x/runtime/once.h>
 #include <quant1x/std/time.h>
-#include <quant1x/exchange/timestamp.h>
-#include <quant1x/exchange/calendar.h>
+#include <quant1x/data/exchange/timestamp.h>
+#include <quant1x/data/exchange/calendar.h>
 
 static int test_number =0;
 

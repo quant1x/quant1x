@@ -1,4 +1,5 @@
-use crate::Timestamp;
+use crate::data::meta::instrument::Instrument;
+use crate::meta::Timestamp;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use crate::data::adapter::DataAdapter;
@@ -50,7 +51,7 @@ impl MinuteKLine {
 
 // 推断成交量单位 (参照 C++ 实现)。遍历获取的 SecurityBar 列表, 使用第一条有效记录的
 // (Amount / Vol) 与典型价格(平均 OCHL)和 High 比较, 向上取整到 10 的次幂以推断单位。
-fn infer_bar_vol_unit(hs: &Vec<Vec<crate::level1::SecurityBar>>) -> f64 {
+fn infer_bar_vol_unit(hs: &Vec<Vec<crate::contrib::data::tdx::standard::SecurityBar>>) -> f64 {
     for vec in hs.iter() {
         for row in vec.iter() {
             if row.amount <= 0.0 || row.vol <= 0.0 {
@@ -110,9 +111,10 @@ impl crate::data::Schema for DataMinuteKLine {
 }
 
 impl crate::data::DataAdapter for DataMinuteKLine {
-    fn print(&self, _code: &str, _dates: &[Timestamp]) {}
+    fn print(&self, _inst: &Instrument, _dates: &[Timestamp]) {}
 
-    fn update(&self, code: &str, _date: Timestamp) {
+    fn update(&self, inst: &Instrument, _date: Timestamp) {
+        let symbol = inst.symbol();
         // 读取分钟 K 线配置（必须与 C++ 中的 datasets::get_minute_kline_config 保持一致）
         let mkc = crate::config::get_minute_kline_config();
         if !mkc.enabled {
@@ -120,11 +122,11 @@ impl crate::data::DataAdapter for DataMinuteKLine {
             return;
         }
         // 使用配置中的频率构建分钟 K 线缓存文件名
-        let filename = crate::config::get_kline_filename_ex(code, &mkc.frequency);
+        let filename = get_minute_kline_filename(inst, &mkc.frequency);
         if filename.is_empty() {
             log::error!(
                 "[DataMinuteKLine] cannot build minute filename for {}",
-                code
+                symbol
             );
             return;
         }
@@ -159,12 +161,12 @@ impl crate::data::DataAdapter for DataMinuteKLine {
             number_of_day = 1;
         }
         // map period -> level1 category (mirror C++ switch)
-        let kline_type: crate::level1::KLineType = match period {
-            5 => crate::level1::KLineType::_5Min,
-            15 => crate::level1::KLineType::_15Min,
-            30 => crate::level1::KLineType::_30Min,
-            60 => crate::level1::KLineType::_1Hour,
-            _ => crate::level1::KLineType::_1Min, // default
+        let kline_type: crate::contrib::data::tdx::standard::KLineType = match period {
+            5 => crate::contrib::data::tdx::standard::KLineType::_5Min,
+            15 => crate::contrib::data::tdx::standard::KLineType::_15Min,
+            30 => crate::contrib::data::tdx::standard::KLineType::_30Min,
+            60 => crate::contrib::data::tdx::standard::KLineType::_1Hour,
+            _ => crate::contrib::data::tdx::standard::KLineType::_1Min, // default
         };
 
         // Align klines offset to a fixed block size (floor alignment), mirroring the C++ logic.
@@ -174,7 +176,7 @@ impl crate::data::DataAdapter for DataMinuteKLine {
         let mut adjust_times = 0i32;
         // 如果没有缓存，则使用一个非常早的默认日期
         let mut current_start_date =
-            crate::Timestamp::pre_market_time(1990, 12, 19).unwrap_or(crate::Timestamp::zero());
+            crate::meta::Timestamp::pre_market_time(1990, 12, 19).unwrap_or(crate::meta::Timestamp::zero());
         if klines_length > 0 {
             if klines_offset > klines_length {
                 klines_offset = klines_length;
@@ -200,8 +202,8 @@ impl crate::data::DataAdapter for DataMinuteKLine {
             // 根据对齐后的索引取出对应的日期作为拉取起点，并保留该边界行的 adjustment_count
             let kline = &cache_klines[aligned];
             // kline.date 是字符串, 尝试解析并转换为盘前时间
-            if let Ok(mut ts) = crate::Timestamp::parse(&kline.date) {
-                ts = crate::Timestamp::pre_market_time_from_current(&ts).unwrap_or(ts);
+            if let Ok(mut ts) = crate::meta::Timestamp::parse(&kline.date) {
+                ts = crate::meta::Timestamp::pre_market_time_from_current(&ts).unwrap_or(ts);
                 current_start_date = ts;
             }
             adjust_times = kline.adjustment_count;
@@ -211,7 +213,7 @@ impl crate::data::DataAdapter for DataMinuteKLine {
                 log::warn!(
                     "[DataMinuteKLine] aligned index {} is not day-first for {} (date={})",
                     aligned,
-                    code,
+                    symbol,
                     cache_klines[aligned].date
                 );
             }
@@ -219,16 +221,16 @@ impl crate::data::DataAdapter for DataMinuteKLine {
 
         // 构建从起始日期到今日盘前的日期范围
         let mut current_end_date =
-            crate::Timestamp::pre_market_time_from_current(&crate::Timestamp::now())
-                .unwrap_or(crate::Timestamp::now());
-        let ts_range = crate::exchange::date_range(current_start_date, current_end_date, false);
+            crate::meta::Timestamp::pre_market_time_from_current(&crate::meta::Timestamp::now())
+                .unwrap_or(crate::meta::Timestamp::now());
+        let ts_range = crate::meta::date_range(current_start_date, current_end_date, false);
         if ts_range.is_empty() {
-            log::debug!("[DataMinuteKLine] empty date range for {}", code);
+            log::debug!("[DataMinuteKLine] empty date range for {}", symbol);
             return;
         }
         log::info!(
             "[DataMinuteKLine] updating {} from {} to {} ({} days) with period {} minutes",
-            code,
+            symbol,
             current_start_date.only_date(),
             current_end_date.only_date(),
             ts_range.len(),
@@ -244,7 +246,7 @@ impl crate::data::DataAdapter for DataMinuteKLine {
         };
         let days = std::cmp::min(max_days, total_days);
         if days == 0 {
-            log::debug!("[DataMinuteKLine] empty date range for {}", code);
+            log::debug!("[DataMinuteKLine] empty date range for {}", symbol);
             return;
         }
         let total = days * number_of_day;
@@ -259,7 +261,7 @@ impl crate::data::DataAdapter for DataMinuteKLine {
             total
         );
         // 从 level1 分页拉取分钟数据（C++ 中日线用类目 9；分钟线依据频率使用 1..8，这里简化使用 1 作为分钟类目）
-        let mut hs: Vec<Vec<crate::level1::SecurityBar>> = Vec::new();
+        let mut hs: Vec<Vec<crate::contrib::data::tdx::standard::SecurityBar>> = Vec::new();
         let step = SECURITY_BARS_MAX;
         let mut start_idx: usize = 0;
         while start_idx < total {
@@ -268,13 +270,13 @@ impl crate::data::DataAdapter for DataMinuteKLine {
             // 最低可观测性：在拉取每页数据前记录请求参数
             log::info!(
                 "[DataMinuteKLine] fetch request: code={} kline_type={:?} start_idx={} count={} total={}",
-                code,
+                symbol,
                 kline_type,
                 start_idx,
                 count,
                 total
             );
-            match crate::data::kline_raw::fetch_kline(code, start_idx as u32, count, kline_type)
+            match crate::data::kline_raw::fetch_kline(&symbol, start_idx as u32, count, kline_type)
             {
                 Some(resp) if !resp.list.is_empty() => {
                     let response_len = resp.list.len();
@@ -287,7 +289,7 @@ impl crate::data::DataAdapter for DataMinuteKLine {
                 _ => {
                     log::warn!(
                         "[DataMinuteKLine] fetch_kline returned empty for {} start={}",
-                        code,
+                        symbol,
                         start_idx
                     );
                     break;
@@ -308,8 +310,8 @@ impl crate::data::DataAdapter for DataMinuteKLine {
         for page in hs.iter() {
             for row in page.iter() {
                 let date_time =
-                    crate::Timestamp::pre_market_time(row.year, row.month as u32, row.day as u32)
-                        .unwrap_or(crate::Timestamp::now());
+                    crate::meta::Timestamp::pre_market_time(row.year, row.month as u32, row.day as u32)
+                        .unwrap_or(crate::meta::Timestamp::now());
                 if date_time < current_start_date || date_time > current_end_date {
                     continue;
                 }
@@ -331,7 +333,7 @@ impl crate::data::DataAdapter for DataMinuteKLine {
         }
 
         let is_fresh_fetch_require_adjustment = adjust_times == 1;
-        let dividends = crate::data::xdxr::load_xdxr(code);
+        let dividends = crate::data::xdxr::load_xdxr(&symbol);
         if is_fresh_fetch_require_adjustment {
             apply_forward_adjustment_for_event!(
                 &mut incremental_klines,
@@ -425,6 +427,15 @@ fn read_minute_kline_from_csv(filename: &str) -> Vec<MinuteKLine> {
     klines
 }
 
+/// 生成分钟 K 线缓存文件路径，与 Python 对齐
+///   sub = f"{freq}/{inst.cache_dir()}"
+///   return f'{config.data_path}/{sub}/{inst.symbol()}.csv'
+fn get_minute_kline_filename(inst: &Instrument, freq: &str) -> String {
+    let symbol = inst.symbol();
+    let sub = format!("{}/{}", freq, inst.cache_dir());
+    format!("{}/{}/{}.csv", crate::config::default_cache_path(), sub, symbol)
+}
+
 pub fn init() {
     let plugin = Arc::new(DataMinuteKLine) as Arc<dyn crate::data::DataAdapter>;
     crate::data::register(plugin);
@@ -433,12 +444,15 @@ pub fn init() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::data::market::detect_symbol;
 
     #[test]
     fn test_minute_kline_update() {
         let adapter: DataMinuteKLine = DataMinuteKLine;
         let code = "sh510050";
+        let inst = detect_symbol(code);
+        assert!(inst.can_construct_symbol());
         let date = Timestamp::now();
-        adapter.update(code, date);
+        adapter.update(&inst, date);
     }
 }

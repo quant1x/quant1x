@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 import logging
 
-from quant1x.exchange import Timestamp
+from quant1x.data.meta import Timestamp
 from quant1x.level1 import protocol
 from quant1x.level1.client import get_std_conn
 from quant1x.level1.security_bars import SecurityBarsRequest, SecurityBarsResponse, KLineType, SecurityBar, SECURITY_BARS_MAX

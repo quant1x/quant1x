@@ -7,8 +7,10 @@ import math
 from typing import List, Tuple, Dict, Optional, Union
 from dataclasses import dataclass, field
 from enum import Enum
-from quant1x import exchange
-from quant1x.exchange import Timestamp
+from quant1x.data.market import detect_symbol, assert_stock_by_security_code
+from quant1x.data.meta.instrument import Instrument, InstrumentType
+from quant1x.contrib.data.tdx.helpers import market_to_exchange
+from quant1x.data.meta.timestamp import Timestamp
 
 # Constants
 ERROR_BASEDATA_NOTICE = 91000
@@ -117,7 +119,8 @@ def stock_notices(security_code: str, begin_date: str, end_date: str = "", page_
     # C++: auto marketInfo = exchange::DetectMarket(securityCode);
     # params.Add({"stock_list", std::get<2>(marketInfo)});
     # std::get<2> is pure_code
-    _, _, pure_code = exchange.detect_market(security_code)
+    inst = detect_symbol(security_code)
+    pure_code = inst.ticker
 
     params = {
         "sr": "-1",
@@ -192,15 +195,9 @@ def stock_notices(security_code: str, begin_date: str, end_date: str = "", page_
             
             try:
                 market_type_int = int(market_code_str)
-                # We need to map int to MarketType enum if we want to use get_security_code strictly
-                # But get_security_code in python takes MarketType enum.
-                # Let's look at exchange.code.MarketType
-                
-                # from quant1x.exchange.code import MarketType
-                # We can cast int to MarketType(int)
-                from quant1x.exchange.code import MarketType, get_security_code
-                market_type = MarketType(market_type_int)
-                sec_code = get_security_code(market_type, stock_code)
+                exchange = market_to_exchange(market_type_int)
+                inst = Instrument(exchange, InstrumentType.Unknown, stock_code)
+                sec_code = inst.symbol()
             except Exception:
                 # Fallback
                 sec_code = stock_code
@@ -257,7 +254,9 @@ def stock_warning(security_code: str, page_number: int) -> Tuple[RawWarning, Opt
     """
     StockWarning - 安全版本
     """
-    _, flag, pure_code = exchange.detect_market(security_code)
+    inst = detect_symbol(security_code)
+    flag = inst.exchange.identifier
+    pure_code = inst.ticker
     flag = flag.upper()
     
     params = {
@@ -375,7 +374,7 @@ def notice_date_for_report(code: str, date: str) -> Tuple[str, str]:
 
 def get_one_notice(security_code: str, current_date: str) -> CompanyNotice:
     notice = CompanyNotice()
-    if not exchange.assert_stock_by_security_code(security_code):
+    if not assert_stock_by_security_code(security_code):
         return notice
         
     try:
@@ -455,4 +454,23 @@ def get_one_notice(security_code: str, current_date: str) -> CompanyNotice:
         notice.risk_keywords = tmp_notice.keywords
         
     return notice
+
+
+if __name__ == "__main__":
+    # 测试获取个股公告
+    code = "sh600000"
+    date = "2025-06-09"
+    print(f"=== 测试 stock_notices({code}, {date}) ===")
+    notices, pages, err = stock_notices(code, date)
+    if err:
+        print(f"  错误: {err.message}")
+    else:
+        print(f"  共 {len(notices)} 条公告, {pages} 页")
+        for n in notices[:3]:
+            print(f"  [{n.notice_date}] {n.title[:50]}...")
+
+    print(f"\n=== 测试 get_one_notice({code}, {date}) ===")
+    notice = get_one_notice(code, date)
+    print(f"  increase={notice.increase}, reduce={notice.reduce}, risk={notice.risk}")
+    print(f"  keywords={notice.risk_keywords[:100] if notice.risk_keywords else '无'}")
 

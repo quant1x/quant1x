@@ -1,5 +1,5 @@
 #include <quant1x/test/test.h>
-#include <quant1x/market/instruments.h>
+#include <quant1x/data/market/instruments.h>
 
 TEST_CASE("parse-datetime", "[chrono]") {
     SECTION("date") {

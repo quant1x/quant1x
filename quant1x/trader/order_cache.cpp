@@ -1,7 +1,7 @@
 #include <quant1x/trader/order_cache.h>
 #include <quant1x/trader/order.h>
 
-#include <quant1x/market/instruments.h>
+#include <quant1x/data/market/instruments.h>
 #include <quant1x/encoding/csv.h>
 
 namespace trader {

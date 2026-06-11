@@ -3,7 +3,7 @@
 #define QUANT1X_DATA_XDXR_H 1
 
 #include "base.h"
-#include <quant1x/level1/client.h>
+#include <quant1x/contrib/data/tdx/client.h>
 
 namespace factors {
     struct CumulativeAdjustment;

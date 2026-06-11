@@ -1,7 +1,8 @@
 use crate::data::{KLine, KLineRaw, load_xdxr};
-use crate::data::market::correct_security_code;
+use crate::data::market::{correct_security_code, detect_symbol};
+use crate::data::meta::instrument::Instrument;
 use crate::data::meta::Timestamp;
-use crate::level1::XdxrInfo;
+use crate::contrib::data::tdx::standard::XdxrInfo;
 use chrono::{Datelike, NaiveDate};
 use std::cmp::Ordering;
 
@@ -261,27 +262,61 @@ pub fn calculate_pre_adjust(klines: &mut Vec<KLine>, xdxr_list: &[XdxrInfo]) {
     apply_forward_adjustment_incrementally(klines, xdxr_list, &start_ts, &end_ts, true);
 }
 
-pub fn get_cross_section_forward_adjusted_klines(security_code: &str, as_of_date: &str) -> Vec<KLine> {
-    let _corrected_code = correct_security_code(security_code);
+pub fn get_cross_section_forward_adjusted_klines(
+    inst: &Instrument,
+    as_of_date: &str,
+) -> Vec<KLine> {
     let ts = Timestamp::parse(as_of_date).unwrap_or_else(|_| Timestamp::now());
     let fixed_date = ts.only_date();
 
-    // TODO: Implement actual data loading
-    // For now, return empty vector to make it compile
-    let raw_klines: Vec<KLineRaw> = Vec::new();
+    log::debug!(
+        "Getting forward adjusted klines for instrument: {} as of {}",
+        inst.symbol(),
+        as_of_date
+    );
+
+    // 对齐 Python: raw_klines = checkout_kline_raw(inst)
+    let raw_klines = crate::contrib::data::tdx::kline_raw::checkout_kline_raw(inst);
 
     if raw_klines.is_empty() {
         return Vec::new();
     }
 
+    // 检查是否最新数据
     let last_kline = &raw_klines[raw_klines.len() - 1];
     if last_kline.date < fixed_date {
-        // Try to reload, but for now just return what we have
+        // 数据可能太旧，但 checkout_kline_raw 已经尝试更新过了
+        // 如果还是旧数据，说明服务器也没有更新
     }
 
+    // 对齐数据缓存的日期，过滤可能存在停牌没有数据的情况
     let offset = check_kline_offset(&raw_klines, &fixed_date);
     if offset < 0 {
-        return Vec::new();
+        // A股没有找到目标日期的数据，返回空
+        if inst.exchange == crate::data::meta::exchange::Exchange::SSE
+            || inst.exchange == crate::data::meta::exchange::Exchange::SZSE
+            || inst.exchange == crate::data::meta::exchange::Exchange::BSE
+        {
+            return Vec::new();
+        }
+        // 非A股，获取全部数据
+        let klines: Vec<KLine> = raw_klines
+            .iter()
+            .map(|raw_kline| KLine {
+                date: raw_kline.date.clone(),
+                open: raw_kline.open,
+                close: raw_kline.close,
+                high: raw_kline.high,
+                low: raw_kline.low,
+                volume: raw_kline.volume,
+                amount: raw_kline.amount,
+                up: raw_kline.up,
+                down: raw_kline.down,
+                datetime: raw_kline.datetime.clone(),
+                adjustment_count: 0,
+            })
+            .collect();
+        return klines;
     }
 
     let fixed_count = raw_klines.len() - offset as usize;
@@ -308,10 +343,12 @@ pub fn get_cross_section_forward_adjusted_klines(security_code: &str, as_of_date
         })
         .collect();
 
-    // TODO: Load XDXR data
-    let xdxr_list: Vec<XdxrInfo> = Vec::new();
+    // 加载 XDXR 数据（先检查是否需要更新）
+    let symbol = inst.symbol();
+    // 调用 get_xdxr_list 检查并更新，然后加载
+    let xdxr_list = crate::data::xdxr::load_xdxr(&symbol);
 
-    // Sort xdxr_list by date (already sorted if loaded properly)
+    // 排序 XDXR 列表
     let mut xdxr_list = xdxr_list;
     xdxr_list.sort_by(|a, b| {
         let date_a = NaiveDate::parse_from_str(&a.date, DATE_LAYOUT)
@@ -327,15 +364,39 @@ pub fn get_cross_section_forward_adjusted_klines(security_code: &str, as_of_date
         let end_date = NaiveDate::parse_from_str(&klines[klines.len() - 1].date, DATE_LAYOUT)
             .unwrap_or_else(|_| NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
 
-        let start_ts = Timestamp::pre_market_time(start_date.year(), start_date.month() as u32, start_date.day())
-            .unwrap_or_else(|| Timestamp::now());
-        let end_ts = Timestamp::pre_market_time(end_date.year(), end_date.month() as u32, end_date.day())
-            .unwrap_or_else(|| Timestamp::now());
+        let start_ts = Timestamp::pre_market_time(
+            start_date.year(),
+            start_date.month() as u32,
+            start_date.day(),
+        )
+        .unwrap_or_else(|| Timestamp::now());
+        let end_ts = Timestamp::pre_market_time(
+            end_date.year(),
+            end_date.month() as u32,
+            end_date.day(),
+        )
+        .unwrap_or_else(|| Timestamp::now());
 
         apply_forward_adjustment_incrementally(&mut klines, &xdxr_list, &start_ts, &end_ts, true);
     }
 
     klines
+}
+
+/// 兼容旧接口：通过字符串代码调用
+pub fn get_cross_section_forward_adjusted_klines_by_code(
+    security_code: &str,
+    as_of_date: &str,
+) -> Vec<KLine> {
+    let inst = detect_symbol(security_code);
+    if !inst.can_construct_symbol() {
+        log::warn!(
+            "get_cross_section_forward_adjusted_klines: cannot detect symbol for {}",
+            security_code
+        );
+        return Vec::new();
+    }
+    get_cross_section_forward_adjusted_klines(&inst, as_of_date)
 }
 
 #[cfg(test)]
@@ -418,7 +479,7 @@ mod tests {
     #[test]
     fn test_get_cross_section_forward_adjusted_klines() {
         // This test requires actual data, so we'll just test that it doesn't panic
-        let result = get_cross_section_forward_adjusted_klines("sh600000", "2024-12-26");
+        let result = get_cross_section_forward_adjusted_klines_by_code("sh600000", "2024-12-26");
         // The result may be empty if no data is available, but it shouldn't panic
         assert!(result.is_empty() || !result.is_empty());
     }
@@ -444,7 +505,7 @@ mod tests {
         println!("datasets.kline cache date range: {} to {}", first_cached_date, last_cached_date);
 
         // Use get_cross_section_forward_adjusted_klines to get adjusted data for the same date range
-        let adjusted_klines = get_cross_section_forward_adjusted_klines(code, last_cached_date);
+        let adjusted_klines = get_cross_section_forward_adjusted_klines_by_code(code, last_cached_date);
 
         if adjusted_klines.is_empty() {
             panic!("get_cross_section_forward_adjusted_klines returned empty data");

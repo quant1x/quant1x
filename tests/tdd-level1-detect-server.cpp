@@ -1,7 +1,7 @@
-#include <quant1x/level1/config.h>
+#include <quant1x/contrib/data/tdx/level1/config.h>
 #include <quant1x/test/test.h>
 
-#include "quant1x/level1/client.h"
+#include "quant1x/contrib/data/tdx/client.h"
 
 TEST_CASE("detect", "[level1]") {
     auto list = level1::detect();

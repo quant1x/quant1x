@@ -3,7 +3,7 @@
 #include <quant1x/std/util.h>
 #include <quant1x/std/filesystem.h>
 #include <quant1x/config/base.h>
-#include <quant1x/market/instruments.h>
+#include <quant1x/data/market/instruments.h>
 #include <quant1x/encoding/yaml.h>
 
 #include <algorithm>

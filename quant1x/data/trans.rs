@@ -1,7 +1,8 @@
-use crate::level1::protocol;
-use crate::level1::transaction_data::{TickTransaction, TransactionRequest, TransactionResponse};
-use crate::level1::{self};
-use crate::Timestamp;
+use crate::data::meta::instrument::Instrument;
+use crate::contrib::data::tdx::standard::protocol;
+use crate::contrib::data::tdx::standard::transaction_data::{TickTransaction, TransactionRequest, TransactionResponse};
+use crate::contrib::data::tdx::standard::{self};
+use crate::meta::Timestamp;
 use std::sync::Arc;
 
 
@@ -32,14 +33,14 @@ impl crate::data::Schema for DataTrans {
 }
 
 impl crate::data::DataAdapter for DataTrans {
-    fn print(&self, _code: &str, _dates: &[Timestamp]) {}
+    fn print(&self, _inst: &Instrument, _dates: &[Timestamp]) {}
 
-    fn update(&self, code: &str, date: Timestamp) {
-        // 遵循 C++ CheckoutTransactionData 的行为：读取缓存并分页增量拉取
-        let corrected = crate::data::market::correct_security_code(code);
+    fn update(&self, inst: &Instrument, date: Timestamp) {
+        let symbol = inst.symbol();
+        // 对齐 Python: 文件路径为 trans/{cache_dir}/{year}/{yyyymmdd}/{symbol}.csv
         let mut path = std::path::PathBuf::from(crate::config::default_cache_path());
         path.push("trans");
-        // 使用按年/日期目录的组织方式：trans/YYYY/YYYY-MM-DD/<code>.csv
+        path.push(inst.cache_dir());
         let date_str = date.only_date();
         let year = if date_str.len() >= 4 {
             &date_str[..4]
@@ -52,7 +53,7 @@ impl crate::data::DataAdapter for DataTrans {
             log::error!("[DataTrans] create_dir_all failed: {}", e);
             return;
         }
-        path.push(format!("{}.csv", corrected));
+        path.push(format!("{}.csv", symbol));
         let filename = path.to_string_lossy().to_string();
 
         // 如果存在则尝试读取已有缓存(容错处理, 读取失败视为空)
@@ -124,7 +125,7 @@ impl crate::data::DataAdapter for DataTrans {
         }
 
         let today_is_last =
-            date.is_same_date(&crate::exchange::last_trading_day(crate::Timestamp::now()));
+            date.is_same_date(&crate::meta::last_trading_day(crate::meta::Timestamp::now()));
 
         let mut start: u16 = 0;
         let mut history: Vec<TickTransaction> = Vec::new();
@@ -135,7 +136,7 @@ impl crate::data::DataAdapter for DataTrans {
             start: u16,
             count: u16,
         ) -> Option<TransactionResponse> {
-            match crate::level1::get_std_conn() {
+            match crate::contrib::data::tdx::client::get_std_conn() {
                 Ok(mut pooled) => {
                     let mut request = TransactionRequest::new(security_code, start, count);
                     let mut response = TransactionResponse::new_from_request(&request);
@@ -165,7 +166,7 @@ impl crate::data::DataAdapter for DataTrans {
         if today_is_last {
             // 拉取当日实时成交分页数据
             loop {
-                match fetch_transaction_page(&corrected, start, level1::transaction_data::TICK_TRANSACTION_PER_REQUEST_MAX) {
+                match fetch_transaction_page(&symbol, start, standard::transaction_data::TICK_TRANSACTION_PER_REQUEST_MAX) {
                     Some(mut resp) => {
                         if resp.count == 0 || resp.list.is_empty() {
                             break;
@@ -183,10 +184,10 @@ impl crate::data::DataAdapter for DataTrans {
                         if size > 0 {
                             hs.push(tmp);
                         }
-                        if (size as u16) < level1::transaction_data::TICK_TRANSACTION_PER_REQUEST_MAX {
+                        if (size as u16) < standard::transaction_data::TICK_TRANSACTION_PER_REQUEST_MAX {
                             break;
                         }
-                        start = start.wrapping_add(level1::transaction_data::TICK_TRANSACTION_PER_REQUEST_MAX);
+                        start = start.wrapping_add(standard::transaction_data::TICK_TRANSACTION_PER_REQUEST_MAX);
                     }
                     None => {
                         break;
@@ -197,11 +198,11 @@ impl crate::data::DataAdapter for DataTrans {
             // 获取历史成交数据页
             // 拉取历史成交分页数据
             loop {
-                match crate::level1::transaction_history::fetch_history_transactions(
-                    &corrected,
+                match crate::contrib::data::tdx::standard::transaction_history::fetch_history_transactions(
+                    &symbol,
                     date.yyyymmdd(),
                     start,
-                    level1::transaction_data::TICK_TRANSACTION_PER_REQUEST_MAX,
+                    standard::transaction_data::TICK_TRANSACTION_PER_REQUEST_MAX,
                 ) {
                     Some(mut resp) => {
                         if resp.count == 0 || resp.list.is_empty() {
@@ -219,10 +220,10 @@ impl crate::data::DataAdapter for DataTrans {
                         if size > 0 {
                             hs.push(tmp);
                         }
-                        if (size as u16) < level1::transaction_data::TICK_TRANSACTION_PER_REQUEST_MAX {
+                        if (size as u16) < standard::transaction_data::TICK_TRANSACTION_PER_REQUEST_MAX {
                             break;
                         }
-                        start = start.wrapping_add(level1::transaction_data::TICK_TRANSACTION_PER_REQUEST_MAX);
+                        start = start.wrapping_add(standard::transaction_data::TICK_TRANSACTION_PER_REQUEST_MAX);
                     }
                     None => {
                         break;

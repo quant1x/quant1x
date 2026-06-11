@@ -78,6 +78,62 @@ impl InstrumentType {
     pub fn is_index(self) -> bool {
         self.base_type() == Self::INDEX
     }
+
+    /// 从字符串解析 InstrumentType
+    pub fn from_string(s: &str) -> Self {
+        match s.to_lowercase().as_str() {
+            "index" | "指数" => Self::INDEX,
+            "stock" | "股票" => Self::STOCK,
+            "fund" | "基金" => Self::FUND,
+            "bond" | "债券" => Self::BOND,
+            "forex" | "外汇" => Self::FOREX,
+            "commodity" | "商品" => Self::COMMODITY,
+            "future" | "期货" => Self::FUTURE,
+            "option" | "期权" => Self::OPTION,
+            "warrant" | "权证" => Self::WARRANT,
+            "macro" | "宏观" => Self::MACRO,
+            "bstock" | "b股" => Self::BSTOCK,
+            "hstock" | "h股" => Self::HSTOCK,
+            "ipo" | "新股" => Self::IPO,
+            "chinext" | "创业板" => Self::CHINEXT_MARKET,
+            "star" | "科创板" => Self::STAR_MARKET,
+            "gem" | "创业板港股" => Self::GEM_MARKET,
+            "etf" => Self::ETF,
+            "lof" => Self::LOF,
+            "open_ended" | "开放式基金" => Self::OPEN_ENDED_FUND,
+            "money" | "货币基金" => Self::MONEY_FUND,
+            "sector" | "板块" => Self::SECTOR,
+            "neeq" | "新三板" => Self::NEEQ,
+            _ => Self::UNKNOWN,
+        }
+    }
+
+    /// 转换为字符串表示
+    pub fn to_string(self) -> String {
+        match self {
+            Self::INDEX => "index".to_string(),
+            Self::STOCK => "stock".to_string(),
+            Self::FUND => "fund".to_string(),
+            Self::BOND => "bond".to_string(),
+            Self::FOREX => "forex".to_string(),
+            Self::COMMODITY => "commodity".to_string(),
+            Self::FUTURE => "future".to_string(),
+            Self::OPTION => "option".to_string(),
+            Self::WARRANT => "warrant".to_string(),
+            Self::MACRO => "macro".to_string(),
+            Self::ETF => "etf".to_string(),
+            Self::LOF => "lof".to_string(),
+            Self::BSTOCK => "bstock".to_string(),
+            Self::HSTOCK => "hstock".to_string(),
+            Self::IPO => "ipo".to_string(),
+            Self::CHINEXT_MARKET => "chinext".to_string(),
+            Self::STAR_MARKET => "star".to_string(),
+            Self::GEM_MARKET => "gem".to_string(),
+            Self::SECTOR => "sector".to_string(),
+            Self::NEEQ => "neeq".to_string(),
+            _ => "unknown".to_string(),
+        }
+    }
 }
 
 /// 证券信息结构体，与 Python data/meta/instrument.py 的 Instrument dataclass 对齐
@@ -156,6 +212,12 @@ impl Instrument {
         } else {
             &self.alias_ticker
         }
+    }
+
+    /// 获取缓存目录路径，用于存储交易所相关数据文件
+    /// 与 Python cache_dir() 对齐: 返回 exchange.name 小写
+    pub fn cache_dir(&self) -> String {
+        format!("{:?}", self.exchange).to_lowercase()
     }
 }
 

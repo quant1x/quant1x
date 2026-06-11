@@ -7,11 +7,11 @@ import (
 	"testing"
 
 	"gitee.com/quant1x/num"
+	_ "gitee.com/quant1x/quant1x/quant1x/contrib/data/tdx"
 	"gitee.com/quant1x/quant1x/quant1x/data"
-	_ "gitee.com/quant1x/quant1x/quant1x/data/provider"
 	"gitee.com/quant1x/quant1x/quant1x/exchange"
 	"gitee.com/quant1x/quant1x/quant1x/learn/preprocessing"
-	"gitee.com/quant1x/quant1x/quant1x/markets"
+	"gitee.com/quant1x/quant1x/quant1x/market"
 )
 
 func TestDBSCAN_Basic(t *testing.T) {
@@ -125,7 +125,7 @@ func TestDBSCAN_TickData(t *testing.T) {
 	//date = "2026-01-15"
 	D := data.DataHandler()
 	securityCode := exchange.CorrectSecurityCode(code)
-	securityName := markets.GetStockName(securityCode)
+	securityName := market.GetStockName(securityCode)
 	fmt.Printf("%s(%s) - %s\n", securityName, securityCode, date)
 	ticks, err := D.GetTradeDetails(securityCode, date)
 	if len(ticks) == 0 || err != nil {

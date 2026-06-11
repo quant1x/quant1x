@@ -5,8 +5,9 @@
 import os
 import json
 import pandas as pd
-from .. import exchange, config
-
+from ..config import config
+from .meta.calendar import last_trading_day
+from . import market
 # SectorFilename 板块缓存文件名
 def sector_filename(date: str = '') -> str:
     """
@@ -15,7 +16,7 @@ def sector_filename(date: str = '') -> str:
     name = 'blocks'
     cache_date = date.strip()
     if len(cache_date) == 0:
-        cache_date = exchange.last_trade_date()
+        cache_date = last_trading_day()
     filename = os.path.join(config.meta_path, f'{name}.{cache_date}')
     if not os.path.isfile(filename):
         # fallback to blocks.csv
@@ -61,7 +62,7 @@ def get_sector_constituents(code: str) -> list[str]:
     获取板块成分股列表
     """
     code = code.strip()
-    security_code = exchange.correct_security_code(code)
+    security_code = market.correct_security_code(code)
     df = get_sector_list().copy()
     cs = df[df['code'] == security_code]['constituent_stocks']
     list = []
@@ -72,6 +73,6 @@ def get_sector_constituents(code: str) -> list[str]:
     list = []
     for sc in ConstituentStocks:
         sc = sc.strip()
-        sc = exchange.correct_security_code(sc)
+        sc = market.correct_security_code(sc)
         list.append(sc)
     return list

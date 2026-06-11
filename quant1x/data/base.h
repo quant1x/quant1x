@@ -3,7 +3,7 @@
 #define QUANT1X_DATASETS_BASE_H 1
 
 #include "adapter.h"
-#include <quant1x/exchange/code.h>
+#include <quant1x/data/exchange/code.h>
 
 namespace data {
     constexpr data::Kind baseKind = 0;

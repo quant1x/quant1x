@@ -9,7 +9,7 @@ import tempfile
 from quant1x.data import trans
 from quant1x.level1.client import init_std_pool
 from quant1x.config import config
-from quant1x.exchange import Timestamp
+from quant1x.data.meta import Timestamp
 
 class TestTransReal(unittest.TestCase):
     def setUp(self):

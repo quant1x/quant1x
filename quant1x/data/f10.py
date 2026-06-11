@@ -7,7 +7,9 @@ from functools import lru_cache
 from typing import Dict, Any
 import pandas as pd
 from pandas import DataFrame
-from .. import exchange, config
+
+from . import exchange
+from .. import config
 
 @lru_cache(maxsize=None)
 def cache_f10(date: str = None) -> DataFrame:

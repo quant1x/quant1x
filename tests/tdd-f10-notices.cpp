@@ -10,7 +10,7 @@
 #include <tuple>
 #include <sstream>
 #include <iomanip>
-#include <quant1x/market/instruments.h>
+#include <quant1x/data/market/instruments.h>
 #include <quant1x/factors/financial_report.h>
 #include <quant1x/factors/notice.h>
 #include <quant1x/encoding/csv.h>

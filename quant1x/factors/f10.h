@@ -3,7 +3,7 @@
 #define QUANT1X_FACTOR_F10_H 1
 
 #include "quant1x/data/adapter.h"
-#include "quant1x/exchange/calendar.h"
+#include "quant1x/data/exchange/calendar.h"
 #include "quant1x/std/numeric.h"
 
 namespace factors {

@@ -1,5 +1,5 @@
 #include <quant1x/test/test.h>
-#include <quant1x/exchange/margin_trading.h>
+#include <quant1x/data/exchange/margin_trading.h>
 #include <quant1x/runtime/core.h>
 
 TEST_CASE("check-target-is-margin-trading", "[f10]") {

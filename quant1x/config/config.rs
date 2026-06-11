@@ -135,33 +135,55 @@ pub fn get_xdxr_filename(code: &str) -> String {
 }
 
 /// Return the full filename for a day KLine cache file for `code`.
-/// Mirrors C++ config::get_kline_filename(code, forward)
+/// DEPRECATED: Use the Instrument-based path generation in kline.rs instead.
+/// Kept for backward compatibility with old callers.
 pub fn get_kline_filename(code: &str, forward: bool) -> String {
-    // Expecting code like "600000.SZ" (length 8) as in C++ implementation
-    if code.len() != 8 {
-        log::error!("invalid security code length (expected 8): {}", code);
-        return String::new();
+    // 兼容旧格式：code 如 "sh600000" (长度可能不是8)
+    // 对于 Instrument 格式，使用 detect_symbol 解析后按新规则生成路径
+    let inst = crate::data::market::detect_symbol(code);
+    if !inst.can_construct_symbol() {
+        // 回退到旧逻辑
+        if code.len() < 3 {
+            log::error!("invalid security code: {}", code);
+            return String::new();
+        }
+        let sub = &code[..code.len() - 3];
+        let mut path = std::path::PathBuf::from(get_day_path());
+        path.push(sub);
+        let ext = if forward { "csv" } else { "raw" };
+        path.push(format!("{}.{}", code, ext));
+        return path.to_string_lossy().to_string();
     }
-    let sub = &code[..code.len() - 3];
-    let mut path = std::path::PathBuf::from(get_day_path());
-    path.push(sub);
+    let symbol = inst.symbol();
+    let sub = format!("day/{}", inst.cache_dir());
+    let mut path = std::path::PathBuf::from(default_cache_path());
+    path.push(&sub);
     let ext = if forward { "csv" } else { "raw" };
-    path.push(format!("{}.{}", code, ext));
+    path.push(format!("{}.{}", symbol, ext));
     path.to_string_lossy().to_string()
 }
 
 /// Return the full filename for a kline cache file for a specific frequency.
-/// Mirrors C++ get_kline_filename_ex(code, freq) which places files under <cache>/<freq>/<subpath>/<code>.csv
+/// DEPRECATED: Use the Instrument-based path generation in kline_minute.rs instead.
 pub fn get_kline_filename_ex(code: &str, freq: &str) -> String {
-    if code.len() != 8 {
-        log::error!("invalid security code length (expected 8): {}", code);
-        return String::new();
+    let inst = crate::data::market::detect_symbol(code);
+    if !inst.can_construct_symbol() {
+        // 回退到旧逻辑
+        if code.len() < 3 {
+            log::error!("invalid security code: {}", code);
+            return String::new();
+        }
+        let mut path = std::path::PathBuf::from(get_kline_path(freq));
+        let sub = &code[..code.len() - 3];
+        path.push(sub);
+        path.push(format!("{}.csv", code));
+        return path.to_string_lossy().to_string();
     }
-    let mut path = std::path::PathBuf::from(get_kline_path(freq));
-    let sub = &code[..code.len() - 3];
-    path.push(sub);
-    path.push(format!("{}.csv", code));
-    //print!("{}", path.to_string_lossy().to_string());
+    let symbol = inst.symbol();
+    let sub = format!("{}/{}", freq, inst.cache_dir());
+    let mut path = std::path::PathBuf::from(default_cache_path());
+    path.push(&sub);
+    path.push(format!("{}.csv", symbol));
     path.to_string_lossy().to_string()
 }
 
@@ -270,14 +292,14 @@ pub fn get_concurrency_for(key: &str) -> usize {
             if let Some(map) = typed.concurrency {
                 if let Some(v) = map.get(key) {
                     let mut result = std::cmp::min(*v as usize, 8);
-                    if let Some(max) = crate::level1::pool_max_connections() {
+                    if let Some(max) = crate::contrib::data::tdx::client::pool_max_connections() {
                         result = std::cmp::min(result, max);
                     }
                     return result;
                 }
                 if let Some(v) = map.get("default") {
                     let mut result = std::cmp::min(*v as usize, 8);
-                    if let Some(max) = crate::level1::pool_max_connections() {
+                    if let Some(max) = crate::contrib::data::tdx::client::pool_max_connections() {
                         result = std::cmp::min(result, max);
                     }
                     return result;
@@ -291,7 +313,7 @@ pub fn get_concurrency_for(key: &str) -> usize {
         .map(|n| n.get())
         .unwrap_or(4);
     let mut result = std::cmp::min(default, 8);
-    if let Some(max) = crate::level1::pool_max_connections() {
+    if let Some(max) = crate::contrib::data::tdx::client::pool_max_connections() {
         result = std::cmp::min(result, max);
     }
     result

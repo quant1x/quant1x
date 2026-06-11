@@ -9,8 +9,8 @@ from typing import List, Optional
 
 from quant1x.level1 import protocol, xdxr_info
 from quant1x.level1.client import get_std_conn
-from quant1x.exchange import code as exchange_code
-from quant1x.exchange import Timestamp
+from quant1x.data.market import correct_security_code
+from quant1x.data.meta.timestamp import Timestamp
 from quant1x.config import config
 from . import adapter
 from .adapter import DataAdapter, DEFAULT_DATA_PROVIDER
@@ -50,7 +50,7 @@ def load_xdxr(code: str) -> List[xdxr_info.XdxrInfo]:
     return result
 
 def save_xdxr(code: str, date: Timestamp, values: List[xdxr_info.XdxrInfo]):
-    security_code = exchange_code.correct_security_code(code)
+    security_code = correct_security_code(code)
     # date is ignored as in C++ implementation
     
     filename = config.get_xdxr_filename(security_code)

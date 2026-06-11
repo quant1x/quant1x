@@ -3,7 +3,7 @@
 # Licensed under the MIT License.
 
 from quant1x import config
-from quant1x.market.blocks import parse_raw_block_file, get_sector_filename
+from quant1x.data.market.blocks import parse_raw_block_file, get_sector_filename
 import os, json, datetime
 meta = config.meta_path
 print('meta_path ->', meta)
@@ -51,7 +51,7 @@ if os.path.exists(bf):
 print('\nDone')
 
 # Extra diagnostics: attempt to run generator and show mappings
-from quant1x.market.blocks import parse_and_generate_block_file
+from quant1x.data.market.blocks import parse_and_generate_block_file
 print('\n== run parse_and_generate_block_file()')
 res = parse_and_generate_block_file()
 print('  result ->', res)

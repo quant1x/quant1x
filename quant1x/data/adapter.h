@@ -3,7 +3,7 @@
 #define QUANT1X_DATA_ADAPTER_H 1
 
 #include <quant1x/std/api.h>
-#include <quant1x/exchange/timestamp.h>
+#include <quant1x/data/exchange/timestamp.h>
 #include <vector>
 #include <string>
 #include <cstdint>

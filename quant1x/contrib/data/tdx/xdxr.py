@@ -161,7 +161,7 @@ def update_xdxr_from_ext_0x24b9(inst: Instrument):
         logger.exception(f"[dataset::xdxr] update failed")
 
 def update_xdxr_from_ext_7615(inst: Instrument):
-    from .level1.f10 import get_ext_xdxr_info
+    from .level1.hk_f10 import get_ext_xdxr_info
     try:
         rows = get_ext_xdxr_info(inst=inst)
         save_xdxr(inst, rows)

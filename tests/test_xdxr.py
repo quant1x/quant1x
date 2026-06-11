@@ -10,7 +10,7 @@ import tempfile
 import quant1x.data.xdxr as xdxr_module
 from quant1x.level1 import xdxr_info
 from quant1x.config import config
-from quant1x.exchange import Timestamp
+from quant1x.data.meta import Timestamp
 
 class TestXdxr(unittest.TestCase):
     def setUp(self):

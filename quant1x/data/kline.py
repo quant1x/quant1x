@@ -8,13 +8,14 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Any
 import logging
 
-from quant1x.exchange import Timestamp
+from quant1x.data.meta.timestamp import Timestamp
 from quant1x.level1 import protocol
 from quant1x.level1.client import get_std_conn
 from quant1x.level1.security_bars import SecurityBarsRequest, SecurityBarsResponse, KLineType, SecurityBar, SECURITY_BARS_MAX
 # from quant1x.factors import base as factors  # 延迟导入以避免循环导入
 from quant1x.level1.xdxr_info import XdxrInfo
-import quant1x.data.xdxr as xdxr_module
+from quant1x.data.market import detect_symbol
+import quant1x.contrib.data.tdx.xdxr as xdxr_module
 from quant1x.config import config
 from quant1x.data import adapter
 from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASEDATA, register, DEFAULT_DATA_PROVIDER
@@ -301,7 +302,7 @@ class DataKLine(DataAdapter):
                 
         # 6. Adjustment logic
         is_fresh_fetch_require_adjustment = (adjust_times == 1)
-        dividends = xdxr_module.load_xdxr(code)
+        dividends = xdxr_module.load_xdxr(detect_symbol(code))
         
         if is_fresh_fetch_require_adjustment:
             apply_forward_adjustment_for_event(incremental_klines, current_start_date, dividends)
