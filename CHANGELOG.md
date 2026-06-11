@@ -3,10 +3,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.18] - 2026-06-11
+### Changed
+- python: 恢复港股F10的接口
+- 调整包路径
+
 ## [0.7.17] - 2026-06-09
 ### Changed
 - python: 删除废弃的market代码
 - refactor: restructure data/meta module with exchange, instrument, region, ticker_rules and timestamp
+- update changelog
 
 ## [0.7.16] - 2026-06-09
 ### Changed
@@ -1593,7 +1599,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.17...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.18...HEAD
+[0.7.18]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.17...v0.7.18
 [0.7.17]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.16...v0.7.17
 [0.7.16]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.15...v0.7.16
 [0.7.15]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.14...v0.7.15
