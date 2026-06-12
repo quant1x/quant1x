@@ -335,7 +335,7 @@ fn fetch_kline_raw_from_std(
 ) -> Option<SecurityBarsResponse> {
     let symbol = inst.symbol();
     // 调用已有的数据层接口（内部使用 level1 连接池，但作为数据层接口调用是允许的）
-    let resp = crate::data::kline_raw::fetch_kline(&symbol, start, count, crate::contrib::data::tdx::standard::KLineType::RiK)?;
+    let resp = crate::data::kline_raw::fetch_kline(&symbol, start, count, crate::contrib::data::tdx::level1::std::KLineType::RiK)?;
     Some(SecurityBarsResponse {
         count: resp.count,
         list: resp.list.iter().map(|b| SecurityBar {
@@ -347,7 +347,7 @@ fn fetch_kline_raw_from_std(
             up_count: b.up_count as i32, down_count: b.down_count as i32,
         }).collect(),
         is_index: resp.is_index,
-        category: resp.category,
+        category: 0, // SecurityBarsRequest no longer carries category; use default
     })
 }
 

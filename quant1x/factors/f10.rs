@@ -7,7 +7,7 @@ use crate::factors::financial_report;
 use crate::factors::notice;
 use crate::factors::safety_score;
 use crate::factors::share_holder;
-use crate::contrib::data::tdx::standard;
+use crate::contrib::data::tdx::level1;
 use crate::std::numeric;
 use serde::{Deserialize, Serialize};
 
@@ -158,12 +158,11 @@ fn get_finance_info(security_code: &str, feature_date: &str) -> (f64, f64, Strin
 
     // Try to fetch from level1
     if let Ok(mut conn) = crate::contrib::data::tdx::client::get_std_conn() {
-        let mut request = standard::FinanceInfoRequest::new(security_code);
-        let mut response = standard::FinanceInfoResponse::new();
+        let mut msg = level1::FinanceInfoRequest::new(security_code);
 
         // Use stream() to get the stream
-        if let Ok(_) = standard::process(conn.stream(), &mut request, &mut response) {
-            let info = response.info;
+        if let Ok(_) = crate::contrib::data::tdx::protocol::process_level1_stream(conn.stream(), &mut msg) {
+            let info = msg.info;
             // Check if response is valid (assuming non-zero capital means valid)
             if info.liu_tong_gu_ben > 0.0 && info.zong_gu_ben > 0.0 {
                 capital = info.liu_tong_gu_ben;

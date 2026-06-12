@@ -9,17 +9,25 @@ pub mod hello;
 pub mod heartbeat;
 pub mod kline;
 pub mod security_count;
+pub mod security_list;
 pub mod block_meta;
 pub mod minute_time;
 pub mod security_quote;
 pub mod company;
+pub mod security_bars;
+pub mod finance_info;
+pub mod xdxr;
 
 // 重新导出常用类型
 pub use hello::{Hello1Request, Hello2Request};
 pub use heartbeat::HeartbeatRequest;
 pub use kline::KLineType;
 pub use security_count::{SecurityCountRequest, fetch_security_count};
+pub use security_list::{SecurityListRequest, Security, PRE_REQUEST_MAX as SECURITY_LIST_PRE_REQUEST_MAX, fetch_security_list};
 pub use block_meta::{BlockMetaRequest, BlockMeta, BLOCK_ZHISHU, BLOCK_FENGGE, BLOCK_GAINIAN, BLOCK_DEFAULT};
 pub use minute_time::{HistoryMinuteTimeRequest, MinuteTime, fetch_history_minute_time};
 pub use security_quote::{SecurityQuoteRequest, SecurityQuoteData, StockInfo, TradeState};
 pub use company::{CompanyCategoryRequest, CompanyContentRequest};
+pub use security_bars::{SecurityBarsRequest, SecurityBarsResponse, SecurityBar};
+pub use finance_info::{FinanceInfoRequest, FinanceInfoResponse, FinanceInfo, fetch_finance_info};
+pub use xdxr::{XdxrRequest, XdxrBatchRequest, fetch_xdxr, fetch_xdxr_batch};

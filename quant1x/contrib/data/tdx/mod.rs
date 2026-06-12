@@ -2,8 +2,8 @@ pub mod helpers;
 pub use helpers::*;
 pub mod command;
 pub use command::*;
-pub mod config;
-pub use config::*;
+pub mod _config;
+pub use _config::*;
 pub mod protocol;
 pub use protocol::*;
 pub mod client;
@@ -22,5 +22,4 @@ pub mod trans;
 pub use trans::*;
 pub mod sector;
 pub use sector::*;
-
 

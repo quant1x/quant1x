@@ -86,11 +86,11 @@ fn init_securities_impl() -> Result<(), Box<dyn std::error::Error>> {
             MARKET_BEIJING as u16,
         ];
         let mut all: Vec<SecurityInfo> = Vec::new();
-        let count = crate::contrib::data::tdx::standard::security_list::PRE_REQUEST_MAX;
+        let count = crate::contrib::data::tdx::level1::std::security_list::PRE_REQUEST_MAX;
         for &market in markets.iter() {
             let mut start: u32 = 0;
             loop {
-                match crate::contrib::data::tdx::standard::security_list::fetch_security_list(market as u16, start, count)
+                match crate::contrib::data::tdx::level1::std::security_list::fetch_security_list(market as u16, start, count)
                 {
                     Some(resp) => {
                         log::info!(

@@ -1,62 +1,62 @@
-use crate::data::{KLine, KLineRaw, load_xdxr};
+use crate::contrib::data::tdx::level1::std::xdxr::{XdxrInfo, XdxrInfoList, load_xdxr_list};
 use crate::data::market::{correct_security_code, detect_symbol};
 use crate::data::meta::instrument::Instrument;
 use crate::data::meta::Timestamp;
-use crate::contrib::data::tdx::standard::XdxrInfo;
+use crate::data::schema::{CumulativeAdjustment, XdxrInfo};
 use chrono::{Datelike, NaiveDate};
 use std::cmp::Ordering;
 
 const DATE_LAYOUT: &str = "%Y-%m-%d";
 
-#[derive(Debug, Clone)]
-pub struct CumulativeAdjustment {
-    pub timestamp: Timestamp,
-    pub m: f64,
-    pub a: f64,
-    pub monetary_adjustment: f64,
-    pub share_adjustment_ratio: f64,
-    pub no: i32,
-}
+// #[derive(Debug, Clone)]
+// pub struct CumulativeAdjustment {
+//     pub timestamp: Timestamp,
+//     pub m: f64,
+//     pub a: f64,
+//     pub monetary_adjustment: f64,
+//     pub share_adjustment_ratio: f64,
+//     pub no: i32,
+// }
 
-impl CumulativeAdjustment {
-    pub fn new(
-        timestamp: Timestamp,
-        m: f64,
-        a: f64,
-        monetary_adjustment: f64,
-        share_adjustment_ratio: f64,
-        no: i32,
-    ) -> Self {
-        Self {
-            timestamp,
-            m,
-            a,
-            monetary_adjustment,
-            share_adjustment_ratio,
-            no,
-        }
-    }
+// impl CumulativeAdjustment {
+//     pub fn new(
+//         timestamp: Timestamp,
+//         m: f64,
+//         a: f64,
+//         monetary_adjustment: f64,
+//         share_adjustment_ratio: f64,
+//         no: i32,
+//     ) -> Self {
+//         Self {
+//             timestamp,
+//             m,
+//             a,
+//             monetary_adjustment,
+//             share_adjustment_ratio,
+//             no,
+//         }
+//     }
 
-    pub fn to_string(&self) -> String {
-        format!(
-            "{{no={},timestamp={},m={:.6},a={:.6},monetaryAdjustment={:.6},shareAdjRatio={:.6}}}",
-            self.no,
-            self.timestamp.only_date(),
-            self.m,
-            self.a,
-            self.monetary_adjustment,
-            self.share_adjustment_ratio
-        )
-    }
-
-    pub fn apply(&self, price: f64) -> f64 {
-        price * self.m + self.a
-    }
-
-    pub fn inverse(&self, adjusted_price: f64) -> f64 {
-        (adjusted_price - self.a) / self.m
-    }
-}
+//     pub fn to_string(&self) -> String {
+//         format!(
+//             "{{no={},timestamp={},m={:.6},a={:.6},monetaryAdjustment={:.6},shareAdjRatio={:.6}}}",
+//             self.no,
+//             self.timestamp.only_date(),
+//             self.m,
+//             self.a,
+//             self.monetary_adjustment,
+//             self.share_adjustment_ratio
+//         )
+//     }
+//
+//     pub fn apply(&self, price: f64) -> f64 {
+//         price * self.m + self.a
+//     }
+//
+//     pub fn inverse(&self, adjusted_price: f64) -> f64 {
+//         (adjusted_price - self.a) / self.m
+//     }
+// }
 
 /// 检查K线数据中指定日期的偏移量
 ///
@@ -104,10 +104,10 @@ pub fn ipo_date_from_xdxrs(xdxr_list: &[XdxrInfo]) -> Option<String> {
         if v.category != 5 {
             continue;
         }
-        if v.qian_liutong == 0.0
-            && v.qian_zonggu == 0.0
-            && v.hou_liutong > 0.0
-            && v.hou_zonggu > 0.0
+        if v.qian_liu_tong == 0.0
+            && v.qian_zong_gu_ben == 0.0
+            && v.hou_liu_tong > 0.0
+            && v.hou_zong_gu_ben > 0.0
         {
             return Some(v.date.clone());
         }
@@ -137,8 +137,8 @@ pub fn combine_adjustments_in_period(
         }
 
         let (m, a) = info.adjust_factor();
-        let event_monetary_adjustment = info.monetary_factor();
-        let event_share_adjustment_ratio = info.share_ratio_factor();
+        let event_monetary_adjustment = info.compute_monetary_adjustment();
+        let event_share_adjustment_ratio = info.compute_share_adjustment_ratio();
 
         for factor in &mut result {
             factor.m *= m;
@@ -454,17 +454,20 @@ mod tests {
                 date: "2024-01-01".to_string(),
                 category: 1,
                 name: "test".to_string(),
-                fenhong: 1.0,
-                peigu_jia: 0.0,
-                songzhuan: 0.0,
-                peigu: 0.0,
-                suogu: 0.0,
-                qian_liutong: 100.0,
-                hou_liutong: 100.0,
-                qian_zonggu: 100.0,
-                hou_zonggu: 100.0,
-                fenshu: 0.0,
-                xingquan_jia: 0.0,
+                fen_hong: 1.0,
+                dividend_currency: "CNY".to_string(),
+                pei_gu_jia: 0.0,
+                rights_currency: "CNY".to_string(),
+                song_zhuan_gu: 0.0,
+                pei_gu: 0.0,
+                suo_gu: 0.0,
+                qian_liu_tong: 100.0,
+                hou_liu_tong: 100.0,
+                qian_zong_gu_ben: 100.0,
+                hou_zong_gu_ben: 100.0,
+                fen_shu: 0.0,
+                xing_quan_jia: 0.0,
+
             },
         ];
 

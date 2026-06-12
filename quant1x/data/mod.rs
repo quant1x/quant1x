@@ -4,11 +4,14 @@ pub use meta::*;
 pub mod market;
 pub use market::*;
 
-pub mod exchange;
-pub use exchange::*;
+//pub mod exchange;
+//pub use exchange::*;
 
 pub mod adapter;
 pub use adapter::*;
+
+pub mod cache;
+pub use cache::*;
 
 mod base;
 pub use base::*;
@@ -16,20 +19,12 @@ pub use base::*;
 pub mod schema;
 pub use schema::*;
 
-pub mod xdxr;
-pub use xdxr::*;
-
 pub mod datasource;
 pub use datasource::*;
 
-pub mod kline;
-pub use kline::*;
-pub mod kline_raw;
-pub use kline_raw::*;
-pub mod kline_minute;
-pub use kline_minute::*;
-pub mod trans;
-pub use trans::*;
+
+pub mod status;
+pub use status::*;
 
 // Reusable macro: apply_forward_adjustment_for_event!
 // This macro implements the forward-adjustment algorithm used by both day KLine and minute KLine
