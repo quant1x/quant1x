@@ -5,13 +5,13 @@ import (
 	"sort"
 	"strings"
 
-	"gitee.com/quant1x/quant1x/quant1x/core"
-	"gitee.com/quant1x/quant1x/quant1x/encoding"
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
-	"gitee.com/quant1x/quant1x/quant1x/level1"
-	"gitee.com/quant1x/quant1x/quant1x/log"
-	"gitee.com/quant1x/quant1x/quant1x/runtime"
-	"gitee.com/quant1x/quant1x/quant1x/std"
+	level1_std "github.com/quant1x/quant1x/quant1x/contrib/data/tdx/level1/std"
+	"github.com/quant1x/quant1x/quant1x/core"
+	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/encoding"
+	"github.com/quant1x/quant1x/quant1x/log"
+	"github.com/quant1x/quant1x/quant1x/runtime"
+	"github.com/quant1x/quant1x/quant1x/std"
 )
 
 var (
@@ -25,7 +25,7 @@ func GetSecurityFilename() string {
 }
 
 func updateSecurities(fname string) {
-	conn, release, err := level1.GetStdConnection()
+	conn, release, err := level1_std.GetStdConnection()
 	if err == nil {
 		defer release()
 		markets := []exchange.Exchange{
@@ -38,9 +38,9 @@ func updateSecurities(fname string) {
 			var codes []exchange.InstrumentInfo
 			start := 0
 			for {
-				req := level1.NewSecurityListRequest(market, start, level1.SecurityListPerRequestMax)
-				resp := &level1.SecurityListResponse{}
-				if err := level1.Process(conn, req, resp); err != nil {
+				req := level1_std.NewSecurityListRequest(market, start, level1_std.SecurityListPerRequestMax)
+				resp := &level1_std.SecurityListResponse{}
+				if err := level1_std.Process(conn, req, resp); err != nil {
 					break
 				}
 				if len(resp.List) > 0 {
@@ -59,10 +59,10 @@ func updateSecurities(fname string) {
 						codes = append(codes, si)
 					}
 				}
-				if len(resp.List) < level1.SecurityListPerRequestMax {
+				if len(resp.List) < level1_std.SecurityListPerRequestMax {
 					break
 				}
-				start += level1.SecurityListPerRequestMax
+				start += level1_std.SecurityListPerRequestMax
 			}
 			sort.Slice(codes, func(i, j int) bool {
 				return codes[i].Ticker < codes[j].Ticker

@@ -3,8 +3,8 @@ package config
 import (
 	"path/filepath"
 
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
-	"gitee.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/std"
 )
 
 // 缓存id, 由市场代码+证券代码组成

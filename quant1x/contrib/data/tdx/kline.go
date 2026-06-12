@@ -3,17 +3,17 @@ package tdx
 import (
 	"fmt"
 
-	"gitee.com/quant1x/quant1x/quant1x/config"
-	"gitee.com/quant1x/quant1x/quant1x/data"
-	"gitee.com/quant1x/quant1x/quant1x/encoding"
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
-	"gitee.com/quant1x/quant1x/quant1x/level1"
-	"gitee.com/quant1x/quant1x/quant1x/log"
+	"github.com/quant1x/quant1x/quant1x/config"
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/level1/std"
+	"github.com/quant1x/quant1x/quant1x/data"
+	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/encoding"
+	logger "github.com/quant1x/quant1x/quant1x/log"
 )
 
 // tdxFetchRawSecurityBars 执行底层 level1 SecurityBars 请求并返回原始响应列表（未转换）。
-func tdxFetchRawSecurityBars(securityCode exchange.InstrumentInfo, category level1.KLineType, start, count uint16) ([]level1.SecurityBar, error) {
-	conn, release, err := level1.GetStdConnection()
+func tdxFetchRawSecurityBars(securityCode exchange.InstrumentInfo, category std.KLineType, start, count uint16) ([]std.SecurityBar, error) {
+	conn, release, err := std.GetStdConnection()
 	if err != nil {
 		return nil, fmt.Errorf("level1 client acquire failed: %w", err)
 	}
@@ -24,9 +24,9 @@ func tdxFetchRawSecurityBars(securityCode exchange.InstrumentInfo, category leve
 		return nil, fmt.Errorf("nil connection from level1 client")
 	}
 
-	req := level1.NewSecurityBarsRequest(securityCode, category, start, count)
-	resp := level1.NewSecurityBarsResponse(req.IsIndex, uint16(req.Param.Category))
-	if err := level1.Process(conn, req, resp); err != nil {
+	req := std.NewSecurityBarsRequest(securityCode, category, start, count)
+	resp := std.NewSecurityBarsResponse(req.IsIndex, uint16(req.Param.Category))
+	if err := std.Process(conn, req, resp); err != nil {
 		return nil, fmt.Errorf("security bars request failed: %w", err)
 	}
 	return resp.List, nil
@@ -37,7 +37,7 @@ func tdxFetchRawSecurityBars(securityCode exchange.InstrumentInfo, category leve
 func tdxUpdateKLine(symbol exchange.InstrumentInfo, _date exchange.Timestamp) {
 	_ = _date
 	if symbol.Type == exchange.SecurityTypeUnknown {
-		log.Debugf("[DataKLine] unknown security type for code %s", symbol.Symbol())
+		logger.Debugf("[DataKLine] unknown security type for code %s", symbol.Symbol())
 		return
 	}
 
@@ -46,7 +46,7 @@ func tdxUpdateKLine(symbol exchange.InstrumentInfo, _date exchange.Timestamp) {
 	var cacheKLines []data.KLine
 	err := encoding.CsvToSlices(cacheFilename, &cacheKLines)
 	if err != nil {
-		log.Debugf("[DataKLine] load cache failed for %s: %v", symbol.Symbol(), err)
+		logger.Debugf("[DataKLine] load cache failed for %s: %v", symbol.Symbol(), err)
 		// 继续更新
 	}
 	klinesLength := len(cacheKLines)
@@ -81,7 +81,7 @@ func tdxUpdateKLine(symbol exchange.InstrumentInfo, _date exchange.Timestamp) {
 		firstNotAdjustedBar := cacheKLines[firstNotAdjustedIdx]
 		adjustTimes = firstNotAdjustedBar.AdjustmentCount
 		currentStartDate, _ = exchange.ParseTimestamp(firstNotAdjustedBar.Date)
-		log.Debugf("[DataKLine] [%s]: cached klines=%d, adjustTimes=%d, start from %s", symbol.Symbol(), klinesLength, adjustTimes, currentStartDate.OnlyDate())
+		logger.Debugf("[DataKLine] [%s]: cached klines=%d, adjustTimes=%d, start from %s", symbol.Symbol(), klinesLength, adjustTimes, currentStartDate.OnlyDate())
 	}
 
 	// 2. 确定结束日期
@@ -95,13 +95,13 @@ func tdxUpdateKLine(symbol exchange.InstrumentInfo, _date exchange.Timestamp) {
 	}
 	total := len(ts)
 	if total == 0 {
-		log.Debugf("[DataKLine] empty date range for %s", symbol.Symbol())
+		logger.Debugf("[DataKLine] empty date range for %s", symbol.Symbol())
 		return
 	}
 
 	// 3. 分页从 level1 拉取数据
-	step := uint16(level1.SecurityBarsMax)
-	var hs [][]level1.SecurityBar
+	step := uint16(std.SecurityBarsMax)
+	var hs [][]std.SecurityBar
 	var elementCount int
 	var start uint16 = 0
 	for {
@@ -114,9 +114,9 @@ func tdxUpdateKLine(symbol exchange.InstrumentInfo, _date exchange.Timestamp) {
 		if count == 0 {
 			break
 		}
-		reply, err := tdxFetchRawSecurityBars(symbol, level1.KLineDaily, start, count)
+		reply, err := tdxFetchRawSecurityBars(symbol, std.KLineDaily, start, count)
 		if err != nil {
-			log.Debugf("[DataKLine] fetch error for %s start=%d count=%d: %v", symbol.Symbol(), start, count, err)
+			logger.Debugf("[DataKLine] fetch error for %s start=%d count=%d: %v", symbol.Symbol(), start, count, err)
 			break
 		}
 		if len(reply) == 0 {
@@ -216,6 +216,6 @@ func (d *DataKLine) Update(code exchange.InstrumentInfo, _date exchange.Timestam
 func init() {
 	// register DataKLine plugin
 	if err := data.Register(&DataKLine{}); err != nil {
-		log.Errorf("[DataKLine] failed to register plugin: %v", err)
+		logger.Errorf("[DataKLine] failed to register plugin: %v", err)
 	}
 }

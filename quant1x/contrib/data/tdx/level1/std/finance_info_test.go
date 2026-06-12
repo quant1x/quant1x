@@ -1,10 +1,10 @@
-package level1
+package std
 
 import (
 	"fmt"
 	"testing"
 
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"github.com/quant1x/quant1x/quant1x/data/exchange"
 )
 
 func TestFinanceInfo(t *testing.T) {

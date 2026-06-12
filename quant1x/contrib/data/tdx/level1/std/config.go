@@ -1,4 +1,4 @@
-package level1
+package std
 
 import (
 	stdnet "net"
@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/log"
+	"github.com/quant1x/quant1x/quant1x/log"
 )
 
 func standardServerList() []serverInfo {

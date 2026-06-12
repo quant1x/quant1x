@@ -5,12 +5,12 @@ import (
 
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/command"
-	"gitee.com/quant1x/quant1x/quant1x/runtime"
-	"gitee.com/quant1x/quant1x/quant1x/util"
+	"github.com/quant1x/quant1x/quant1x/command"
+	"github.com/quant1x/quant1x/quant1x/runtime"
+	"github.com/quant1x/quant1x/quant1x/util"
 
-	_ "gitee.com/quant1x/quant1x/quant1x/contrib/data/tdx" // for data provider plugins
-	_ "gitee.com/quant1x/quant1x/quant1x/market"           // for go:linkname GetCodeList
+	_ "github.com/quant1x/quant1x/quant1x/contrib/data/tdx" // for data provider plugins
+	_ "github.com/quant1x/quant1x/quant1x/data/market"      // for go:linkname GetCodeList
 )
 
 var (

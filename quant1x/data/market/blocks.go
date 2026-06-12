@@ -8,24 +8,24 @@ import (
 	"slices"
 	"strings"
 
-	"gitee.com/quant1x/quant1x/quant1x/config"
-	"gitee.com/quant1x/quant1x/quant1x/encoding"
-	"gitee.com/quant1x/quant1x/quant1x/encoding/binary/struc"
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
-	qio "gitee.com/quant1x/quant1x/quant1x/io"
-	"gitee.com/quant1x/quant1x/quant1x/level1"
-	"gitee.com/quant1x/quant1x/quant1x/runtime"
-	"gitee.com/quant1x/quant1x/quant1x/std"
-	"gitee.com/quant1x/quant1x/quant1x/util"
+	"github.com/quant1x/quant1x/quant1x/config"
+	level1_std "github.com/quant1x/quant1x/quant1x/contrib/data/tdx/level1/std"
+	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/encoding"
+	"github.com/quant1x/quant1x/quant1x/encoding/binary/struc"
+	qio "github.com/quant1x/quant1x/quant1x/io"
+	"github.com/quant1x/quant1x/quant1x/runtime"
+	"github.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/util"
 )
 
-func getBlockInfo(conn *qio.Connection, blockFile string) (*level1.BlockInfoResponse, error) {
-	var result level1.BlockInfoResponse
+func getBlockInfo(conn *qio.Connection, blockFile string) (*level1_std.BlockInfoResponse, error) {
+	var result level1_std.BlockInfoResponse
 	start := uint32(0)
 	for {
-		req := level1.NewBlockInfoRequest(blockFile, start)
-		resp := level1.BlockInfoResponse{}
-		err := level1.Process(conn, req, &resp)
+		req := level1_std.NewBlockInfoRequest(blockFile, start)
+		resp := level1_std.BlockInfoResponse{}
+		err := level1_std.Process(conn, req, &resp)
 		if err != nil {
 			return nil, err
 		}
@@ -33,7 +33,7 @@ func getBlockInfo(conn *qio.Connection, blockFile string) (*level1.BlockInfoResp
 		result.Data = append(result.Data, resp.Data...)
 		if resp.Size == 0 {
 			return nil, io.EOF
-		} else if resp.Size < level1.BlockChunksSize {
+		} else if resp.Size < level1_std.BlockChunksSize {
 			break
 		}
 		start += resp.Size
@@ -43,7 +43,7 @@ func getBlockInfo(conn *qio.Connection, blockFile string) (*level1.BlockInfoResp
 
 // 下载板块原始数据文件
 func downloadBlockRawData(filename string) {
-	conn, release, err := level1.GetStdConnection()
+	conn, release, err := level1_std.GetStdConnection()
 	if err != nil {
 		return
 	}

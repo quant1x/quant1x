@@ -3,7 +3,7 @@ package tdx
 import (
 	"testing"
 
-	"gitee.com/quant1x/quant1x/quant1x/data"
+	"github.com/quant1x/quant1x/quant1x/data"
 )
 
 func TestTdxProvider(t *testing.T) {

@@ -5,9 +5,9 @@ import (
 	"math"
 	"testing"
 
-	"gitee.com/quant1x/quant1x/quant1x/config"
-	"gitee.com/quant1x/quant1x/quant1x/data"
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"github.com/quant1x/quant1x/quant1x/config"
+	"github.com/quant1x/quant1x/quant1x/data"
+	"github.com/quant1x/quant1x/quant1x/data/exchange"
 )
 
 func TestGetCrossSectionForwardAdjustedKlines(t *testing.T) {

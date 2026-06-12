@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"gitee.com/quant1x/num"
+	"github.com/quant1x/num"
 )
 
 // DataExtractor 提取可用于聚类的数值样本集

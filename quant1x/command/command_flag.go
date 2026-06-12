@@ -4,10 +4,10 @@ import (
 	"strings"
 	"unsafe"
 
-	"gitee.com/quant1x/pkg/tablewriter"
-	"gitee.com/quant1x/quant1x/quant1x/data"
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
-	"gitee.com/quant1x/quant1x/quant1x/std/meta"
+	"github.com/quant1x/pkg/tablewriter"
+	"github.com/quant1x/quant1x/quant1x/data"
+	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/std/meta"
 	cli "github.com/spf13/cobra"
 )
 

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math"
 
-	"gitee.com/quant1x/num"
-	"gitee.com/quant1x/quant1x/quant1x/learn/preprocessing"
-	"gitee.com/quant1x/quant1x/quant1x/level1"
+	"github.com/quant1x/num"
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/level1/std"
+	"github.com/quant1x/quant1x/quant1x/learn/preprocessing"
 )
 
 // TradeBehavior 表示一个分笔窗口的交易行为特征
@@ -93,7 +93,7 @@ type TickDataExtractor struct {
 
 // Extract 提取数据并返回 [][]float64（用于 KMeans），同时计算覆盖率
 func (e *TickDataExtractor) Extract(data any) [][]float64 {
-	ticks, ok := data.([]level1.TickTransaction)
+	ticks, ok := data.([]std.TickTransaction)
 	if !ok || len(ticks) == 0 {
 		return nil
 	}
@@ -158,7 +158,7 @@ func (e *TickDataExtractor) Extract(data any) [][]float64 {
 }
 
 // extractAsStruct 核心特征提取（结构化）
-func (e *TickDataExtractor) extractAsStruct(window []level1.TickTransaction) TradeBehavior {
+func (e *TickDataExtractor) extractAsStruct(window []std.TickTransaction) TradeBehavior {
 	n := len(window)
 	if n == 0 {
 		return TradeBehavior{}

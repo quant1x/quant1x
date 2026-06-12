@@ -1,4 +1,4 @@
-package level1
+package std
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"github.com/quant1x/quant1x/quant1x/data/exchange"
 )
 
 // TradeState mirrors the C++ TradeState enum.

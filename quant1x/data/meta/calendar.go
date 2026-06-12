@@ -10,9 +10,9 @@ import (
 	"sort"
 	"strings"
 
-	"gitee.com/quant1x/quant1x/quant1x/core"
-	"gitee.com/quant1x/quant1x/quant1x/data/meta/sina"
-	"gitee.com/quant1x/quant1x/quant1x/runtime"
+	"github.com/quant1x/quant1x/quant1x/core"
+	"github.com/quant1x/quant1x/quant1x/data/meta/sina"
+	"github.com/quant1x/quant1x/quant1x/runtime"
 
 	"time"
 )

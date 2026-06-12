@@ -5,8 +5,8 @@ import (
 	"sort"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/data"
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"github.com/quant1x/quant1x/quant1x/data"
+	"github.com/quant1x/quant1x/quant1x/data/exchange"
 )
 
 const DateLayout = "2006-01-02"

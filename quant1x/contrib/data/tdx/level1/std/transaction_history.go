@@ -1,4 +1,4 @@
-package level1
+package std
 
 import (
 	"bytes"
@@ -7,8 +7,8 @@ import (
 	"io"
 	"strings"
 
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
-	"gitee.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/std"
 )
 
 // HistoryTransactionRequest mirrors the C++ HistoryTransactionRequest.

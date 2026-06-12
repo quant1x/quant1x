@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"gitee.com/quant1x/quant1x/quant1x/core"
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"github.com/quant1x/quant1x/quant1x/core"
+	"github.com/quant1x/quant1x/quant1x/data/exchange"
 )
 
 // Kind 表示插件类型标识
@@ -172,11 +172,6 @@ func Plugins(mask Kind) []DataAdapter {
 	sort.Slice(list, func(i, j int) bool { return list[i].Kind() < list[j].Kind() })
 	return list
 }
-
-const (
-	LayoutTradeDate     = "2006-01-02"              // 交易日格式(仅日期)
-	LayoutDateTimeMilli = "2006-01-02 15:04:05.000" // 日期时间格式(含毫秒)
-)
 
 // DataSummary 数据概要
 type DataSummary struct {

@@ -1,10 +1,10 @@
-package level1
+package std
 
 import (
 	"sync"
 	"testing"
 
-	"gitee.com/quant1x/quant1x/quant1x/data"
+	"github.com/quant1x/quant1x/quant1x/data"
 )
 
 func TestSecurityListReal(t *testing.T) {

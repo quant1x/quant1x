@@ -5,7 +5,7 @@ import (
 	"strings"
 	_ "unsafe"
 
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"github.com/quant1x/quant1x/quant1x/data/exchange"
 )
 
 var (

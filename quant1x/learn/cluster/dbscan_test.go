@@ -6,12 +6,12 @@ import (
 	"sort"
 	"testing"
 
-	"gitee.com/quant1x/num"
-	_ "gitee.com/quant1x/quant1x/quant1x/contrib/data/tdx"
-	"gitee.com/quant1x/quant1x/quant1x/data"
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
-	"gitee.com/quant1x/quant1x/quant1x/learn/preprocessing"
-	"gitee.com/quant1x/quant1x/quant1x/market"
+	"github.com/quant1x/num"
+	_ "github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
+	"github.com/quant1x/quant1x/quant1x/data"
+	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/data/market"
+	"github.com/quant1x/quant1x/quant1x/learn/preprocessing"
 )
 
 func TestDBSCAN_Basic(t *testing.T) {

@@ -1,4 +1,4 @@
-package level1
+package std
 
 import (
 	"fmt"

@@ -3,13 +3,14 @@ package tdx
 import (
 	_ "unsafe" // for go:linkname
 
-	"gitee.com/quant1x/quant1x/quant1x/config"
-	"gitee.com/quant1x/quant1x/quant1x/data"
-	"gitee.com/quant1x/quant1x/quant1x/encoding"
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"github.com/quant1x/quant1x/quant1x/config"
+	"github.com/quant1x/quant1x/quant1x/data"
+	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/data/schema"
+	"github.com/quant1x/quant1x/quant1x/encoding"
 )
 
-//go:linkname GetTdxProvider gitee.com/quant1x/quant1x/quant1x/data.DataHandler
+//go:linkname GetTdxProvider github.com/quant1x/quant1x/quant1x/data.DataHandler
 func GetTdxProvider() data.DataSource {
 	return new(tdxProvider)
 }
@@ -25,7 +26,7 @@ func (p *tdxProvider) GetF10(instrument string) (data.F10, error) {
 func (p *tdxProvider) GetKLines(instrument string, startDate, endDate string, frequency string, adjust ...data.AdjustmentType) ([]data.KLine, error) {
 	// 1. 确定缓存文件并读取本地缓存
 	cacheFilename := config.GetKlineFilename(instrument, true)
-	klines := []data.KLine{}
+	klines := []schema.Bar{}
 	err := encoding.CsvToSlices(cacheFilename, &klines)
 	if err == nil && len(klines) > 0 {
 		return klines, nil
@@ -34,7 +35,7 @@ func (p *tdxProvider) GetKLines(instrument string, startDate, endDate string, fr
 	sc := exchange.DetectSymbol(instrument)
 	tdxUpdateKLine(sc, exchange.NowTimestamp())
 	// 3. 重新读取缓存文件
-	klines = []data.KLine{}
+	klines = []schema.Bar{}
 	err = encoding.CsvToSlices(cacheFilename, &klines)
 	if err == nil && len(klines) > 0 {
 		return klines, nil
@@ -44,15 +45,15 @@ func (p *tdxProvider) GetKLines(instrument string, startDate, endDate string, fr
 	return nil, data.ErrNotImplemented
 }
 
-func (p *tdxProvider) GetTransactions(instrument string, date string) ([]data.Transaction, error) {
+func (p *tdxProvider) GetTransactions(instrument string, date string) ([]schema.Transaction, error) {
 	return p.GetTradeDetails(instrument, date)
 }
 
-func (p *tdxProvider) GetTradeTicks(instrument string, date string) ([]data.Transaction, error) {
+func (p *tdxProvider) GetTradeTicks(instrument string, date string) ([]schema.Transaction, error) {
 	return p.GetTradeDetails(instrument, date)
 }
 
-func (p *tdxProvider) GetTradeDetails(instrument string, date string) ([]data.Transaction, error) {
+func (p *tdxProvider) GetTradeDetails(instrument string, date string) ([]schema.Transaction, error) {
 	sc := exchange.DetectSymbol(instrument)
 	ts, err := exchange.NewTimestampFromString(date)
 	if err != nil {

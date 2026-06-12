@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"sync"
 
-	"gitee.com/quant1x/quant1x/quant1x/log"
+	"github.com/quant1x/quant1x/quant1x/log"
 )
 
 // EndpointData 保存单个端点的连接统计

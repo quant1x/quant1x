@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/config"
-	"gitee.com/quant1x/quant1x/quant1x/runtime"
+	"github.com/quant1x/quant1x/quant1x/config"
+	"github.com/quant1x/quant1x/quant1x/runtime"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

@@ -1,4 +1,4 @@
-package level1
+package std
 
 import (
 	"bytes"
@@ -8,8 +8,8 @@ import (
 	"io"
 	"strings"
 
-	"gitee.com/quant1x/quant1x/quant1x/encoding"
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/encoding"
 )
 
 const (

@@ -1,4 +1,4 @@
-package level1
+package std
 
 import (
 	"bytes"
@@ -9,8 +9,8 @@ import (
 	stdio "io"
 	"sync/atomic"
 
-	qio "gitee.com/quant1x/quant1x/quant1x/io"
-	"gitee.com/quant1x/quant1x/quant1x/log"
+	qio "github.com/quant1x/quant1x/quant1x/io"
+	"github.com/quant1x/quant1x/quant1x/log"
 )
 
 // StdCommand 标准命令类型

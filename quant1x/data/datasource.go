@@ -3,7 +3,8 @@ package data
 import (
 	_ "unsafe" // for go:linkname
 
-	"gitee.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/data/schema"
+	"github.com/quant1x/quant1x/quant1x/std"
 )
 
 type AdjustmentType string
@@ -43,18 +44,18 @@ type DataSource interface {
 	//  startDate 和 endDate 格式为 "YYYY-MM-DD"
 	//  frequency 格式为 "<n>min", "1d", "1w", "1m" 等
 	//  adjust 参数可选，默认为前复权
-	GetKLines(instrument string, startDate, endDate string, frequency string, adjust ...AdjustmentType) ([]KLine, error)
+	GetKLines(instrument string, startDate, endDate string, frequency string, adjust ...AdjustmentType) ([]schema.Bar, error)
 
 	// GetTransactions 获取指定交易日的成交数据。
-	GetTransactions(instrument string, date string) ([]Transaction, error)
+	GetTransactions(instrument string, date string) ([]schema.Transaction, error)
 
 	// GetTradeTicks 返回交易所推送的逐笔成交记录（每笔独立，Num=1）。
 	// 数据来源于 Level-2 逐笔成交流。
-	GetTradeTicks(instrument string, date string) ([]Transaction, error)
+	GetTradeTicks(instrument string, date string) ([]schema.Transaction, error)
 
 	// GetTradeDetails 返回交易所推送的分笔成交记录（原生3秒快照，Num≥1）。
 	// 数据来源于 Level-2 成交明细（分笔）流，非人为聚合。
-	GetTradeDetails(instrument string, date string) ([]Transaction, error)
+	GetTradeDetails(instrument string, date string) ([]schema.Transaction, error)
 }
 
 // DataHandler returns a DataSource instance for handling data operations.
