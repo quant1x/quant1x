@@ -1,4 +1,4 @@
-module gitee.com/quant1x/quant1x
+module github.com/quant1x/quant1x
 
 go 1.26.0
 
