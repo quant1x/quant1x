@@ -3,9 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.20] - 2026-06-12
+### Changed
+- go: 统一调整仓库地址为github
+- go: 切换go基础库代码仓库到github
+
 ## [0.7.19] - 2026-06-12
 ### Changed
 - 缓存代码
+- update changelog
 
 ## [0.7.18] - 2026-06-11
 ### Changed
@@ -1604,7 +1610,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.19...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.20...HEAD
+[0.7.20]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.19...v0.7.20
 [0.7.19]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.18...v0.7.19
 [0.7.18]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.17...v0.7.18
 [0.7.17]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.16...v0.7.17
