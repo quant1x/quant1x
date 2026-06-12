@@ -42,3 +42,4 @@ target/
 
 # vscode
 .vscode/launch.json
+quant1x/_version.py
