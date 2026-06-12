@@ -275,15 +275,15 @@ if __name__ == '__main__':
     # df = pd.DataFrame(list)
     # df.to_csv('ext-instruments.csv', index=False)
     # print(df)
-    # # K线数据
-    # from .level1.ext import InstrumentBars
-    # #bars = InstrumentBars(9, 0x17, ticker='HSIL8', start=0, count=700)
-    # bars = InstrumentBars(8, 31, ticker='00700', start=0, count=700)
-    # #bars = InstrumentBars(9, 12, ticker='A_IXIC', start=0, count=700)
-    # protocol.process_level1_new(conn, bars)
-    # if bars.reply:
-    #     df = pd.DataFrame(bars.reply)
-    #     print(df)
+    # K线数据
+    from .level1.ext import InstrumentBars
+    #bars = InstrumentBars(9, 0x17, ticker='HSIL8', start=0, count=700)
+    bars = InstrumentBars(8, 31, ticker='00700', start=0, count=700)
+    #bars = InstrumentBars(9, 12, ticker='A_IXIC', start=0, count=700)
+    protocol.process_level1_new(conn, bars)
+    if bars.reply:
+        df = pd.DataFrame(bars.reply)
+        print(df)
     
     # 成交数据
     from .level1.ext import TransactionData, DailyTransactionData
