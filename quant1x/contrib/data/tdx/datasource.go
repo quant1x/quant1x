@@ -3,13 +3,13 @@ package tdx
 import (
 	_ "unsafe" // for go:linkname
 
-	"gitee.com/quant1x/quant1x/quant1x/config"
-	"gitee.com/quant1x/quant1x/quant1x/data"
-	"gitee.com/quant1x/quant1x/quant1x/encoding"
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"github.com/quant1x/quant1x/quant1x/config"
+	"github.com/quant1x/quant1x/quant1x/data"
+	"github.com/quant1x/quant1x/quant1x/encoding"
+	"github.com/quant1x/quant1x/quant1x/exchange"
 )
 
-//go:linkname GetTdxProvider gitee.com/quant1x/quant1x/quant1x/data.DataHandler
+//go:linkname GetTdxProvider github.com/quant1x/quant1x/quant1x/data.DataHandler
 func GetTdxProvider() data.DataSource {
 	return new(tdxProvider)
 }

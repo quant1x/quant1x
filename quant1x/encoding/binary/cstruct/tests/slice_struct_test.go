@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	"gitee.com/quant1x/quant1x/quant1x/encoding/binary/cstruct"
+	"github.com/quant1x/quant1x/quant1x/encoding/binary/cstruct"
 )
 
 type mystruct12 struct {

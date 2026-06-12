@@ -497,7 +497,7 @@ package main
 
 import (
     "fmt"
-    "gitee.com/quant1x/quant1x/quant1x/factors"
+    "github.com/quant1x/quant1x/quant1x/factors"
 )
 
 func main() {

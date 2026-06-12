@@ -7,7 +7,7 @@ import (
 	"io"
 	"math"
 
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"github.com/quant1x/quant1x/quant1x/exchange"
 )
 
 // XdxrCategory 除权除息类型枚举

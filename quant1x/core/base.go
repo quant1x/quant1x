@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"gitee.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/std"
 	"gopkg.in/yaml.v3"
 )
 

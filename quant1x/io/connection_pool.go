@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/log"
+	"github.com/quant1x/quant1x/quant1x/log"
 )
 
 // Connection is an RAII-style wrapper around an established TCP connection.

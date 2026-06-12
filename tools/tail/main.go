@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"gitee.com/quant1x/pkg/tools/tail"
-	"gitee.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/std"
 	cli "github.com/spf13/cobra"
 )
 

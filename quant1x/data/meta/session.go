@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/data"
-	"gitee.com/quant1x/quant1x/quant1x/runtime"
-	"gitee.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/data"
+	"github.com/quant1x/quant1x/quant1x/runtime"
+	"github.com/quant1x/quant1x/quant1x/std"
 )
 
 // TODO: https://www.tradinghours.com/markets
@@ -651,9 +651,9 @@ func InitUSSession() (*TradingSession, error) {
 // ======================================================================
 
 var (
-	tradingHoursMap       = make(map[string]*TradingSession)
-	tradingHoursDefault   *TradingSession
-	tradingHoursOnce      = runtime.RollingOnceFromSpec(data.CnCronExprDailyInit) // 每天9:00重置
+	tradingHoursMap     = make(map[string]*TradingSession)
+	tradingHoursDefault *TradingSession
+	tradingHoursOnce    = runtime.RollingOnceFromSpec(data.CnCronExprDailyInit) // 每天9:00重置
 )
 
 // GetTradingHoursMap 获取交易时段映射

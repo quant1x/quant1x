@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"gitee.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/std"
 )
 
 const MarketCnFirstListTime = "1990-12-19"

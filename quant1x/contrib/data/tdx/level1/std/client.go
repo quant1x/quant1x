@@ -10,11 +10,11 @@ import (
 	"sync"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/core"
-	"gitee.com/quant1x/quant1x/quant1x/data/exchange"
-	qio "gitee.com/quant1x/quant1x/quant1x/io"
-	"gitee.com/quant1x/quant1x/quant1x/log"
-	"gitee.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/core"
+	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	qio "github.com/quant1x/quant1x/quant1x/io"
+	"github.com/quant1x/quant1x/quant1x/log"
+	"github.com/quant1x/quant1x/quant1x/std"
 	"gopkg.in/yaml.v3"
 )
 

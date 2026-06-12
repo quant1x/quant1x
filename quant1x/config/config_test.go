@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"gitee.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/std"
 )
 
 // resetGlobals resets package-level globals so tests can control initialization.

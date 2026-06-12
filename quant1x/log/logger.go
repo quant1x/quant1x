@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/std"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"github.com/quant1x/quant1x/quant1x/std"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

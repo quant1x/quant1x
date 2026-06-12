@@ -4,8 +4,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gitee.com/quant1x/quant1x/quant1x/core"
-	"gitee.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/core"
+	"github.com/quant1x/quant1x/quant1x/std"
 )
 
 // price cage defaults from C++ config/price_cage.h

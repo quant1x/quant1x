@@ -3,12 +3,12 @@ package tdx
 import (
 	"fmt"
 
-	"gitee.com/quant1x/quant1x/quant1x/config"
-	"gitee.com/quant1x/quant1x/quant1x/data"
-	"gitee.com/quant1x/quant1x/quant1x/encoding"
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
-	"gitee.com/quant1x/quant1x/quant1x/level1"
-	"gitee.com/quant1x/quant1x/quant1x/log"
+	"github.com/quant1x/quant1x/quant1x/config"
+	"github.com/quant1x/quant1x/quant1x/data"
+	"github.com/quant1x/quant1x/quant1x/encoding"
+	"github.com/quant1x/quant1x/quant1x/exchange"
+	"github.com/quant1x/quant1x/quant1x/level1"
+	"github.com/quant1x/quant1x/quant1x/log"
 )
 
 // tdxFetchRawSecurityBars 执行底层 level1 SecurityBars 请求并返回原始响应列表（未转换）。

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"gitee.com/quant1x/quant1x/quant1x/core"
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"github.com/quant1x/quant1x/quant1x/core"
+	"github.com/quant1x/quant1x/quant1x/data/exchange"
 )
 
 // Kind 表示插件类型标识

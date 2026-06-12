@@ -8,7 +8,7 @@ import (
 	"sync"
 	"unsafe"
 
-	"gitee.com/quant1x/quant1x/quant1x/std/mem"
+	"github.com/quant1x/quant1x/quant1x/std/mem"
 )
 
 const (

@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/log"
-	"gitee.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/log"
+	"github.com/quant1x/quant1x/quant1x/std"
 )
 
 const (

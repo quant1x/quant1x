@@ -5,7 +5,7 @@ import (
 	"math"
 	"strings"
 
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
+	"github.com/quant1x/quant1x/quant1x/exchange"
 )
 
 const (

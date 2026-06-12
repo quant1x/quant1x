@@ -5,8 +5,8 @@ import (
 	"math"
 
 	"gitee.com/quant1x/num"
-	"gitee.com/quant1x/quant1x/quant1x/learn/preprocessing"
-	"gitee.com/quant1x/quant1x/quant1x/level1"
+	"github.com/quant1x/quant1x/quant1x/learn/preprocessing"
+	"github.com/quant1x/quant1x/quant1x/level1"
 )
 
 // TradeBehavior 表示一个分笔窗口的交易行为特征

@@ -6,7 +6,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"gitee.com/quant1x/quant1x/quant1x/core"
+	"github.com/quant1x/quant1x/quant1x/core"
 )
 
 // TraderParameter mirrors C++ config::TraderParameter (fields only).

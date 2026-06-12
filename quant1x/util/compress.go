@@ -11,7 +11,7 @@ import (
 	"slices"
 	"strings"
 
-	"gitee.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/std"
 )
 
 // ZlibCompress 进行zlib压缩

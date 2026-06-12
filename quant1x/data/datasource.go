@@ -3,7 +3,7 @@ package data
 import (
 	_ "unsafe" // for go:linkname
 
-	"gitee.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/std"
 )
 
 type AdjustmentType string

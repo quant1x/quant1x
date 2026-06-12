@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/core"
+	"github.com/quant1x/quant1x/quant1x/core"
 )
 
 // TestCalendarMarkerReal calls updateCalendar() against the real sina URL and

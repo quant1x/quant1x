@@ -4,7 +4,7 @@ argparse（Go）使用说明
 本文档描述项目内 Go 版 argparse 的用法与行为约定。
 
 - 代码位置：quant1x/std/argparse
-- Go 包路径：`gitee.com/quant1x/quant1x/quant1x/std/argparse`
+- Go 包路径：`github.com/quant1x/quant1x/quant1x/std/argparse`
 - 设计目标：与 C++ 规范实现 `third_party/include/argparse/argparse.hpp` 的行为对齐（尤其是解析规则、usage/help 输出与错误信息）。
 
 
@@ -18,7 +18,7 @@ import (
     "fmt"
     "os"
 
-    "gitee.com/quant1x/quant1x/quant1x/std/argparse"
+    "github.com/quant1x/quant1x/quant1x/std/argparse"
 )
 
 func main() {

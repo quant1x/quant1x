@@ -3,6 +3,8 @@ package data
 import (
 	"sort"
 	"time"
+
+	"github.com/quant1x/quant1x/quant1x/data/schema"
 )
 
 // CumulativeAdjustment 累计复权因子, 对应仿射变换: P' = M * P + A
@@ -16,7 +18,7 @@ type CumulativeAdjustment struct {
 // ApplyForwardAdjustmentForEvent 使用提供的除权除息事件对 K 线执行前复权处理。
 //
 //	eventStartDate 是用于过滤 IPO 早期事件的起始日期（格式 YYYY-MM-DD）。
-func ApplyForwardAdjustmentForEvent(klines []KLine, eventStartDate string, dividends []XdxrInfo) {
+func ApplyForwardAdjustmentForEvent(klines []schema.Bar, eventStartDate string, dividends []schema.XdxrInfo) {
 	if len(klines) == 0 || len(dividends) == 0 {
 		return
 	}
@@ -30,7 +32,7 @@ func ApplyForwardAdjustmentForEvent(klines []KLine, eventStartDate string, divid
 	cutoffDate := d.Add(24 * time.Hour).Format(LayoutTradeDate)
 
 	// 筛选除权除息事件（Category == 1）且日期 <= cutoffDate
-	eligibleXdxrEvents := make([]XdxrInfo, 0, len(dividends))
+	eligibleXdxrEvents := make([]schema.XdxrInfo, 0, len(dividends))
 	for _, v := range dividends {
 		if v.Category == 1 && v.Date <= cutoffDate {
 			eligibleXdxrEvents = append(eligibleXdxrEvents, v)

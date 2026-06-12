@@ -8,15 +8,15 @@ import (
 	"slices"
 	"strings"
 
-	"gitee.com/quant1x/quant1x/quant1x/config"
-	"gitee.com/quant1x/quant1x/quant1x/encoding"
-	"gitee.com/quant1x/quant1x/quant1x/encoding/binary/struc"
-	"gitee.com/quant1x/quant1x/quant1x/exchange"
-	qio "gitee.com/quant1x/quant1x/quant1x/io"
-	"gitee.com/quant1x/quant1x/quant1x/level1"
-	"gitee.com/quant1x/quant1x/quant1x/runtime"
-	"gitee.com/quant1x/quant1x/quant1x/std"
-	"gitee.com/quant1x/quant1x/quant1x/util"
+	"github.com/quant1x/quant1x/quant1x/config"
+	"github.com/quant1x/quant1x/quant1x/encoding"
+	"github.com/quant1x/quant1x/quant1x/encoding/binary/struc"
+	"github.com/quant1x/quant1x/quant1x/exchange"
+	qio "github.com/quant1x/quant1x/quant1x/io"
+	"github.com/quant1x/quant1x/quant1x/level1"
+	"github.com/quant1x/quant1x/quant1x/runtime"
+	"github.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/util"
 )
 
 func getBlockInfo(conn *qio.Connection, blockFile string) (*level1.BlockInfoResponse, error) {

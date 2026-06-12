@@ -5,7 +5,7 @@ import (
 	"math"
 	"sync"
 
-	"gitee.com/quant1x/quant1x/quant1x/runtime"
+	"github.com/quant1x/quant1x/quant1x/runtime"
 )
 
 // ======================================================================

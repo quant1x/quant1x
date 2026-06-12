@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"gitee.com/quant1x/pkg/gocsv"
-	"gitee.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/std"
 )
 
 const (
