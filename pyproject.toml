@@ -50,7 +50,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://gitee.com/quant1x/quant1x"
+Homepage = "https://github.com/quant1x/quant1x"
 
 [project.entry-points."console_scripts"]
 # quant1x = "quant1x.__main__:entry"
@@ -86,4 +86,3 @@ write_to = "quant1x/_version.py"
 fallback_version = "0.0.0"
 version_scheme = "guess-next-dev"
 local_scheme = "no-local-version"
-#version_file = "quant1x/_version.py"
