@@ -310,8 +310,8 @@ fn cache_filename() -> Option<PathBuf> {
 
 /// 将服务器字典写入 YAML 缓存文件。
 ///
-/// 对应 Python `_config.py:write_cache()`。
-pub fn write_cache(servers: &BTreeMap<String, Vec<ServerInfo>>) {
+/// 对应 Python `_config.py:save_cached_servers()`。
+pub fn save_cached_servers(servers: &BTreeMap<String, Vec<ServerInfo>>) {
     let Some(path) = cache_filename() else {
         return;
     };
@@ -327,9 +327,9 @@ pub fn write_cache(servers: &BTreeMap<String, Vec<ServerInfo>>) {
 
 /// 从 YAML 缓存文件中读取服务器列表。
 ///
-/// 对应 Python `_config.py:read_cache()`。
+/// 对应 Python `_config.py:load_cached_servers()`。
 /// - key: "standard" 或 "extension"
-pub fn read_cache(key: &str) -> Vec<ServerInfo> {
+pub fn load_cached_servers(key: &str) -> Vec<ServerInfo> {
     let Some(path) = cache_filename() else {
         return Vec::new();
     };
@@ -397,7 +397,7 @@ fn try_probe_one(
     };
 
     // Connect with timeout
-    let std_stream = match StdTcpStream::connect_timeout(&sock_addr, timeout) {
+    let mut std_stream = match StdTcpStream::connect_timeout(&sock_addr, timeout) {
         Ok(s) => s,
         Err(e) => {
             log::warn!("Probe timed out for {}:{} ({}) after {} ms: {}", host, port, candidate.name, connect_timeout_ms, e);
@@ -411,17 +411,15 @@ fn try_probe_one(
     let _ = std_stream.set_write_timeout(Some(timeout));
 
     // Perform protocol handshake via level1 Hello1 + Hello2
-    let mut mio_stream = mio::net::TcpStream::from_std(std_stream);
-
     let handshake_result = (|| -> std::io::Result<()> {
         let mut req1 = crate::contrib::data::tdx::level1::std::Hello1Request::new();
-        crate::contrib::data::tdx::protocol::process_level1_stream(&mut mio_stream, &mut req1)
+        crate::contrib::data::tdx::protocol::process_level1_stream(&mut std_stream, &mut req1)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
         if req1.info.trim().is_empty() {
             return Err(std::io::Error::new(std::io::ErrorKind::Other, "Hello1 response empty"));
         }
         let mut req2 = crate::contrib::data::tdx::level1::std::Hello2Request::new();
-        crate::contrib::data::tdx::protocol::process_level1_stream(&mut mio_stream, &mut req2)
+        crate::contrib::data::tdx::protocol::process_level1_stream(&mut std_stream, &mut req2)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
         if req2.info.trim().is_empty() {
             return Err(std::io::Error::new(std::io::ErrorKind::Other, "Hello2 response empty"));
@@ -432,7 +430,7 @@ fn try_probe_one(
     match handshake_result {
         Ok(()) => {
             let elapsed = start.elapsed().as_millis() as i64;
-            let _ = mio_stream.shutdown(Shutdown::Both);
+            let _ = std_stream.shutdown(Shutdown::Both);
             log::debug!("Probe succeeded for {}:{} ({}) - {} ms", host, port, candidate.name, elapsed);
             Some(ServerInfo {
                 source: candidate.source.clone(),
@@ -443,7 +441,7 @@ fn try_probe_one(
             })
         }
         Err(e) => {
-            let _ = mio_stream.shutdown(Shutdown::Both);
+            let _ = std_stream.shutdown(Shutdown::Both);
             log::warn!("Handshake failed for {}:{} ({}) - Error: {}", host, port, candidate.name, e);
             None
         }
@@ -600,9 +598,9 @@ mod tests {
     }
 
     #[test]
-    fn test_read_cache_empty_on_no_file() {
+    fn test_load_cached_servers_empty_on_no_file() {
         // 读取不存在的 key 应返回空列表
-        let result = read_cache("nonexistent_key");
+        let result = load_cached_servers("nonexistent_key");
         assert!(result.is_empty());
     }
 }

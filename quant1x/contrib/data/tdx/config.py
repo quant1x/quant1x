@@ -248,7 +248,7 @@ def _cache_filename() -> str:
     return os.path.join(config.meta_path, "server.bin")
 
 
-def write_cache(servers: OrderedDict[str, List[Dict[str, Any]]]) -> None:
+def save_cached_servers(servers: OrderedDict[str, List[Dict[str, Any]]]) -> None:
     fn = _cache_filename()
     try:
         os.makedirs(os.path.dirname(fn), exist_ok=True)
@@ -271,7 +271,7 @@ def write_cache(servers: OrderedDict[str, List[Dict[str, Any]]]) -> None:
 _cache_data: OrderedDict[str, Any] | None = None
 
 
-def read_cache(key: str = "standard") -> List[Dict[str, Any]]:
+def load_cached_servers(key: str = "standard") -> List[Dict[str, Any]]:
     global _cache_data
     fn = _cache_filename()
     try:
