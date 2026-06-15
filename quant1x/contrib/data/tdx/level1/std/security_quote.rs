@@ -4,6 +4,7 @@
 //
 // security_quote — 行情快照 (STD_SECURITY_QUOTES_OLD, 0x053e)
 
+use crate::market;
 use crate::std::BinaryStream;
 
 use super::super::super::command::*;
@@ -93,8 +94,9 @@ impl SecurityQuoteRequest {
             if sc.is_empty() {
                 continue;
             }
-            let (market, _flag, pure) = crate::exchange::detect_market(sc);
-            let mut code = pure.clone();
+            let inst = crate::data::market::detect_symbol(sc);
+            let market = helpers::exchange_to_market(inst.exchange.code()).unwrap_or(0) as u8;
+            let mut code = inst.code().to_string();
             if code.len() > 6 {
                 code.truncate(6);
             }

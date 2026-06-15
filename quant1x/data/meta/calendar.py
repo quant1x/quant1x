@@ -7,14 +7,15 @@ import pandas as pd
 from typing import List, Optional
 
 from quant1x.std import ThreadSafeSingletonABC, ThreadSafeStrategy
-from .sina.decoder import FinanceDecoder
 from quant1x.runtime.once import RollingOnce
 from quant1x.config import config
-from quant1x.data import market, layout, cache
-from quant1x.data.meta import Timestamp
 from quant1x.std import filesystem as fs
 from quant1x.log import logger
 
+from quant1x.data import cache
+from .sina.decoder import FinanceDecoder
+
+from . import layout, Timestamp, tradinghours
 
 # 新浪财经交易日历URL
 SINA_CALENDAR_URL = "https://finance.sina.com.cn/realstock/company/klc_td_sh.txt"
@@ -25,7 +26,7 @@ CALENDAR_MISSING_DATE = "1992-05-04"
 globalCalendarsString = []
 globalCalendarsTimestamp = []
 
-calendarRollingOnce = RollingOnce(name='calendar_init', cron=market.cn_cron_expr_daily_init)
+calendarRollingOnce = RollingOnce(name='calendar_init', cron=tradinghours.cn_cron_expr_daily_init)
 
 def _get_calendar_filename() -> str:
     return os.path.join(config.meta_path, "calendar")

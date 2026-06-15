@@ -5,6 +5,7 @@ use std::fmt::Debug;
 use std::path::PathBuf;
 use std::sync::{Arc, Condvar, Mutex};
 
+use crate::data::datasource::DataHandler;
 use crate::data::meta::instrument::Instrument;
 use crate::meta::Timestamp;
 
@@ -125,18 +126,8 @@ pub fn plugins_with_name(plugin_type: Kind, keywords: &[String]) -> Vec<Arc<dyn 
 /// 其结果将被汇总并写入适配器指定的缓存文件（使用适配器提供的 headers/values）。
 pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Timestamp) -> usize {
     use indicatif::{ProgressBar, ProgressStyle};
-
-    let all_codes = crate::market::get_code_list();
-    if all_codes.is_empty() {
-        log::warn!("No codes found for update");
-    }
-
-    // 将字符串代码转换为 Instrument 列表（与 Python 对齐：所有业务接口以 Instrument 为核心）
-    let all_instruments: Vec<Instrument> = all_codes
-        .iter()
-        .map(|code| crate::data::market::detect_symbol(code))
-        .filter(|inst| inst.can_construct_symbol())
-        .collect();
+    let d = crate::contrib::data::tdx::TdxDataSource;
+    let all_instruments: Vec<Instrument> = d.list_instruments(None);
     if all_instruments.is_empty() {
         log::warn!("No valid instruments found for update");
         return 0;
@@ -167,7 +158,7 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
         if let Some(limit) = crate::contrib::data::tdx::client::pool_max_connections() {
             limit
         } else {
-            let fallback = std::cmp::min(crate::contrib::data::tdx::standard::config::MAX_CONNECTIONS.max(1), 5);
+            let fallback = std::cmp::min(crate::contrib::data::tdx::config::MAX_CONNECTIONS.max(1), 5);
             log::info!(
                 "[cache] level1 pool not initialized; falling back to concurrency limit {}",
                 fallback

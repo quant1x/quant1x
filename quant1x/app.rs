@@ -676,7 +676,7 @@ pub fn try_run_subcommand(
     {
         true
     } else {
-        only_servers || all || base_keys.iter().any(|k| k == "servers")
+        only_servers || all || base_keys.iter().any(|k| k == "servers" || k == "all")
     };
 
     if do_calendar {
@@ -688,7 +688,7 @@ pub fn try_run_subcommand(
 
         let start = Instant::now();
         // Ensure calendar cache exists and trigger any necessary lazy loading.
-        if let Err(e) = crate::exchange::calendar::ensure_calendar_cache() {
+        if let Err(e) = crate::data::meta::calendar::ensure_calendar_cache() {
             spinner.finish_with_message(format!(
                 "Failed to ensure calendar cache: {} (path {})",
                 e,
@@ -706,28 +706,30 @@ pub fn try_run_subcommand(
     if do_servers {
         log::info!("正在探测 level1 服务器（握手探测）...");
         let start = Instant::now();
-        let detected = crate::contrib::data::tdx::standard::config::detect(
-            crate::contrib::data::tdx::standard::config::MAX_ELAPSED_TIME_MS,
-            crate::contrib::data::tdx::standard::config::MAX_CONNECTIONS,
-            crate::contrib::data::tdx::standard::config::DEFAULT_CONNECT_TIMEOUT_MS,
+        let detected = crate::contrib::data::tdx::config::detect(
+            crate::contrib::data::tdx::config::MAX_ELAPSED_TIME_MS,
+            crate::contrib::data::tdx::config::MAX_CONNECTIONS,
+            crate::contrib::data::tdx::config::DEFAULT_CONNECT_TIMEOUT_MS,
         );
 
         if detected.is_empty() {
             log::warn!("未探测到可用服务器。");
         } else {
-            for srv in detected.iter() {
-                log::info!(
-                    "{} {} => {}:{} ({} ms)",
-                    srv.source,
-                    srv.name,
-                    srv.host,
-                    srv.port,
-                    srv.latency_ms
-                );
+            for (source, servers) in detected.iter() {
+                for srv in servers.iter() {
+                    log::info!(
+                        "{} {} => {}:{} ({} ms)",
+                        source,
+                        srv.name,
+                        srv.host,
+                        srv.port,
+                        srv.latency_ms
+                    );
+                }
             }
-            crate::contrib::data::tdx::standard::config::save_cached_servers(&detected);
+            crate::contrib::data::tdx::config::save_cached_servers(&detected);
             log::info!(
-                "Saved {} servers to cache (elapsed {:?}).",
+                "Saved {} server groups to cache (elapsed {:?}).",
                 detected.len(),
                 start.elapsed()
             );
@@ -743,8 +745,9 @@ pub fn try_run_subcommand(
         !base_keys.is_empty()
     };
     if want_base {
-        // If the user specified base keys, select plugins with those keys; otherwise update all base data plugins
-        if base_keys.is_empty() {
+        // "all" keyword means update all base adapters; otherwise update only named adapters
+        let is_all_keyword = base_keys.iter().any(|k| k == "all");
+        if base_keys.is_empty() || is_all_keyword {
             // update all base adapters
             let _count = crate::data::update_all_mask(
                 crate::data::PLUGIN_MASK_BASE_DATA,
@@ -773,8 +776,9 @@ pub fn try_run_subcommand(
         !features_keys.is_empty()
     };
     if want_features {
-        // If the user specified feature keys, select plugins with those keys; otherwise update all feature data plugins
-        if features_keys.is_empty() {
+        // "all" keyword means update all feature adapters; otherwise update only named adapters
+        let is_all_keyword = features_keys.iter().any(|k| k == "all");
+        if features_keys.is_empty() || is_all_keyword {
             // update all feature adapters
             let _count = crate::data::update_all_mask(
                 crate::data::PLUGIN_MASK_FEATURE,

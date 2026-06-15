@@ -21,8 +21,8 @@ static STD_POOL: OnceLock<Arc<TcpConnectionPool<StandardProtocolHandler>>> = Onc
 fn build_std_pool() -> Arc<TcpConnectionPool<StandardProtocolHandler>> {
     let endpoint_manager = Arc::new(crate::io::endpoint::EndpointManager::new());
 
-    let mut servers: Vec<super::_config::ServerInfo> = Vec::new();
-    if let Some(cached) = Some(super::_config::read_cache("standard")) {
+    let mut servers: Vec<super::config::ServerInfo> = Vec::new();
+    if let Some(cached) = Some(super::config::load_cached_servers("standard")) {
         if !cached.is_empty() {
             log::debug!("[tdx/client] loaded {} cached std servers", cached.len());
             servers = cached;
@@ -31,17 +31,17 @@ fn build_std_pool() -> Arc<TcpConnectionPool<StandardProtocolHandler>> {
 
     if servers.is_empty() {
         log::debug!("[tdx/client] no cached std servers, running detect()");
-        let detected_map = super::_config::detect(
-            super::_config::MAX_ELAPSED_TIME_MS,
-            super::_config::MAX_CONNECTIONS,
-            super::_config::DEFAULT_CONNECT_TIMEOUT_MS,
+        let detected_map = super::config::detect(
+            super::config::MAX_ELAPSED_TIME_MS,
+            super::config::MAX_CONNECTIONS,
+            super::config::DEFAULT_CONNECT_TIMEOUT_MS,
         );
         let detected = detected_map.get("standard").cloned().unwrap_or_default();
         log::debug!("[tdx/client] detect() returned {} std servers", detected.len());
         if !detected.is_empty() {
             let mut cache_map = std::collections::BTreeMap::new();
             cache_map.insert("standard".to_string(), detected.clone());
-            super::_config::write_cache(&cache_map);
+            super::config::save_cached_servers(&cache_map);
         }
         servers = detected;
     } else {
@@ -50,7 +50,7 @@ fn build_std_pool() -> Arc<TcpConnectionPool<StandardProtocolHandler>> {
 
     if servers.is_empty() {
         log::warn!("[tdx/client] std detection produced no servers, falling back to standard list");
-        servers = super::_config::standard_server_list();
+        servers = super::config::standard_server_list();
     }
 
     for s in &servers {
@@ -68,7 +68,7 @@ fn build_std_pool() -> Arc<TcpConnectionPool<StandardProtocolHandler>> {
     }
 
     let max_conn = std::cmp::min(
-        super::_config::MAX_CONNECTIONS,
+        super::config::MAX_CONNECTIONS,
         server_count.max(1),
     );
 
@@ -102,7 +102,7 @@ fn build_ext_pool() -> Arc<TcpConnectionPool<ExtensionProtocolHandler>> {
     let endpoint_manager = Arc::new(crate::io::endpoint::EndpointManager::new());
 
     let mut discovered: Vec<SocketAddr> = Vec::new();
-    let cached = super::_config::read_cache("extension");
+    let cached = super::config::load_cached_servers("extension");
     if !cached.is_empty() {
         for s in &cached {
             match SocketAddr::from_str(&s.addr()) {
@@ -113,7 +113,7 @@ fn build_ext_pool() -> Arc<TcpConnectionPool<ExtensionProtocolHandler>> {
     }
 
     if discovered.is_empty() {
-        let ext_servers = super::_config::extension_server_list();
+        let ext_servers = super::config::extension_server_list();
         for s in &ext_servers {
             match SocketAddr::from_str(&s.addr()) {
                 Ok(addr) => discovered.push(addr),
@@ -127,7 +127,7 @@ fn build_ext_pool() -> Arc<TcpConnectionPool<ExtensionProtocolHandler>> {
     }
 
     let max_conn = std::cmp::min(
-        super::_config::MAX_CONNECTIONS,
+        super::config::MAX_CONNECTIONS,
         std::cmp::max(1, discovered.len()),
     );
 

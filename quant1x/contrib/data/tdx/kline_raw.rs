@@ -5,16 +5,18 @@
 //
 // 不依赖 crate::contrib::data::tdx::standard，所有类型均使用 tdx/ 本地模块定义。
 
+use std::sync::Arc;
+use serde::{Deserialize, Serialize};
+
 use crate::data::adapter::DataAdapter;
 use crate::data::meta::instrument::Instrument;
 use crate::data::meta::Timestamp;
-use crate::data::{KLineRaw, BaseRawDailyKLine};
-use crate::std::BinaryStream;
-use std::sync::Arc;
-
+use crate::data::{BaseRawDailyKLine};
 use super::command::{EXT_INSTRUMENT_BARS, FLAG_GENERIC};
 use super::helpers::msg_sequence_id;
+use super::level1::std::security_bars::{SecurityBarsRequest, SecurityBar as StdSecurityBar};
 use super::protocol::{BaseMessage, RequestHeader, ResponseHeader};
+use crate::std::BinaryStream;
 
 /// 日线增量更新时丢弃的缓存天数，与 Python MaxCachedDaysToDropOnIncrementalUpdate 对齐
 const MAX_CACHED_DAYS_TO_DROP: usize = 1;
@@ -243,6 +245,47 @@ impl InstrumentBars {
 // 文件路径 & 缓存
 // ============================================================
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct KLineRaw {
+    #[serde(rename = "date")]
+    pub date: String,
+    #[serde(rename = "open")]
+    pub open: f64,
+    #[serde(rename = "close")]
+    pub close: f64,
+    #[serde(rename = "high")]
+    pub high: f64,
+    #[serde(rename = "low")]
+    pub low: f64,
+    #[serde(rename = "volume")]
+    pub volume: f64,
+    #[serde(rename = "amount")]
+    pub amount: f64,
+    #[serde(rename = "up")]
+    pub up: i32,
+    #[serde(rename = "down")]
+    pub down: i32,
+    #[serde(rename = "datetime")]
+    pub datetime: String,
+}
+
+impl KLineRaw {
+    pub fn headers() -> Vec<String> {
+        vec![
+            "date".into(),
+            "open".into(),
+            "close".into(),
+            "high".into(),
+            "low".into(),
+            "volume".into(),
+            "amount".into(),
+            "up".into(),
+            "down".into(),
+            "datetime".into(),
+        ]
+    }
+}
+
 /// 生成原始K线缓存文件路径，与 Python get_kline_raw_filename 对齐
 pub fn get_kline_raw_filename(inst: &Instrument) -> String {
     let symbol = inst.symbol();
@@ -325,30 +368,84 @@ fn save_kline_raw(filename: &str, values: &[KLineRaw]) {
 // fetch_kline_raw — 根据交易所类型分发
 // ============================================================
 
+/// 根据交易所类型分发到标准行情或扩展行情获取原始K线
+/// 对应 Python fetch_kline_raw(inst, start, count, freq)
+pub fn fetch_kline_raw(
+    inst: &Instrument,
+    start: u32,
+    count: u16,
+) -> Option<SecurityBarsResponse> {
+    if inst.exchange.is_std_quote() {
+        fetch_kline_raw_from_std(inst, start, count)
+    } else if inst.exchange.is_ext_quote() {
+        fetch_kline_raw_from_ext(inst, start, count)
+    } else {
+        None
+    }
+}
 
 
 /// 从标准行情获取原始K线
+/// 对应 Python kline_raw.py fetch_kline_raw_from_std:
+///   msg = SecurityBars(inst.exchange, inst.ticker, kline_type, start, count, inst.type.is_index())
+/// 使用 STD_SECURITY_BARS (0x052d) 命令，通过标准行情连接获取
 fn fetch_kline_raw_from_std(
     inst: &Instrument,
     start: u32,
     count: u16,
 ) -> Option<SecurityBarsResponse> {
-    let symbol = inst.symbol();
-    // 调用已有的数据层接口（内部使用 level1 连接池，但作为数据层接口调用是允许的）
-    let resp = crate::data::kline_raw::fetch_kline(&symbol, start, count, crate::contrib::data::tdx::level1::std::KLineType::RiK)?;
-    Some(SecurityBarsResponse {
-        count: resp.count,
-        list: resp.list.iter().map(|b| SecurityBar {
-            open: b.open, close: b.close, high: b.high, low: b.low,
-            vol: b.vol, amount: b.amount,
-            year: b.year as i32, month: b.month as i32, day: b.day as i32,
-            hour: b.hour as i32, minute: b.minute as i32,
-            datetime: b.datetime.clone(),
-            up_count: b.up_count as i32, down_count: b.down_count as i32,
-        }).collect(),
-        is_index: resp.is_index,
-        category: 0, // SecurityBarsRequest no longer carries category; use default
-    })
+    let code = inst.code();
+    let ticker = code.to_uppercase();
+    let category = kline_type_to_value(KLineType::Daily);
+
+    match super::client::get_std_conn() {
+        Ok(mut conn) => {
+            // 使用 SecurityBarsRequest (STD_SECURITY_BARS, 0x052d)，不是 InstrumentBars (EXT_INSTRUMENT_BARS, 0x23ff)
+            let symbol = format!("{}{}", inst.exchange.identifier(), ticker);
+            let mut bars = SecurityBarsRequest::with_is_index(
+                &symbol,
+                category,
+                start as u16,
+                count,
+                inst.instrument_type.is_index(),
+            );
+            match super::protocol::process_level1_stream(conn.stream(), &mut bars) {
+                Ok(()) => {
+                    log::debug!("[kline_raw] fetch_kline_raw_from_std: {} bars for {}", bars.list.len(), inst.symbol());
+                    let list: Vec<SecurityBar> = bars.list.into_iter().map(|b| SecurityBar {
+                        open: b.open,
+                        close: b.close,
+                        high: b.high,
+                        low: b.low,
+                        vol: b.volume,
+                        amount: b.amount,
+                        year: b.year,
+                        month: b.month,
+                        day: b.day,
+                        hour: b.hour,
+                        minute: b.minute,
+                        datetime: b.timestamp,
+                        up_count: b.up as i32,
+                        down_count: b.down as i32,
+                    }).collect();
+                    Some(SecurityBarsResponse {
+                        count: list.len() as u16,
+                        list,
+                        is_index: inst.instrument_type.is_index(),
+                        category,
+                    })
+                }
+                Err(e) => {
+                    log::error!("[kline_raw] fetch_kline_raw_from_std failed for {}: {}", inst.symbol(), e);
+                    None
+                }
+            }
+        }
+        Err(e) => {
+            log::error!("[kline_raw] get_std_conn failed: {}", e);
+            None
+        }
+    }
 }
 
 /// 从扩展行情获取原始K线（港股/美股等）
@@ -358,7 +455,7 @@ fn fetch_kline_raw_from_ext(
     start: u32,
     count: u16,
 ) -> Option<SecurityBarsResponse> {
-    let code = if inst.alias_ticker.is_empty() { &inst.ticker } else { &inst.alias_ticker };
+    let code = inst.code();
     let ticker = code.to_uppercase();
     let category = kline_type_to_value(KLineType::Daily);
 

@@ -9,15 +9,15 @@ from enum import IntFlag
 from typing import List, Optional, Union
 from datetime import datetime
 
+from quant1x.runtime.once import RollingOnce
 from quant1x.std.time import get_timezone_offset_standard
 from quant1x.log import logger
 
-from .. import layout, market
+from .. import market
 from .timestamp import Timestamp
 from .exchange import Exchange
 from .region import Region
-from quant1x.runtime.once import RollingOnce
-from quant1x.data.meta import calendar
+from . import calendar, layout, tradinghours
 
 # TODO: https://www.tradinghours.com/markets
 
@@ -589,7 +589,7 @@ def init_us_session() -> TradingSession:
 # 全局单例（由 RollingOnce 每日重建）
 _trading_hours_map = {}
 _trading_hours_default = init_cn_session() # 默认中国市场时段
-_ts_today_session_once = RollingOnce(name='sessions_init', cron=market.cn_cron_expr_daily_init)
+_ts_today_session_once = RollingOnce(name='sessions_init', cron=tradinghours.cn_cron_expr_daily_init)
 
 
 def _ts_today_session_init():
@@ -696,7 +696,7 @@ def check_trading_timestamp(exchange: Exchange = Exchange.SSE, last_modified: Op
 
 
 _ts_today_init: Timestamp = Timestamp.zero()
-_ts_today_init_once = RollingOnce(name='today_init', cron=market.cn_cron_expr_daily_init)
+_ts_today_init_once = RollingOnce(name='today_init', cron=tradinghours.cn_cron_expr_daily_init)
 
 def get_today() -> Timestamp:
     global _ts_today_init

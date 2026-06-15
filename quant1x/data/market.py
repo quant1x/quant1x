@@ -7,16 +7,16 @@ from typing import List
 from quant1x.log import logger
 from quant1x.std.numeric import NumberRange
 
-from ..meta.exchange import Exchange
-from ..meta.instrument import Instrument, InstrumentType
+from .meta.exchange import Exchange
+from .meta.instrument import Instrument, InstrumentType
 
 # 证券代码规则定义
-from ..meta.ticker_rules.rule import CodeRule, global_rules
-from ..meta.ticker_rules.market_sse import sse_rules
-from ..meta.ticker_rules.market_szse import szse_rules
-from ..meta.ticker_rules.market_bse import bse_rules
-from ..meta.ticker_rules.market_hkex import hkex_rules
-from ..meta.ticker_rules.market_usa import usa_rules, usa_ticker_to_code, usa_code_to_ticker
+from .meta.ticker_rules.rule import CodeRule, global_rules
+from .meta.ticker_rules.market_sse import sse_rules
+from .meta.ticker_rules.market_szse import szse_rules
+from .meta.ticker_rules.market_bse import bse_rules
+from .meta.ticker_rules.market_hkex import hkex_rules
+from .meta.ticker_rules.market_usa import usa_rules, usa_ticker_to_code, usa_code_to_ticker
 
 def match_rule(code: str, rules: List[CodeRule]) -> CodeRule:
     """
@@ -297,15 +297,11 @@ def correct_security_code(code: str) -> str:
     else:
         raise ValueError(f"无法纠正证券代码: {code}")
 
-PRE_MARKET_HOUR = 9
-PRE_MARKET_MINUTE = 0
-PRE_MARKET_SECOND = 0
-cn_cron_expr_daily_init = f"0 {PRE_MARKET_HOUR} {PRE_MARKET_MINUTE} * * *"
+
 
 __all__ = [
     "detect_instrument_type_by_rule",
     "detect_symbol",
-    "cn_cron_expr_daily_init",
 ]
 
 

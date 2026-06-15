@@ -304,11 +304,6 @@ mod tests {
 
         let ds = TdxDataSource::new();
 
-        // (Python 注释) sectors = D.get_sector_list()
-        // (Python 注释) indexes = D.get_index_list()
-        // (Python 注释) stocks = D.get_stock_list()
-        // (Python 注释) codes = D.list_instruments()
-
         // ---- 对齐 Python __main__: get_instrument + klines ----
         // Python: code = 'sh562500' → code = 'hsi.hk' → code = 'ixic.us' → code = '00077.hk'
         let code = "00077.hk";

@@ -41,7 +41,7 @@ class SecurityBars(protocol.BaseMessage):
     """K线数据"""
     def __init__(self, exchange: Exchange, code: str, category: KLineType, start: int, count: int, is_index: bool = False):
         super().__init__(Command.STD_SECURITY_BARS)
-        self.request_header.packet_type = 0x00
+        self.request_header.packet_flag = 0x00
         self._category = category
         self._i = 1
         self._start = start

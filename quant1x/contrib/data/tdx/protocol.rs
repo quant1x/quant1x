@@ -221,7 +221,7 @@ pub fn process_level1<M: BaseMessage, R: Read>(
 }
 
 /// 对单一 Read+Write stream 执行 process_level1
-/// 适用于 MioTcpStream 等不支持 try_clone 的 stream
+/// 使用阻塞 std::net::TcpStream，已设置读写超时
 pub fn process_level1_stream<M: BaseMessage, T: Read + Write>(
     stream: &mut T,
     msg: &mut M,
@@ -339,7 +339,7 @@ fn process_level1_impl<M: BaseMessage, R: Read>(
 // 对应 Python protocol.py StandardProtocolHandler
 // ============================================================
 
-use mio::net::TcpStream as MioTcpStream;
+use std::net::TcpStream as StdTcpStream;
 use std::time::Duration;
 
 use crate::io::operation_handler::NetworkOperationHandler;
@@ -350,7 +350,15 @@ use super::level1::std::heartbeat::HeartbeatRequest;
 pub struct StandardProtocolHandler;
 
 impl NetworkOperationHandler for StandardProtocolHandler {
-    fn handshake(&self, stream: &mut MioTcpStream) -> std::io::Result<()> {
+    /// handshake 匹配 trait 签名 (mio::net::TcpStream)，但实际不使用。
+    /// 连接池通过 handshake_std 在 std::net::TcpStream 上执行阻塞握手。
+    fn handshake(&self, _stream: &mut mio::net::TcpStream) -> std::io::Result<()> {
+        // 不会被调用，handshake_std 已覆盖
+        Ok(())
+    }
+
+    /// 在阻塞的 std::net::TcpStream 上执行握手，保证 read_exact 不会遇到 WouldBlock。
+    fn handshake_std(&self, stream: &mut StdTcpStream) -> std::io::Result<()> {
         // Hello1
         let mut req1 = Hello1Request::new();
         match process_level1_stream(stream, &mut req1) {
@@ -384,7 +392,7 @@ impl NetworkOperationHandler for StandardProtocolHandler {
         Ok(())
     }
 
-    fn keepalive(&self, stream: &mut MioTcpStream) -> std::io::Result<bool> {
+    fn keepalive(&self, stream: &mut mio::net::TcpStream) -> std::io::Result<bool> {
         let mut req = HeartbeatRequest::new();
         match process_level1_stream(stream, &mut req) {
             Ok(()) => Ok(true),
@@ -411,7 +419,15 @@ use super::level1::ext::{ExtSynchronizeRequest, InstrumentCountRequest};
 pub struct ExtensionProtocolHandler;
 
 impl NetworkOperationHandler for ExtensionProtocolHandler {
-    fn handshake(&self, stream: &mut MioTcpStream) -> std::io::Result<()> {
+    /// handshake 匹配 trait 签名 (mio::net::TcpStream)，但实际不使用。
+    /// 连接池通过 handshake_std 在 std::net::TcpStream 上执行阻塞握手。
+    fn handshake(&self, _stream: &mut mio::net::TcpStream) -> std::io::Result<()> {
+        // 不会被调用，handshake_std 已覆盖
+        Ok(())
+    }
+
+    /// 在阻塞的 std::net::TcpStream 上执行握手，保证 read_exact 不会遇到 WouldBlock。
+    fn handshake_std(&self, stream: &mut StdTcpStream) -> std::io::Result<()> {
         let mut req = ExtSynchronizeRequest::new();
         match process_level1_stream(stream, &mut req) {
             Ok(()) if req.success => Ok(()),
@@ -426,25 +442,7 @@ impl NetworkOperationHandler for ExtensionProtocolHandler {
         }
     }
 
-    fn handshake_std(&self, stream: &mut std::net::TcpStream) -> std::io::Result<()> {
-        let mut reader = stream.try_clone().map_err(|e| {
-            std::io::Error::new(std::io::ErrorKind::Other, format!("try_clone reader: {}", e))
-        })?;
-        let mut req = ExtSynchronizeRequest::new();
-        match process_level1(&mut reader, stream, &mut req) {
-            Ok(()) if req.success => Ok(()),
-            Ok(()) => Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "ExtensionProtocolHandler: synchronize failed (success=false)",
-            )),
-            Err(e) => Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                e.to_string(),
-            )),
-        }
-    }
-
-    fn keepalive(&self, stream: &mut MioTcpStream) -> std::io::Result<bool> {
+    fn keepalive(&self, stream: &mut mio::net::TcpStream) -> std::io::Result<bool> {
         let mut req = InstrumentCountRequest::new();
         match process_level1_stream(stream, &mut req) {
             Ok(()) => Ok(req.count > 0),

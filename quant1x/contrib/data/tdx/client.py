@@ -12,7 +12,7 @@ from quant1x.data import status
 from quant1x.data.meta import Exchange
 from quant1x.net.conn import ConnectionHandle
 from quant1x.net.tcp_client_pool import TcpConnectionPool
-from . import _config, protocol
+from . import config, protocol
 from quant1x.log import logger
 
 _std_pool_lock = threading.Lock()
@@ -35,18 +35,18 @@ def _build_std_pool(*, min_conn: int, max_conn: int, servers: Optional[List[Tupl
     discovered: List[Tuple[str, int]] = []
 
     # 决定是否更新服务器缓存
-    cache_fn = _config._cache_filename()
+    cache_fn = config._cache_filename()
     # 如果缓存文件不存在, 则创建或更新缓存文件
     create_or_update = status.should_initialize_file(cache_fn)
     if not create_or_update:
-        cached = _config.read_cache(key)
+        cached = config.load_cached_servers(key)
         create_or_update = len(cached) == 0
         
     if create_or_update:
-        detected = _config.detect(conn_limit=10)
+        detected = config.detect(conn_limit=10)
         if detected:
             try:
-                _config.write_cache(detected)
+                config.save_cached_servers(detected)
             except Exception:
                 logger.error("level1._build_pool: failed to write server cache")
         try:
@@ -57,7 +57,7 @@ def _build_std_pool(*, min_conn: int, max_conn: int, servers: Optional[List[Tupl
 
     # 读取缓存的服务器
     try:
-        cached = _config.read_cache(key)
+        cached = config.load_cached_servers(key)
         if cached:
             for s in cached:
                 h = s.get("host") or s.get("Host")
@@ -140,18 +140,18 @@ def _build_ext_pool(*, min_conn: int, max_conn: int, servers: Optional[List[Tupl
     discovered: List[Tuple[str, int]] = []
 
     # 决定是否更新服务器缓存
-    cache_fn = _config._cache_filename()
+    cache_fn = config._cache_filename()
     # 如果缓存文件不存在, 则创建或更新缓存文件
     create_or_update = status.should_initialize_file(cache_fn)
     if not create_or_update:
-        cached = _config.read_cache(key)
+        cached = config.load_cached_servers(key)
         create_or_update = len(cached) == 0
         
     if create_or_update:
-        detected = _config.detect(conn_limit=10)
+        detected = config.detect(conn_limit=10)
         if detected:
             try:
-                _config.write_cache(detected)
+                config.save_cached_servers(detected)
             except Exception:
                 logger.error("level1._build_pool: failed to write server cache")
         try:
@@ -162,7 +162,7 @@ def _build_ext_pool(*, min_conn: int, max_conn: int, servers: Optional[List[Tupl
 
     # 读取缓存的服务器
     try:
-        cached = _config.read_cache(key)
+        cached = config.load_cached_servers(key)
         if cached:
             for s in cached:
                 h = s.get("host") or s.get("Host")

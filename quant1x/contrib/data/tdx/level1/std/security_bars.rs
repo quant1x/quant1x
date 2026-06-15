@@ -1,4 +1,4 @@
-// K线类型 (mimicking C++ level1::KLineType)
+// K线类型 (mimicking Python KLineType)
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KLineType {
@@ -19,9 +19,13 @@ pub enum KLineType {
 use super::super::super::command::*;
 use super::super::super::helpers::{get_datetime_from_u32, int_to_float64};
 use super::super::super::protocol::{BaseMessage, RequestHeader, ResponseHeader};
+use crate::helpers;
 use crate::std::BinaryStream;
 
-#[derive(Debug, Clone, Default)]
+/// SECURITY_BARS_PRE_REQUEST_MAX = 700
+pub const SECURITY_BARS_PRE_REQUEST_MAX: usize = 700;
+
+#[derive(Debug, Clone)]
 struct SecurityBarsParameter {
     market: u16,
     code: [u8; 6],
@@ -31,7 +35,20 @@ struct SecurityBarsParameter {
     count: u16,
 }
 
-#[allow(dead_code)]
+impl Default for SecurityBarsParameter {
+    fn default() -> Self {
+        Self {
+            market: 0,
+            code: [0u8; 6],
+            category: 0,
+            i_field: 1, // frequency, 对应 Python self._i = 1
+            start: 0,
+            count: 0,
+        }
+    }
+}
+
+/// K线数据 — 对应 Python SecurityBars(protocol.BaseMessage)
 #[derive(Debug, Clone)]
 pub struct SecurityBarsRequest {
     pub req_header: RequestHeader,
@@ -43,10 +60,28 @@ pub struct SecurityBarsRequest {
     pub list: Vec<SecurityBar>,
 }
 
-#[allow(dead_code)]
 impl SecurityBarsRequest {
-    pub fn new(security_code: &str, category: u16, start: u16, count: u16) -> Self {
-        Self::with_frequency(security_code, category, start, count, 1)
+    /// 构造 K线请求
+    ///
+    /// 对应 Python `SecurityBars.__init__(exchange, code, category, start, count, is_index)`
+    pub fn new(
+        security_code: &str,
+        category: u16,
+        start: u16,
+        count: u16,
+    ) -> Self {
+        Self::with_is_index(security_code, category, start, count, false)
+    }
+
+    /// 带 is_index 参数的构造
+    pub fn with_is_index(
+        security_code: &str,
+        category: u16,
+        start: u16,
+        count: u16,
+        is_index: bool,
+    ) -> Self {
+        Self::with_frequency_and_is_index(security_code, category, start, count, 1, is_index)
     }
 
     pub fn with_frequency(
@@ -56,13 +91,26 @@ impl SecurityBarsRequest {
         count: u16,
         frequency: u16,
     ) -> Self {
-        let (market_id, _flag, pure) = crate::exchange::detect_market(security_code);
+        Self::with_frequency_and_is_index(security_code, category, start, count, frequency, false)
+    }
+
+    /// 完整构造，对齐 Python `__init__`
+    pub fn with_frequency_and_is_index(
+        security_code: &str,
+        category: u16,
+        start: u16,
+        count: u16,
+        frequency: u16,
+        is_index: bool,
+    ) -> Self {
+        let inst = crate::data::market::detect_symbol(security_code);
+        //let market_id = inst.ext_market;
+        let market_id = helpers::exchange_to_market(inst.exchange.code()).unwrap_or(0);
+        let pure = inst.code().to_string();
         let mut code_bytes = [0u8; 6];
         let sym = pure.as_bytes();
         let copy_len = std::cmp::min(sym.len(), code_bytes.len());
         code_bytes[..copy_len].copy_from_slice(&sym[..copy_len]);
-
-        let is_index = crate::exchange::assert_index_by_market_and_code(market_id, pure.as_str());
 
         let mut req_header = RequestHeader::new(STD_SECURITY_BARS, FLAG_UNCOMPRESSED);
         req_header.packet_type = 0x00;
@@ -89,6 +137,7 @@ impl SecurityBarsRequest {
         self.is_index
     }
 
+    #[allow(dead_code)]
     fn code_string(&self) -> String {
         let nul = self
             .param
@@ -107,6 +156,7 @@ impl BaseMessage for SecurityBarsRequest {
     fn response_header_mut(&mut self) -> &mut ResponseHeader { &mut self.resp_header }
 
     fn serialize_request_body(&mut self) -> Vec<u8> {
+        // 对应 Python: struct.pack('<H 6s H H H H', market, code, category, i, start, count) + padding
         let mut payload = BinaryStream::new();
         payload.push_u16(self.param.market);
         payload.push_byte_array(&self.param.code);
@@ -121,50 +171,69 @@ impl BaseMessage for SecurityBarsRequest {
     fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
         self.list.clear();
         self.count = 0;
+
+        if data.len() < 2 {
+            return Ok(());
+        }
+
         let mut bs = BinaryStream::from_vec(data.to_vec());
         self.count = bs.get_u16()?;
         self.list.reserve(self.count as usize);
 
         let mut pre_diff_base: i64 = 0;
+        let cat = self.param.category;
+
         for _ in 0..self.count {
             let mut e = SecurityBar::new();
 
-            if (self.param.category as i32) < 4 || self.param.category == 7 || self.param.category == 8 {
+            // 对应 Python: if cat < 4 or cat == 7 or cat == 8
+            if cat < 4 || cat == 7 || cat == 8 {
                 let zipday = bs.get_u16()? as u32;
                 let tminutes = bs.get_u16()?;
                 let (y, m, d, hh, mm) =
-                    get_datetime_from_u32(self.param.category as i32, zipday, tminutes);
+                    get_datetime_from_u32(cat as i32, zipday, tminutes);
                 e.year = y;
                 e.month = m;
                 e.day = d;
                 e.hour = hh;
                 e.minute = mm;
             } else {
+                // 对应 Python: zipday = struct.unpack('<I', ...)[0]; year = int(zipday/10000); month = int((zipday%10000)/100); day = int(zipday%100)
+                // Python 非分钟线不调用 get_datetime_from_uint32，直接算
                 let zipday = bs.get_u32()?;
-                let (y, m, d, hh, mm) =
-                    get_datetime_from_u32(self.param.category as i32, zipday, 0);
+                let y = (zipday / 10000) as i32;
+                let m = ((zipday % 10000) / 100) as i32;
+                let d = (zipday % 100) as i32;
                 e.year = y;
                 e.month = m;
                 e.day = d;
-                e.hour = hh;
-                e.minute = mm;
+                e.hour = 15; // 对齐 Python: hour = 15
+                e.minute = 0;
             }
-            e.datetime = format!(
+
+            // 对应 Python: e.date = f"{year:04d}-{month:02d}-{day:02d}"
+            e.date = format!("{:04}-{:02}-{:02}", e.year, e.month, e.day);
+            // 对应 Python: e.timestamp = f"{year:04d}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:00"
+            e.timestamp = format!(
                 "{:04}-{:02}-{:02} {:02}:{:02}:00",
                 e.year, e.month, e.day, e.hour, e.minute
             );
 
+            // 对应 Python: helpers.varint_decode
             let mut price_open_diff = bs.varint_decode()?;
             let price_close_diff = bs.varint_decode()?;
             let price_high_diff = bs.varint_decode()?;
             let price_low_diff = bs.varint_decode()?;
 
+            // 对应 Python: ivol = struct.unpack('<I', ...)[0]; e.volume = helpers.int_to_float64(ivol)
             let ivol = bs.get_u32()?;
-            e.vol = int_to_float64(ivol);
+            e.volume = int_to_float64(ivol);
 
+            // 对应 Python: dbvol = struct.unpack('<I', ...)[0]; e.amount = helpers.int_to_float64(dbvol)
             let dbvol = bs.get_u32()?;
             e.amount = int_to_float64(dbvol);
 
+            // 对应 Python: e.open = float(price_open_diff + pre_diff_base) / 1000.0
             e.open = (price_open_diff + pre_diff_base) as f64 / 1000.0;
             price_open_diff += pre_diff_base;
 
@@ -174,9 +243,10 @@ impl BaseMessage for SecurityBarsRequest {
 
             pre_diff_base = price_open_diff + price_close_diff;
 
+            // 对应 Python: if self._is_index: e.up = ...; e.down = ...
             if self.is_index {
-                e.up_count = bs.get_u16()?;
-                e.down_count = bs.get_u16()?;
+                e.up = bs.get_u16()?;
+                e.down = bs.get_u16()?;
             }
 
             self.list.push(e);
@@ -185,41 +255,59 @@ impl BaseMessage for SecurityBarsRequest {
     }
 }
 
+/// K线数据结构体 — 对应 Python `Bar`
 #[derive(Debug, Clone)]
 pub struct SecurityBar {
+    /// 日期: YYYY-MM-DD, 对应 Python `date`
+    pub date: String,
+    /// 开盘价
     pub open: f64,
+    /// 收盘价
     pub close: f64,
+    /// 最高价
     pub high: f64,
+    /// 最低价
     pub low: f64,
-    pub vol: f64,
+    /// 成交量, 对应 Python `volume`
+    pub volume: f64,
+    /// 成交额
     pub amount: f64,
+    /// 上涨家数: 仅指数有效, 对应 Python `up`
+    pub up: u16,
+    /// 下跌家数: 仅指数有效, 对应 Python `down`
+    pub down: u16,
+    /// 时间戳: YYYY-MM-DD HH:MM:SS, 对应 Python `timestamp`
+    pub timestamp: String,
+    /// 复权次数, 对应 Python `adjustment_count`
+    pub adjustment_count: u32,
+
+    // ---- 以下为辅助字段，Python Bar 中没有 ----
     pub year: i32,
     pub month: i32,
     pub day: i32,
     pub hour: i32,
     pub minute: i32,
-    pub datetime: String,
-    pub up_count: u16,
-    pub down_count: u16,
 }
 
 impl SecurityBar {
     pub fn new() -> Self {
         Self {
+            date: String::new(),
             open: 0.0,
             close: 0.0,
             high: 0.0,
             low: 0.0,
-            vol: 0.0,
+            volume: 0.0,
             amount: 0.0,
+            up: 0,
+            down: 0,
+            timestamp: String::new(),
+            adjustment_count: 0,
             year: 0,
             month: 0,
             day: 0,
             hour: 0,
             minute: 0,
-            datetime: String::new(),
-            up_count: 0,
-            down_count: 0,
         }
     }
 }
@@ -236,7 +324,8 @@ mod tests {
     fn deserialize_sample_matches_cpp_output() {
         let hex_data = "05002bff3401a52910134982d4834e07eb2f4f2eff340102060e4a8a70db4dca40934e2fff3401440a0f4aef5a734e3b6c234f30ff340141191f515cd8094f6d64ba4f31ff34014d102c4398098b4e44b03c4f";
         let buf = hex::decode(hex_data).unwrap();
-        let mut req = SecurityBarsRequest::new("sh000001", 9, 0, 800);
+        // 对应 Python: SecurityBars(exchange, "sh000001", KLineType.RI_K, 0, 800, is_index=True)
+        let mut req = SecurityBarsRequest::with_is_index("sh000001", 9, 0, 800, true);
         let _ = req.deserialize_response_body(&buf);
         assert_eq!(req.count as usize, req.list.len());
         assert!(req.list.len() > 0 || req.count == 0);

@@ -98,8 +98,8 @@ macro_rules! apply_forward_adjustment_for_event {
 pub fn init() {
     // register xdxr, day kline, minute kline, transaction adapters
     // ignore failures — each sub-init handles its own logging
-    xdxr::init();
-    kline::init();
-    kline_minute::init();
-    trans::init();
+    //xdxr::init();
+    crate::contrib::data::tdx::kline::init();
+    //kline_minute::init();
+    //trans::init();
 }

@@ -842,14 +842,14 @@ mod tests {
         assert!(PERM_CONTINUOUS_TRADING.can_market_order());
         assert!(PERM_CONTINUOUS_TRADING.can_limit_order());
         assert!(PERM_CONTINUOUS_TRADING.can_match());
-        assert!(PERM_CONTINUOUS_TRADING.is_continuous_trading());
-        assert!(!PERM_CLOSED.is_continuous_trading());
+        assert!(PermissionExt::is_continuous_trading(&PERM_CONTINUOUS_TRADING));
+        assert!(!PermissionExt::is_continuous_trading(&PERM_CLOSED));
     }
 
     #[test]
     fn test_timestatus_methods() {
         assert!(TS_CONTINUOUS_TRADING.is_open());
-        assert!(TS_CONTINUOUS_TRADING.is_continuous_trading());
+        assert!(TimeStatusExt::is_continuous_trading(&TS_CONTINUOUS_TRADING));
         assert!(TS_CONTINUOUS_TRADING.is_market_active());
         assert!(!TS_CONTINUOUS_TRADING.is_trading_disabled());
         assert!(TS_CLOSED.is_trading_disabled());

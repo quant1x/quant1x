@@ -18,8 +18,9 @@ pub struct FinanceInfoRequest {
 impl FinanceInfoRequest {
     pub fn new(security_code: &str) -> Self {
         let mut code = [0u8; 6];
-        let (_mid, _flag, pure) = crate::exchange::detect_market(security_code);
-        let market = _mid;
+        let inst = crate::data::market::detect_symbol(security_code);
+        let market = inst.ext_market as u8;
+        let pure = inst.code().to_string();
         let bytes = pure.as_bytes();
         for i in 0..bytes.len().min(6) {
             code[i] = bytes[i];

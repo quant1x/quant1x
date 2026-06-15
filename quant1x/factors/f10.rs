@@ -1,8 +1,6 @@
 use crate::config;
-use crate::data::kline;
 use crate::data::market::detect_symbol;
 use crate::data::meta::Timestamp;
-use crate::data::xdxr;
 use crate::factors::financial_report;
 use crate::factors::notice;
 use crate::factors::safety_score;
@@ -139,10 +137,9 @@ impl F10 {
 }
 
 fn get_ipo_date(security_code: &str, _feature_date: &str) -> String {
-    // Use load_klines from datasets::kline
-    // Note: checkout_klines in C++ might do more, but here we just load from cache
-    let filename = config::get_kline_filename(security_code, true);
-    let kls = kline::load_klines(&filename);
+    // Use load_kline from tdx::kline
+    let inst = detect_symbol(security_code);
+    let kls = crate::contrib::data::tdx::kline::load_kline(&inst);
     if kls.is_empty() {
         return String::new();
     }
@@ -161,22 +158,27 @@ fn get_finance_info(security_code: &str, feature_date: &str) -> (f64, f64, Strin
         let mut msg = level1::FinanceInfoRequest::new(security_code);
 
         // Use stream() to get the stream
-        if let Ok(_) = crate::contrib::data::tdx::protocol::process_level1_stream(conn.stream(), &mut msg) {
-            let info = msg.info;
-            // Check if response is valid (assuming non-zero capital means valid)
-            if info.liu_tong_gu_ben > 0.0 && info.zong_gu_ben > 0.0 {
-                capital = info.liu_tong_gu_ben;
-                total_capital = info.zong_gu_ben;
-            }
+        match crate::contrib::data::tdx::protocol::process_level1_stream(conn.stream(), &mut msg) {
+            Ok(_) => {
+                let info = msg.info;
+                // Check if response is valid (assuming non-zero capital means valid)
+                if info.liu_tong_gu_ben > 0.0 && info.zong_gu_ben > 0.0 {
+                    capital = info.liu_tong_gu_ben;
+                    total_capital = info.zong_gu_ben;
+                }
 
-            if info.ipo_date >= base_date {
-                ipo_date = Timestamp::from_yyyymmdd_int(info.ipo_date).to_string();
-            } else {
-                ipo_date = get_ipo_date(security_code, feature_date);
-            }
+                if info.ipo_date >= base_date {
+                    ipo_date = Timestamp::from_yyyymmdd_int(info.ipo_date).to_string();
+                } else {
+                    ipo_date = get_ipo_date(security_code, feature_date);
+                }
 
-            if info.updated_date >= base_date {
-                update_date = Timestamp::from_yyyymmdd_int(info.updated_date).to_string();
+                if info.updated_date >= base_date {
+                    update_date = Timestamp::from_yyyymmdd_int(info.updated_date).to_string();
+                }
+            }
+            Err(e) => {
+                log::warn!("[f10] finance_info request failed for {}: {}", security_code, e);
             }
         }
     }
@@ -207,7 +209,8 @@ fn checkout_security_basic_info(security_code: &str, feature_date: &str) -> F10S
         update_date: String::new(),
     };
 
-    let mut list = xdxr::load_xdxr(security_code);
+    // TODO: implement xdxr loading — crate::contrib::data::tdx::level1::std::xdxr::fetch_xdxr
+    let mut list: Vec<crate::data::schema::XdxrInfo> = Vec::new();
     // Sort descending by date
     list.sort_by(|a, b| b.date.cmp(&a.date));
 
@@ -217,8 +220,8 @@ fn checkout_security_basic_info(security_code: &str, feature_date: &str) -> F10S
         .find(|v| v.is_capital_change() && feature_date >= v.date.as_str());
 
     if let Some(v) = xdxr {
-        info.total_capital = v.hou_zonggu * 10000.0; // config::TenThousand
-        info.capital = v.hou_liutong * 10000.0;
+        info.total_capital = v.hou_zong_gu_ben * 10000.0; // config::TenThousand
+        info.capital = v.hou_liu_tong * 10000.0;
     } else {
         let (cap, total_cap, ipo, update) = get_finance_info(security_code, feature_date);
         info.capital = cap;
