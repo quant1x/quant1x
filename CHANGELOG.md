@@ -3,9 +3,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.25] - 2026-06-15
+### Changed
+- refactor: align RequestHeader/ResponseHeader field names with Python base message
+
+- zip_flag -> frame_type (align with Python RequestHeader.frame_type)
+
+- packet_type -> packet_flag (align with Python ResponseHeader.packet_flag)
+
+- update all submodule references in heartbeat/minute_time/security_bars/finance_info
+
 ## [0.7.24] - 2026-06-15
 ### Changed
 - fix: extension server probe now uses ExtensionProtocolHandler handshake
+- release v0.7.24
 
 ## [0.7.23] - 2026-06-15
 ### Changed
@@ -1645,7 +1656,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.24...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.25...HEAD
+[0.7.25]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.24...v0.7.25
 [0.7.24]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.23...v0.7.24
 [0.7.23]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.22...v0.7.23
 [0.7.22]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.21...v0.7.22
