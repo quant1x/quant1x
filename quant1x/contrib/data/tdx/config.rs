@@ -459,8 +459,8 @@ fn try_probe_one(
 ///
 /// # 返回值
 /// BTreeMap 按协议类型分组:
-/// - "standard": 标准行情服务器列表
-/// - "extension": 扩展行情服务器列表 (目前返回空, ExtensionProtocolHandler 待实现)
+/// - "standard": 标准行情服务器列表 (Hello1+Hello2 握手)
+/// - "extension": 扩展行情服务器列表 (ExtSynchronize 0x2454 握手)
 pub fn detect(
     elapsed_time_ms: i64,
     conn_limit: usize,
@@ -477,15 +477,162 @@ pub fn detect(
     selected.insert("standard".to_string(), standard_servers);
 
     // ---- 探测扩展行情服务器 ----
-    // TODO: 扩展行情服务器探测需要 ExtensionProtocolHandler，
-    // 当前 ExtensionProtocolHandler 尚未迁移到 Rust。
-    // Python 中: resources = [("standard", StandardServerList, StandardProtocolHandler()),
-    //                        ("extension", ExtensionServerList, ExtensionProtocolHandler())]
+    // 扩展行情使用 ExtensionProtocolHandler，对应 Python ExtensionProtocolHandler.handshake
     let extension_candidates = extension_server_list();
-    log::info!("Starting detection for extension servers, total candidates: {} (ExtensionProtocolHandler not yet implemented in Rust, skipping)", extension_candidates.len());
-    selected.insert("extension".to_string(), Vec::new());
+    // 合并券商版扩展服务器列表 (list2 端口不同，暂不混用)
+    //extension_candidates.extend(extension_server_list2());
+    log::info!("Starting detection for extension servers, total candidates: {}", extension_candidates.len());
+
+    let extension_servers = detect_extension_servers(&extension_candidates, elapsed_time_ms, conn_limit, connect_timeout_ms);
+    log::info!("Detection completed for extension servers: {}/{} available", extension_servers.len(), extension_candidates.len());
+    selected.insert("extension".to_string(), extension_servers);
 
     selected
+}
+
+/// 并行探测扩展行情候选服务器列表。
+///
+/// 使用 ExtensionProtocolHandler 进行协议握手 (ExtSynchronizeRequest, 0x2454)。
+fn detect_extension_servers(
+    candidates: &[ServerInfo],
+    elapsed_time_ms: i64,
+    conn_limit: usize,
+    connect_timeout_ms: i32,
+) -> Vec<ServerInfo> {
+    let n = candidates.len();
+    if n == 0 {
+        return Vec::new();
+    }
+
+    // 线程数 = min(cpu_count, candidates.len())
+    let num_threads = match thread::available_parallelism() {
+        Ok(nthreads) => std::cmp::min(nthreads.get(), n),
+        Err(_) => std::cmp::min(4, n),
+    };
+    let servers_per_thread = (n + num_threads - 1) / num_threads;
+
+    let mut handles = Vec::new();
+    for i in 0..num_threads {
+        let slice = candidates.to_vec();
+        let start = i * servers_per_thread;
+        let end = std::cmp::min(start + servers_per_thread, n);
+        let cap = std::cmp::min(conn_limit, MAX_CONNECTIONS);
+
+        handles.push(thread::spawn(move || {
+            let mut found: Vec<ServerInfo> = Vec::new();
+            for j in start..end {
+                if j >= slice.len() {
+                    break;
+                }
+                let candidate = &slice[j];
+                if let Some(mut si) = try_probe_extension_one(candidate, connect_timeout_ms) {
+                    // 只保留延迟低于阈值的
+                    if si.latency_ms < elapsed_time_ms {
+                        // 如果延迟为0 (即测量失败), 设为一个大值方便排序
+                        if si.latency_ms == 0 {
+                            si.latency_ms = elapsed_time_ms;
+                        }
+                        found.push(si);
+                    }
+                }
+            }
+            // 每线程内排序截断
+            if found.len() > cap {
+                found.sort_by_key(|s| s.latency_ms);
+                found.truncate(cap);
+            }
+            found
+        }));
+    }
+
+    let mut results: Vec<ServerInfo> = Vec::new();
+    for h in handles {
+        if let Ok(mut v) = h.join() {
+            results.append(&mut v);
+        }
+    }
+
+    // 全局排序截断
+    results.sort_by_key(|s| s.latency_ms);
+    let limit = std::cmp::min(results.len(), std::cmp::min(conn_limit, MAX_CONNECTIONS));
+    results.into_iter().take(limit).collect()
+}
+
+/// 探测单个扩展行情候选服务器的连通性。
+///
+/// 使用 ExtensionProtocolHandler 进行协议握手 (ExtSynchronizeRequest, 0x2454)。
+fn try_probe_extension_one(
+    candidate: &ServerInfo,
+    connect_timeout_ms: i32,
+) -> Option<ServerInfo> {
+    let host = &candidate.host;
+    let port = candidate.port;
+    let addr_str = format!("{}:{}", host, port);
+
+    log::debug!("Probing extension {}:{} ({}) - timeout: {} ms", host, port, candidate.name, connect_timeout_ms);
+
+    let timeout = Duration::from_millis(connect_timeout_ms as u64);
+    let start = Instant::now();
+
+    // Resolve address
+    let sock_addr = match (&addr_str[..]).to_socket_addrs() {
+        Ok(mut addrs) => match addrs.next() {
+            Some(a) => a,
+            None => {
+                log::warn!("Probe failed for extension {}:{} ({}) - no address resolved", host, port, candidate.name);
+                return None;
+            }
+        },
+        Err(e) => {
+            log::warn!("Probe failed for extension {}:{} ({}) - resolve error: {}", host, port, candidate.name, e);
+            return None;
+        }
+    };
+
+    // Connect with timeout
+    let mut std_stream = match StdTcpStream::connect_timeout(&sock_addr, timeout) {
+        Ok(s) => s,
+        Err(e) => {
+            log::warn!("Probe timed out for extension {}:{} ({}) after {} ms: {}", host, port, candidate.name, connect_timeout_ms, e);
+            return None;
+        }
+    };
+
+    // Set TCP_NODELAY
+    let _ = std_stream.set_nodelay(true);
+    let _ = std_stream.set_read_timeout(Some(timeout));
+    let _ = std_stream.set_write_timeout(Some(timeout));
+
+    // Perform extension protocol handshake via ExtensionProtocolHandler
+    let handshake_result = (|| -> std::io::Result<()> {
+        let mut req = crate::contrib::data::tdx::level1::ext::ExtSynchronizeRequest::new();
+        crate::contrib::data::tdx::protocol::process_level1_stream(&mut std_stream, &mut req)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        if !req.success {
+            return Err(std::io::Error::new(std::io::ErrorKind::Other, "ExtSynchronize failed (success=false)"));
+        }
+        Ok(())
+    })();
+
+    match handshake_result {
+        Ok(()) => {
+            let elapsed = start.elapsed().as_millis() as i64;
+            let _ = std_stream.shutdown(Shutdown::Both);
+            log::debug!("Extension probe succeeded for {}:{} ({}) - {} ms", host, port, candidate.name, elapsed);
+            Some(ServerInfo {
+                source: candidate.source.clone(),
+                name: candidate.name.clone(),
+                host: candidate.host.clone(),
+                port: candidate.port,
+                latency_ms: elapsed,
+            })
+        }
+        Err(e) => {
+            let _ = std_stream.shutdown(Shutdown::Both);
+            log::warn!("Extension handshake failed for {}:{} ({}) - Error: {}", host, port, candidate.name, e);
+            None
+        }
+    }
 }
 
 /// 并行探测给定候选服务器列表。
