@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.24] - 2026-06-15
+### Changed
+- fix: extension server probe now uses ExtensionProtocolHandler handshake
+
 ## [0.7.23] - 2026-06-15
 ### Changed
 - refactor: 合并 handshake/handshake_std 为统一的 handshake 方法
+- release v0.7.23
 
 ## [0.7.22] - 2026-06-15
 ### Changed
@@ -1640,7 +1645,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.23...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.24...HEAD
+[0.7.24]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.23...v0.7.24
 [0.7.23]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.22...v0.7.23
 [0.7.22]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.21...v0.7.22
 [0.7.21]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.20...v0.7.21
