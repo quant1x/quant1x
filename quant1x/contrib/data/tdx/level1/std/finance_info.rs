@@ -27,7 +27,7 @@ impl FinanceInfoRequest {
         }
 
         let mut req_header = RequestHeader::new(STD_FINANCE_INFO, FLAG_UNCOMPRESSED);
-        req_header.packet_type = 0x01;
+        req_header.packet_flag = 0x01;
         FinanceInfoRequest {
             req_header,
             resp_header: ResponseHeader::new(),

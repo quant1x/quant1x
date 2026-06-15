@@ -44,7 +44,7 @@ impl HistoryMinuteTimeRequest {
         code[..copy_len].copy_from_slice(&sym[..copy_len]);
 
         let mut req_header = RequestHeader::new(STD_HISTORY_MINUTE_DATA, FLAG_UNCOMPRESSED);
-        req_header.packet_type = 0x00;
+        req_header.packet_flag = 0x00;
 
         Self {
             req_header,

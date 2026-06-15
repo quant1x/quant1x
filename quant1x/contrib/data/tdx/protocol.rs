@@ -18,12 +18,12 @@ use super::helpers::msg_sequence_id;
 
 /// 请求头，对应 Python `RequestHeader`
 ///
-/// 布局 (小端): zip_flag(u8) + sequence_id(u32) + packet_type(u8) + body_wire_len(u16) + body_raw_len(u16) + command(u16) = 12 字节
+/// 布局 (小端): frame_type(u8) + sequence_id(u32) + packet_flag(u8) + body_wire_len(u16) + body_raw_len(u16) + command(u16) = 12 字节
 #[derive(Debug, Clone)]
 pub struct RequestHeader {
-    pub zip_flag: u8,
+    pub frame_type: u8,
     pub sequence_id: u32,
-    pub packet_type: u8,
+    pub packet_flag: u8,
     pub body_wire_len: u16,
     pub body_raw_len: u16,
     pub command: Command,
@@ -31,11 +31,11 @@ pub struct RequestHeader {
 
 impl RequestHeader {
     /// 创建请求头，自动分配 sequence_id
-    pub fn new(cmd: Command, flags: u8) -> Self {
+    pub fn new(cmd: Command, frame_type: u8) -> Self {
         Self {
-            zip_flag: flags,
+            frame_type,
             sequence_id: msg_sequence_id(),
-            packet_type: 0x01,
+            packet_flag: 0x01,
             body_wire_len: 0,
             body_raw_len: 0,
             command: cmd,
@@ -50,9 +50,9 @@ impl RequestHeader {
     /// 序列化为小端字节数组
     pub fn serialize(&self) -> Vec<u8> {
         let mut bs = BinaryStream::new();
-        bs.push_u8(self.zip_flag);
+        bs.push_u8(self.frame_type);
         bs.push_u32(self.sequence_id);
-        bs.push_u8(self.packet_type);
+        bs.push_u8(self.packet_flag);
         bs.push_u16(self.body_wire_len);
         bs.push_u16(self.body_raw_len);
         bs.push_u16(self.command.value);
@@ -61,8 +61,8 @@ impl RequestHeader {
 
     pub fn to_string(&self) -> String {
         format!(
-            "RequestHeader(zip_flag: {}, sequence_id: {}, packet_type: {}, body_wire_len: {}, body_raw_len: {}, command: {:?})",
-            self.zip_flag, self.sequence_id, self.packet_type, self.body_wire_len, self.body_raw_len, self.command
+            "RequestHeader(frame_type: {}, sequence_id: {}, packet_flag: {}, body_wire_len: {}, body_raw_len: {}, command: {:?})",
+            self.frame_type, self.sequence_id, self.packet_flag, self.body_wire_len, self.body_raw_len, self.command
         )
     }
 }
@@ -73,13 +73,13 @@ impl RequestHeader {
 
 /// 响应头，对应 Python `ResponseHeader`
 ///
-/// 布局 (小端): magic_number(u32) + zip_flag(u8) + sequence_id(u32) + packet_type(u8) + command(u16) + body_wire_len(u16) + body_raw_len(u16) = 16 字节
+/// 布局 (小端): magic_number(u32) + frame_type(u8) + sequence_id(u32) + packet_flag(u8) + command(u16) + body_wire_len(u16) + body_raw_len(u16) = 16 字节
 #[derive(Debug, Clone)]
 pub struct ResponseHeader {
     pub magic_number: u32,
-    pub zip_flag: u8,
+    pub frame_type: u8,
     pub sequence_id: u32,
-    pub packet_type: u8,
+    pub packet_flag: u8,
     pub command: Command,
     pub body_wire_len: u16,
     pub body_raw_len: u16,
@@ -89,9 +89,9 @@ impl ResponseHeader {
     pub fn new() -> Self {
         Self {
             magic_number: 0,
-            zip_flag: 0,
+            frame_type: 0,
             sequence_id: 0,
-            packet_type: 0,
+            packet_flag: 0,
             command: super::command::CMD_UNKNOWN,
             body_wire_len: 0,
             body_raw_len: 0,
@@ -107,9 +107,9 @@ impl ResponseHeader {
     pub fn deserialize(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
         let mut bs = BinaryStream::from_vec(data.to_vec());
         self.magic_number = bs.get_u32()?;
-        self.zip_flag = bs.get_u8()?;
+        self.frame_type = bs.get_u8()?;
         self.sequence_id = bs.get_u32()?;
-        self.packet_type = bs.get_u8()?;
+        self.packet_flag = bs.get_u8()?;
         let cmd_value = bs.get_u16()?;
         self.body_wire_len = bs.get_u16()?;
         self.body_raw_len = bs.get_u16()?;
@@ -127,8 +127,8 @@ impl ResponseHeader {
 
     pub fn to_string(&self) -> String {
         format!(
-            "ResponseHeader(magic_number: {}, zip_flag: {}, sequence_id: {}, packet_type: {}, command: {:?}, body_wire_len: {}, body_raw_len: {})",
-            self.magic_number, self.zip_flag, self.sequence_id, self.packet_type, self.command, self.body_wire_len, self.body_raw_len
+            "ResponseHeader(magic_number: {}, frame_type: {}, sequence_id: {}, packet_flag: {}, command: {:?}, body_wire_len: {}, body_raw_len: {})",
+            self.magic_number, self.frame_type, self.sequence_id, self.packet_flag, self.command, self.body_wire_len, self.body_raw_len
         )
     }
 }
@@ -476,9 +476,9 @@ mod tests {
         let hdr = RequestHeader::new(STD_HEARTBEAT, FLAG_UNCOMPRESSED);
         let data = hdr.serialize();
         assert_eq!(data.len(), 12);
-        // zip_flag
+        // frame_type
         assert_eq!(data[0], FLAG_UNCOMPRESSED);
-        // packet_type
+        // packet_flag
         assert_eq!(data[5], 0x01);
         // command value (little-endian)
         let cmd_bytes = &data[10..12];
@@ -487,12 +487,12 @@ mod tests {
 
     #[test]
     fn test_response_header_deserialize() {
-        // 构造一个简单的响应头: magic=0x11223344, zip_flag=0x0C, seq_id=42, pkt_type=0, cmd=0x0004, wire=100, raw=200
+        // 构造一个简单的响应头: magic=0x11223344, frame_type=0x0C, seq_id=42, packet_flag=0, cmd=0x0004, wire=100, raw=200
         let mut buf = Vec::new();
         buf.extend_from_slice(&0x11223344u32.to_le_bytes());  // magic_number
-        buf.push(0x0C);                                        // zip_flag
+        buf.push(0x0C);                                        // frame_type
         buf.extend_from_slice(&42u32.to_le_bytes());           // sequence_id
-        buf.push(0x00);                                        // packet_type
+        buf.push(0x00);                                        // packet_flag
         buf.extend_from_slice(&0x0004u16.to_le_bytes());       // command = STD_HEARTBEAT
         buf.extend_from_slice(&100u16.to_le_bytes());          // body_wire_len
         buf.extend_from_slice(&200u16.to_le_bytes());          // body_raw_len
@@ -501,7 +501,7 @@ mod tests {
         hdr.deserialize(&buf).unwrap();
 
         assert_eq!(hdr.magic_number, 0x11223344);
-        assert_eq!(hdr.zip_flag, 0x0C);
+        assert_eq!(hdr.frame_type, 0x0C);
         assert_eq!(hdr.sequence_id, 42);
         assert_eq!(hdr.command.value, 0x0004);
         assert_eq!(hdr.body_wire_len, 100);
