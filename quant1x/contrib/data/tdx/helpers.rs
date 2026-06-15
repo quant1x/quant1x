@@ -69,7 +69,7 @@ pub fn varint_decode(data: &[u8], pos: usize) -> (i64, usize) {
     }
 
     let mut p = pos;
-    let byte = data[p];
+    let mut byte = data[p];
     p += 1;
 
     let sign = (byte & 0x40) != 0;
@@ -80,7 +80,7 @@ pub fn varint_decode(data: &[u8], pos: usize) -> (i64, usize) {
         if p >= data.len() {
             panic!("varint_decode: index out of range");
         }
-        let byte = data[p];
+        byte = data[p];
         p += 1;
         value |= ((byte & 0x7F) as i64) << shift;
         shift += 7;
@@ -279,11 +279,11 @@ mod tests {
 
     #[test]
     fn test_get_datetime_from_u32() {
-        // category < 4: zipday = 0x2A5F (year=2004 + 5=2009, month=2, day=31), tminutes=570 (9:30)
+        // category < 4: zipday = 0x2A5F = 10847, year=2004 + (10847>>11)=2009, 10847%2048=607, month=6, day=7
         let (y, m, d, h, min) = get_datetime_from_u32(0, 0x2A5F, 570);
         assert_eq!(y, 2009);
-        assert_eq!(m, 2);
-        assert_eq!(d, 31);
+        assert_eq!(m, 6);
+        assert_eq!(d, 7);
         assert_eq!(h, 9);
         assert_eq!(min, 30);
 

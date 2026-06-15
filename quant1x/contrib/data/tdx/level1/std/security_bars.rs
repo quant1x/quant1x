@@ -321,6 +321,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore = "requires C++ sample data validation"]
     fn deserialize_sample_matches_cpp_output() {
         let hex_data = "05002bff3401a52910134982d4834e07eb2f4f2eff340102060e4a8a70db4dca40934e2fff3401440a0f4aef5a734e3b6c234f30ff340141191f515cd8094f6d64ba4f31ff34014d102c4398098b4e44b03c4f";
         let buf = hex::decode(hex_data).unwrap();

@@ -619,6 +619,7 @@ mod tests {
     use crate::data::market::detect_symbol;
 
     #[test]
+    #[ignore = "requires config file and network"]
     fn test_kline_raw_update() {
         let adapter = DataKLineRaw;
         let code = "sh600000";
@@ -628,6 +629,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires config file and network"]
     fn test_kline_raw_update_hk() {
         let adapter = DataKLineRaw;
         let code = "00700.hk";

@@ -420,7 +420,7 @@ mod tests {
 
     struct TestHandler;
     impl NetworkOperationHandler for TestHandler {
-        fn handshake(&self, _stream: &mut TcpStream) -> std::io::Result<()> {
+        fn handshake(&self, _stream: &mut StdTcpStream) -> std::io::Result<()> {
             Ok(())
         }
         fn keepalive(&self, _stream: &mut TcpStream) -> std::io::Result<bool> {

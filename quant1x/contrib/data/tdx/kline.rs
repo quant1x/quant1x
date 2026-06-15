@@ -498,6 +498,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires config file"]
     fn test_get_kline_filename() {
         let inst = make_test_instrument();
         let filename = get_kline_filename(&inst);
