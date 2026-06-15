@@ -3,6 +3,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.22] - 2026-06-15
+### Changed
+- feat(tdx): 实现板块文件下载与解析功能，添加测试
+
+- 新增 block.rs: BlockInfo 消息 (STD_BLOCK_DATA 0x06b9)，支持分块下载板块原始数据
+- 扩展 sector.rs: 实现 sync_block_files() 完整下载流程
+  - 从 level1 分块下载原始板块文件
+  - 解析二进制板块文件 (384字节头 + 2813字节记录)
+  - 解压 zhb.zip 提取配置文件
+  - 加载行业配置并生成CSV缓存
+  - get_sector_list() 首次调用自动触发同步
+- 添加 9 个测试用例 (6个单元测试 + 3个集成测试标记ignore)
+
 ## [0.7.21] - 2026-06-15
 ### Changed
 - python: 修订项目主页url
@@ -12,6 +25,7 @@ All notable changes to this project will be documented in this file.
 - 对齐rust和python的部分消息结构
 - python: 删除cli包
 - rust: 修复协议握手没实现的bug
+- release v0.7.21
 
 ## [0.7.20] - 2026-06-12
 ### Changed
@@ -1621,7 +1635,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.21...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.22...HEAD
+[0.7.22]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.21...v0.7.22
 [0.7.21]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.20...v0.7.21
 [0.7.20]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.19...v0.7.20
 [0.7.19]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.18...v0.7.19
