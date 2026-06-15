@@ -3,10 +3,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.21] - 2026-06-15
+### Changed
+- python: 修订项目主页url
+- python: 测试代码恢复k线测试
+- 调整资源配置文件
+- python: 拆分常量
+- 对齐rust和python的部分消息结构
+- python: 删除cli包
+- rust: 修复协议握手没实现的bug
+
 ## [0.7.20] - 2026-06-12
 ### Changed
 - go: 统一调整仓库地址为github
 - go: 切换go基础库代码仓库到github
+- update changelog
 
 ## [0.7.19] - 2026-06-12
 ### Changed
@@ -1610,7 +1621,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.20...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.21...HEAD
+[0.7.21]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.20...v0.7.21
 [0.7.20]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.19...v0.7.20
 [0.7.19]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.18...v0.7.19
 [0.7.18]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.17...v0.7.18
