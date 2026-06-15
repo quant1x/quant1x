@@ -25,15 +25,7 @@ impl MockHandler {
 }
 
 impl NetworkOperationHandler for MockHandler {
-    fn handshake(&self, _stream: &mut TcpStream) -> std::io::Result<()> {
-        if self.handshake_success {
-            Ok(())
-        } else {
-            Err(std::io::Error::new(std::io::ErrorKind::ConnectionRefused, "Mock handshake failed"))
-        }
-    }
-
-    fn handshake_std(&self, _stream: &mut StdTcpStream) -> std::io::Result<()> {
+    fn handshake(&self, _stream: &mut StdTcpStream) -> std::io::Result<()> {
         if self.handshake_success {
             Ok(())
         } else {

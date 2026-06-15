@@ -370,10 +370,7 @@ use super::level1::std::heartbeat::HeartbeatRequest;
 pub struct StandardProtocolHandler;
 
 impl NetworkOperationHandler for StandardProtocolHandler {
-    /// handshake 在 mio::net::TcpStream 上执行握手。
-    /// 连接池预热阶段和 handshake_std 都会调用。
-    /// recv_exact 已兼容非阻塞 socket 的 WouldBlock 重试。
-    fn handshake(&self, stream: &mut mio::net::TcpStream) -> std::io::Result<()> {
+    fn handshake(&self, stream: &mut StdTcpStream) -> std::io::Result<()> {
         // Hello1
         let mut req1 = Hello1Request::new();
         match process_level1_stream(stream, &mut req1) {
@@ -407,42 +404,6 @@ impl NetworkOperationHandler for StandardProtocolHandler {
         Ok(())
     }
 
-    // /// 在阻塞的 std::net::TcpStream 上执行握手。
-    // /// 实际委托给 handshake，因为 process_level1_stream/recv_exact 已兼容阻塞和非阻塞 socket。
-    // fn handshake_std(&self, stream: &mut StdTcpStream) -> std::io::Result<()> {
-    //     // Hello1
-    //     let mut req1 = Hello1Request::new();
-    //     match process_level1_stream(stream, &mut req1) {
-    //         Ok(()) => {
-    //             if req1.info.trim().is_empty() {
-    //                 log::error!("StandardProtocolHandler::handshake Hello1 validation failed: empty info");
-    //                 return Err(std::io::Error::new(std::io::ErrorKind::Other, "Hello1 response invalid or empty"));
-    //             }
-    //         }
-    //         Err(e) => {
-    //             log::error!("StandardProtocolHandler::handshake Hello1 failed: {}", e);
-    //             return Err(std::io::Error::new(std::io::ErrorKind::Other, e.to_string()));
-    //         }
-    //     }
-    //
-    //     // Hello2
-    //     let mut req2 = Hello2Request::new();
-    //     match process_level1_stream(stream, &mut req2) {
-    //         Ok(()) => {
-    //             if req2.info.trim().is_empty() {
-    //                 log::error!("StandardProtocolHandler::handshake Hello2 validation failed: empty info");
-    //                 return Err(std::io::Error::new(std::io::ErrorKind::Other, "Hello2 response invalid or empty"));
-    //             }
-    //         }
-    //         Err(e) => {
-    //             log::error!("StandardProtocolHandler::handshake Hello2 failed: {}", e);
-    //             return Err(std::io::Error::new(std::io::ErrorKind::Other, e.to_string()));
-    //         }
-    //     }
-    //
-    //     Ok(())
-    // }
-
     fn keepalive(&self, stream: &mut mio::net::TcpStream) -> std::io::Result<bool> {
         let mut req = HeartbeatRequest::new();
         match process_level1_stream(stream, &mut req) {
@@ -470,10 +431,7 @@ use super::level1::ext::{ExtSynchronizeRequest, InstrumentCountRequest};
 pub struct ExtensionProtocolHandler;
 
 impl NetworkOperationHandler for ExtensionProtocolHandler {
-    /// handshake 在 mio::net::TcpStream 上执行握手。
-    /// 连接池预热阶段和 handshake_std 都会调用。
-    /// recv_exact 已兼容非阻塞 socket 的 WouldBlock 重试。
-    fn handshake(&self, stream: &mut mio::net::TcpStream) -> std::io::Result<()> {
+    fn handshake(&self, stream: &mut StdTcpStream) -> std::io::Result<()> {
         let mut req = ExtSynchronizeRequest::new();
         match process_level1_stream(stream, &mut req) {
             Ok(()) if req.success => Ok(()),
@@ -482,22 +440,6 @@ impl NetworkOperationHandler for ExtensionProtocolHandler {
                 "ExtensionProtocolHandler: synchronize failed (success=false)",
             )),
             Err(e) => Err(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())),
-        }
-    }
-
-    /// 在阻塞的 std::net::TcpStream 上执行握手，保证 read_exact 不会遇到 WouldBlock。
-    fn handshake_std(&self, stream: &mut StdTcpStream) -> std::io::Result<()> {
-        let mut req = ExtSynchronizeRequest::new();
-        match process_level1_stream(stream, &mut req) {
-            Ok(()) if req.success => Ok(()),
-            Ok(()) => Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "ExtensionProtocolHandler: synchronize failed (success=false)",
-            )),
-            Err(e) => Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                e.to_string(),
-            )),
         }
     }
 

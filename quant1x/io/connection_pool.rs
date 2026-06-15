@@ -79,26 +79,25 @@ impl<H: NetworkOperationHandler> TcpConnectionPool<H> {
                         timeout
                     );
                     match StdTcpStream::connect_timeout(&ep, timeout) {
-                        Ok(std_stream) => {
+                        Ok(mut std_stream) => {
                             let _ = std_stream.set_nodelay(true);
                             // 设置读/写超时以避免无限阻塞
                             let _ = std_stream.set_read_timeout(Some(timeout));
                             let _ = std_stream.set_write_timeout(Some(timeout));
-                            // 转换为 mio::TcpStream
-                            let mut stream = TcpStream::from_std(std_stream);
                             // 运行握手，但在预热期间忽略错误
-                            match pool.handler.handshake(&mut stream) {
+                            match pool.handler.handshake(&mut std_stream) {
                                 Ok(()) => {
                                     log::debug!(
                                         "connection_pool: pre-warm handshake ok for {}",
                                         ep
                                     );
-                                    // 仅在推回空闲队列时加锁，以避免在执行网络操作时持有空闲互斥锁
+                                    // 转为 mio stream 存入连接池
+                                    let mio_stream = TcpStream::from_std(std_stream);
                                     let mut idle = pool.idle.lock().unwrap();
-                                    idle.push_back(Connection::new(stream, ep));
+                                    idle.push_back(Connection::new(mio_stream, ep));
                                 }
                                 Err(e) => {
-                                    if let Err(shutdown_err) = stream.shutdown(Shutdown::Both) {
+                                    if let Err(shutdown_err) = std_stream.shutdown(Shutdown::Both) {
                                         if shutdown_err.kind() != std::io::ErrorKind::NotConnected {
                                             log::debug!(
                                                 "connection_pool: pre-warm shutdown error for {}: {}",
@@ -293,7 +292,7 @@ impl<H: NetworkOperationHandler> TcpConnectionPool<H> {
                     endpoint
                 );
                 let hs_start = Instant::now();
-                match self.handler.handshake_std(&mut std_stream) {
+                match self.handler.handshake(&mut std_stream) {
                     Ok(()) => {
                         let hs_elapsed = hs_start.elapsed();
                         // convert to mio stream after successful blocking handshake
