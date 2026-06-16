@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.27] - 2026-06-16
+### Changed
+- python: 删除旧版本的代码检测
+
 ## [0.7.26] - 2026-06-16
 ### Changed
 - fix: compile error in connection_pool and varint_decode bug, ignore env-dependent tests
@@ -14,6 +18,7 @@ All notable changes to this project will be documented in this file.
 - Update all 12 adapter subclasses, extract code via inst.symbol() internally
 - Fix callers (cache.cpp, tests) to pass Instrument via data::detect_symbol()
 - Update CMakeLists.txt source paths accordingly
+- release v0.7.26
 
 ## [0.7.25] - 2026-06-15
 ### Changed
@@ -1669,7 +1674,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.26...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.27...HEAD
+[0.7.27]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.26...v0.7.27
 [0.7.26]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.25...v0.7.26
 [0.7.25]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.24...v0.7.25
 [0.7.24]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.23...v0.7.24
