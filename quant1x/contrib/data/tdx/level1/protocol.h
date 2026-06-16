@@ -214,7 +214,56 @@ namespace level1 {
     constexpr auto request_header_length  = 0x0c;
     constexpr auto response_header_length = 0x10;
 
-    // 模板化的 process 函数
+    /**
+     * BaseMessage — 消息基类 (对齐 Python protocol.BaseMessage)
+     *
+     * 用于处理消息头和消息体的解析和序列化。
+     * Python 参考: quant1x/contrib/data/tdx/protocol.py BaseMessage
+     */
+    template <typename Derived>
+    struct BaseMessage {
+        RequestHeader<Derived> request_header;
+        ResponseHeader<Derived> response_header;
+
+        BaseMessage() : request_header(), response_header() {}
+
+        /// 序列化请求体 (子类实现)
+        std::vector<u8> serialize_request_body() { return static_cast<Derived *>(this)->serialize_request_body_impl(); }
+
+        /// 序列化整个请求 = 消息头 + 消息体
+        std::vector<u8> serialize_request() {
+            auto body = serialize_request_body();
+            request_header.PkgLen1 = u16(2 + body.size());
+            request_header.PkgLen2 = u16(2 + body.size());
+            auto buf = request_header.headerSerialize();
+            buf.insert(buf.end(), body.begin(), body.end());
+            return buf;
+        }
+
+        /// 反序列化响应头
+        void deserialize_response_header(const std::vector<u8> &data) {
+            response_header.headerDeserialize(data);
+        }
+
+        /// 反序列化响应体 (子类实现)
+        void deserialize_response_body(const std::vector<u8> &data) {
+            static_cast<Derived *>(this)->deserialize_response_body_impl(data);
+        }
+
+        /// 获取命令字符串
+        std::string command() { return request_header.commandImpl(); }
+
+        /// 获取请求字符串表示
+        std::string request_string() { return request_header.headerStringImpl(); }
+
+        /// 获取响应字符串表示
+        std::string response_string() { return response_header.headerStringImpl(); }
+
+        /// 完整 toString
+        std::string toString() { return static_cast<Derived *>(this)->toStringImpl(); }
+    };
+
+    // 模板化的 process 函数 (兼容旧接口)
     template <typename RequestType, typename ResponseType>
     quant1x::error process(asio::ip::tcp::socket &socket, RequestType &request, ResponseType &response) {
         std::string cmd     = request.command();
@@ -264,6 +313,46 @@ namespace level1 {
         spdlog::debug("[{}]Recv response buff: {}", cmd, strings::bytesToHex(body_buffer));
         response.deserialize(body_buffer);
         spdlog::debug("[{}]Recv response body: {}", cmd, response.toString());
+        return quant1x::make_error_code(0, "success");
+    }
+
+    // 基于 BaseMessage 的 process 函数 (对齐 Python process_level1_new)
+    template <typename MessageType>
+    quant1x::error process(asio::ip::tcp::socket &socket, BaseMessage<MessageType> &msg) {
+        std::string cmd     = msg.command();
+        auto        req_buf = msg.serialize_request();
+        spdlog::debug("[{}]Send buffer: {}", cmd, strings::bytesToHex(req_buf));
+        spdlog::debug("[{}]Send request: {}", cmd, msg.request_header.headerStringImpl());
+        asio::error_code ec;
+        size_t n = asio::write(socket, asio::buffer(req_buf.data(), req_buf.size()), ec);
+        spdlog::debug("[{}]Send request: {} bytes.", cmd, n);
+        if (ec) {
+            return quant1x::make_error_code(ec.value(), ec.message());
+        }
+        // 读取响应的消息头
+        std::vector<u8> hdr_response_buf(response_header_length);
+        size_t hdr_response_length = asio::read(socket, asio::buffer(hdr_response_buf), ec);
+        if (ec) {
+            return quant1x::make_error_code(ec.value(), ec.message());
+        }
+        hdr_response_buf.resize(hdr_response_length);
+        msg.deserialize_response_header(hdr_response_buf);
+        if (msg.response_header.ZipSize == 0) {
+            return quant1x::make_error_code(0, "success");
+        }
+        spdlog::debug("[{}]Recv response head: {}", cmd, msg.response_header.headerStringImpl());
+        std::vector<u8> body_buffer(msg.response_header.ZipSize);
+        size_t body_received = asio::read(socket, asio::buffer(body_buffer, body_buffer.size()), ec);
+        if (ec) {
+            return quant1x::make_error_code(ec.value(), ec.message());
+        }
+        body_buffer.resize(body_received);
+        if (msg.response_header.ZipSize != msg.response_header.UnZipSize) {
+            std::vector<u8> un = unzip(body_buffer, msg.response_header.UnZipSize);
+            body_buffer        = un;
+        }
+        msg.deserialize_response_body(body_buffer);
+        spdlog::debug("[{}]Recv response body: {}", cmd, msg.toString());
         return quant1x::make_error_code(0, "success");
     }
 }  // namespace level1

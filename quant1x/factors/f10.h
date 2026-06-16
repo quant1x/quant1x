@@ -3,7 +3,7 @@
 #define QUANT1X_FACTOR_F10_H 1
 
 #include "quant1x/data/adapter.h"
-#include "quant1x/data/exchange/calendar.h"
+#include <quant1x/data/meta/timestamp.h>
 #include "quant1x/std/numeric.h"
 
 namespace factors {
@@ -101,10 +101,10 @@ struct F10 {
             // 这种情况有可能是次新股的保护期
             return false;
         }
-        auto current_date = exchange::timestamp(Date);
-        auto ys = exchange::date_range(current_date, AnnualReportDate);
+        auto current_date = meta::Timestamp(Date);
+        auto ys = meta::date_range(current_date, AnnualReportDate);
         auto ly = ys.size();
-        auto qs = exchange::date_range(current_date, QuarterlyReportDate);
+        auto qs = meta::date_range(current_date, QuarterlyReportDate);
         auto lq = qs.size();
         if((ly > 0 && ly < factors::risk::ReportingWarningDays) || (lq > 0 && lq < factors::risk::ReportingWarningDays)) {
             return true;
@@ -135,17 +135,17 @@ public:
 
     std::unique_ptr<data::FeatureAdapter> clone() const override;
 
-    void init(const exchange::timestamp &timestamp) override;
+    void init(const meta::Timestamp &timestamp) override;
 
-    void Print(const std::string &code, const std::vector<exchange::timestamp> &dates) override;
+    void Print(const meta::Instrument &inst, const std::vector<meta::Timestamp> &dates) override;
 
-    void Update(const std::string &code, const exchange::timestamp &date) override;
+    void Update(const meta::Instrument &inst, const meta::Timestamp &date) override;
 };
 
 
 namespace factors {
     /// 获取指定日期的F10数据
-    std::optional<F10> get_f10(const std::string& code, const exchange::timestamp& timestamp);
+    std::optional<F10> get_f10(const std::string& code, const meta::Timestamp& timestamp);
 }
 
 #endif //QUANT1X_FACTOR_F10_H

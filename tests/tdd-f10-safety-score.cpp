@@ -1,6 +1,6 @@
 #include <quant1x/test/test.h>
 
-#include <quant1x/data/market/instruments.h>
+#include <quant1x/data/meta/timestamp.h>
 #include <iostream>
 #include <string>
 #include <map>
@@ -168,7 +168,7 @@ std::mutex mapMutex;  // 用于线程安全访问mapSafetyScore
 
 // 获取个股安全分
 std::tuple<int, std::string> GetSafetyScore(const std::string& securityCode) {
-    if (!exchange::AssertStockBySecurityCode(securityCode)) {
+    if (!data::assert_stock_by_security_code(securityCode)) {
         return {defaultSafetyScore, ""};
     }
 
@@ -178,7 +178,7 @@ std::tuple<int, std::string> GetSafetyScore(const std::string& securityCode) {
 
     int score = defaultSafetyScore;
     std::string detail;
-    auto [marketId, marketCode, pureCode] = exchange::DetectMarket(securityCode);
+    auto [marketId, marketCode, pureCode] = data::detect_symbol(securityCode);
 
     if (pureCode.length() == 6) {
         std::string url = urlRiskAssessment + pureCode + ".json";

@@ -4,7 +4,7 @@
 
 #include <quant1x/contrib/data/tdx/level1//protocol.h>
 #include <quant1x/contrib/data/tdx/level1/security_quote.h>
-#include <quant1x/data/exchange/code.h>
+#include <quant1x/data/meta/exchange.h>
 #include <ostream>
 #include <stdexcept>
 
@@ -43,75 +43,51 @@ namespace level1 {
     };
 #pragma pack(pop)  // 恢复默认对齐方式
 
-    struct TransactionRequest : public RequestHeader<TransactionRequest> {
+    // 分笔成交请求/响应 (对齐 Python Transaction)
+    struct Transaction : public BaseMessage<Transaction> {
         uint16_t Market;    // 市场代码
         char Code[6];       // 证券代码(固定6字节)
         uint16_t Start;     // 起始位置
-        uint16_t Count;     // 请求数量
+        uint16_t ReqCount;  // 请求数量
 
-        TransactionRequest(const std::string &securityCode, u16 offset, u16 size) : RequestHeader<TransactionRequest>() {
-            ZipFlag = ZlibFlag::Uncompressed;
-            SeqID = SequenceId();
-            PacketType = 0x00;
-            Method = StdCommand::TRANSACTION_DATA;
+        uint16_t Count;                     // 返回的记录数
+        std::vector<TickTransaction> List;  // 分笔成交数据列表
+        int market_;                        // 响应解析用
+        const char *code_;                  // 响应解析用
+
+        Transaction(const std::string &securityCode, u16 offset, u16 size) : BaseMessage<Transaction>() {
+            request_header.ZipFlag = ZlibFlag::Uncompressed;
+            request_header.SeqID = SequenceId();
+            request_header.PacketType = 0x00;
+            request_header.Method = StdCommand::TRANSACTION_DATA;
             {
-                auto [id, _, symbol] = exchange::DetectMarket(securityCode);
+                auto [id, _, symbol] = data::detect_symbol(securityCode);
                 Market = static_cast<uint16_t>(id);
                 const char * const tmp = symbol.c_str();
                 std::memcpy(Code, tmp, sizeof(Code));
             }
             Start = offset;
-            Count = size;
+            ReqCount = size;
+            market_ = Market;
+            code_ = Code;
         }
 
         // 序列化方法
-        std::vector<u8> serializeImpl() {
-            PkgLen1 = 2 + 2 + 6 + 2 + 2;
-            PkgLen2 = 2 + 2 + 6 + 2 + 2;
-            auto buf = RequestHeader<TransactionRequest>::headerSerialize();
+        std::vector<u8> serialize_request_body_impl() {
             BinaryStream stream;
             stream.push_arithmetic(Market);
             stream.push_array(Code);
             stream.push_arithmetic(Start);
-            stream.push_arithmetic(Count);
-            auto data = stream.data();
-            buf.insert(buf.end(), data.begin(), data.end());
-            return buf;
+            stream.push_arithmetic(ReqCount);
+            return stream.data();
         }
 
-        std::string toStringImpl() const {
-            std::ostringstream oss;
-            oss << RequestHeader<TransactionRequest>::headerStringImpl()
-                << "{"
-                << "Market:" << int(Market)
-                << ", Code:" << strings::from(Code)
-                << ", Start:" << Start
-                << ", Count:" << Count
-                << "}";
-            return oss.str();
-        }
-
-    };
-
-    struct TransactionResponse : public ResponseHeader<TransactionResponse> {
-        uint16_t Count;                     // 返回的记录数
-        std::vector<TickTransaction> List;  // 分笔成交数据列表
-        int market_;
-        const char *code_;
-
-        TransactionResponse(int market, const char *code) : ResponseHeader<TransactionResponse>() {
-            Count = 0;
-            List = {};
-            market_ = market;
-            code_ = code;
-        }
-
-        void deserializeImpl(const std::vector<u8> &data) {
+        void deserialize_response_body_impl(const std::vector<u8> &data) {
             BinaryStream bs(data);
             Count = bs.get_u16();
             List.reserve(Count);
             auto baseUnit = helpers::defaultBaseUnit(market_, code_);
-            auto isIndex = exchange::AssertIndexByMarketAndCode(static_cast<exchange::ExchangeId>(market_), std::string(code_));
+            auto isIndex = data::assert_index_by_security_code(static_cast<meta::ExchangeId>(market_), std::string(code_));
             i64 lastPrice = 0;
             try {
                 for(int i = 0; i < Count; ++i) {
@@ -138,16 +114,21 @@ namespace level1 {
                     List.emplace_back(e);
                 }
             } catch(const std::out_of_range&) {
-                spdlog::warn("[TransactionResponse] insufficient data for {} transactions, parsed {} successfully", Count, List.size());
+                spdlog::warn("[Transaction] insufficient data for {} transactions, parsed {} successfully", Count, List.size());
                 Count = List.size();
             }
         }
 
         std::string toStringImpl() const {
             std::ostringstream oss;
-            oss << ResponseHeader<TransactionResponse>::headerStringImpl()
-                << "{Count:" << Count
-                << ", List:[";
+            oss << request_header.headerStringImpl()
+                << "{"
+                << "Market:" << int(Market)
+                << ", Code:" << strings::from(Code)
+                << ", Start:" << Start
+                << ", Count:" << ReqCount
+                << "}";
+            oss << " {RspCount:" << Count << ", List:[";
             for(int i = 0; i < Count; i++) {
                 oss << "{" << List[i] << "}";
             }

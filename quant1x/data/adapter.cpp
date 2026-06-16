@@ -97,7 +97,7 @@ namespace data {
     namespace fs = std::filesystem;
     constexpr const char *const cache1dPrefix = "flash";
 
-    std::string FeatureAdapter::Filename(const exchange::timestamp &timestamp) {
+    std::string FeatureAdapter::Filename(const meta::Timestamp &timestamp) {
         const std::string& key = Key();
         // 查找分隔符
         size_t pos = key.find('/');

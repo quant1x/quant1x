@@ -9,38 +9,23 @@
 // ==============================
 
 namespace level1 {
-#pragma pack(push, 1)  // 确保1字节对齐
 
-    struct HeartbeatRequest : public RequestHeader<HeartbeatRequest> {
-
-        HeartbeatRequest() : RequestHeader<HeartbeatRequest>() {
-            ZipFlag = ZlibFlag::Uncompressed;
-            SeqID = SequenceId();
-            PacketType = 0x02;
-            Method = StdCommand::HEARTBEAT;
-        }
-
-        std::vector<u8> serializeImpl() {
-            spdlog::debug("HeartbeatRequest");
-            PkgLen1 = 2 + 0;
-            PkgLen2 = 2 + 0;
-            auto buf = RequestHeader<HeartbeatRequest>::headerSerialize();
-            return buf;
-        }
-
-        std::string toStringImpl() {
-            std::ostringstream oss;
-            oss << RequestHeader<HeartbeatRequest>::headerStringImpl();
-            //oss << ' ' << " padding:" << util::bytesToHex(padding);
-            return oss.str();
-        }
-
-    };
-
-    struct HeartbeatResponse : public ResponseHeader<HeartbeatResponse> {
+    // 心跳 (对齐 Python Heartbeat)
+    struct Heartbeat : public BaseMessage<Heartbeat> {
         std::string info;// 10个字节的消息, 未解
 
-        void deserializeImpl(const std::vector<u8> &data) {
+        Heartbeat() : BaseMessage<Heartbeat>() {
+            request_header.ZipFlag = ZlibFlag::Uncompressed;
+            request_header.SeqID = SequenceId();
+            request_header.PacketType = 0x02;
+            request_header.Method = StdCommand::HEARTBEAT;
+        }
+
+        std::vector<u8> serialize_request_body_impl() {
+            return {};
+        }
+
+        void deserialize_response_body_impl(const std::vector<u8> &data) {
             BinaryStream stream(data);
             info = stream.get_string(10);
         }
@@ -50,7 +35,6 @@ namespace level1 {
         }
     };
 
-#pragma pack(pop)  // 恢复默认对齐方式
 }
 
 #endif //QUANT1X_LEVEL1_HEARTBEAT_H

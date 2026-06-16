@@ -8,8 +8,8 @@
 #include <quant1x/encoding/charsets.h>
 #include <quant1x/std/buffer.h>
 
-#include <quant1x/data/exchange/code.h>
-#include <quant1x/data/exchange/session.h>
+#include <quant1x/data/meta/exchange.h>
+#include <quant1x/data/meta/session.h>
 #include <quant1x/contrib/data/tdx/level1/protocol.h>
 #include <quant1x/contrib/data/tdx/level1/helpers.h>
 #include <quant1x/contrib/data/tdx/level1/hello1.h>

@@ -4,7 +4,7 @@
 
 #include <quant1x/data/adapter.h>
 #include <quant1x/engine/rule_engine.h>
-#include <quant1x/data/market/instruments.h>
+#include <quant1x/data/meta/timestamp.h>
 #include <quant1x/contrib/data/tdx/client.h>
 #include <quant1x/proto/data.h>
 #include <quant1x/proto/snapshot.capnp.h>
@@ -138,7 +138,7 @@ public:
 // ======================
 class StrategyBase : public Filterable, public Sortable, public Evaluatable, public StrategyInfo {
 private:
-    exchange::timestamp timestamp_;
+    meta::Timestamp timestamp_;
 
 protected:
     std::vector<data::KLine> market_data_;
@@ -146,9 +146,9 @@ protected:
 public:
     const std::vector<data::KLine> &market_data() const { return market_data_; }
 
-    const exchange::timestamp &getTimestamp() const { return timestamp_; }
+    const meta::Timestamp &getTimestamp() const { return timestamp_; }
 
-    void setTimestamp(const exchange::timestamp &timestamp) { timestamp_ = timestamp.pre_market_time(); }
+    void setTimestamp(const meta::Timestamp &timestamp) { timestamp_ = timestamp.pre_market_time(); }
 
 public:
     std::string DebugString() const {

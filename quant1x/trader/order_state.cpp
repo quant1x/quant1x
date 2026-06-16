@@ -1,7 +1,7 @@
 #include <quant1x/trader/order_state.h>
 #include <spdlog/spdlog.h>
 #include <quant1x/trader/fee.h>
-#include <quant1x/data/market/instruments.h>
+#include <quant1x/data/meta/timestamp.h>
 #include <quant1x/engine/strategy.h>
 #include <quant1x/trader/order.h>
 #include <quant1x/config/base.h>
@@ -34,7 +34,7 @@ namespace trader {
     std::pair<std::string, std::string> order_state_fields(const std::string& date,
                                                            const std::string& quantStrategyName,
                                                            Direction direction) {
-        std::string stateDate = exchange::timestamp(date).cache_date();
+        std::string stateDate = meta::Timestamp(date).cache_date();
         std::string flagPath = state_file_path(stateDate);
         std::string filenamePrefix = state_file_prefix(stateDate, quantStrategyName, direction);
         return {flagPath, filenamePrefix};
@@ -54,7 +54,7 @@ namespace trader {
                                      Direction direction,
                                      const std::string& code) {
         auto [orderFlagPath, filenamePrefix] = order_state_fields_from_strategy(date, model, direction);
-        std::string securityCode = exchange::CorrectSecurityCode(code);
+        std::string securityCode = data::correct_security_code(code);
         std::string filename = filenamePrefix + "-" + securityCode + orderStateFileExtension;
         fs::path state_filename = fs::path(orderFlagPath) / filename;
         return state_filename.string();

@@ -4,7 +4,7 @@
 #include <quant1x/runtime/service.h>
 #include <spdlog/spdlog.h>
 #include <quant1x/runtime/core.h>
-#include <quant1x/data/exchange/timestamp.h>
+#include <quant1x/data/meta/timestamp.h>
 #include <quant1x/realtime/snapshot.h>
 #include <quant1x/cache.h>
 #include <quant1x/trader/tracker.h>
@@ -50,8 +50,8 @@ namespace quant1x::engine {
             spdlog::info("进入服务运行");
             // 盘中快照
             auto task_snapshot = runtime::add_task("realtime-snapshot", "*/1 * 9-15 * * ?", [] {
-                exchange::timestamp now = exchange::timestamp::now();
-                auto ts = exchange::check_trading_timestamp(now);
+                meta::Timestamp now = meta::Timestamp::now();
+                auto ts = meta::check_trading_timestamp(now);
                 spdlog::info("realtime update: {}", ts.updateInRealTime);
                 if(ts.updateInRealTime) {
                     realtime::sync_snapshots();
@@ -67,10 +67,10 @@ namespace quant1x::engine {
 
             // 盘中交易
             auto task_trader = runtime::add_task("realtime-trader", "*/1 * 9-15 * * ?", [] {
-                exchange::timestamp now = exchange::timestamp::now();
-                auto ts = exchange::check_trading_timestamp(now);
+                meta::Timestamp now = meta::Timestamp::now();
+                auto ts = meta::check_trading_timestamp(now);
                 spdlog::info("realtime trade status: {}", magic_enum::enum_name(ts.status));
-                if((ts.status & exchange::MaskOrder) == exchange::MaskOrder) {
+                if((ts.status & 0) == 0) {
                     trader::tracker();
                 }
             });

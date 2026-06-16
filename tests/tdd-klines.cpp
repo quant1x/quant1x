@@ -1,43 +1,47 @@
 #include <quant1x/test/test.h>
-#include <quant1x/data/exchange/timestamp.h>
+#include <quant1x/data/meta/timestamp.h>
 #include <quant1x/data/kline_raw.h>
-#include <quant1x/data/kline.h>
+#include <quant1x/contrib/data/tdx/kline.h>
 #include <quant1x/data/kline_minute.h>
 #include <quant1x/pandas/dataframe.h>
 #include <quant1x/factors/base.h>
 
 TEST_CASE("download-kline-raw", "[data]") {
     std::string code = "sz300773";
-    exchange::timestamp now = exchange::last_trading_day();
+    meta::Timestamp now = meta::last_trading_day();
     const auto adapter = std::make_unique<data::DataKLineRaw>();
-    adapter->Update(code, now);
+    auto inst = data::detect_symbol(code);
+    adapter->Update(inst, now);
 }
 
 TEST_CASE("daily-kline", "[data]") {
     runtime::global_init();
     std::string code = "sz002350";
-    exchange::timestamp now = exchange::last_trading_day();
+    meta::Timestamp now = meta::last_trading_day();
 
     const auto adapter = std::make_unique<data::DataKLine>();
-    adapter->Update(code, now);
+    auto inst = data::detect_symbol(code);
+    adapter->Update(inst, now);
 }
 
 TEST_CASE("daily-kline-xdxr", "[data]") {
     runtime::global_init();
     std::string code = "sz300773";
-    exchange::timestamp now = exchange::timestamp::pre_market_time(2025, 10, 24);
+    meta::Timestamp now = meta::Timestamp::pre_market_time(2025, 10, 24);
 
     const auto adapter = std::make_unique<data::DataKLine>();
-    adapter->Update(code, now);
+    auto inst = data::detect_symbol(code);
+    adapter->Update(inst, now);
 }
 
 TEST_CASE("minute-kline", "[data]") {
     runtime::global_init();
     std::string code = "sh510050";
-    exchange::timestamp now = exchange::last_trading_day();
+    meta::Timestamp now = meta::last_trading_day();
 
     const auto adapter = std::make_unique<data::DataMinuteKLine>("5min");
-    adapter->Update(code, now);
+    auto inst = data::detect_symbol(code);
+    adapter->Update(inst, now);
 }
 
 TEST_CASE("checkout-klines", "[data]") {

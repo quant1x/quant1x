@@ -12,7 +12,7 @@ TEST_CASE("base-snapshot", "[runtime]") {
     size_t start = 0;
     auto tp_start = std::chrono::high_resolution_clock::now();
     try {
-        spdlog::warn("start = {}", exchange::timestamp::now().toString());
+        spdlog::warn("start = {}", meta::Timestamp::now().toString());
         for (; start < count; start += level1::security_quotes_max) {
             auto length = count - start;
             if (length > level1::security_quotes_max) {
@@ -26,7 +26,7 @@ TEST_CASE("base-snapshot", "[runtime]") {
             size_t i = 0;
             for (; i < length; i++) {
                 const auto& code = sub_codes[i];
-                auto [mid, mflag, symbol] = exchange::DetectMarket(code);
+                auto [mid, mflag, symbol] = data::detect_symbol(code);
                 maps[code] = level1::StockInfo{mid, symbol};
             }
             level1::SecurityQuoteRequest request(sub_codes);
@@ -40,7 +40,7 @@ TEST_CASE("base-snapshot", "[runtime]") {
         auto tp_end = std::chrono::high_resolution_clock::now();
         auto diff = tp_end - tp_start;
         //std::cout << diff << std::endl;
-        spdlog::warn("stop = {}", exchange::timestamp::now().toString());
+        spdlog::warn("stop = {}", meta::Timestamp::now().toString());
         spdlog::info("cross time:{}", util::format_duration_auto(diff));
     } catch (const std::exception &e) {  // 其他标准异常
         spdlog::error("全局捕获 - 标准异常: {} (type: {})", e.what(), typeid(e).name());
@@ -226,11 +226,11 @@ TEST_CASE("tick-snapshot", "[runtime]") {
     auto snapshots = quoteList.initSnapshots(uint32_t(count));
     size_t start = 0;
     auto tp_start = std::chrono::high_resolution_clock::now();
-    auto last_trade_day = exchange::last_trading_day();
+    auto last_trade_day = meta::last_trading_day();
     auto current_day = last_trade_day.only_date();
-    auto [update_in_realTime, status] = exchange::can_update_in_realtime(exchange::timestamp::now());
+    auto [update_in_realTime, status] = false(meta::Timestamp::now());
     try {
-        spdlog::warn("start = {}", exchange::timestamp::now().toString());
+        spdlog::warn("start = {}", meta::Timestamp::now().toString());
         for (; start < count; start += level1::security_quotes_max) {
             auto length = count - start;
             if (length > level1::security_quotes_max) {
@@ -244,7 +244,7 @@ TEST_CASE("tick-snapshot", "[runtime]") {
             size_t i = 0;
             for (; i < length; i++) {
                 const auto& code = sub_codes[i];
-                auto [mid, mflag, symbol] = exchange::DetectMarket(code);
+                auto [mid, mflag, symbol] = data::detect_symbol(code);
                 maps[code] = level1::StockInfo{mid, symbol};
             }
             level1::SecurityQuoteRequest request(sub_codes);
@@ -257,7 +257,7 @@ TEST_CASE("tick-snapshot", "[runtime]") {
                 const auto & raw = response.list[j];
                 auto snap = snapshots[uint32_t(start)+j];
                 snap.setDate(current_day);
-                snap.setSecurityCode(exchange::GetSecurityCode(static_cast<exchange::MarketType>(raw.market), raw.code));
+                snap.setSecurityCode(data::correct_security_code(static_cast<meta::InstrumentType>(raw.market), raw.code));
                 auto exchangeState = ExchangeState::CLOSING;
                 if(raw.state == level1::TradeState::DELISTING) {
                     exchangeState = ExchangeState::DELISTING;
@@ -267,7 +267,7 @@ TEST_CASE("tick-snapshot", "[runtime]") {
                 if (update_in_realTime) {
                     exchangeState = ExchangeState::NORMAL;
                 }
-                if (status == exchange::TimeStatus::ExchangeHaltTrading) {
+                if (status == meta::TimeStatus::ExchangeHaltTrading) {
                     exchangeState = ExchangeState::NORMAL;
                 }
                 snap.setExchangeState(exchangeState);
@@ -345,7 +345,7 @@ TEST_CASE("tick-snapshot", "[runtime]") {
         auto tp_end = std::chrono::high_resolution_clock::now();
         auto diff = tp_end - tp_start;
         //std::cout << diff << std::endl;
-        spdlog::warn("stop = {}", exchange::timestamp::now().toString());
+        spdlog::warn("stop = {}", meta::Timestamp::now().toString());
         spdlog::info("cross time:{}", util::format_duration_auto(diff));
     } catch (const std::exception &e) {  // 其他标准异常
         spdlog::error("全局捕获 - 标准异常: {} (type: {})", e.what(), typeid(e).name());
@@ -411,7 +411,7 @@ TEST_CASE("get-snapshot", "[realtime]") {
     runtime::global_init();
     realtime::load_snapshots();
     std::string code = "600600";
-    auto security_code = exchange::CorrectSecurityCode(code);
+    auto security_code = data::correct_security_code(code);
     auto ss = realtime::snapshot(security_code);
     if(ss.has_value()) {
         std::string ts = ss->getTimeStamp();

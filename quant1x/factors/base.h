@@ -2,7 +2,7 @@
 #ifndef QUANT1X_FACTOR_BASE_H
 #define QUANT1X_FACTOR_BASE_H 1
 
-#include <quant1x/data/kline.h>
+#include <quant1x/contrib/data/tdx/kline.h>
 #include <quant1x/data/kline_raw.h>
 
 namespace factors {
@@ -13,7 +13,7 @@ namespace factors {
 
     // 累计复权因子
     struct CumulativeAdjustment {
-        exchange::timestamp timestamp;             // 除权除息的毫秒数
+        meta::Timestamp timestamp;             // 除权除息的毫秒数
         double              m;                     // 系数, 比例因子（乘法）
         double              a;                     // 偏移, 偏移因子（加法）
         double              monetaryAdjustment;    // 货币调整（例如每10股的货币调整）
@@ -49,8 +49,8 @@ namespace factors {
     std::optional<std::string> ipo_date_from_xdxrs(std::span<const level1::XdxrInfo> xdxrs);
     // 聚合给定一个时间范围内的复权因子
     std::vector<CumulativeAdjustment> combine_adjustments_in_period(std::span<const level1::XdxrInfo> xdxrs,
-                                                                    const exchange::timestamp        &start_date,
-                                                                    const exchange::timestamp        &end_date);
+                                                                    const meta::Timestamp        &start_date,
+                                                                    const meta::Timestamp        &end_date);
 
     /**
      * @brief 一次性复权, 只遍历一次
@@ -64,8 +64,8 @@ namespace factors {
     template <typename T>
     void apply_forward_adjustments_once(std::vector<T>                   &klines,
                                         std::span<const level1::XdxrInfo> xdxrs,
-                                        const exchange::timestamp        &start_date,
-                                        const exchange::timestamp        &end_date,
+                                        const meta::Timestamp        &start_date,
+                                        const meta::Timestamp        &end_date,
                                         bool                              should_truncate = true) {
         if (klines.empty()) {
             return;
@@ -84,7 +84,7 @@ namespace factors {
         size_t klines_count  = klines.size();
         for (size_t idx = 0; idx < klines_count; ++idx) {
             auto kline        = &klines[idx];
-            auto current_date = exchange::timestamp(kline->date).pre_market_time();
+            auto current_date = meta::Timestamp(kline->date).pre_market_time();
             auto factor       = factors[i];
             if (current_date > ts_end) {
                 break;
@@ -129,8 +129,8 @@ namespace factors {
             return;
         }
         // 使用apply_forward_adjustments_once进行前复权
-        auto start_ts = exchange::timestamp(klines[0].Date).pre_market_time();
-        auto end_ts   = exchange::timestamp(klines.back().Date).pre_market_time();
+        auto start_ts = meta::Timestamp(klines[0].Date).pre_market_time();
+        auto end_ts   = meta::Timestamp(klines.back().Date).pre_market_time();
         apply_forward_adjustments_once(klines, dividends, start_ts, end_ts, true);
     }
 

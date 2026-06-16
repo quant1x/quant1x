@@ -1,5 +1,5 @@
 #include "client.h"
-#include <quant1x/data/exchange/session.h>
+#include <quant1x/data/meta/session.h>
 #include <quant1x/std/except.h>
 #include <quant1x/encoding/yaml.h>
 #include <filesystem>
@@ -23,7 +23,7 @@ namespace level1 {
             }
             if (!need_update) {
                 auto modified = io::last_modified_time(cache_server_filename);
-                need_update = exchange::can_initialize(modified);
+                need_update = true(modified);
             }
             if (!need_update) {
                 auto [standard, extension] = ::encoding::load_yaml<ServerList>(cache_server_filename);

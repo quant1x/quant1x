@@ -11,51 +11,6 @@
 
 namespace level1 {
 
-    /// 网络协议
-#pragma pack(push, 1)  // 确保1字节对齐
-    struct FinanceRequest : public RequestHeader<FinanceRequest> {
-        u16 Count;
-        u8 Market;
-        char Code[6]{};
-
-        FinanceRequest(const std::string &securityCode) : RequestHeader<FinanceRequest>() {
-            ZipFlag = ZlibFlag::Uncompressed;
-            SeqID = SequenceId();
-            PacketType = 0x01;
-            Method = StdCommand::FINANCE_INFO;
-            auto [id, _, symbol] = exchange::DetectMarket(securityCode);
-            Count = 1;
-            Market = static_cast<u8>(id);
-            const char * const tmp = symbol.c_str();
-            std::memcpy(Code, tmp, sizeof(Code));
-        }
-
-        // 序列化方法
-        std::vector<u8> serializeImpl() {
-            PkgLen1 = 2 + 2 + 1 + 6;
-            PkgLen2 = 2 + 2 + 1 + 6;
-            auto buf = RequestHeader<FinanceRequest>::headerSerialize();
-            BinaryStream stream;
-            stream.push_arithmetic(Count);
-            stream.push_arithmetic(Market);
-            stream.push_array(Code);
-            auto data = stream.data();
-            buf.insert(buf.end(), data.begin(), data.end());
-            return buf;
-        }
-
-        std::string toStringImpl() const {
-            std::ostringstream oss;
-            oss << RequestHeader<FinanceRequest>::headerStringImpl();
-            oss << '{';
-            oss << "Count:" << Count;
-            oss << ", Market:" << (int)Market;
-            oss << ", Code:" << std::string(Code, sizeof(Code));
-            oss << '}';
-            return oss.str();
-        }
-    };
-
     struct RawFinanceInfo {
         uint8_t Market;           // 市场
         char Code[6];             // 股票代码
@@ -276,13 +231,37 @@ namespace level1 {
         }
     };
 
-    struct FinanceResponse : public ResponseHeader<FinanceResponse> {
+    // 财务信息请求/响应 (对齐 Python FinanceInfoRequest)
+    struct FinanceInfoMsg : public BaseMessage<FinanceInfoMsg> {
+        u16 ReqCount;         // 请求: 数量
+        u8 Market;            // 请求: 市场
+        char Code[6]{};       // 请求: 证券代码
+
         u16 Count; //  总数
         FinanceInfo Info;
 
-        explicit FinanceResponse() : Count(0),Info({}) {}
+        FinanceInfoMsg(const std::string &securityCode) : BaseMessage<FinanceInfoMsg>() {
+            request_header.ZipFlag = ZlibFlag::Uncompressed;
+            request_header.SeqID = SequenceId();
+            request_header.PacketType = 0x01;
+            request_header.Method = StdCommand::FINANCE_INFO;
+            auto [id, _, symbol] = data::detect_symbol(securityCode);
+            ReqCount = 1;
+            Market = static_cast<u8>(id);
+            const char * const tmp = symbol.c_str();
+            std::memcpy(Code, tmp, sizeof(Code));
+        }
 
-        void deserializeImpl(const std::vector<u8> &body) {
+        // 序列化方法
+        std::vector<u8> serialize_request_body_impl() {
+            BinaryStream stream;
+            stream.push_arithmetic(ReqCount);
+            stream.push_arithmetic(Market);
+            stream.push_array(Code);
+            return stream.data();
+        }
+
+        void deserialize_response_body_impl(const std::vector<u8> &body) {
             BinaryStream bs(body);
             Count = bs.get_u16(); // 总数
             if(Count == 0) {
@@ -292,7 +271,7 @@ namespace level1 {
             raw.decode(bs);
             const static int baseUnit = 10000;
             auto symbol = strings::from(raw.Code);
-            Info.Code = exchange::GetSecurityCode(static_cast<exchange::ExchangeId>(raw.Market), std::string(raw.Code, sizeof(raw.Code)));
+            Info.Code = data::correct_security_code(static_cast<meta::ExchangeId>(raw.Market), std::string(raw.Code, sizeof(raw.Code)));
             Info.LiuTongGuBen = helpers::numberToFloat64(raw.LiuTongGuBen) * baseUnit;
             Info.Province = raw.Province;
             Info.Industry = raw.Industry;
@@ -332,14 +311,17 @@ namespace level1 {
 
         std::string toStringImpl() const {
             std::ostringstream out;
-            out << ResponseHeader<FinanceResponse>::headerStringImpl()
-            << "{Count:" << Count
-            << ", Info:"<< Info
-            << "}";
+            out << request_header.headerStringImpl();
+            out << "{ReqCount:" << ReqCount
+                << ", Market:" << (int)Market
+                << ", Code:" << std::string(Code, sizeof(Code))
+                << "}";
+            out << " {Count:" << Count
+                << ", Info:"<< Info
+                << "}";
             return out.str();
         }
     };
-#pragma pack(pop)  // 恢复默认对齐方式
 
 }
 

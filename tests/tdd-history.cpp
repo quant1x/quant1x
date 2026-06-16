@@ -9,7 +9,7 @@
 TEST_CASE("history-trans", "[features]") {
     std::string code = "600600";
     std::string date = "2025-05-29";
-    exchange::timestamp ts = exchange::timestamp::parse(date);
+    meta::Timestamp ts = meta::Timestamp::parse(date);
     auto list = datasets::CheckoutTransactionData(code, ts, true);
     auto summary = datasets::CountInflow(list, code, ts);
     std::cout << summary << std::endl;
@@ -141,7 +141,7 @@ TEST_CASE("history-basic-auto", "[features]") {
     info.NewLowN = formula::at(newLowN, -1);
 
     // 成交统计概要数据
-    exchange::timestamp ts = exchange::timestamp::parse(date);
+    meta::Timestamp ts = meta::Timestamp::parse(date);
     auto list = datasets::CheckoutTransactionData(code, ts, true);
     auto summary = datasets::CountInflow(list, code, ts);
     info.OpenVolume = summary.OpenVolume;
@@ -156,6 +156,7 @@ TEST_CASE("history-release", "[factors]") {
     std::string code = "sh600600";
     std::string date = "2025-06-24";
     HistoryFeature adapter;
-    exchange::timestamp feature_date = exchange::timestamp(date);
-    adapter.Update(code, feature_date);
+    meta::Timestamp feature_date = meta::Timestamp(date);
+    auto inst = data::detect_symbol(code);
+    adapter.Update(inst, feature_date);
 }

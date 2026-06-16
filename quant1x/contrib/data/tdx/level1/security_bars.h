@@ -59,8 +59,6 @@ namespace level1 {
                 return "UNKNOWN_KLINE";
         }
     }
-#pragma pack(push, 1)  // 确保1字节对齐
-
     struct SecurityBarsParameter {
         u16 Market;
         char Code[6];
@@ -95,28 +93,34 @@ namespace level1 {
         }
     };
 
-    // K线 - 请求
-    struct SecurityBarsRequest : public RequestHeader<SecurityBarsRequest> {
+    // K线 (对齐 Python SecurityBars)
+    struct SecurityBars : public BaseMessage<SecurityBars> {
         SecurityBarsParameter param{};
         std::vector<u8> padding{};
         bool isIndex = false;
 
-        SecurityBarsRequest(const std::string &securityCode, u16 category, u16 start, u16 count) : RequestHeader<SecurityBarsRequest>() {
-            ZipFlag = ZlibFlag::Uncompressed;
-            SeqID = SequenceId();
-            PacketType = 0x00;
-            Method = StdCommand::SECURITY_BARS;
+        u16 Count;
+        std::vector<SecurityBar> List;
 
+        u16 category_;
+
+        SecurityBars(const std::string &securityCode, u16 category, u16 start, u16 count) : BaseMessage<SecurityBars>() {
+            request_header.ZipFlag = ZlibFlag::Uncompressed;
+            request_header.SeqID = SequenceId();
+            request_header.PacketType = 0x00;
+            request_header.Method = StdCommand::SECURITY_BARS;
+
+            category_ = category;
             param.Category = category;
             param.I = 1;
             param.Start = start;
             param.Count = count;
             {
-                auto [id, _, symbol] = exchange::DetectMarket(securityCode);
+                auto [id, _, symbol] = data::detect_symbol(securityCode);
                 param.Market = static_cast<u16>(id);
                 const char * const tmp = symbol.c_str();
                 std::memcpy(param.Code, tmp, sizeof(param.Code));
-                if(exchange::AssertIndexByMarketAndCode(id, symbol)) {
+                if(data::assert_index_by_security_code(id, symbol)) {
                     isIndex = true;
                 }
             }
@@ -124,10 +128,7 @@ namespace level1 {
             padding = strings::hexToBytes("00000000000000000000");
         }
 
-        std::vector<u8> serializeImpl() {
-            PkgLen1 = u16(2 + sizeof(SecurityBarsParameter) + padding.size());
-            PkgLen2 = PkgLen1;
-            auto buf = RequestHeader<SecurityBarsRequest>::headerSerialize();
+        std::vector<u8> serialize_request_body_impl() {
             BinaryStream bs;
             bs.push_arithmetic(param.Market);
             bs.push_array(param.Code);
@@ -135,44 +136,12 @@ namespace level1 {
             bs.push_arithmetic(param.I);
             bs.push_arithmetic(param.Start);
             bs.push_arithmetic(param.Count);
-            auto &data = bs.data();
-            buf.insert(buf.end(), data.begin(), data.end());
-            buf.insert(buf.end(), padding.begin(), padding.end());
-            return buf;
+            auto data = bs.data();
+            data.insert(data.end(), padding.begin(), padding.end());
+            return data;
         }
 
-        std::string toStringImpl() const {
-            std::ostringstream oss;
-            oss << RequestHeader<SecurityBarsRequest>::headerStringImpl();
-            oss << "{Market:" << int(param.Market)
-                << ", Code:" << strings::from(param.Code)
-                << ", Category:" << klineTypeToString(static_cast<KLineType>(param.Category))
-                << ", I:" << int(param.I)
-                << ", Start:" << int(param.Start)
-                << ", Count:" << int(param.Count)
-                << ", padding:" << strings::bytesToHex(padding)
-                << "}";
-            return oss.str();
-        }
-    };
-
-    // K线 - 响应
-    struct SecurityBarsResponse : public ResponseHeader<SecurityBarsResponse> {
-        u16 Count;
-        std::vector<SecurityBar> List;
-
-        bool isIndex_;
-        u16 category_;
-
-        SecurityBarsResponse(bool isIndex, u16 category) : ResponseHeader<SecurityBarsResponse>() {
-            Count = 0;
-            List = {};
-
-            isIndex_ = isIndex;
-            category_ = category;
-        }
-
-        void deserializeImpl(const std::vector<u8> &data) {
+        void deserialize_response_body_impl(const std::vector<u8> &data) {
             BinaryStream bs(data);
             Count = bs.get_u16();
             List.reserve(Count);
@@ -223,7 +192,7 @@ namespace level1 {
 
                 pre_diff_base = price_open_diff + price_close_diff;
 
-                if (isIndex_) {
+                if (isIndex) {
                     e.UpCount = bs.get_u16();
                     e.DownCount = bs.get_u16();
                 }
@@ -231,11 +200,18 @@ namespace level1 {
             }
         }
 
-        std::string toString() const {
+        std::string toStringImpl() const {
             std::ostringstream oss;
-            oss << ResponseHeader<SecurityBarsResponse>::headerStringImpl();
-            oss << "{Count:" << int(Count);
-            oss << ", List:[";
+            oss << request_header.headerStringImpl();
+            oss << "{Market:" << int(param.Market)
+                << ", Code:" << strings::from(param.Code)
+                << ", Category:" << klineTypeToString(static_cast<KLineType>(param.Category))
+                << ", I:" << int(param.I)
+                << ", Start:" << int(param.Start)
+                << ", Count:" << int(param.Count)
+                << ", padding:" << strings::bytesToHex(padding)
+                << "}";
+            oss << " {Count:" << int(Count) << ", List:[";
             for(int i = 0; i < Count; i++) {
                 oss << "{" << List[i] << "}";
             }
@@ -243,8 +219,6 @@ namespace level1 {
             return oss.str();
         }
     };
-
-#pragma pack(pop)  // 恢复默认对齐方式
 
 }
 #endif //QUANT1X_LEVEL1_SECURITY_BARS_H

@@ -4,7 +4,7 @@
 #include <quant1x/std/numeric.h>
 #include <spdlog/spdlog.h>
 #include <quant1x/runtime/once.h>
-#include <quant1x/data/exchange/calendar.h>
+#include <quant1x/data/meta/timestamp.h>
 #include <quant1x/trader/trader.h>
 
 namespace trader {
@@ -13,7 +13,7 @@ namespace trader {
     static inline double trader_account_theoretical_fund = 0.0;
     static inline double trader_account_remaining_cash   = 0.0;
 
-    static inline auto account_once = RollingOnce::create("trader-account", exchange::cron_expr_daily_9am);
+    static inline auto account_once = RollingOnce::create("trader-account", meta::Timestamp);
 
     void lazy_init_fund_pool() {
         calculateTheoreticalFund(&trader_account_theoretical_fund, &trader_account_remaining_cash);

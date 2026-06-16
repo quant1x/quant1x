@@ -1,51 +1,51 @@
 #include <quant1x/test/test.h>
-#include <quant1x/data/market/instruments.h>
+#include <quant1x/data/meta/timestamp.h>
 
 TEST_CASE("parse-datetime", "[chrono]") {
     SECTION("date") {
         std::string test_date1 = "2025-05-29 15:00:01";
-        auto ts1 = exchange::timestamp::parse(test_date1);
+        auto ts1 = meta::Timestamp::parse(test_date1);
         REQUIRE(ts1.toString() == test_date1+".000");
 
         std::string test_date2 = "2025-05-29 15:00:01.123";
-        auto ts2 = exchange::timestamp::parse(test_date2);
+        auto ts2 = meta::Timestamp::parse(test_date2);
         REQUIRE(ts2.toString() == test_date2);
 
         std::string test_date3 = "2025-05-29";
-        auto        ts3        = exchange::timestamp::parse(test_date3);
+        auto        ts3        = meta::Timestamp::parse(test_date3);
         REQUIRE(ts3.toString() == test_date3 + " 00:00:00.000");
     }
 
     SECTION("time") {
         std::string test_date1 = "2025-05-29 15:00:01";
-        auto ts1 = exchange::timestamp::parse(test_date1);
+        auto ts1 = meta::Timestamp::parse(test_date1);
         REQUIRE(ts1.only_time() == "15:00:01");
 
         std::string test_date2 = "2025-05-29 15:00:01.123";
-        auto ts2 = exchange::timestamp::parse(test_date2);
+        auto ts2 = meta::Timestamp::parse(test_date2);
         REQUIRE(ts2.only_time() == "15:00:01");
     }
 }
 
 TEST_CASE("parse-time-hhmmss", "[timestamp]") {
-    exchange::timestamp ts;
-    ts = exchange::timestamp::parse_time("15:00:01");
+    meta::Timestamp ts;
+    ts = meta::Timestamp::parse_time("15:00:01");
     std::cout << ts.only_time() << std::endl;
-    ts = exchange::timestamp::parse_time("15:00:00.999");
+    ts = meta::Timestamp::parse_time("15:00:00.999");
     std::cout << ts.only_time() << std::endl;
 
-    ts = exchange::timestamp::parse("2025-05-29 15:00:01");
+    ts = meta::Timestamp::parse("2025-05-29 15:00:01");
     std::cout << ts.only_time() << std::endl;
 }
 
 TEST_CASE("parse-time-hhmmss.sss", "[timestamp]") {
-    exchange::timestamp ts;
-    ts = exchange::timestamp::parse_time("15:00:01");
+    meta::Timestamp ts;
+    ts = meta::Timestamp::parse_time("15:00:01");
     std::cout << ts.toString() << std::endl;
-    ts = exchange::timestamp::parse_time("15:00:00.999");
+    ts = meta::Timestamp::parse_time("15:00:00.999");
     std::cout << ts.toString() << std::endl;
 
-    ts = exchange::timestamp::parse("2025-05-29 15:00:01");
+    ts = meta::Timestamp::parse("2025-05-29 15:00:01");
     std::cout << ts.toString() << std::endl;
 }
 

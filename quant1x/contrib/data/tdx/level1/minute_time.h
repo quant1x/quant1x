@@ -11,56 +11,6 @@
 
 namespace level1 {
 
-    /// 网络协议
-#pragma pack(push, 1)  // 确保1字节对齐
-
-#pragma pack(pop)  // 恢复默认对齐方式
-
-    struct HistoryMinuteTimeRequest : public RequestHeader<HistoryMinuteTimeRequest> {
-        uint32_t Date;      // 日期
-        uint8_t  Market;    // 市场代码
-        char Code[6];       // 证券代码(固定6字节)
-
-        HistoryMinuteTimeRequest(const std::string &securityCode, u32 date) : RequestHeader<HistoryMinuteTimeRequest>() {
-            ZipFlag = ZlibFlag::Uncompressed;
-            SeqID = SequenceId();
-            PacketType = 0x00;
-            Method = StdCommand::HISTORY_MINUTE_DATA;
-            {
-                auto [id, _, symbol] = exchange::DetectMarket(securityCode);
-                Market = static_cast<uint8_t>(id);
-                const char * const tmp = symbol.c_str();
-                std::memcpy(Code, tmp, sizeof(Code));
-            }
-            Date = date;
-        }
-
-        // 序列化方法
-        std::vector<u8> serializeImpl() {
-            PkgLen1 = 2 + 4 + 1 + 6;
-            PkgLen2 = 2 + 4 + 1 + 6;
-            auto buf = RequestHeader<HistoryMinuteTimeRequest>::headerSerialize();
-            BinaryStream stream;
-            stream.push_arithmetic(Date);
-            stream.push_arithmetic(Market);
-            stream.push_array(Code);
-            auto data = stream.data();
-            buf.insert(buf.end(), data.begin(), data.end());
-            return buf;
-        }
-
-        std::string toStringImpl() const {
-            std::ostringstream oss;
-            oss << RequestHeader<HistoryMinuteTimeRequest>::headerStringImpl()
-                << "{"
-                << "Market:" << int(Market)
-                << ", Code:" << strings::from(Code)
-                << "}";
-            return oss.str();
-        }
-
-    };
-
     struct MinuteTime {
         f32 Price;
         i64 Vol;
@@ -71,20 +21,43 @@ namespace level1 {
         }
     };
 
-    struct HistoryMinuteTimeResponse : public ResponseHeader<HistoryMinuteTimeResponse> {
+    // 历史分时数据 (对齐 Python HistoryMinuteTime)
+    struct HistoryMinuteTime : public BaseMessage<HistoryMinuteTime> {
+        uint32_t Date;      // 日期
+        uint8_t  Market;    // 市场代码
+        char Code[6];       // 证券代码(固定6字节)
+
         uint16_t Count;                     // 返回的记录数
-        std::vector<MinuteTime> List;  // 分笔成交数据列表
+        std::vector<MinuteTime> List;       // 分时数据列表
         int market_;
         const char *code_;
 
-        HistoryMinuteTimeResponse(int market, const char* code) : ResponseHeader<HistoryMinuteTimeResponse>() {
-            Count = 0;
-            List = {};
-            market_ = market;
-            code_ = code;
+        HistoryMinuteTime(const std::string &securityCode, u32 date) : BaseMessage<HistoryMinuteTime>() {
+            request_header.ZipFlag = ZlibFlag::Uncompressed;
+            request_header.SeqID = SequenceId();
+            request_header.PacketType = 0x00;
+            request_header.Method = StdCommand::HISTORY_MINUTE_DATA;
+            {
+                auto [id, _, symbol] = data::detect_symbol(securityCode);
+                Market = static_cast<uint8_t>(id);
+                const char * const tmp = symbol.c_str();
+                std::memcpy(Code, tmp, sizeof(Code));
+            }
+            Date = date;
+            market_ = Market;
+            code_ = Code;
         }
 
-        void deserializeImpl(const std::vector<u8> &data) {
+        // 序列化方法
+        std::vector<u8> serialize_request_body_impl() {
+            BinaryStream stream;
+            stream.push_arithmetic(Date);
+            stream.push_arithmetic(Market);
+            stream.push_array(Code);
+            return stream.data();
+        }
+
+        void deserialize_response_body_impl(const std::vector<u8> &data) {
             if(data.size() < 2) {
                 return;
             }
@@ -92,7 +65,6 @@ namespace level1 {
             Count = bs.get_u16();
             List.reserve(Count);
             auto baseUnit = helpers::defaultBaseUnit(market_, code_);
-            auto isIndex = exchange::AssertIndexByMarketAndCode(static_cast<exchange::ExchangeId>(market_), std::string(code_));
             i64 lastPrice = 0;
             bs.skip(4); // 历史分笔成交记录, 跳过4个字节
             try {
@@ -108,16 +80,20 @@ namespace level1 {
                     List.emplace_back(e);
                 }
             } catch(const std::out_of_range&) {
-                spdlog::warn("[HistoryMinuteTimeResponse] insufficient data for {} minute times, parsed {} successfully", Count, List.size());
+                spdlog::warn("[HistoryMinuteTime] insufficient data for {} minute times, parsed {} successfully", Count, List.size());
                 Count = List.size();
             }
         }
 
         std::string toStringImpl() const {
             std::ostringstream oss;
-            oss << ResponseHeader<HistoryMinuteTimeResponse>::headerStringImpl()
-                << "{Count:" << Count
-                << ", List:[";
+            oss << request_header.headerStringImpl()
+                << "{"
+                << "Date:" << Date
+                << ", Market:" << int(Market)
+                << ", Code:" << strings::from(Code)
+                << "}";
+            oss << " {Count:" << Count << ", List:[";
             for(int i = 0; i < Count; i++) {
                 oss << "{" << List[i] << "}";
             }

@@ -397,9 +397,9 @@ namespace backtest {
         std::vector<data::KLine> filtered_market_data;
         if (backtest_data.config.start_time.time_since_epoch().count() != 0 &&
             backtest_data.config.end_time.time_since_epoch().count() != 0) {
-            // Convert TimePoint -> exchange::timestamp for date-only comparisons
-            exchange::timestamp ts_start(backtest_data.config.start_time);
-            exchange::timestamp ts_end(backtest_data.config.end_time);
+            // Convert TimePoint -> meta::Timestamp for date-only comparisons
+            meta::Timestamp ts_start(backtest_data.config.start_time);
+            meta::Timestamp ts_end(backtest_data.config.end_time);
             std::string         start_date = ts_start.only_date();
             std::string         end_date   = ts_end.only_date();
             for (const auto &b : market_data) {

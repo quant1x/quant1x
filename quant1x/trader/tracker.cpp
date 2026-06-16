@@ -9,7 +9,7 @@
 #include <quant1x/trader/tracker.h>
 #include <quant1x/config/config.h>
 #include <spdlog/spdlog.h>
-#include <quant1x/data/market/instruments.h>
+#include <quant1x/data/meta/timestamp.h>
 #include <indicators/progress_bar.hpp>
 #include <quant1x/realtime/snapshot.h>
 #include <quant1x/trader/trader.h>
@@ -63,7 +63,7 @@ namespace trader {
                 mpb::option::MaxProgress{codeCount + 0},
             };
             int processed_codes = 0;
-            auto timestamp = exchange::timestamp::now();
+            auto timestamp = meta::Timestamp::now();
             strategy->setTimestamp(timestamp);
             auto date = timestamp.only_date();
             std::vector<ResultInfo> result_buys;
@@ -74,9 +74,9 @@ namespace trader {
                 std::string codePrefix = std::format("{}({}/{})", code, current, codeCount);
                 bar.set_option(mpb::option::PrefixText{codePrefix + ""});
                 // 4. 运行回测
-                std::string securityCode = exchange::CorrectSecurityCode(code);
+                std::string securityCode = data::correct_security_code(code);
                 // result.date = feature_date;
-                if (exchange::AssertStockBySecurityCode(securityCode)) {
+                if (data::assert_stock_by_security_code(securityCode)) {
                     auto snapshot = realtime::get_snapshot(securityCode);
                     if(snapshot.has_value()) {
                         auto stock_state = snapshot->state;
@@ -174,7 +174,7 @@ namespace trader {
                 if(v.CanUseVolume < 1) {
                     continue;
                 }
-                std::string security_code = exchange::CorrectSecurityCode(v.StockCode);
+                std::string security_code = data::correct_security_code(v.StockCode);
                 mapHolding.emplace(std::move(security_code), std::move(v));
             }
 

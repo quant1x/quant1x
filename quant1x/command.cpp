@@ -45,30 +45,30 @@ namespace quant1x {
             return 0;
         }
         // 判断开始日期
-        std::string tmp_start_date = exchange::last_trading_day().only_date();
+        std::string tmp_start_date = meta::last_trading_day().only_date();
         if(sub_parser.is_used(cmd_flag_start)) {
             tmp_start_date = updateStartDate.value;
         }
         std::cout << "开始日期 = " << tmp_start_date << std::endl;
         // 判断结束日期
-        std::string tmp_end_date = exchange::last_trading_day().only_date();
+        std::string tmp_end_date = meta::last_trading_day().only_date();
         if(sub_parser.is_used(cmd_flag_end)) {
             tmp_end_date = updateEndDate.value;
         }
         std::cout << "结束日期 = " << tmp_end_date << std::endl;
         // 标准化日期
-        exchange::timestamp start_date = exchange::timestamp::parse(tmp_start_date).pre_market_time();
-        start_date = exchange::last_trading_day(start_date);
-        exchange::timestamp end_date = exchange::timestamp::parse(tmp_end_date).pre_market_time();
-        end_date = exchange::last_trading_day(end_date);
+        meta::Timestamp start_date = meta::Timestamp::parse(tmp_start_date).pre_market_time();
+        start_date = meta::last_trading_day(start_date);
+        meta::Timestamp end_date = meta::Timestamp::parse(tmp_end_date).pre_market_time();
+        end_date = meta::last_trading_day(end_date);
         // 矫正日期
         if(!start_date.is_same_date(end_date)) {
             // 以传入的开始日期为cache日期, 特征日期要取前一天
-            start_date = exchange::prev_trading_day(start_date);
+            start_date = meta::prev_trading_day(start_date);
 //            // 以传入的结束日期为特征日期, 矫正结束日期为最近一个有数据的交易日
-//            end_date = exchange::last_trading_day(end_date);
+//            end_date = meta::last_trading_day(end_date);
         }
-        auto const & dates = exchange::date_range(start_date, end_date);
+        auto const & dates = meta::date_range(start_date, end_date);
         int count = 0;
         size_t length = dates.size();
         if(length > 0) {

@@ -476,15 +476,7 @@ set(quant1x-headers
     # 数据
     quant1x/data/adapter.h
     quant1x/data/base.h
-    quant1x/data/xdxr.h
-    quant1x/data/chips.h
-    
-    # 数据集 (migrated to quant1x/data)
-    quant1x/data/kline_raw.h
-    quant1x/data/kline.h
-    quant1x/data/trans.h
-    quant1x/data/minute.h
-    quant1x/data/kline_minute.h
+    quant1x/data/market.h
 
     # 实时模块
     quant1x/realtime/snapshot.h
@@ -495,17 +487,7 @@ set(quant1x-headers
     quant1x/backtest/trade.h
     quant1x/backtest/position.h
 
-    # 交易所相关
-    quant1x/data/market/instruments.h
-    quant1x/data/market/blocks.h
-    quant1x/data/market/security.h
-    quant1x/data/exchange/calendar.h
-    quant1x/data/exchange/code.h
-    quant1x/data/exchange/rule.h
-    quant1x/data/exchange/margin_trading.h
-    quant1x/data/exchange/session.h
-    quant1x/data/exchange/timestamp.h
-    quant1x/data/exchange/status.h
+    # 交易所相关 (migrated to quant1x/data/meta/)
 
     # 数据客户端
     quant1x/contrib/data/tdx/client.h
@@ -514,6 +496,17 @@ set(quant1x-headers
     quant1x/contrib/data/tdx/level1/config.h
     quant1x/contrib/data/tdx/level1/minute_time.h
     quant1x/contrib/data/tdx/level1/protocol.h
+
+    # tdx adapters
+    quant1x/contrib/data/tdx/xdxr.h
+    quant1x/contrib/data/tdx/kline_raw.h
+    quant1x/contrib/data/tdx/kline.h
+    quant1x/contrib/data/tdx/trans.h
+    quant1x/contrib/data/tdx/minute.h
+    quant1x/contrib/data/tdx/chips.h
+    quant1x/contrib/data/tdx/kline_minute.h
+    quant1x/contrib/data/tdx/f10.h
+    quant1x/contrib/data/tdx/history.h
 
     # 引擎
     quant1x/engine/strategy.h
@@ -637,28 +630,22 @@ set(quant1x-sources
 
     # 数据
     quant1x/data/adapter.cpp
-    quant1x/data/xdxr.cpp
-    quant1x/data/chips.cpp
-    
-    # 数据集 (migrated to quant1x/data)
-    quant1x/data/kline.cpp
-    quant1x/data/kline_raw.cpp
-    quant1x/data/minute.cpp
-    quant1x/data/trans.cpp
-    quant1x/data/kline_minute.cpp
+    quant1x/data/market.cpp
+
+    # tdx adapters
+    quant1x/contrib/data/tdx/xdxr.cpp
+    quant1x/contrib/data/tdx/kline_raw.cpp
+    quant1x/contrib/data/tdx/kline.cpp
+    quant1x/contrib/data/tdx/trans.cpp
+    quant1x/contrib/data/tdx/minute.cpp
+    quant1x/contrib/data/tdx/chips.cpp
+    quant1x/contrib/data/tdx/kline_minute.cpp
+    quant1x/contrib/data/tdx/f10.cpp
+    quant1x/contrib/data/tdx/history.cpp
+
     quant1x/datasets.cpp
 
-    # 交易所相关
-    quant1x/data/market/instruments.cpp
-    quant1x/data/market/blocks.cpp
-    quant1x/data/market/security.cpp
-    quant1x/data/exchange/code.cpp
-    quant1x/data/exchange/rule.cpp
-    quant1x/data/exchange/calendar.cpp
-    quant1x/data/exchange/session.cpp
-    quant1x/data/exchange/timestamp.cpp
-    quant1x/data/exchange/status.cpp
-    quant1x/data/exchange/margin_trading.cpp
+    # 交易所相关 (migrated to quant1x/data/meta/)
 
     # 因子
     quant1x/factors/base.cpp

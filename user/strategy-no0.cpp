@@ -35,7 +35,7 @@ quant1x::error No0Strategy::Filter(const config::StrategyParameter &parameter, c
     }
     // 判断是否涨停
     double prev_price = snapshot.lastClose;
-    std::string security_code = exchange::GetSecurityCode(static_cast<exchange::ExchangeId>(snapshot.market), snapshot.code);
+    std::string security_code = data::correct_security_code(static_cast<meta::ExchangeId>(snapshot.market), snapshot.code);
     double up_limit = instruments::calc_limit_up_price(security_code, prev_price);
     if(price == up_limit) {
         return quant1x::make_error_code(0+3, std::format("涨停, 价格{}, 不打板", price));
@@ -46,13 +46,13 @@ quant1x::error No0Strategy::Filter(const config::StrategyParameter &parameter, c
 
 void No0Strategy::Evaluate(const SecurityCode &code, ResultInfo &result) const {
     result.strategy_id = this->Code();
-    std::string securityCode = exchange::CorrectSecurityCode(code);
+    std::string securityCode = data::correct_security_code(code);
     result.code = securityCode;
     //std::cout << "No0Strategy evaluated for: " << securityCode << std::endl;
     auto timestamp = getTimestamp().pre_market_time();
     auto feature_date = timestamp.only_date();
     result.date = feature_date;
-    if(!exchange::AssertStockBySecurityCode(securityCode)) {
+    if(!data::assert_stock_by_security_code(securityCode)) {
         return;
     }
     auto klines = factors::checkout_klines(securityCode, feature_date);
@@ -78,11 +78,11 @@ void No0Strategy::Evaluate(const SecurityCode &code, ResultInfo &result) const {
 }
 
 void No0Strategy::updateIndicators(const SecurityCode &code) {
-    std::string securityCode = exchange::CorrectSecurityCode(code);
+    std::string securityCode = data::correct_security_code(code);
     std::cout << "[No0Strategy::updateIndicators] entered for code=" << securityCode << "\n";
     auto timestamp = getTimestamp().pre_market_time();
     auto feature_date = timestamp.only_date();
-    if(!exchange::AssertStockBySecurityCode(securityCode)) {
+    if(!data::assert_stock_by_security_code(securityCode)) {
         return;
     }
     auto klines = factors::checkout_klines(securityCode, feature_date);
@@ -161,9 +161,9 @@ void No0Strategy::reset() {
 // 增量计算
 void No0Strategy::Evaluate(const SecurityCode &code, ResultInfo &result, const Snapshot::Reader &snapshot) const {
     result.strategy_id = this->Code();
-    std::string securityCode = exchange::CorrectSecurityCode(code);
+    std::string securityCode = data::correct_security_code(code);
     result.code = securityCode;
-    auto timestamp = exchange::last_trading_day(getTimestamp());
+    auto timestamp = meta::last_trading_day(getTimestamp());
     auto feature_date = timestamp.only_date();
     result.date = feature_date;
     auto history = factors::get_history(code, timestamp);
@@ -197,9 +197,9 @@ void No0Strategy::Evaluate(const SecurityCode &code, ResultInfo &result, const S
 
 void No0Strategy::Evaluate(const SecurityCode &code, ResultInfo &result, const level1::SecurityQuote &snapshot) const {
     result.strategy_id = this->Code();
-    std::string securityCode = exchange::CorrectSecurityCode(code);
+    std::string securityCode = data::correct_security_code(code);
     result.code = securityCode;
-    auto timestamp = exchange::last_trading_day(getTimestamp());
+    auto timestamp = meta::last_trading_day(getTimestamp());
     auto feature_date = timestamp.only_date();
     result.date = feature_date;
     auto history = factors::get_history(code, timestamp);

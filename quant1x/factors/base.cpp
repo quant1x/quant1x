@@ -1,11 +1,11 @@
-#include <quant1x/data/market/instruments.h>
+#include <quant1x/data/meta/timestamp.h>
 #include <quant1x/factors/base.h>
 
 namespace factors {
 
     namespace {
         std::unordered_map<std::string, std::vector<level1::XdxrInfo>> xdxrs_map;
-        auto xdxrs_once = RollingOnce::create("factors-xdxrs", exchange::cron_expr_daily_9am);
+        auto xdxrs_once = RollingOnce::create("factors-xdxrs", meta::Timestamp);
 
         void lazy_load_xdxr_list() {
             xdxrs_map.clear();
@@ -47,8 +47,8 @@ namespace factors {
 
     // 聚合给定一个时间范围内的复权因子
     std::vector<CumulativeAdjustment> combine_adjustments_in_period(std::span<const level1::XdxrInfo> xdxrs,
-                                                                    const exchange::timestamp        &start_date,
-                                                                    const exchange::timestamp        &end_date) {
+                                                                    const meta::Timestamp        &start_date,
+                                                                    const meta::Timestamp        &end_date) {
         // 1. 过滤符合时间范围的除权除息数据
         std::vector<CumulativeAdjustment> result;
         for (const auto &info : xdxrs) {
@@ -56,7 +56,7 @@ namespace factors {
                 continue;
 
             // 统一盘前时间
-            exchange::timestamp event_ts = exchange::timestamp::parse(info.Date).pre_market_time();
+            meta::Timestamp event_ts = meta::Timestamp::parse(info.Date).pre_market_time();
             if (event_ts < start_date || event_ts > end_date)
                 continue;
 
@@ -151,8 +151,8 @@ namespace factors {
 
     // 捡出指定日期的K线数据
     std::vector<data::KLine> checkout_klines(const std::string &code, const std::string &date) {
-        std::string         securityCode = exchange::CorrectSecurityCode(code);
-        exchange::timestamp ts(date);
+        std::string         securityCode = data::correct_security_code(code);
+        meta::Timestamp ts(date);
         std::string         fixed_date = ts.only_date();
 
         // 1. 取缓存的K线
@@ -238,8 +238,8 @@ namespace factors {
         // 4. 检查 offset
         // 5. 转换 KLineRaw -> KLine
         // 6. 应用复权因子
-        std::string         securityCode = exchange::CorrectSecurityCode(code);
-        exchange::timestamp ts(date);
+        std::string         securityCode = data::correct_security_code(code);
+        meta::Timestamp ts(date);
         std::string         fixed_date = ts.only_date();
 
         // 1. 取缓存的K线
@@ -279,8 +279,8 @@ namespace factors {
         auto result = convert_to_klines(cache_raw_klines, offset);
         auto xdxrs  = get_xdxr_list(securityCode);
         // 确定前复权的时间范围
-        auto ts_start = exchange::timestamp(result[0].date).pre_market_time();
-        auto ts_end   = exchange::timestamp(result.back().date).pre_market_time();
+        auto ts_start = meta::Timestamp(result[0].date).pre_market_time();
+        auto ts_end   = meta::Timestamp(result.back().date).pre_market_time();
         // auto cbs = combine_adjustments_in_period(xdxrs, ts_start, ts_end);
         apply_forward_adjustments_once(result, xdxrs, ts_start, ts_end);
         return result;

@@ -10,69 +10,45 @@
 
 namespace level1 {
 
-    /// 网络协议
-#pragma pack(push, 1)  // 确保1字节对齐
+    // 证券统计 (对齐 Python SecurityCount)
+    struct SecurityCount : public BaseMessage<SecurityCount> {
+        u16 Market;                    // 市场
+        std::vector<u8> padding={};    // 填充
+        u16 Count;                     // 返回数量
 
-    struct SecurityCountReqeust : public RequestHeader<SecurityCountReqeust> {
-        u16 Market;
-        std::vector<u8> padding={};
-
-        SecurityCountReqeust() : RequestHeader<SecurityCountReqeust>(){
-            ZipFlag = ZlibFlag::Uncompressed;
-            SeqID = SequenceId();
-            PacketType = 0x01;
-            Method = StdCommand::SECURITY_COUNT;
+        SecurityCount() : BaseMessage<SecurityCount>() {
+            request_header.ZipFlag = ZlibFlag::Uncompressed;
+            request_header.SeqID = SequenceId();
+            request_header.PacketType = 0x01;
+            request_header.Method = StdCommand::SECURITY_COUNT;
 
             Market = 0;
             padding = strings::hexToBytes("75c73301");
         }
 
-        std::vector<u8> serializeImpl() {
-            PkgLen1 = 2 + 2 + 4;
-            PkgLen2 = 2 + 2 + 4;
-            auto buf = RequestHeader<SecurityCountReqeust>::headerSerialize();
+        std::vector<u8> serialize_request_body_impl() {
             BinaryStream stream;
             stream.push_arithmetic(Market);
             auto data = stream.data();
-            buf.insert(buf.end(), data.begin(), data.end());
-            buf.insert(buf.end(), padding.begin(), padding.end());
-            return buf;
+            data.insert(data.end(), padding.begin(), padding.end());
+            return data;
         }
 
-        std::string toStringImpl() const {
-            std::ostringstream oss;
-            oss << RequestHeader<SecurityCountReqeust>::headerStringImpl()
-                << '{'
-                << "Market:"<< int(Market)
-                << ", padding:" << strings::bytesToHex(padding)
-                << '}';
-            return oss.str();
-        }
-
-    };
-
-    struct SecurityCountResponse : public ResponseHeader<SecurityCountResponse> {
-        u16 Count;
-
-        SecurityCountResponse() : ResponseHeader<SecurityCountResponse>() {
-            Count = 0;
-        }
-
-        void deserializeImpl(const std::vector<u8> &data) {
+        void deserialize_response_body_impl(const std::vector<u8> &data) {
             BinaryStream bs(data);
             Count = bs.get_u16();
         }
 
         std::string toStringImpl() const {
             std::ostringstream oss;
-            oss << ResponseHeader<SecurityCountResponse>::headerStringImpl()
-                << "{Count:" << Count
+            oss << request_header.headerStringImpl()
+                << '{'
+                << "Market:"<< int(Market)
+                << ", padding:" << strings::bytesToHex(padding)
                 << "}";
             return oss.str();
         }
     };
-
-#pragma pack(pop)  // 恢复默认对齐方式
 
 }
 #endif //QUANT1X_LEVEL1_SECURITY_COUNT_H

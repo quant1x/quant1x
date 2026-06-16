@@ -1,5 +1,5 @@
 #include <cpr/cpr.h>
-#include <quant1x/data/market/instruments.h>
+#include <quant1x/data/meta/timestamp.h>
 #include <quant1x/factors/safety_score.h>
 
 //#include <iostream>
@@ -143,7 +143,7 @@ namespace risks {
 
     // 获取个股安全分
     std::tuple<int, std::string> GetSafetyScore(const std::string &securityCode) {
-        if (!exchange::AssertStockBySecurityCode(securityCode)) {
+        if (!data::assert_stock_by_security_code(securityCode)) {
             return {defaultSafetyScore, ""};
         }
 
@@ -153,7 +153,7 @@ namespace risks {
 
         int         score = defaultSafetyScore;
         std::string detail;
-        auto [marketId, marketCode, pureCode] = exchange::DetectMarket(securityCode);
+        auto [marketId, marketCode, pureCode] = data::detect_symbol(securityCode);
 
         if (pureCode.length() == 6) {
             std::string url = urlRiskAssessment + pureCode + ".json";

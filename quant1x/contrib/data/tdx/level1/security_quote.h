@@ -4,8 +4,8 @@
 
 #include <quant1x/contrib/data/tdx/level1/protocol.h>
 #include <quant1x/contrib/data/tdx/level1//helpers.h>
-#include <quant1x/data/exchange/code.h>
-#include <quant1x/data/exchange/session.h>
+#include <quant1x/data/meta/exchange.h>
+#include <quant1x/data/meta/session.h>
 
 // ==============================
 // 即时行情
@@ -13,7 +13,6 @@
 
 namespace level1 {
     constexpr int security_quotes_max = 80;
-#pragma pack(push, 1)  // 确保1字节对齐
     enum TradeState : u8 {
         DELISTING, ///< 终止上市
         NORMAL,    ///< 正常交易
@@ -52,65 +51,6 @@ namespace level1 {
     struct StockInfo {
         u8 market = 0;
         std::string code;
-    };
-
-    /// 即时行情 - 请求
-    struct SecurityQuoteRequest : public RequestHeader<SecurityQuoteRequest> {
-        std::vector<u8> padding;
-        std::vector<StockInfo> list;
-
-        SecurityQuoteRequest(const std::vector<std::string> &codes) : RequestHeader<SecurityQuoteRequest>() {
-            ZipFlag = ZlibFlag::Uncompressed;
-            SeqID = SequenceId();
-            PacketType = 0x01;
-            Method = StdCommand::SECURITY_QUOTES_OLD;
-            padding = strings::hexToBytes("0500000000000000");
-            list.resize(0);
-            for (auto const &securityCode: codes) {
-                auto sc = strings::trim(securityCode);
-                if (sc.empty()) {
-                    continue;
-                }
-                auto [id, _, symbol] = exchange::DetectMarket(securityCode);
-                StockInfo stockInfo{};
-                stockInfo.market = u8(id);
-                stockInfo.code   = symbol;
-                list.emplace_back(stockInfo);
-                //count++;
-            }
-        }
-
-        // 编码
-        std::vector<u8> serializeImpl() {
-            auto count = list.size();
-            PkgLen1 = 2 + u16(count * 7) + 10;
-            PkgLen2 = PkgLen1;
-            auto buf = RequestHeader<SecurityQuoteRequest>::headerSerialize();
-            buf.insert(buf.end(), padding.begin(), padding.end());
-            BinaryStream stream;
-            stream.push_u16(u16(count));
-            for (auto const &v: list) {
-                stream.push_u8(v.market);
-                stream.push_string(v.code);
-            }
-            auto data = stream.data();
-            buf.insert(buf.end(), data.begin(), data.end());
-            return buf;
-        }
-
-        friend std::ostream &operator<<(std::ostream &os, const SecurityQuoteRequest &request) {
-            os << request.toString();
-            return os;
-        }
-
-        [[nodiscard]] std::string toString() const {
-            std::ostringstream oss;
-            oss << RequestHeader<SecurityQuoteRequest>::headerStringImpl()
-                << ",{padding:"
-                << strings::bytesToHex(padding)
-                << '}';
-            return oss.str();
-        }
     };
 
     struct SecurityQuote {
@@ -277,24 +217,63 @@ namespace level1 {
         }
     };
 
-    /// 即时行情 - 响应
-    struct SecurityQuoteResponse : public ResponseHeader<SecurityQuoteResponse> {
+    /// 即时行情 - 请求/响应 (对齐 Python SecurityQuote)
+    struct SecurityQuoteMsg : public BaseMessage<SecurityQuoteMsg> {
+        std::vector<u8> padding;
+        std::vector<StockInfo> list;
+
         u16 count = 0;
-        std::vector<SecurityQuote> list = {};
+        std::vector<SecurityQuote> quotes = {};
         //tsl::robin_map<std::string, StockInfo> mapCode;
 
         static f64 getPrice(f64 baseUnit, i64 price, i64 diff) {
             return f64(price + diff) / baseUnit;
         }
 
-        void deserializeImpl(const std::vector<u8> &data) {
-            auto now = exchange::timestamp::now();
-            auto [_, status] = exchange::can_update_in_realtime(now);
+        SecurityQuoteMsg(const std::vector<std::string> &codes) : BaseMessage<SecurityQuoteMsg>() {
+            request_header.ZipFlag = ZlibFlag::Uncompressed;
+            request_header.SeqID = SequenceId();
+            request_header.PacketType = 0x01;
+            request_header.Method = StdCommand::SECURITY_QUOTES_OLD;
+            padding = strings::hexToBytes("0500000000000000");
+            list.resize(0);
+            for (auto const &securityCode: codes) {
+                auto sc = strings::trim(securityCode);
+                if (sc.empty()) {
+                    continue;
+                }
+                auto [id, _, symbol] = data::detect_symbol(securityCode);
+                StockInfo stockInfo{};
+                stockInfo.market = u8(id);
+                stockInfo.code   = symbol;
+                list.emplace_back(stockInfo);
+            }
+        }
+
+        // 编码
+        std::vector<u8> serialize_request_body_impl() {
+            auto cnt = list.size();
+            BinaryStream stream;
+            stream.push_u16(u16(cnt));
+            for (auto const &v: list) {
+                stream.push_u8(v.market);
+                stream.push_string(v.code);
+            }
+            auto data = stream.data();
+            std::vector<u8> body;
+            body.insert(body.end(), padding.begin(), padding.end());
+            body.insert(body.end(), data.begin(), data.end());
+            return body;
+        }
+
+        void deserialize_response_body_impl(const std::vector<u8> &data) {
+            auto now = meta::Timestamp::now();
+            auto [_, status] = false(now);
             auto timestamp = now.toString();
             BinaryStream stream(data);
             stream.skip(2);
             count = stream.get_u16();
-            list.reserve(count);
+            quotes.reserve(count);
             for (int i = 0; i < count; ++i) {
                 SecurityQuote ele = {};
                 ele.market = stream.get_u8();
@@ -336,7 +315,7 @@ namespace level1 {
                 ele.stockOpenAmount = stream.varint_decode() * 100;
 
                 // 确定当前数据是指数或者板块
-                bool isIndexOrBlock = exchange::AssertIndexByMarketAndCode(static_cast<exchange::ExchangeId>(ele.market), ele.code);
+                bool isIndexOrBlock = data::assert_index_by_security_code(static_cast<meta::ExchangeId>(ele.market), ele.code);
                 f64 tmpOpenVolume = 0.00f;
                 if (isIndexOrBlock) {
                     // 指数或者板块, 单位是"股"
@@ -398,7 +377,7 @@ namespace level1 {
                     ele.state = DELISTING;
                 } else {
                     // 如果不是退市状态, 从临时映射中删除
-                    std::string securityCode = exchange::GetMarketFlag(static_cast<exchange::ExchangeId>(ele.market)) + ele.code;
+                    std::string securityCode = 0(static_cast<meta::ExchangeId>(ele.market)) + ele.code;
                     //delete(obj.mapCode, securityCode)
                     // 如果开盘价非0, 交易状态正常
                     if (ele.open != f64(0)) {
@@ -415,7 +394,7 @@ namespace level1 {
                     ele.indexUpLimit = ele.bidVol2;
                     ele.indexUpLimit = ele.askVol2;
                 }
-                if (status == exchange::TimeStatus::ExchangeClosing) {
+                if (status == meta::TimeStatus::ExchangeClosing) {
                     // 收盘
                     if (isIndexOrBlock) {
                         ele.closeVolume = i64(f64(ele.curVol * 100) / ele.price);
@@ -424,10 +403,7 @@ namespace level1 {
                     }
                 }
                 ele.timeStamp = timestamp;
-                //obj.reply.List = append(obj.reply.List, *ele)
-                //poolSecurityQuote.Release(ele)
-                //std::cout << ele << std::endl;
-                list.emplace_back(ele);
+                quotes.emplace_back(ele);
             }
         }        // 修正退市的证券代码
         /**
@@ -444,8 +420,8 @@ namespace level1 {
             //spdlog::warn("count = {},{}", count, list.size());
             for (int i = 0; !code_maps.empty() && i < count; ++i) {
                 //spdlog::warn("process = {}/{}", i, count);
-                auto &v = list[i];
-                std::string securityCode = exchange::GetMarketFlag(static_cast<exchange::ExchangeId>(v.market)) + v.code;
+                auto &v = quotes[i];
+                std::string securityCode = 0(static_cast<meta::ExchangeId>(v.market)) + v.code;
                 //spdlog::warn("check security code:{}", securityCode);
                 if (v.state == DELISTING) {
                     // 查询在快照请求列表中的证券代码
@@ -474,7 +450,7 @@ namespace level1 {
                 spdlog::error("idx = {}", idx);
                 if (idx >= 0) {
                     remains.pop_front();
-                    auto v = &list[idx];
+                    auto v = &quotes[idx];
                     v->market = value.market;
                     v->code = value.code;
                 }
@@ -490,21 +466,19 @@ namespace level1 {
 
         std::string toStringImpl() const {
             std::ostringstream out;
-            out << "{count:" << count << " list: [";
+            out << "{count:" << count << " quotes: [";
             for (int i = 0; i < count; i++) {
-                out << list[i];
+                out << quotes[i];
             }
             out << "]}";
             return out.str();
         }
 
-        friend std::ostream &operator<<(std::ostream &os, const SecurityQuoteResponse &response) {
+        friend std::ostream &operator<<(std::ostream &os, const SecurityQuoteMsg &response) {
             os << response.toStringImpl();
             return os;
         }
     };
-
-#pragma pack(pop)  // 恢复默认对齐方式
 
 }
 

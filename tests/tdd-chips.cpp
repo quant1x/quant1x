@@ -610,7 +610,7 @@ private:
 TEST_CASE("chips-v2", "[chips]") {
     std::string code          = "000999";
     std::string date          = "2025-09-05";
-    std::string security_code = exchange::CorrectSecurityCode(code);
+    std::string security_code = data::correct_security_code(code);
     std::cout << "当前日期: " << date << ", 证券代码: " << security_code << std::endl;
     ChipDistribution cd(defaultConfig);
     bool             result = cd.LoadCSV(security_code, date);

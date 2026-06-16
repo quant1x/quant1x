@@ -37,11 +37,11 @@ public:
 
     std::string Usage() const override { return "no0"; }
 
-    void Print(const std::string &code, const std::vector<exchange::timestamp> &dates) override;
+    void Print(const meta::Instrument &inst, const std::vector<meta::Timestamp> &dates) override;
 
-    void Update(const std::string &code, const exchange::timestamp &date) override;
+    void Update(const meta::Instrument &inst, const meta::Timestamp &date) override;
 
-    void init(const exchange::timestamp &timestamp) override;
+    void init(const meta::Timestamp &timestamp) override;
 
     std::unique_ptr<FeatureAdapter> clone() const override;
 
@@ -52,7 +52,7 @@ public:
 
 namespace factors {
     /// 获取指定日期的No0数据
-    std::optional<No0> get_no0(const std::string &code, const exchange::timestamp &timestamp);
+    std::optional<No0> get_no0(const std::string &code, const meta::Timestamp &timestamp);
 }  // namespace factors
 
 #endif  // QUANT1X_FEATURES_NO0_H

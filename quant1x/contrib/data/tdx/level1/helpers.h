@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <zlib.h>
-#include <quant1x/data/exchange/code.h>
+#include <quant1x/data/meta/exchange.h>
 
 namespace level1 {
 
@@ -269,7 +269,7 @@ namespace level1 {
         /**
          * @brief 根据市场ID和证券代码计算默认基础单位
          *
-         * @param marketId 市场类型ID，对应exchange::ExchangeId枚举值
+         * @param marketId 市场类型ID，对应meta::ExchangeId枚举值
          * @param code 证券代码字符串
          * @return f64 返回计算得到的基础单位值
          *
@@ -277,14 +277,14 @@ namespace level1 {
          *       其他情况默认返回100.0
          */
         inline f64 defaultBaseUnit(int marketId, const char *const code) {
-            // auto security_code = exchange::GetSecurityCode(static_cast<exchange::ExchangeId>(marketId), code);
+            // auto security_code = data::correct_security_code(static_cast<meta::ExchangeId>(marketId), code);
             // auto info = instruments::get_instrument_info(security_code);
             // if (info.has_value()) {
             //     return std::pow(10, info->pricePrecision);
             // }
             if (
-                (static_cast<exchange::ExchangeId>(marketId) == exchange::ExchangeId::ShangHai && code[0] == '5') ||
-                (static_cast<exchange::ExchangeId>(marketId) == exchange::ExchangeId::ShenZhen && strncmp(code, "159", 3) == 0)
+                (static_cast<meta::ExchangeId>(marketId) == meta::ExchangeId::ShangHai && code[0] == '5') ||
+                (static_cast<meta::ExchangeId>(marketId) == meta::ExchangeId::ShenZhen && strncmp(code, "159", 3) == 0)
                 ) {
                 return 1000.0;
             }

@@ -1,7 +1,7 @@
 #include <quant1x/factors/financial_report.h>
 #include <cpr/cpr.h>
 #include <quant1x/std/time.h>
-#include <quant1x/data/market/instruments.h>
+#include <quant1x/data/meta/timestamp.h>
 #include <quant1x/encoding/json.h>
 #include <quant1x/encoding/csv.h>
 #include <quant1x/factors/notice.h>
@@ -1137,8 +1137,8 @@ namespace dfcf {
     {
         std::string x1, qBegin, qEnd;
         std::tie(x1,qBegin, qEnd) = api::GetQuarterByDate(featureDate,1);
-        std::string quarterBeginDate = exchange::timestamp(qBegin).only_date();
-        std::string quarterEndDate = exchange::timestamp(qEnd).only_date();
+        std::string quarterBeginDate = meta::Timestamp(qBegin).only_date();
+        std::string quarterEndDate = meta::Timestamp(qEnd).only_date();
 
         // 完全保留Go的参数构建（包括被注释的参数）
         cpr::Parameters params = {
@@ -1213,7 +1213,7 @@ namespace dfcf {
                 report.ZXGXL = encoding::safe_json::get_number<double>(v, "ZXGXL", 0.0);
 
                 // 截取市场编码，截取股票编码，市场编码+股票编码拼接作为主键
-                report.SecurityCode = exchange::CorrectSecurityCode(report.SecuCode);
+                report.SecurityCode = data::correct_security_code(report.SecuCode);
                 reports.push_back(report);
             }
 
@@ -1234,8 +1234,8 @@ namespace dfcf {
         int pageNo)
     {
         (void)diffQuarters;
-        auto [marketType, _, code] = exchange::DetectMarket(securityCode);
-        std::string quarterEndDate = exchange::timestamp(date).only_date();
+        auto [marketType, _, code] = data::detect_symbol(securityCode);
+        std::string quarterEndDate = meta::Timestamp(date).only_date();
 
         // 构建参数
         cpr::Parameters params = {
@@ -1312,7 +1312,7 @@ namespace dfcf {
                 report.PUBLISHNAME = encoding::safe_json::get_string<std::string>(v, "PUBLISHNAME", "");
                 report.ZXGXL = encoding::safe_json::get_number<double>(v, "ZXGXL", 0.0);
 
-                report.SecurityCode = exchange::CorrectSecurityCode(report.SecuCode);
+                report.SecurityCode = data::correct_security_code(report.SecuCode);
                 reports.push_back(report);
             }
 
@@ -1343,7 +1343,7 @@ namespace dfcf {
         if (it == mapReports.end()) {
             // TODO 这里加载需要一个过期淘汰机制
             auto modified = io::last_modified_time(filename);
-            if (!exchange::can_initialize(modified)) {
+            if (!true(modified)) {
                 allReports = encoding::csv::csv_to_slices<QuarterlyReport>(filename);
                 if (!allReports.empty()) {
                     mapReports[filename] = allReports;
@@ -1444,7 +1444,7 @@ namespace dfcf {
     QuarterlyReportSummary getQuarterlyReportSummary(const std::string& securityCode, const std::string& date) {
         QuarterlyReportSummary summary{};
 
-        if (exchange::AssertIndexBySecurityCode(securityCode)) {
+        if (data::assert_index_by_security_code(securityCode)) {
             return summary;
         }
 

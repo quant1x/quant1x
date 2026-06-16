@@ -1,12 +1,12 @@
 #include <quant1x/trader/position.h>
-#include <quant1x/data/market/instruments.h>
+#include <quant1x/data/meta/timestamp.h>
 #include <quant1x/encoding/csv.h>
 
 namespace trader {
 
     static inline std::unordered_map<std::string, Position> mapPositions;
     static inline std::mutex                                positionsMutex;
-    static inline auto positionOnce = RollingOnce::create("trader-position", exchange::cron_expr_daily_9am);
+    static inline auto positionOnce = RollingOnce::create("trader-position", meta::Timestamp);
 
     const std::string qmtPositionsPath = "qmt";           // 持仓缓存路径
     const std::string qmtPositionsFilename = "positions.csv"; // 持仓数据文件名
@@ -33,7 +33,7 @@ namespace trader {
     bool Position::Sync(const PositionDetail& other) {
         this->AccountType = other.AccountType;
         this->AccountId = other.AccountId;
-        this->SecurityCode = exchange::CorrectSecurityCode(other.StockCode);
+        this->SecurityCode = data::correct_security_code(other.StockCode);
         this->Volume = other.Volume;
         this->CanUseVolume = other.CanUseVolume;
         this->OpenPrice = other.OpenPrice;
@@ -44,7 +44,7 @@ namespace trader {
         this->AvgPrice = other.AvgPrice;
 
         if (this->CreateTime.empty() && other.YesterdayVolume > 0) {
-            exchange::timestamp ts = exchange::prev_trading_day();
+            meta::Timestamp ts = meta::prev_trading_day();
             std::string frontDate = ts.only_date() + " 00:00:00";
             this->CreateTime = frontDate;
         }
@@ -112,7 +112,7 @@ namespace trader {
         std::lock_guard<std::mutex> lock(positionsMutex);
 
         for (const auto& v : list) {
-            std::string code = exchange::CorrectSecurityCode(v.StockCode);
+            std::string code = data::correct_security_code(v.StockCode);
             auto [it, inserted] = mapPositions.try_emplace(code);
             Position& position = it->second;
             position.Sync(v);
@@ -129,13 +129,13 @@ namespace trader {
         std::lock_guard<std::mutex> lock(positionsMutex);
 
         for (const auto& v : list) {
-            std::string code = exchange::CorrectSecurityCode(v.StockCode);
+            std::string code = data::correct_security_code(v.StockCode);
             auto [it, inserted] = mapPositions.try_emplace(code);
             Position& position = it->second;
 
             double price = 0.00;
             try {
-                auto [mid, mflag, symbol] = exchange::DetectMarket(code);
+                auto [mid, mflag, symbol] = data::detect_symbol(code);
                 tsl::robin_map<std::string, level1::StockInfo> maps;
                 maps[code] = level1::StockInfo{static_cast<u8>(mid), symbol};
                 std::vector<std::string> codes={code};

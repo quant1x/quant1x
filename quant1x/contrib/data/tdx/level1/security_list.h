@@ -14,43 +14,7 @@
 
 namespace level1 {
     constexpr int security_list_pre_request_max = 1600;  ///< 单次最大获取多少条股票数据
-    /// 网络协议
-#pragma pack(push, 1)  // 确保1字节对齐
     // 证券列表
-    struct SecurityListRequest : RequestHeader<SecurityListRequest> {
-        u16 market;   // 交易市场
-        u32 start;    // 起始位置
-        u32 count;    // 请求数量
-        u32 unknown;  // 未知字段，通常为0x00000000
-
-        SecurityListRequest(int market, int start, int count) : RequestHeader<SecurityListRequest>() {
-            ZipFlag       = ZlibFlag::Uncompressed;
-            SeqID         = SequenceId();
-            PacketType    = 0x01;
-            Method        = StdCommand::SECURITY_LIST;
-            this->market  = market;
-            this->start   = start;
-            this->count   = count;
-            this->unknown = 0;
-        }
-
-        std::vector<u8> serializeImpl() {
-            BinaryStream tmp;
-            PkgLen1 = 2 + 2 + 4 + 4 + 4;
-            PkgLen2 = 2 + 2 + 4 + 4 + 4;
-            tmp.push_arithmetic(market);
-            tmp.push_arithmetic(start);
-            tmp.push_arithmetic(count);
-            tmp.push_arithmetic(unknown);
-            auto buf  = RequestHeader<SecurityListRequest>::headerSerialize();
-            auto data = tmp.data();
-            buf.insert(buf.end(), data.begin(), data.end());
-            return buf;
-        }
-
-        [[nodiscard]] std::string toStringImpl() const { return ""; }
-    };
-
     struct Security {
         std::string Code;          // 证券代码
         u16         VolUnit;       // 每手股数
@@ -74,11 +38,37 @@ namespace level1 {
         }
     };
 
-    struct SecurityListResponse : public ResponseHeader<SecurityListResponse> {
-        u16                   Count;
-        std::vector<Security> List;
+    // 证券列表请求/响应 (对齐 Python SecurityList)
+    struct SecurityList : public BaseMessage<SecurityList> {
+        u16 market;   // 交易市场
+        u32 start;    // 起始位置
+        u32 count;    // 请求数量
+        u32 unknown;  // 未知字段，通常为0x00000000
 
-        void deserializeImpl(const std::vector<u8> &data) {
+        u16                   Count;     // 响应: 返回记录数
+        std::vector<Security> List;      // 响应: 证券列表
+
+        SecurityList(int market, int start, int count) : BaseMessage<SecurityList>() {
+            request_header.ZipFlag       = ZlibFlag::Uncompressed;
+            request_header.SeqID         = SequenceId();
+            request_header.PacketType    = 0x01;
+            request_header.Method        = StdCommand::SECURITY_LIST;
+            this->market  = market;
+            this->start   = start;
+            this->count   = count;
+            this->unknown = 0;
+        }
+
+        std::vector<u8> serialize_request_body_impl() {
+            BinaryStream tmp;
+            tmp.push_arithmetic(market);
+            tmp.push_arithmetic(start);
+            tmp.push_arithmetic(count);
+            tmp.push_arithmetic(unknown);
+            return tmp.data();
+        }
+
+        void deserialize_response_body_impl(const std::vector<u8> &data) {
             BinaryStream buf(data);
             Count = buf.get_u16();
             for (int index = 0; index < Count; index++) {
@@ -97,14 +87,12 @@ namespace level1 {
             }
         }
 
-        std::string toStringImpl() const { return ""; }
-
-        friend std::ostream &operator<<(std::ostream &os, const SecurityListResponse &response) {
-            os << "Count:" << response.Count;
-            return os;
+        [[nodiscard]] std::string toStringImpl() const {
+            std::ostringstream oss;
+            oss << "Count:" << Count;
+            return oss.str();
         }
     };
-#pragma pack(pop)  // 恢复默认对齐方式
 }  // namespace level1
 
 #endif  // QUANT1X_LEVEL1_SECURITY_LIST_H

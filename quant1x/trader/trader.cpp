@@ -1,6 +1,6 @@
 #include <cpr/cpr.h>
 #include <quant1x/config/config.h>
-#include <quant1x/data/exchange/code.h>
+#include <quant1x/data/meta/exchange.h>
 #include <quant1x/trader/constants.h>
 #include <quant1x/trader/fee.h>
 #include <quant1x/trader/trader.h>
@@ -192,7 +192,7 @@ namespace trader {
                        int                priceType,
                        double             price,
                        int                volume) {
-        auto [marketId, marketCode, symbol] = exchange::DetectMarket(securityCode);
+        auto [marketId, marketCode, symbol] = data::detect_symbol(securityCode);
         marketCode                          = strings::to_upper(marketCode);
 
         cpr::Payload params{

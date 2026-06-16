@@ -11,16 +11,14 @@
 
 namespace level1 {
 
-    /// 网络协议
-#pragma pack(push, 1)  // 确保1字节对齐
-
-    struct BlockInfo {
+    /// 板块数据结构
+    struct BlockEntry {
         std::string BlockName{};
         u16 BlockType = 0;
         u16 StockCount = 0;
         std::vector<std::string> Codelist{};
 
-        friend std::ostream &operator<<(std::ostream &os, const BlockInfo &info) {
+        friend std::ostream &operator<<(std::ostream &os, const BlockEntry &info) {
             os << "BlockName: " << info.BlockName << " BlockType: " << info.BlockType << " StockCount: "
                << info.StockCount << " Codelist: [" << strings::join(info.Codelist, ',');
             os << "]";
@@ -28,16 +26,19 @@ namespace level1 {
         }
     };
 
-    struct BlockInfoRequest : public RequestHeader<BlockInfoRequest> {
-        u32 Start;
-        u32 Size;
-        char BlockFilename[100];
+    // 板块数据请求/响应 (对齐 Python BlockInfo)
+    struct BlockInfoMsg : public BaseMessage<BlockInfoMsg> {
+        u32 Start;                       // 请求: 起始偏移
+        u32 Size;                        // 请求: 数据块大小
+        char BlockFilename[100];         // 请求: 板块文件名
+        u32 DataSize = 0;                // 响应: 数据大小
+        std::vector<u8> Data;            // 响应: 板块数据
 
-        BlockInfoRequest(const std::string &filename, u32 offset) : RequestHeader<BlockInfoRequest>(), BlockFilename() {
-            ZipFlag = ZlibFlag::Uncompressed;
-            SeqID = SequenceId();
-            PacketType = 0x01;
-            Method = StdCommand::BLOCK_DATA;
+        BlockInfoMsg(const std::string &filename, u32 offset) : BaseMessage<BlockInfoMsg>(), BlockFilename() {
+            request_header.ZipFlag = ZlibFlag::Uncompressed;
+            request_header.SeqID = SequenceId();
+            request_header.PacketType = 0x01;
+            request_header.Method = StdCommand::BLOCK_DATA;
 
             Start = offset;
             Size = BLOCK_CHUNKS_SIZE;
@@ -45,40 +46,19 @@ namespace level1 {
             strncpy(BlockFilename, filename.c_str(), sizeof(BlockFilename) - 1);
         }
 
-        std::vector<u8> serializeImpl() {
-            PkgLen1 = 0x6e;
-            PkgLen2 = 0x6e;
-            auto buf = RequestHeader<BlockInfoRequest>::headerSerialize();
+        std::vector<u8> serialize_request_body_impl() {
             BinaryStream stream;
             stream.push_arithmetic(Start);
             stream.push_arithmetic(Size);
             stream.push_array(BlockFilename);
-            auto data = stream.data();
-            buf.insert(buf.end(), data.begin(), data.end());
-            return buf;
+            return stream.data();
         }
 
-        std::string toStringImpl() const {
-            std::ostringstream oss;
-            oss << RequestHeader<BlockInfoRequest>::headerStringImpl()
-                << "{Start:" << Start
-                << ", Size:" << Size
-                << ", BlockFilename:" << strings::from(BlockFilename)
-                << "}";
-
-            return oss.str();
-        }
-    };
-
-    struct BlockInfoResponse : public ResponseHeader<BlockInfoResponse> {
-        u32 Size = 0;
-        std::vector<u8> Data;
-
-        void deserializeImpl(const std::vector<u8> &body) {
+        void deserialize_response_body_impl(const std::vector<u8> &body) {
             BinaryStream bs(body);
-            Size = bs.get_u32();
-            if(Size > 0) {
-                Data.reserve(Size);
+            DataSize = bs.get_u32();
+            if(DataSize > 0) {
+                Data.reserve(DataSize);
                 auto remain = bs.data();
                 Data.insert(Data.end(), remain.begin()+ bs.position(), remain.end());
             }
@@ -86,14 +66,15 @@ namespace level1 {
 
         std::string toStringImpl() const {
             std::ostringstream oss;
-            oss << ResponseHeader<BlockInfoResponse>::headerStringImpl()
-                << "{Size:" << Size;
-            oss << "}";
+            oss << request_header.headerStringImpl()
+                << "{Start:" << Start
+                << ", Size:" << Size
+                << ", BlockFilename:" << strings::from(BlockFilename)
+                << "}"
+                << " DataSize:" << DataSize;
             return oss.str();
         }
     };
-
-#pragma pack(pop)  // 恢复默认对齐方式
 
 }
 

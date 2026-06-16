@@ -14,13 +14,13 @@ TEST_CASE("today", "[exchange]") {
 }
 
 TEST_CASE("check-filelock", "[exchange]") {
-    exchange::timestamp now = exchange::timestamp::now().since(15,10,0,0);
+    meta::Timestamp now = meta::Timestamp::now().since(15,10,0,0);
     auto check = cache::checkUpdateState("2025-05-29", now);
     std::cout << check << std::endl;
 }
 
 TEST_CASE("create-filelock", "[exchange]") {
-    exchange::timestamp now = exchange::timestamp::now().since(15,10,0,0);
+    meta::Timestamp now = meta::Timestamp::now().since(15,10,0,0);
     cache::doneUpdate("2025-05-29", now);
 }
 

@@ -40,9 +40,9 @@ TEST_CASE("strategy-backtest", "[strategies]") {
         std::cout << strategy->DebugString() << std::endl;
         auto strategyParameter = config::TraderConfig()->GetStrategyParameterByCode(1);
 
-        auto bt_begin = exchange::timestamp(2024,6,1);
-        auto bt_end = exchange::timestamp(2025,6,9);
-        auto dates = exchange::date_range(bt_begin, bt_end);
+        auto bt_begin = meta::Timestamp(2024,6,1);
+        auto bt_end = meta::Timestamp(2025,6,9);
+        auto dates = meta::date_range(bt_begin, bt_end);
         std::cout << "from:" << dates[0].only_date() << ", to:" << dates[dates.size()-1].only_date() << std::endl;
         // 创建多进度条管理器
         indicators::DynamicProgress<indicators::ProgressBar> bars;

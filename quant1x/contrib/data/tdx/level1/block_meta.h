@@ -16,9 +16,6 @@ namespace level1 {
     constexpr const char* const BLOCK_DEFAULT     = "block.dat";     // 早期的板块数据文件, 与block_zs.dat
     constexpr u16         BLOCK_CHUNKS_SIZE = 0x7530;          // 板块文件默认一个请求包最大数据
 
-/// 网络协议
-#pragma pack(push, 1)  // 确保1字节对齐
-
     // BlockMeta 响应包结构
     struct BlockMeta {
         u32 Size;           // 尺寸
@@ -33,39 +30,28 @@ namespace level1 {
         }
     };
 
-    struct BlockMetaRequest : public RequestHeader<BlockMetaRequest> {
-        char BlockFilename[40];
+    // 板块元数据请求/响应 (对齐 Python BlockMetaRequest)
+    struct BlockMetaMsg : public BaseMessage<BlockMetaMsg> {
+        char BlockFilename[40];       // 请求: 板块文件名
+        BlockMeta Meta{};             // 响应: 板块元数据
 
-        BlockMetaRequest(const std::string &filename) : RequestHeader<BlockMetaRequest>() {
-            ZipFlag    = ZlibFlag::Uncompressed;
-            SeqID      = SequenceId();
-            PacketType = 0x01;
-            Method     = StdCommand::BLOCK_META;
+        BlockMetaMsg(const std::string &filename) : BaseMessage<BlockMetaMsg>() {
+            request_header.ZipFlag    = ZlibFlag::Uncompressed;
+            request_header.SeqID      = SequenceId();
+            request_header.PacketType = 0x01;
+            request_header.Method     = StdCommand::BLOCK_META;
 
             memset(BlockFilename, 0x00, sizeof(BlockFilename));
             std::strncpy(BlockFilename, filename.c_str(), sizeof(BlockFilename) - 1);
         }
 
-        std::vector<u8> serializeImpl() {
-            PkgLen1  = 0x2a;
-            PkgLen2  = 0x2a;
-            auto buf = RequestHeader<BlockMetaRequest>::headerSerialize();
+        std::vector<u8> serialize_request_body_impl() {
+            std::vector<u8> buf;
             buf.insert(buf.end(), std::begin(BlockFilename), std::end(BlockFilename));
             return buf;
         }
 
-        std::string toStringImpl() const {
-            std::ostringstream oss;
-            oss << RequestHeader<BlockMetaRequest>::headerStringImpl();
-            oss << "{BlockFilename:" << strings::from(BlockFilename) << "}";
-            return oss.str();
-        }
-    };
-
-    struct BlockMetaResponse : public ResponseHeader<BlockMetaResponse> {
-        BlockMeta Meta{};
-
-        void deserializeImpl(const std::vector<u8> &data) {
+        void deserialize_response_body_impl(const std::vector<u8> &data) {
             BinaryStream bs(data);
             Meta.Size = bs.get_u32();
             Meta.C1   = bs.get_u8();
@@ -75,11 +61,12 @@ namespace level1 {
 
         std::string toStringImpl() const {
             std::ostringstream oss;
-            oss << ResponseHeader<BlockMetaResponse>::headerStringImpl() << "{" << Meta << "}";
+            oss << request_header.headerStringImpl();
+            oss << "{BlockFilename:" << strings::from(BlockFilename) << "}"
+                << "{" << Meta << "}";
             return oss.str();
         }
     };
-#pragma pack(pop)  // 恢复默认对齐方式
 
 }  // namespace level1
 

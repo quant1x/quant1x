@@ -14,7 +14,7 @@
 #include <indicators/dynamic_progress.hpp>
 #include <indicators/progress_bar.hpp>
 
-#include <quant1x/data/market/instruments.h>
+#include <quant1x/data/meta/timestamp.h>
 
 namespace quant1x {
 
@@ -54,11 +54,11 @@ namespace quant1x {
 
     inline cmdFlags updateStartDate = {.use          = cmd_flag_start,
                                        .value        = "",
-                                       .defaultValue = exchange::timestamp::now().only_date(),
+                                       .defaultValue = meta::Timestamp::now().only_date(),
                                        .usage        = "开始日期"};
 
     inline cmdFlags updateEndDate = {
-        .use = cmd_flag_end, .value = "", .defaultValue = exchange::timestamp::now().only_date(), .usage = "结束日期"};
+        .use = cmd_flag_end, .value = "", .defaultValue = meta::Timestamp::now().only_date(), .usage = "结束日期"};
 
     inline std::vector<cmdFlags *> updateFlags = {
         &updateAll,

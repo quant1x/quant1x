@@ -3,7 +3,8 @@
 #define QUANT1X_DATASETS_BASE_H 1
 
 #include "adapter.h"
-#include <quant1x/data/exchange/code.h>
+#include <quant1x/data/meta/exchange.h>
+#include <quant1x/data/market.h>
 
 namespace data {
     constexpr data::Kind baseKind = 0;
@@ -20,7 +21,7 @@ namespace data {
     constexpr data::Kind BaseMinuteKLine         = data::PluginMaskBaseData | (baseKind + 11); // 基础数据-分钟级别K线
 
     // 市场开埠日期
-    inline exchange::timestamp market_first_date = exchange::timestamp::parse(exchange::market_cn_first_listtime).pre_market_time();
+    inline meta::Timestamp market_first_date = meta::Timestamp::parse(meta::MARKET_CN_FIRST_LISTTIME).pre_market_time();
 }
 
 #endif //QUANT1X_DATASETS_BASE_H

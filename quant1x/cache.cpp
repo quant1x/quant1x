@@ -57,8 +57,8 @@ namespace cache {
         return config::default_cache_path() + "/var";
     }
 
-    std::string stateFilename(const std::string& date, const exchange::timestamp& timestamp) {
-        std::string fixedDate = exchange::timestamp(date).only_date();
+    std::string stateFilename(const std::string& date, const meta::Timestamp& timestamp) {
+        std::string fixedDate = meta::Timestamp(date).only_date();
         std::string tm = timestamp.toString(timeLayoutOfState).substr(0,6);
 
         std::string tmStr = fixedDate + "T" + tm;
@@ -67,12 +67,12 @@ namespace cache {
     }
 
 
-    bool checkUpdateState(const std::string& date, const exchange::timestamp& timestamp) {
+    bool checkUpdateState(const std::string& date, const meta::Timestamp& timestamp) {
         std::string filename = stateFilename(date, timestamp);
         return !fs::exists(filename);
     }
 
-    void doneUpdate(const std::string& date, const exchange::timestamp& timestamp) {
+    void doneUpdate(const std::string& date, const meta::Timestamp& timestamp) {
         std::string filename = stateFilename(date, timestamp);
         auto err = filesystem::check_filepath(filename, true);
         err.clear();
@@ -96,7 +96,7 @@ namespace cache {
         }
     }
 
-    int update_with_adapters(const std::vector<data::DataAdapter*> &adapters, const exchange::timestamp& feature_date) {
+    int update_with_adapters(const std::vector<data::DataAdapter*> &adapters, const meta::Timestamp& feature_date) {
         auto const & config = config::global_config();
         auto const & cfg_concurrency = config.data.concurrency;
         // 隐藏终端光标以获得更流畅的显示效果，使用 RAII 确保恢复
@@ -147,7 +147,7 @@ namespace cache {
         bars.push_back(barCodes);
 
         // 缓存日期
-        auto cache_date = exchange::next_trading_day(feature_date);
+        auto cache_date = meta::next_trading_day(feature_date);
 
         // 线程池大小，根据CPU核心数调整
         //const size_t num_threads = std::min<size_t>(std::thread::hardware_concurrency(), 5);
@@ -244,11 +244,13 @@ namespace cache {
                         if(is_feature_adapter && featureAdapter) {
                             // 特征数据, 需要先clone一个实例, 然后用这个实例进行更新操作
                             auto feature = featureAdapter->clone();
-                            feature->Update(code, feature_date);
+                            auto inst = data::detect_symbol(code);
+                            feature->Update(inst, feature_date);
                             values = feature->values();
                         } else {
                             // 基础数据是适配器自己内部聚合文件, 不需要外部干预
-                            adapter->Update(code, feature_date);
+                            auto inst = data::detect_symbol(code);
+                            adapter->Update(inst, feature_date);
                         }
 
                         // 线程安全地保存结果
@@ -431,15 +433,15 @@ namespace cache {
 
     void update_all() {
         std::string today = api::today();
-        std::string last_trading_day = exchange::last_trading_day().only_date();
-        std::string current_time = exchange::timestamp::now().toString(timeLayoutOfPhase).substr(0, 8);
+        std::string last_trading_day = meta::last_trading_day().only_date();
+        std::string current_time = meta::Timestamp::now().toString(timeLayoutOfPhase).substr(0, 8);
         bool should_update = false;
-        exchange::timestamp update_phase{};
+        meta::Timestamp update_phase{};
         // 判断更新时机
         if (today == last_trading_day) { // 交易日
             for (const auto& trigger_time : allDateUpdateTimes) {
                 if (current_time >= trigger_time) {
-                    update_phase = exchange::timestamp::parse_time(trigger_time);
+                    update_phase = meta::Timestamp::parse_time(trigger_time);
                     should_update = checkUpdateState(today, update_phase);
                     if (should_update) break;
                 }

@@ -1,5 +1,5 @@
 #include <quant1x/realtime/snapshot.h>
-#include <quant1x/data/market/instruments.h>
+#include <quant1x/data/meta/timestamp.h>
 #include <quant1x/std/filesystem.h>
 #include <capnp/serialize.h>
 #include <capnp/message.h>
@@ -149,11 +149,11 @@ namespace realtime {
         auto snapshots = quoteList.initSnapshots(uint32_t(count));
         size_t start = 0;
         auto tp_start = std::chrono::high_resolution_clock::now();
-        auto last_trade_day = exchange::last_trading_day();
+        auto last_trade_day = meta::last_trading_day();
         auto current_day = last_trade_day.only_date();
-        auto [update_in_realTime, status] = exchange::can_update_in_realtime(exchange::timestamp::now());
+        auto [update_in_realTime, status] = false(meta::Timestamp::now());
         try {
-            spdlog::warn("[snapshot] start = {}", exchange::timestamp::now().toString());
+            spdlog::warn("[snapshot] start = {}", meta::Timestamp::now().toString());
             for (; start < count; start += level1::security_quotes_max) {
                 std::unique_lock lock(mem_mutex);
                 auto length = count - start;
@@ -166,7 +166,7 @@ namespace realtime {
                 size_t i = 0;
                 for (; i < length; i++) {
                     const auto &code = sub_codes[i];
-                    auto [mid, mflag, symbol] = exchange::DetectMarket(code);
+                    auto [mid, mflag, symbol] = data::detect_symbol(code);
                     maps[code] = level1::StockInfo{static_cast<u8>(mid), symbol};
                 }
                 level1::SecurityQuoteRequest request(sub_codes);
@@ -184,7 +184,7 @@ namespace realtime {
                 response.verify_delisted_securities(maps);
                 for (int j = 0; j < response.count; ++j) {
                     const auto &raw = response.list[j];
-                    std::string security_code = exchange::GetSecurityCode(static_cast<exchange::ExchangeId>(raw.market), raw.code);
+                    std::string security_code = data::correct_security_code(static_cast<meta::ExchangeId>(raw.market), raw.code);
                     mem_snapshots.insert_or_assign(security_code, raw);
                     auto snap = snapshots[uint32_t(start) + j];
                     snap.setDate(current_day);
@@ -198,7 +198,7 @@ namespace realtime {
                     if (update_in_realTime) {
                         exchangeState = ExchangeState::NORMAL;
                     }
-                    if (status == exchange::TimeStatus::ExchangeHaltTrading) {
+                    if (status == meta::TimeStatus::ExchangeHaltTrading) {
                         exchangeState = ExchangeState::NORMAL;
                     }
                     snap.setExchangeState(exchangeState);
@@ -274,7 +274,7 @@ namespace realtime {
             auto tp_end = std::chrono::high_resolution_clock::now();
             auto diff = tp_end - tp_start;
             //std::cout << diff << std::endl;
-            spdlog::warn("[snapshot] stop = {}", exchange::timestamp::now().toString());
+            spdlog::warn("[snapshot] stop = {}", meta::Timestamp::now().toString());
             spdlog::info("[snapshot] cross time:{}", util::format_duration_auto(diff));
         } catch (const std::exception &e) {  // 其他标准异常
             spdlog::error("[snapshot] - 标准异常: {} (type: {})", e.what(), typeid(e).name());

@@ -5,14 +5,15 @@
 
 #include "no0.h"
 
-void DataNo0::Print(const std::string &code, const std::vector<exchange::timestamp> &dates) {
-    (void)code;
+void DataNo0::Print(const meta::Instrument &inst, const std::vector<meta::Timestamp> &dates) {
+    (void)inst;
     (void)dates;
 }
 
-void DataNo0::Update(const std::string &code, const exchange::timestamp &date) {
+void DataNo0::Update(const meta::Instrument &inst, const meta::Timestamp &date) {
+    auto code = inst.symbol();
     std::string         feature_date = date.only_date();
-    exchange::timestamp ts_cache     = exchange::next_trading_day(date);
+    meta::Timestamp ts_cache     = meta::next_trading_day(date);
     feature.Date                     = ts_cache.only_date();
     feature.Code                     = code;
     auto klines                      = factors::klines_forward_adjusted_to_date(code, feature_date);
@@ -39,7 +40,7 @@ void DataNo0::Update(const std::string &code, const exchange::timestamp &date) {
     feature.State |= factors::FeatureNo0;
 }
 
-void DataNo0::init(const exchange::timestamp &timestamp) {
+void DataNo0::init(const meta::Timestamp &timestamp) {
     (void)timestamp;
 }
 
@@ -66,7 +67,7 @@ std::vector<std::string> DataNo0::values() const {
 namespace factors {
 
     /// 获取指定日期的No0数据
-    std::optional<No0> get_no0(const std::string &code, const exchange::timestamp &timestamp) {
+    std::optional<No0> get_no0(const std::string &code, const meta::Timestamp &timestamp) {
         return FactorManager<No0, DataNo0>::get(code, timestamp);
     }
 

@@ -29,16 +29,16 @@ std::string HistoryFeature::Usage() const {
     return "历史数据";
 }
 
-void HistoryFeature::Print(const std::string &code, const std::vector<exchange::timestamp> &dates) {
-    (void)code;
+void HistoryFeature::Print(const meta::Instrument &inst, const std::vector<meta::Timestamp> &dates) {
+    (void)inst;
     (void)dates;
 }
 
-void HistoryFeature::Update(const std::string &code, const exchange::timestamp &date) {
-    (void)code;
+void HistoryFeature::Update(const meta::Instrument &inst, const meta::Timestamp &date) {
+    auto code = inst.symbol();
     (void)date;
     std::string feature_date = date.only_date();
-    exchange::timestamp ts_cache = exchange::next_trading_day(date);
+    meta::Timestamp ts_cache = meta::next_trading_day(date);
     history.Date = ts_cache.only_date();
     history.Code = code;
     auto klines = factors::klines_forward_adjusted_to_date(code, feature_date);
@@ -150,7 +150,7 @@ void HistoryFeature::Update(const std::string &code, const exchange::timestamp &
     history.State |= factors::FeatureHistory;
 }
 
-void HistoryFeature::init(const exchange::timestamp &timestamp) {
+void HistoryFeature::init(const meta::Timestamp &timestamp) {
     (void)timestamp;
 }
 
@@ -195,12 +195,12 @@ namespace factors {
     namespace {
         inline std::mutex g_factor_history_mutex{};
         inline tsl::robin_map<std::string, History> g_factor_history_map{};
-        inline exchange::timestamp                  g_factor_history_date{};
+        inline meta::Timestamp                  g_factor_history_date{};
     }
 
-    static void check_and_update(const exchange::timestamp &timestamp) {
+    static void check_and_update(const meta::Timestamp &timestamp) {
         std::lock_guard<std::mutex> lock{g_factor_history_mutex};
-        exchange::timestamp algin_date = timestamp.pre_market_time();
+        meta::Timestamp algin_date = timestamp.pre_market_time();
         if(g_factor_history_map.empty() || g_factor_history_date != algin_date) {
             g_factor_history_date = algin_date;
             auto adapter = HistoryFeature();
@@ -217,7 +217,7 @@ namespace factors {
     }
 
     /// 获取指定日期的History数据
-    std::optional<History> get_history(const std::string& code, const exchange::timestamp& timestamp) {
+    std::optional<History> get_history(const std::string& code, const meta::Timestamp& timestamp) {
         check_and_update(timestamp);
         auto it = g_factor_history_map.find(code);
         if(it != g_factor_history_map.end()) {

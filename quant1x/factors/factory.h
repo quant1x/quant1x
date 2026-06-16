@@ -10,7 +10,7 @@
 #include <filesystem>
 #include <spdlog/spdlog.h>
 #include <tsl/robin_map.h>
-#include <quant1x/data/exchange/timestamp.h>
+#include <quant1x/data/meta/timestamp.h>
 #include <quant1x/encoding/csv.h>
 #include <quant1x/data/adapter.h>
 #include <quant1x/runtime/once.h>
@@ -22,7 +22,7 @@ namespace factors {
     class FactorManager {
     private:
         struct DataCache {
-            exchange::timestamp            date;
+            meta::Timestamp            date;
             tsl::robin_map<std::string, T> map;
         };
 
@@ -43,14 +43,14 @@ namespace factors {
         }
 
     public:
-        static std::optional<T> get(const std::string &code, const exchange::timestamp &timestamp) {
+        static std::optional<T> get(const std::string &code, const meta::Timestamp &timestamp) {
             auto &cache = instance();
 
             // 1. 尝试更新 (如果处于重置状态)
             // RollingOnce::Do 内部使用原子操作检查状态，只有在需要更新时才加锁
             cache.once->Do([&]() {
                 auto adapter        = Adapter();
-                exchange::timestamp align_date = timestamp.pre_market_time();
+                meta::Timestamp align_date = timestamp.pre_market_time();
                 auto cache_filename = adapter.Filename(align_date);
 
                 auto new_data = std::make_shared<DataCache>();

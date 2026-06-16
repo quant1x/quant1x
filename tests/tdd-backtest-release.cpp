@@ -1,6 +1,6 @@
 #include <fmt/format.h>
 #include <quant1x/backtest/backtest.h>
-#include <quant1x/data/kline.h>
+#include <quant1x/contrib/data/tdx/kline.h>
 #include <user/no0.h>
 #include <user/strategy-no0.h>
 
@@ -47,8 +47,8 @@ int main(int argc, char **argv) {
         }
 
         try {
-            auto t0 = exchange::timestamp::parse(start_str);
-            auto t1 = exchange::timestamp::parse(end_str);
+            auto t0 = meta::Timestamp::parse(start_str);
+            auto t1 = meta::Timestamp::parse(end_str);
             if (t0.value() > t1.value()) {
                 std::cerr << "Error: start_date must be <= end_date.\n";
                 std::cerr << "  Received: start='" << start_str << "' end='" << end_str << "'\n";
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
             config.end_time   = std::chrono::system_clock::time_point(std::chrono::milliseconds(t1.value()));
 
             // use parsed end timestamp for strategy timestamp (pre_market_time)
-            exchange::timestamp timestamp = t1.pre_market_time();
+            meta::Timestamp timestamp = t1.pre_market_time();
             (void)timestamp;  // keep compiler happy until used below
         } catch (const std::exception &ex) {
             std::cerr << "Error: Failed to parse dates: " << ex.what() << "\n";
@@ -66,11 +66,11 @@ int main(int argc, char **argv) {
         }
     } else {
         // no args -> use defaults
-        auto t0                       = exchange::timestamp(2025, 9, 1);
-        auto t1                       = exchange::timestamp(2025, 9, 30);
+        auto t0                       = meta::Timestamp(2025, 9, 1);
+        auto t1                       = meta::Timestamp(2025, 9, 30);
         config.start_time             = std::chrono::system_clock::time_point(std::chrono::milliseconds(t0.value()));
         config.end_time               = std::chrono::system_clock::time_point(std::chrono::milliseconds(t1.value()));
-        exchange::timestamp timestamp = t1.pre_market_time();
+        meta::Timestamp timestamp = t1.pre_market_time();
         (void)timestamp;
     }
 
@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
     std::cout << "回测日期区间: " << start_str << " 至 " << end_str << std::endl;
 
     // parse end_str to get a timestamp for strategy time (we re-parse here to get the value in both branches)
-    exchange::timestamp timestamp = exchange::timestamp::parse(end_str).pre_market_time();
+    meta::Timestamp timestamp = meta::Timestamp::parse(end_str).pre_market_time();
     StrategyManager    &manager   = StrategyManager::Instance();
 
     // Register strategy and keep the shared_ptr locally (avoids cross-translation lookup issues)
@@ -101,8 +101,8 @@ int main(int argc, char **argv) {
     std::vector<std::string> debug_codes;
     for (size_t i = 0; i < all_codes.size() && debug_codes.size() < debug_limit; ++i) {
         auto        code         = all_codes[i];
-        std::string securityCode = exchange::CorrectSecurityCode(code);
-        if (exchange::AssertStockBySecurityCode(securityCode)) {
+        std::string securityCode = data::correct_security_code(code);
+        if (data::assert_stock_by_security_code(securityCode)) {
             debug_codes.push_back(code);
         }
     }
@@ -133,9 +133,9 @@ int main(int argc, char **argv) {
         bars[0].set_option(indicators::option::PrefixText{fmt::format("{}({}/{})", code, processed_codes, codeCount)});
 
         // 4. 运行回测
-        std::string securityCode = exchange::CorrectSecurityCode(code);
+        std::string securityCode = data::correct_security_code(code);
         std::cout << "--- Backtesting " << securityCode << " ---\n";
-        if (exchange::AssertStockBySecurityCode(securityCode)) {
+        if (data::assert_stock_by_security_code(securityCode)) {
             engine.run(code);
         } else {
             std::cout << "skipping non-stock: " << securityCode << "\n";

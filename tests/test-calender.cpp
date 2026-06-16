@@ -1,12 +1,12 @@
-#include <quant1x/data/exchange/sina/decoder.h>
+#include <quant1x/data/meta/sina/decoder.h>
 #include <quant1x/test/test.h>
-#include <quant1x/data/market/instruments.h>
+#include <quant1x/data/meta/timestamp.h>
 
 TEST_CASE("update-calendar", "[calendar]") {
     runtime::global_init();
     spdlog::set_level(spdlog::level::debug);
     spdlog::debug("calendar-1");
-    exchange::update_calendar();
+    meta::last_trading_day();
     spdlog::debug("calendar-2");
 //    auto list = util::js_decode(text);
 //    for(const auto & v: list) {

@@ -579,7 +579,7 @@ std::vector<std::string> csv_row_to_vector(
     return values;
 }
 
-#include <quant1x/data/kline.h>
+#include <quant1x/contrib/data/tdx/kline.h>
 
 void process_csv(const std::string& filename) {
     csv2::Reader<csv2::delimiter<','>> reader;

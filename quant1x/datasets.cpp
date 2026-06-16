@@ -1,12 +1,14 @@
 #include <quant1x/datasets.h>
-#include <quant1x/data/xdxr.h>
-#include <quant1x/data/kline.h>
-#include <quant1x/data/minute.h>
-#include <quant1x/data/chips.h>
-#include <quant1x/data/trans.h>
-#include <quant1x/data/kline_minute.h>
-#include <quant1x/factors/f10.h>
-#include <quant1x/factors/history.h>
+#include <quant1x/contrib/data/tdx/kline.h>
+#include <quant1x/contrib/data/tdx/xdxr.h>
+#include <quant1x/contrib/data/tdx/kline_raw.h>
+#include <quant1x/contrib/data/tdx/kline.h>
+#include <quant1x/contrib/data/tdx/minute.h>
+#include <quant1x/contrib/data/tdx/chips.h>
+#include <quant1x/contrib/data/tdx/trans.h>
+#include <quant1x/contrib/data/tdx/kline_minute.h>
+#include <quant1x/contrib/data/tdx/f10.h>
+#include <quant1x/contrib/data/tdx/history.h>
 #include <quant1x/pandas/rule.h>
 
 namespace data {
@@ -34,28 +36,28 @@ namespace data {
     void init() {
         // 基础数据
         // 除权除息
-        data::Register(std::make_unique<DataXdxr>());
+        data::Register(std::make_unique<tdx::DataXdxr>());
         // 日线 - 未除权
-        data::Register(std::make_unique<DataKLineRaw>());
+        data::Register(std::make_unique<tdx::DataKLineRaw>());
         // 日线 - 除权
-        data::Register(std::make_unique<DataKLine>());
+        data::Register(std::make_unique<tdx::DataKLine>());
         // 分时数据
-        data::Register(std::make_unique<DataMinute>());
+        data::Register(std::make_unique<tdx::DataMinute>());
         // 分笔成交
-        data::Register(std::make_unique<DataTrans>());
+        data::Register(std::make_unique<tdx::DataTrans>());
         // 筹码分布
-        data::Register(std::make_unique<DataChips>());
+        data::Register(std::make_unique<tdx::DataChips>());
         // 分钟级别K线
         auto const &mkc = get_minute_kline_config();
         if (mkc.enabled) {
-            data::Register(std::make_unique<DataMinuteKLine>(mkc));
+            data::Register(std::make_unique<tdx::DataMinuteKLine>());
         }
 
         // 特征数据
         // F10
-        data::Register(std::make_unique<F10Feature>());
+        data::Register(std::make_unique<tdx::DataF10>());
         // 通用历史数据
-        data::Register(std::make_unique<HistoryFeature>());
+        data::Register(std::make_unique<tdx::HistoryFeature>());
     }
 
 } // namespace data

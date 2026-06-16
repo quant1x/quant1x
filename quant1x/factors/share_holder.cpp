@@ -1,7 +1,7 @@
 #include <cpr/cpr.h>
 #include <quant1x/encoding/csv.h>
 #include <quant1x/encoding/json.h>
-#include <quant1x/data/market/instruments.h>
+#include <quant1x/data/meta/timestamp.h>
 #include <quant1x/factors/share_holder.h>
 #include <quant1x/std/time.h>
 
@@ -146,11 +146,11 @@ namespace dfcf {
     ShareHolder(const std::string &securityCode, const std::string &date, int diff = 0) {
         std::vector<CirculatingShareholder> list;
 
-        auto [x1, x2, code]        = exchange::DetectMarket(securityCode);
-        std::string quarterEndDate = exchange::timestamp(date).only_date();
+        auto [x1, x2, code]        = data::detect_symbol(securityCode);
+        std::string quarterEndDate = meta::Timestamp(date).only_date();
 
         auto [y1, y2, qEnd] = api::GetQuarterByDate(date, diff);
-        quarterEndDate      = exchange::timestamp(qEnd).only_date();
+        quarterEndDate      = meta::Timestamp(qEnd).only_date();
 
         cpr::Parameters params{{"sortColumns", "HOLDER_RANK"},
                                {"sortTypes", "1"},
@@ -181,8 +181,8 @@ namespace dfcf {
                 CirculatingShareholder shareholder{
                     v.SECUCODE,                                      // SecurityCode
                     v.SECURITY_NAME_ABBR,                            // SecurityName
-                    exchange::timestamp(v.END_DATE).only_date(),     // EndDate
-                    exchange::timestamp(v.UPDATE_DATE).only_date(),  // UpdateDate
+                    meta::Timestamp(v.END_DATE).only_date(),     // EndDate
+                    meta::Timestamp(v.UPDATE_DATE).only_date(),  // UpdateDate
                     v.HOLDER_NEWTYPE,                                // HolderType
                     v.HOLDER_NAME,                                   // HolderName
                     v.IS_HOLDORG,                                    // IsHoldOrg
@@ -198,7 +198,7 @@ namespace dfcf {
                 };
 
                 // 修订证券代码
-                auto [_, mflag, mcode]   = exchange::DetectMarket(shareholder.SecurityCode);
+                auto [_, mflag, mcode]   = data::detect_symbol(shareholder.SecurityCode);
                 shareholder.SecurityCode = mflag + mcode;
 
                 // HoldChangeState

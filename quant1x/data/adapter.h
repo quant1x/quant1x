@@ -3,7 +3,8 @@
 #define QUANT1X_DATA_ADAPTER_H 1
 
 #include <quant1x/std/api.h>
-#include <quant1x/data/exchange/timestamp.h>
+#include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/meta/instrument.h>
 #include <vector>
 #include <string>
 #include <cstdint>
@@ -34,18 +35,18 @@ namespace data {
     class DataAdapter : public Schema {
     public:
         virtual ~DataAdapter() = default;
-        // 控制台打印
-        virtual void Print(const std::string& code, const std::vector<exchange::timestamp>& dates = {}) = 0;
-        // 更新数据
-        virtual void Update(const std::string& code, const exchange::timestamp& date = 0) = 0;
+        // 控制台打印, 对齐 Python: print(inst, date=None)
+        virtual void Print(const meta::Instrument& inst, const std::vector<meta::Timestamp>& dates = {}) = 0;
+        // 更新数据, 对齐 Python: update(inst, date=None)
+        virtual void Update(const meta::Instrument& inst, const meta::Timestamp& date = meta::Timestamp()) = 0;
     };
 
     // 特征数据适配器
     class FeatureAdapter : public DataAdapter {
     public:
         // 特征数据为聚合文件路径
-        std::string Filename(const exchange::timestamp &timestamp = 0);
-        virtual void init(const exchange::timestamp &timestamp) = 0;
+        std::string Filename(const meta::Timestamp &timestamp = meta::Timestamp());
+        virtual void init(const meta::Timestamp &timestamp) = 0;
         virtual std::unique_ptr<FeatureAdapter> clone() const = 0;
         virtual std::vector<std::string> headers() const = 0;
         virtual std::vector<std::string> values() const = 0;
@@ -70,9 +71,10 @@ namespace data {
 
     #define REGISTER_PLUGIN(cls)            \
         namespace {                         \
-            cache::PluginRegistrar<cls> cls##Registrar; \
+            data::PluginRegistrar<cls> cls##Registrar; \
         }
 
+    DataAdapter* GetDataAdapter(Kind kind);
     std::vector<DataAdapter*> PluginsWithName(Kind pluginType, const std::vector<std::string>& keywords);
     std::vector<DataAdapter*> Plugins(Kind mask = 0);
 

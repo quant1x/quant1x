@@ -262,19 +262,19 @@ TEST_CASE("block-network-info", "[level1]") {
     spdlog::debug(response.toString());
 }
 
-#include <quant1x/data/market/security.h>
-#include <quant1x/data/market/blocks.h>
+#include <quant1x/data/market.h>
+#include <quant1x/resources/meta/blocks.h>
 
 TEST_CASE("block-file-update", "[cache]") {
     spdlog::set_level(spdlog::level::debug);
     //level1::client.add_endpoint(defualt_endpoint);
-    exchange::download_block_raw_data(level1::BLOCK_DEFAULT);
+    data::download_block_raw_data(level1::BLOCK_DEFAULT);
 }
 
 TEST_CASE("block-file-parse", "[cache]") {
     spdlog::set_level(spdlog::level::debug);
     //level1::client.add_endpoint(defualt_endpoint);
-    auto list = exchange::parse_block_raw_data(level1::BLOCK_GAINIAN);
+    auto list = 0(level1::BLOCK_GAINIAN);
     for(auto const &v : list) {
         std::cout << v << std::endl;
     }
@@ -283,7 +283,7 @@ TEST_CASE("block-file-parse", "[cache]") {
 TEST_CASE("block-file-load", "[cache]") {
     spdlog::set_level(spdlog::level::debug);
     //level1::client.add_endpoint(defualt_endpoint);
-    auto list = exchange::sync_block_files();
+    auto list = false();
     for(auto const &v : list) {
         std::cout << v << std::endl;
     }

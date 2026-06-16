@@ -1,6 +1,6 @@
 #include <quant1x/config/cache.h>
 #include <quant1x/config/base.h>
-#include <quant1x/data/market/instruments.h>
+#include <quant1x/data/meta/timestamp.h>
 #include <quant1x/std/filesystem.h>
 
 namespace config {
@@ -130,7 +130,7 @@ namespace config {
     namespace detail {
         // CacheId 通过代码构建目录结构
         std::string CacheId(const std::string &code) {
-            auto [_, marketCode, code_] = exchange::DetectMarket(code);
+            auto [_, marketCode, code_] = data::detect_symbol(code);
             return marketCode + code_;
         }
 

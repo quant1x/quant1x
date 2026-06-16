@@ -10,43 +10,27 @@
 // ==============================
 
 namespace level1 {
-    /// 网络协议
-#pragma pack(push, 1)  // 确保1字节对齐
 
-    // login2 - request
-    struct Hello2Request : RequestHeader<Hello2Request> {
-        std::vector<u8> padding;
+    // login2 - 第二次协议握手 (对齐 Python UpgradeTip)
+    struct Hello2 : public BaseMessage<Hello2> {
+        std::vector<u8> padding;  // 请求体填充字节
+        std::string Info;         // 响应信息
 
-        Hello2Request() : RequestHeader<Hello2Request>() {
-            ZipFlag = ZlibFlag::Uncompressed;
-            SeqID = SequenceId();
-            PacketType = 0x01;
-            Method = StdCommand::LOGIN2;
+        Hello2() : BaseMessage<Hello2>() {
+            request_header.ZipFlag = ZlibFlag::Uncompressed;
+            request_header.SeqID = SequenceId();
+            request_header.PacketType = 0x01;
+            request_header.Method = StdCommand::LOGIN2;
             padding = strings::hexToBytes("d5d0c9ccd6a4a8af0000008fc22540130000d500c9ccbdf0d7ea00000002");
         }
 
-        // 序列化方法
-        std::vector<u8> serializeImpl() {
-            PkgLen1 = 2 + padding.size();
-            PkgLen2 = 2 + padding.size();
-            auto buf = RequestHeader<Hello2Request>::headerSerialize();
-            buf.insert(buf.end(), padding.begin(), padding.end());
-            return buf;
+        // 序列化请求体
+        std::vector<u8> serialize_request_body_impl() {
+            return padding;
         }
 
-        std::string toStringImpl() const {
-            std::ostringstream oss;
-            oss << RequestHeader<Hello2Request>::headerStringImpl();
-            oss << ' ' << " padding:" << strings::bytesToHex(padding);
-            return oss.str();
-        }
-    };
-
-    // login2 - response
-    struct Hello2Response : public ResponseHeader<Hello2Response> {
-        std::string Info;
-
-        void deserializeImpl(const std::vector<u8> &data) {
+        // 反序列化响应体
+        void deserialize_response_body_impl(const std::vector<u8> &data) {
             const int offset = 58;
             if (data.size() >= offset) {
                 // 截取从offset字节开始的部分
@@ -57,11 +41,14 @@ namespace level1 {
         }
 
         std::string toStringImpl() const {
-            return fmt::format("Info: {}", Info);
+            std::ostringstream oss;
+            oss << request_header.headerStringImpl();
+            oss << ' ' << " padding:" << strings::bytesToHex(padding);
+            oss << " Info:" << Info;
+            return oss.str();
         }
     };
 
-#pragma pack(pop)  // 恢复默认对齐方式
 }
 
 #endif //QUANT1X_LEVEL1_HELLO2_H
