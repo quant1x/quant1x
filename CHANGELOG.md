@@ -3,6 +3,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.26] - 2026-06-16
+### Changed
+- fix: compile error in connection_pool and varint_decode bug, ignore env-dependent tests
+- git仓库忽略codebuddy的临时目录
+- refactor: migrate exchange namespace to meta, adapter Update/Print to Instrument ref
+
+- Move exchange-related types under data::meta namespace
+- Change DataAdapter/FeatureAdapter Update/Print from string code to Instrument& inst
+- Update all 12 adapter subclasses, extract code via inst.symbol() internally
+- Fix callers (cache.cpp, tests) to pass Instrument via data::detect_symbol()
+- Update CMakeLists.txt source paths accordingly
+
 ## [0.7.25] - 2026-06-15
 ### Changed
 - refactor: align RequestHeader/ResponseHeader field names with Python base message
@@ -12,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - packet_type -> packet_flag (align with Python ResponseHeader.packet_flag)
 
 - update all submodule references in heartbeat/minute_time/security_bars/finance_info
+- release v0.7.25
 
 ## [0.7.24] - 2026-06-15
 ### Changed
@@ -1656,7 +1669,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.25...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.26...HEAD
+[0.7.26]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.25...v0.7.26
 [0.7.25]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.24...v0.7.25
 [0.7.24]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.23...v0.7.24
 [0.7.23]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.22...v0.7.23
