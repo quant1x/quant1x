@@ -19,7 +19,8 @@ TEST_CASE("patterns-wave-v1", "[release]") {
 }
 
 
-#include <quant1x/factors/base.h>
+#include <quant1x/factors/base_compat.h>
+#include <quant1x/contrib/data/tdx/kline.h>
 #include <quant1x/pandas/dataframe.h>
 #include <quant1x/std/format.h>
 #include <span>
@@ -72,7 +73,7 @@ TEST_CASE("patterns-wave-v2", "[release]") {
     std::string code = "sz300773";
     std::string date = "2025-07-15";
     int N = 50;
-    auto klines = factors::checkout_klines(code, date);
+    auto klines = tdx::checkout_klines(code, date);
     DataFrame df = DataFrame::from_struct_vector(klines);
     auto const& col_high = df.get<f64>("high");
     const xt::xarray<f64>& HIGH = xt::adapt(col_high);

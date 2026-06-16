@@ -26,7 +26,8 @@ TEST_CASE("load-chips", "[chips]") {
     std::cout << vol << std::endl;
 }
 
-#include <quant1x/factors/base.h>
+#include <quant1x/factors/base_compat.h>
+#include <quant1x/contrib/data/tdx/kline.h>
 #include <quant1x/factors/f10.h>
 #include <quant1x/std/safe.h>
 
@@ -194,7 +195,7 @@ public:
 
     // 加载数据
     bool LoadCSV(const std::string &code, const std::string &date) {
-        auto klines = factors::checkout_klines(code, date);
+        auto klines = tdx::checkout_klines(code, date);
         if (klines.empty()) {
             return false;
         }

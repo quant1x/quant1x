@@ -4,6 +4,7 @@
 
 #include <quant1x/data/adapter.h>
 #include <quant1x/data/base.h>
+#include <quant1x/data/kline.h>
 #include <quant1x/data/schema/bar.h>
 #include <quant1x/data/schema/adjustment.h>
 #include <quant1x/data/meta/instrument.h>
@@ -36,8 +37,11 @@ std::vector<meta::schema::Bar> load_kline(const meta::Instrument& inst);
 // 复权因子
 // =============================
 
-/// 通过证券代码获取最新的除权除息列表 (对应 factor:: / Python get_xdxr_list)
+/// 通过证券代码获取最新的除权除息列表 (对应 Python get_xdxr_list)
 std::vector<level1::XdxrInfo> get_xdxr_list(const meta::Instrument& inst);
+
+/// 通过证券代码字符串获取除权除息列表 (便捷重载)
+std::vector<level1::XdxrInfo> get_xdxr_list(const std::string& security_code);
 
 /// 从除权除息的列表提取IPO日期 (对应 Python ipo_date_from_xdxrs)
 std::optional<std::string> ipo_date_from_xdxrs(std::span<const level1::XdxrInfo> xdxrs);
@@ -47,6 +51,12 @@ std::vector<meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
         std::span<const level1::XdxrInfo> xdxrs,
         const meta::Timestamp& start_date,
         const meta::Timestamp& end_date);
+
+/// 聚合给定一个时间范围内的复权因子 — 日期字符串便捷重载
+std::vector<meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
+        const std::vector<level1::XdxrInfo>& xdxrs,
+        const std::string& start_date,
+        const std::string& end_date);
 
 /// 对K线数据进行一次性前复权 (对应 Python apply_forward_adjustment_incrementally)
 void apply_forward_adjustments_once(
@@ -91,6 +101,20 @@ int check_kline_offset(const std::vector<T>& klines, const std::string& date) {
 // =============================
 // 数据适配器: 前复权K线
 // =============================
+
+/// 获取指定证券代码截至指定日期的前复权K线数据 (对应 Python/Rust get_cross_section_forward_adjusted_klines)
+///   - 如果缓存文件不存在，先通过 DataKLine 从服务器拉取并生成缓存
+///   - 从已复权的 K 线缓存 CSV 读取，按 as_of_date 过滤
+std::vector<meta::schema::Bar> get_cross_section_forward_adjusted_klines(
+        const meta::Instrument& inst, const std::string& as_of_date);
+
+/// 捡出截至指定日期的K线记录 (原 factors::checkout_klines, 对齐 Python)
+///   从已复权的 K 线缓存读取，按日期过滤，返回 data::KLine
+std::vector<data::KLine> checkout_klines(const std::string& code, const std::string& date);
+
+/// 捡出截至指定日期的前复权K线记录 (原 factors::klines_forward_adjusted_to_date, 对齐 Python)
+///   与 checkout_klines 等效 — DataKLine::Update 写入的缓存已是前复权数据
+std::vector<data::KLine> klines_forward_adjusted_to_date(const std::string& code, const std::string& date);
 
 /// 前复权K线适配器 (对应 Python DataKLine)
 class DataKLine : public data::DataAdapter {

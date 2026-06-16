@@ -67,5 +67,44 @@ namespace level1 {
         });
         return _standard_connection_pool_ptr->acquire();
     }
-    
+
+    // ============================================================
+    // 扩展行情连接池 (对应 Python client.py get_ext_conn)
+    // ============================================================
+
+    namespace {
+        std::once_flag _once_extension_tcp_connection_pool;
+        std::unique_ptr<TcpConnectionPool<ExtensionProtocolHandler> > _extension_connection_pool_ptr = nullptr;
+
+        std::unique_ptr<TcpConnectionPool<ExtensionProtocolHandler> > init_extension_protocol_connection_pool() {
+            auto _handler = std::make_shared<ExtensionProtocolHandler>();
+            std::string cache_server_filename = config::get_meta_path() + "/server.bin";
+            size_t concurrency = 10;
+
+            auto [standard, extension] = ::encoding::load_yaml<ServerList>(cache_server_filename);
+            if (extension.empty()) {
+                spdlog::warn("[client] no extension servers in cache, using built-in list");
+            }
+
+            auto tcpConnectionPool = std::make_unique<TcpConnectionPool<ExtensionProtocolHandler> >(1, concurrency, _handler);
+            for (auto d: extension) {
+                spdlog::debug("ext: {} [{}:{}]", d.Name, d.Host, d.Port);
+                tcpConnectionPool->add_endpoint(d.Host, d.Port);
+            }
+            return tcpConnectionPool;
+        }
+    }
+
+    std::unique_ptr<Connection, std::function<void(Connection *)> > get_ext_conn() {
+        std::call_once(_once_extension_tcp_connection_pool, []() {
+            try {
+                _extension_connection_pool_ptr = init_extension_protocol_connection_pool();
+            } catch (const std::exception &e) {
+                spdlog::error("扩展连接池初始化失败: {}", e.what());
+                throw e;
+            }
+        });
+        return _extension_connection_pool_ptr->acquire();
+    }
+
 } // namespace level1

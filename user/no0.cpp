@@ -2,6 +2,7 @@
 #include <quant1x/formula.h>
 #include <quant1x/pandas/dataframe.h>
 #include <quant1x/factors/factory.h>
+#include <quant1x/contrib/data/tdx/kline.h>
 
 #include "no0.h"
 
@@ -16,7 +17,7 @@ void DataNo0::Update(const meta::Instrument &inst, const meta::Timestamp &date) 
     meta::Timestamp ts_cache     = meta::next_trading_day(date);
     feature.Date                     = ts_cache.only_date();
     feature.Code                     = code;
-    auto klines                      = factors::klines_forward_adjusted_to_date(code, feature_date);
+    auto klines                      = tdx::klines_forward_adjusted_to_date(code, feature_date);
     if (klines.size() < factors::KLineMin) {
         spdlog::warn("[DataNo0] code={},date={}, 日线数据不足", code, feature_date);
         return;

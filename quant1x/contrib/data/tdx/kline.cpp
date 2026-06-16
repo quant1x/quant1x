@@ -1,5 +1,6 @@
 #include "kline.h"
 #include "client.h"
+#include "instruments.h"
 #include "kline_raw.h"
 #include "xdxr.h"
 #include <quant1x/contrib/data/tdx/level1/security_bars.h>
@@ -117,6 +118,12 @@ std::vector<meta::schema::Bar> load_kline(const meta::Instrument& inst) {
 // =============================
 // 获取XDXR数据
 // =============================
+
+std::vector<level1::XdxrInfo> get_xdxr_list(const std::string& security_code) {
+    auto inst_opt = instruments::GetInstrumentInfo(security_code);
+    if (!inst_opt) return {};
+    return get_xdxr_list(*inst_opt);
+}
 
 std::vector<level1::XdxrInfo> get_xdxr_list(const meta::Instrument& inst) {
     // 从 xdxr 缓存文件读取
@@ -243,6 +250,16 @@ std::vector<meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
     return result;
 }
 
+// 日期字符串便捷重载
+std::vector<meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
+        const std::vector<level1::XdxrInfo>& xdxrs,
+        const std::string& start_date,
+        const std::string& end_date) {
+    auto ts_start = meta::Timestamp::parse(start_date).pre_market_time();
+    auto ts_end   = meta::Timestamp::parse(end_date).pre_market_time();
+    return combine_adjustments_in_period(std::span(xdxrs), ts_start, ts_end);
+}
+
 // =============================
 // 一次性前复权 (对应 Python apply_forward_adjustment_incrementally)
 // =============================
@@ -364,6 +381,82 @@ void apply_forward_adjustment_for_event(
 }
 
 // =============================
+// get_cross_section_forward_adjusted_klines (对应 Python/Rust)
+// =============================
+
+std::vector<meta::schema::Bar> get_cross_section_forward_adjusted_klines(
+        const meta::Instrument& inst, const std::string& as_of_date) {
+
+    auto filename = get_kline_filename(inst);
+    spdlog::debug("[get_cross_section_forward_adjusted_klines] loading for {} from {}",
+                  inst.symbol(), filename);
+
+    // 如果缓存文件不存在，先通过 DataKLine adapter 拉取并生成缓存
+    if (!std::filesystem::exists(filename)) {
+        spdlog::info("[get_cross_section_forward_adjusted_klines] cache not found for {}, triggering DataKLine update",
+                     inst.symbol());
+        DataKLine adapter;
+        adapter.Update(inst, meta::Timestamp());
+    }
+
+    auto all_klines = read_kline_from_csv(filename);
+    if (all_klines.empty()) {
+        return {};
+    }
+
+    // 过滤出 as_of_date 及之前的K线
+    std::vector<meta::schema::Bar> result;
+    for (auto& kline : all_klines) {
+        if (kline.date <= as_of_date) {
+            result.push_back(std::move(kline));
+        }
+    }
+    return result;
+}
+
+// =============================
+// checkout_klines / klines_forward_adjusted_to_date
+//   两者等效 — DataKLine::Update 写入的缓存已是前复权数据
+// =============================
+
+/// 内部 helper: Bar → data::KLine
+static data::KLine bar_to_kline(const meta::schema::Bar& bar, const std::string& code) {
+    data::KLine kline;
+    kline.date   = bar.date;
+    kline.code   = code;
+    kline.open   = bar.open;
+    kline.close  = bar.close;
+    kline.high   = bar.high;
+    kline.low    = bar.low;
+    kline.volume = bar.volume;
+    kline.amount = bar.amount;
+    return kline;
+}
+
+static std::vector<data::KLine> bars_to_klines(
+        std::vector<meta::schema::Bar>&& bars, const std::string& code) {
+    std::vector<data::KLine> result;
+    result.reserve(bars.size());
+    for (auto& bar : bars) {
+        result.push_back(bar_to_kline(bar, code));
+    }
+    return result;
+}
+
+std::vector<data::KLine> checkout_klines(const std::string& code, const std::string& date) {
+    std::string sec_code = data::correct_security_code(code);
+    auto inst_opt = instruments::GetInstrumentInfo(sec_code);
+    if (!inst_opt) return {};
+    auto bars = get_cross_section_forward_adjusted_klines(*inst_opt, date);
+    return bars_to_klines(std::move(bars), sec_code);
+}
+
+std::vector<data::KLine> klines_forward_adjusted_to_date(const std::string& code, const std::string& date) {
+    // 与 checkout_klines 等效 — 缓存中已是前复权数据
+    return checkout_klines(code, date);
+}
+
+// =============================
 // DataKLine 适配器实现
 // =============================
 
@@ -400,52 +493,35 @@ void DataKLine::Update(const meta::Instrument& inst, const meta::Timestamp& date
     spdlog::debug("[DataKLine] [{}]: from {} to {}",
                   code, current_start_date.only_date(), current_end_date.only_date());
 
-    // 3. 分页拉取原始日线数据
+    // 3. 分页拉取原始日线数据 — fetch_kline_raw 返回 domain Bar (对齐 Python: reply = fetch_kline_raw(inst, start, count, freq))
     int32_t step = level1::security_bars_max;
     int32_t start = 0;
     std::vector<std::vector<meta::schema::Bar>> batches;
     size_t element_count = 0;
 
-    try {
-        auto conn = level1::get_std_conn();
+    while (true) {
+        int32_t count = step;
+        auto reply = fetch_kline_raw(inst, start, count, static_cast<u16>(level1::KLineType::DAILY));
+        if (reply.empty()) break;
 
-        while (true) {
-            int32_t count = step;
-            level1::SecurityBars bars(code, static_cast<u16>(level1::KLineType::DAILY), start, count);
-            level1::process(conn->socket(), bars);
+        auto reply_size = reply.size();
+        element_count += reply_size;
 
-            if (bars.List.empty()) break;
+        // 记录最后一根bar的日期用于判断循环终止 (对齐 Python: last_bar = reply[-1]; last_bar_date = Timestamp.parse(last_bar.date).get_pre_market_time())
+        auto& last_bar = reply.back();
+        auto last_bar_date = meta::Timestamp::parse(last_bar.date).pre_market_time();
 
-            std::vector<meta::schema::Bar> batch;
-            for (auto const& raw : bars.List) {
-                meta::schema::Bar bar;
-                bar.date      = raw.DateTime.substr(0, 10);
-                bar.open      = raw.Open;
-                bar.close     = raw.Close;
-                bar.high      = raw.High;
-                bar.low       = raw.Low;
-                bar.volume    = raw.Vol * 100;  // 转换为股 (对齐 Python: volume * 100)
-                bar.amount    = raw.Amount;
-                bar.up        = raw.UpCount;
-                bar.down      = raw.DownCount;
-                bar.timestamp = raw.DateTime;
-                bar.adjustment_count = 0;
-                batch.push_back(std::move(bar));
-            }
+        batches.push_back(std::move(reply));
 
-            element_count += batch.size();
-            batches.push_back(std::move(batch));
+        if (last_bar_date < current_start_date) break;
+        if (reply_size < static_cast<size_t>(count)) break;
 
-            auto& last_raw = bars.List.back();
-            auto last_bar_date = meta::Timestamp(last_raw.DateTime.substr(0, 10)).pre_market_time();
+        start += count;
+    }
 
-            if (last_bar_date < current_start_date) break;
-            if (bars.List.size() < static_cast<size_t>(count)) break;
-
-            start += count;
-        }
-    } catch (const std::exception& e) {
-        spdlog::warn("[DataKLine] fetch failed for {}: {}", code, e.what());
+    // 对齐 Python: 如果首次请求就失败，直接返回
+    if (batches.empty()) {
+        spdlog::debug("[DataKLine] no data from server for {}", code);
         return;
     }
 

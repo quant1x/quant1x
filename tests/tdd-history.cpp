@@ -1,6 +1,6 @@
 #include <quant1x/test/test.h>
 #include <quant1x/factors/history.h>
-#include <quant1x/factors/base.h>
+#include <quant1x/contrib/data/tdx/kline.h>
 #include <quant1x/dataframe/dataframe.h>
 #include <quant1x/formula.h>
 #include <quant1x/datasets/trans.h>
@@ -19,7 +19,7 @@ TEST_CASE("history-basic-base", "[features]") {
     //using namespace formula;
     std::string code = "600600";
     std::string date = "2025-05-29";
-    auto klines = factors::checkout_klines(code, date);
+    auto klines = tdx::checkout_klines(code, date);
     std::cout << klines.size() << std::endl;
     DataFrame df = DataFrame::from_struct_vector(klines);
     std::cout << df.to_string() << std::endl;
@@ -41,7 +41,7 @@ TEST_CASE("history-basic-auto", "[features]") {
     //using namespace formula;
     std::string code = "600600";
     std::string date = "2025-05-29";
-    auto klines = factors::checkout_klines(code, date);
+    auto klines = tdx::checkout_klines(code, date);
     std::cout << klines.size() << std::endl;
     DataFrame df = DataFrame::from_struct_vector(klines);
     std::cout << df.to_string() << std::endl;

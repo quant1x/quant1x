@@ -530,7 +530,6 @@ set(quant1x-headers
     # 因子 (TODO: API migration — all factor .h files depend on old data:: types)
     # quant1x/factors/f10.h
     # quant1x/factors/share_holder.h
-    # quant1x/factors/base.h
     # quant1x/factors/notice.h
     # quant1x/factors/financial_report.h
     # quant1x/factors/safety_score.h
@@ -658,7 +657,6 @@ set(quant1x-sources
     # quant1x/data/meta/session.cpp (TODO: missing layout.h dependency)
 
     # 因子 (TODO: API migration — all factor .cpp files depend on old data:: types)
-    # quant1x/factors/base.cpp
     # quant1x/factors/f10.cpp
     # quant1x/factors/share_holder.cpp
     # quant1x/factors/history.cpp

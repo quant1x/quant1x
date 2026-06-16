@@ -1,6 +1,7 @@
 #include <quant1x/test/test.h>
 #include <quant1x/datasets/xdxr.h>
 #include <quant1x/datasets/xdxr_adjust_factor.h>
+#include <quant1x/contrib/data/tdx/kline.h>
 
 #include <ranges>
 #include <quant1x/datasets/kline.h>
@@ -17,8 +18,8 @@ TEST_CASE("xdxr-extract", "[xdxr]") {
     std::string code = "sz300773";
     meta::Timestamp start("1990-12-19");
     meta::Timestamp end("2025-06-05");
-    auto xdxrs = factors::get_xdxr_list(code);
-    auto list = factors::combine_adjustments_in_period(xdxrs, start, end);
+    auto xdxrs = tdx::get_xdxr_list(code);
+    auto list = tdx::combine_adjustments_in_period(xdxrs, start, end);
     std::cout << list << std::endl;
 }
 
@@ -26,7 +27,7 @@ TEST_CASE("kline-extract", "[xdxr]") {
     spdlog::set_level(spdlog::level::debug);
     std::string code = "sz300773";
     meta::Timestamp end("2025-06-05");
-    auto klines = factors::klines_forward_adjusted_to_date(code, end.only_date());
+    auto klines = tdx::klines_forward_adjusted_to_date(code, end.only_date());
     DataFrame df = DataFrame::from_struct_vector(klines);
     std::cout << df.to_string() << std::endl;
 }
@@ -34,7 +35,7 @@ TEST_CASE("kline-extract", "[xdxr]") {
 TEST_CASE("klines-check", "[xdxr]") {
     spdlog::set_level(spdlog::level::debug);
     std::string code = "sz300773";
-    auto xdxr_infos = factors::get_xdxr_list(code);
+    auto xdxr_infos = tdx::get_xdxr_list(code);
 
     std::string raw_cache_filename = config::get_kline_filename(code, false);
     auto raw_list = encoding::csv::csv_to_slices<datasets::KLineRaw>(raw_cache_filename);
@@ -46,9 +47,8 @@ TEST_CASE("klines-check", "[xdxr]") {
     // 在这里修正开始日期不能早于ipo日期
     start_date = std::max(ipo_date, start_date);
     auto end_date = meta::Timestamp(2025,6,5).pre_market_time();
-    factors::apply_forward_adjustments_once(raw_list, xdxr_infos, start_date, end_date, true);
-    //std::string cache_filename = config::get_kline_filename(code, true);
-    //encoding::csv::slices_to_csv(raw_list, cache_filename);
+    // std::string cache_filename = config::get_kline_filename(code, true);
+    // encoding::csv::slices_to_csv(raw_list, cache_filename);
     DataFrame df = DataFrame::from_struct_vector(raw_list);
     std::cout << df.to_string() << std::endl;
 }
@@ -72,7 +72,7 @@ std::unordered_map<std::string, std::vector<factors::CumulativeAdjustment>> chec
             ipo_date = opt_f10->IpoDate;
         } else {
             // f10数据不存在, 则从除权除息的第一条股本变化的记录中获取
-            auto ipo_from_xdxr = factors::ipo_date_from_xdxrs(xdxr_infos);
+            auto ipo_from_xdxr = tdx::ipo_date_from_xdxrs(xdxr_infos);
             if (ipo_from_xdxr.has_value()) {
                 ipo_date = ipo_from_xdxr.value();
             } else {
@@ -80,7 +80,7 @@ std::unordered_map<std::string, std::vector<factors::CumulativeAdjustment>> chec
                 ipo_date = meta::MARKET_CN_FIRST_LISTTIME;
             }
         }
-        auto factors = factors::combine_adjustments_in_period(xdxr_infos, ipo_date, today);
+        auto factors = tdx::combine_adjustments_in_period(xdxr_infos, ipo_date, today);
         if(factors.empty()) {
             continue;
         }

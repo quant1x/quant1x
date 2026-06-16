@@ -3,14 +3,15 @@
 #include <quant1x/contrib/data/tdx/client.h>
 #include <quant1x/data/xdxr.h>
 #include <quant1x/factors/f10.h>
-#include <quant1x/factors/base.h>
+#include <quant1x/factors/base_compat.h>
+#include <quant1x/contrib/data/tdx/kline.h>
 #include <quant1x/factors/notice.h>
 #include <quant1x/factors/financial_report.h>
 #include <quant1x/factors/share_holder.h>
 #include <quant1x/factors/safety_score.h>
 
 static std::string get_ipo_date(const std::string &security_code, const std::string &feature_date) {
-    auto kls = factors::checkout_klines(security_code, feature_date);
+    auto kls = tdx::checkout_klines(security_code, feature_date);
     if(kls.empty()) {
         return "";
     }

@@ -1,4 +1,5 @@
 #include "strategy-no0.h"
+#include <quant1x/contrib/data/tdx/kline.h>
 #include <quant1x/factors/history.h>
 #include <quant1x/factors/base_compat.h>
 #include <quant1x/formula.h>
@@ -55,7 +56,7 @@ void No0Strategy::Evaluate(const SecurityCode &code, ResultInfo &result) const {
     if(!data::assert_stock_by_security_code(securityCode)) {
         return;
     }
-    auto klines = factors::checkout_klines(securityCode, feature_date);
+    auto klines = tdx::checkout_klines(securityCode, feature_date);
     // Log klines count for debugging
     spdlog::warn("[No0Strategy::updateIndicators] {} fetched klines: {} (min required {})", securityCode, klines.size(), factors::KLineMin);
     std::cout << "[No0Strategy::updateIndicators] " << securityCode << " fetched klines: " << klines.size() << "\n";
@@ -85,7 +86,7 @@ void No0Strategy::updateIndicators(const SecurityCode &code) {
     if(!data::assert_stock_by_security_code(securityCode)) {
         return;
     }
-    auto klines = factors::checkout_klines(securityCode, feature_date);
+    auto klines = tdx::checkout_klines(securityCode, feature_date);
     if (klines.size() < factors::KLineMin) {
         return;
     }

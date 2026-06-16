@@ -2,10 +2,11 @@
 #ifndef QUANT1X_FACTOR_BASE_COMPAT_H
 #define QUANT1X_FACTOR_BASE_COMPAT_H 1
 
-// Minimal constants from factors/base.h — used during API migration
-// TODO: remove after full migration
+// Minimal constants & type aliases migrated from factors/base.h
+// TODO: remove after all consumers migrate to tdx:: namespace
 
 #include <quant1x/data/adapter.h>
+#include <quant1x/data/schema/adjustment.h>
 
 namespace factors {
     constexpr int  KLineMin    = 120;
@@ -19,6 +20,9 @@ namespace factors {
     constexpr auto FeatureKLineShap                 = baseFeature + 6;
     constexpr auto FeatureInvestmentSentimentMaster = baseFeature + 7;
     constexpr auto FeatureSecuritiesMarginTrading   = baseFeature + 8;
+
+    // Backward-compatible type alias for CumulativeAdjustment
+    using CumulativeAdjustment = meta::schema::CumulativeAdjustment;
 }
 
 #endif // QUANT1X_FACTOR_BASE_COMPAT_H

@@ -26,6 +26,7 @@
 #include <quant1x/contrib/data/tdx/level1/block_meta.h>
 #include <quant1x/contrib/data/tdx/level1/block_info.h>
 #include <quant1x/contrib/data/tdx/level1/minute_time.h>
+#include <quant1x/contrib/data/tdx/level1/ext_sync.h>
 #include <quant1x/contrib/data/tdx/level1/config.h>
 
 namespace level1 {
@@ -75,6 +76,37 @@ namespace level1 {
      *         使用自定义删除器管理连接生命周期
      */
     std::unique_ptr<Connection, std::function<void(Connection *)>> get_std_conn();
+
+    // ============================================================
+    // 扩展行情连接 (对应 Python client.py get_ext_conn / Rust client.rs get_ext_conn)
+    // ============================================================
+
+    class ExtensionProtocolHandler : public NetworkOperationHandler<ExtensionProtocolHandler> {
+    public:
+        bool handshakeImpl(asio::ip::tcp::socket &socket) {
+            try {
+                // 扩展行情同步握手 (对齐 Python Synchronize / Rust ExtSynchronizeRequest)
+                ExtSync sync;
+                process(socket, sync);
+                return sync.success;
+            } catch (...) {
+                return false;
+            }
+        }
+
+        bool keepaliveImpl(asio::ip::tcp::socket &socket) {
+            // 扩展行情心跳: 暂用同步消息保持连接 (对齐 Rust: InstrumentCountRequest 保持心跳)
+            try {
+                ExtSync sync;
+                process(socket, sync);
+                return true;
+            } catch (...) {
+                return false;
+            }
+        }
+    };
+
+    std::unique_ptr<Connection, std::function<void(Connection *)>> get_ext_conn();
 
 }  // namespace level1
 

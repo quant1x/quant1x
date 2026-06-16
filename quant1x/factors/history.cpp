@@ -41,7 +41,7 @@ void HistoryFeature::Update(const meta::Instrument &inst, const meta::Timestamp 
     meta::Timestamp ts_cache = meta::next_trading_day(date);
     history.Date = ts_cache.only_date();
     history.Code = code;
-    auto klines = factors::klines_forward_adjusted_to_date(code, feature_date);
+    auto klines = tdx::klines_forward_adjusted_to_date(code, feature_date);
     if(klines.size() < factors::KLineMin) {
         spdlog::warn("[HistoryFeature] code={},date={}, 日线数据不足", code, feature_date);
         return;
