@@ -1,50 +1,500 @@
 #include "kline.h"
 #include "client.h"
+#include "kline_raw.h"
+#include "xdxr.h"
 #include <quant1x/contrib/data/tdx/level1/security_bars.h>
+#include <quant1x/contrib/data/tdx/level1/xdxr_info.h>
 #include <quant1x/config/base.h>
+#include <quant1x/data/base.h>
 #include <spdlog/spdlog.h>
 #include <fstream>
+#include <sstream>
+#include <algorithm>
+#include <filesystem>
 
 namespace tdx {
 
-    static std::string kline_cache_filename(const meta::Instrument& inst) {
-        return config::default_cache_path() + "/day/" + inst.cache_dir() + "/" + inst.symbol() + ".csv";
+// =============================
+// 常量 (对齐 Python)
+// =============================
+
+/// 增量更新缓存清理的最大天数 (对齐 Python MaxCachedDaysToDropOnIncrementalUpdate)
+constexpr int kMaxCachedDaysToDropOnIncrementalUpdate = 1;
+
+/// 中国资本市场首个交易日 (对齐 Python MarketCnFirstListTime)
+constexpr const char* kMarketCnFirstListTime = "1990-12-19";
+
+// =============================
+// K线缓存 I/O
+// =============================
+
+std::string get_kline_filename(const meta::Instrument& inst) {
+    return config::default_cache_path() + "/day/" + inst.cache_dir() + "/" + inst.symbol() + ".csv";
+}
+
+std::vector<meta::schema::Bar> read_kline_from_csv(const std::string& filename) {
+    std::vector<meta::schema::Bar> klines;
+    if (!std::filesystem::exists(filename)) {
+        return klines;
     }
 
-    void DataKLine::Print(const meta::Instrument& inst, const std::vector<meta::Timestamp>& dates) {
-        (void)inst;
-        (void)dates;
+    std::ifstream in(filename);
+    if (!in) {
+        spdlog::warn("[read_kline_from_csv] cannot open: {}", filename);
+        return klines;
     }
 
-    void DataKLine::Update(const meta::Instrument& inst, const meta::Timestamp& date) {
-        (void)date;
-        auto code = inst.symbol();
-        // 前复权K线: 先拉取 raw kline，前复权计算在 factors/base.cpp 中
-        // 详细实现在 factors/base.cpp 的 klines_forward_adjusted_to_date 中
-        try {
-            auto conn = level1::get_std_conn();
-            level1::SecurityBars bars(code, static_cast<u16>(level1::KLineType::DAILY), 0, level1::security_bars_max);
-            level1::process(conn->socket(), bars);
-            // 保存到 {cache}/day/{cache_dir}/{symbol}.csv (对齐 Rust/Python)
-            auto filename = kline_cache_filename(inst);
-            auto parent = std::filesystem::path(filename).parent_path().string();
-            std::filesystem::create_directories(parent);
-            std::ofstream out(filename);
-            if (out) {
-                out << "date,open,close,high,low,volume,amount,up,down,timestamp,adjustment_count\n";
-                for (auto const& bar : bars.List) {
-                    out << bar.DateTime.substr(0, 10) << ","
-                        << bar.Open << "," << bar.Close << "," << bar.High << "," << bar.Low << ","
-                        << bar.Vol << "," << bar.Amount << ","
-                        << bar.UpCount << "," << bar.DownCount << ","
-                        << bar.DateTime << ",0\n";
-                }
-                out.close();
-            }
-            spdlog::info("[DataKLine] saved {} bars for {} to {}", bars.List.size(), code, filename);
-        } catch (const std::exception& e) {
-            spdlog::warn("[DataKLine] update failed for {}: {}", code, e.what());
+    std::string line;
+    // 跳过 header
+    if (!std::getline(in, line)) {
+        return klines;
+    }
+
+    while (std::getline(in, line)) {
+        if (line.empty()) continue;
+
+        std::istringstream ss(line);
+        meta::schema::Bar bar;
+        std::string token;
+
+        auto next_token = [&]() -> std::string {
+            std::string t;
+            if (!std::getline(ss, t, ',')) return "";
+            // trim
+            t.erase(0, t.find_first_not_of(" \t\r\n"));
+            t.erase(t.find_last_not_of(" \t\r\n") + 1);
+            return t;
+        };
+
+        bar.date = next_token();
+        bar.open = std::stod(next_token());
+        bar.close = std::stod(next_token());
+        bar.high = std::stod(next_token());
+        bar.low = std::stod(next_token());
+        bar.volume = std::stod(next_token());
+        bar.amount = std::stod(next_token());
+        bar.up = std::stoi(next_token());
+        bar.down = std::stoi(next_token());
+        bar.timestamp = next_token();
+        bar.adjustment_count = std::stoi(next_token());
+
+        klines.push_back(std::move(bar));
+    }
+
+    return klines;
+}
+
+void save_kline(const std::string& filename, const std::vector<meta::schema::Bar>& klines) {
+    if (klines.empty()) return;
+
+    auto dir = std::filesystem::path(filename).parent_path().string();
+    std::filesystem::create_directories(dir);
+
+    std::ofstream out(filename);
+    if (!out) {
+        spdlog::error("[save_kline] cannot write: {}", filename);
+        return;
+    }
+
+    out << "date,open,close,high,low,volume,amount,up,down,timestamp,adjustment_count\n";
+    for (auto const& bar : klines) {
+        out << bar.date << ","
+            << bar.open << "," << bar.close << "," << bar.high << "," << bar.low << ","
+            << bar.volume << "," << bar.amount << ","
+            << bar.up << "," << bar.down << ","
+            << bar.timestamp << ","
+            << bar.adjustment_count << "\n";
+    }
+    out.close();
+}
+
+std::vector<meta::schema::Bar> load_kline(const meta::Instrument& inst) {
+    auto filename = get_kline_filename(inst);
+    spdlog::debug("[load_kline] file: {}", filename);
+    return read_kline_from_csv(filename);
+}
+
+// =============================
+// 获取XDXR数据
+// =============================
+
+std::vector<level1::XdxrInfo> get_xdxr_list(const meta::Instrument& inst) {
+    // 从 xdxr 缓存文件读取
+    std::string filename = config::default_cache_path() + "/xdxr/" + inst.cache_dir() + "/" + inst.symbol() + ".csv";
+    std::vector<level1::XdxrInfo> result;
+
+    std::ifstream in(filename);
+    if (!in) {
+        spdlog::debug("[get_xdxr_list] no cache file: {}", filename);
+        return result;
+    }
+
+    std::string line;
+    // 跳过 header
+    if (!std::getline(in, line)) {
+        return result;
+    }
+
+    auto parse_double = [](const std::string& s) -> double {
+        try { return std::stod(s); } catch (...) { return 0.0; }
+    };
+    auto parse_int = [](const std::string& s) -> int {
+        try { return std::stoi(s); } catch (...) { return 0; }
+    };
+
+    while (std::getline(in, line)) {
+        if (line.empty()) continue;
+
+        std::istringstream ss(line);
+        std::string token;
+        auto next = [&]() -> std::string {
+            std::string t;
+            std::getline(ss, t, ',');
+            t.erase(0, t.find_first_not_of(" \t\r\n"));
+            t.erase(t.find_last_not_of(" \t\r\n") + 1);
+            return t;
+        };
+
+        level1::XdxrInfo info;
+        info.Date         = next();
+        info.Category     = static_cast<u16>(parse_int(next()));
+        info.Name         = next();
+        info.FenHong      = parse_double(next());
+        info.PeiGuJia     = parse_double(next());
+        info.SongZhuanGu  = parse_double(next());
+        info.PeiGu        = parse_double(next());
+        info.SuoGu        = parse_double(next());
+        info.QianLiuTong  = parse_double(next());
+        info.HouLiuTong   = parse_double(next());
+        info.QianZongGuBen = parse_double(next());
+        info.HouZongGuBen  = parse_double(next());
+        info.FenShu       = parse_double(next());
+        info.XingQuanJia  = parse_double(next());
+
+        result.push_back(std::move(info));
+    }
+
+    // 按日期排序
+    std::sort(result.begin(), result.end(),
+              [](const level1::XdxrInfo& a, const level1::XdxrInfo& b) { return a.Date < b.Date; });
+
+    return result;
+}
+
+std::optional<std::string> ipo_date_from_xdxrs(std::span<const level1::XdxrInfo> xdxrs) {
+    for (auto const& v : xdxrs) {
+        if (v.Category != 5) continue;
+        if (v.QianLiuTong == 0 && v.QianZongGuBen == 0 && v.HouLiuTong > 0 && v.HouZongGuBen > 0) {
+            return v.Date;
         }
     }
+    return std::nullopt;
+}
+
+// =============================
+// 复权因子聚合 (对应 Python combine_adjustments_in_period)
+// =============================
+
+std::vector<meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
+        std::span<const level1::XdxrInfo> xdxrs,
+        const meta::Timestamp& start_date,
+        const meta::Timestamp& end_date) {
+
+    std::vector<meta::schema::CumulativeAdjustment> result;
+
+    for (const auto& info : xdxrs) {
+        // 只处理除权除息 (Category == 1)
+        if (info.Category != 1) continue;
+
+        // 转换为盘前时间
+        meta::Timestamp event_ts = meta::Timestamp::parse(info.Date).pre_market_time();
+        if (event_ts < start_date || event_ts > end_date) continue;
+
+        auto [m, a] = info.adjustFactor();
+        double event_monetary_adjustment = info.computeMonetaryAdjustment();
+        double event_share_adjustment_ratio = info.computeShareAdjustmentRatio();
+
+        for (auto& factor : result) {
+            // 叠加复权因子
+            factor.m *= m;
+            factor.a = m * factor.a + a;
+            factor.no += 1;
+
+            double old_monetary = factor.monetary_adjustment;
+            double old_share = factor.share_adjustment_ratio;
+            double new_share = old_share + event_share_adjustment_ratio +
+                               old_share * event_share_adjustment_ratio;
+            double new_monetary = old_monetary +
+                                  event_monetary_adjustment * (1.0 + old_share);
+            factor.monetary_adjustment = new_monetary;
+            factor.share_adjustment_ratio = new_share;
+        }
+
+        meta::schema::CumulativeAdjustment entry{};
+        entry.timestamp             = event_ts;
+        entry.m                     = m;
+        entry.a                     = a;
+        entry.no                    = 1;
+        entry.monetary_adjustment   = event_monetary_adjustment;
+        entry.share_adjustment_ratio = event_share_adjustment_ratio;
+        result.push_back(entry);
+    }
+
+    return result;
+}
+
+// =============================
+// 一次性前复权 (对应 Python apply_forward_adjustment_incrementally)
+// =============================
+
+void apply_forward_adjustments_once(
+        std::vector<meta::schema::Bar>& klines,
+        std::span<const level1::XdxrInfo> xdxrs,
+        const meta::Timestamp& start_date,
+        const meta::Timestamp& end_date,
+        bool should_truncate) {
+
+    if (klines.empty()) return;
+
+    auto ts_start = start_date;
+    auto ts_end   = end_date;
+    auto factors  = combine_adjustments_in_period(xdxrs, ts_start, ts_end);
+
+    if (factors.empty()) return;
+
+    size_t factors_count = factors.size();
+    size_t i = 0;
+    size_t rows = 0;
+    size_t klines_count = klines.size();
+
+    for (size_t idx = 0; idx < klines_count; ++idx) {
+        auto& kline = klines[idx];
+        auto current_date = meta::Timestamp(kline.date).pre_market_time();
+        auto factor = factors[i];
+
+        if (current_date > ts_end) {
+            break;
+        }
+
+        while (i + 1 < factors_count && current_date >= factor.timestamp) {
+            ++i;
+            factor = factors[i];
+        }
+
+        if (current_date < factor.timestamp) {
+            kline.adjust(factor);
+        } else if (!should_truncate) {
+            break;
+        }
+
+        ++rows;
+    }
+
+    if (should_truncate) {
+        klines.resize(rows);
+    }
+}
+
+// =============================
+// 前复权计算 (对应 Python calculate_pre_adjust)
+// =============================
+
+void calculate_pre_adjust(
+        std::vector<meta::schema::Bar>& klines,
+        const std::vector<level1::XdxrInfo>& dividends) {
+
+    if (klines.empty()) return;
+
+    auto start_ts = meta::Timestamp(klines[0].date).pre_market_time();
+    auto end_ts   = meta::Timestamp(klines.back().date).pre_market_time();
+    apply_forward_adjustments_once(klines, dividends, start_ts, end_ts, true);
+}
+
+// =============================
+// 增量前复权 (对应 Python apply_forward_adjustment_for_event)
+// =============================
+
+void apply_forward_adjustment_for_event(
+        std::vector<meta::schema::Bar>& klines,
+        const meta::Timestamp& current_start_date,
+        const std::vector<level1::XdxrInfo>& dividends) {
+
+    if (klines.empty()) return;
+
+    // 最后一根K线的日期
+    auto& last = klines.back();
+    auto ts_last_day = meta::Timestamp(last.date).pre_market_time();
+
+    // 使用 next_trading_day 的逻辑: 这里简化为 last_date_next = ts_last_day + 1day
+    // 对齐 Python: last_day_next = next_trading_day(ts_last_day).only_date()
+    auto last_day_next = ts_last_day;
+    auto start_date_str = current_start_date.only_date();
+
+    for (const auto& info : dividends) {
+        if (info.Category != 1) continue;
+        if (info.Date > last_day_next.only_date()) continue;
+
+        if (info.Date <= start_date_str) {
+            // IPO之前的事件跳过
+            continue;
+        }
+
+        auto [m, a] = info.adjustFactor();
+        double share_ratio = info.computeShareAdjustmentRatio();
+
+        for (auto& kline : klines) {
+            if (kline.date >= info.Date) break;
+            if (kline.date < info.Date) {
+                kline.open  = kline.open  * m + a;
+                kline.close = kline.close * m + a;
+                kline.high  = kline.high  * m + a;
+                kline.low   = kline.low   * m + a;
+
+                if (kline.volume != 0) {
+                    double ap = kline.amount / kline.volume;
+                    double ap_adjusted = ap * m + a;
+                    kline.volume *= (1.0 + share_ratio);
+                    kline.amount = kline.volume * ap_adjusted;
+                }
+
+                kline.adjustment_count += 1;
+            }
+        }
+    }
+}
+
+// =============================
+// DataKLine 适配器实现
+// =============================
+
+void DataKLine::Print(const meta::Instrument& inst, const std::vector<meta::Timestamp>& dates) {
+    (void)inst;
+    (void)dates;
+}
+
+void DataKLine::Update(const meta::Instrument& inst, const meta::Timestamp& date) {
+    (void)date;
+    auto code = inst.symbol();
+
+    // 1. 确定起始日期 — 从本地缓存读取
+    meta::Timestamp current_start_date = meta::Timestamp::parse(kMarketCnFirstListTime);
+    auto cache_filename = get_kline_filename(inst);
+    auto cache_klines = read_kline_from_csv(cache_filename);
+
+    size_t klines_length = cache_klines.size();
+    size_t klines_offset_days = kMaxCachedDaysToDropOnIncrementalUpdate;
+    int adjust_times = 0;
+
+    if (klines_length > 0) {
+        if (klines_offset_days > klines_length) {
+            klines_offset_days = klines_length;
+        }
+        auto& kline = cache_klines[klines_length - klines_offset_days];
+        current_start_date = meta::Timestamp(kline.date);
+        adjust_times = kline.adjustment_count;
+    }
+
+    // 2. 确定结束日期 = 当前盘前时间
+    auto current_end_date = meta::Timestamp::now().pre_market_time();
+
+    spdlog::debug("[DataKLine] [{}]: from {} to {}",
+                  code, current_start_date.only_date(), current_end_date.only_date());
+
+    // 3. 分页拉取原始日线数据
+    int32_t step = level1::security_bars_max;
+    int32_t start = 0;
+    std::vector<std::vector<meta::schema::Bar>> batches;
+    size_t element_count = 0;
+
+    try {
+        auto conn = level1::get_std_conn();
+
+        while (true) {
+            int32_t count = step;
+            level1::SecurityBars bars(code, static_cast<u16>(level1::KLineType::DAILY), start, count);
+            level1::process(conn->socket(), bars);
+
+            if (bars.List.empty()) break;
+
+            std::vector<meta::schema::Bar> batch;
+            for (auto const& raw : bars.List) {
+                meta::schema::Bar bar;
+                bar.date      = raw.DateTime.substr(0, 10);
+                bar.open      = raw.Open;
+                bar.close     = raw.Close;
+                bar.high      = raw.High;
+                bar.low       = raw.Low;
+                bar.volume    = raw.Vol * 100;  // 转换为股 (对齐 Python: volume * 100)
+                bar.amount    = raw.Amount;
+                bar.up        = raw.UpCount;
+                bar.down      = raw.DownCount;
+                bar.timestamp = raw.DateTime;
+                bar.adjustment_count = 0;
+                batch.push_back(std::move(bar));
+            }
+
+            element_count += batch.size();
+            batches.push_back(std::move(batch));
+
+            auto& last_raw = bars.List.back();
+            auto last_bar_date = meta::Timestamp(last_raw.DateTime.substr(0, 10)).pre_market_time();
+
+            if (last_bar_date < current_start_date) break;
+            if (bars.List.size() < static_cast<size_t>(count)) break;
+
+            start += count;
+        }
+    } catch (const std::exception& e) {
+        spdlog::warn("[DataKLine] fetch failed for {}: {}", code, e.what());
+        return;
+    }
+
+    // 4. 反转批次并过滤日期范围
+    std::reverse(batches.begin(), batches.end());
+
+    std::vector<meta::schema::Bar> incremental_klines;
+    for (auto& batch : batches) {
+        for (auto& bar : batch) {
+            auto date_time = meta::Timestamp(bar.date).pre_market_time();
+            if (date_time < current_start_date || date_time > current_end_date) continue;
+            incremental_klines.push_back(std::move(bar));
+        }
+    }
+
+    size_t inc_len = incremental_klines.size();
+    if (inc_len == 0) {
+        spdlog::debug("[DataKLine] no new data for {}", code);
+        return;
+    }
+
+    // 5. 获取除权除息数据
+    auto dividends = tdx::get_xdxr_list(inst);
+
+    // 6. 增量复权判断
+    bool is_fresh_fetch_require_adjustment = (adjust_times == 1);
+
+    if (is_fresh_fetch_require_adjustment) {
+        apply_forward_adjustment_for_event(incremental_klines, current_start_date, dividends);
+    }
+
+    // 7. 合并旧缓存和新数据
+    std::vector<meta::schema::Bar> klines;
+    if (klines_length > klines_offset_days) {
+        klines.insert(klines.end(),
+                      cache_klines.begin(),
+                      cache_klines.begin() + (klines_length - klines_offset_days));
+    }
+    klines.insert(klines.end(), incremental_klines.begin(), incremental_klines.end());
+
+    // 8. 非首次拉取时对整个合并结果做前复权
+    if (!is_fresh_fetch_require_adjustment) {
+        apply_forward_adjustment_for_event(klines, current_start_date, dividends);
+    }
+
+    // 9. 保存到缓存
+    tdx::save_kline(cache_filename, klines);
+    spdlog::info("[DataKLine] updated {} ({} bars) -> {}",
+                 code, klines.size(), cache_filename);
+}
 
 } // namespace tdx
