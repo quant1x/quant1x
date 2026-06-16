@@ -1,7 +1,6 @@
 #include "kline_raw.h"
 #include "client.h"
 #include <quant1x/contrib/data/tdx/level1/security_bars.h>
-#include <quant1x/data/kline_raw.h>
 #include <quant1x/config/base.h>
 #include <spdlog/spdlog.h>
 #include <fstream>
@@ -21,10 +20,10 @@ namespace tdx {
             // Fetch raw kline data via SecurityBars protocol
             level1::SecurityBars bars(code, static_cast<u16>(level1::KLineType::DAILY), 0, level1::security_bars_max);
             level1::process(conn->socket(), bars);
-            // Save to CSV
-            std::string dir = config::get_data_path() + "/day_raw/" + code;
+            // Save to {cache}/day_raw/{cache_dir}/{symbol}.raw (对齐 Rust/Python)
+            std::string dir = config::default_cache_path() + "/day_raw/" + inst.cache_dir();
             std::filesystem::create_directories(dir);
-            std::string filename = dir + "/" + code + ".csv";
+            std::string filename = dir + "/" + inst.symbol() + ".raw";
             std::ofstream out(filename);
             if (out) {
                 out << "date,open,close,high,low,volume,amount,up,down,datetime\n";

@@ -1,5 +1,6 @@
 #include <quant1x/cache.h>
 #include <quant1x/std/filesystem.h>
+#include <quant1x/contrib/data/tdx/instruments.h>
 #include <indicators/dynamic_progress.hpp>
 #include <indicators/progress_bar.hpp>
 #include <boost/pfr/core.hpp>
@@ -7,6 +8,7 @@
 #include <deque>
 #include <condition_variable>
 #include <limits>
+#include <fstream>
 
 namespace cache {
 
@@ -59,7 +61,7 @@ namespace cache {
 
     std::string stateFilename(const std::string& date, const meta::Timestamp& timestamp) {
         std::string fixedDate = meta::Timestamp(date).only_date();
-        std::string tm = timestamp.toString(timeLayoutOfState).substr(0,6);
+        std::string tm = timestamp.to_string(timeLayoutOfState).substr(0,6);
 
         std::string tmStr = fixedDate + "T" + tm;
         std::string filename = getVariablePath() + "/update." + tmStr;
@@ -76,7 +78,9 @@ namespace cache {
         std::string filename = stateFilename(date, timestamp);
         auto err = filesystem::check_filepath(filename, true);
         err.clear();
-        io::write_file(filename);
+        // io::write_file(filename); // TODO: use filesystem
+        std::ofstream f(filename, std::ios::out | std::ios::trunc);
+        f.close();
     }
 
     bool cleanExpiredStateFiles() {
@@ -133,7 +137,7 @@ namespace cache {
         bars[0].set_progress(0);
 
         auto first = adapters[0]->Key();
-        const auto allCodes = instruments::GetCodeList();
+        const auto allCodes = tdx::instruments::GetCodeList();
         mpb::ProgressBar barCodes(
             mpb::option::BarWidth{50},
             mpb::option::ForegroundColor{mpb::Color::yellow},
@@ -432,9 +436,9 @@ namespace cache {
     }
 
     void update_all() {
-        std::string today = api::today();
+        std::string today = meta::Timestamp::now().only_date(); // TODO: use api::today()
         std::string last_trading_day = meta::last_trading_day().only_date();
-        std::string current_time = meta::Timestamp::now().toString(timeLayoutOfPhase).substr(0, 8);
+        std::string current_time = meta::Timestamp::now().to_string(timeLayoutOfPhase).substr(0, 8);
         bool should_update = false;
         meta::Timestamp update_phase{};
         // 判断更新时机
@@ -448,7 +452,7 @@ namespace cache {
             }
         } else { // 非交易日
             if (current_time >= lastUpdateTime) {
-                update_phase = lastUpdateTime;
+                update_phase = meta::Timestamp::parse_time(lastUpdateTime);
                 should_update = checkUpdateState(today, update_phase);
             }
         }

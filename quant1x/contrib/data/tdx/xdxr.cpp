@@ -7,8 +7,8 @@
 
 namespace tdx {
 
-    static std::string xdxr_cache_dir(const std::string& code) {
-        return config::get_data_path() + "/xdxr/" + code + ".csv";
+    static std::string xdxr_cache_filename(const meta::Instrument& inst) {
+        return config::default_cache_path() + "/xdxr/" + inst.cache_dir() + "/" + inst.symbol() + ".csv";
     }
 
     void DataXdxr::Print(const meta::Instrument& inst, const std::vector<meta::Timestamp>& dates) {
@@ -24,13 +24,13 @@ namespace tdx {
             // XdxrBatch 内部处理 market 检测
             level1::XdxrBatch batch({code});
             level1::process(conn->socket(), batch);
-            // save to CSV
-            auto filename = xdxr_cache_dir(code);
+            // save to {cache}/xdxr/{cache_dir}/{symbol}.csv (对齐 Rust/Python)
+            auto filename = xdxr_cache_filename(inst);
             auto parent = std::filesystem::path(filename).parent_path().string();
             std::filesystem::create_directories(parent);
             std::ofstream out(filename);
             if (out) {
-                out << "date,category,name,fen_hong,dividend_currency,pei_gu_jia,rights_currency,"
+                out << "date,category,name,fen_hong,pei_gu_jia,"
                     << "song_zhuan_gu,pei_gu,suo_gu,qian_liu_tong,hou_liu_tong,qian_zong_gu_ben,"
                     << "hou_zong_gu_ben,fen_shu,xing_quan_jia\n";
                 for (auto const& entry : batch.entries) {
@@ -39,9 +39,7 @@ namespace tdx {
                             << static_cast<int>(info.Category) << ","
                             << info.Name << ","
                             << info.FenHong << ","
-                            << info.dividend_currency << ","
                             << info.PeiGuJia << ","
-                            << info.rights_currency << ","
                             << info.SongZhuanGu << ","
                             << info.PeiGu << ","
                             << info.SuoGu << ","

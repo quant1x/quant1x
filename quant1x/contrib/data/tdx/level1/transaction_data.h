@@ -61,7 +61,7 @@ namespace level1 {
             request_header.PacketType = 0x00;
             request_header.Method = StdCommand::TRANSACTION_DATA;
             {
-                auto [id, _, symbol] = data::detect_symbol(securityCode);
+                auto [id, _, symbol] = detect_symbol(securityCode);
                 Market = static_cast<uint16_t>(id);
                 const char * const tmp = symbol.c_str();
                 std::memcpy(Code, tmp, sizeof(Code));
@@ -87,7 +87,7 @@ namespace level1 {
             Count = bs.get_u16();
             List.reserve(Count);
             auto baseUnit = helpers::defaultBaseUnit(market_, code_);
-            auto isIndex = data::assert_index_by_security_code(static_cast<meta::ExchangeId>(market_), std::string(code_));
+            auto isIndex = assert_index_by_security_code(static_cast<meta::Exchange>(market_), std::string(code_));
             i64 lastPrice = 0;
             try {
                 for(int i = 0; i < Count; ++i) {

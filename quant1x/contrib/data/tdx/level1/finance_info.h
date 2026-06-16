@@ -245,7 +245,7 @@ namespace level1 {
             request_header.SeqID = SequenceId();
             request_header.PacketType = 0x01;
             request_header.Method = StdCommand::FINANCE_INFO;
-            auto [id, _, symbol] = data::detect_symbol(securityCode);
+            auto [id, _, symbol] = detect_symbol(securityCode);
             ReqCount = 1;
             Market = static_cast<u8>(id);
             const char * const tmp = symbol.c_str();
@@ -271,7 +271,7 @@ namespace level1 {
             raw.decode(bs);
             const static int baseUnit = 10000;
             auto symbol = strings::from(raw.Code);
-            Info.Code = data::correct_security_code(static_cast<meta::ExchangeId>(raw.Market), std::string(raw.Code, sizeof(raw.Code)));
+            Info.Code = correct_security_code(static_cast<meta::Exchange>(raw.Market), std::string(raw.Code, sizeof(raw.Code)));
             Info.LiuTongGuBen = helpers::numberToFloat64(raw.LiuTongGuBen) * baseUnit;
             Info.Province = raw.Province;
             Info.Industry = raw.Industry;

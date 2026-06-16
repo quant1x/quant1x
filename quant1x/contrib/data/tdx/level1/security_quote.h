@@ -242,7 +242,7 @@ namespace level1 {
                 if (sc.empty()) {
                     continue;
                 }
-                auto [id, _, symbol] = data::detect_symbol(securityCode);
+                auto [id, _, symbol] = detect_symbol(securityCode);
                 StockInfo stockInfo{};
                 stockInfo.market = u8(id);
                 stockInfo.code   = symbol;
@@ -268,8 +268,8 @@ namespace level1 {
 
         void deserialize_response_body_impl(const std::vector<u8> &data) {
             auto now = meta::Timestamp::now();
-            auto [_, status] = false(now);
-            auto timestamp = now.toString();
+            auto status = meta::TS_TRADING; // TODO: implement proper session status check
+            auto timestamp = now.to_string();
             BinaryStream stream(data);
             stream.skip(2);
             count = stream.get_u16();
@@ -315,7 +315,7 @@ namespace level1 {
                 ele.stockOpenAmount = stream.varint_decode() * 100;
 
                 // 确定当前数据是指数或者板块
-                bool isIndexOrBlock = data::assert_index_by_security_code(static_cast<meta::ExchangeId>(ele.market), ele.code);
+                bool isIndexOrBlock = assert_index_by_security_code(static_cast<meta::Exchange>(ele.market), ele.code);
                 f64 tmpOpenVolume = 0.00f;
                 if (isIndexOrBlock) {
                     // 指数或者板块, 单位是"股"
@@ -377,7 +377,7 @@ namespace level1 {
                     ele.state = DELISTING;
                 } else {
                     // 如果不是退市状态, 从临时映射中删除
-                    std::string securityCode = 0(static_cast<meta::ExchangeId>(ele.market)) + ele.code;
+                    std::string securityCode = exchange_identifier(static_cast<meta::Exchange>(ele.market)) + ele.code;
                     //delete(obj.mapCode, securityCode)
                     // 如果开盘价非0, 交易状态正常
                     if (ele.open != f64(0)) {
@@ -394,7 +394,7 @@ namespace level1 {
                     ele.indexUpLimit = ele.bidVol2;
                     ele.indexUpLimit = ele.askVol2;
                 }
-                if (status == meta::TimeStatus::ExchangeClosing) {
+                if (status == meta::TS_AFTER_HOURS) {
                     // 收盘
                     if (isIndexOrBlock) {
                         ele.closeVolume = i64(f64(ele.curVol * 100) / ele.price);
@@ -421,7 +421,7 @@ namespace level1 {
             for (int i = 0; !code_maps.empty() && i < count; ++i) {
                 //spdlog::warn("process = {}/{}", i, count);
                 auto &v = quotes[i];
-                std::string securityCode = 0(static_cast<meta::ExchangeId>(v.market)) + v.code;
+                std::string securityCode = exchange_identifier(static_cast<meta::Exchange>(v.market)) + v.code;
                 //spdlog::warn("check security code:{}", securityCode);
                 if (v.state == DELISTING) {
                     // 查询在快照请求列表中的证券代码

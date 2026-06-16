@@ -116,11 +116,11 @@ namespace level1 {
             param.Start = start;
             param.Count = count;
             {
-                auto [id, _, symbol] = data::detect_symbol(securityCode);
+                auto [id, _, symbol] = detect_symbol(securityCode);
                 param.Market = static_cast<u16>(id);
                 const char * const tmp = symbol.c_str();
                 std::memcpy(param.Code, tmp, sizeof(param.Code));
-                if(data::assert_index_by_security_code(id, symbol)) {
+                if(assert_index_by_security_code(static_cast<meta::Exchange>(id), symbol)) {
                     isIndex = true;
                 }
             }

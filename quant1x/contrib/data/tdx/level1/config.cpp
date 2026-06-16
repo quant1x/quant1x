@@ -248,17 +248,15 @@ namespace level1 {
                     auto start_time = std::chrono::high_resolution_clock::now();
 
                     // 协议握手
-                    level1::Hello1Request reqHello1;
-                    level1::Hello1Response respHello1;
-                    auto err1 = level1::process(socket_guard.socket(), reqHello1, respHello1);
+                    level1::Hello1 hello1;
+                    auto err1 = level1::process(socket_guard.socket(), hello1);
                     if (err1) {
                         spdlog::error("[Server Detection] Level1 protocol handshake phase 1 failed with {} - skipping server", err1.message());
                         continue; // 跳过这个服务器
                     }
 
-                    level1::Hello2Request reqHello2;
-                    level1::Hello2Response respHello2;
-                    auto err2 = level1::process(socket_guard.socket(), reqHello2, respHello2);
+                    level1::Hello2 hello2;
+                    auto err2 = level1::process(socket_guard.socket(), hello2);
                     if (err2) {
                         spdlog::error("[Server Detection] Level1 protocol handshake phase 2 failed with {} - skipping server", err2.message());
                         continue; // 跳过这个服务器

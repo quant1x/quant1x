@@ -3,7 +3,7 @@
 #define QUANT1X_FACTOR_BASE_H 1
 
 #include <quant1x/contrib/data/tdx/kline.h>
-#include <quant1x/data/kline_raw.h>
+#include <quant1x/contrib/data/tdx/kline_raw.h>
 
 namespace factors {
 

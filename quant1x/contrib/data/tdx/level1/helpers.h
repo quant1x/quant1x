@@ -269,7 +269,7 @@ namespace level1 {
         /**
          * @brief 根据市场ID和证券代码计算默认基础单位
          *
-         * @param marketId 市场类型ID，对应meta::ExchangeId枚举值
+         * @param marketId 市场类型ID，对应meta::Exchange枚举值
          * @param code 证券代码字符串
          * @return f64 返回计算得到的基础单位值
          *
@@ -277,14 +277,15 @@ namespace level1 {
          *       其他情况默认返回100.0
          */
         inline f64 defaultBaseUnit(int marketId, const char *const code) {
-            // auto security_code = data::correct_security_code(static_cast<meta::ExchangeId>(marketId), code);
+            // auto security_code = data::correct_security_code(static_cast<meta::Exchange>(marketId), code);
             // auto info = instruments::get_instrument_info(security_code);
             // if (info.has_value()) {
             //     return std::pow(10, info->pricePrecision);
             // }
+            auto ex = static_cast<meta::Exchange>(marketId);
             if (
-                (static_cast<meta::ExchangeId>(marketId) == meta::ExchangeId::ShangHai && code[0] == '5') ||
-                (static_cast<meta::ExchangeId>(marketId) == meta::ExchangeId::ShenZhen && strncmp(code, "159", 3) == 0)
+                (ex == meta::Exchange::SSE && code[0] == '5') ||
+                (ex == meta::Exchange::SZSE && strncmp(code, "159", 3) == 0)
                 ) {
                 return 1000.0;
             }
@@ -292,6 +293,48 @@ namespace level1 {
             return 100.0;
         }
     }  // namespace helpers
+
+    // 根据证券代码字符串检测交易所和代码
+    // 支持格式: "sh600000", "sz000001", "600000", "000001", "bj831000" 等
+    // 返回: (exchange_id_int, _, ticker_string)
+    inline std::tuple<int, int, std::string> detect_symbol(const std::string& security_code) {
+        std::string code = security_code;
+        meta::Exchange ex = meta::Exchange::UNKNOWN;
+        std::string ticker;
+        // 检查前缀格式: sh/sz/bj
+        if (code.size() >= 2) {
+            std::string prefix = code.substr(0, 2);
+            std::string lower;
+            for (char c : prefix) lower += static_cast<char>(::tolower(static_cast<unsigned char>(c)));
+            if (lower == "sh")      { ex = meta::Exchange::SSE;  ticker = code.substr(2); }
+            else if (lower == "sz") { ex = meta::Exchange::SZSE; ticker = code.substr(2); }
+            else if (lower == "bj") { ex = meta::Exchange::BSE;  ticker = code.substr(2); }
+        }
+        if (ex == meta::Exchange::UNKNOWN && !code.empty() && code[0] >= '0' && code[0] <= '9') {
+            ticker = code;
+            if      (code[0] == '6')                  ex = meta::Exchange::SSE;
+            else if (code[0] == '0' || code[0] == '3') ex = meta::Exchange::SZSE;
+            else if (code[0] == '8' || code[0] == '4') ex = meta::Exchange::BSE;
+        }
+        return {static_cast<int>(ex), 0, ticker};
+    }
+
+    // 判断证券代码是否为指数
+    inline bool assert_index_by_security_code(meta::Exchange ex, const std::string& code) {
+        if (code.empty()) return false;
+        if (ex == meta::Exchange::SSE  && code.size() >= 3 && code.substr(0, 3) == "000") return true;
+        if (ex == meta::Exchange::SZSE && code.size() >= 3 && code.substr(0, 3) == "399") return true;
+        if (ex == meta::Exchange::BSE  && code.size() >= 3 && code.substr(0, 3) == "899") return true;
+        return false;
+    }
+
+    // 根据交易所和原始代码生成标准证券代码
+    inline std::string correct_security_code(meta::Exchange ex, const std::string& raw_code) {
+        auto code = strings::trim(raw_code);
+        std::string ident = exchange_identifier(ex);
+        return ident + code;
+    }
+
 }  // namespace level1
 
 #endif  // QUANT1X_LEVEL1_HELPERS_H

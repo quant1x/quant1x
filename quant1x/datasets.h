@@ -6,7 +6,8 @@
 
 namespace data {
     // 初始化数据集
-    void init();
+    // (TODO: API migration — datasets.cpp masked, stub only)
+    inline void init() {}
 }
 
 #endif //QUANT1X_DATASETS_CACHE_H

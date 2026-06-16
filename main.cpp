@@ -1,12 +1,24 @@
 #include <quant1x/quant1x.h>
 #include <sstream>
-#include "user/no0.h"
-#include "user/strategy-no0.h"
+// TODO: API migration — user strategy files masked
+// #include "user/no0.h"
+// #include "user/strategy-no0.h"
 #include <quant1x/command.h>
 #include <quant1x/datasets.h>
 #include <private/build-info.h>
 #include <quant1x/config/config.h>
 #include <quant1x/cache.h>
+#include <quant1x/std/api.h>
+#include <quant1x/io/file.h>
+#include <quant1x/runtime/core.h>
+
+// TDX 数据适配器 — 显式注册以强制 linker 拉入对应目标文件
+#include <quant1x/contrib/data/tdx/kline.h>
+#include <quant1x/contrib/data/tdx/kline_minute.h>
+#include <quant1x/contrib/data/tdx/trans.h>
+#include <quant1x/contrib/data/tdx/minute.h>
+#include <quant1x/contrib/data/tdx/xdxr.h>
+#include <quant1x/contrib/data/tdx/kline_raw.h>
 // #if HAVE_MIMALLOC
 // #include <mimalloc.h>
 // #endif
@@ -156,13 +168,21 @@ int main(const int argc, const char *const argv[]) {
     runtime::logger_set(verbose, debug);
     quant1x::engine::init([] {
         std::cout << "这里执行定制的初始化工作" << std::endl;
-        // 注册1号特征
-        data::Register(std::make_unique<DataNo0>());
-        // 注册策略
-        StrategyManager& manager = StrategyManager::Instance();
-        StrategyPtr s0 = std::make_shared<No0Strategy>();
-        manager.Register(s0);
-        
+        // TODO: API migration — user strategy files masked
+        // // 注册1号特征
+        // data::Register(std::make_unique<DataNo0>());
+        // // 注册策略
+        // StrategyManager& manager = StrategyManager::Instance();
+        // StrategyPtr s0 = std::make_shared<No0Strategy>();
+        // manager.Register(s0);
+
+        // 注册 TDX 基础数据适配器
+        data::Register(std::make_unique<tdx::DataXdxr>());
+        data::Register(std::make_unique<tdx::DataKLineRaw>());
+        data::Register(std::make_unique<tdx::DataKLine>());
+        data::Register(std::make_unique<tdx::DataTrans>());
+        data::Register(std::make_unique<tdx::DataMinute>());
+        data::Register(std::make_unique<tdx::DataMinuteKLine>());
     });
 
     if(program.is_subcommand_used("service")) {

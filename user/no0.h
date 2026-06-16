@@ -4,7 +4,7 @@
 
 #include <quant1x/std/base.h>
 #include <quant1x/data/adapter.h>
-#include <quant1x/factors/base.h>
+#include <quant1x/factors/base_compat.h>
 
 /// 0号策略特征工程结构体
 /// 0号作为演示策略，仅供学习和参考，不作为投资建议，请勿直接使用

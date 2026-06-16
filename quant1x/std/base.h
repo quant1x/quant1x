@@ -3,6 +3,7 @@
 #define QUANT1X_STD_BASE_H 1
 
 #include "feature_detection.h"
+#include <spdlog/spdlog.h>
 
 // 网络相关头文件（Windows 特定）
 #if OS_IS_WINDOWS

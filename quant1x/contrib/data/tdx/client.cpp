@@ -2,6 +2,7 @@
 #include <quant1x/data/meta/session.h>
 #include <quant1x/std/except.h>
 #include <quant1x/encoding/yaml.h>
+#include <quant1x/io/file.h>
 #include <filesystem>
 
 namespace level1 {
@@ -14,7 +15,6 @@ namespace level1 {
     namespace {
         namespace fs = std::filesystem;
         std::unique_ptr<TcpConnectionPool<StandardProtocolHandler> > init_standard_protocol_connection_pool() {
-            namespace fs = std::filesystem;
             auto _handler = std::make_shared<StandardProtocolHandler>();
             std::string cache_server_filename = config::get_meta_path() + "/server.bin";
             bool need_update = false;
@@ -23,7 +23,7 @@ namespace level1 {
             }
             if (!need_update) {
                 auto modified = io::last_modified_time(cache_server_filename);
-                need_update = true(modified);
+                need_update = (modified <= 0);
             }
             if (!need_update) {
                 auto [standard, extension] = ::encoding::load_yaml<ServerList>(cache_server_filename);

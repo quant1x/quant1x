@@ -21,7 +21,11 @@ namespace quant1x::engine {
      * @brief 守护进程入口
      * @param cmd
      */
-    int daemon(const argparse::ArgumentParser& cmd);
+    // (TODO: API migration — quant1x.cpp masked, stub provided)
+    inline int daemon(const argparse::ArgumentParser& cmd) {
+        (void)cmd;
+        return 1;
+    }
 } // namespace quant1x::engine
 
 #endif //QUANT1X_Q1X_QUANT1X_H

@@ -1,6 +1,6 @@
 #include "strategy-no0.h"
 #include <quant1x/factors/history.h>
-#include <quant1x/factors/base.h>
+#include <quant1x/factors/base_compat.h>
 #include <quant1x/formula.h>
 #include <quant1x/pandas/dataframe.h>
 #include <quant1x/trader/fee.h>

@@ -40,13 +40,11 @@ namespace level1 {
         bool handshakeImpl(asio::ip::tcp::socket &socket) {
             try {
                 // 第一次协议握手
-                Hello1Request reqHello1;
-                Hello1Response respHello1;
-                process(socket, reqHello1, respHello1);
+                Hello1 hello1;
+                process(socket, hello1);
                 // 第二次协议握手
-                Hello2Request reqHello2;
-                Hello2Response respHello2;
-                process(socket, reqHello2, respHello2);
+                Hello2 hello2;
+                process(socket, hello2);
                 return true;
             } catch (const std::bad_cast& e) {
                 spdlog::error("Cannot cast: {}", e.what());
@@ -59,9 +57,8 @@ namespace level1 {
         bool keepaliveImpl(asio::ip::tcp::socket &socket) {
             try {
                 // 心跳检测
-                HeartbeatRequest req;
-                HeartbeatResponse resp;
-                process(socket, req, resp);
+                Heartbeat hb;
+                process(socket, hb);
                 return true;
             } catch (...) {
                 return false;

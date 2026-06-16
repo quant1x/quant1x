@@ -38,7 +38,7 @@ namespace level1 {
             request_header.PacketType = 0x00;
             request_header.Method = StdCommand::HISTORY_MINUTE_DATA;
             {
-                auto [id, _, symbol] = data::detect_symbol(securityCode);
+                auto [id, _, symbol] = detect_symbol(securityCode);
                 Market = static_cast<uint8_t>(id);
                 const char * const tmp = symbol.c_str();
                 std::memcpy(Code, tmp, sizeof(Code));

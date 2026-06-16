@@ -52,143 +52,9 @@ namespace level1 {
         }
     }
 
-    // 除权除息请求/响应 (对齐 Python Xdxr)
-    struct Xdxr : public BaseMessage<Xdxr> {
-        u8              Market;   // 市场代码 0:深圳 1:上海
-        char            Code[6];  // 股票代码
-        std::vector<u8> padding;
-
-        u16                   Count;       // 响应: 数据条数
-        std::vector<XdxrInfo> List;        // 响应: 解析后的除权除息列表
-
-        Xdxr(const std::string &securityCode) : BaseMessage<Xdxr>() {
-            request_header.ZipFlag               = ZlibFlag::Uncompressed;
-            request_header.SeqID                 = SequenceId();
-            request_header.PacketType            = 0x01;
-            request_header.Method                = StdCommand::XDXR_INFO;
-            auto [id, _, symbol]  = data::detect_symbol(securityCode);
-            Market                = static_cast<u8>(id);
-            const char *const tmp = symbol.c_str();
-            std::memcpy(Code, tmp, sizeof(Code));
-            padding = strings::hexToBytes("0100");
-        }
-
-        // 序列化方法
-        std::vector<u8> serialize_request_body_impl() {
-            BinaryStream stream;
-            stream.push_byte_array(padding.data(), padding.size());
-            stream.push_arithmetic(Market);
-            stream.push_array(Code);
-            return stream.data();
-        }
-
-        void deserialize_response_body_impl(const std::vector<u8> &body) {
-            BinaryStream bs(body);
-            bs.skip(9);
-            Count = bs.get_u16();
-            List.reserve(Count);
-            for (int i = 0; i < Count; i++) {
-                XdxrInfo e{};
-                bs.get_u8();                          // 市场代码
-                std::string code = bs.get_string(6);  // 股票代码
-                bs.get_u8();                          // 未知
-                u32 date     = bs.get_u32();          // 日期
-                u8  category = bs.get_u8();           // 类型
-                u8  data[16] = {0};                   // 数据
-                bs.get_array(data);
-                auto [year, month, day, hour, minute] = helpers::getDatetimeFromUint32(9, date, 0);
-                e.Category                            = category;
-                e.Date                                = fmt::format("{:04d}-{:02d}-{:02d}", year, month, day);
-                e.Name                                = to_string(static_cast<XdxrCategory>(e.Category));
-                BinaryStream tmp(data);
-                switch (e.Category) {
-                    case 1:  // 除权除息
-                    {
-                        f32 f         = 0;
-                        f             = tmp.get_float();
-                        e.FenHong     = f;
-                        f             = tmp.get_float();
-                        e.PeiGuJia    = f;
-                        f             = tmp.get_float();
-                        e.SongZhuanGu = f;
-                        f             = tmp.get_float();
-                        e.PeiGu       = f;
-                        break;
-                    }
-                    case 11:
-                    case 12: {
-                        f32 f = 0;
-                        tmp.skip(8);
-                        f       = tmp.get_float();
-                        e.SuoGu = f;
-                        break;
-                    }
-                    case 13:
-                    case 14: {
-                        f32 f         = 0;
-                        f             = tmp.get_float();
-                        e.XingQuanJia = f;
-                        tmp.skip(8);
-                        f        = tmp.get_float();
-                        e.FenShu = f;
-                        break;
-                    }
-                    default: {
-                        u32 v           = 0;
-                        v               = tmp.get_u32();
-                        e.QianLiuTong   = _get_v(v);
-                        v               = tmp.get_u32();
-                        e.QianZongGuBen = _get_v(v);
-                        v               = tmp.get_u32();
-                        e.HouLiuTong    = _get_v(v);
-                        v               = tmp.get_u32();
-                        e.HouZongGuBen  = _get_v(v);
-                        break;
-                    }
-                }
-                List.emplace_back(e);
-            }
-        }
-
-        std::string toStringImpl() const {
-            std::ostringstream out;
-            out << request_header.headerStringImpl();
-            out << '{';
-            out << "Market:" << (int)Market;
-            out << ", Code:" << std::string(Code, sizeof(Code));
-            out << ", padding:" << strings::bytesToHex(padding);
-            out << '}';
-            out << " {Count:" << Count << "}";
-            return out.str();
-        }
-
-    private:
-        static f64 _get_v(u32 v) {
-            if (v == 0) {
-                return 0;
-            }
-            return helpers::integerToFloat64(v);
-        }
-    };
-
-    // 原始除权除息信息
-    struct RawXdxrInfo {
-        u8   Market;    // 市场代码
-        char Code[6];   // 股票代码
-        u8   Unknown;   // 保留字段
-        u32  Date;      // 日期(YYYYMMDD格式)
-        u8   Category;  // 类型编号
-        u8   Data[16];  // 数据内容(根据类型不同解析方式不同)
-    };
-
-    // 除权除息响应结构
-    struct XdxrInfoReply {
-        u8                       Unknown[9];  // 保留字段
-        u16                      Count;       // 数据条数
-        std::vector<RawXdxrInfo> List;        // 原始数据列表
-    };
-
-    // 解析后的除权除息信息
+    // ==========================================================
+    // 解析后的除权除息信息 (定义在前，被 Xdxr 使用)
+    // ==========================================================
     struct XdxrInfo {
         std::string Date;           // 日期 YYYY-MM-DD格式
         int         Category;       // 类型编号
@@ -299,6 +165,142 @@ namespace level1 {
         }
     };
 
+    // 除权除息请求/响应 (对齐 Python Xdxr)
+    struct Xdxr : public BaseMessage<Xdxr> {
+        u8              Market;   // 市场代码 0:深圳 1:上海
+        char            Code[6];  // 股票代码
+        std::vector<u8> padding;
+
+        u16                   Count;       // 响应: 数据条数
+        std::vector<XdxrInfo> List;        // 响应: 解析后的除权除息列表
+
+        Xdxr(const std::string &securityCode) : BaseMessage<Xdxr>() {
+            request_header.ZipFlag               = ZlibFlag::Uncompressed;
+            request_header.SeqID                 = SequenceId();
+            request_header.PacketType            = 0x01;
+            request_header.Method                = StdCommand::XDXR_INFO;
+            auto [id, _, symbol]  = detect_symbol(securityCode);
+            Market                = static_cast<u8>(id);
+            const char *const tmp = symbol.c_str();
+            std::memcpy(Code, tmp, sizeof(Code));
+            padding = strings::hexToBytes("0100");
+        }
+
+        // 序列化方法
+        std::vector<u8> serialize_request_body_impl() {
+            BinaryStream stream;
+            stream.push_byte_array(padding.data(), padding.size());
+            stream.push_arithmetic(Market);
+            stream.push_array(Code);
+            return stream.data();
+        }
+
+        void deserialize_response_body_impl(const std::vector<u8> &body) {
+            BinaryStream bs(body);
+            bs.skip(9);
+            Count = bs.get_u16();
+            List.reserve(Count);
+            for (int i = 0; i < Count; i++) {
+                XdxrInfo info{};
+                bs.get_u8();                          // 市场代码
+                std::string code = bs.get_string(6);  // 股票代码
+                bs.get_u8();                          // 未知
+                u32 date     = bs.get_u32();          // 日期
+                u8  category = bs.get_u8();           // 类型
+                u8  data[16] = {0};                   // 数据
+                bs.get_array(data);
+                auto [year, month, day, hour, minute] = helpers::getDatetimeFromUint32(9, date, 0);
+                info.Category                            = category;
+                info.Date                                = fmt::format("{:04d}-{:02d}-{:02d}", year, month, day);
+                info.Name                                = to_string(static_cast<XdxrCategory>(info.Category));
+                BinaryStream tmp(data);
+                switch (info.Category) {
+                    case 1:  // 除权除息
+                    {
+                        f32 f         = 0;
+                        f             = tmp.get_float();
+                        info.FenHong     = f;
+                        f             = tmp.get_float();
+                        info.PeiGuJia    = f;
+                        f             = tmp.get_float();
+                        info.SongZhuanGu = f;
+                        f             = tmp.get_float();
+                        info.PeiGu       = f;
+                        break;
+                    }
+                    case 11:
+                    case 12: {
+                        f32 f = 0;
+                        tmp.skip(8);
+                        f       = tmp.get_float();
+                        info.SuoGu = f;
+                        break;
+                    }
+                    case 13:
+                    case 14: {
+                        f32 f         = 0;
+                        f             = tmp.get_float();
+                        info.XingQuanJia = f;
+                        tmp.skip(8);
+                        f        = tmp.get_float();
+                        info.FenShu = f;
+                        break;
+                    }
+                    default: {
+                        u32 v           = 0;
+                        v               = tmp.get_u32();
+                        info.QianLiuTong   = _get_v(v);
+                        v               = tmp.get_u32();
+                        info.QianZongGuBen = _get_v(v);
+                        v               = tmp.get_u32();
+                        info.HouLiuTong    = _get_v(v);
+                        v               = tmp.get_u32();
+                        info.HouZongGuBen  = _get_v(v);
+                        break;
+                    }
+                }
+                List.emplace_back(info);
+            }
+        }
+
+        std::string toStringImpl() const {
+            std::ostringstream out;
+            out << request_header.headerStringImpl();
+            out << '{';
+            out << "Market:" << (int)Market;
+            out << ", Code:" << std::string(Code, sizeof(Code));
+            out << ", padding:" << strings::bytesToHex(padding);
+            out << '}';
+            out << " {Count:" << Count << "}";
+            return out.str();
+        }
+
+    private:
+        static f64 _get_v(u32 v) {
+            if (v == 0) {
+                return 0;
+            }
+            return helpers::integerToFloat64(v);
+        }
+    };
+
+    // 原始除权除息信息
+    struct RawXdxrInfo {
+        u8   Market;    // 市场代码
+        char Code[6];   // 股票代码
+        u8   Unknown;   // 保留字段
+        u32  Date;      // 日期(YYYYMMDD格式)
+        u8   Category;  // 类型编号
+        u8   Data[16];  // 数据内容(根据类型不同解析方式不同)
+    };
+
+    // 除权除息响应结构
+    struct XdxrInfoReply {
+        u8                       Unknown[9];  // 保留字段
+        u16                      Count;       // 数据条数
+        std::vector<RawXdxrInfo> List;        // 原始数据列表
+    };
+
     // 除权除息批量请求 (对齐 Python XdxrBatch, Python有，C++原无)
     struct XdxrBatch : public BaseMessage<XdxrBatch> {
         struct StockEntry {
@@ -322,12 +324,12 @@ namespace level1 {
             request_header.PacketType = 0x01;
             request_header.Method = StdCommand::XDXR_INFO;
             for (auto const &sc : securityCodes) {
-                auto [id, _, symbol] = data::detect_symbol(sc);
-                StockEntry e{};
-                e.market = static_cast<u8>(id);
+                auto [id, _, symbol] = detect_symbol(sc);
+                StockEntry entry{};
+                entry.market = static_cast<u8>(id);
                 const char *tmp = symbol.c_str();
-                std::memcpy(e.code, tmp, sizeof(e.code));
-                stocks.push_back(e);
+                std::memcpy(entry.code, tmp, sizeof(entry.code));
+                stocks.push_back(entry);
             }
         }
 

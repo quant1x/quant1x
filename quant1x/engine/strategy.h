@@ -5,13 +5,15 @@
 #include <quant1x/data/adapter.h>
 #include <quant1x/engine/rule_engine.h>
 #include <quant1x/data/meta/timestamp.h>
-#include <quant1x/contrib/data/tdx/client.h>
 #include <quant1x/proto/data.h>
 #include <quant1x/proto/snapshot.capnp.h>
 #include <quant1x/std/except.h>
 #include <quant1x/std/numeric.h>
 #include <quant1x/trader/fee.h>
 #include <quant1x/data/kline.h>
+
+// 前向声明 — 避免引入 level1 整个模块的依赖
+namespace level1 { struct SecurityQuote; }
 
 // 前向声明
 struct ResultInfo;
