@@ -9,7 +9,7 @@ from typing import List
 from ...command import Command
 from ... import helpers
 from ... import protocol
-from quant1x.data.meta.code import detect_market
+from quant1x.data.market import detect_symbol
 
 
 @dataclass
@@ -24,8 +24,10 @@ class HistoryMinuteTime(protocol.BaseMessage):
         super().__init__(Command.STD_HISTORY_MINUTE_DATA)
         self.request_header.packet_flag = 0x00
         self._date = date
-        market_id, _, symbol = detect_market(security_code)
-        self._market = market_id.value
+        inst = detect_symbol(security_code)
+        market_id = helpers.exchange_to_market(inst.exchange)
+        symbol = inst.code()
+        self._market = market_id
         self._code = symbol
 
         self.count: int = 0

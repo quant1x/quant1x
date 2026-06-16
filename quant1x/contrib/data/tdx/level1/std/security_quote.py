@@ -9,13 +9,7 @@ from typing import List
 from ...command import Command
 from ... import helpers
 from ... import protocol
-from quant1x.data.meta.code import (
-    detect_market,
-    assert_index_by_market_and_code,
-    MarketType,
-    get_market_flag,
-)
-
+from quant1x.data.market import detect_symbol
 
 @dataclass
 class StockInfo:
@@ -34,8 +28,10 @@ class SecurityQuote(protocol.BaseMessage):
             sc = security_code.strip()
             if not sc:
                 continue
-            market_id, _, symbol = detect_market(sc)
-            self.list.append(StockInfo(market=market_id.value, code=symbol))
+            inst = detect_symbol(sc)
+            market_id = helpers.exchange_to_market(inst.exchange)
+            symbol = inst.code()
+            self.list.append(StockInfo(market=market_id, code=symbol))
 
         self.count = 0
         self.quotes: List[dict] = []
