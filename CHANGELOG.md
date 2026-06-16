@@ -3,9 +3,55 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.28] - 2026-06-17
+### Changed
+- refactor(cpp): align cache paths with Rust/Python, add network fetch for stub adapters
+
+- Use inst.cache_dir() (e.g. sse/szse) in cache paths for kline_raw, xdxr, kline, trans, minute, kline_minute
+- kline_raw: day_raw/{cache_dir}/{symbol}.raw
+- xdxr: xdxr/{cache_dir}/{symbol}.csv
+- kline: day/{cache_dir}/{symbol}.csv
+- trans: trans/{cache_dir}/{year}/{yyyymmdd}/{symbol}.csv
+- minute: minute/{cache_dir}/{symbol}.csv
+- kline_minute: kline_minute/{cache_dir}/{symbol}.csv
+- Implement actual network fetch + save logic for kline, trans, minute, kline_minute adapters
+- refactor(cpp): move protocol.h/cpp and helpers.h from level1/ to tdx/ to align with Rust/Python
+
+- Moved quant1x/contrib/data/tdx/level1/{protocol.h, protocol.cpp, helpers.h} -> quant1x/contrib/data/tdx/
+- Updated all 19 include references across client.h, instruments.cpp, tests, and 16 level1 headers
+- Fixed double-slash paths in xdxr_info.h, transaction_data.h
+- Updated CMakeLists.txt source paths and added helpers.h to header list
+- Updated helpers.rs comment to reflect new path
+- refactor(cpp): move forward-adjustment logic from factors/ into tdx/kline, align DataKLine::Update with Python
+
+kline.h/cpp:
+- Full DataKLine::Update() flow matching Python: cache load -> date range -> batch fetch -> merge -> adjust -> save
+- apply_forward_adjustment_for_event() for incremental updates
+- apply_forward_adjustments_once() / calculate_pre_adjust() for general use
+- combine_adjustments_in_period() using meta::schema::CumulativeAdjustment
+- CSV I/O: read_kline_from_csv, save_kline, load_kline, get_kline_filename
+- get_xdxr_list / ipo_date_from_xdxrs reading from xdxr cache
+
+factors/base.h/cpp:
+- Remove all adjustment types/functions (moved to tdx::kline)
+- checkout_klines / klines_forward_adjusted_to_date now delegate to tdx:: functions
+- Keep feature constants and backward-compatible wrapper API
+- refactor(cpp): align kline_raw with Python semantics, add ext protocol support, remove old base factors
+
+- kline_raw: fetch_kline_raw returns domain Bar (not protocol SecurityBar), internal SecurityBar->Bar conversion
+- level1: add ext_sync.h (ExtSynchronize, cmd 0x2454) and instrument_bars.h (InstrumentBars, cmd 0x23FF) for ext K-line protocol
+- client: add ExtensionProtocolHandler with get_ext_conn() for ext connection pool
+- fetch_kline_raw_from_ext: replace TODO stub with full ext protocol implementation
+- kline: remove redundant SecurityBar->Bar conversion, directly consume domain Bar
+- factors: delete old base.cpp/h, update base_compat.h/f10.cpp/history.cpp
+- tests: update tdd-* tests, user: update no0/strategy-no0
+- gitignore: add build_output.txt
+- 删除cmake构建临时文件
+
 ## [0.7.27] - 2026-06-16
 ### Changed
 - python: 删除旧版本的代码检测
+- release v0.7.27
 
 ## [0.7.26] - 2026-06-16
 ### Changed
@@ -26,7 +72,7 @@ All notable changes to this project will be documented in this file.
 
 - zip_flag -> frame_type (align with Python RequestHeader.frame_type)
 
-- packet_type -> packet_ctrl (align with Python ResponseHeader.packet_ctrl)
+- packet_type -> packet_flag (align with Python ResponseHeader.packet_flag)
 
 - update all submodule references in heartbeat/minute_time/security_bars/finance_info
 - release v0.7.25
@@ -1674,7 +1720,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.27...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.28...HEAD
+[0.7.28]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.27...v0.7.28
 [0.7.27]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.26...v0.7.27
 [0.7.26]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.25...v0.7.26
 [0.7.25]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.24...v0.7.25
