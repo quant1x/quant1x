@@ -2,7 +2,7 @@
 #ifndef QUANT1X_LEVEL1_FINANCE_INFO_H
 #define QUANT1X_LEVEL1_FINANCE_INFO_H 1
 
-#include <quant1x/contrib/data/tdx/level1/protocol.h>
+#include <quant1x/contrib/data/tdx/protocol.h>
 #include <ostream>
 
 // ==============================

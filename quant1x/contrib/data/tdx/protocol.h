@@ -3,7 +3,7 @@
 #define QUANT1X_LEVEL1_PROTOCOL_H 1
 
 #include <quant1x/encoding/charsets.h>
-#include <quant1x/contrib/data/tdx/level1/helpers.h>
+#include <quant1x/contrib/data/tdx/helpers.h>
 #include <quant1x/io/connection_pool.h>
 #include <quant1x/std/api.h>
 #include <quant1x/std/buffer.h>

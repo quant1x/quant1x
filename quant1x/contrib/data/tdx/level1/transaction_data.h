@@ -2,7 +2,7 @@
 #ifndef QUANT1X_LEVEL1_TRANSACTION_DATA_H
 #define QUANT1X_LEVEL1_TRANSACTION_DATA_H 1
 
-#include <quant1x/contrib/data/tdx/level1//protocol.h>
+#include <quant1x/contrib/data/tdx/protocol.h>
 #include <quant1x/contrib/data/tdx/level1/security_quote.h>
 #include <quant1x/data/meta/exchange.h>
 #include <ostream>

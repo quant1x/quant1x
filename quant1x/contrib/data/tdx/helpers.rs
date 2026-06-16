@@ -4,7 +4,7 @@
 //
 // TDX helpers — 工具函数
 // 对应 Python quant1x/contrib/data/tdx/helpers.py
-// 对应 C++   level1/helpers.h
+// 对应 C++   quant1x/contrib/data/tdx/helpers.h
 
 use std::sync::atomic::{AtomicU32, Ordering};
 

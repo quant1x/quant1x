@@ -2,7 +2,7 @@
 #ifndef QUANT1X_LEVEL1_SERVER_H
 #define QUANT1X_LEVEL1_SERVER_H 1
 
-#include <quant1x/contrib/data/tdx/level1/helpers.h>
+#include <quant1x/contrib/data/tdx/helpers.h>
 #include <quant1x/io/base.h>
 
 namespace level1 {

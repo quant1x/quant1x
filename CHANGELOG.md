@@ -26,7 +26,7 @@ All notable changes to this project will be documented in this file.
 
 - zip_flag -> frame_type (align with Python RequestHeader.frame_type)
 
-- packet_type -> packet_flag (align with Python ResponseHeader.packet_flag)
+- packet_type -> packet_ctrl (align with Python ResponseHeader.packet_ctrl)
 
 - update all submodule references in heartbeat/minute_time/security_bars/finance_info
 - release v0.7.25

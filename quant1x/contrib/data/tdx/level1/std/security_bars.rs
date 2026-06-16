@@ -113,7 +113,7 @@ impl SecurityBarsRequest {
         code_bytes[..copy_len].copy_from_slice(&sym[..copy_len]);
 
         let mut req_header = RequestHeader::new(STD_SECURITY_BARS, FLAG_UNCOMPRESSED);
-        req_header.packet_flag = 0x00;
+        req_header.packet_ctrl = 0x00;
 
         SecurityBarsRequest {
             req_header,

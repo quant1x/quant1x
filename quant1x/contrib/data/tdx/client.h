@@ -10,8 +10,8 @@
 
 #include <quant1x/data/meta/exchange.h>
 #include <quant1x/data/meta/session.h>
-#include <quant1x/contrib/data/tdx/level1/protocol.h>
-#include <quant1x/contrib/data/tdx/level1/helpers.h>
+#include <quant1x/contrib/data/tdx/protocol.h>
+#include <quant1x/contrib/data/tdx/helpers.h>
 #include <quant1x/contrib/data/tdx/level1/hello1.h>
 #include <quant1x/contrib/data/tdx/level1/hello2.h>
 #include <quant1x/contrib/data/tdx/level1/heartbeat.h>

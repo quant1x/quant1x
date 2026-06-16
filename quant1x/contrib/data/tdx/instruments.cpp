@@ -9,7 +9,7 @@
 #include <quant1x/data/market.h>
 #include <quant1x/data/status.h>
 #include <quant1x/contrib/data/tdx/client.h>
-#include <quant1x/contrib/data/tdx/level1/protocol.h>
+#include <quant1x/contrib/data/tdx/protocol.h>
 #include <quant1x/contrib/data/tdx/level1/security_list.h>
 #include <fstream>
 #include <sstream>

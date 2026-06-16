@@ -2,7 +2,7 @@
 #ifndef QUANT1X_LEVEL1_BLOCK_META_H
 #define QUANT1X_LEVEL1_BLOCK_META_H 1
 
-#include <quant1x/contrib/data/tdx/level1/protocol.h>
+#include <quant1x/contrib/data/tdx/protocol.h>
 
 // ==============================
 // 板块元数据

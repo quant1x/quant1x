@@ -38,7 +38,7 @@ impl HeartbeatRequest {
     pub fn new() -> Self {
         let mut header = RequestHeader::new(STD_HEARTBEAT, FLAG_UNCOMPRESSED);
         header.sequence_id = msg_sequence_id();
-        header.packet_flag = 0x02;
+        header.packet_ctrl = 0x02;
         Self {
             req_header: header,
             resp_header: ResponseHeader::new(),

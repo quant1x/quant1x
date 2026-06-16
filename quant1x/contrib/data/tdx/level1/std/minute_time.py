@@ -22,7 +22,7 @@ class HistoryMinuteTime(protocol.BaseMessage):
     """历史分时数据"""
     def __init__(self, security_code: str, date: int):
         super().__init__(Command.STD_HISTORY_MINUTE_DATA)
-        self.request_header.packet_flag = 0x00
+        self.request_header.packet_ctrl = 0x00
         self._date = date
         inst = detect_symbol(security_code)
         market_id = helpers.exchange_to_market(inst.exchange)

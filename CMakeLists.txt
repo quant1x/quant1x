@@ -498,7 +498,10 @@ set(quant1x-headers
     # level1
     quant1x/contrib/data/tdx/level1/config.h
     quant1x/contrib/data/tdx/level1/minute_time.h
-    quant1x/contrib/data/tdx/level1/protocol.h
+
+    # tdx (moved from level1 to align with Rust/Python)
+    quant1x/contrib/data/tdx/protocol.h
+    quant1x/contrib/data/tdx/helpers.h
 
     # tdx adapters (TODO: xdxr, chips, kline_raw, f10 API migration pending)
     quant1x/contrib/data/tdx/xdxr.h
@@ -611,7 +614,7 @@ set(quant1x-sources
     
     # level1
     quant1x/contrib/data/tdx/level1/config.cpp
-    quant1x/contrib/data/tdx/level1/protocol.cpp
+    quant1x/contrib/data/tdx/protocol.cpp
 
 
     # 配置信息

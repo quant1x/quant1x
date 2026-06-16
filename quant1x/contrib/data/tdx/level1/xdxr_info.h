@@ -3,7 +3,7 @@
 #define QUANT1X_LEVEL1_XDXR_INFO_H 1
 
 #include <quant1x/data/meta/exchange.h>
-#include <quant1x/contrib/data/tdx/level1//protocol.h>
+#include <quant1x/contrib/data/tdx/protocol.h>
 
 #include <ostream>
 

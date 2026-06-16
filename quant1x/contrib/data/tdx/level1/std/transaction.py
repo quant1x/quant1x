@@ -25,7 +25,7 @@ class Transaction(protocol.BaseMessage):
     def __init__(self, exchange: Exchange, code: str, start: int, count: int,
                  price_precision: int = 2, is_index: bool = False):
         super().__init__(Command.STD_TRANSACTION_DATA)
-        self.request_header.packet_flag = 0x00
+        self.request_header.packet_ctrl = 0x00
         self._market = helpers.exchange_to_market(exchange)
         self._code = code
         self._start = start
@@ -84,7 +84,7 @@ class HistoricalTransaction(protocol.BaseMessage):
     def __init__(self, exchange: Exchange, code: str, date: int, start: int, count: int,
                  price_precision: int = 2, is_index: bool = False):
         super().__init__(Command.STD_HISTORY_TRANSACTION_DATA)
-        self.request_header.packet_flag = 0x00
+        self.request_header.packet_ctrl = 0x00
         self._market = helpers.exchange_to_market(exchange)
         self._code = code
         self._date = date

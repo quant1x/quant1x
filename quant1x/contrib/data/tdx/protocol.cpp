@@ -1,4 +1,4 @@
-#include <quant1x/contrib/data/tdx/level1/protocol.h>
+#include <quant1x/contrib/data/tdx/protocol.h>
 
 namespace level1 {
 

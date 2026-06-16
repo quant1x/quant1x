@@ -11,7 +11,7 @@ class Heartbeat(protocol.BaseMessage):
     def __init__(self):
         super().__init__(Command.STD_HEARTBEAT)
         self.info = ""
-        self.request_header.packet_flag = 0x02
+        self.request_header.packet_ctrl = 0x02
 
     def serialize_request_body(self) -> bytes:
         return b""

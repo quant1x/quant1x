@@ -33,8 +33,8 @@ class RequestHeader(Stringable, Sizeable, abc.ABC):
     """帧标识, u8"""
     sequence_id:  int # u32
     """消息ID, u32"""
-    packet_flag: int # u8
-    """包类型, u8"""
+    packet_ctrl: int # u8
+    """数据包控制位, u8"""
     body_wire_len:    int # u16
     """包长度1, u16"""
     body_raw_len:    int # u16
@@ -42,10 +42,10 @@ class RequestHeader(Stringable, Sizeable, abc.ABC):
     command:     Command # u16
     """命令字, u16"""
 
-    def __init__(self, command: Command, frame_type: int = FLAG_UNCOMPRESSED, packet_flag: int = 0x01):
+    def __init__(self, command: Command, frame_type: int = FLAG_UNCOMPRESSED, packet_ctrl: int = 0x01):
         self.frame_type = frame_type & 0xFF
         self.sequence_id = msg_sequence_id()
-        self.packet_flag = packet_flag & 0xFF
+        self.packet_ctrl = packet_ctrl & 0xFF
         self.body_wire_len = 0
         self.body_raw_len = 0
         self.command = command
@@ -54,7 +54,7 @@ class RequestHeader(Stringable, Sizeable, abc.ABC):
         class_name = self.__class__.__name__
         return (
             f"{class_name}(frame_type: {self.frame_type}, sequence_id: {self.sequence_id}, "
-            f"packet_flag: {self.packet_flag}, body_wire_len: {self.body_wire_len}, "
+            f"packet_ctrl: {self.packet_ctrl}, body_wire_len: {self.body_wire_len}, "
             f"body_raw_len: {self.body_raw_len}, command: {self.command})"
         )
     
@@ -72,7 +72,7 @@ class RequestHeader(Stringable, Sizeable, abc.ABC):
             bytes: 打包后的二进制数据，包含以下字段按顺序排列：
                 - frame_type (1字节)
                 - sequence_id (4字节)
-                - packet_flag (1字节)
+                - packet_ctrl (1字节)
                 - body_wire_len (2字节)
                 - body_raw_len (2字节)
                 - command (2字节)
@@ -81,7 +81,7 @@ class RequestHeader(Stringable, Sizeable, abc.ABC):
             '<B I B H H H',
             self.frame_type,
             self.sequence_id,
-            self.packet_flag,
+            self.packet_ctrl,
             self.body_wire_len,
             self.body_raw_len,
             self.command.value & 0xFFFF
@@ -97,8 +97,8 @@ class ResponseHeader(Stringable, Sizeable, abc.ABC):
     """帧类型, u8"""
     sequence_id: int # u32
     """消息ID, u32"""
-    packet_flag: int # u8
-    """包类型/标志, u8"""
+    packet_ctrl: int # u8
+    """数据包控制位, u8"""
     command:    Command # u16
     """命令字, u16"""
     body_wire_len:   int # u16
@@ -110,7 +110,7 @@ class ResponseHeader(Stringable, Sizeable, abc.ABC):
         class_name = self.__class__.__name__
         return (
             f"{class_name}(magic_number: {self.magic_number}, frame_type: {self.frame_type}, sequence_id: {self.sequence_id}, "
-            f"packet_flag: {self.packet_flag}, command: {self.command}, body_wire_len: {self.body_wire_len}, "
+            f"packet_ctrl: {self.packet_ctrl}, command: {self.command}, body_wire_len: {self.body_wire_len}, "
             f"body_raw_len: {self.body_raw_len})"
         )
     
@@ -124,9 +124,9 @@ class ResponseHeader(Stringable, Sizeable, abc.ABC):
         Args:
             data: 协议头字节数据
         """
-        # 解析协议头格式：I1(4字节), frame_type(1字节), sequence_id(4字节), packet_flag(1字节), command(2字节), body_wire_len(2字节), body_raw_len(2字节)
-        self.magic_number, self.frame_type, self.sequence_id, self.packet_flag, cmd_value, self.body_wire_len, self.body_raw_len = struct.unpack('<I B I B H H H', data)
-        # - packet_flag (unsigned char): 1字节无符号整数
+        # 解析协议头格式：I1(4字节), frame_type(1字节), sequence_id(4字节), packet_ctrl(1字节), command(2字节), body_wire_len(2字节), body_raw_len(2字节)
+        self.magic_number, self.frame_type, self.sequence_id, self.packet_ctrl, cmd_value, self.body_wire_len, self.body_raw_len = struct.unpack('<I B I B H H H', data)
+        # - packet_ctrl (unsigned char): 1字节无符号整数
         # - command (unsigned short): 2字节无符号整数
         # - body_wire_len (unsigned short): 2字节无符号整数
         # - command (unsigned short): 2字节无符号整数
@@ -149,8 +149,8 @@ class BaseMessage(abc.ABC):
     
     用于处理消息头和消息体的解析和序列化。
     """
-    def __init__(self, command: Command, frame_type: int = FLAG_UNCOMPRESSED, packet_flag: int = 0x01):
-        self.request_header = RequestHeader(command=command, frame_type=frame_type, packet_flag=packet_flag)
+    def __init__(self, command: Command, frame_type: int = FLAG_UNCOMPRESSED, packet_ctrl: int = 0x01):
+        self.request_header = RequestHeader(command=command, frame_type=frame_type, packet_ctrl=packet_ctrl)
         self.response_header = ResponseHeader()
         self.reply = None
     
@@ -234,7 +234,7 @@ def process_level1_new(conn_handle: ConnectionHandle, msg: BaseMessage) -> None:
     # hdr = _recv_exact(conn_handle, 16)
     #
     # # 解析头部: <I B I B H H H> => u32, u8, u32, u8, u16, u16, u16
-    # i1, frame_type, seq_id, packet_flag, method, body_wire_len, body_raw_len = struct.unpack('<IBIBHHH', hdr)
+    # i1, frame_type, seq_id, packet_ctrl, method, body_wire_len, body_raw_len = struct.unpack('<IBIBHHH', hdr)
     #
     # if body_wire_len == 0:
     #     return

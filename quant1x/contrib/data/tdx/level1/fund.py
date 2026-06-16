@@ -82,7 +82,7 @@ class HistoryFundFlowDetails_invalid(protocol.BaseMessage):
                  ):
         super().__init__(Command.STD_SECURITY_BARS, flags=1)
         logger.warning(f"请求和响应正常, 无数据返回")
-        self.request_header.packet_flag = 0x08
+        self.request_header.packet_ctrl = 0x08
         self._market = helpers.exchange_to_market(exchange)
         self._ticker = ticker
         #self._date = date
@@ -170,7 +170,7 @@ class HistoryFundFlowDetails(protocol.BaseMessage):
                  ):
         super().__init__(Command.STD_FUND_FLOW, flags=2)
         logger.warning(f"请求和响应正常, 无数据返回")
-        self.request_header.packet_flag = 0x01
+        self.request_header.packet_ctrl = 0x01
         self._market = helpers.exchange_to_market(exchange)
         self._ticker = ticker
 
