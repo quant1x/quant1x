@@ -31,11 +31,11 @@ func GetFilenameModifiedTime(fname string) (*Timestamp, error) {
 //
 // 返回值:
 //
-//	bool - 如果文件需要更新则返回true，否则返回false
+//	bool - 如果文件需要更新则返回true, 否则返回false
 //
 // 注意:
 //
-//	如果获取文件修改时间失败，默认返回true
+//	如果获取文件修改时间失败, 默认返回true
 func ShouldInitializeFile(fname string) bool {
 	modTime, err := GetFilenameModifiedTime(fname)
 	if err != nil {
@@ -52,11 +52,11 @@ func ShouldInitializeFile(fname string) bool {
 //
 // 返回值:
 //
-//	bool - 如果文件需要更新则返回true，否则返回false
+//	bool - 如果文件需要更新则返回true, 否则返回false
 //
 // 注意:
 //
-//	如果获取文件修改时间失败，默认返回true
+//	如果获取文件修改时间失败, 默认返回true
 func ShouldUpdateFile(fname string) bool {
 	modTime, err := GetFilenameModifiedTime(fname)
 	if err != nil {

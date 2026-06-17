@@ -34,7 +34,7 @@ namespace cache {
             try {
                 mpb::show_console_cursor(true);
             } catch (...) {
-                // 忽略任何异常，析构函数必须 noexcept
+                // 忽略任何异常, 析构函数必须 noexcept
             }
         }
     };
@@ -50,7 +50,7 @@ namespace cache {
                     spdlog::default_logger()->flush();
                 }
             } catch (...) {
-                // 忽略所有异常，析构必须 noexcept
+                // 忽略所有异常, 析构必须 noexcept
             }
         }
     };
@@ -103,7 +103,7 @@ namespace cache {
     int update_with_adapters(const std::vector<data::DataAdapter*> &adapters, const meta::Timestamp& feature_date) {
         auto const & config = config::global_config();
         auto const & cfg_concurrency = config.data.concurrency;
-        // 隐藏终端光标以获得更流畅的显示效果，使用 RAII 确保恢复
+        // 隐藏终端光标以获得更流畅的显示效果, 使用 RAII 确保恢复
         ConsoleCursorGuard cursor_guard;
         // 确保在函数退出时尽力 flush 日志到磁盘
         LogFlushGuard log_flush_guard;
@@ -137,7 +137,7 @@ namespace cache {
         bars[0].set_progress(0);
 
         auto first = adapters[0]->Key();
-        const auto allCodes = tdx::instruments::GetCodeList();
+        const auto allCodes = tdx::instruments::get_code_list();
         mpb::ProgressBar barCodes(
             mpb::option::BarWidth{50},
             mpb::option::ForegroundColor{mpb::Color::yellow},
@@ -153,7 +153,7 @@ namespace cache {
         // 缓存日期
         auto cache_date = meta::next_trading_day(feature_date);
 
-        // 线程池大小，根据CPU核心数调整
+        // 线程池大小, 根据CPU核心数调整
         //const size_t num_threads = std::min<size_t>(std::thread::hardware_concurrency(), 5);
         //const size_t num_cpus = getPhysicalCPUCount();
         // 默认并发数, 按照系统默认值预先设置
@@ -212,7 +212,7 @@ namespace cache {
                         featureAdapter->init(feature_date);
                         cache_filename = featureAdapter->Filename(cache_date);
                         is_feature_adapter = true;
-                        spdlog::info("特征适配器[{}]初始化完成，缓存文件: {}", featureAdapter->Name(), cache_filename);
+                        spdlog::info("特征适配器[{}]初始化完成, 缓存文件: {}", featureAdapter->Name(), cache_filename);
                     } catch (const std::exception &e) {
                         spdlog::error("feature adapter init/filename failed for plugin {}: {}", module_name, e.what());
                         is_feature_adapter = false;
@@ -279,7 +279,7 @@ namespace cache {
                 }
             };
 
-            // 创建任务队列并使用受限数量的工作线程执行（避免创建过多线程）
+            // 创建任务队列并使用受限数量的工作线程执行(避免创建过多线程)
             size_t batch_size = (allCodes.size() + num_threads - 1) / num_threads;
 
             // 限制工作线程数为 num_threads 与默认并发最大值的较小者
@@ -312,7 +312,7 @@ namespace cache {
                             std::unique_lock<std::mutex> lk(tasks_mutex);
                             tasks_cv.wait(lk, [&] { return !tasks.empty() || done_adding; });
                             if (tasks.empty()) {
-                                // 没有任务且已经结束添加，则退出
+                                // 没有任务且已经结束添加, 则退出
                                 if (done_adding) break;
                                 else continue;
                             }
@@ -355,7 +355,7 @@ namespace cache {
                                         std::make_move_iterator(result.data.end()));
                     }
 
-                    // 2. 按原始代码顺序排序（缺失键视为末尾）
+                    // 2. 按原始代码顺序排序(缺失键视为末尾)
                     std::unordered_map<std::string, size_t> code_order;
                     for (size_t i = 0; i < allCodes.size(); ++i) {
                         code_order[allCodes[i]] = i;

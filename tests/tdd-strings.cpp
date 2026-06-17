@@ -139,8 +139,8 @@ TEST_CASE("to_lower function works correctly", "[to_lower]") {
     }
 
 //    SECTION("Unicode UTF-8 safe (ASCII only in this function)") {
-//        // 注意：此 to_lower 只支持 ASCII 字符
+//        // 注意: 此 to_lower 只支持 ASCII 字符
 //        REQUIRE(strings::to_lower("ÄÖÜ") == "äöü");      // 如果你的系统 locale 是 UTF-8 可能不生效
-//        REQUIRE(strings::to_lower("Élève") == "élève");  // 同上，只转换 ASCII 大写字母
+//        REQUIRE(strings::to_lower("Élève") == "élève");  // 同上, 只转换 ASCII 大写字母
 //    }
 }

@@ -94,7 +94,7 @@ impl SecurityBarsRequest {
         Self::with_frequency_and_is_index(security_code, category, start, count, frequency, false)
     }
 
-    /// 完整构造，对齐 Python `__init__`
+    /// 完整构造, 对齐 Python `__init__`
     pub fn with_frequency_and_is_index(
         security_code: &str,
         category: u16,
@@ -199,7 +199,7 @@ impl BaseMessage for SecurityBarsRequest {
                 e.minute = mm;
             } else {
                 // 对应 Python: zipday = struct.unpack('<I', ...)[0]; year = int(zipday/10000); month = int((zipday%10000)/100); day = int(zipday%100)
-                // Python 非分钟线不调用 get_datetime_from_uint32，直接算
+                // Python 非分钟线不调用 get_datetime_from_uint32, 直接算
                 let zipday = bs.get_u32()?;
                 let y = (zipday / 10000) as i32;
                 let m = ((zipday % 10000) / 100) as i32;
@@ -281,7 +281,7 @@ pub struct SecurityBar {
     /// 复权次数, 对应 Python `adjustment_count`
     pub adjustment_count: u32,
 
-    // ---- 以下为辅助字段，Python Bar 中没有 ----
+    // ---- 以下为辅助字段, Python Bar 中没有 ----
     pub year: i32,
     pub month: i32,
     pub day: i32,
@@ -312,8 +312,8 @@ impl SecurityBar {
     }
 }
 
-/// SecurityBarsResponse 已合并到 SecurityBarsRequest 中。
-/// 保留类型别名以兼容旧代码。
+/// SecurityBarsResponse 已合并到 SecurityBarsRequest 中. 
+/// 保留类型别名以兼容旧代码. 
 pub type SecurityBarsResponse = SecurityBarsRequest;
 
 #[cfg(test)]

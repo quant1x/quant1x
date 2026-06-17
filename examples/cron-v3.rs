@@ -6,7 +6,7 @@ use tokio_cron_scheduler::{Job, JobScheduler};
 async fn main() {
     let sched = JobScheduler::new().await.unwrap();
 
-    // 添加一个每10秒执行的任务（cron 表达式）
+    // 添加一个每10秒执行的任务(cron 表达式)
     sched
         .add(
             Job::new("0/10 * * * * *", |_uuid, _l| {

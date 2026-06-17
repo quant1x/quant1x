@@ -194,7 +194,7 @@ static std::unique_ptr<Top10ShareHolder> checkoutShareHolder(const std::string &
         auto [top10Capital, freeCapital, capitalChanged, increaseRatio, reductionRatio] =
             ComputeFreeCapital(list, capital);
 
-        // 如果自由流通股本为负，使用总股本重新计算
+        // 如果自由流通股本为负, 使用总股本重新计算
         if (freeCapital < 0) {
             std::tie(top10Capital, freeCapital, capitalChanged, increaseRatio, reductionRatio) =
                 ComputeFreeCapital(list, totalCapital);

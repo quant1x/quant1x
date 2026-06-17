@@ -22,16 +22,16 @@ def get_filename_modified_time(fname: str) -> Timestamp:
         dt = datetime.fromtimestamp(info.st_mtime)
         return Timestamp.from_datetime(dt)
     except OSError:
-        # 可能因权限、竞争条件（文件被删除）等导致 stat 失败
+        # 可能因权限, 竞争条件(文件被删除)等导致 stat 失败
         return Timestamp.zero()
 
 
 MaxCachedDaysToDropOnIncrementalUpdate = 1
 """
-    是增量更新缓存清理的最大天数。
-    该机制确保在 A 股除权除息日等场景下，当日数据能被正确覆盖。
-    由于 A 股的复权处理以交易日为单位，且同一天内可能多次更新数据，
-    因此需先删除缓存中已有的当日记录，再插入最新增量数据。
+    是增量更新缓存清理的最大天数. 
+    该机制确保在 A 股除权除息日等场景下, 当日数据能被正确覆盖. 
+    由于 A 股的复权处理以交易日为单位, 且同一天内可能多次更新数据, 
+    因此需先删除缓存中已有的当日记录, 再插入最新增量数据. 
 """
 
 _default_bar_period = 'D'
@@ -69,7 +69,7 @@ def convert_klines_trading(klines, period='D'):
         'Y' - 年线
 
     Returns:
-    pd.DataFrame: 转换后的K线数据，date字段表示实际交易日
+    pd.DataFrame: 转换后的K线数据, date字段表示实际交易日
     """
     if klines.empty:
         return klines.copy()
@@ -86,7 +86,7 @@ def convert_klines_trading(klines, period='D'):
     # 根据周期分组
     groups = df['date'].dt.to_period(period)
 
-    # 聚合数据，date字段保留实际的交易日
+    # 聚合数据, date字段保留实际的交易日
     result = df.groupby(groups).agg({
         'date': 'last',  # 实际最后一个交易日
         'open': 'first',

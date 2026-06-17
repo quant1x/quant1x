@@ -4,7 +4,7 @@
 
 """
 Dataclass 序列化与反射工具
-提供 CSV 与 dataclass 实例列表之间的双向转换，以及字段元信息提取。
+提供 CSV 与 dataclass 实例列表之间的双向转换, 以及字段元信息提取. 
 """
 from typing import Type, List, Dict,  get_type_hints
 from dataclasses import fields, is_dataclass

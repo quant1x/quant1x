@@ -25,14 +25,14 @@ func (d *DataBarRaw) Key() string     { return "day_raw" }
 func (d *DataBarRaw) Name() string    { return "日K线RAW" }
 func (d *DataBarRaw) Usage() string   { return "日K线RAW" }
 
-// Print 实现 DataAdapter.Print（可变参数日期）
+// Print 实现 DataAdapter.Print(可变参数日期)
 func (d *DataBarRaw) Print(code exchange.InstrumentInfo, dates ...exchange.Timestamp) {
 	_ = code
 	_ = dates
 }
 
-// Update 对应 C++ DataBarRaw::Update 的行为：读取本地缓存、确定时间窗口、分页拉取 level1 数据、
-// 反转与合并结果，并写回缓存文件。
+// Update 对应 C++ DataBarRaw::Update 的行为: 读取本地缓存, 确定时间窗口, 分页拉取 level1 数据,
+// 反转与合并结果, 并写回缓存文件.
 func (d *DataBarRaw) Update(code exchange.InstrumentInfo, _date exchange.Timestamp) {
 	// 1. 确定缓存文件并读取本地缓存
 	cacheFilename := config.GetKlineFilename(code.Symbol(), false)
@@ -42,7 +42,7 @@ func (d *DataBarRaw) Update(code exchange.InstrumentInfo, _date exchange.Timesta
 	klinesLength := len(cacheKLines)
 	klinesOffsetDays := schema.MaxCachedDaysToDropOnIncrementalUpdate
 
-	// 默认起始日期（使用 datasets.MarketFirstDate，与 C++ 的 market_first_date 等价）
+	// 默认起始日期(使用 datasets.MarketFirstDate, 与 C++ 的 market_first_date 等价)
 	currentStartDate := exchange.GetFirstMarketDate(code.Exchange)
 	if klinesLength > 0 {
 		if klinesOffsetDays > klinesLength {
@@ -138,7 +138,7 @@ func init() {
 	}
 }
 
-// BarRaw 对应 C++ 中的 data::BarRaw，用于表示原始日线数据。
+// BarRaw 对应 C++ 中的 data::BarRaw, 用于表示原始日线数据.
 type BarRaw struct {
 	Date     string  `name:"日期" csv:"date"`        // 日期 YYYY-MM-DD
 	Open     float64 `name:"开盘价" csv:"open"`       // 开盘价
@@ -154,7 +154,7 @@ type BarRaw struct {
 
 //const maxBarRawLookbackDays = 1
 
-// saveBarRaw 将原始 K 线写入 CSV 文件（包含表头）。
+// saveBarRaw 将原始 K 线写入 CSV 文件(包含表头).
 func saveBarRaw(filename string, values []BarRaw) error {
 	f, err := os.Create(filename)
 	if err != nil {
@@ -188,7 +188,7 @@ func saveBarRaw(filename string, values []BarRaw) error {
 	return nil
 }
 
-// ReadBarRawFromCSV 从 CSV 文件中读取 BarRaw 条目；解析错误会返回错误。
+// ReadBarRawFromCSV 从 CSV 文件中读取 BarRaw 条目；解析错误会返回错误.
 func ReadBarRawFromCSV(filename string) ([]BarRaw, error) {
 	f, err := os.Open(filename)
 	if err != nil {
@@ -236,7 +236,7 @@ func ReadBarRawFromCSV(filename string) ([]BarRaw, error) {
 	return out, nil
 }
 
-// LoadBarRaw 从缓存文件加载原始K线数据。
+// LoadBarRaw 从缓存文件加载原始K线数据.
 func LoadBarRaw(code string) ([]BarRaw, error) {
 	filename := config.GetKlineFilename(code, false)
 	logger.Debugf("[data::BarRaw] kline file: %s", filename)

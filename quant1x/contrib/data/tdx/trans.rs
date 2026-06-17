@@ -1,8 +1,8 @@
 // Copyright (c) Quant1X <wangfengxy@sina.cn>.
 // Licensed under the MIT License.
 //
-// trans — 逐笔交易数据缓存读取，与 Python contrib/data/tdx/trans.py 对齐
-// 作为 datasource 的本地代理，仅从本地缓存CSV文件读取数据，不依赖 level1 协议
+// trans — 逐笔交易数据缓存读取, 与 Python contrib/data/tdx/trans.py 对齐
+// 作为 datasource 的本地代理, 仅从本地缓存CSV文件读取数据, 不依赖 level1 协议
 
 use crate::data::meta::instrument::{Instrument, InstrumentType};
 use crate::data::meta::Timestamp;
@@ -34,7 +34,7 @@ fn get_historical_trade_filename(inst: &Instrument, date_str: &str) -> String {
 }
 
 /// 从CSV缓存文件加载逐笔交易数据
-/// 与 Python load_transaction_data_from_cache 对齐（仅缓存读取部分）
+/// 与 Python load_transaction_data_from_cache 对齐(仅缓存读取部分)
 fn load_transaction_data_from_cache(inst: &Instrument, date_str: &str) -> Vec<Transaction> {
     let filename = get_historical_trade_filename(inst, date_str);
 

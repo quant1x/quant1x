@@ -24,11 +24,11 @@ func (r FinanceRequest) Serialize() []byte {
 	// 写入代码数量
 	count := uint16(len(r.Codes))
 	_ = binary.Write(buf, binary.LittleEndian, count)
-	// 遍历 Codes 列表，写入每个代码
+	// 遍历 Codes 列表, 写入每个代码
 	for _, code := range r.Codes {
 		// 写入市场代码
 		_ = buf.WriteByte(uint8(exchangeToMarketId(code.Exchange)))
-		// 写入证券代码，固定6字节
+		// 写入证券代码, 固定6字节
 		sym := std.String2Bytes(code.Ticker)
 		if len(sym) > 6 {
 			sym = sym[:6]
@@ -45,7 +45,7 @@ func (r FinanceRequest) String() string {
 	return fmt.Sprintf("FinanceRequest{Count:%d,Codes:%s}", count, instrumentsToString(r.Codes))
 }
 
-// RawFinanceInfo 对应二进制原始结构（按 finance_info.h 定义）
+// RawFinanceInfo 对应二进制原始结构(按 finance_info.h 定义)
 type RawFinanceInfo struct {
 	Market             uint8
 	Code               [6]byte
@@ -246,7 +246,7 @@ type FinanceInfo struct {
 
 // IsDelisting 判断该金融信息是否表示股票已退市
 //
-//	当IPO日期、总股本和流通股本均为0时返回true
+//	当IPO日期, 总股本和流通股本均为0时返回true
 func (f FinanceInfo) IsDelisting() bool {
 	return f.IPODate == 0 && f.ZongGuBen == 0 && f.LiuTongGuBen == 0
 }

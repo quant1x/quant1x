@@ -49,9 +49,9 @@ namespace level1 {
         f32 WeiFenLiRun;          // 未分配利润
         f32 BaoLiu1;              // 保留字段1
         f32 BaoLiu2;              // 保留字段2
-        // char BaoLiu3[7];         // 保留字段3（可选）
+        // char BaoLiu3[7];         // 保留字段3(可选)
 
-        // 解码方法（成员方法）
+        // 解码方法(成员方法)
         void decode(BinaryStream &bs) {
 
             // 1. 读取 Market

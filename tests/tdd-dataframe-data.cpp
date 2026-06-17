@@ -376,7 +376,7 @@ TEST_CASE("csv2-load-csv", "[dataframe]") {
     }
 }
 
-//// 正确声明DataFrame：第一个模板参数是索引类型，第二个是列名类型
+//// 正确声明DataFrame: 第一个模板参数是索引类型, 第二个是列名类型
 //using MyDataFrame = hmdf::DataFrame<unsigned, std::string>;  // unsigned作为索引类型
 //
 //MyDataFrame load_csv_to_dataframe(const std::string &filename) {
@@ -398,7 +398,7 @@ TEST_CASE("csv2-load-csv", "[dataframe]") {
 //        std::vector<std::string> dates;
 //        std::vector<double> opens, closes;
 //
-//        // 填充数据（修改后的迭代器用法）
+//        // 填充数据(修改后的迭代器用法)
 //        for (const auto &row : csv) {
 //            auto it = row.begin();
 //            // 读取日期列
@@ -419,7 +419,7 @@ TEST_CASE("csv2-load-csv", "[dataframe]") {
 //            closes.push_back(close);
 //        }
 //
-//        // 加载到DataFrame（使用新API）
+//        // 加载到DataFrame(使用新API)
 //        df.load_data(
 //            MyDataFrame::gen_icolumn_index(dates.size()),  // 生成索引
 //            std::make_pair("date", dates),
@@ -448,10 +448,10 @@ TEST_CASE("csv2-load-csv", "[dataframe]") {
 //    try {
 //        // 创建ReadParams对象并设置参数
 //        ReadParams params;
-//        params.skip_first_line = true;  // 跳过第一行（通常是标题行）
+//        params.skip_first_line = true;  // 跳过第一行(通常是标题行)
 //        params.columns_only = true;    // 读取索引列和数据列
 //
-//        // 正确方式1：使用文件流读取
+//        // 正确方式1: 使用文件流读取
 //        //std::ifstream ifs(cache_filename);
 //        //df.read(ifs, io_format::csv2);
 //        df.read(cache_filename.c_str(),
@@ -460,7 +460,7 @@ TEST_CASE("csv2-load-csv", "[dataframe]") {
 //
 //        auto c1 = df.get_column<double>("close");
 //
-////        // 或者正确方式2：使用文件路径（需要确保路径正确）
+////        // 或者正确方式2: 使用文件路径(需要确保路径正确)
 ////        // df.read("data.csv", io_format::csv2);
 ////
 ////        // 获取列名 - 使用正确的API
@@ -481,14 +481,14 @@ TEST_CASE("csv2-load-csv", "[dataframe]") {
 #include <boost/pfr.hpp>
 #include <unordered_map>
 
-// FNV-1a哈希（直接处理大小写）
+// FNV-1a哈希(直接处理大小写)
 struct FNV1aCaseInsensitiveHash {
     size_t operator()(const std::string& key) const noexcept {
         constexpr size_t FNV_offset_basis = 2166136261U;
         constexpr size_t FNV_prime = 16777619U;
 
         size_t hash = FNV_offset_basis;
-        for (unsigned char c : key) {  // 注意：必须用unsigned char
+        for (unsigned char c : key) {  // 注意: 必须用unsigned char
             hash ^= std::tolower(c);
             hash *= FNV_prime;
         }
@@ -607,14 +607,14 @@ TEST_CASE("struct-load-csv", "[dataframe]") {
     std::string code = "sh603338";
     std::string cache_filename = config::get_kline_filename(code);
     std::cout << "code=" << code << ", cache=" << cache_filename << std::endl;
-    // b. 初始化mapper（全局唯一）
+    // b. 初始化mapper(全局唯一)
     using Mapper = AutoCSVMapper<data::KLine>;
     std::unordered_map<std::string, size_t> global_col_index;
     bool is_first = true;
 
     csv2::Reader<csv2::delimiter<','>> reader;
     reader.mmap(cache_filename);
-    // c. 建立列名索引（只需首次）
+    // c. 建立列名索引(只需首次)
     if (is_first) {
         size_t idx = 0;
         for (const auto& cell : reader.header()) {
@@ -639,7 +639,7 @@ TEST_CASE("struct-load-csv", "[dataframe]") {
 #include <string>
 #include <unordered_map>
 
-// 类型转换工具（保持不变）
+// 类型转换工具(保持不变)
 template<typename T>
 T convert_from_string(const std::string& str) {
     if constexpr (std::is_same_v<T, int>) return std::stoi(str);
@@ -703,7 +703,7 @@ struct csvToStructMapperWithLine {
     }
 };
 
-// CSV行转换（保持不变）
+// CSV行转换(保持不变)
 std::vector<std::string> csv_row_to_vector(const auto& row) {
     std::vector<std::string> cells;
     for (auto it = row.begin(); it != row.end(); ++it) {
@@ -732,7 +732,7 @@ TEST_CASE("rows-load-csv", "[dataframe]") {
         headers.push_back(name);
     }
 
-    // 3. 构建映射关系（只需一次）
+    // 3. 构建映射关系(只需一次)
     auto mapper = csvToStructMapperWithLine<data::KLine>::build(headers);
 
     // 4. 处理数据行
@@ -743,7 +743,7 @@ TEST_CASE("rows-load-csv", "[dataframe]") {
         dataset.push_back(row);
     }
 
-    // 5. 使用数据（示例）
+    // 5. 使用数据(示例)
     for (const auto& data : dataset) {
         printf("date: %s, Price: %.2f, Volume: %f, Active: %d\n",
                data.date.c_str(), data.close, data.volume, data.adjustment_count);
@@ -805,7 +805,7 @@ struct CsvStructMapper {
     // 初始化列存储
     static void initialize_columns(ColumnMap& columns, const std::vector<std::string>& headers) {
         for (const auto& header : headers) {
-            // 默认初始化为空的string列，后续会根据实际类型调整
+            // 默认初始化为空的string列, 后续会根据实际类型调整
             columns[header] = std::vector<std::string>{};
         }
     }
@@ -823,13 +823,13 @@ struct CsvStructMapper {
             size_t col_idx = it->second;
             mapper.required_columns.push_back(col_idx);
 
-            // 字段处理器（行式解析）
+            // 字段处理器(行式解析)
             mapper.field_handlers[col_idx] = [](Struct& obj, const std::string& value) {
                 auto& field = boost::pfr::get<Idx>(obj);
                 field = convert_from_string<std::decay_t<decltype(field)>>(value);
             };
 
-            // 列追加器（列式存储）
+            // 列追加器(列式存储)
             mapper.column_appenders[col_idx] = [field_name_str](
                 ColumnMap& columns,
                 const Struct& obj,
@@ -842,7 +842,7 @@ struct CsvStructMapper {
 
                 if constexpr (std::is_same_v<FieldType, int>) {
                     if (!std::holds_alternative<std::vector<int>>(column)) {
-                        // 如果列类型不匹配，重新初始化
+                        // 如果列类型不匹配, 重新初始化
                         column = std::vector<int>{};
                     }
                     std::get<std::vector<int>>(column).push_back(field);

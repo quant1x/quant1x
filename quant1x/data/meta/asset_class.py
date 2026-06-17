@@ -9,19 +9,19 @@ from typing import Set
 class AssetClass(Enum):
     """
     证券资产类别标准枚举
-    设计原则：
+    设计原则: 
     1. 与通达信 category 字段精确映射
     2. 符合 ISO 15022/FIX Protocol 国际标准
-    3. 支持中国特有资产类型（如股转系统）
-    4. 区分交易资产与非交易资产（指标/指数）
+    3. 支持中国特有资产类型(如股转系统)
+    4. 区分交易资产与非交易资产(指标/指数)
     """
     
     # === 权益类 (Equity) ===
-    EQUITY = "EQUITY"           # 普通股票（A股/港股/美股等）
+    EQUITY = "EQUITY"           # 普通股票(A股/港股/美股等)
     """股票"""
     EQUITY_PREFERRED = "PREFERRED"     # 优先股
     """优先股"""
-    EQUITY_DEPOSITORY_RECEIPT = "DEPOSITORY_RECEIPT"  # 存托凭证（CDR/ADR）
+    EQUITY_DEPOSITORY_RECEIPT = "DEPOSITORY_RECEIPT"  # 存托凭证(CDR/ADR)
     """存托凭证"""
     EQUITY_GEM = "GEN" # 创业板
     """创业板"""
@@ -29,15 +29,15 @@ class AssetClass(Enum):
     """跨市场合约"""
     
     # === 固定收益类 (Fixed Income) ===
-    BOND = "BOND"               # 债券（国债/企业债/可转债）
+    BOND = "BOND"               # 债券(国债/企业债/可转债)
     """债券"""
-    TREASURY = "TREASURY"       # 国债（细分）
+    TREASURY = "TREASURY"       # 国债(细分)
     """国债"""
     CONVERTIBLE_BOND = "CONVERTIBLE_BOND"  # 可转债
     """可转债"""
     
     # === 基金类 (Fund) ===
-    MUTUAL_FUND = "MUTUAL_FUND" # 公募基金（含股票/债券/混合型）
+    MUTUAL_FUND = "MUTUAL_FUND" # 公募基金(含股票/债券/混合型)
     """公募基金"""
     MONEY_MARKET_FUND = "MONEY_MARKET_FUND"  # 货币基金
     """货币基金"""
@@ -45,42 +45,42 @@ class AssetClass(Enum):
     """交易所交易基金"""
     LOF = "LOF"                 # 上市开放式基金
     """上市开放式基金"""
-    PRIVATE_EQUITY = "PRIVATE_EQUITY"  # 私募基金（阳光私募/券商资管）
+    PRIVATE_EQUITY = "PRIVATE_EQUITY"  # 私募基金(阳光私募/券商资管)
     """私募基金"""
     
     # === 衍生品类 (Derivatives) ===
-    FUTURE = "FUTURE"           # 期货（商品/金融）
+    FUTURE = "FUTURE"           # 期货(商品/金融)
     """期货"""
-    OPTION = "OPTION"           # 期权（商品/股票/股指）
+    OPTION = "OPTION"           # 期权(商品/股票/股指)
     """期权"""
-    WARRANT = "WARRANT"         # 权证（港股特色）
+    WARRANT = "WARRANT"         # 权证(港股特色)
     """权证"""
     SWAP = "SWAP"               # 互换
     """互换"""
     
     # === 商品与外汇 (Commodities & FX) ===
-    COMMODITY = "COMMODITY"     # 现货商品（黄金/白银等）
-    FX_SPOT = "FX_SPOT"         # 外汇即期（基本/交叉汇率）
+    COMMODITY = "COMMODITY"     # 现货商品(黄金/白银等)
+    FX_SPOT = "FX_SPOT"         # 外汇即期(基本/交叉汇率)
     FX_FORWARD = "FX_FORWARD"   # 外汇远期
     
     # === 指数类 (Index) - 非交易资产 ===
-    INDEX = "INDEX"             # 价格指数（中证/国证/国际指数）
-    BENCHMARK = "BENCHMARK"     # 基准指数（静态成分股列表）
+    INDEX = "INDEX"             # 价格指数(中证/国证/国际指数)
+    BENCHMARK = "BENCHMARK"     # 基准指数(静态成分股列表)
     
     # === 另类资产 (Alternative) ===
-    OTC = "OTC"                 # 场外交易品种（协议转让）
+    OTC = "OTC"                 # 场外交易品种(协议转让)
     REPO = "REPO"               # 回购
     
     # === 非交易资产 (Non-Tradable) ===
     MACRO_INDICATOR = "MACRO_INDICATOR"  # 宏观经济指标
-    STATISTICS = "STATISTICS"   # 统计数据（如大宗连续）
+    STATISTICS = "STATISTICS"   # 统计数据(如大宗连续)
     
     # === 中国特有类别 ===
-    NEEQ = "NEEQ"             # 新三板/股转系统（National Equities Exchange and Quotations）
+    NEEQ = "NEEQ"             # 新三板/股转系统(National Equities Exchange and Quotations)
     BOND_PRE_ISSUE = "BOND_PRE_ISSUE"  # 国债预发行
     
     # === 虚拟合约 (Synthetic) ===
-    SYNTHETIC = "SYNTHETIC"     # 主力合约/连续合约（系统合成）
+    SYNTHETIC = "SYNTHETIC"     # 主力合约/连续合约(系统合成)
     
     # === 其他类别 ===
     ALL = "ALL"             # 全部, 所有资产类别, 非特殊需要不适用

@@ -217,7 +217,7 @@ namespace level1 {
     /**
      * BaseMessage — 消息基类 (对齐 Python protocol.BaseMessage)
      *
-     * 用于处理消息头和消息体的解析和序列化。
+     * 用于处理消息头和消息体的解析和序列化. 
      * Python 参考: quant1x/contrib/data/tdx/protocol.py BaseMessage
      */
     template <typename Derived>

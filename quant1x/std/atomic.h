@@ -10,9 +10,9 @@ namespace base {
     /**
      * 原子共享指针封装类
      *
-     * 用于兼容 C++20 的 std::atomic<std::shared_ptr<T>> 和旧标准的 std::atomic_load/store。
-     * 在 C++20 中，std::atomic<std::shared_ptr<T>> 提供了更高效和安全的实现。
-     * 在旧标准中，使用全局函数 std::atomic_load/store 操作 std::shared_ptr。
+     * 用于兼容 C++20 的 std::atomic<std::shared_ptr<T>> 和旧标准的 std::atomic_load/store. 
+     * 在 C++20 中, std::atomic<std::shared_ptr<T>> 提供了更高效和安全的实现. 
+     * 在旧标准中, 使用全局函数 std::atomic_load/store 操作 std::shared_ptr. 
      */
     template <typename T>
     class atomic_share_ptr {

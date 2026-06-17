@@ -11,7 +11,7 @@ BLOCK_CHUNKS_SIZE = 0x7530
 
 
 class BlockInfo(protocol.BaseMessage):
-    """板块数据（合并Request和Response）"""
+    """板块数据(合并Request和Response)"""
     def __init__(self, filename: str, offset: int):
         super().__init__(Command.STD_BLOCK_DATA)
         self._filename = filename

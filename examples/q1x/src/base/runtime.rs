@@ -29,13 +29,13 @@ fn global_signal_init() {
     unsafe {
         low_level::register(SIGTERM, move || {
             r_term.store(false, Ordering::SeqCst);
-            info!("捕获到 SIGTERM（系统重启/关闭）");
+            info!("捕获到 SIGTERM(系统重启/关闭)");
         }).unwrap();
 
         // 注册 SIGINT 处理
         low_level::register(SIGINT, move || {
             r_int.store(false, Ordering::SeqCst);
-            info!("捕获到 SIGINT（Ctrl+C）");
+            info!("捕获到 SIGINT(Ctrl+C)");
         }).unwrap();
     }
 }
@@ -67,7 +67,7 @@ pub fn wait_for_exit() {
         thread::sleep(Duration::from_secs(1));
     }
     let mut hooks = global_runtime_shutdown_hooks.lock().unwrap();
-    // 执行所有回调（FILO顺序）
+    // 执行所有回调(FILO顺序)
     while let Some(callback) = hooks.pop_front() {
         (callback)();
     }

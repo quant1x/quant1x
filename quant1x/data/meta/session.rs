@@ -239,7 +239,7 @@ impl TimeRange {
         let parts: Vec<&str> = if time_range.contains('~') {
             time_range.split('~').collect()
         } else if time_range.contains('-') {
-            // 注意: 时间本身包含 - 号，如 "09:30:00 - 11:30:00"
+            // 注意: 时间本身包含 - 号, 如 "09:30:00 - 11:30:00"
             // 找到中间的分隔符位置
             let mid = time_range.find(" - ").unwrap_or_else(|| {
                 // fallback: 在第二个时间格式的冒号后面找 -
@@ -611,19 +611,19 @@ pub fn init_cn_session() -> TradingSession {
 
 /// 初始化港股交易时段
 pub fn init_hk_session() -> TradingSession {
-    // 1. 输入买卖盘时段：9:00-9:15
+    // 1. 输入买卖盘时段: 9:00-9:15
     let tr1 = TimeRange::new("09:00:00 ~ 09:15:00", TS_AUCTION_ORDER_INPUT_PERIOD);
-    // 2. 不可取消时段：9:15-9:20
+    // 2. 不可取消时段: 9:15-9:20
     let tr2 = TimeRange::new("09:15:00 ~ 09:20:00", TS_AUCTION_NO_CANCELLATION_PERIOD);
-    // 3. 随机对盘时段：9:20-9:22
+    // 3. 随机对盘时段: 9:20-9:22
     let tr3 = TimeRange::new("09:20:00 ~ 09:22:00", TS_AUCTION_MATCHING_TO_OPENING);
-    // 4. 暂停时段：9:22-9:30
+    // 4. 暂停时段: 9:22-9:30
     let tr4 = TimeRange::new("09:22:00 ~ 09:30:00", TS_SUSPEND);
-    // 5. 连续交易：9:30-12:00
+    // 5. 连续交易: 9:30-12:00
     let tr5 = TimeRange::new("09:30:00 ~ 12:00:00", TS_CONTINUOUS_TRADING);
-    // 6. 午间休市：12:00-13:00
+    // 6. 午间休市: 12:00-13:00
     let tr6 = TimeRange::new("12:00:00 ~ 13:00:00", TS_SUSPEND);
-    // 7. 连续交易：13:00-16:00
+    // 7. 连续交易: 13:00-16:00
     let tr7 = TimeRange::new("13:00:00 ~ 16:00:00", TS_CONTINUOUS_TRADING);
     // 8. 收盘竞价 - 参考价定价阶段 (16:00-16:01)
     let tr8 = TimeRange::new("16:00:00 ~ 16:01:00", TS_AUCTION_ORDER_INPUT_PERIOD);

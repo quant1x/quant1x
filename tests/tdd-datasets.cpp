@@ -80,7 +80,7 @@ void benchmark() {
     // 生成随机字符串
     std::string randomString = generateRandomString(stringLength);
 
-    // 无分支实现：转大写
+    // 无分支实现: 转大写
     {
         std::string temp = randomString;
         auto start = std::chrono::high_resolution_clock::now();
@@ -92,7 +92,7 @@ void benchmark() {
         std::cout << "No-branch toUpper: " << elapsed.count() << " seconds\n";
     }
 
-    // 标准库实现：转大写
+    // 标准库实现: 转大写
     {
         auto start = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < iterations; ++i) {
@@ -103,7 +103,7 @@ void benchmark() {
         std::cout << "Standard toUpper: " << elapsed.count() << " seconds\n";
     }
 
-    // 无分支实现：转小写
+    // 无分支实现: 转小写
     {
         std::string temp = randomString;
         auto start = std::chrono::high_resolution_clock::now();
@@ -115,7 +115,7 @@ void benchmark() {
         std::cout << "No-branch toLower: " << elapsed.count() << " seconds\n";
     }
 
-    // 标准库实现：转小写
+    // 标准库实现: 转小写
     {
         auto start = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < iterations; ++i) {
@@ -138,7 +138,7 @@ TEST_CASE("calendar", "[exchange]") {
     // 当前交易日
     std::string a = meta::Timestamp::now;
     std::string b = meta::Timestamp::now.get().toString();
-    spdlog::debug("current_day={}， ts_today_init={}", a, b);
+    spdlog::debug("current_day={},  ts_today_init={}", a, b);
 
     spdlog::debug("------------------------------");
 
@@ -230,7 +230,7 @@ TEST_CASE("all-codes", "[exchange]") {
     spdlog::debug("------------------------------");
 //    auto xx = data::correct_security_code();
 //    (void)xx;
-    auto codes = instruments::GetCodeList();
+    auto codes = instruments::get_code_list();
     spdlog::debug("------------------------------");
     for(auto const &v : codes) {
         spdlog::debug(v);
@@ -282,9 +282,9 @@ TEST_CASE("trade-session", "[exchange]") {
     std::cout << session << std::endl;
 
     // 测试时间点
-    meta::Timestamp ts1 = 30000000; // 08:20:00（全天交易未开始）
-    meta::Timestamp ts2 = 36000000; // 10:00:00（交易时段内）
-    meta::Timestamp ts3 = 55000000; // 15:16:40（全天交易已结束）
+    meta::Timestamp ts1 = 30000000; // 08:20:00(全天交易未开始)
+    meta::Timestamp ts2 = 36000000; // 10:00:00(交易时段内)
+    meta::Timestamp ts3 = 55000000; // 15:16:40(全天交易已结束)
 
     // 测试是否在交易时段内
     std::cout << "ts1 在交易时段内: " << session.in(ts1) << std::endl;
@@ -461,7 +461,7 @@ std::vector<level1::SecurityBar> fetch(const std::string &code, u16 start, u16 c
 //             start += count;
 //         } while (start < total);
 //         (void)elementCount;
-//         // 4. 由于K线数据，每次获取数据是从后往前获取, 所以这里需要反转历史数据的切片
+//         // 4. 由于K线数据, 每次获取数据是从后往前获取, 所以这里需要反转历史数据的切片
 //         std::reverse(hs.begin(), hs.end());
 //         // 5. 调整成交量, 单位从手改成股, vol字段 * 100
 //         //std::vector<KLine> newKLines;
@@ -482,7 +482,7 @@ std::vector<level1::SecurityBar> fetch(const std::string &code, u16 start, u16 c
 //                 newKLines.add_amount(row.Amount); // 成交金额(元)
 //                 newKLines.add_up(row.UpCount); // 上涨家数 / 外盘
 //                 newKLines.add_down(row.DownCount); // 下跌家数 / 内盘
-//                 newKLines.add_adjustmentcount(0); // 新增：除权除息次数
+//                 newKLines.add_adjustmentcount(0); // 新增: 除权除息次数
 //             }
 //         }
 //         // 6. K线数据转换成KLine结构
@@ -559,7 +559,7 @@ TEST_CASE("simd-check", "[datasets]") {
     // 输出当前支持的 SIMD 架构
     std::cout << "Current architecture: " << xsimd::default_arch().name() << std::endl;
 
-    // 检查是否启用了 SIMD 加速（不是 GENERIC）
+    // 检查是否启用了 SIMD 加速(不是 GENERIC)
     if (std::string(xsimd::default_arch().name()) == "GENERIC") {
         std::cout << "No SIMD acceleration available!" << std::endl;
     } else {
@@ -597,7 +597,7 @@ TEST_CASE("xtensor-add", "[xtensor]") {
     xt::xarray<double> a = xt::ones<double>({1000});
     xt::xarray<double> b = xt::ones<double>({1000}) * 2.0;
 
-    // 所有元素相加，自动使用 xsimd SIMD 加速
+    // 所有元素相加, 自动使用 xsimd SIMD 加速
     auto c = a + b;
 
     std::cout << "First element: " << c(0) << std::endl;
@@ -633,10 +633,10 @@ void vector_add_avx_hand_crafted(const double* a, const double* b, double* res, 
     constexpr size_t vec_size = 4; // AVX: 4 doubles per batch (256-bit)
     const size_t aligned_N = (N / vec_size) * vec_size;
 
-    // 主体：使用 AVX 向量化加法
+    // 主体: 使用 AVX 向量化加法
     for (; i < aligned_N; i += vec_size)
     {
-        __m256d va = _mm256_loadu_pd(a + i);     // 安全加载（不对齐也兼容）
+        __m256d va = _mm256_loadu_pd(a + i);     // 安全加载(不对齐也兼容)
         __m256d vb = _mm256_loadu_pd(b + i);
         __m256d vres = _mm256_add_pd(va, vb);
         _mm256_storeu_pd(res + i, vres);         // 安全存储

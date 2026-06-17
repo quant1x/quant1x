@@ -63,9 +63,9 @@ inline std::vector<CodeRule> hkex_rules() {
         {Exchange::HKEX, RulePrefix("09850", "09999"), InstrumentType::Stock, "主板", ""},
 
         // 10000-29999, 衍生权证
-        {Exchange::HKEX, RulePrefix("10000", "10899"), InstrumentType::Warrant, "衍生权证", "相关资产在香港以外地区上市的衍生权证、一篮子权证及非标准型权证"},
+        {Exchange::HKEX, RulePrefix("10000", "10899"), InstrumentType::Warrant, "衍生权证", "相关资产在香港以外地区上市的衍生权证, 一篮子权证及非标准型权证"},
         {Exchange::HKEX, RulePrefix("10900", "10999"), InstrumentType::Warrant, "衍生权证", "相关资产在香港以外地区上市的衍生权证(以美元买卖)"},
-        {Exchange::HKEX, RulePrefix("11000", "11999"), InstrumentType::Warrant, "衍生权证", "相关资产在香港以外地区上市的衍生权证、一篮子权证及非标准型权证"},
+        {Exchange::HKEX, RulePrefix("11000", "11999"), InstrumentType::Warrant, "衍生权证", "相关资产在香港以外地区上市的衍生权证, 一篮子权证及非标准型权证"},
         {Exchange::HKEX, RulePrefix("12000", "29999"), InstrumentType::Warrant, "衍生权证", ""},
 
         // 30000-39999, 供沪深股通使用

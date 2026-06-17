@@ -6,7 +6,7 @@ import (
 	"math"
 )
 
-// 预定义错误（全局变量）
+// 预定义错误(全局变量)
 var (
 	ErrEmptyData          = errors.New("preprocessing: cannot fit on empty data")
 	ErrZeroFeatures       = errors.New("preprocessing: each sample must have at least one feature")
@@ -15,10 +15,10 @@ var (
 	ErrInconsistentDim    = errors.New("preprocessing: feature dimension mismatch during transform")
 )
 
-// StandardScaler 标准化器，将数据标准化为均值为0，标准差为1
+// StandardScaler 标准化器, 将数据标准化为均值为0, 标准差为1
 type StandardScaler struct {
-	Mean   []float64 // 均值（导出用于外部查看）
-	Std    []float64 // 标准差（导出用于外部查看）
+	Mean   []float64 // 均值(导出用于外部查看)
+	Std    []float64 // 标准差(导出用于外部查看)
 	n      int       // 样本数量
 	fitted bool      // 是否已完成拟合
 }
@@ -28,9 +28,9 @@ func NewStandardScaler() *StandardScaler {
 	return &StandardScaler{}
 }
 
-// Fit 使用Welford在线算法拟合数据，计算均值和标准差
+// Fit 使用Welford在线算法拟合数据, 计算均值和标准差
 //
-//	支持多维数据（每行是一个样本，每列是一个特征）
+//	支持多维数据(每行是一个样本, 每列是一个特征)
 func (s *StandardScaler) Fit(data [][]float64) (*StandardScaler, error) {
 	if len(data) == 0 {
 		return nil, ErrEmptyData
@@ -41,7 +41,7 @@ func (s *StandardScaler) Fit(data [][]float64) (*StandardScaler, error) {
 
 	nFeatures := len(data[0])
 	s.Mean = make([]float64, nFeatures)
-	m2 := make([]float64, nFeatures) // 二阶矩（用于计算方差）
+	m2 := make([]float64, nFeatures) // 二阶矩(用于计算方差)
 	s.n = 0
 
 	// Welford 在线算法
@@ -77,7 +77,7 @@ func (s *StandardScaler) Fit(data [][]float64) (*StandardScaler, error) {
 	return s, nil
 }
 
-// Transform 对数据进行标准化：z = (x - mean) / std
+// Transform 对数据进行标准化: z = (x - mean) / std
 func (s *StandardScaler) Transform(data [][]float64) ([][]float64, error) {
 	if !s.fitted {
 		return nil, ErrNotFitted

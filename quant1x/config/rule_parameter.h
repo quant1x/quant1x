@@ -94,7 +94,7 @@ namespace config {
         // 冗详模式
         bool Verbose = false;
 
-        // 构造函数，初始化NumberRange字段
+        // 构造函数, 初始化NumberRange字段
         RuleParameter() {
             SafetyScore = numeric::number_range<int>("80~");
             VolumeRatio = numeric::number_range<double>("0.382~2.800");
@@ -219,7 +219,7 @@ namespace YAML {
             encoding::safe_yaml::try_parse_field(node, "maximum_increase_within_10d", rule.MaximumIncreaseWithin10days);
             encoding::safe_yaml::try_parse_field(node, "max_reduce_amount", rule.MaxReduceAmount);
 
-            // 数值范围配置（逐个处理NumberRange字段）
+            // 数值范围配置(逐个处理NumberRange字段)
             if (node["safety_score"]) {
                 number_range<int> nr;
                 if (convert<number_range<int>>::decode(node["safety_score"], nr)) {

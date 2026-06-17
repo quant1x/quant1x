@@ -18,7 +18,7 @@ def should_initialize_file(fname: str, exchange: Exchange = Exchange.SSE) -> boo
         bool: 如果文件不存在或需要重新初始化则返回True, 否则返回False
     
     Raises:
-        OSError: 如果文件访问出现错误（函数内部已处理, 但调用方可能需要知道）
+        OSError: 如果文件访问出现错误(函数内部已处理, 但调用方可能需要知道)
     """
     try:
         mod_time = cache.get_filename_modified_time(fname)

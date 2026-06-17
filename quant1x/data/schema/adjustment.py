@@ -10,14 +10,14 @@ from ..meta.timestamp import Timestamp
 
 class XdxrCategory(Enum):
     EX_DIVIDEND = 1                       # 除权除息
-    BONUS_SHARES_LISTING = 2              # 送股上市（无偿）
-    RESTRICTED_SHARES_LISTING = 3         # 非流通股上市（受限股解禁）
+    BONUS_SHARES_LISTING = 2              # 送股上市(无偿)
+    RESTRICTED_SHARES_LISTING = 3         # 非流通股上市(受限股解禁)
     UNSPECIFIED_CAPITAL_ADJUSTMENT = 4    # 未知股本变动
-    GENERAL_CAPITAL_ADJUSTMENT = 5        # 股本变化（保留，但慎用）
+    GENERAL_CAPITAL_ADJUSTMENT = 5        # 股本变化(保留, 但慎用)
     NEW_SHARE_ISSUANCE = 6                # 增发新股
     SHARE_REPURCHASE = 7                  # 股份回购
     NEW_SHARES_LISTING = 8                # 增发新股上市
-    TRANSFERRED_RIGHTS_SHARES_LISTING = 9 # 转配股上市（中国特有）
+    TRANSFERRED_RIGHTS_SHARES_LISTING = 9 # 转配股上市(中国特有)
     CONVERTIBLE_BOND_LISTING = 10         # 可转债上市
     STOCK_SPLIT_OR_REVERSE_SPLIT = 11     # 拆股或合股
     RESTRICTED_SHARES_CONSOLIDATION = 12  # 非流通股缩股
@@ -139,11 +139,11 @@ class XdxrEntry:
 class CumulativeAdjustment:
     """复权数据结构体"""
     timestamp: Timestamp # 复权日期
-    m: float = 0.0 # 乘性因子（Multiplier），处理比例调整（如送股）
-    a: float = 0.0 # 加性因子（Additive），处理平移调整（如分红）
-    monetary_adjustment: float = 0.0 # 货币调整，用于价格复权（P' = P * (1 + ratio)）
-    share_adjustment_ratio: float = 0.0 # 股本调整比率，用于成交量复权（V' = V * (1 + ratio)）
-    no: int = 0 # 本次复权调整的序号（从1开始），用于追踪应用顺序
+    m: float = 0.0 # 乘性因子(Multiplier), 处理比例调整(如送股)
+    a: float = 0.0 # 加性因子(Additive), 处理平移调整(如分红)
+    monetary_adjustment: float = 0.0 # 货币调整, 用于价格复权(P' = P * (1 + ratio))
+    share_adjustment_ratio: float = 0.0 # 股本调整比率, 用于成交量复权(V' = V * (1 + ratio))
+    no: int = 0 # 本次复权调整的序号(从1开始), 用于追踪应用顺序
 
     def to_string(self) -> str:
         return (f"{{no={self.no},timestamp={self.timestamp.only_date()},"

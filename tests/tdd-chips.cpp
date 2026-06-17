@@ -267,7 +267,7 @@ public:
         // 创建指向尾部 N 个元素的 span
         std::span<DailyData> lastN = N == 0
                                ? std::span(data_)
-                               : std::span(data_).subspan(0, data_.size() - N);  // 如果 size < N，也可以取全部
+                               : std::span(data_).subspan(0, data_.size() - N);  // 如果 size < N, 也可以取全部
         for (const auto &day : lastN) {
             switch (config_.ModelType) {
                 case 1:
@@ -302,7 +302,7 @@ private:
         std::map<double, double> tmpChip;
         tmpChip[singlePrice] = day.kline.volume;
 
-        // 应用衰减合并（需特殊处理衰减率）
+        // 应用衰减合并(需特殊处理衰减率)
         DailyData adjustedDay = day;
         // adjustedDay.TurnoverRate = 100; // 强制全量换手
         applyDecayAndMerge(adjustedDay, tmpChip);
@@ -310,23 +310,23 @@ private:
 
     // 三角形分布计算
     bool calculateTriangular(const DailyData &day) {
-        // 情况1：处理最高价等于最低价的情况（一字涨停/跌停）
+        // 情况1: 处理最高价等于最低价的情况(一字涨停/跌停)
         if (day.kline.high == day.kline.low) {
             // 直接全部分配到唯一价格点
             handleSinglePriceDay(day);
             return true;
         }
 
-        // 情况2：常规价格区间校验
+        // 情况2: 常规价格区间校验
         if (day.kline.high < day.kline.low) {
             return false;
         }
 
-        // 生成价格网格（包含容差处理）
+        // 生成价格网格(包含容差处理)
         std::vector<double> priceGrid = generatePriceGrid(day.kline.low, day.kline.high, config_.PriceStep, digits_);
         std::map<double, double> tmpChip;
 
-        // 计算归一化系数（处理可能的零除问题）
+        // 计算归一化系数(处理可能的零除问题)
         double priceRange = day.kline.high - day.kline.low;
         double h          = 2.0 / priceRange;  // 保证概率密度积分为1
 
@@ -337,7 +337,7 @@ private:
 
             // 分情况处理三角形分布
             if (price < day.Avg) {
-                // 左三角形处理（包含Avg=Low的边界情况）
+                // 左三角形处理(包含Avg=Low的边界情况)
                 double denominator = day.Avg - day.kline.low;
                 if (denominator <= 1e-8) {  // 处理浮点精度误差
                     // 当Avg=Low时退化为矩形分布
@@ -348,7 +348,7 @@ private:
                     area      = config_.PriceStep * (y1 + y2) / 2;
                 }
             } else {
-                // 右三角形处理（包含Avg=High的边界情况）
+                // 右三角形处理(包含Avg=High的边界情况)
                 double denominator = day.kline.high - day.Avg;
                 if (denominator <= 1e-8) {
                     // 当Avg=High时退化为矩形分布
@@ -435,7 +435,7 @@ private:
         return grid;
     }
 
-    // 辅助函数：查找局部峰值
+    // 辅助函数: 查找局部峰值
     std::vector<double> findLocalPeaks(const std::vector<double> &prices, const std::map<double, double> &data) const {
         std::vector<double> peaks;
         int                 n = int(prices.size());
@@ -588,7 +588,7 @@ private:
 
         if (closestPrice > 0) {
             feature.Closest = closestPrice;
-            // 如果极值未找到，使用最近峰值的量能
+            // 如果极值未找到, 使用最近峰值的量能
             if (feature.PeakVolume == 0) {
                 feature.PeakVolume = chip_data.at(closestPrice);
                 feature.PeakRatio  = feature.PeakVolume / total;

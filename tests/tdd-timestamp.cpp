@@ -131,13 +131,13 @@ parse_time(const std::string& input) {
 //    std::tm local_tm = *std::localtime(&now); // 本地时间 struct tm
 //    std::tm utc_tm = *std::gmtime(&now);      // UTC 时间 struct tm
 //
-//    // 计算两个时间点之间的差值（秒）
+//    // 计算两个时间点之间的差值(秒)
 //    std::time_t local = std::mktime(&local_tm);
 //    std::time_t utc = std::mktime(&utc_tm);
 //
 //    auto offset_ms =  (local - utc) * 1000LL;  // 秒转毫秒
 //
-//    std::cout << "当前时区偏移（毫秒）: " << offset_ms << " ms\n";
+//    std::cout << "当前时区偏移(毫秒): " << offset_ms << " ms\n";
 //}
 
 TEST_CASE("parse_datetime-v1", "[chrono]") {
@@ -145,7 +145,7 @@ TEST_CASE("parse_datetime-v1", "[chrono]") {
     auto t1 = parse_datetime("2025-04-05 12:30:45");
     CHECK(t1.time_since_epoch().count() == 1743856245000);
 
-    // 格式化回字符串（当作 UTC 时间输出）
+    // 格式化回字符串(当作 UTC 时间输出)
     std::string output1 = date::format("%Y-%m-%d %H:%M:%S", t1);
     CHECK(output1 == "2025-04-05 12:30:45.000");
 

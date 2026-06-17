@@ -6,7 +6,7 @@
 季报数据获取 (东方财富API)
 
 从 factors/financial_report.py 迁移, 去掉对 quant1x.exchange 的依赖,
-改用 quant1x.data.market.detect_symbol 和 data.meta.timestamp。
+改用 quant1x.data.market.detect_symbol 和 data.meta.timestamp. 
 """
 
 import os
@@ -277,7 +277,7 @@ def cache_quarterly_reports_by_security_code(date: str, diff_quarters: int = 1) 
 def get_cache_quarterly_reports_by_security_code(security_code: str, date: str, diff_quarters: int = 1) -> Optional[QuarterlyReport]:
     """Get quarterly report for a specific security code from cache or network.
 
-    优先全市场拉取 (缓存到文件), 单股票 API 作为兜底。
+    优先全市场拉取 (缓存到文件), 单股票 API 作为兜底. 
     """
     normalized_code = correct_security_code(security_code)
 
@@ -321,7 +321,7 @@ def get_cache_quarterly_reports_by_security_code(security_code: str, date: str, 
 
     # 3. 全市场拉取, 写入文件缓存, 再从中查找
     # 注意: cache_quarterly_reports_by_security_code 内部已通过 diff 参数做季度偏移,
-    # 这里直接传原始 date, 避免双重偏移。
+    # 这里直接传原始 date, 避免双重偏移. 
     for diff in range(diff_quarters, 5):
         all_reports, pages, err = cache_quarterly_reports_by_security_code(date, diff)
         if err:

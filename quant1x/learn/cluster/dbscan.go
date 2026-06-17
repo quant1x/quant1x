@@ -74,7 +74,7 @@ func (d *DBSCAN) Fit(data [][]float64) []int {
 
 		neighbors := d.regionQuery(data, i)
 
-		// 核心点判断：邻域点数（含自己）>= MinPts
+		// 核心点判断: 邻域点数(含自己)>= MinPts
 		if len(neighbors) < d.MinPts {
 			labels[i] = -1
 			continue
@@ -112,7 +112,7 @@ func (d *DBSCAN) Fit(data [][]float64) []int {
 				}
 			}
 
-			// 仅当未标记时才分配簇（防止噪声被覆盖）
+			// 仅当未标记时才分配簇(防止噪声被覆盖)
 			if labels[q] == 0 {
 				labels[q] = clusterID
 			}
@@ -124,10 +124,10 @@ func (d *DBSCAN) Fit(data [][]float64) []int {
 	return labels
 }
 
-// Predict 返回距离 newPoint 最近的非噪声点的簇标签。
+// Predict 返回距离 newPoint 最近的非噪声点的簇标签.
 //
-//	注意：这不是原生 DBSCAN 的预测方式，而是一种常用的启发式扩展。
-//	如果无有效邻居，返回 -1。
+//	注意: 这不是原生 DBSCAN 的预测方式, 而是一种常用的启发式扩展.
+//	如果无有效邻居, 返回 -1.
 func (d *DBSCAN) Predict(data [][]float64, labels []int, newPoint []float64) int {
 	if len(data) == 0 || len(labels) != len(data) {
 		return -1

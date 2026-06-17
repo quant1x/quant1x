@@ -226,7 +226,7 @@ def quarterly_reports_by_security_code(security_code: str, date: str, diff_quart
 _map_reports: Dict[str, List[QuarterlyReport]] = {}
 
 def _quarter_str(date: str) -> str:
-    """获取 date 对应的季度字符串，如 2026Q1"""
+    """获取 date 对应的季度字符串, 如 2026Q1"""
     quarter, _, _ = std.get_quarter_by_date(date)
     return quarter
 

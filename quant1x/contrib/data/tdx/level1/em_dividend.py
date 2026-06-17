@@ -27,7 +27,7 @@ print(json_data)
 #data = json.loads(json_data)
 records = json_data['result']['data']
 
-# 定义CSV字段（按业务逻辑排序）
+# 定义CSV字段(按业务逻辑排序)
 fieldnames = [
     'SECURITY_CODE',      # 证券代码
     'YEAR',               # 归属年份
@@ -47,7 +47,7 @@ with open(output_file, 'w', newline='', encoding='utf-8-sig') as f:
     writer.writeheader()
     
     for record in records:
-        # 数据清洗：处理null值
+        # 数据清洗: 处理null值
         cleaned_record = {k: (v if v is not None else '') for k, v in record.items()}
         writer.writerow(cleaned_record)
 

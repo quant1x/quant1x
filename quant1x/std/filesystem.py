@@ -79,14 +79,14 @@ def touch(filename: str):
 
 def update_file_mtime(filename: str, timestamp: float = 0):
     """
-    更新文件的修改时间(mtime)，如果文件不存在则创建空文件
+    更新文件的修改时间(mtime), 如果文件不存在则创建空文件
     
     Args:
         filename (str): 需要更新时间的文件路径
-        timestamp (float): 指定的时间戳，默认为0表示使用当前时间
+        timestamp (float): 指定的时间戳, 默认为0表示使用当前时间
     
     Raises:
-        Exception: 文件操作失败时静默处理（不抛出异常）
+        Exception: 文件操作失败时静默处理(不抛出异常)
     """
     if timestamp == 0:
         timestamp = time.time()

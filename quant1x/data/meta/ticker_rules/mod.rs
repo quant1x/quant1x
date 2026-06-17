@@ -1,7 +1,7 @@
 // Copyright (c) Quant1X <wangfengxy@sina.cn>.
 // Licensed under the MIT License.
 //
-// ticker_rules — 证券代码规则模块，与 Python data/meta/ticker_rules/ 对齐
+// ticker_rules — 证券代码规则模块, 与 Python data/meta/ticker_rules/ 对齐
 
 pub mod rule;
 pub mod market_sse;

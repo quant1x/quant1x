@@ -26,13 +26,13 @@ pub trait Schema: Send + Sync + Debug {
     fn usage(&self) -> String;
 }
 
-/// DataAdapter 基础数据：对应 Python data/adapter.py 中的 DataAdapter（包含 Schema + Update/Print）
-/// 重构后 update 接受 &Instrument 而非 &str code，与 Python 版本对齐
+/// DataAdapter 基础数据: 对应 Python data/adapter.py 中的 DataAdapter(包含 Schema + Update/Print)
+/// 重构后 update 接受 &Instrument 而非 &str code, 与 Python 版本对齐
 pub trait DataAdapter: Schema + Send + Sync {
     fn print(&self, inst: &Instrument, dates: &[Timestamp]);
     fn update(&self, inst: &Instrument, date: Timestamp);
-    /// 可选钩子：如果该适配器是 FeatureAdapter，则返回其 boxed 克隆。
-    /// 默认实现返回 None；feature 适配器应重写并返回 Some(clone)。
+    /// 可选钩子: 如果该适配器是 FeatureAdapter, 则返回其 boxed 克隆. 
+    /// 默认实现返回 None；feature 适配器应重写并返回 Some(clone). 
     fn as_feature_clone(&self) -> Option<Box<dyn FeatureAdapter>> {
         None
     }
@@ -69,7 +69,7 @@ pub trait FeatureAdapter: DataAdapter {
 static PLUGIN_MAP: Lazy<Mutex<BTreeMap<Kind, Arc<dyn DataAdapter>>>> =
     Lazy::new(|| Mutex::new(BTreeMap::new()));
 
-/// 注册插件；如果已存在则 panic（等同于 ErrAlreadyExists 行为）
+/// 注册插件；如果已存在则 panic(等同于 ErrAlreadyExists 行为)
 pub fn register(plugin: Arc<dyn DataAdapter>) {
     let kind = plugin.kind();
     let mut map = PLUGIN_MAP.lock().unwrap();
@@ -79,13 +79,13 @@ pub fn register(plugin: Arc<dyn DataAdapter>) {
     map.insert(kind, plugin);
 }
 
-/// 按 kind 获取插件（精确匹配）
+/// 按 kind 获取插件(精确匹配)
 pub fn get_data_adapter(kind: Kind) -> Option<Arc<dyn DataAdapter>> {
     let map = PLUGIN_MAP.lock().unwrap();
     map.get(&kind).cloned()
 }
 
-/// 返回与 mask 匹配的所有插件（mask==0 时返回全部）
+/// 返回与 mask 匹配的所有插件(mask==0 时返回全部)
 pub fn plugins(mask: Kind) -> Vec<Arc<dyn DataAdapter>> {
     let map = PLUGIN_MAP.lock().unwrap();
     let mut result: Vec<Arc<dyn DataAdapter>> = Vec::new();
@@ -121,9 +121,9 @@ pub fn plugins_with_name(plugin_type: Kind, keywords: &[String]) -> Vec<Arc<dyn 
     candidates.into_iter().map(|(_, p)| p).collect()
 }
 
-/// 按顺序更新给定的适配器列表。每个适配器决定其数据如何更新。
-/// Feature 适配器（即 `as_feature_clone` 返回 Some 的适配器）会基于 codes 并行执行，
-/// 其结果将被汇总并写入适配器指定的缓存文件（使用适配器提供的 headers/values）。
+/// 按顺序更新给定的适配器列表. 每个适配器决定其数据如何更新. 
+/// Feature 适配器(即 `as_feature_clone` 返回 Some 的适配器)会基于 codes 并行执行, 
+/// 其结果将被汇总并写入适配器指定的缓存文件(使用适配器提供的 headers/values). 
 pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Timestamp) -> usize {
     use indicatif::{ProgressBar, ProgressStyle};
     let d = crate::contrib::data::tdx::TdxDataSource;
@@ -133,11 +133,11 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
         return 0;
     }
 
-    // 并发度默认值由每个 adapter 的配置决定（quant1x.yaml 中的 data.concurrency）
+    // 并发度默认值由每个 adapter 的配置决定(quant1x.yaml 中的 data.concurrency)
 
     let mut processed_adapters = 0usize;
 
-    // 确保 base 适配器先于 feature 适配器运行：将其划分为两组
+    // 确保 base 适配器先于 feature 适配器运行: 将其划分为两组
     let mut base_adapters: Vec<Arc<dyn DataAdapter>> = Vec::new();
     let mut feature_adapters: Vec<Arc<dyn DataAdapter>> = Vec::new();
     for adapter in adapters.iter() {
@@ -252,7 +252,7 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
             let results: StdArc<StdMutex<Vec<(String, Vec<String>)>>> =
                 StdArc::new(StdMutex::new(Vec::new()));
 
-            // 划分 instruments（分块以供线程处理）
+            // 划分 instruments(分块以供线程处理)
             let mut num_threads = crate::config::get_concurrency_for(&adapter.key());
             // Ensure business thread count does not exceed level1 pool capacity
             if num_threads == 0 || num_threads > pool_max {
@@ -287,7 +287,7 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
                         if let Some(feature_instance) = adapter_clone.as_feature_clone() {
                             // Acquire global semaphore before network/update work
                             let _g = sem_clone.guard();
-                            // 执行更新（传入 Instrument 引用，与 Python 对齐）
+                            // 执行更新(传入 Instrument 引用, 与 Python 对齐)
                             feature_instance.update(&inst, feature_date);
                             let vals = feature_instance.values();
                             if !vals.is_empty() {

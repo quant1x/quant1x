@@ -72,7 +72,7 @@ namespace dfcf {
 
     // JSON 反序列化
     void from_json(const json &j, RawStockHolder::Result::Data &d) {
-        // 字符串类型（自动处理null）
+        // 字符串类型(自动处理null)
         encoding::unsafe_json::get_string(j, "SECUCODE", d.SECUCODE);
         encoding::unsafe_json::get_string(j, "SECURITY_CODE", d.SECURITY_CODE);
         encoding::unsafe_json::get_string(j, "ORG_CODE", d.ORG_CODE);
@@ -101,7 +101,7 @@ namespace dfcf {
         encoding::unsafe_json::get_string(j, "LISTING_STATE", d.LISTING_STATE);
         encoding::unsafe_json::get_string(j, "NEW_CHANGE_RATIO", d.NEW_CHANGE_RATIO);
 
-        // 数值类型（带默认值和类型检查）
+        // 数值类型(带默认值和类型检查)
         encoding::unsafe_json::get_number(j, "HOLD_NUM", d.HOLD_NUM, int64_t(0));
         encoding::unsafe_json::get_number(j, "FREE_HOLDNUM_RATIO", d.FREE_HOLDNUM_RATIO, 0.0);
         encoding::unsafe_json::get_number(j, "CHANGE_RATIO", d.CHANGE_RATIO, 0.0);
@@ -111,7 +111,7 @@ namespace dfcf {
         encoding::unsafe_json::get_number(j, "HOLD_RATIO_CHANGE", d.HOLD_RATIO_CHANGE, 0.0);
         encoding::unsafe_json::get_number(j, "XZCHANGE", d.XZCHANGE, int64_t(0));
 
-        // 布尔类型（特殊处理字符串/数字/布尔混合情况）
+        // 布尔类型(特殊处理字符串/数字/布尔混合情况)
         encoding::unsafe_json::get_string(j, "IS_HOLDORG", d.IS_HOLDORG, "");
     }
 

@@ -66,7 +66,7 @@ public:
     BinaryStream(const BinaryStream&) = delete;
     BinaryStream& operator=(const BinaryStream&) = delete;
 
-    // 析构函数 - 不需要特殊处理，vector会自动清理
+    // 析构函数 - 不需要特殊处理, vector会自动清理
     ~BinaryStream() = default;
 
     // 通用数值类型写入
@@ -98,7 +98,7 @@ public:
         }
     }
 
-    // 基础类型写入（自动推导）
+    // 基础类型写入(自动推导)
     void push_i8(int8_t value) { push_arithmetic(value); }
     void push_u8(uint8_t value) { push_arithmetic(value); }
     void push_i16(int16_t value) { push_arithmetic(value); }
@@ -141,7 +141,7 @@ public:
         offset += n;
     }
 
-    // 非字节数组写入（逐元素小端序）
+    // 非字节数组写入(逐元素小端序)
     template <typename T, size_t N>
     void push_array(const T (&data)[N]) {
         for (const auto& elem : data) {
@@ -177,7 +177,7 @@ public:
         offset += n;
     }
 
-    // 非字节数组读取（逐元素小端序）
+    // 非字节数组读取(逐元素小端序)
     template <typename T, size_t N>
     void get_array(T (&output)[N]) {
         for (auto& elem : output) {
@@ -206,7 +206,7 @@ public:
         return str;
     }
 
-    // 原始字符串处理（无长度前缀）
+    // 原始字符串处理(无长度前缀)
     void push_string(const std::string& str) {
         push_byte_array(reinterpret_cast<const uint8_t*>(str.data()), str.size());
     }

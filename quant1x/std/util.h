@@ -12,7 +12,7 @@ namespace util {
     namespace {
         struct duration_unit {
             const char *name;
-            double      threshold;  // 单位阈值（秒）
+            double      threshold;  // 单位阈值(秒)
             double      divisor;    // 转换除数
         };
 
@@ -35,7 +35,7 @@ namespace util {
                 return {sec / unit.divisor, unit.name};
             }
         }
-        // 默认返回纳秒（处理小于1ns的情况）
+        // 默认返回纳秒(处理小于1ns的情况)
         return {sec / 1e-9, "ns"};
     }
 

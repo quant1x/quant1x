@@ -16,13 +16,13 @@ from quant1x.log import logger
 
 @dataclass
 class HistoricalFundFlow:
-    """历史日线资金流向条目。"""
+    """历史日线资金流向条目. """
     
     year: int
     month: int
     day: int
     
-    # 金额项 (单位：元)
+    # 金额项 (单位: 元)
     super_in: float
     super_out: float
     large_in: float
@@ -34,7 +34,7 @@ class HistoricalFundFlow:
     
     @property
     def main_net_inflow(self) -> float:
-        """当日主力净流入。"""
+        """当日主力净流入. """
         return (self.super_in + self.large_in) - (self.super_out + self.large_out)
 
 def _pow2(exp: int) -> float:
@@ -121,7 +121,7 @@ class HistoryFundFlowDetails_invalid(protocol.BaseMessage):
     def deserialize_response_body(self, data: bytes) -> None:
         self.list.clear()
         response_body = data
-        # 响应格式：9字节头 + 2字节数量 + 每条记录 36 字节
+        # 响应格式: 9字节头 + 2字节数量 + 每条记录 36 字节
         if len(response_body) < 11:
             return
             
@@ -133,7 +133,7 @@ class HistoryFundFlowDetails_invalid(protocol.BaseMessage):
             if len(response_body) < pos + 36:
                 break
             
-            # 记录格式：4字节日期 + 8个4字节自定义浮点金额
+            # 记录格式: 4字节日期 + 8个4字节自定义浮点金额
             # [0]日期, [1..4]流入(超/大/中/小), [5..8]流出(超/大/中/小)
             raw_data = struct.unpack("<IIIIIIIII", response_body[pos:pos+36])
             

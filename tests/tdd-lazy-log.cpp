@@ -1,7 +1,7 @@
 // unit test for lazy daily sink (self-contained)
 #include <quant1x/test/test.h>
 #include <quant1x/std/strings.h>
-#include <quant1x/io/file.h>
+#include <quant1x/std/filesystem.h>
 #include <quant1x/log/lazy_daily_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/daily_file_sink.h>
@@ -16,7 +16,7 @@
 using quant1x::log::make_lazy_daily_sink;
 
 TEST_CASE("lazy-daily-log", "[spdlog][lazy]") {
-    // 在项目源目录下创建一个专用测试日志目录（避免使用全局配置或系统临时目录）
+    // 在项目源目录下创建一个专用测试日志目录(避免使用全局配置或系统临时目录)
     // Derive project source root from this source file path so tests work when run from build dir.
     std::filesystem::path src_path(__FILE__);
     auto project_root = src_path.parent_path().parent_path(); // .../tests/<file> -> project root
@@ -35,7 +35,7 @@ TEST_CASE("lazy-daily-log", "[spdlog][lazy]") {
     // 确保不存在残留文件
     std::remove(logfile.c_str());
 
-    // 局部 lazy sink + 局部 logger（不影响全局 spdlog 状态）
+    // 局部 lazy sink + 局部 logger(不影响全局 spdlog 状态)
     auto lazy = make_lazy_daily_sink(logfile, 0, 0, false);
     auto sinks = spdlog::sinks_init_list{lazy};
     auto logger = std::make_shared<spdlog::logger>("tdd-lazy-local", sinks);
@@ -99,6 +99,6 @@ TEST_CASE("lazy-daily-log", "[spdlog][lazy]") {
         REQUIRE(sz > 0);
     }
 
-    // 清理：删除日志文件（保留 logs 目录）
+    // 清理: 删除日志文件(保留 logs 目录)
     std::remove(logfile.c_str());
 }

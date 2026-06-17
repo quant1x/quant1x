@@ -2,10 +2,10 @@
 
 namespace numeric {
 
-    // ✅ 支持任意位数保留（0~9）
+    // ✅ 支持任意位数保留(0~9)
     // ✅ 使用静态幂表优化性能
-    // ✅ 无分支、无条件跳转（branchless），适合高性能场景
-    // ✅ 支持负数、零、NaN 等边界情况
+    // ✅ 无分支, 无条件跳转(branchless), 适合高性能场景
+    // ✅ 支持负数, 零, NaN 等边界情况
     // ✅ 符合金融/证券系统的标准需求
     f64 decimal(f64 value, int digits) {
         digits = std::clamp(digits, 0, 9);

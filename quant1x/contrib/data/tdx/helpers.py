@@ -27,9 +27,9 @@ def msg_sequence_id() -> int:
 
 def varint_encode(value: int) -> bytes:
     """
-    将整数编码为 varint 字节序列。
+    将整数编码为 varint 字节序列. 
 
-    返回值为包含编码后字节的 `bytes`。
+    返回值为包含编码后字节的 `bytes`. 
     """
     buffer = bytearray()
     sign = value < 0
@@ -59,9 +59,9 @@ def varint_encode(value: int) -> bytes:
 
 def varint_decode(data: bytes, pos: int) -> Tuple[int, int]:
     """
-    从 `data` 的位置 `pos` 解码一个 varint。
+    从 `data` 的位置 `pos` 解码一个 varint. 
 
-    返回 `(value, new_pos)`，其中 `new_pos` 是下一个未读取的索引位置。
+    返回 `(value, new_pos)`, 其中 `new_pos` 是下一个未读取的索引位置. 
     """
     if pos >= len(data):
         raise IndexError("Index out of range")
@@ -86,13 +86,13 @@ def varint_decode(data: bytes, pos: int) -> Tuple[int, int]:
 
 def default_base_unit(market_id: int, code: str) -> float:
     """
-    获取价格计算所用的默认基数（单位）。
+    获取价格计算所用的默认基数(单位). 
 
-    参数：
-        market_id: 市场编号（例如 0=深市, 1=沪市）
+    参数: 
+        market_id: 市场编号(例如 0=深市, 1=沪市)
         code: 证券代码
 
-    返回：基数（`100.0` 或 `1000.0`）。
+    返回: 基数(`100.0` 或 `1000.0`). 
     """
     # market_id: 0=ShenZhen, 1=ShangHai
     # Using exchange_code.MarketType values if possible, but here we take int
@@ -104,9 +104,9 @@ def default_base_unit(market_id: int, code: str) -> float:
 
 def get_datetime_from_uint32(category: int, zipday: int, tminutes: int) -> Tuple[int, int, int, int, int]:
     """
-    根据不同的 `category` 格式，从压缩日期/分钟信息中恢复年、月、日、时、分。
+    根据不同的 `category` 格式, 从压缩日期/分钟信息中恢复年, 月, 日, 时, 分. 
 
-    返回 `(year, month, day, hour, minute)`。
+    返回 `(year, month, day, hour, minute)`. 
     """
     year = 0
     month = 0
@@ -154,9 +154,9 @@ def get_datetime(category, buffer, pos):
 
 def int_to_float64(integer: int) -> float:
     """
-    将 32 位无符号整数解释并转换为浮点数（与 level1 协议中使用的转换一致）。
+    将 32 位无符号整数解释并转换为浮点数(与 level1 协议中使用的转换一致). 
 
-    该函数把输入分解成四个字节并依照协议的位权与指数规则重建浮点值。
+    该函数把输入分解成四个字节并依照协议的位权与指数规则重建浮点值. 
     """
     if integer == 0:
         return 0.0

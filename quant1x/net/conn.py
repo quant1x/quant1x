@@ -59,12 +59,12 @@ class ConnectionHandle:
         self._released = False
 
     def __enter__(self) -> "ConnectionHandle":
-        # 返回句柄本身，使调用方在使用 `with` 时得到 `ConnectionHandle`（而非原始 `Connection`）。
-        # 这样可以屏蔽底层 socket，鼓励通过句柄提供的 API 进行操作。
+        # 返回句柄本身, 使调用方在使用 `with` 时得到 `ConnectionHandle`(而非原始 `Connection`). 
+        # 这样可以屏蔽底层 socket, 鼓励通过句柄提供的 API 进行操作. 
         return self
 
-    # 在句柄上暴露最小的类 socket API（sendall/recv/settimeout），
-    # 以便调用方（或协议层）在不直接访问原始 socket 的情况下进行 I/O 操作。
+    # 在句柄上暴露最小的类 socket API(sendall/recv/settimeout), 
+    # 以便调用方(或协议层)在不直接访问原始 socket 的情况下进行 I/O 操作. 
     def sendall(self, data: bytes) -> None:
         return self._conn.socket.sendall(data)
 
@@ -79,12 +79,12 @@ class ConnectionHandle:
 
     def __exit__(self, exc_type, exc, tb):
         """
-        上下文管理器退出时调用的方法，负责释放资源。
+        上下文管理器退出时调用的方法, 负责释放资源. 
         
         Args:
-            exc_type: 异常类型，如果没有异常则为 None
-            exc: 异常实例，如果没有异常则为 None
-            tb: 回溯对象，如果没有异常则为 None
+            exc_type: 异常类型, 如果没有异常则为 None
+            exc: 异常实例, 如果没有异常则为 None
+            tb: 回溯对象, 如果没有异常则为 None
         """
         self.release()
 
@@ -92,7 +92,7 @@ class ConnectionHandle:
         """
         释放连接资源
         
-        如果连接尚未被释放，则调用释放函数并标记为已释放状态。
+        如果连接尚未被释放, 则调用释放函数并标记为已释放状态. 
         
         Args:
             无
@@ -110,7 +110,7 @@ class ConnectionHandle:
                 self._released = True
 
     def __del__(self):
-        # 尽力自动释放（用于模拟 C++ unique_ptr 的析构行为）
+        # 尽力自动释放(用于模拟 C++ unique_ptr 的析构行为)
         try:
             self.release()
         except Exception:

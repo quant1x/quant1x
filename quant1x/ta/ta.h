@@ -7,13 +7,13 @@
 
 namespace ta {
 
-    // 抽象接口：所有指标必须实现 update() 和 name()
+    // 抽象接口: 所有指标必须实现 update() 和 name()
     template<typename T>
     class ITechnicalIndicator {
     public:
         virtual ~ITechnicalIndicator() = default;
 
-        // 输入一个新值，返回当前指标值
+        // 输入一个新值, 返回当前指标值
         virtual T update(T value) = 0;
 
         // 对整个序列进行批量处理
@@ -27,7 +27,7 @@ namespace ta {
         virtual std::string name() const = 0;
     };
 
-    // 基类：封装通用缓冲逻辑（窗口管理）
+    // 基类: 封装通用缓冲逻辑(窗口管理)
     template<typename T>
     class VectorIndicator : public ITechnicalIndicator<T> {
     protected:

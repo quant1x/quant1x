@@ -1,13 +1,13 @@
 // Copyright (c) Quant1X <wangfengxy@sina.cn>.
 // Licensed under the MIT License.
 //
-// datasource — 数据源抽象接口，与 Python data/datasource.py 对齐（旧版本）
+// datasource — 数据源抽象接口, 与 Python data/datasource.py 对齐(旧版本)
 
 use crate::data::meta::exchange::Exchange;
 use crate::data::meta::instrument::Instrument;
 use crate::data::schema::{Bar, Sector, Transaction};
 
-/// 板块类别：用于区分不同逻辑类型的股票分组
+/// 板块类别: 用于区分不同逻辑类型的股票分组
 ///
 /// 与 Python `PlateCategory(Enum)` 对齐
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -29,12 +29,12 @@ pub enum PlateCategory {
 }
 
 impl PlateCategory {
-    /// 返回类别代码（数字值），对应 Python `PlateCategory.code`
+    /// 返回类别代码(数字值), 对应 Python `PlateCategory.code`
     pub fn code(self) -> i32 {
         self as i32
     }
 
-    /// 返回中文显示名，对应 Python `PlateCategory.label`
+    /// 返回中文显示名, 对应 Python `PlateCategory.label`
     pub fn label(self) -> &'static str {
         match self {
             PlateCategory::Unknown => "未知",
@@ -56,8 +56,8 @@ impl std::fmt::Display for PlateCategory {
 
 /// 市场接口抽象 trait
 ///
-/// 所有具体市场（如 A 股、港股、美股）应实现此 trait。
-/// 与 Python `DataHandler(ABC)` 对齐。
+/// 所有具体市场(如 A 股, 港股, 美股)应实现此 trait. 
+/// 与 Python `DataHandler(ABC)` 对齐. 
 pub trait DataHandler: Send + Sync {
     /// 返回该市场对应的市场列表
     ///
@@ -68,7 +68,7 @@ pub trait DataHandler: Send + Sync {
     ///
     /// 对应 Python `get_index_list(self, market: Union[List, str] = "all") -> List[Instrument]`
     ///
-    /// market: 市场标识，可以是字符串或列表。"all" 表示所有市场
+    /// market: 市场标识, 可以是字符串或列表. "all" 表示所有市场
     fn get_index_list(&self, market: Option<&[String]>) -> Vec<Instrument>;
 
     /// 获取指定类别的板块列表
@@ -85,7 +85,7 @@ pub trait DataHandler: Send + Sync {
     ///
     /// 对应 Python `get_instrument(self, symbol: str) -> Instrument`
     ///
-    /// symbol: 证券代码，如 "sh600000"
+    /// symbol: 证券代码, 如 "sh600000"
     /// 当找不到指定代码的合约时返回 None
     fn get_instrument(&self, symbol: &str) -> Option<Instrument>;
 
@@ -93,7 +93,7 @@ pub trait DataHandler: Send + Sync {
     ///
     /// 对应 Python `klines(self, symbol: str, start_date: str | None = None, end_date: str | None = None, freq: str | None = None)`
     ///
-    /// Python 版本返回 DataFrame，Rust 版本返回 Vec<Bar>
+    /// Python 版本返回 DataFrame, Rust 版本返回 Vec<Bar>
     fn klines(
         &self,
         symbol: &str,
@@ -106,8 +106,8 @@ pub trait DataHandler: Send + Sync {
     ///
     /// 对应 Python `transactions(self, symbol: str, date: str | None = None)`
     ///
-    /// date: 交易日期，如 "2020-01-01"，None 表示当天
-    /// Python 版本返回 DataFrame，Rust 版本返回 Vec<Transaction>
+    /// date: 交易日期, 如 "2020-01-01", None 表示当天
+    /// Python 版本返回 DataFrame, Rust 版本返回 Vec<Transaction>
     fn transactions(
         &self,
         symbol: &str,

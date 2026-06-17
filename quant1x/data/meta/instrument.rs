@@ -1,12 +1,12 @@
 // Copyright (c) Quant1X <wangfengxy@sina.cn>.
 // Licensed under the MIT License.
 //
-// Instrument — 证券信息结构体，与 Python data/meta/instrument.py 对齐
+// Instrument — 证券信息结构体, 与 Python data/meta/instrument.py 对齐
 
 use super::exchange::Exchange;
 use super::region::Region;
 
-/// 资产子类型（高4位），语义由主类型 InstrumentType 决定
+/// 资产子类型(高4位), 语义由主类型 InstrumentType 决定
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Subtype {
@@ -26,7 +26,7 @@ pub enum Subtype {
     Temporary = 0xF0,
 }
 
-/// 合约类型（低4位=资产大类，高4位=子类型扩展）
+/// 合约类型(低4位=资产大类, 高4位=子类型扩展)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InstrumentType(pub u16);
 
@@ -61,12 +61,12 @@ impl InstrumentType {
     pub const NEEQ: Self = InstrumentType(0xFE);
     pub const OTHER: Self = InstrumentType(0xFF);
 
-    /// 提取基础资产类型（低4位）
+    /// 提取基础资产类型(低4位)
     pub fn base_type(self) -> InstrumentType {
         InstrumentType(self.0 & 0x0F)
     }
 
-    /// 提取子类型扩展位（高4位）
+    /// 提取子类型扩展位(高4位)
     pub fn subtype(self) -> u16 {
         self.0 & 0xF0
     }
@@ -136,14 +136,14 @@ impl InstrumentType {
     }
 }
 
-/// 证券信息结构体，与 Python data/meta/instrument.py 的 Instrument dataclass 对齐
+/// 证券信息结构体, 与 Python data/meta/instrument.py 的 Instrument dataclass 对齐
 #[derive(Debug, Clone)]
 pub struct Instrument {
     /// 交易所
     pub exchange: Exchange,
     /// 证券类型
     pub instrument_type: InstrumentType,
-    /// 交易所分配的证券代码（ticker）
+    /// 交易所分配的证券代码(ticker)
     pub ticker: String,
     /// 证券名称
     pub name: String,
@@ -182,8 +182,8 @@ impl Instrument {
     }
 
     /// 构建交易符号字符串
-    /// CN 市场: {identifier}{ticker}，如 sh600000
-    /// 非 CN 市场: {ticker}.{identifier}，如 aapl.us (ticker 转小写)
+    /// CN 市场: {identifier}{ticker}, 如 sh600000
+    /// 非 CN 市场: {ticker}.{identifier}, 如 aapl.us (ticker 转小写)
     pub fn symbol(&self) -> String {
         if self.exchange.region() == Region::CN {
             format!("{}{}", self.exchange.identifier(), self.ticker)
@@ -205,7 +205,7 @@ impl Instrument {
             && self.price_precision > 0
     }
 
-    /// 获取证券代码（优先返回 alias_ticker）
+    /// 获取证券代码(优先返回 alias_ticker)
     pub fn code(&self) -> &str {
         if self.alias_ticker.is_empty() {
             &self.ticker
@@ -214,7 +214,7 @@ impl Instrument {
         }
     }
 
-    /// 获取缓存目录路径，用于存储交易所相关数据文件
+    /// 获取缓存目录路径, 用于存储交易所相关数据文件
     /// 与 Python cache_dir() 对齐: 返回 exchange.name 小写
     pub fn cache_dir(&self) -> String {
         format!("{:?}", self.exchange).to_lowercase()

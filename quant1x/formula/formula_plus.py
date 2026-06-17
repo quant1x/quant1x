@@ -3,9 +3,9 @@
 # Licensed under the MIT License.
 
 # MyTT 麦语言-通达信-同花顺指标实现     https://github.com/mpquant/MyTT
-# 高级函数版本，本文件函数计算结果经过验证完全正确，可以正常使用，但代码比较复杂，做为进阶使用。
-# MyTT团队对每个函数精益求精，力争效率速度，代码优雅的完美统一，如果您有更好的实现方案，请不吝赐教！
-# 感谢以下团队成员的努力和贡献： 火焰，jqz1226, stanene, bcq
+# 高级函数版本, 本文件函数计算结果经过验证完全正确, 可以正常使用, 但代码比较复杂, 做为进阶使用. 
+# MyTT团队对每个函数精益求精, 力争效率速度, 代码优雅的完美统一, 如果您有更好的实现方案, 请不吝赐教！
+# 感谢以下团队成员的努力和贡献:  火焰, jqz1226, stanene, bcq
 import math
 
 import numpy as np
@@ -73,10 +73,10 @@ def SUMBARSFAST(X, A):
     # type: (np.ndarray, Optional[np.ndarray, float, int]) -> np.ndarray
     """
     通达信SumBars函数的Python实现  by jqz1226
-    SumBars函数将X向前累加，直到大于等于A, 返回这个区间的周期数。例如SUMBARS(VOL, CAPITAL),求完全换手的周期数。
-    :param X: 数组。被累计的源数据。 源数组中不能有小于0的元素。
-    :param A: 数组（一组）或者浮点数（一个）或者整数（一个），累加截止的界限数
-    :return:  数组。各K线分别对应的周期数
+    SumBars函数将X向前累加, 直到大于等于A, 返回这个区间的周期数. 例如SUMBARS(VOL, CAPITAL),求完全换手的周期数. 
+    :param X: 数组. 被累计的源数据.  源数组中不能有小于0的元素. 
+    :param A: 数组(一组)或者浮点数(一个)或者整数(一个), 累加截止的界限数
+    :return:  数组. 各K线分别对应的周期数
     """
     if any(X <= 0):   raise ValueError('数组X的每个元素都必须大于0！')
 
@@ -86,7 +86,7 @@ def SUMBARSFAST(X, A):
     if isinstance(A * 1.0, float):  A = np.repeat(A, length)  # 是单值则转化为数组
     A = np.flipud(A)  # 倒转
     sumbars = np.zeros(length)  # 初始化sumbars为0
-    Sigma = np.insert(np.cumsum(X), 0, 0.0)  # 在累加值前面插入一个0.0（元素变多1个，便于引用）
+    Sigma = np.insert(np.cumsum(X), 0, 0.0)  # 在累加值前面插入一个0.0(元素变多1个, 便于引用)
 
     for i in range(length):
         k = np.searchsorted(Sigma[i + 1:], A[i] + Sigma[i])
@@ -99,7 +99,7 @@ def SUMBARSFAST(X, A):
 
 def SAR(HIGH, LOW, N=10, S=2, M=20):
     """
-    求抛物转向。 例如SAR(10,2,20)表示计算10日抛物转向，步长为2%，步长极限为20%
+    求抛物转向.  例如SAR(10,2,20)表示计算10日抛物转向, 步长为2%, 步长极限为20%
     Created by: jqz1226, 2021-11-24首次发表于聚宽(www.joinquant.com)
 
     :param HIGH: high序列
@@ -126,7 +126,7 @@ def SAR(HIGH, LOW, N=10, S=2, M=20):
             b_first = False
         else:  # 继续多 或者 空
             ep = s_hhv[i] if is_long else s_llv[i]  # 极值
-            if (is_long and HIGH[i] > ep) or ((not is_long) and LOW[i] < ep):  # 顺势：多创新高 或者 空创新低
+            if (is_long and HIGH[i] > ep) or ((not is_long) and LOW[i] < ep):  # 顺势: 多创新高 或者 空创新低
                 af = min(af + f_step, f_max)
             #
             sar_x[i] = sar_x[i - 1] + af * (ep - sar_x[i - 1])
@@ -156,7 +156,7 @@ def TDX_SAR(High, Low, iAFStep=2, iAFLimit=20):  # type: (np.ndarray, np.ndarray
     SarX[0] = Low[0]
     # 第2个bar及其以后
     for i in range(1, len(High)):
-        # 1.更新：hv, lv, af, ep
+        # 1.更新: hv, lv, af, ep
         if bull:  # 多
             if High[i] > ep:  # 创新高
                 ep = High[i]
@@ -174,9 +174,9 @@ def TDX_SAR(High, Low, iAFStep=2, iAFLimit=20):  # type: (np.ndarray, np.ndarray
         else:
             SarX[i] = min(SarX[i - 1], max(SarX[i], High[i], High[i - 1]))
 
-        # 4. 判断是否：向下跌破，向上突破
+        # 4. 判断是否: 向下跌破, 向上突破
         if bull:  # 多
-            if Low[i] < SarX[i]:  # 向下跌破，转空
+            if Low[i] < SarX[i]:  # 向下跌破, 转空
                 bull = False
                 tmp_SarX = ep  # 上阶段的最高点
                 ep = Low[i]

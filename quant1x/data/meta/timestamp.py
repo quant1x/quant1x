@@ -135,7 +135,7 @@ class Timestamp:
         return dt.strftime("%H:%M:%S")
     
     def yyyymmdd(self) -> int:
-        """返回日期部分的整数表示，格式为 YYYYMMDD"""
+        """返回日期部分的整数表示, 格式为 YYYYMMDD"""
         dt = self.to_datetime()
         return dt.year * 10000 + dt.month * 100 + dt.day
 

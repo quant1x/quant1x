@@ -167,7 +167,7 @@ def load_f10(inst: Instrument) -> List[F10]:
 
 
 def load_f10_as_dataframe(inst: Instrument) -> pd.DataFrame:
-    """从CSV文件加载F10因子数据，返回DataFrame"""
+    """从CSV文件加载F10因子数据, 返回DataFrame"""
     try:
         filename = _get_f10_filename(inst)
         if os.path.exists(filename):
@@ -212,7 +212,7 @@ def _fetch_finance_info_from_tdx(exchange: Exchange, ticker: str):
 def _fetch_safety_score(security_code: str) -> int:
     """从通达信安全分HTTP接口获取个股风险评分
 
-    参考 factors/safety_score.py 的实现，纯HTTP调用，不依赖factors层。
+    参考 factors/safety_score.py 的实现, 纯HTTP调用, 不依赖factors层. 
     """
     try:
         inst = detect_symbol(security_code)
@@ -331,14 +331,14 @@ def _checkout_share_holder(security_code: str, feature_date: str, xdxr_list: Lis
 
 def _compute_f10_from_tdx(inst: Instrument, date: str) -> Optional[F10]:
     """
-    从 contrib 层数据源计算F10因子 (对齐 C++/Rust F10Feature::Update)。
+    从 contrib 层数据源计算F10因子 (对齐 C++/Rust F10Feature::Update). 
 
     数据来源:
-    - 财务信息 (TCP STD_FINANCE_INFO): 股本、IPO日期、更新日期
+    - 财务信息 (TCP STD_FINANCE_INFO): 股本, IPO日期, 更新日期
     - 除权除息 (get_xdxr_list): 历史股本变化, IPO日期fallback
-    - 前十大流通股东 (东方财富API): 自由流通股本、增减持
+    - 前十大流通股东 (东方财富API): 自由流通股本, 增减持
     - 季报 (东方财富API): bps, eps, 营业收入
-    - 公告 (东方财富API): 增减持、风险
+    - 公告 (东方财富API): 增减持, 风险
     - 安全分 (TDX HTTP API): 个股风险评分
     - 季度信息 (std.time): 当前所属季报期
 
@@ -367,7 +367,7 @@ def _compute_f10_from_tdx(inst: Instrument, date: str) -> Optional[F10]:
             f10.capital = finance.liu_tong_gu_ben
             f10.total_capital = finance.zong_gu_ben
 
-    # 2. IPO日期: 先从财务信息获取，否则从除权除息提取
+    # 2. IPO日期: 先从财务信息获取, 否则从除权除息提取
     finance = _fetch_finance_info_from_tdx(inst.exchange, inst.ticker)
     if finance and not finance.is_delisting():
         if finance.ipo_date >= 19900101:
@@ -413,7 +413,7 @@ def _compute_f10_from_tdx(inst: Instrument, date: str) -> Optional[F10]:
         logger.warning(f"[tdx::f10] share_holder failed for {security_code}: {e}")
         logger.warning(traceback.format_exc())
 
-    # 如果自由流通股本为0，使用流通股本
+    # 如果自由流通股本为0, 使用流通股本
     if f10.free_capital == 0:
         f10.free_capital = f10.capital
 
@@ -470,14 +470,14 @@ def _compute_f10_from_tdx(inst: Instrument, date: str) -> Optional[F10]:
 
 def update_f10(inst: Instrument, date: Optional[str] = None):
     """
-    更新指定合约的F10因子数据。
+    更新指定合约的F10因子数据. 
 
-    从TDX标准行情TCP获取财务信息和除权除息数据，
-    计算基本F10因子并缓存到本地CSV。
+    从TDX标准行情TCP获取财务信息和除权除息数据, 
+    计算基本F10因子并缓存到本地CSV. 
 
     Args:
         inst: 合约信息
-        date: 目标日期，格式为'YYYY-MM-DD'，默认为None表示使用当前日期
+        date: 目标日期, 格式为'YYYY-MM-DD', 默认为None表示使用当前日期
     """
     try:
         if date is None:
@@ -490,7 +490,7 @@ def update_f10(inst: Instrument, date: Optional[str] = None):
             logger.warning(f"[tdx::f10] failed to compute F10 for {inst}")
             return
 
-        # 加载已有数据，按日期去重后追加新数据
+        # 加载已有数据, 按日期去重后追加新数据
         existing = load_f10(inst)
         existing_dates = {e.date for e in existing}
 
@@ -508,16 +508,16 @@ def update_f10(inst: Instrument, date: Optional[str] = None):
 
 def get_f10(inst: Instrument, date: Optional[str] = None) -> Optional[F10]:
     """
-    获取指定合约和日期的F10因子数据。
+    获取指定合约和日期的F10因子数据. 
 
-    优先从本地缓存加载，若不存在则触发更新。
+    优先从本地缓存加载, 若不存在则触发更新. 
 
     Args:
         inst: 合约信息
-        date: 目标日期，格式为'YYYY-MM-DD'
+        date: 目标日期, 格式为'YYYY-MM-DD'
 
     Returns:
-        F10对象，若未找到返回None
+        F10对象, 若未找到返回None
     """
     filename = _get_f10_filename(inst)
 
@@ -542,7 +542,7 @@ def get_f10(inst: Instrument, date: Optional[str] = None) -> Optional[F10]:
         if r.date == date:
             return r
 
-    # 如果未找到精确匹配，尝试触发当日更新
+    # 如果未找到精确匹配, 尝试触发当日更新
     logger.debug(f"[tdx::f10] no cached F10 for {inst} on {date}, updating...")
     update_f10(inst, date)
     records = load_f10(inst)

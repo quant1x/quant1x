@@ -61,9 +61,9 @@ hkex_rules = [
     CodeRule(Exchange.HKEX, NumberRange("09850", "09999"), InstrumentType.STOCK, "主板", ""),
     
     # 10000-29999, 衍生权证
-    CodeRule(Exchange.HKEX, NumberRange("10000", "10899"), InstrumentType.WARRANT, "衍生权证", "相关资产在香港以外地区上市的衍生权证、一篮子权证及非标准型权证"),
+    CodeRule(Exchange.HKEX, NumberRange("10000", "10899"), InstrumentType.WARRANT, "衍生权证", "相关资产在香港以外地区上市的衍生权证, 一篮子权证及非标准型权证"),
     CodeRule(Exchange.HKEX, NumberRange("10900", "10999"), InstrumentType.WARRANT, "衍生权证", "相关资产在香港以外地区上市的衍生权证(以美元买卖)"),
-    CodeRule(Exchange.HKEX, NumberRange("11000", "11999"), InstrumentType.WARRANT, "衍生权证", "相关资产在香港以外地区上市的衍生权证、一篮子权证及非标准型权证"),
+    CodeRule(Exchange.HKEX, NumberRange("11000", "11999"), InstrumentType.WARRANT, "衍生权证", "相关资产在香港以外地区上市的衍生权证, 一篮子权证及非标准型权证"),
     CodeRule(Exchange.HKEX, NumberRange("12000", "29999"), InstrumentType.WARRANT, "衍生权证", ""),
     
     # 30000-39999, 供沪深股通使用
@@ -124,7 +124,7 @@ hkex_rules = [
     CodeRule(Exchange.HKEX, "9", InstrumentType.OTHER, "沪深股通", ""),
 ]
 
-# 港股交易最小变动单位（最小价位表）
+# 港股交易最小变动单位(最小价位表)
 # 定义价格区间和对应的最小变动价位
 price_ranges = [
     (0.01, 0.25),      # 区间1: 0.01 至 0.25
@@ -157,10 +157,10 @@ min_price_changes = [
 # 创建字典映射
 price_info = dict(zip(price_ranges, min_price_changes))
 
-# 函数：根据价格获取最小变动单位
+# 函数: 根据价格获取最小变动单位
 def get_min_price_change(price):
     """
-    根据给定的股价，返回对应的最小变动价位
+    根据给定的股价, 返回对应的最小变动价位
     
     参数:
         price (float): 股票价格
@@ -171,10 +171,10 @@ def get_min_price_change(price):
     for (low, high), min_change in price_info.items():
         if low <= price < high:
             return min_change
-    # 如果价格超出范围，返回None
+    # 如果价格超出范围, 返回None
     return None
 
-# 函数：格式化价格到最小变动单位的倍数
+# 函数: 格式化价格到最小变动单位的倍数
 def round_to_tick(price):
     """
     将价格四舍五入到最小变动单位的整数倍

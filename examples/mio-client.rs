@@ -72,7 +72,7 @@ impl Connection {
     fn send_heartbeat(&mut self) -> io::Result<()> {
         if let Some(_stream) = self.stream.as_mut() {
             if !self.connecting {
-                // 直接发送原始心跳数据（不带长度前缀）
+                // 直接发送原始心跳数据(不带长度前缀)
                 self.write_buffer.extend_from_slice(b"heartbeat");
                 self.last_activity = Instant::now();
             }

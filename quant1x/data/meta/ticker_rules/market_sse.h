@@ -22,7 +22,7 @@ inline std::vector<CodeRule> sse_rules() {
         {Exchange::SSE, RulePrefix("090"), InstrumentType::Bond, "国债质押回购出入库", "国债质押式回购质押券出入库"},
         {Exchange::SSE, RulePrefix("091"), InstrumentType::Bond, "国债质押回购出入库", "对应019***"},
         {Exchange::SSE, RulePrefix("099"), InstrumentType::Bond, "国债质押回购出入库", "对应009***"},
-        {Exchange::SSE, RulePrefix("0"), InstrumentType::Index, "指数/国债", "首位 0: 指数、国债"},
+        {Exchange::SSE, RulePrefix("0"), InstrumentType::Index, "指数/国债", "首位 0: 指数, 国债"},
 
         // === 债券 1xx ===
         {Exchange::SSE, RulePrefix("100"), InstrumentType::Bond, "债券回售/可转债", "100000-100899 用于可转换公司债券(对应600***); 100900-100999 用于债券回售"},
@@ -47,7 +47,7 @@ inline std::vector<CodeRule> sse_rules() {
         {Exchange::SSE, RulePrefix("122"), InstrumentType::Bond, "公司债/企业债", "122000-122499 用于公司债券; 122500-122999 用于企业债券"},
         {Exchange::SSE, RulePrefix("123"), InstrumentType::Bond, "公司/企业债/ABS", "123000-123499 用于企业/公司债; 123500-123999 用于资产支持证券"},
         {Exchange::SSE, RulePrefix("124"), InstrumentType::Bond, "企业债质押出入库", "对应124000-124999"},
-        {Exchange::SSE, RulePrefix("125"), InstrumentType::Bond, "中小企业私募债/非公开公司债", "中小企业私募债券、非公开发行公司债券"},
+        {Exchange::SSE, RulePrefix("125"), InstrumentType::Bond, "中小企业私募债/非公开公司债", "中小企业私募债券, 非公开发行公司债券"},
         {Exchange::SSE, RulePrefix("126"), InstrumentType::Bond, "分离交易可转债", "分离交易的可转换公司债券"},
         {Exchange::SSE, RulePrefix("127"), InstrumentType::Bond, "企业债", "127000-127899 用于企业债券; 127900-127999 用于政府支持债"},
         {Exchange::SSE, RulePrefix("128"), InstrumentType::Bond, "信贷资产支持证券", "信贷资产支持证券"},
@@ -57,7 +57,7 @@ inline std::vector<CodeRule> sse_rules() {
         {Exchange::SSE, RulePrefix("132"), InstrumentType::Bond, "可交换公司债", "可交换公司债券"},
         {Exchange::SSE, RulePrefix("133"), InstrumentType::Bond, "可交换债质押出入库", "对应132***"},
         {Exchange::SSE, RulePrefix("134"), InstrumentType::Bond, "公开公司债质押出入库", "对应136***"},
-        {Exchange::SSE, RulePrefix("135"), InstrumentType::Bond, "证券公司短期债/并购私募债", "证券公司短期债、并购重组私募债券、非公开发行公司债券"},
+        {Exchange::SSE, RulePrefix("135"), InstrumentType::Bond, "证券公司短期债/并购私募债", "证券公司短期债, 并购重组私募债券, 非公开发行公司债券"},
         {Exchange::SSE, RulePrefix("136"), InstrumentType::Bond, "公开公司债质押出入库", "对应136***"},
         {Exchange::SSE, RulePrefix("137"), InstrumentType::Bond, "可交换/公开公司债", "137000-137499 非公开可交换; 137500-137999 公开公司债"},
         {Exchange::SSE, RulePrefix("138"), InstrumentType::Bond, "可交换换股/公开公司债", "138000-138499 非公开可交换换股; 138500-138999 公开公司债"},
@@ -117,7 +117,7 @@ inline std::vector<CodeRule> sse_rules() {
         {Exchange::SSE, RulePrefix("192"), InstrumentType::Bond, "可交换债换股", "对应132***"},
         {Exchange::SSE, RulePrefix("193"), InstrumentType::Bond, "创新创业转股/ABS", "193000-193099 创新创业公司非公开可转债转股; 193100-193999 用于资产支持证券"},
         {Exchange::SSE, RulePrefix("194"), InstrumentType::Bond, "非公开公司债", "非公开发行公司债券"},
-        {Exchange::SSE, RulePrefix("195"), InstrumentType::Bond, "可转债转股", "195000-195499 用于可转债转股，对应605***"},
+        {Exchange::SSE, RulePrefix("195"), InstrumentType::Bond, "可转债转股", "195000-195499 用于可转债转股, 对应605***"},
         {Exchange::SSE, RulePrefix("196"), InstrumentType::Bond, "非公开公司债", "非公开发行公司债券"},
         {Exchange::SSE, RulePrefix("197"), InstrumentType::Bond, "非公开公司债", "非公开发行公司债券"},
         {Exchange::SSE, RulePrefix("198"), InstrumentType::Bond, "地方政府债", "地方政府债券"},
@@ -154,13 +154,13 @@ inline std::vector<CodeRule> sse_rules() {
         {Exchange::SSE, RulePrefix("270"), InstrumentType::Bond, "企业债", "企业债券"},
         {Exchange::SSE, RulePrefix("271"), InstrumentType::Bond, "企业债", "企业债券"},
         {Exchange::SSE, RulePrefix("272"), InstrumentType::Bond, "企业债", "企业债券"},
-        {Exchange::SSE, RulePrefix("2"), InstrumentType::Bond, "债券回购/借贷", "首位 2: 债券回购、债券借贷等"},
+        {Exchange::SSE, RulePrefix("2"), InstrumentType::Bond, "债券回购/借贷", "首位 2: 债券回购, 债券借贷等"},
 
         // === 优先股/国债期货 3xx ===
         {Exchange::SSE, RulePrefix("310"), InstrumentType::Bond, "国债期货", "国债期货(已暂停)"},
         {Exchange::SSE, RulePrefix("330"), InstrumentType::IPO, "优先股(公开)", "公开发行优先股"},
         {Exchange::SSE, RulePrefix("360"), InstrumentType::Other, "非公开优先股", "非公开发行优先股"},
-        {Exchange::SSE, RulePrefix("3"), InstrumentType::Other, "优先股/国债期货", "首位 3: 优先股、国债期货(已暂停)"},
+        {Exchange::SSE, RulePrefix("3"), InstrumentType::Other, "优先股/国债期货", "首位 3: 优先股, 国债期货(已暂停)"},
         {Exchange::SSE, RulePrefix("4"), InstrumentType::Other, "备用", "首位 4: 备用"},
 
         // === 基金/REITs/权证 5xx ===
@@ -170,7 +170,7 @@ inline std::vector<CodeRule> sse_rules() {
         {Exchange::SSE, RulePrefix("505"), InstrumentType::Fund, "创新封闭式基金", "505800-505899 用于创新型封闭式证券投资基金"},
         {Exchange::SSE, RulePrefix("506"), InstrumentType::Fund, "科创板LOF", "506000-506099 用于科创板相关 LOF"},
         {Exchange::SSE, RulePrefix("508"), InstrumentType::Fund, "公募REITs", "508000-508099 用于公募 REITs"},
-        {Exchange::SSE, RulePrefix("510"), InstrumentType::ETF, "交易型开放式指数证券投资基金", "标的指数为沪市指数、跨市场指数或跨境指数"},
+        {Exchange::SSE, RulePrefix("510"), InstrumentType::ETF, "交易型开放式指数证券投资基金", "标的指数为沪市指数, 跨市场指数或跨境指数"},
         {Exchange::SSE, RulePrefix("511"), InstrumentType::ETF, "债券ETF/货基", "511000-511299 单市场债券(沪)ETF; 511300-511599 现金申赎类债券ETF; 511600-511999 交易型货币基金"},
         {Exchange::SSE, RulePrefix("512"), InstrumentType::ETF, "交易型开放式指数证券投资基金", "标的指数为跨市场指数"},
         {Exchange::SSE, RulePrefix("513"), InstrumentType::ETF, "交易型开放式指数证券投资基金", "标的指数为跨境指数"},
@@ -190,10 +190,10 @@ inline std::vector<CodeRule> sse_rules() {
         {Exchange::SSE, RulePrefix("561"), InstrumentType::ETF, "交易型开放式指数证券投资基金", "标的指数为跨市场指数"},
         {Exchange::SSE, RulePrefix("562"), InstrumentType::ETF, "交易型开放式指数证券投资基金", "标的指数为跨市场指数"},
         {Exchange::SSE, RulePrefix("563"), InstrumentType::ETF, "交易型开放式指数证券投资基金", "标的指数为跨市场指数"},
-        {Exchange::SSE, RulePrefix("580"), InstrumentType::Warrant, "权证", "含股改权证、公司权证"},
+        {Exchange::SSE, RulePrefix("580"), InstrumentType::Warrant, "权证", "含股改权证, 公司权证"},
         {Exchange::SSE, RulePrefix("582"), InstrumentType::Warrant, "权证行权", "用于权证行权/行权相关代码"},
         {Exchange::SSE, RulePrefix("588"), InstrumentType::ETF, "科创板ETF", "588000-588299 单市场(科创板)ETF; 588300-588699 跨市场(含科创板)ETF; 588700-588999 单市场(科创板)ETF"},
-        {Exchange::SSE, RulePrefix("5"), InstrumentType::Fund, "基金/REITs/权证", "首位 5: 基金、公募 REITs、权证"},
+        {Exchange::SSE, RulePrefix("5"), InstrumentType::Fund, "基金/REITs/权证", "首位 5: 基金, 公募 REITs, 权证"},
 
         // === A股/存托凭证 6xx ===
         {Exchange::SSE, RulePrefix("600"), InstrumentType::Stock, "主板A股", "主板 A 股"},
@@ -202,7 +202,7 @@ inline std::vector<CodeRule> sse_rules() {
         {Exchange::SSE, RulePrefix("605"), InstrumentType::Stock, "主板A股", "主板 A 股(配套号段)"},
         {Exchange::SSE, RulePrefix("688"), InstrumentType::StarMarket, "科创板", "科创板股票"},
         {Exchange::SSE, RulePrefix("689"), InstrumentType::StarMarket, "科创板存托凭证", "科创板存托凭证"},
-        {Exchange::SSE, RulePrefix("6"), InstrumentType::Stock, "A股/存托凭证", "首位 6: A 股、存托凭证"},
+        {Exchange::SSE, RulePrefix("6"), InstrumentType::Stock, "A股/存托凭证", "首位 6: A 股, 存托凭证"},
 
         // === 非交易业务 7xx ===
         {Exchange::SSE, RulePrefix("700"), InstrumentType::Other, "配股", "配股(对应600***)"},
@@ -228,8 +228,8 @@ inline std::vector<CodeRule> sse_rules() {
         // === 标准券/板块 8xx ===
         {Exchange::SSE, RulePrefix("880"), InstrumentType::Sector, "板块指数", "通达信"},
         {Exchange::SSE, RulePrefix("881"), InstrumentType::Sector, "板块指数", "通达信"},
-        {Exchange::SSE, RulePrefix("888"), InstrumentType::Bond, "标准券", "888880 为新标准券，用于债券回购转换成标准券"},
-        {Exchange::SSE, RulePrefix("8"), InstrumentType::Bond, "标准券/备用", "首位 8: 标准券、备用"},
+        {Exchange::SSE, RulePrefix("888"), InstrumentType::Bond, "标准券", "888880 为新标准券, 用于债券回购转换成标准券"},
+        {Exchange::SSE, RulePrefix("8"), InstrumentType::Bond, "标准券/备用", "首位 8: 标准券, 备用"},
 
         // === B股 9xx ===
         {Exchange::SSE, RulePrefix("900"), InstrumentType::BStock, "B股", "B 股"},

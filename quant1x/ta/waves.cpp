@@ -11,7 +11,7 @@ namespace ta::patterns {
 
         size_t n = high.size();
 
-        // 第一步：计算一阶差分 (向量化操作)
+        // 第一步: 计算一阶差分 (向量化操作)
         xt::xarray<int> diff_high = xt::zeros<int>({n});
         xt::xarray<int> diff_low  = xt::zeros<int>({n});
 
@@ -21,7 +21,7 @@ namespace ta::patterns {
         xt::view(diff_low,
                  xt::range(0, n - 1)) = xt::sign(xt::view(low, xt::range(1, n)) - xt::view(low, xt::range(0, n - 1)));
 
-        // 第二步：处理平台区域 (向量化处理)
+        // 第二步: 处理平台区域 (向量化处理)
         auto process_plateaus = [](xt::xarray<int> &diff) {
             size_t n = diff.size();
 
@@ -49,7 +49,7 @@ namespace ta::patterns {
         process_plateaus(diff_high);
         process_plateaus(diff_low);
 
-        // 第三步：识别波峰和波谷 (向量化操作)
+        // 第三步: 识别波峰和波谷 (向量化操作)
         auto d_high = xt::view(diff_high, xt::range(1, n)) - xt::view(diff_high, xt::range(0, n - 1));
         auto d_low  = xt::view(diff_low, xt::range(1, n)) - xt::view(diff_low, xt::range(0, n - 1));
 

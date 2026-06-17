@@ -90,7 +90,7 @@ fn load_calendar_from_file(path: PathBuf) -> std::io::Result<()> {
     Ok(())
 }
 
-fn preprocess_js(text: &str) -> String {
+fn _preprocess_sina_text(text: &str) -> String {
     let mut processed = text.to_string();
     if let Some(eq) = processed.find('=') {
         processed = processed[eq + 1..].to_string();
@@ -135,7 +135,7 @@ fn download_and_cache_calendar_url(
         return Err(format!("http status {}", status).into());
     }
     let text = resp.text()?;
-    let pre = preprocess_js(&text);
+    let pre = _preprocess_sina_text(&text);
     // decoder expects base64-like payload; use CalendarDecoder
     let mut dec = FinanceDecoder::new(&pre);
     dec.decode_base64(&pre);
@@ -474,7 +474,7 @@ mod tests {
             return Ok(());
         }
 
-        let pre = preprocess_js(text);
+        let pre = _preprocess_sina_text(text);
         let mut dec = FinanceDecoder::new(&pre);
         dec.decode_base64(&pre);
         let records = dec.decode();

@@ -178,7 +178,7 @@ DEFAULT_HTTP_REQUEST_HEADERS = {
     "Accept": "text/plain, */*; q=0.01",
     "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
     #"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",  # POST 必填
-    # Cookie 建议用 session.cookies 管理，此处仅为演示
+    # Cookie 建议用 session.cookies 管理, 此处仅为演示
     # "Cookie": "Hm_lvt_5c4c948b141e4d66943a8430c3d600d0=...; ..."
 }
 
@@ -207,7 +207,7 @@ class DividendRecord:
     # --- 1. 基础配置 (Configuration) ---
     ex_date: str            # 除权日
     # --- 2. 无偿权益 (Free Distributions) ---
-    # 现金分红 (Cash Dividend)，税前金额
+    # 现金分红 (Cash Dividend), 税前金额
     amount: float           # 每股金额
     currency: str           # 币种
     info_date: str          # 公告日期
@@ -215,15 +215,15 @@ class DividendRecord:
     pay_date: str           # 派息日
     cdate_begin: str        # 过户开始日
     cdate_end: str          # 过户截止日
-    # 送红股 (Stock Dividend)，来源于未分配利润
+    # 送红股 (Stock Dividend), 来源于未分配利润
     bonus_shares_per: float=0.0 # 送股比例
-    # 转增股本 (Capitalization)，来源于资本公积
+    # 转增股本 (Capitalization), 来源于资本公积
     capitalization_shares_per: float=0.0 # 转增股比例
     # --- 3. 有偿权益 (Rights Issue / Paid) ---
     # 股东需支付对价才能获得新股
-    # 配股比例 (Rights Ratio)，如每10股配1股
+    # 配股比例 (Rights Ratio), 如每10股配1股
     rights_shares: float=0    # 新股数量
-    # 配股价格 (Rights Price)，每股认购价格
+    # 配股价格 (Rights Price), 每股认购价格
     rights_price: float=0.0   # 每股价格
     
 def hk_parse_dividend_data(resp_json: dict, symbol: str=None, preferred_currency:str=Region.HK.currency) -> List[DividendRecord]:

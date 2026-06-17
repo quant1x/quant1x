@@ -8,7 +8,7 @@
 
 namespace realtime {
 
-    // 定义 imbalance 结构体返回值（可扩展）
+    // 定义 imbalance 结构体返回值(可扩展)
     struct ImbalanceResult {
         double simpleImbalance;   // 简单总量不平衡度
         double weightedImbalance; // 价格加权不平衡度

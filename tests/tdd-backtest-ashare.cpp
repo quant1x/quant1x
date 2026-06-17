@@ -38,9 +38,9 @@ public:
                (day < 10 ? "0" : "") + std::to_string(day);
     }
 
-    // 计算是否是交易日（简化版，实际应从市场日历获取）
+    // 计算是否是交易日(简化版, 实际应从市场日历获取)
     bool isTradingDay() const {
-        // 简单模拟：周末不是交易日
+        // 简单模拟: 周末不是交易日
         int q = day;
         int m = month;
         int y = year;
@@ -63,7 +63,7 @@ namespace std {
     };
 }
 
-// 价格数据点（增加涨跌停价）
+// 价格数据点(增加涨跌停价)
 struct PriceData {
     Date date;
     double open;
@@ -76,13 +76,13 @@ struct PriceData {
     double prev_close;  // 前收盘价
 };
 
-// 持仓信息（增加买入日期用于T+1检查）
+// 持仓信息(增加买入日期用于T+1检查)
 struct Position {
     std::string symbol;
     double quantity = 0.00;
     double entryPrice = 0.00;
     Date entryDate;
-    Date buyDate; // 实际买入日期（用于T+1判断）
+    Date buyDate; // 实际买入日期(用于T+1判断)
 
     // 默认构造函数
     Position() : entryDate(1970, 1, 1), buyDate(1970, 1, 1) {}
@@ -128,7 +128,7 @@ private:
 
     // 交易参数
     double commissionRate = 0.0003;  // 佣金率 0.03%
-    double stampTax = 0.001;         // 印花税 0.1%（仅卖出收取）
+    double stampTax = 0.001;         // 印花税 0.1%(仅卖出收取)
     double minCommission = 5.0;      // 最低佣金5元
 
 protected:
@@ -176,7 +176,7 @@ public:
         return commission;
     }
 
-    // 买入（A股T+1）
+    // 买入(A股T+1)
     void buy(const std::string& symbol, double quantity, const Date& date) {
         if (quantity <= 0) {
             recordRejectedTrade(date, symbol, "BUY", quantity, 0, "Invalid quantity");
@@ -196,7 +196,7 @@ public:
             return;
         }
 
-        // 检查是否涨停（A股涨停不能买入）
+        // 检查是否涨停(A股涨停不能买入)
         if (price >= getUpperLimitPrice(symbol, date) - 1e-6) {
             recordRejectedTrade(date, symbol, "BUY", quantity, price, "Upper limit reached");
             return;
@@ -218,7 +218,7 @@ public:
         TradeRecord record{date, symbol, "BUY", quantity, price, commission, "FILLED", ""};
         tradeHistory.push_back(record);
 
-        // 更新持仓（A股T+1，实际可卖日期是下一个交易日）
+        // 更新持仓(A股T+1, 实际可卖日期是下一个交易日)
         if (positions.find(symbol) != positions.end()) {
             Position& pos = positions[symbol];
             double totalQty = pos.quantity + quantity;
@@ -235,7 +235,7 @@ public:
         }
     }
 
-    // 卖出（A股T+1）
+    // 卖出(A股T+1)
     void sell(const std::string& symbol, double quantity, const Date& date) {
         if (quantity <= 0) {
             recordRejectedTrade(date, symbol, "SELL", quantity, 0, "Invalid quantity");
@@ -268,7 +268,7 @@ public:
             return;
         }
 
-        // 检查是否跌停（A股跌停不能卖出）
+        // 检查是否跌停(A股跌停不能卖出)
         if (price <= getLowerLimitPrice(symbol, date) + 1e-6) {
             recordRejectedTrade(date, symbol, "SELL", quantity, price, "Lower limit reached");
             return;
@@ -384,7 +384,7 @@ public:
         double unrealizedPnL = calculateUnrealizedPnL(date);
         double realizedPnL = 0.0;
 
-        // 计算当日已实现盈亏（从交易记录中）
+        // 计算当日已实现盈亏(从交易记录中)
         for (const auto& trade : tradeHistory) {
             if (trade.date == date && trade.status == "FILLED" && trade.action == "SELL") {
                 // 查找该股票的持仓成本
@@ -420,7 +420,7 @@ public:
     // 运行回测
     void run() {
         for (const Date& date : tradingDates) {
-            // 执行策略逻辑（由子类实现）
+            // 执行策略逻辑(由子类实现)
             executeStrategy(date);
 
             // 每日结算
@@ -437,7 +437,7 @@ public:
         exportTradeHistory();
     }
 
-    // 策略逻辑（由子类实现）
+    // 策略逻辑(由子类实现)
     virtual void executeStrategy(const Date& date) = 0;
 
     // 打印结果
@@ -547,7 +547,7 @@ private:
     }
 };
 
-// 示例策略：双均线策略
+// 示例策略: 双均线策略
 class DualMovingAverageStrategy : public AShareBacktestEngine {
 private:
     size_t shortWindow = 5;
@@ -619,7 +619,7 @@ int main() {
     SetConsoleCP(CP_UTF8);
     //std::locale::global(std::locale(".65001"));
 #endif
-    // 创建示例价格数据（贵州茅台）
+    // 创建示例价格数据(贵州茅台)
     std::vector<PriceData> stockData;
     double prevClose = 1600.0;
     for (int i = 1; i <= 60; i++) {
@@ -633,7 +633,7 @@ int main() {
             double lower_limit = round(prevClose * 0.9 * 100) / 100; // 跌停价
 
             // 模拟停牌
-            bool suspended = (i == 15 || i == 16); // 第15、16天停牌
+            bool suspended = (i == 15 || i == 16); // 第15, 16天停牌
 
             stockData.push_back({
                                     date,

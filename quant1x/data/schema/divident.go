@@ -32,8 +32,8 @@ func (x *XdxrInfo) ComputeMonetaryAdjustment() float64 {
 	return (x.PeiGu*x.PeiGuJia - x.FenHong + x.FenShu*x.XingQuanJia) / 10.0
 }
 
-// AdjustFactor 计算并返回完整的复权调整参数，对应 C++ 中的 XdxrInfo::adjustFactor。
-// 返回的 CumulativeAdjustment.No 字段为 0，应在应用时由调用方设置为实际调整序号。
+// AdjustFactor 计算并返回完整的复权调整参数, 对应 C++ 中的 XdxrInfo::adjustFactor.
+// 返回的 CumulativeAdjustment.No 字段为 0, 应在应用时由调用方设置为实际调整序号.
 func (x *XdxrInfo) AdjustFactor() CumulativeAdjustment {
 	A := x.ComputeMonetaryAdjustment()
 	B := x.ComputeShareAdjustmentRatio()

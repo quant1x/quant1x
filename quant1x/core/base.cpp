@@ -46,14 +46,14 @@ std::string get_meta_path() {
     return (base / "meta").string();
 }
 
-// 解析YAML配置，与Go版本的parseYamlConfig保持一致
+// 解析YAML配置, 与Go版本的parseYamlConfig保持一致
 bool parse_yaml_config(const std::string& filename, BaseConfig& config) {
     // 默认值
     config.debug = false;
     config.filename = filename;
     config.config_map.clear();
 
-    // 若配置文件不存在：使用默认 BaseDir/LogDir，并保留空 map
+    // 若配置文件不存在: 使用默认 BaseDir/LogDir, 并保留空 map
     if (!std::filesystem::exists(filename)) {
         config.basedir = get_base_path();
         config.logdir = (std::filesystem::path(config.basedir) / "logs").string();
@@ -101,7 +101,7 @@ const BaseConfig& get_global_config() {
     return global_config_lazy.get();
 }
 
-// 全局函数接口，与Go版本保持一致的调用方式
+// 全局函数接口, 与Go版本保持一致的调用方式
 const std::string& get_configfile_path() {
     return get_global_config().filename;
 }
@@ -115,11 +115,11 @@ std::string get_data_path() {
 }
 
 std::unordered_map<std::string, YAML::Node> get_config_map() {
-    return get_global_config().config_map;  // 返回拷贝，防止误修改
+    return get_global_config().config_map;  // 返回拷贝, 防止误修改
 }
 
 const std::unordered_map<std::string, YAML::Node>& get_config_map_ref() {
-    return get_global_config().config_map;  // 返回引用，允许修改
+    return get_global_config().config_map;  // 返回引用, 允许修改
 }
 
 } // namespace core

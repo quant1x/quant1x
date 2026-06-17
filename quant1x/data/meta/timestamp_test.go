@@ -321,7 +321,7 @@ func TestPythonCompatibility(t *testing.T) {
 	})
 }
 
-// 基准测试：比较C++兼容层与Go原生实现的性能
+// 基准测试: 比较C++兼容层与Go原生实现的性能
 func BenchmarkCompatVsGoNative(b *testing.B) {
 	ms := int64(1640995200000)
 

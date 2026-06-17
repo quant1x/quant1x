@@ -12,13 +12,13 @@ const (
 	DefaultFileMode = 0644
 )
 
-// DirExists 确保指定路径的目录存在，如果不存在则递归创建
+// DirExists 确保指定路径的目录存在, 如果不存在则递归创建
 //
-// 参数：
+// 参数:
 //   - path: 目录路径
 //
-// 返回值：
-//   - error: 路径无效、创建失败或路径非目录时返回错误
+// 返回值:
+//   - error: 路径无效, 创建失败或路径非目录时返回错误
 func DirExists(path string) error {
 	path = strings.TrimSpace(path)
 	if path == "" {
@@ -29,13 +29,13 @@ func DirExists(path string) error {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			// 递归创建目录（包括父目录）
+			// 递归创建目录(包括父目录)
 			if err := os.MkdirAll(path, DefaultDirMode); err != nil {
 				return fmt.Errorf("failed to create directory: %w", err)
 			}
 			return nil
 		}
-		return err // 其他错误（如权限不足）
+		return err // 其他错误(如权限不足)
 	}
 
 	if !fileInfo.IsDir() {
@@ -46,10 +46,10 @@ func DirExists(path string) error {
 
 // FileDirExists 确保文件所在的目录存在
 //
-// 参数：
-//   - filePath: 文件路径（如 `/data/logs/file.txt`）
+// 参数:
+//   - filePath: 文件路径(如 `/data/logs/file.txt`)
 //
-// 返回值：
+// 返回值:
 //   - error: 目录创建失败或路径非目录时返回错误
 func FileDirExists(filePath string) error {
 	filePath = strings.TrimSpace(filePath)

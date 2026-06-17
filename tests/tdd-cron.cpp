@@ -58,17 +58,17 @@ TEST_CASE("cron-v1", "[runtime]") {
 }
 
 /**
- * 在固定时间窗口内保证操作只执行一次，窗口通过 cron 表达式或时间间隔定义。
- * 每次窗口结束时自动重置，允许下个窗口重新执行。
+ * 在固定时间窗口内保证操作只执行一次, 窗口通过 cron 表达式或时间间隔定义. 
+ * 每次窗口结束时自动重置, 允许下个窗口重新执行. 
  */
 template<typename T>
 class PeriodicOnce1 {
 public:
-    // 构造函数：接受初始化函数（支持任意可调用对象）
+    // 构造函数: 接受初始化函数(支持任意可调用对象)
     template<typename Func, typename = std::enable_if_t<!std::is_same_v<std::decay_t<Func>, PeriodicOnce1>>>
     explicit PeriodicOnce1(Func&& init): init_(std::forward<Func>(init)) {}
 
-    // 获取值，首次调用或重置后执行初始化函数
+    // 获取值, 首次调用或重置后执行初始化函数
     T& get() {
         if (!done_.load(std::memory_order_acquire)) {
             std::lock_guard lock(mutex_);
@@ -81,7 +81,7 @@ public:
         return *value_;
     }
 
-    // 重置状态，允许下次调用 get 时重新初始化
+    // 重置状态, 允许下次调用 get 时重新初始化
     void reset() {
         std::lock_guard<std::mutex> lock(mutex_);
         done_.store(false, std::memory_order_release);

@@ -61,7 +61,7 @@ class Bar:
     
     @property
     def change_pct(self) -> float:
-        """涨跌幅（百分比）"""
+        """涨跌幅(百分比)"""
         if self.open == 0:
             return 0.0
         return (self.close - self.open) / self.open * 100
@@ -76,7 +76,7 @@ class Bar:
         """是否阴线"""
         return self.close < self.open
     
-    # 可选：技术指标相关
+    # 可选: 技术指标相关
     @property
     def body_size(self) -> float:
         """K线实体大小"""
@@ -92,17 +92,17 @@ class Bar:
         """下影线长度"""
         return min(self.open, self.close) - self.low
     
-    # 可选：量价关系
+    # 可选: 量价关系
     @property
     def avg_price(self) -> float:
-        """均价（成交额/成交量）"""
+        """均价(成交额/成交量)"""
         if self.volume == 0:
             return 0.0
         return self.amount / self.volume
     
     @property
     def price_range(self) -> float:
-        """价格区间（最高-最低）"""
+        """价格区间(最高-最低)"""
         return self.high - self.low
     
     @classmethod
@@ -112,7 +112,7 @@ class Bar:
                 "up", "down", "timestamp", "adjustment_count"]
 
     def to_list(self) -> List:
-        """转为列表，便于写入CSV"""
+        """转为列表, 便于写入CSV"""
         return [
             self.date, self.open, self.close, self.high, self.low,
             self.volume, self.amount, self.up, self.down,
@@ -137,7 +137,7 @@ class Bar:
         )
 
     def to_dict(self) -> dict:
-        """转为扁平字典，适配 DataFrame"""
+        """转为扁平字典, 适配 DataFrame"""
         return {
             "date": self.date,
             "open": self.open,

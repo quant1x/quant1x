@@ -22,10 +22,10 @@ def _get_xdxr_filename(inst: Instrument) -> str:
     根据股票代码生成对应的除权除息数据文件路径
     
     Args:
-        inst (Instrument): 股票代码对象，包含股票符号信息
+        inst (Instrument): 股票代码对象, 包含股票符号信息
     
     Returns:
-        str: 除权除息数据文件的完整路径，格式为 {数据目录}/xdxr/{股票代码}.csv
+        str: 除权除息数据文件的完整路径, 格式为 {数据目录}/xdxr/{股票代码}.csv
     """
     dir = config.data_path
     sub = f'xdxr/{inst.cache_dir()}'

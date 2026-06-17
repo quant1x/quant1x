@@ -24,10 +24,10 @@ fn get_security_filename() -> String {
     crate::config::get_security_filename()
 }
 
-/// 从 CSV 文件加载证券列表到全局安全映射中。
+/// 从 CSV 文件加载证券列表到全局安全映射中. 
 ///
-/// 读取由 `get_security_filename()` 指定的 CSV 文件，逐行解析为 `Instrument` 对象，
-/// 并以 `symbol` 为键插入全局 `SECURITY_MAP`。加载前会清空已有数据。
+/// 读取由 `get_security_filename()` 指定的 CSV 文件, 逐行解析为 `Instrument` 对象, 
+/// 并以 `symbol` 为键插入全局 `SECURITY_MAP`. 加载前会清空已有数据. 
 ///
 /// # Returns
 ///
@@ -36,7 +36,7 @@ fn get_security_filename() -> String {
 ///
 /// # Panics
 ///
-/// 当 `SECURITY_MAP` 的 Mutex 被 poison 时会 panic。
+/// 当 `SECURITY_MAP` 的 Mutex 被 poison 时会 panic. 
 fn load_securities() -> bool {
     let fname = get_security_filename();
     log::debug!("Loading securities from {}", fname);
@@ -84,9 +84,9 @@ fn load_securities() -> bool {
     !map.is_empty()
 }
 
-/// 根据证券代码字符串，自动识别市场并返回标准化的证券代码。
+/// 根据证券代码字符串, 自动识别市场并返回标准化的证券代码. 
 ///
-/// 如果无法识别有效的市场或代码，则返回空字符串。
+/// 如果无法识别有效的市场或代码, 则返回空字符串. 
 ///
 /// # Examples
 ///
@@ -106,20 +106,20 @@ fn correct_security_code(symbol: &str) -> String {
     }
 }
 
-/// 从指定交易所获取证券列表。
+/// 从指定交易所获取证券列表. 
 ///
-/// 根据交易所类型映射为对应的市场ID，调用通达信协议获取证券列表，
-/// 并将返回的原始数据转换为 `Instrument` 集合。
+/// 根据交易所类型映射为对应的市场ID, 调用通达信协议获取证券列表, 
+/// 并将返回的原始数据转换为 `Instrument` 集合. 
 ///
 /// # Arguments
 ///
-/// - `exchange` - 交易所枚举，支持 SSE(沪)、SZSE(深)、BSE(京)
+/// - `exchange` - 交易所枚举, 支持 SSE(沪), SZSE(深), BSE(京)
 /// - `start` - 请求起始位置
 /// - `count` - 请求数量
 ///
 /// # Returns
 ///
-/// 返回该交易所指定范围内的证券列表。若交易所不支持或协议请求失败，返回空向量。
+/// 返回该交易所指定范围内的证券列表. 若交易所不支持或协议请求失败, 返回空向量. 
 fn fetch_security_list(exchange: Exchange, start: u32, count: u32) -> Vec<Instrument> {
     let market_id = helpers::exchange_to_market(exchange.code()).unwrap_or(0) as u16;
     let resp = match crate::contrib::data::tdx::level1::std::security_list::fetch_security_list(market_id, start, count) {
@@ -145,14 +145,14 @@ fn fetch_security_list(exchange: Exchange, start: u32, count: u32) -> Vec<Instru
     instruments
 }
 
-/// 初始化证券列表，从通达信服务器拉取并缓存到本地 CSV 文件。
+/// 初始化证券列表, 从通达信服务器拉取并缓存到本地 CSV 文件. 
 ///
-/// 首先检查是否需要更新（通过 `should_initialize_file` 判断），若无需更新则尝试从已有 CSV 加载；
-/// 若 CSV 加载失败或标记为需要更新，则从服务器分页拉取证券列表：
-/// - 标准行情：拉取沪市(SSE)、深市(SZSE)、北交所(BSE)的 A 股列表
-/// - 扩展行情：拉取港交所(HKEX)的证券列表
+/// 首先检查是否需要更新(通过 `should_initialize_file` 判断), 若无需更新则尝试从已有 CSV 加载；
+/// 若 CSV 加载失败或标记为需要更新, 则从服务器分页拉取证券列表: 
+/// - 标准行情: 拉取沪市(SSE), 深市(SZSE), 北交所(BSE)的 A 股列表
+/// - 扩展行情: 拉取港交所(HKEX)的证券列表
 ///
-/// 拉取完成后写入 CSV 缓存文件，并将证券列表加载到内存中的 `SECURITY_MAP`。
+/// 拉取完成后写入 CSV 缓存文件, 并将证券列表加载到内存中的 `SECURITY_MAP`. 
 pub fn init_securities() {
     let fname = get_security_filename();
     let mut ensure_updated = status::should_initialize_file(fname.as_str(), Exchange::SSE);
@@ -248,13 +248,13 @@ pub fn init_securities() {
     }
 }
 
-/// 将证券列表写入 CSV 文件。
+/// 将证券列表写入 CSV 文件. 
 ///
-/// 自动创建目标文件所在的目录结构，写入表头及所有证券记录。
+/// 自动创建目标文件所在的目录结构, 写入表头及所有证券记录. 
 ///
 /// # Errors
 ///
-/// 若文件创建或写入失败，错误会被静默忽略（使用 `let _` 丢弃）。
+/// 若文件创建或写入失败, 错误会被静默忽略(使用 `let _` 丢弃). 
 fn write_securities_csv_v1(fname: &str, instruments: &[Instrument]) {
     if let Some(parent) = std::path::Path::new(fname).parent() {
         let _ = fs::create_dir_all(parent);
@@ -292,15 +292,15 @@ fn write_securities_csv(fname: &str, instruments: &[Instrument]) -> io::Result<(
 
     let file = File::create(fname)?;
     
-    // 使用 csv::Writer，它自带缓冲，且自动处理 CSV 转义
+    // 使用 csv::Writer, 它自带缓冲, 且自动处理 CSV 转义
     let mut wtr = WriterBuilder::new()
         .has_headers(true) // 自动处理表头
         .from_writer(file);
 
     for inst in instruments {
-        // serialize 会自动将结构体字段按顺序写入，并安全处理特殊字符
-        // 注意：这要求 Instrument 或其引用的字段实现了 serde::Serialize 
-        // 如果不想用 serde，也可以使用 wtr.write_record(&[ ... ]) 手动传入字符串切片
+        // serialize 会自动将结构体字段按顺序写入, 并安全处理特殊字符
+        // 注意: 这要求 Instrument 或其引用的字段实现了 serde::Serialize 
+        // 如果不想用 serde, 也可以使用 wtr.write_record(&[ ... ]) 手动传入字符串切片
         wtr.write_record(&[
             inst.exchange.identifier().to_string(),
             inst.instrument_type.0.to_string(),
@@ -323,12 +323,12 @@ fn write_securities_csv(fname: &str, instruments: &[Instrument]) -> io::Result<(
 
 /// 根据证券代码获取证券信息
 ///
-/// 自动校正输入的证券代码格式，并从全局证券映射表中查找对应的 [`Instrument`]。
-/// 若映射表尚未初始化，会先触发初始化再进行查找。
+/// 自动校正输入的证券代码格式, 并从全局证券映射表中查找对应的 [`Instrument`]. 
+/// 若映射表尚未初始化, 会先触发初始化再进行查找. 
 ///
 /// # Arguments
 ///
-/// * `symbol` - 证券代码，支持带或不带市场前缀的格式
+/// * `symbol` - 证券代码, 支持带或不带市场前缀的格式
 ///
 /// # Returns
 ///
@@ -337,7 +337,7 @@ fn write_securities_csv(fname: &str, instruments: &[Instrument]) -> io::Result<(
 ///
 /// # Panics
 ///
-/// 当全局证券映射表的互斥锁被毒化（持有锁的线程 panic）时会 panic。
+/// 当全局证券映射表的互斥锁被毒化(持有锁的线程 panic)时会 panic. 
 pub fn get_instrument_info(symbol: &str) -> Option<Instrument> {
     let security_code = correct_security_code(symbol);
     log::debug!("get_instrument_info: symbol={}, security_code={}", symbol, security_code);
@@ -353,7 +353,7 @@ pub fn get_instrument_info(symbol: &str) -> Option<Instrument> {
     }
 }
 
-/// 确保证券缓存已初始化（供外部调用）
+/// 确保证券缓存已初始化(供外部调用)
 pub fn ensure_securities_initialized() {
     init_securities();
 }
@@ -384,7 +384,7 @@ mod tests {
 
     #[test]
     fn test_correct_security_code_bj() {
-        // Python 920000 纯数字推断为 sh920000（6位数字先匹配上交所规则）
+        // Python 920000 纯数字推断为 sh920000(6位数字先匹配上交所规则)
         assert_eq!(correct_security_code("920000"), "sh920000");
         assert_eq!(correct_security_code("920000.BJ"), "bj920000");
     }
@@ -397,7 +397,7 @@ mod tests {
 
     #[test]
     fn test_correct_security_code_us() {
-        // Python ixic.us → ixic.os（Exchange.USA.identifier = "os"）
+        // Python ixic.us → ixic.os(Exchange.USA.identifier = "os")
         assert_eq!(correct_security_code("ixic.us"), "ixic.os");
         assert_eq!(correct_security_code("aapl.us"), "aapl.us");
     }

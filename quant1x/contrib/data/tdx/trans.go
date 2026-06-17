@@ -40,14 +40,14 @@ func initHistoricalTradingData() {
 	historicalTradingDataBegin = ts
 }
 
-// getBeginDateOfHistoricalTradingData 返回配置的历史逐笔数据的最早日期。
-// 该值为惰性初始化，来源于 defaultTrainsBeginDate。
+// getBeginDateOfHistoricalTradingData 返回配置的历史逐笔数据的最早日期.
+// 该值为惰性初始化, 来源于 defaultTrainsBeginDate.
 func getBeginDateOfHistoricalTradingData() exchange.Timestamp {
 	historicalTradingDataOnce.Do(initHistoricalTradingData)
 	return historicalTradingDataBegin
 }
 
-// updateBeginDateOfHistoricalTradingData 以线程安全的方式更新起始日期。
+// updateBeginDateOfHistoricalTradingData 以线程安全的方式更新起始日期.
 func updateBeginDateOfHistoricalTradingData(date string) {
 	// ensure initialized
 	_ = getBeginDateOfHistoricalTradingData()
@@ -58,7 +58,7 @@ func updateBeginDateOfHistoricalTradingData(date string) {
 	}
 }
 
-// restoreBeginDateOfHistoricalTradingData 将起始日期恢复为默认值。
+// restoreBeginDateOfHistoricalTradingData 将起始日期恢复为默认值.
 func restoreBeginDateOfHistoricalTradingData() {
 	updateBeginDateOfHistoricalTradingData(defaultTrainsBeginDate)
 }
@@ -75,7 +75,7 @@ type TurnoverDataSummary struct {
 	CloseTurnZ  float64 `csv:"close_turn_z"`
 }
 
-// loadTransactionDataFromCache 从 CSV 缓存读取逐笔数据并返回数据列表及起始时间字符串。
+// loadTransactionDataFromCache 从 CSV 缓存读取逐笔数据并返回数据列表及起始时间字符串.
 func loadTransactionDataFromCache(instrument exchange.InstrumentInfo, featureDate exchange.Timestamp, ignorePreviousData bool) ([]data.Transaction, string) {
 	list := make([]schema.Transaction, 0)
 
@@ -130,7 +130,7 @@ func loadTransactionDataFromCache(instrument exchange.InstrumentInfo, featureDat
 	return list, startTime
 }
 
-// updateTransactionData 从 level1 拉取逐笔数据并写入合并后的 CSV 缓存。
+// updateTransactionData 从 level1 拉取逐笔数据并写入合并后的 CSV 缓存.
 func updateTransactionData(instrument exchange.InstrumentInfo, featureDate exchange.Timestamp, startTime string) {
 	tradeDate := featureDate.YYYYMMDD()
 	todayIsLastTradingDate := featureDate.IsSameDate(exchange.NowTimestamp())
@@ -202,7 +202,7 @@ func updateTransactionData(instrument exchange.InstrumentInfo, featureDate excha
 		start += offset
 	}
 
-	// 将分段数据反转并展开（服务器返回最新到最旧）
+	// 将分段数据反转并展开(服务器返回最新到最旧)
 	for i := len(hs) - 1; i >= 0; i-- {
 		history = append(history, hs[i]...)
 	}
@@ -259,14 +259,14 @@ func ensureTransactionDataUpdated(instrument exchange.InstrumentInfo, featureDat
 	}
 }
 
-// CheckoutTransactionData 导出：检出指定日期的逐笔成交数据
+// CheckoutTransactionData 导出: 检出指定日期的逐笔成交数据
 func CheckoutTransactionData(instrument exchange.InstrumentInfo, featureDate exchange.Timestamp, ignorePreviousData bool) []data.Transaction {
 	ensureTransactionDataUpdated(instrument, featureDate, ignorePreviousData)
 	list, _ := loadTransactionDataFromCache(instrument, featureDate, ignorePreviousData)
 	return list
 }
 
-// CountInflow 计算成交额/成交量汇总，行为与 C++ 实现相似。
+// CountInflow 计算成交额/成交量汇总, 行为与 C++ 实现相似.
 func CountInflow(list []std.TickTransaction, securityCode string, featureDate exchange.Timestamp) TurnoverDataSummary {
 	summary := TurnoverDataSummary{}
 	if len(list) == 0 {
@@ -314,7 +314,7 @@ func CountInflow(list []std.TickTransaction, securityCode string, featureDate ex
 		lastPrice = price
 	}
 
-	// F10 尚未在此模块移植到 Go，保留 TurnZ 为零。
+	// F10 尚未在此模块移植到 Go, 保留 TurnZ 为零.
 	//_ = correctedCode
 	_ = featureDate
 	return summary
@@ -339,6 +339,6 @@ func (d *DataTrans) Update(instrument exchange.InstrumentInfo, date exchange.Tim
 }
 
 func init() {
-	// 注册到 data 插件中心，容错处理重复注册
+	// 注册到 data 插件中心, 容错处理重复注册
 	_ = data.Register(&DataTrans{})
 }

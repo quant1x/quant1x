@@ -34,7 +34,7 @@ GLOBAL_DEFAULT_START_DATE = "1900-01-01"
 market_first_date: Timestamp
 
 # 初始化市场首日日期
-# 与 C++ 严格保持一致：解析常量并取盘前时间。
+# 与 C++ 严格保持一致: 解析常量并取盘前时间. 
 try:
     ts = Timestamp.parse(MarketCnFirstListTime)
     market_first_date = ts.get_pre_market_time()

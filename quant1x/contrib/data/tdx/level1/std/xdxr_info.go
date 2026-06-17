@@ -15,14 +15,14 @@ type XdxrCategory int
 
 const (
 	ExDividend                     XdxrCategory = 1  // 除权除息
-	BonusSharesListing             XdxrCategory = 2  // 送股上市（无偿）
-	RestrictedSharesListing        XdxrCategory = 3  // 非流通股上市（受限股解禁）
+	BonusSharesListing             XdxrCategory = 2  // 送股上市(无偿)
+	RestrictedSharesListing        XdxrCategory = 3  // 非流通股上市(受限股解禁)
 	UnspecifiedCapitalAdjustment   XdxrCategory = 4  // 未知股本变动
-	GeneralCapitalAdjustment       XdxrCategory = 5  // 股本变化（保留，但慎用）
+	GeneralCapitalAdjustment       XdxrCategory = 5  // 股本变化(保留, 但慎用)
 	NewShareIssuance               XdxrCategory = 6  // 增发新股
 	ShareRepurchase                XdxrCategory = 7  // 股份回购
 	NewSharesListing               XdxrCategory = 8  // 增发新股上市
-	TransferredRightsSharesListing XdxrCategory = 9  // 转配股上市（中国特有）
+	TransferredRightsSharesListing XdxrCategory = 9  // 转配股上市(中国特有)
 	ConvertibleBondListing         XdxrCategory = 10 // 可转债上市
 	StockSplitOrReverseSplit       XdxrCategory = 11 // 拆股或合股
 	RestrictedSharesConsolidation  XdxrCategory = 12 // 非流通股缩股
@@ -119,17 +119,17 @@ func (x XdxrInfo) IsAdjust() bool {
 
 // AdjustFactor 计算调整因子m和a
 //
-// 根据股票分红配股等参数计算价格调整因子，用于复权计算
+// 根据股票分红配股等参数计算价格调整因子, 用于复权计算
 //
 // 返回调整因子m和a的元组
 // - m: 价格调整乘数因子
 // - a: 价格调整加数因子
 //
-// 当1+B接近0时，会返回默认值m=1.0和a=0.0
+// 当1+B接近0时, 会返回默认值m=1.0和a=0.0
 func (x XdxrInfo) AdjustFactor() (float64, float64) {
 	var m, a float64
 
-	// 计算货币调整项和股本调整比率（通过独立函数）
+	// 计算货币调整项和股本调整比率(通过独立函数)
 	A := x.ComputeMonetaryAdjustment()
 	B := x.ComputeShareAdjustmentRatio()
 
@@ -160,7 +160,7 @@ func (x XdxrInfo) ComputeShareAdjustmentRatio() float64 {
 }
 
 // IsCapitalChange 判断是否是股本变化
-// 返回: true表示是股本变化，false表示不是
+// 返回: true表示是股本变化, false表示不是
 func (x XdxrInfo) IsCapitalChange() bool {
 	switch x.Category {
 	case int(ExDividend), // 除权除息

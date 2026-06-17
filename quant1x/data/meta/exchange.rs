@@ -5,8 +5,8 @@ use super::region::Region;
 
 /// 交易所
 ///
-/// 每个变体持有 (mic, identifier, region, label) 四元组，
-/// 与 Python 版 Exchange(Enum) 语义一致。
+/// 每个变体持有 (mic, identifier, region, label) 四元组, 
+/// 与 Python 版 Exchange(Enum) 语义一致. 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Exchange {
     // 中国市场
@@ -54,7 +54,7 @@ pub enum Exchange {
     UNKNOWN, // 未知交易所
 }
 
-/// 所有枚举变体构成的静态数组，用于迭代查找（对应 Python 的 `for ex in cls`）。
+/// 所有枚举变体构成的静态数组, 用于迭代查找(对应 Python 的 `for ex in cls`). 
 const ALL: &[Exchange] = &[
     Exchange::SSE, Exchange::XSSC, Exchange::SZSE, Exchange::XSEC, Exchange::BSE,
     Exchange::SHFE, Exchange::XINE, Exchange::CZCE, Exchange::DCE, Exchange::CFFEX,
@@ -204,7 +204,7 @@ impl Exchange {
         }
     }
 
-    /// 枚举名，对应 Python 的 `self.name`
+    /// 枚举名, 对应 Python 的 `self.name`
     pub fn code(self) -> &'static str {
         match self {
             Exchange::SSE => "SSE",
@@ -341,7 +341,7 @@ impl std::fmt::Display for Exchange {
     }
 }
 
-/// 智能解析字符串为 Exchange 实例（函数版本，对应 Go 的 ParseExchange）
+/// 智能解析字符串为 Exchange 实例(函数版本, 对应 Go 的 ParseExchange)
 pub fn parse_exchange(s: &str) -> Result<Exchange, String> {
     Exchange::parse(s)
 }

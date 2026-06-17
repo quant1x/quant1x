@@ -2,7 +2,7 @@
 #ifndef QUANT1X_DATA_MARKET_H
 #define QUANT1X_DATA_MARKET_H 1
 
-/// market — 市场/证券代码识别与纠正，与 Python data/market.py 对齐
+/// market — 市场/证券代码识别与纠正, 与 Python data/market.py 对齐
 
 #include "meta/exchange.h"
 #include "meta/instrument.h"
@@ -14,7 +14,7 @@
 
 namespace data {
 
-/// 根据交易所和代码，使用对应规则检测证券类型
+/// 根据交易所和代码, 使用对应规则检测证券类型
 /// 对应 Python 的 detect_instrument_type_by_rule
 meta::InstrumentType detect_instrument_type_by_rule(meta::Exchange exchange, const std::string& code);
 
@@ -43,7 +43,7 @@ inline bool assert_index_by_security_code(const std::string& security_code) {
     return instype_is_index(inst.type);
 }
 
-/// 纠正证券代码格式，补全前缀或后缀
+/// 纠正证券代码格式, 补全前缀或后缀
 /// 对应 Python 的 correct_security_code
 ///
 /// 支持多种格式:

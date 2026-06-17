@@ -5,7 +5,7 @@
 #include "feature_detection.h"
 #include <spdlog/spdlog.h>
 
-// 网络相关头文件（Windows 特定）
+// 网络相关头文件(Windows 特定)
 #if OS_IS_WINDOWS
 #ifndef WINVER
 #define WINVER 0x0A00
@@ -99,7 +99,7 @@ constexpr const char *const INVALID_DATE_FORMAT_YMD_COMPACT_MSG = "日期格式�
 // 其他大端架构
 #define ENDIAN_BIG 1
 #else
-// 无法确定时，触发编译错误
+// 无法确定时, 触发编译错误
 #error "Unknown endianness"
 #endif
 

@@ -41,8 +41,8 @@ func (c CumulativeAdjustment) Inverse(adjustedPrice float64) float64 {
 //
 // 返回值:
 //
-//	如果找到目标日期，返回其在数组中的偏移量(从末尾开始计数)
-//	如果目标日期不存在或比所有K线日期都早，返回-1
+//	如果找到目标日期, 返回其在数组中的偏移量(从末尾开始计数)
+//	如果目标日期不存在或比所有K线日期都早, 返回-1
 func CheckKlineOffset(klines []data.KLineRaw, date string) int {
 	rows := len(klines)
 	offset := 0
@@ -190,7 +190,7 @@ func CalculatePreAdjust(klines []*data.KLine, xdxrList []data.XdxrInfo) {
 	ApplyForwardAdjustmentIncrementally(klines, xdxrList, startTs, endTs, true)
 }
 
-// GetCrossSectionForwardAdjustedKlines 获取指定证券代码在指定日期前的K线数据，并进行前复权处理
+// GetCrossSectionForwardAdjustedKlines 获取指定证券代码在指定日期前的K线数据, 并进行前复权处理
 //
 // 参数:
 //
@@ -199,12 +199,12 @@ func CalculatePreAdjust(klines []*data.KLine, xdxrList []data.XdxrInfo) {
 //
 // 返回:
 //
-//	前复权后的K线数据切片，如果获取失败则返回空切片
+//	前复权后的K线数据切片, 如果获取失败则返回空切片
 //
 // 注意:
 //  1. 会自动修正证券代码格式
-//  2. 如果找不到对应日期数据，返回空切片
-//  3. 当存在除权除息数据时，会对K线进行前复权处理
+//  2. 如果找不到对应日期数据, 返回空切片
+//  3. 当存在除权除息数据时, 会对K线进行前复权处理
 //  4. 返回的K线数据按日期升序排列
 func GetCrossSectionForwardAdjustedKlines(securityCode, asOfDate string) []*data.KLine {
 	correctedCode := exchange.CorrectSecurityCode(securityCode)

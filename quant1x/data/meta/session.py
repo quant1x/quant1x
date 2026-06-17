@@ -71,7 +71,7 @@ class Permission(IntFlag):
     MATCHING_TRANSACTION= MATCHING | FILL
     """撮合成交, 正在撮合中, 会产生成交记录"""
     
-    # 连续交易：市价 + 限价 + 可成交 + 撤单 + 改单 + 计入分钟数
+    # 连续交易: 市价 + 限价 + 可成交 + 撤单 + 改单 + 计入分钟数
     CONTINUOUS_TRADING  = MARKET | LIMIT |  CANCEL | MODIFY | OPEN | MATCHING_TRANSACTION
     
     INITIALIZING        = IS_TEMPORARY
@@ -79,14 +79,14 @@ class Permission(IntFlag):
     
     # 盘前
     PRE_MARKET          = IS_TEMPORARY | CANCEL | LIMIT
-    """盘前, 允许下单、撤单, 但不允许市价单"""
+    """盘前, 允许下单, 撤单, 但不允许市价单"""
     AFTER_HOURS         = IS_TEMPORARY | CANCEL | LIMIT
-    """盘后, 允许下单、撤单, 但不允许市价单"""
+    """盘后, 允许下单, 撤单, 但不允许市价单"""
     
     # 早盘集合竞价 = POS (Pre-Opening Session)
     # 收盘竞价时段 = CAS Closing Auction Session)
     
-    # 集合竞价：限价 + 撤单 + 撮合
+    # 集合竞价: 限价 + 撤单 + 撮合
     CALL_AUCTION        = LIMIT | MATCHING | IS_TEMPORARY
     """集合竞价, 仅限价单, 临时状态 (可自动恢复)"""
     
@@ -111,7 +111,7 @@ class Permission(IntFlag):
     """紧急停牌 (市场活跃但不能撮合, 只有 OPEN 位)"""
     
     LUNCH_BREAK         = ACCEPT_ORDER_ONLY | IS_TEMPORARY
-    """交易日休息时段 (允许下单、撤单, 但不允许市价单)"""
+    """交易日休息时段 (允许下单, 撤单, 但不允许市价单)"""
     
     def can_match(self) -> bool:
         """是否允许成交 (连续或集合竞价)"""
@@ -138,16 +138,16 @@ class Permission(IntFlag):
         return bool(self & Permission.OPEN)
 
 # ======================================================================
-# 时间状态枚举（使用掩码组合）
+# 时间状态枚举(使用掩码组合)
 # ======================================================================
 class TimeStatus(IntFlag):
     """全球统一交易时间状态枚举, 使用掩码组合表示不同状态"""
     OPEN                           = Permission.OPEN
     """开盘"""
-    CLOSED                         = Permission.CLOSED              # 当日收盘（默认状态, 不可交易）
-    """当日收盘（默认状态, 不可交易）"""
-    PRE_MARKET                     = Permission.PRE_MARKET          # 盘前（活跃但未开始交易）
-    AFTER_HOURS                    = Permission.AFTER_HOURS         # 盘后（活跃但已结束交易）
+    CLOSED                         = Permission.CLOSED              # 当日收盘(默认状态, 不可交易)
+    """当日收盘(默认状态, 不可交易)"""
+    PRE_MARKET                     = Permission.PRE_MARKET          # 盘前(活跃但未开始交易)
+    AFTER_HOURS                    = Permission.AFTER_HOURS         # 盘后(活跃但已结束交易)
     SUSPEND                        = Permission.LUNCH_BREAK         # 休市中(非活跃, 不可交易)
     CONTINUOUS_TRADING             = Permission.CONTINUOUS_TRADING  # 连续竞价(上午/下午, 可撤单)
     TRADING                        = CONTINUOUS_TRADING             # 连续竞价, 盘中交易别名
@@ -167,8 +167,8 @@ class TimeStatus(IntFlag):
     AUCTION_MATCHING_TO_CLOSING    = CALL_AUCTION | Permission.FILL # CLOSING_AUCTION_MATCHING
     """集合竞价收盘 阶段"""
     
-    ExchangeHaltTrading            = OPEN                         # 市场活跃但暂停交易(如临时停牌、熔断等)
-    """市场活跃但暂停交易(如午间休市、临时停牌、熔断等)"""
+    ExchangeHaltTrading            = OPEN                         # 市场活跃但暂停交易(如临时停牌, 熔断等)
+    """市场活跃但暂停交易(如午间休市, 临时停牌, 熔断等)"""
     
     
     def is_market_active(self) -> bool:
@@ -389,10 +389,10 @@ class TradingSession:
 
     def update_time_bounds(self):
         """
-        更新交易时段的时间边界, 计算所有交易时段中的最早开始时间和最晚结束时间。
+        更新交易时段的时间边界, 计算所有交易时段中的最早开始时间和最晚结束时间. 
         
-        如果没有交易时段(sessions为空), 则设置默认时间边界为23:59:59和00:00:00。
-        否则遍历所有交易时段, 找到最早的开始时间(begin)和最晚的结束时间(end)。
+        如果没有交易时段(sessions为空), 则设置默认时间边界为23:59:59和00:00:00. 
+        否则遍历所有交易时段, 找到最早的开始时间(begin)和最晚的结束时间(end). 
         
         Attributes Updated:
             earliest_start (Timestamp): 所有交易时段中最小的开始时间
@@ -438,7 +438,7 @@ class TradingSession:
             if status is not None:
                 return status
 
-        # 不在任何交易时段内, 进一步判断是盘前、盘后还是休市
+        # 不在任何交易时段内, 进一步判断是盘前, 盘后还是休市
 
         # 全天交易开始前
         if timestamp < self.earliest_start:
@@ -549,13 +549,13 @@ def init_hk_session() -> TradingSession:
     初始化当日的交易会话时段 (港股)
     https://www.futunn.com/learn/detail-before-entering-the-market-understand-the-trading-rules-of-the-hong-kong-stock-market-83831-230556033
     """
-    # 1. 输入买卖盘时段：上午9:00-9:15,这段时间可以随时输入下单(竞价市价单及竞价限价单), 且期间随时可以撤单。
+    # 1. 输入买卖盘时段: 上午9:00-9:15,这段时间可以随时输入下单(竞价市价单及竞价限价单), 且期间随时可以撤单. 
     tr1 = TimeRange("09:00:00 ~ 09:15:00", TimeStatus.AUCTION_ORDER_INPUT_PERIOD)
-    # 2. 不可取消时段：上午9:15-9:20, 这段时间随时可以下单, 但不可撤单。
+    # 2. 不可取消时段: 上午9:15-9:20, 这段时间随时可以下单, 但不可撤单. 
     tr2 = TimeRange("09:15:00 ~ 09:20:00", TimeStatus.AUCTION_NO_CANCELLATION_PERIOD)
-    # 3. 随机对盘时段：上午9:20-9:22, 在这段时间如果对盘成功, 会产生集合竞价的价格, 也就是开盘价。开盘价涨跌幅限制在15%以内。
+    # 3. 随机对盘时段: 上午9:20-9:22, 在这段时间如果对盘成功, 会产生集合竞价的价格, 也就是开盘价. 开盘价涨跌幅限制在15%以内. 
     tr3 = TimeRange("09:20:00 ~ 09:22:00", TimeStatus.AUCTION_MATCHING_TO_OPENING)
-    # 4. 暂停时段：完成对盘后-上午9:30, 这段时间的竞价限价单, 将自动转为限价单, 并于持续交易时继续等待成交。系统在9:28公布开盘价。
+    # 4. 暂停时段: 完成对盘后-上午9:30, 这段时间的竞价限价单, 将自动转为限价单, 并于持续交易时继续等待成交. 系统在9:28公布开盘价. 
     tr4 = TimeRange("09:22:00 ~ 09:30:00", TimeStatus.SUSPEND)
     tr5 = TimeRange("09:30:00 ~ 12:00:00", TimeStatus.CONTINUOUS_TRADING)
     tr6 = TimeRange("12:00:00 ~ 13:00:00", TimeStatus.SUSPEND)
@@ -586,7 +586,7 @@ def init_us_session() -> TradingSession:
     return TradingSession(tr1, tr2, tr3)
 
 
-# 全局单例（由 RollingOnce 每日重建）
+# 全局单例(由 RollingOnce 每日重建)
 _trading_hours_map = {}
 _trading_hours_default = init_cn_session() # 默认中国市场时段
 _ts_today_session_once = RollingOnce(name='sessions_init', cron=tradinghours.cn_cron_expr_daily_init)
@@ -596,8 +596,8 @@ def _ts_today_session_init():
     """
     初始化今日各市场交易时段信息
     
-    该函数负责初始化中国(CN)、香港(HK)和美国(US)市场的当日交易时段, 
-    并将这些信息存储到全局变量 `_trading_hours_map` 中。
+    该函数负责初始化中国(CN), 香港(HK)和美国(US)市场的当日交易时段, 
+    并将这些信息存储到全局变量 `_trading_hours_map` 中. 
     
     注意:
         该函数会修改全局变量 `_trading_hours_map`, 
@@ -617,7 +617,7 @@ def latest_session_by_exchange(exchange: Exchange = Exchange.SSE) -> TradingSess
     获取指定交易所当天的交易时段信息
     
     Args:
-        exchange (Exchange): 交易所枚举, 默认为SSE（上海证券交易所）
+        exchange (Exchange): 交易所枚举, 默认为SSE(上海证券交易所)
     
     Returns:
         TradingSession: 返回对应交易所的交易时段对象

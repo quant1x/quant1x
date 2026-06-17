@@ -9,30 +9,30 @@ TEST_CASE("formula-hhv", "[formula]") {
     // 数值类型测试
     xt::xarray<double> values_num = {10.5, 11.2, 12.3, 11.8, 10.9};
     std::cout << "origin:" << values_num << std::endl;
-    auto result_num = formula::hhv(values_num, 3); // 正确：调用数值版本
+    auto result_num = formula::hhv(values_num, 3); // 正确: 调用数值版本
     std::cout << "Numeric HHV: " << result_num << std::endl;
 
     // 字符串测试
     xt::xarray<std::string> values_text = {"A", "C", "B", "D", "A"};
     std::cout << "origin:" << values_text << std::endl;
-    auto result_str = formula::hhv(values_text, 2); // 正确：调用特化版本
+    auto result_str = formula::hhv(values_text, 2); // 正确: 调用特化版本
     std::cout << "String HHV: " << result_str << std::endl;
 }
 
 TEST_CASE("formula-llv", "[formula]") {
     // 数值类型测试
     xt::xarray<double> values_num = {10.5, 11.2, 12.3, 11.8, 10.9};
-    auto result_num = formula::llv(values_num, 3); // 正确：调用数值版本
+    auto result_num = formula::llv(values_num, 3); // 正确: 调用数值版本
     std::cout << "Numeric HHV: " << result_num << std::endl;
 
     // 字符串测试
     xt::xarray<std::string> values_text = {"A", "C", "B", "D", "A"};
-    auto result_str = formula::llv(values_text, 2); // 正确：调用特化版本
+    auto result_str = formula::llv(values_text, 2); // 正确: 调用特化版本
     std::cout << "String HHV: " << result_str << std::endl;
 
-    // 非法类型（编译时报错）
+    // 非法类型(编译时报错)
     // xt::xarray<bool> flags = {true, false};
-    // auto err = HHV(flags, 2); // 错误：static_assert触发
+    // auto err = HHV(flags, 2); // 错误: static_assert触发
 }
 
 // 正确的BARSLAST实现
@@ -48,13 +48,13 @@ xt::xarray<int> BARSLAST(E&& cond) {
 
     for (std::size_t i = 0; i < size; ++i) {
         if (cond[i]) {
-            // 当前条件成立，周期数为0
+            // 当前条件成立, 周期数为0
             result[i] = 0;
             // 更新上一次条件成立位置
             last_true_pos = static_cast<int>(i);
         }
         else if (last_true_pos >= 0) {
-            // 当前条件不成立，但有历史成立记录
+            // 当前条件不成立, 但有历史成立记录
             result[i] = static_cast<int>(i) - last_true_pos;
         }
         // 否则保持-1
@@ -63,7 +63,7 @@ xt::xarray<int> BARSLAST(E&& cond) {
     return result;
 }
 
-// 优化版本（保证正确性）
+// 优化版本(保证正确性)
 template <typename E>
 xt::xarray<int> BARSLAST_optimized(E&& cond) {
     const auto size = cond.size();
@@ -90,12 +90,12 @@ TEST_CASE("formula-barslast-bool", "[formula]") {
     xt::xarray<double> values_num = {1, 2, 3, 4, 5, 6, 0, 8, 9, 10, 11, 12};
     auto c0 = values_num <6 && values_num>2;
     std::cout << "origin:" << values_num << std::endl;
-    auto result_num = BARSLAST_optimized(c0); // 正确：调用数值版本
+    auto result_num = BARSLAST_optimized(c0); // 正确: 调用数值版本
     std::cout << "result(num): " << result_num << std::endl;
 
     auto c1 = values_num >200;
     std::cout << "origin:" << values_num << std::endl;
-    result_num = BARSLAST_optimized(c1); // 正确：调用数值版本
+    result_num = BARSLAST_optimized(c1); // 正确: 调用数值版本
     std::cout << "result(num): " << result_num << std::endl;
 }
 
@@ -123,7 +123,7 @@ TEST_CASE("BARSLAST_simd", "[formula]") {
     xt::xarray<double> values_num = {1, 2, 3, 4, 5, 6, 0, 8, 9, 10, 11, 12};
     auto c0 = values_num >10;
     std::cout << "origin:" << values_num << std::endl;
-    auto result_num = BARSLAST_simd(c0); // 正确：调用数值版本
+    auto result_num = BARSLAST_simd(c0); // 正确: 调用数值版本
     std::cout << "result(num): " << result_num << std::endl;
 }
 
@@ -132,7 +132,7 @@ TEST_CASE("BARSLAST_release", "[formula]") {
     xt::xarray<double> values_num = {1, 2, 3, 4, 5, 6, 0, 8, 9, 10, 11, 12};
     auto c0 = values_num >10;
     std::cout << "origin:" << values_num << std::endl;
-    auto result_num = formula::bars_last(c0); // 正确：调用数值版本
+    auto result_num = formula::bars_last(c0); // 正确: 调用数值版本
     std::cout << "result(num): " << result_num << std::endl;
 }
 
@@ -151,7 +151,7 @@ xt::xarray<double> BARSLASTS(E&& cond, int N) {
             if (cond[j]) {
                 count++;
                 if (count == N) {
-                    // 计算周期数（包含两端）
+                    // 计算周期数(包含两端)
                     result[i] = i - j + 1;
                     break;
                 }
@@ -235,7 +235,7 @@ xt::xarray<double> RSI_std(E&& close, size_t period = 14) {
     auto gain = xt::maximum(delta, 0.0);
     auto loss = xt::maximum(-delta, 0.0);
 
-    // 计算初始平均值（简单平均）
+    // 计算初始平均值(简单平均)
     double avg_gain = xt::sum(xt::view(gain, xt::range(0, period)))() / period;
     double avg_loss = xt::sum(xt::view(loss, xt::range(0, period)))() / period;
 
@@ -247,7 +247,7 @@ xt::xarray<double> RSI_std(E&& close, size_t period = 14) {
         rsi[period] = 100.0 - (100.0 / (1.0 + rs));
     }
 
-    // 计算后续RSI值（使用Wilder平滑）
+    // 计算后续RSI值(使用Wilder平滑)
     for (size_t i = period + 1; i < size; ++i) {
         avg_gain = (avg_gain * (period - 1) + gain[i - 1]) / period;
         avg_loss = (avg_loss * (period - 1) + loss[i - 1]) / period;
@@ -340,7 +340,7 @@ xt::xarray<double> RSI_TDX(E&& close, size_t n) {
     return rsi;
 }
 
-// 通达信SMA函数（EMA变种实现）
+// 通达信SMA函数(EMA变种实现)
 xt::xarray<double> SMA_TDX(const xt::xarray<double>& data, int n, int m = 1) {
     const auto size = data.size();
     xt::xarray<double> sma = xt::zeros<double>({size});
@@ -377,11 +377,11 @@ xt::xarray<double> RSI_TDX_EXACT(const xt::xarray<double>& close, int period = 1
     auto gain = xt::maximum(delta, 0.0);
     auto loss = xt::maximum(-delta, 0.0);
 
-    // 计算SMA（使用EMA变种，M=1）
+    // 计算SMA(使用EMA变种, M=1)
     auto sma_gain = SMA_TDX(gain, period, 1);
     auto sma_loss = SMA_TDX(loss, period, 1);
 
-    // 计算RSI（从第1天开始计算）
+    // 计算RSI(从第1天开始计算)
     rsi[0] = 0; // 第0天设为0
     for (int i = 1; i < int(size); ++i) {
         if (sma_loss[i] == 0) {
@@ -395,7 +395,7 @@ xt::xarray<double> RSI_TDX_EXACT(const xt::xarray<double>& close, int period = 1
     return rsi;
 }
 
-// 类型特征：检查是否为 xtensor 布尔表达式
+// 类型特征: 检查是否为 xtensor 布尔表达式
 template <typename T>
 struct is_xtensor_bool : std::false_type {};
 
@@ -466,7 +466,7 @@ TEST_CASE("RSI-tdx", "[formula]") {
 
 
 TEST_CASE("median", "[formula]") {
-    // 测试用例1：奇数长度
+    // 测试用例1: 奇数长度
     xt::xarray<int> arr1 = {5, 3, 1, 4, 2};
     std::cout << "降序排序后的中位数 (" << arr1 << ") = "
               << formula::median(arr1) << std::endl;
@@ -486,9 +486,9 @@ TEST_CASE("stddev", "[formula]") {
     std::cout << "优化后的5日滚动标准差:\n" << std_5day_opt << std::endl;
 }
 
-// 简单实现（前N-1个为NaN）
+// 简单实现(前N-1个为NaN)
 xt::xarray<double> rolling_std_simple(const xt::xarray<double>& data, size_t period) {
-    // 在函数开头添加：
+    // 在函数开头添加: 
     if (period <= 1) {
         xt::xarray<double> result = xt::full_like(data, std::numeric_limits<double>::quiet_NaN());
         return result;
@@ -518,7 +518,7 @@ xt::xarray<double> rolling_std_simple(const xt::xarray<double>& data, size_t per
     return result;
 }
 
-// 优化实现（前N-1个为NaN）
+// 优化实现(前N-1个为NaN)
 xt::xarray<double> rolling_std_optimized(const xt::xarray<double>& data, size_t period) {
     // 1. 初始化全NaN结果
     xt::xarray<double> result = xt::empty<double>(data.shape());
@@ -592,7 +592,7 @@ TEST_CASE("滚动标准差性能基准测试", "[benchmark][rolling_std]") {
     const size_t data_size = 1'000'000;
     xt::xarray<double> data = xt::random::randn<double>({data_size});
 
-    // 2. 预热缓存（避免冷启动误差）
+    // 2. 预热缓存(避免冷启动误差)
     volatile auto warmup = rolling_std_optimized(data, 20); (void)warmup;
 
     // 3. 正式测试
@@ -621,7 +621,7 @@ TEST_CASE("滚动标准差性能基准测试", "[benchmark][rolling_std]") {
 
         // 5. 内存访问模式测试
     SECTION("缓存友好性测试") {
-        // 准备独立数据块（避免视图带来的潜在问题）
+        // 准备独立数据块(避免视图带来的潜在问题)
         std::vector<xt::xarray<double>> chunks = {
             xt::random::randn<double>({1'000}),
             xt::random::randn<double>({10'000}),
@@ -654,7 +654,7 @@ private:
     int count = 0;       // 已处理的数据点数量
 
 public:
-    // 更新统计量（添加一个新数据点）
+    // 更新统计量(添加一个新数据点)
     void update(double newValue) {
         // 1. 更新数据点计数
         count++;
@@ -663,7 +663,7 @@ public:
         //    delta = xₙ - μₙ₋₁
         double delta = newValue - mean;
 
-        // 3. 更新均值（递推公式）
+        // 3. 更新均值(递推公式)
         //    μₙ = μₙ₋₁ + (xₙ - μₙ₋₁)/n
         mean += delta / count;
 
@@ -671,13 +671,13 @@ public:
         //    delta2 = xₙ - μₙ
         double delta2 = newValue - mean;
 
-        // 5. 更新平方和（关键步骤）
+        // 5. 更新平方和(关键步骤)
         //    M2ₙ = M2ₙ₋₁ + (xₙ - μₙ₋₁)(xₙ - μₙ)
         M2 += delta * delta2;
 
-        /* 数学解释：
+        /* 数学解释: 
          * 这里使用 delta * delta2 而不是 delta2² 是为了数值稳定性
-         * 展开后：
+         * 展开后: 
          * (xₙ - μₙ₋₁)(xₙ - μₙ)
          * = (xₙ - μₙ₋₁)(xₙ - μₙ₋₁ - (μₙ - μₙ₋₁))
          * = (xₙ - μₙ₋₁)² - (xₙ - μₙ₋₁)(δ/n)
@@ -697,7 +697,7 @@ public:
         return (count > 0) ? M2 / count : numeric::NaN;  // NaN如果无数据
     }
 
-    // 获取样本方差（无偏估计）
+    // 获取样本方差(无偏估计)
     double getVarianceSample() const {
         return (count > 1) ? M2 / (count - 1) : numeric::NaN;  // NaN如果数据不足
     }
@@ -712,7 +712,7 @@ public:
         return std::sqrt(getVarianceSample());
     }
 
-    // 合并两个独立计算的统计量（用于并行计算）
+    // 合并两个独立计算的统计量(用于并行计算)
     void combine(const WelfordStdDev& other) {
         if (other.count == 0) return;
 
@@ -726,7 +726,7 @@ public:
         // μ_new = (n₁μ₁ + n₂μ₂)/(n₁+n₂)
         double new_mean = mean + delta * other.count / new_count;
 
-        // 计算合并后的M2（关键步骤）
+        // 计算合并后的M2(关键步骤)
         // M2_new = M2₁ + M2₂ + δ²n₁n₂/(n₁+n₂)
         double new_M2 = M2 + other.M2 +
                         delta * delta * count * other.count / new_count;
@@ -736,8 +736,8 @@ public:
         mean = new_mean;
         M2 = new_M2;
 
-        /* 数学解释：
-         * 合并公式来源于：
+        /* 数学解释: 
+         * 合并公式来源于: 
          * 总平方和 = Σ(x - μ_new)²
          *          = Σ₁(x - μ₁ + μ₁ - μ_new)² + Σ₂(x - μ₂ + μ₂ - μ_new)²
          *          = [M2₁ + n₁(μ₁ - μ_new)²] + [M2₂ + n₂(μ₂ - μ_new)²]
@@ -890,12 +890,12 @@ xt::xarray<int> bars_last_count(const xt::xexpression<E>& e) {
     // 获取表达式的实际类型
     using value_type = typename std::remove_reference_t<decltype(e.derived_cast())>::value_type;
 
-    // 如果表达式已经是 bool 类型，则直接使用
+    // 如果表达式已经是 bool 类型, 则直接使用
     xt::xarray<bool> condition;
     if constexpr (std::is_same_v<value_type, bool>) {
         condition = xt::eval(e.derived_cast());
     } else {
-        // 否则判断是否不等于 0（适用于数值类型）
+        // 否则判断是否不等于 0(适用于数值类型)
         condition = xt::eval(e.derived_cast() != 0);
     }
 
@@ -928,7 +928,7 @@ TEST_CASE("bars_last_count", "[formula]") {
  * @brief 使用xtensor实现通达信VALUEWHEN函数
  * @param condition 条件数组
  * @param value 取值数组
- * @return 返回结果数组，形状与输入相同
+ * @return 返回结果数组, 形状与输入相同
  */
 xt::xarray<double> valueWhen(const xt::xarray<bool>& condition, const xt::xarray<double>& value) {
     // 检查输入形状是否相同
@@ -951,7 +951,7 @@ xt::xarray<double> valueWhen(const xt::xarray<bool>& condition, const xt::xarray
             if (lastValidValue.has_value()) {
                 result.flat(i) = lastValidValue.value();
             } else {
-                // 如果之前没有满足条件的值，返回NaN
+                // 如果之前没有满足条件的值, 返回NaN
                 result.flat(i) = std::numeric_limits<double>::quiet_NaN();
             }
         }

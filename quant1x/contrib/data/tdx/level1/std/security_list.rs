@@ -14,7 +14,7 @@ use super::super::super::command::*;
 use super::super::super::helpers::int_to_float64;
 use super::super::super::protocol::{BaseMessage, RequestHeader, ResponseHeader};
 
-/// 单次请求的最大记录数，对应 Python SECURITY_LIST_PRE_REQUEST_MAX
+/// 单次请求的最大记录数, 对应 Python SECURITY_LIST_PRE_REQUEST_MAX
 pub const PRE_REQUEST_MAX: u32 = 1600;
 
 /// 证券条目

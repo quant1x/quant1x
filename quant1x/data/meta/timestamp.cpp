@@ -1,210 +1,268 @@
-#include <quant1x/data/meta/timestamp.h>
-#include <algorithm>
-#include <chrono>
-#include <ctime>
-#include <sstream>
-#include <iomanip>
+#include "timestamp.h"
+#include <quant1x/config/config.h>
+#include <quant1x/std/time.h>
 
 namespace meta {
 
-Timestamp::Timestamp(const std::string& s) {
-    if (s.empty()) {
-        ms = 0;
-        return;
+    constexpr auto only_date_layout = "{:%Y-%m-%d}";
+    constexpr auto cache_date_layout = "{:%Y%m%d}";
+
+    /**
+     * @brief 本地当前时间
+     * @return
+     */
+    int64_t Timestamp::current() {
+        auto utc_now = std::chrono::system_clock::now();
+        auto epoch = std::chrono::duration_cast<std::chrono::milliseconds>(utc_now.time_since_epoch());
+        auto ts = epoch.count();
+        return api::ms_utc_to_local(ts);
     }
-    *this = parse(s);
-}
 
-Timestamp Timestamp::now() {
-    auto now_tp = std::chrono::system_clock::now();
-    auto ms_tp = std::chrono::duration_cast<std::chrono::milliseconds>(now_tp.time_since_epoch());
-    // 转换为本地时间
-    auto now_c = std::chrono::system_clock::to_time_t(now_tp);
-    std::tm local_tm{};
-#ifdef _WIN32
-    localtime_s(&local_tm, &now_c);
-#else
-    localtime_r(&now_c, &local_tm);
-#endif
-    // 计算本地时区偏移
-    std::time_t utc_mktime = std::mktime(&local_tm);
-    auto utc_offset = static_cast<int64_t>(std::difftime(utc_mktime, now_c)) * MILLISECONDS_PER_SECOND;
-    return Timestamp(ms_tp.count() + utc_offset);
-}
+    Timestamp::Timestamp() : ms_(0) {}
+    Timestamp::Timestamp(int64_t t) : ms_(t){}
 
-Timestamp Timestamp::parse(const std::string& s) {
-    if (s.empty()) return zero();
-    std::tm tm{};
-    [[maybe_unused]] int ms_part = 0;
-    // 尝试多种格式
-    const char* formats[] = {
-        "%Y-%m-%d %H:%M:%S", "%Y-%m-%d", "%Y%m%d", "%Y/%m/%d %H:%M:%S",
-        "%Y/%m/%d", "%Y%m%d %H%M%S", "%Y-%m-%dT%H:%M:%S"
-    };
-    for (auto fmt : formats) {
-        std::istringstream ss(s);
-        ss >> std::get_time(&tm, fmt);
-        if (!ss.fail()) {
-            std::time_t t = std::mktime(&tm);
-            auto tp = std::chrono::system_clock::from_time_t(t);
-            auto ms_tp = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch());
-            return Timestamp(ms_tp.count());
-        }
+    Timestamp::Timestamp(const std::chrono::system_clock::time_point &tp) :ms_(0) {
+        auto epoch = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch());
+        auto ts = epoch.count();
+        ms_ = api::ms_utc_to_local(ts);
     }
-    // 最后尝试只有日期的紧凑格式
-    if (s.length() == 8 && std::all_of(s.begin(), s.end(), ::isdigit)) {
-        int year = std::stoi(s.substr(0, 4));
-        int month = std::stoi(s.substr(4, 2));
-        int day = std::stoi(s.substr(6, 2));
-        return from_date(year, month, day);
+
+    Timestamp::Timestamp(const std::string &str) : ms_(0) {
+        auto ts = parse(str).ms_;
+        ms_ = ts;
     }
-    return zero();
-}
 
-Timestamp Timestamp::parse_time(const std::string& s) {
-    if (s.empty()) return zero();
-    std::tm tm{};
-    [[maybe_unused]] int ms_part = 0;
-    // 先尝试纯时间格式
-    const char* time_formats[] = {"%H:%M:%S", "%H:%M", "%H%M%S"};
-    for (auto fmt : time_formats) {
-        std::istringstream ss(s);
-        ss >> std::get_time(&tm, fmt);
-        if (!ss.fail()) {
-            auto now_tp = std::chrono::system_clock::now();
-            auto now_c = std::chrono::system_clock::to_time_t(now_tp);
-            std::tm local_tm{};
-#ifdef _WIN32
-            localtime_s(&local_tm, &now_c);
-#else
-            localtime_r(&now_c, &local_tm);
-#endif
-            local_tm.tm_hour = tm.tm_hour;
-            local_tm.tm_min = tm.tm_min;
-            local_tm.tm_sec = tm.tm_sec;
-            std::time_t t = std::mktime(&local_tm);
-            auto tp = std::chrono::system_clock::from_time_t(t);
-            auto ms_tp = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch());
-            return Timestamp(ms_tp.count());
-        }
+    /**
+     * @brief 通过本地时间构造时间戳
+     * @param y 年
+     * @param m 月
+     * @param d 日
+     * @param hh 时
+     * @param mm 分
+     * @param ss 秒
+     * @param sss 毫秒
+     */
+    Timestamp::Timestamp(int y, int m, int d, int hh, int mm, int ss, int sss) : ms_(0) {
+        std::chrono::year ty{y};
+        std::chrono::month tm{static_cast<unsigned int>(m)};
+        std::chrono::day td{static_cast<unsigned int>(d)};
+        auto ymd = ty / tm / td;
+        std::chrono::sys_days sd = ymd;
+        auto tp = sd
+                  + std::chrono::hours(hh)
+                  + std::chrono::minutes(mm)
+                  + std::chrono::seconds(ss)
+                  + std::chrono::milliseconds(sss);
+        auto epoch = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch());
+        ms_ = epoch.count();
     }
-    // 回退到完整日期时间解析
-    return parse(s);
-}
 
-Timestamp Timestamp::from_date(int year, int month, int day,
-                                int hour, int minute, int second, int millisecond) {
-    std::tm tm{};
-    tm.tm_year = year - 1900;
-    tm.tm_mon = month - 1;
-    tm.tm_mday = day;
-    tm.tm_hour = hour;
-    tm.tm_min = minute;
-    tm.tm_sec = second;
-    std::time_t t = std::mktime(&tm);
-    auto tp = std::chrono::system_clock::from_time_t(t);
-    auto ms_tp = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch());
-    return Timestamp(ms_tp.count() + millisecond);
-}
+    int64_t Timestamp::value() const {
+        return ms_;
+    }
 
-Timestamp Timestamp::pre_market_time() const {
-    int year, month, day;
-    extract(year, month, day);
-    return from_date(year, month, day, PRE_MARKET_HOUR, PRE_MARKET_MINUTE, PRE_MARKET_SECOND, 0);
-}
+    /**
+     * @brief 盘前初始化时间戳, 用年月日构造一个时间戳, 默认时间是9点整
+     * @param year 年
+     * @param month 月
+     * @param day 日
+     * @return
+     */
+    Timestamp Timestamp::pre_market_time(int year, int month, int day) {
+        return {year, month, day, config::cn_pre_market_hour, config::cn_pre_market_minute, config::cn_pre_market_second, 0};
+    }
 
-Timestamp Timestamp::pre_market_time(int year, int month, int day) {
-    return from_date(year, month, day, PRE_MARKET_HOUR, PRE_MARKET_MINUTE, PRE_MARKET_SECOND, 0);
-}
+    /**
+     * @brief 当前时间戳
+     * @return
+     */
+    Timestamp Timestamp::now() {
+        int64_t ts = current();
+        return Timestamp{ts};
+    }
 
-std::string Timestamp::only_date() const {
-    return to_string("%Y-%m-%d");
-}
+    // 零值
+    Timestamp Timestamp::zero() {
+        return {0};
+    }
 
-std::string Timestamp::only_time() const {
-    return to_string("%H:%M:%S");
-}
+    // 解析日期时间
+    Timestamp Timestamp::parse(const std::string& str) {
+        auto ts = api::parse_date(str);
+        return Timestamp{ts};
+    }
 
-std::string Timestamp::cache_date() const {
-    return to_string("%Y%m%d");
-}
+    // 解析时间
+    Timestamp Timestamp::parse_time(const std::string& str) {
+        auto ts = api::parse_time(str);
+        return Timestamp{ts};
+    }
 
-int64_t Timestamp::yyyymmdd_int() const {
-    int year, month, day;
-    extract(year, month, day);
-    return static_cast<int64_t>(year) * 10000 + month * 100 + day;
-}
+    // 获取当前时间戳对应的当天零点（00:00:00.000）的时间戳 truncate
+    Timestamp Timestamp::start_of_day() const {
+        return Timestamp{ms_ - (ms_ % milliseconds_per_day)};
+    }
 
-Timestamp Timestamp::from_yyyymmdd_int(int64_t date) {
-    int year = static_cast<int>(date / 10000);
-    int month = static_cast<int>((date % 10000) / 100);
-    int day = static_cast<int>(date % 100);
-    return from_date(year, month, day);
-}
+    // 当天零点整
+    Timestamp Timestamp::midnight() {
+        auto ts = current();
+        return Timestamp{ts - ts % milliseconds_per_day};
+    }
 
-std::string Timestamp::to_string(const char* layout) const {
-    std::time_t t = static_cast<std::time_t>(ms / MILLISECONDS_PER_SECOND);
-    std::tm local_tm{};
+    Timestamp Timestamp::today(int hour, int minute, int second, int millisecond) const {
+        int64_t ts = start_of_day().value();
+        ts += hour * milliseconds_per_hour;
+        ts += minute * milliseconds_per_minute;
+        ts += second * milliseconds_per_second;
+        ts += millisecond;
+        return Timestamp{ts};
+    }
+
+    Timestamp Timestamp::since(int hour, int minute, int second, int millisecond) const {
+        int64_t ts = start_of_day().value();
+        ts += hour * milliseconds_per_hour;
+        ts += minute * milliseconds_per_minute;
+        ts += second * milliseconds_per_second;
+        ts += millisecond;
+        return Timestamp{ts};
+    }
+
+    Timestamp Timestamp::offset(int hour, int minute, int second, int millisecond) const {
+        int64_t ts = value();
+        ts += hour * milliseconds_per_hour;
+        ts += minute * milliseconds_per_minute;
+        ts += second * milliseconds_per_second;
+        //ts -= (ts % MillisecondsPerSecond); // 毫秒偏移, 去掉原毫秒数, 累加入参
+        ts += millisecond;
+        return Timestamp{ts};
+    }
+
+    // truncate
+
+    Timestamp Timestamp::pre_market_time() const {
+        return since(config::cn_pre_market_hour, config::cn_pre_market_minute, config::cn_pre_market_second, 0);
+    }
+
+    // 调整时间戳到0秒0毫秒（用于 begin）
+    Timestamp Timestamp::floor() const {
+        int64_t ts = value();
+
+        ts -= (ts % milliseconds_per_minute);
+
+        return Timestamp{ts};
+    }
+
+    // 调整时间戳到59秒999毫秒（用于 end）
+    Timestamp Timestamp::ceil() const {
+        int64_t ts = value();
+
+        // 调整原时间戳中的秒部分，并加上 .999 毫秒
+        ts = ts - (ts % milliseconds_per_minute) + (milliseconds_per_minute - 1);
+
+        return Timestamp{ts};
+    }
+
+    // 提取年月日
+    std::tuple<int, int, int> Timestamp::extract() const {
+        // 将毫秒数转换为秒数（忽略毫秒部分）
+        auto seconds = static_cast<std::time_t>(ms_ / milliseconds_per_second);
+
+        // 使用 localtime 转换为本地时间结构体 tm
+        std::tm local_time = {};
 #ifdef _WIN32
-    localtime_s(&local_tm, &t);
+        localtime_s(&local_time, &seconds); // Windows 平台
 #else
-    localtime_r(&t, &local_tm);
+        localtime_r(&seconds, &local_time); // Linux/macOS 平台
 #endif
-    std::ostringstream oss;
-    oss << std::put_time(&local_tm, layout);
-    return oss.str();
-}
 
-bool Timestamp::is_same_date(const Timestamp& other) const {
-    int y1, m1, d1, y2, m2, d2;
-    extract(y1, m1, d1);
-    other.extract(y2, m2, d2);
-    return y1 == y2 && m1 == m2 && d1 == d2;
-}
+        // 提取年、月、日信息
+        int year = local_time.tm_year + 1900; // tm_year 是从 1900 年开始的偏移量
+        int month = local_time.tm_mon + 1;   // tm_mon 是从 0 开始的月份编号
+        int day = local_time.tm_mday;
+        return {year, month, day};
+    }
 
-Timestamp Timestamp::offset(int hour, int minute, int second, int millisecond) const {
-    int64_t offset_ms = static_cast<int64_t>(hour) * MILLISECONDS_PER_HOUR +
-                        static_cast<int64_t>(minute) * MILLISECONDS_PER_MINUTE +
-                        static_cast<int64_t>(second) * MILLISECONDS_PER_SECOND +
-                        millisecond;
-    return Timestamp(ms + offset_ms);
-}
+    std::string Timestamp::to_string(const std::string& layout) const {
+        // 1. 构造毫秒
+        std::chrono::milliseconds ts{ms_};
+        // 2. 转换为 system_clock 的时间点（sys_time）
+        std::chrono::sys_time<std::chrono::milliseconds> tp{ts};
+        //auto zt = std::chrono::zoned_time{_local_zone, tp}; // 本地时间, 这里不用本地时区转换
+        // 3. 格式化为字符串（包含毫秒）
+        std::string str = std::vformat(layout, std::make_format_args(tp));
+        // 考虑更安全的解析时间字符串的方法
+        return str;
+    }
 
-Timestamp Timestamp::start_of_day() const {
-    return today_at(0, 0, 0, 0);
-}
+    std::string Timestamp::format_time_to_second(const std::string& layout) const {
+        //std::chrono::milliseconds ts{ms_};
+        // 1. 构造 sys_time<milliseconds>
+        auto ts = std::chrono::sys_time<std::chrono::milliseconds>(std::chrono::milliseconds(ms_));
+        // 2. 转换为 sys_time<seconds>
+        auto tp = std::chrono::time_point_cast<std::chrono::seconds>(ts);
+        // 3. 格式化为字符串（包含毫秒）
+        std::string str = std::vformat(layout, std::make_format_args(tp));
+        // 考虑更安全的解析时间字符串的方法
+        return str;
+    }
 
-Timestamp Timestamp::today_at(int hour, int minute, int second, int millisecond) const {
-    int year, month, day;
-    extract(year, month, day);
-    return from_date(year, month, day, hour, minute, second, millisecond);
-}
+    // 返回日期
+    std::string Timestamp::only_date() const {
+        return to_string(only_date_layout);
+    }
 
-void Timestamp::extract(int& year, int& month, int& day) const {
-    std::time_t t = static_cast<std::time_t>(ms / MILLISECONDS_PER_SECOND);
-    std::tm local_tm{};
-#ifdef _WIN32
-    localtime_s(&local_tm, &t);
-#else
-    localtime_r(&t, &local_tm);
-#endif
-    year = local_tm.tm_year + 1900;
-    month = local_tm.tm_mon + 1;
-    day = local_tm.tm_mday;
-}
+    std::string Timestamp::cache_date() const {
+        return to_string(cache_date_layout);
+    }
 
-void Timestamp::extract_time(int& hour, int& minute, int& second, int& millisecond) const {
-    std::time_t t = static_cast<std::time_t>(ms / MILLISECONDS_PER_SECOND);
-    std::tm local_tm{};
-#ifdef _WIN32
-    localtime_s(&local_tm, &t);
-#else
-    localtime_r(&t, &local_tm);
-#endif
-    hour = local_tm.tm_hour;
-    minute = local_tm.tm_min;
-    second = local_tm.tm_sec;
-    millisecond = static_cast<int>(ms % MILLISECONDS_PER_SECOND);
-}
+    // 返回时间
+    std::string Timestamp::only_time() const {
+        return format_time_to_second("{:%H:%M:%S}");
+    }
 
-} // namespace meta
+    // 返回整型日期
+    uint32_t Timestamp::yyyymmdd_u32() const {
+        auto [y,m,d] = extract();
+        return y*10000+m*100+d;
+    }
+
+    bool Timestamp::empty() const {
+        return value() == 0;
+    }
+
+    // 判断是否同一天
+    bool Timestamp::is_same_date(const Timestamp &other) const noexcept {
+        const int64_t day1 = ms_ / milliseconds_per_day;
+        const int64_t day2 = other.ms_ / milliseconds_per_day;
+        return day1 == day2;
+    }
+
+    std::ostream& operator<<(std::ostream &os, const Timestamp &ts) {
+        os << ts.to_string();
+        return os;
+    }
+
+    bool Timestamp::operator==(const Timestamp &rhs) const {
+        return ms_ == rhs.ms_;
+    }
+
+    bool Timestamp::operator!=(const Timestamp &rhs) const {
+        return ms_ != rhs.ms_;
+    }
+
+    bool Timestamp::operator<(const Timestamp &rhs) const {
+        return ms_ < rhs.ms_;
+    }
+
+    bool Timestamp::operator>(const Timestamp &rhs) const {
+        return ms_ > rhs.ms_;
+    }
+
+    bool Timestamp::operator<=(const Timestamp &rhs) const {
+        return ms_ <= rhs.ms_;
+    }
+
+    bool Timestamp::operator>=(const Timestamp &rhs) const {
+        return ms_ >= rhs.ms_;
+    }
+}  // namespace meta

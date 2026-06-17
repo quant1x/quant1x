@@ -111,7 +111,7 @@ namespace encoding {
         }
 
         namespace detail {
-            // 辅助函数：将任意类型转换为字符串并处理CSV转义
+            // 辅助函数: 将任意类型转换为字符串并处理CSV转义
             template<typename T>
             std::string v1_to_csv_string(const T &value) {
                 std::ostringstream oss;
@@ -182,7 +182,7 @@ namespace encoding {
 
             csv2::Writer<csv2::delimiter<','>> writer(out_file);
 
-            // 1. 写入表头（使用结构体字段名）
+            // 1. 写入表头(使用结构体字段名)
             std::vector<std::string> header;
             boost::pfr::for_each_field(T{}, [&](auto& field, auto idx) {
                 (void)field;

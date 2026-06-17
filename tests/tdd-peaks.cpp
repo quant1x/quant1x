@@ -7,7 +7,7 @@ using namespace std;
 
 static void findPeaksAndValleys(const vector<int64_t> &nums) {
     if (nums.size() < 2) {
-        cout << "数组元素不足，无法确定波峰波谷" << endl;
+        cout << "数组元素不足, 无法确定波峰波谷" << endl;
         return;
     }
 
@@ -27,8 +27,8 @@ static void findPeaksAndValleys(const vector<int64_t> &nums) {
         }
     }
 
-    // 处理边界情况（如果数组两端可能被视为波峰或波谷）
-    // 例如：[1,2,1]中2是波峰
+    // 处理边界情况(如果数组两端可能被视为波峰或波谷)
+    // 例如: [1,2,1]中2是波峰
     if (nums.size() >= 2) {
         if (nums[0] > nums[1]) {
             peaks.push_back(0);
@@ -91,16 +91,16 @@ public:
         else return 0;
     }
 
-    // Normalize: 前向差分归一化，并处理零值（平台）
+    // Normalize: 前向差分归一化, 并处理零值(平台)
     void Normalize() {
         int n = static_cast<int>(data.size());
         for (int i = 0; i < n - 1; ++i) {
             diff[i] = compare(data[static_cast<std::vector<double, std::allocator<double>>::size_type>(i) + 1],
                               data[i]);
         }
-        diff[n - 1] = 0; // 最后一位无定义，设为0
+        diff[n - 1] = 0; // 最后一位无定义, 设为0
 
-        // Step 2: 处理 diff[i] == 0 的情况，用左右趋势填充
+        // Step 2: 处理 diff[i] == 0 的情况, 用左右趋势填充
         for (int i = 0; i < n - 1; ++i) {
             if (diff[i] == 0) {
                 if (i == 0) {
@@ -112,7 +112,7 @@ public:
                         }
                     }
                 } else if (i == n - 2) {
-                    // 最后一点，向前取值
+                    // 最后一点, 向前取值
                     diff[i] = diff[i - 1];
                 } else {
                     // 取后面的趋势作为当前趋势
@@ -122,17 +122,17 @@ public:
         }
     }
 
-    // Find: 找波峰波谷，基于一阶差分的变化（类似二阶导数）
+    // Find: 找波峰波谷, 基于一阶差分的变化(类似二阶导数)
     void Find() {
         auto n = static_cast<int>(diff.size());
         for (int i = 0; i < n - 1; ++i) {
             int d = diff[i + 1] - diff[i];
 
             if (d == -2) {
-                // 波峰：由上升(+1)转为下降(-1)，说明该点是局部最大值
+                // 波峰: 由上升(+1)转为下降(-1), 说明该点是局部最大值
                 peakIndex.push_back(i + 1);
             } else if (d == 2) {
-                // 波谷：由下降(-1)转为上升(+1)，说明该点是局部最小值
+                // 波谷: 由下降(-1)转为上升(+1), 说明该点是局部最小值
                 valleyIndex.push_back(i + 1);
             }
         }
@@ -245,7 +245,7 @@ TEST_CASE("find-peaks-v2", "[peaks]") {
 //}
 //
 //TEST_CASE("find-peaks-v4", "[peaks]") {
-//    // 原始数据（示例数据，需替换为实际数据）
+//    // 原始数据(示例数据, 需替换为实际数据)
 //    std::vector<double> data = {3, 2.5, 2, 1.5, 1, 1.5, 1.5, 2, 1.5, 2, 1.5};
 //    std::vector<double> x(data.size());
 //    std::iota(x.begin(), x.end(), 0);
@@ -254,13 +254,13 @@ TEST_CASE("find-peaks-v2", "[peaks]") {
 //    auto f = figure(true);
 //    f->size(800, 600);
 //
-//    // 1. 先绘制蓝色折线（确保在最底层）
+//    // 1. 先绘制蓝色折线(确保在最底层)
 //    auto pl = plot(x, data);
 //    pl->color("blue")
 //        .line_width(1)
 //        .display_name("Data");
 //
-//    // 2. 绘制所有数据点（蓝色空心圆）
+//    // 2. 绘制所有数据点(蓝色空心圆)
 //    auto sc = scatter(x, data);
 //    sc->marker("o")
 //        .marker_size(5)
@@ -268,7 +268,7 @@ TEST_CASE("find-peaks-v2", "[peaks]") {
 //        .marker_face_color("blue")
 //        .line_width(1);
 //
-//    // 3. 强制绘制波谷点（绿色实心圆）
+//    // 3. 强制绘制波谷点(绿色实心圆)
 //    std::vector<size_t> valleys = {4, 6, 8, 10}; // 波谷位置索引
 //    std::vector<double> vx, vy;
 //    for (auto i : valleys) {
@@ -294,7 +294,7 @@ TEST_CASE("find-peaks-v2", "[peaks]") {
 //    xlim({0, 10});
 //    ylim({0, 5}); // 调高Y轴上限确保显示完整
 //
-//    // 重要：强制刷新图形缓冲区
+//    // 重要: 强制刷新图形缓冲区
 //    //matplot::flush();
 //    show();
 //}
@@ -368,32 +368,32 @@ TEST_CASE("find-peaks-v2", "[peaks]") {
 //    show();
 //}
 
-// 比较函数，与Python版本相同
+// 比较函数, 与Python版本相同
 int compare(double a, double b) {
     if (a < b) return -1;
     else if (a > b) return 1;
     else return 0;
 }
 
-// 主函数：寻找波峰和波谷
+// 主函数: 寻找波峰和波谷
 static pair<vector<int>, vector<int>> basic_peaks_and_valleys(const vector<double> &high, const vector<double> &low) {
     /**
      * 输入: high - 高价序列, low - 低价序列
      * 返回: 包含波峰和波谷索引的pair
-     * 波峰基于高价序列，波谷基于低价序列
+     * 波峰基于高价序列, 波谷基于低价序列
      */
 
     size_t n = high.size();
     vector<int> diff_high(n, 0);  // 高价差分序列
     vector<int> diff_low(n, 0);   // 低价差分序列
 
-    // 第一步：计算一阶差分
+    // 第一步: 计算一阶差分
     for (size_t i = 0; i < n - 1; ++i) {
         diff_high[i] = compare(high[i + 1], high[i]);
         diff_low[i] = compare(low[i + 1], low[i]);
     }
 
-    // 第二步：处理平台区域（差分为0的情况）
+    // 第二步: 处理平台区域(差分为0的情况)
     for (size_t i = 0; i < n - 1; ++i) {
         // 处理高价序列的平台
         if (diff_high[i] == 0) {
@@ -428,7 +428,7 @@ static pair<vector<int>, vector<int>> basic_peaks_and_valleys(const vector<doubl
         }
     }
 
-    // 第三步：识别波峰和波谷
+    // 第三步: 识别波峰和波谷
     vector<int> peaks;    // 波峰索引
     vector<int> valleys;  // 波谷索引
 
@@ -436,10 +436,10 @@ static pair<vector<int>, vector<int>> basic_peaks_and_valleys(const vector<doubl
         int d_high = diff_high[i + 1] - diff_high[i];
         int d_low = diff_low[i + 1] - diff_low[i];
 
-        if (d_high == -2) {  // 高价序列由上升到下降，形成波峰
+        if (d_high == -2) {  // 高价序列由上升到下降, 形成波峰
             peaks.push_back(int(i) + 1);
         }
-        if (d_low == 2) {    // 低价序列由下降到上升，形成波谷
+        if (d_low == 2) {    // 低价序列由下降到上升, 形成波谷
             valleys.push_back(int(i) + 1);
         }
     }
@@ -472,7 +472,7 @@ static std::pair<std::vector<int64_t>, std::vector<int64_t>> peaks_and_valleys_x
 
     size_t n = high.size();
 
-    // 第一步：计算一阶差分 (向量化操作)
+    // 第一步: 计算一阶差分 (向量化操作)
     xt::xarray<int64_t> diff_high = xt::zeros<int64_t>({n});
     xt::xarray<int64_t> diff_low  = xt::zeros<int64_t>({n});
 
@@ -480,7 +480,7 @@ static std::pair<std::vector<int64_t>, std::vector<int64_t>> peaks_and_valleys_x
     xt::view(diff_high, xt::range(0, n-1)) = xt::sign(xt::view(high, xt::range(1, n)) - xt::view(high, xt::range(0, n-1)));
     xt::view(diff_low, xt::range(0, n-1)) = xt::sign(xt::view(low, xt::range(1, n)) - xt::view(low, xt::range(0, n-1)));
 
-    // 第二步：处理平台区域 (向量化处理)
+    // 第二步: 处理平台区域 (向量化处理)
     auto process_plateaus = [](xt::xarray<int64_t> &diff) {
         size_t n = diff.size();
 
@@ -508,7 +508,7 @@ static std::pair<std::vector<int64_t>, std::vector<int64_t>> peaks_and_valleys_x
     process_plateaus(diff_high);
     process_plateaus(diff_low);
 
-    // 第三步：识别波峰和波谷 (向量化操作)
+    // 第三步: 识别波峰和波谷 (向量化操作)
     auto d_high = xt::view(diff_high, xt::range(1, n)) - xt::view(diff_high, xt::range(0, n-1));
     auto d_low = xt::view(diff_low, xt::range(1, n)) - xt::view(diff_low, xt::range(0, n-1));
 

@@ -461,7 +461,7 @@ namespace dfcf {
                                 if (content.is_string()) {
                                     warningDetail.Level2Content.push_back(content.get<std::string>());
                                 } else {
-                                    // 可选：记录日志或跳过非字符串元素
+                                    // 可选: 记录日志或跳过非字符串元素
                                     spdlog::warn("LEVEL2_CONTENT 中包含非字符串元素");
                                 }
                             }

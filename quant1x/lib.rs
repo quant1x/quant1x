@@ -73,7 +73,7 @@ pub use crate::factors::*;
 pub mod data;
 pub use crate::data::*;
 // datasets adapters (Rust ports)
-// datasets 已并入 data 模块，移除旧的 datasets 顶级导出
+// datasets 已并入 data 模块, 移除旧的 datasets 顶级导出
 pub mod contrib;
 pub use crate::contrib::*;
 

@@ -11,8 +11,8 @@ import (
 	"strings"
 )
 
-// TimeUnit 标准化的时间单位枚举，覆盖 pandas 常见别名。
-// 所有单位均为固定长度（不包括月、年等日历单位）。
+// TimeUnit 标准化的时间单位枚举, 覆盖 pandas 常见别名.
+// 所有单位均为固定长度(不包括月, 年等日历单位).
 type TimeUnit string
 
 const (
@@ -28,7 +28,7 @@ const (
 	YEAR        TimeUnit = "y"
 )
 
-// SecondsPerUnit 每单位对应的秒数（float64 支持纳秒）
+// SecondsPerUnit 每单位对应的秒数(float64 支持纳秒)
 var SecondsPerUnit = map[TimeUnit]float64{
 	NANOSECOND:  1e-9,
 	MICROSECOND: 1e-6,
@@ -42,14 +42,14 @@ var SecondsPerUnit = map[TimeUnit]float64{
 	YEAR:        31536000.0,
 }
 
-// Frequency 表示一个标准化的频率值: num x unit。
+// Frequency 表示一个标准化的频率值: num x unit.
 // 例如: 5 分钟 → Frequency{Num: 5, Unit: MINUTE}
 type Frequency struct {
 	Num  int
 	Unit TimeUnit
 }
 
-// ToTotalSeconds 返回总秒数（可用于比较、排序、计算）
+// ToTotalSeconds 返回总秒数(可用于比较, 排序, 计算)
 func (f Frequency) ToTotalSeconds() float64 {
 	return float64(f.Num) * SecondsPerUnit[f.Unit]
 }
@@ -69,8 +69,8 @@ func (f Frequency) CacheKey() string {
 
 // 预定义的频率常量
 var (
-	FREQ_DAILY  = Frequency{Num: 1, Unit: DAY}   // 日线
-	FREQ_WEEKLY = Frequency{Num: 1, Unit: WEEK}  // 周线
+	FREQ_DAILY   = Frequency{Num: 1, Unit: DAY}   // 日线
+	FREQ_WEEKLY  = Frequency{Num: 1, Unit: WEEK}  // 周线
 	FREQ_MONTHLY = Frequency{Num: 1, Unit: MONTH} // 月线
 	FREQ_YEARLY  = Frequency{Num: 1, Unit: YEAR}  // 年线
 )
@@ -91,7 +91,7 @@ var pandasUnitAliases = map[string]TimeUnit{
 	"S": SECOND,
 	"s": SECOND,
 	// minute
-	"T": MINUTE,
+	"T":   MINUTE,
 	"min": MINUTE,
 	// hour
 	"H": HOUR,
@@ -110,16 +110,19 @@ var pandasUnitAliases = map[string]TimeUnit{
 	"y": YEAR,
 }
 
-// ParseFrequencyString 解析 pandas 风格的频率字符串（如 '5T', '1H', '30s'）为标准化 Frequency。
+// ParseFrequencyString 解析 pandas 风格的频率字符串(如 '5T', '1H', '30s')为标准化 Frequency.
 //
 // 参数:
-//   freq: 频率字符串，如 "5T", "1h", "90s"
+//
+//	freq: 频率字符串, 如 "5T", "1h", "90s"
 //
 // 返回:
-//   Frequency{Num: 5, Unit: MINUTE}
+//
+//	Frequency{Num: 5, Unit: MINUTE}
 //
 // 错误:
-//   无效格式或不支持的单位
+//
+//	无效格式或不支持的单位
 func ParseFrequencyString(freq string) (Frequency, error) {
 	s := strings.TrimSpace(freq)
 	if s == "" {
@@ -157,7 +160,7 @@ func ParseFrequencyString(freq string) (Frequency, error) {
 	return Frequency{Num: num, Unit: unit}, nil
 }
 
-// ToTotalSeconds 便捷函数：将频率转为总秒数
+// ToTotalSeconds 便捷函数: 将频率转为总秒数
 func ToTotalSeconds(freq interface{}) (float64, error) {
 	var f Frequency
 	var err error
@@ -177,14 +180,14 @@ func ToTotalSeconds(freq interface{}) (float64, error) {
 	return f.ToTotalSeconds(), nil
 }
 
-// IsFixedDuration 判断是否为固定时长（所有当前支持的单位都是固定的）。
-// 未来若加入 'M'（月）、'Y'（年），此处需调整。
+// IsFixedDuration 判断是否为固定时长(所有当前支持的单位都是固定的).
+// 未来若加入 'M'(月), 'Y'(年), 此处需调整.
 func IsFixedDuration(freq interface{}) bool {
 	// 当前所有单位均为固定长度
 	return true
 }
 
-// ToFrequency 便捷函数：将字符串转换为 Frequency
+// ToFrequency 便捷函数: 将字符串转换为 Frequency
 func ToFrequency(freq string) Frequency {
 	f, err := ParseFrequencyString(freq)
 	if err != nil {

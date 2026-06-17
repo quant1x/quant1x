@@ -53,8 +53,8 @@ type SecurityBar struct {
 	Hour      int     // 时
 	Minute    int     // 分
 	DateTime  string  // 日期时间字符串
-	UpCount   uint16  // 上涨家数（仅指数K线）
-	DownCount uint16  // 下跌家数（仅指数K线）
+	UpCount   uint16  // 上涨家数(仅指数K线)
+	DownCount uint16  // 下跌家数(仅指数K线)
 }
 
 // SecurityBarsRequest encodes a SECURITY_BARS command.

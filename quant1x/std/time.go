@@ -156,7 +156,7 @@ func GetQuarterDay(months int) (string, string) {
 	return firstOfQuarter, lastOfQuarter
 }
 
-// parseTimeInternal 内部使用的解析函数，返回 time.Time
+// parseTimeInternal 内部使用的解析函数, 返回 time.Time
 func parseTimeInternal(dateStr string) time.Time {
 	for _, layout := range dateTimeLayouts {
 		if t, err := time.ParseInLocation(layout, dateStr, time.Local); err == nil {
@@ -176,7 +176,7 @@ func parseTimeInternal(dateStr string) time.Time {
 	return time.Now()
 }
 
-// GetQuarterByDate 通过给定的日期 获得日期所在财报的季度、初始以及结束日期
+// GetQuarterByDate 通过给定的日期 获得日期所在财报的季度, 初始以及结束日期
 // diff 季度偏移数, 大于0前移diff个季度, 小于0后移diff个季度, 默认为当前季度
 func GetQuarterByDate(dateStr string, diff int) (string, string, string) {
 	t := parseTimeInternal(dateStr)
@@ -211,25 +211,28 @@ func GetQuarterByDate(dateStr string, diff int) (string, string, string) {
 	return quarter, firstOfQuarter, lastOfQuarter
 }
 
-// GetTimezoneOffsetStandard 计算两个时区之间的标准时间差（以小时为单位）
+// GetTimezoneOffsetStandard 计算两个时区之间的标准时间差(以小时为单位)
 //
 // Args:
-//   targetZone: 目标时区名称（如"Asia/Shanghai"、"America/New_York"）
-//   localZone: 本地时区名称，如果为空则使用系统本地时区
+//
+//	targetZone: 目标时区名称(如"Asia/Shanghai", "America/New_York")
+//	localZone: 本地时区名称, 如果为空则使用系统本地时区
 //
 // Returns:
-//   int: 目标时区相对于本地时区的时间差（小时），正数表示目标时区比本地快
+//
+//	int: 目标时区相对于本地时区的时间差(小时), 正数表示目标时区比本地快
 //
 // Example:
-//   offset := GetTimezoneOffsetStandard("America/New_York", "")
-//   offset := GetTimezoneOffsetStandard("Asia/Tokyo", "UTC")
+//
+//	offset := GetTimezoneOffsetStandard("America/New_York", "")
+//	offset := GetTimezoneOffsetStandard("Asia/Tokyo", "UTC")
 func GetTimezoneOffsetStandard(targetZone string, localZone string) int {
 	now := time.Now()
 
 	// 获取目标时区
 	targetLocation, err := time.LoadLocation(targetZone)
 	if err != nil {
-		// 如果加载失败，使用 UTC
+		// 如果加载失败, 使用 UTC
 		targetLocation = time.UTC
 	}
 
@@ -240,7 +243,7 @@ func GetTimezoneOffsetStandard(targetZone string, localZone string) int {
 	} else {
 		localLocation, err = time.LoadLocation(localZone)
 		if err != nil {
-			// 如果加载失败，使用本地系统时区
+			// 如果加载失败, 使用本地系统时区
 			localLocation = time.Local
 		}
 	}
@@ -249,7 +252,7 @@ func GetTimezoneOffsetStandard(targetZone string, localZone string) int {
 	_, targetOffset := now.In(targetLocation).Zone()
 	_, localOffset := now.In(localLocation).Zone()
 
-	// 计算时差（秒转小时）
+	// 计算时差(秒转小时)
 	offsetSeconds := targetOffset - localOffset
 	return offsetSeconds / 3600
 }

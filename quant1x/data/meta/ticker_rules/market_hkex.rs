@@ -62,9 +62,9 @@ pub fn hkex_rules() -> Vec<CodeRule> {
         CodeRule { exchange: Exchange::HKEX, prefix: RulePrefix::Range { start: "09850", end: "09999" }, instrument_type: InstrumentType::STOCK, name: "主板", desc: "" },
 
         // 10000-29999, 衍生权证
-        CodeRule { exchange: Exchange::HKEX, prefix: RulePrefix::Range { start: "10000", end: "10899" }, instrument_type: InstrumentType::WARRANT, name: "衍生权证", desc: "相关资产在香港以外地区上市的衍生权证、一篮子权证及非标准型权证" },
+        CodeRule { exchange: Exchange::HKEX, prefix: RulePrefix::Range { start: "10000", end: "10899" }, instrument_type: InstrumentType::WARRANT, name: "衍生权证", desc: "相关资产在香港以外地区上市的衍生权证, 一篮子权证及非标准型权证" },
         CodeRule { exchange: Exchange::HKEX, prefix: RulePrefix::Range { start: "10900", end: "10999" }, instrument_type: InstrumentType::WARRANT, name: "衍生权证", desc: "相关资产在香港以外地区上市的衍生权证(以美元买卖)" },
-        CodeRule { exchange: Exchange::HKEX, prefix: RulePrefix::Range { start: "11000", end: "11999" }, instrument_type: InstrumentType::WARRANT, name: "衍生权证", desc: "相关资产在香港以外地区上市的衍生权证、一篮子权证及非标准型权证" },
+        CodeRule { exchange: Exchange::HKEX, prefix: RulePrefix::Range { start: "11000", end: "11999" }, instrument_type: InstrumentType::WARRANT, name: "衍生权证", desc: "相关资产在香港以外地区上市的衍生权证, 一篮子权证及非标准型权证" },
         CodeRule { exchange: Exchange::HKEX, prefix: RulePrefix::Range { start: "12000", end: "29999" }, instrument_type: InstrumentType::WARRANT, name: "衍生权证", desc: "" },
 
         // 30000-39999, 供沪深股通使用

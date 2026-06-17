@@ -17,8 +17,8 @@ __all__ = [
 
 class TimeUnit(Enum):
     """
-    标准化的时间单位枚举，覆盖 pandas 常见别名。
-    所有单位均为固定长度（不包括月、年等日历单位）。
+    标准化的时间单位枚举, 覆盖 pandas 常见别名. 
+    所有单位均为固定长度(不包括月, 年等日历单位). 
     """
     NANOSECOND = "ns"
     MICROSECOND = "us"
@@ -33,7 +33,7 @@ class TimeUnit(Enum):
 
     @property
     def seconds_per_unit(self) -> float:
-        """每单位对应的秒数（float 支持纳秒）"""
+        """每单位对应的秒数(float 支持纳秒)"""
         mapping = {
             TimeUnit.NANOSECOND: 1e-9,
             TimeUnit.MICROSECOND: 1e-6,
@@ -51,14 +51,14 @@ class TimeUnit(Enum):
 
 class Frequency(NamedTuple):
     """
-    表示一个标准化的频率值: num x unit。
+    表示一个标准化的频率值: num x unit. 
     例如: 5 分钟 → Frequency(num=5, unit=TimeUnit.MINUTE)
     """
     num: int
     unit: TimeUnit
 
     def to_total_seconds(self) -> float:
-        """返回总秒数（可用于比较、排序、计算）"""
+        """返回总秒数(可用于比较, 排序, 计算)"""
         return self.num * self.unit.seconds_per_unit
 
     def __str__(self) -> str:
@@ -79,7 +79,7 @@ FREQ_MONTHLY = Frequency(num=1, unit=TimeUnit.MONTH)
 FREQ_YEARLY = Frequency(num=1, unit=TimeUnit.YEAR)
 """年线"""
 
-# pandas 单位别名映射表（只读）
+# pandas 单位别名映射表(只读)
 _PANDAS_UNIT_ALIASES = {
     # nanosecond
     "N": TimeUnit.NANOSECOND, "ns": TimeUnit.NANOSECOND,
@@ -105,10 +105,10 @@ _PANDAS_UNIT_ALIASES = {
 
 def parse_frequency_string(freq: str) -> Frequency:
     """
-    解析 pandas 风格的频率字符串（如 '5T', '1H', '30s'）为标准化 FrequencyValue。
+    解析 pandas 风格的频率字符串(如 '5T', '1H', '30s')为标准化 FrequencyValue. 
     
     Args:
-        freq: 频率字符串，如 "5T", "1h", "90s"
+        freq: 频率字符串, 如 "5T", "1h", "90s"
     
     Returns:
         Frequency(count=5, unit=TimeUnit.MINUTE)
@@ -139,7 +139,7 @@ def parse_frequency_string(freq: str) -> Frequency:
 
 
 def to_total_seconds(freq: Union[str, Frequency]) -> float:
-    """便捷函数：将频率转为总秒数"""
+    """便捷函数: 将频率转为总秒数"""
     if isinstance(freq, str):
         freq = parse_frequency_string(freq)
     return freq.to_total_seconds()
@@ -147,8 +147,8 @@ def to_total_seconds(freq: Union[str, Frequency]) -> float:
 
 def is_fixed_duration(freq: Union[str, Frequency]) -> bool:
     """
-    判断是否为固定时长（所有当前支持的单位都是固定的）。
-    未来若加入 'M'（月）、'Y'（年），此处需调整。
+    判断是否为固定时长(所有当前支持的单位都是固定的). 
+    未来若加入 'M'(月), 'Y'(年), 此处需调整. 
     """
     return True  # 当前所有单位均为固定长度
 

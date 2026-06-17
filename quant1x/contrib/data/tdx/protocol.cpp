@@ -10,7 +10,7 @@ namespace level1 {
         std::vector<uint8_t> out(unzip_size);
         uLongf destLen = static_cast<uLongf>(unzip_size);
 
-        // 检查 unzip_size 是否溢出 uLongf（通常不会，但需确保）
+        // 检查 unzip_size 是否溢出 uLongf(通常不会, 但需确保)
         if (destLen != unzip_size) {
             throw std::runtime_error("unzip_size exceeds maximum supported by zlib");
         }

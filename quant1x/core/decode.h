@@ -18,7 +18,7 @@ bool decode_to(void* dst, const std::any& src);
 // 与Go版本的LookupConfig保持一致
 std::any lookup_config(const std::string& path);
 
-// DecodeConfig 从配置中解码指定路径到目标结构体，并应用默认值
+// DecodeConfig 从配置中解码指定路径到目标结构体, 并应用默认值
 // 与Go版本的DecodeConfig保持一致
 template<typename T>
 bool decode_config(const std::string& path, T& dst) {

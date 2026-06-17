@@ -39,7 +39,7 @@ def cli():
     pass
 
 def parse_comma_separated(ctx, param, value):
-    """将逗号分隔字符串转为 list[str]，空值返回 None"""
+    """将逗号分隔字符串转为 list[str], 空值返回 None"""
     if not value:
         return None
     parts = [v.strip() for v in value.split(",") if v.strip()]
@@ -53,7 +53,7 @@ def _resolve_plugins(
     base: Optional[List[str]],
     feature: Optional[List[str]],
 ) -> List[DataAdapter]:
-    """解析用户选项，返回需要运行的 plugin 列表。"""
+    """解析用户选项, 返回需要运行的 plugin 列表. """
     if update_all is None and base is None and feature is None:
         return []
 
@@ -68,7 +68,7 @@ def _resolve_plugins(
     return plugins
 
 def _load_instruments() -> List[Instrument]:
-    """加载全市场股票列表（A股）。"""
+    """加载全市场股票列表(A股). """
     ds = TdxDataSource()
     return ds.list_instruments("all")
 
@@ -76,7 +76,7 @@ def _load_instruments() -> List[Instrument]:
 # 命令: update
 # ---------------------------------------------------------------------------
 def _signal_handler(signum, frame):
-    """处理 SIGINT (CTRL+C)，设置中断标志。"""
+    """处理 SIGINT (CTRL+C), 设置中断标志. """
     global _interrupted
     _interrupted = True
 
@@ -130,9 +130,9 @@ def update(update_all: bool, base: Optional[List[str]], feature: Optional[List[s
             TextColumn("•"),
             TimeElapsedColumn(),
             console=console,
-            refresh_per_second=8,  # Rich 内置渲染节流，无需手动 throttle
+            refresh_per_second=8,  # Rich 内置渲染节流, 无需手动 throttle
         ) as progress:
-            # 外层任务：plugin 级别
+            # 外层任务: plugin 级别
             plugin_task = progress.add_task(
                 "[bold]Overall Progress", total=len(plugins)
             )
@@ -145,17 +145,17 @@ def update(update_all: bool, base: Optional[List[str]], feature: Optional[List[s
                 name = plugin.name()
                 desc = f"{kind} ({name})"
 
-                # 内层任务：股票级别
+                # 内层任务: 股票级别
                 stock_task = progress.add_task(
                     f"  [cyan]{desc}[/cyan]", total=total_instruments
                 )
 
                 def _update_one(inst: Instrument) -> bool:
-                    """更新单只股票，成功返回 True。"""
+                    """更新单只股票, 成功返回 True. """
                     if _interrupted:
                         return False
                     try:
-                        # plugin.update() 签名有两类：Instrument 或 str(code)
+                        # plugin.update() 签名有两类: Instrument 或 str(code)
                         try:
                             plugin.update(inst)
                         except TypeError:
@@ -191,11 +191,11 @@ def update(update_all: bool, base: Optional[List[str]], feature: Optional[List[s
                         for f in futures:
                             f.cancel()
 
-                # 股票级别任务完成，隐藏
+                # 股票级别任务完成, 隐藏
                 progress.update(stock_task, visible=False)
 
                 if _interrupted:
-                    # 推进外层 plugin 进度，标记中断
+                    # 推进外层 plugin 进度, 标记中断
                     progress.update(plugin_task, advance=1, description=f"[bold yellow]Overall Progress[/bold yellow] (interrupted at {kind})")
                     break
 

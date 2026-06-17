@@ -55,14 +55,14 @@ namespace io {
         }
     }
 
-    // If-Modified-Since (cpp-httplib 版本，支持 http/https)
+    // If-Modified-Since (cpp-httplib 版本, 支持 http/https)
     std::tuple<std::string, int64_t> request_httplib(const std::string &url, int64_t fileLastModified) {
         httplib::Headers headers = {};
         if (fileLastModified != 0) {
             headers.emplace("If-Modified-Since", time_point_to_http_date_cpp20(fileLastModified));
         }
-        httplib::Client cli(url); // 直接用完整URL，自动支持http/https
-        auto res = cli.Get("/", headers); // "/"表示请求根路径，实际会用URL里的path
+        httplib::Client cli(url); // 直接用完整URL, 自动支持http/https
+        auto res = cli.Get("/", headers); // "/"表示请求根路径, 实际会用URL里的path
         int64_t tm = 0;
         if (res && res->status == 200) {
             auto it = res->headers.find("Last-Modified");

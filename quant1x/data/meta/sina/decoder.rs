@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::data::meta::Timestamp;
 
-/// 解码器输出的单行记录（用于日历/历史数据行）
+/// 解码器输出的单行记录(用于日历/历史数据行)
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct Record {
     pub date: Option<String>,
@@ -17,7 +17,7 @@ pub struct Record {
     pub avg_price: Option<String>,
 }
 
-/// FinanceDecoder: 基于自定义 base64/位流的解码器，用于从压缩编码中解析日期/数值序列
+/// FinanceDecoder: 基于自定义 base64/位流的解码器, 用于从压缩编码中解析日期/数值序列
 pub struct FinanceDecoder {
     pub indices: Vec<u8>,
     pub e: usize,

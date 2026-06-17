@@ -583,10 +583,10 @@ class DailyTransactionData(protocol.BaseMessage):
             hour = raw_time // 60
             minute = raw_time % 60
             second = direction % 10000
-            nature = direction #### 为了老用户接口的兼容性，已经转换为使用 nature_value
+            nature = direction #### 为了老用户接口的兼容性, 已经转换为使用 nature_value
             value = direction // 10000
             nature_name = '换手'
-            # 对于大于59秒的值，属于无效数值
+            # 对于大于59秒的值, 属于无效数值
             if second > 59:
                 second = 0
             date =datetime(year, month, day, hour, minute, second)
@@ -653,7 +653,7 @@ class DailyTransactionData(protocol.BaseMessage):
                 ("volume", volume),
                 ("zengcang", zengcang),
                 ("natrue_name", nature_name),
-                ("nature_name", nature_name), #修正了nature_name的拼写错误(natrue), 为了保持兼容性，原有的natrue_name还会保留一段时间
+                ("nature_name", nature_name), #修正了nature_name的拼写错误(natrue), 为了保持兼容性, 原有的natrue_name还会保留一段时间
                 ("direction", direction),
                 ("nature", nature),
 
@@ -846,8 +846,8 @@ class TodoCmd0X2489(protocol.BaseMessage):
         # 52个字节
         ticker = self.ticker.encode("utf-8")
         symbol = struct.pack('<B23s', self.market, ticker) # 24: 证券代码
-        type_ = struct.pack('<HH', self.bar_type, self.unknown1) # 4: 2，K线类型，2，未知
-        range_ = struct.pack('<IH', self.start, self.size) # 6: 4，起始时间，2，数量
+        type_ = struct.pack('<HH', self.bar_type, self.unknown1) # 4: 2, K线类型, 2, 未知
+        range_ = struct.pack('<IH', self.start, self.size) # 6: 4, 起始时间, 2, 数量
         padding= bytearray.fromhex('00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00') # 18: 未知填充
         return symbol + type_ + range_ + padding
     

@@ -54,7 +54,7 @@ def change_rate(base: float, value: float) -> float:
 
 def decimal(f: float, digits: int = 2) -> float:
     """
-    保留小数位，使用与 C++ 等效的无分支算法
+    保留小数位, 使用与 C++ 等效的无分支算法
     :param f: 浮点数
     :param digits: 小数位数
     :return:
@@ -79,17 +79,17 @@ def decimal(f: float, digits: int = 2) -> float:
 class NumberRange:
     def __init__(self, *args, **kwargs):
         """
-        初始化数值范围对象，支持多种参数格式
+        初始化数值范围对象, 支持多种参数格式
         
         Args:
-            *args: 可变参数，支持以下格式：
+            *args: 可变参数, 支持以下格式: 
                 - 两个数值 (start, end)
                 - 列表/元组包含多个数值或范围对
                 - 集合包含多个离散值
                 - 另一个 NumberRange 对象
-            **kwargs: 可选参数，包含：
-                include_start (bool): 默认包含范围起始值，默认为 True
-                include_end (bool): 默认包含范围结束值，默认为 True
+            **kwargs: 可选参数, 包含: 
+                include_start (bool): 默认包含范围起始值, 默认为 True
+                include_end (bool): 默认包含范围结束值, 默认为 True
         
         Raises:
             TypeError: 如果参数类型不符合要求
@@ -100,7 +100,7 @@ class NumberRange:
         default_include_start = kwargs.get('include_start', True)
         default_include_end = kwargs.get('include_end', True)
         
-        # 如果没有参数，返回空范围
+        # 如果没有参数, 返回空范围
         if not args:
             return
         
@@ -116,7 +116,7 @@ class NumberRange:
         # 情况2: 处理其他参数
         for arg in args:
             if isinstance(arg, (list, tuple)):
-                # 如果是元组 (1, 100) 或 ("00001", "02799")，直接作为范围
+                # 如果是元组 (1, 100) 或 ("00001", "02799"), 直接作为范围
                 if len(arg) == 2 and all(isinstance(x, (int, float, str)) for x in arg):
                     self.add_range(arg[0], arg[1], default_include_start, default_include_end)
                 else:
@@ -158,15 +158,15 @@ class NumberRange:
         """
         合并重叠或相邻的范围区间
         
-        将内部存储的多个范围区间(_ranges)合并为不重叠的连续区间，并更新对应的起始点列表(_starts)。
-        每个范围区间由四元组(start, end, include_start, include_end)表示，其中include_start和include_end表示是否包含端点。
+        将内部存储的多个范围区间(_ranges)合并为不重叠的连续区间, 并更新对应的起始点列表(_starts). 
+        每个范围区间由四元组(start, end, include_start, include_end)表示, 其中include_start和include_end表示是否包含端点. 
         
-        处理逻辑：
-        1. 当两个区间重叠或相邻且至少有一个包含端点时，将它们合并为一个新区间
+        处理逻辑: 
+        1. 当两个区间重叠或相邻且至少有一个包含端点时, 将它们合并为一个新区间
         2. 新区间的起止点为合并区间的最早开始和最晚结束
         3. 新区间的端点包含性由原区间中对应端点的包含性决定
         
-        注意：此方法会直接修改实例的_ranges和_starts属性
+        注意: 此方法会直接修改实例的_ranges和_starts属性
         """
         if len(self._ranges) <= 1:
             return
@@ -207,10 +207,10 @@ class NumberRange:
             bool: 如果值在任何范围内则返回True, 否则返回False
         
         Note:
-            范围检查包含以下逻辑：
+            范围检查包含以下逻辑: 
             - 值大于起始且小于结束
-            - 如果值等于起始，则检查是否包含起始(inc_start)
-            - 如果值等于结束，则检查是否包含结束(inc_end)
+            - 如果值等于起始, 则检查是否包含起始(inc_start)
+            - 如果值等于结束, 则检查是否包含结束(inc_end)
         """
         if not self._ranges:
             return False
@@ -264,7 +264,7 @@ if __name__ == '__main__':
     nr3 = NumberRange(ranges)
     print(nr3)  # NumberRange([1, 100], [150, 180], [200, 300])
 
-    # 4. 离散值集合（自动转换为单点区间）
+    # 4. 离散值集合(自动转换为单点区间)
     discrete_set = {1, 3, 5, 7, 9}
     nr4 = NumberRange(discrete_set)
     print(nr4)  # NumberRange([1, 1], [3, 3], [5, 5], [7, 7], [9, 9])

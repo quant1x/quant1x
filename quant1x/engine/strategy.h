@@ -98,8 +98,8 @@ public:
 // 交易方向枚举
 enum class TradeDirection {
     HOLD,   ///< 不动
-    LONG,   ///< 买入（A股）/做多（期货）
-    SHORT,  ///< 卖出（A股）/做空（期货）
+    LONG,   ///< 买入(A股)/做多(期货)
+    SHORT,  ///< 卖出(A股)/做空(期货)
     FLAT    ///< 平仓
 };
 
@@ -114,13 +114,13 @@ public:
     // 增量计算评估
     virtual void Evaluate(const SecurityCode &code, ResultInfo &result, const Snapshot::Reader &snapshot) const = 0;
     virtual void Evaluate(const SecurityCode &code, ResultInfo &result, const level1::SecurityQuote &snapshot) const = 0;
-    // 更新指标数据（如均线）
+    // 更新指标数据(如均线)
     virtual void updateIndicators(const SecurityCode &code) = 0;
 
     // 根据当前市场状态生成交易信号
     virtual TradeDirection generateSignal(size_t current_index) = 0;
 
-    // 重置策略状态（用于新回测）
+    // 重置策略状态(用于新回测)
     virtual void reset() = 0;
 };
 
@@ -136,7 +136,7 @@ public:
 };
 
 // ======================
-// 组合策略基类（最终继承使用）
+// 组合策略基类(最终继承使用)
 // ======================
 class StrategyBase : public Filterable, public Sortable, public Evaluatable, public StrategyInfo {
 private:
@@ -161,7 +161,7 @@ public:
 };
 
 // ======================
-// 策略管理器（单例）
+// 策略管理器(单例)
 // ======================
 class StrategyManager {
 private:

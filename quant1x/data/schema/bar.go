@@ -1,11 +1,11 @@
 package schema
 
-// MaxCachedDaysToDropOnIncrementalUpdate 是增量更新缓存清理的最大天数。
+// MaxCachedDaysToDropOnIncrementalUpdate 是增量更新缓存清理的最大天数.
 //
-// 在执行增量更新前，从缓存数据中最多需要移除最近的若干个交易日数据。
-// 该机制确保在 A 股除权除息日等场景下，当日数据能被正确覆盖。
-// 由于 A 股的复权处理以交易日为单位，且同一天内可能多次更新数据，
-// 因此需先删除缓存中已有的当日记录，再插入最新增量数据。
+// 在执行增量更新前, 从缓存数据中最多需要移除最近的若干个交易日数据.
+// 该机制确保在 A 股除权除息日等场景下, 当日数据能被正确覆盖.
+// 由于 A 股的复权处理以交易日为单位, 且同一天内可能多次更新数据,
+// 因此需先删除缓存中已有的当日记录, 再插入最新增量数据.
 const MaxCachedDaysToDropOnIncrementalUpdate = 1
 
 // Bar 表示一条 K 线数据
@@ -23,7 +23,7 @@ type Bar struct {
 	AdjustmentCount int     `name:"复权次数" csv:"adjustment_count"` // 复权次数
 }
 
-// Adjust 根据复权因子对 Bar 执行前复权调整。
+// Adjust 根据复权因子对 Bar 执行前复权调整.
 func (k *Bar) Adjust(adj CumulativeAdjustment) {
 	// compute adjusted prices
 	k.Open = k.Open*adj.M + adj.A

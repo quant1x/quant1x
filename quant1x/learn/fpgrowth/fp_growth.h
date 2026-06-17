@@ -7,14 +7,14 @@
 
 namespace quant1x {
 
-// 前置声明，不暴露具体定义
+// 前置声明, 不暴露具体定义
 class FPGrowthCore;
 
 /**
  * @brief 泛型 FP Growth 算法实现
  * 
- * 自动处理类型 T 到 size_t 的映射，支持任意可哈希类型（如 std::string）
- * 注意：目前仅支持 std::string, size_t, int, long 等常见类型的显式实例化。
+ * 自动处理类型 T 到 size_t 的映射, 支持任意可哈希类型(如 std::string)
+ * 注意: 目前仅支持 std::string, size_t, int, long 等常见类型的显式实例化. 
  */
 template <typename T>
 class FPGrowth {

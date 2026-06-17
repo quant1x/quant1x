@@ -8,7 +8,7 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::fs::File;
 use std::io::{self, BufReader, Read};
 
-/// 自定义 Reader，跟踪已读字节数并更新进度条
+/// 自定义 Reader, 跟踪已读字节数并更新进度条
 struct ProgressReader<R> {
     inner: R,
     progress: ProgressBar,
@@ -44,7 +44,7 @@ pub struct HistoricalTrade {
     pub direction: TradeDirection,
 }
 
-/// 交易类型枚举（对应Go中的TradeType）
+/// 交易类型枚举(对应Go中的TradeType)
 #[derive(Debug, Clone, Copy, PartialEq, Serialize_repr, Deserialize_repr)]
 #[repr(i32)]
 pub enum TradeDirection {

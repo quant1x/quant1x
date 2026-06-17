@@ -5,7 +5,7 @@
 #include <sstream>
 #include <quant1x/std/time.h>
 
-namespace io {
+namespace http {
 
     static std::string time_point_to_http_date_cpp20(int64_t milliseconds_since_epoch) {
         // 将毫秒时间戳转换为 time_point

@@ -16,7 +16,7 @@ def csv_to_slice(filepath: Union[str, Path], cls: Type[T]) -> List[T]:
     从 CSV 加载为 dataclass 实例列表
     
     :param filepath: CSV 文件路径
-    :param cls: 目标 dataclass 类（必须用 @dataclass 装饰）
+    :param cls: 目标 dataclass 类(必须用 @dataclass 装饰)
     :return: List[cls]
     """
     if not is_dataclass(cls):
@@ -48,7 +48,7 @@ def csv_to_slice(filepath: Union[str, Path], cls: Type[T]) -> List[T]:
         except StopIteration:
             return []  # 空文件
 
-        # 验证 header 是否匹配（顺序和名称必须一致）
+        # 验证 header 是否匹配(顺序和名称必须一致)
         if file_header != field_names:
             raise ValueError(
                 f"CSV header {file_header} does not match dataclass fields {field_names}. "
@@ -75,7 +75,7 @@ def csv_to_slice(filepath: Union[str, Path], cls: Type[T]) -> List[T]:
                     elif target_type is bool:
                         kwargs[name] = value_str.lower() in ('true', '1', 'yes', 'on')
                     else:
-                        # 未知类型：保留字符串（或可抛异常）
+                        # 未知类型: 保留字符串(或可抛异常)
                         kwargs[name] = value_str
                 except Exception as e:
                     raise ValueError(
@@ -90,8 +90,8 @@ def csv_to_slice(filepath: Union[str, Path], cls: Type[T]) -> List[T]:
 def slice_to_csv(filepath: Union[str, Path],  data: List[T]) -> None:
     """保存 dataclass 实例列表到 CSV"""
     if not data:
-        # 空列表：无法推断结构，拒绝保存（或可创建空 header？）
-        # 这里选择：不写文件
+        # 空列表: 无法推断结构, 拒绝保存(或可创建空 header？)
+        # 这里选择: 不写文件
         return
     
     first = data[0]
@@ -103,7 +103,7 @@ def slice_to_csv(filepath: Union[str, Path],  data: List[T]) -> None:
     cls_fields = fields(cls)
     header = get_field_names(cls)
     
-    # 将每个实例转为行（按字段顺序）
+    # 将每个实例转为行(按字段顺序)
     rows = []
     for obj in data:
         if type(obj) is not cls:

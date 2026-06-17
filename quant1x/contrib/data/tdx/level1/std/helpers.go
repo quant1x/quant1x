@@ -209,7 +209,7 @@ const (
 //
 // 返回值:
 //
-//	对应市场的整型ID，如果交易所不匹配则返回-1
+//	对应市场的整型ID, 如果交易所不匹配则返回-1
 func exchangeToMarketId(ex exchange.Exchange) int {
 	switch ex {
 	case exchange.ExchangeSZSE:
@@ -249,7 +249,7 @@ func defaultBaseUnit(marketID int, code string) float64 {
 	return 100.0
 }
 
-// instrumentsToString 将一组InstrumentInfo转换为逗号分隔的字符串，格式为"ticker:exchangeId,ticker:exchangeId..."
+// instrumentsToString 将一组InstrumentInfo转换为逗号分隔的字符串, 格式为"ticker:exchangeId,ticker:exchangeId..."
 // 自动去除结果字符串开头的逗号
 func instrumentsToString(codes []exchange.InstrumentInfo) string {
 	var result strings.Builder

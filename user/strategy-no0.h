@@ -5,14 +5,14 @@
 #include <quant1x/engine/strategy.h>
 
 // ======================
-// 示例具体策略：0号策略
+// 示例具体策略: 0号策略
 // ======================
 class No0Strategy final : public StrategyBase {
 private:
     StrategyMetadata metadata_{
         "0号策略",
         "Quant1X Team",
-        "演示策略，用于选股和评估"
+        "演示策略, 用于选股和评估"
     };
     std::vector<bool> buys_;
     std::vector<bool> sells_;

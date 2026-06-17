@@ -2,16 +2,16 @@ use crate::data::meta::timestamp::Timestamp;
 use std::fs;
 use std::time::UNIX_EPOCH;
 
-/// 获取今天初始化时间，对应 Python `cache.get_today_initialized_time`。
+/// 获取今天初始化时间, 对应 Python `cache.get_today_initialized_time`. 
 pub fn get_today_initialized_time() -> Timestamp {
     let now = Timestamp::now();
     now.pre_market_time_from_current().unwrap_or(now)
 }
 
-/// 获取文件最后修改时间，对应 Python `cache.get_filename_modified_time`。
+/// 获取文件最后修改时间, 对应 Python `cache.get_filename_modified_time`. 
 ///
 /// - 文件不存在 → `Timestamp::zero()`
-/// - OS 错误（权限、竞争条件等）→ `Timestamp::zero()`
+/// - OS 错误(权限, 竞争条件等)→ `Timestamp::zero()`
 pub fn get_filename_modified_time(fname: &str) -> Timestamp {
     let meta = match fs::symlink_metadata(fname) {
         Ok(m) => m,
@@ -28,12 +28,12 @@ pub fn get_filename_modified_time(fname: &str) -> Timestamp {
     Timestamp::new(dur.as_millis() as i64)
 }
 
-/// 增量更新缓存清理的最大天数，对应 Python `MaxCachedDaysToDropOnIncrementalUpdate`。
+/// 增量更新缓存清理的最大天数, 对应 Python `MaxCachedDaysToDropOnIncrementalUpdate`. 
 pub const MAX_CACHED_DAYS_TO_DROP_ON_INCREMENTAL_UPDATE: i32 = 1;
 
 const DEFAULT_BAR_PERIOD: &str = "D";
 
-/// 根据周期标识返回中文名称，对应 Python `cache.get_period_name`。
+/// 根据周期标识返回中文名称, 对应 Python `cache.get_period_name`. 
 pub fn get_period_name(period: &str) -> String {
     let upper = period.to_uppercase();
     match upper.as_str() {
@@ -46,7 +46,7 @@ pub fn get_period_name(period: &str) -> String {
     }
 }
 
-/// 日期格式化，对应 Python `cache.date_format`。
+/// 日期格式化, 对应 Python `cache.date_format`. 
 pub fn date_format(date: &str, layout: &str) -> String {
     // 尝试多种常见日期格式解析
     let parsed = chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d")

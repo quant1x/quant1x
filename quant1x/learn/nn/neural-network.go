@@ -59,7 +59,7 @@ func sigmoidDerivative(x float64) float64 {
 	return x * (1.0 - x)
 }
 
-// Forward 前向传播（并发计算）
+// Forward 前向传播(并发计算)
 func (nn *NeuralNetwork) Forward(input []float64) (hidden, output []float64) {
 	var wg sync.WaitGroup
 
@@ -95,7 +95,7 @@ func (nn *NeuralNetwork) Forward(input []float64) (hidden, output []float64) {
 	return
 }
 
-// Backpropagate 反向传播（带动量优化）
+// Backpropagate 反向传播(带动量优化)
 func (nn *NeuralNetwork) Backpropagate(input, target []float64) float64 {
 	hidden, output := nn.Forward(input)
 
@@ -152,7 +152,7 @@ func (nn *NeuralNetwork) Backpropagate(input, target []float64) float64 {
 	return totalError / float64(nn.OutputSize)
 }
 
-// Train 批量训练（带早停机制）
+// Train 批量训练(带早停机制)
 func (nn *NeuralNetwork) Train(inputs, targets [][]float64, epochs int, validationSplit float64) {
 	valSize := int(float64(len(inputs)) * validationSplit)
 	trainInputs := inputs[:len(inputs)-valSize]

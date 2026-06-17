@@ -6,7 +6,7 @@ import os
 import sys
 
 def _find_package_name(start_dir: str) -> str:
-    """从 start_dir 向上查找 LICENSE 文件，返回其父目录名作为 package_name"""
+    """从 start_dir 向上查找 LICENSE 文件, 返回其父目录名作为 package_name"""
     current = os.path.abspath(start_dir)
     for _ in range(10):  # 最多向上查找10层
         license_path = os.path.join(current, "LICENSE")
@@ -17,14 +17,14 @@ def _find_package_name(start_dir: str) -> str:
             break
         current = parent
     raise FileNotFoundError(
-        "无法找到 LICENSE 文件，请确保在项目根目录或其子目录下运行此脚本。"
+        "无法找到 LICENSE 文件, 请确保在项目根目录或其子目录下运行此脚本. "
         f"当前起始目录: {os.path.abspath(start_dir)}"
     )
 
 
 def get_module_path(file_path: str) -> str:
     """将文件路径转换为模块路径"""
-    # 获取工作目录（项目根目录）
+    # 获取工作目录(项目根目录)
     workspace_root = os.getcwd()
     package_name = _find_package_name(workspace_root)
     # 标准化路径
@@ -46,7 +46,7 @@ def get_module_path(file_path: str) -> str:
         print(f"\033[90m[run_module] 相对路径: {rel_path}\033[0m")
     except ValueError:
         # 如果不在同一个驱动器
-        print("\033[90m[run_module] ⚠️ 警告：文件与工作目录不在同一驱动器\033[0m")
+        print("\033[90m[run_module] ⚠️ 警告: 文件与工作目录不在同一驱动器\033[0m")
         # 使用绝对路径
         rel_path = file_path
     

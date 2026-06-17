@@ -420,7 +420,6 @@ set(quant1x-headers
     # i/o 相关
     quant1x/io/csv-reader.h
     quant1x/io/csv-writer.h
-    quant1x/io/file.h
     quant1x/io/http.h
     quant1x/log/logger.h
     quant1x/log/router_sink.h
@@ -433,7 +432,7 @@ set(quant1x-headers
     quant1x/encoding/yaml.h
 
     # 配置
-    quant1x/config/base.h
+    quant1x/config/config.h
     quant1x/config/data_cache.h
     quant1x/config/rule_parameter.h
     quant1x/config/strategy_parameter.h
@@ -476,6 +475,7 @@ set(quant1x-headers
     # 数据
     quant1x/data/adapter.h
     quant1x/data/base.h
+    quant1x/data/cache.h
     quant1x/data/market.h
     quant1x/data/status.h
 
@@ -489,8 +489,9 @@ set(quant1x-headers
     # quant1x/backtest/position.h
 
     # 交易所相关 (migrated to quant1x/data/meta/)
-    quant1x/data/meta/timestamp.cpp
-    # quant1x/data/meta/session.cpp (TODO: missing layout.h dependency)
+    quant1x/data/meta/calendar.h
+    quant1x/data/meta/timestamp.h
+    quant1x/data/meta/session.h
 
     # 数据客户端
     quant1x/contrib/data/tdx/client.h
@@ -594,7 +595,6 @@ set(quant1x-sources
     quant1x/runtime/scheduler.cpp
 
     # i/o 相关
-    quant1x/io/file.cpp
     quant1x/io/http.cpp
     quant1x/log/router_sink.cpp
     quant1x/log/lazy_daily_sink.cpp
@@ -618,7 +618,7 @@ set(quant1x-sources
 
     # 配置信息
     quant1x/config/base.cpp
-    # quant1x/config/cache.cpp (TODO: API migration)
+    #quant1x/config/cache.cpp
     quant1x/config/trading_session.cpp
     # quant1x/config/trader_parameter.cpp (TODO: API migration)
     # quant1x/config/strategy_parameter.cpp (TODO: API migration)
@@ -636,6 +636,7 @@ set(quant1x-sources
 
     # 数据
     quant1x/data/adapter.cpp
+    quant1x/data/cache.cpp
     quant1x/data/market.cpp
 
     # tdx adapters (TODO: chips, f10, history API migration pending)
@@ -654,7 +655,8 @@ set(quant1x-sources
 
     # 交易所相关 (migrated to quant1x/data/meta/)
     quant1x/data/meta/timestamp.cpp
-    # quant1x/data/meta/session.cpp (TODO: missing layout.h dependency)
+    quant1x/data/meta/calendar.cpp
+    quant1x/data/meta/session.cpp
 
     # 因子 (TODO: API migration — all factor .cpp files depend on old data:: types)
     # quant1x/factors/f10.cpp

@@ -295,7 +295,7 @@ private:
         if (s > 2)
             return result;
 
-        // 实现分时数据解码逻辑（简化版本）
+        // 实现分时数据解码逻辑(简化版本)
         return result;
     }
 
@@ -305,7 +305,7 @@ private:
         if (s >= 1)
             return result;
 
-        // 实现K线数据解码逻辑（简化版本）
+        // 实现K线数据解码逻辑(简化版本)
         return result;
     }
 
@@ -315,7 +315,7 @@ private:
 
         r["l"] = 0;
         int n_count = -1;
-        bool t_initialized = false;  // 🔧 关键：跟踪result是否已初始化
+        bool t_initialized = false;  // 🔧 关键: 跟踪result是否已初始化
         
         r["d"] = static_cast<int>(w({18})[0] - 1);
         int target_date = static_cast<int>(w({18})[0]);
@@ -331,7 +331,7 @@ private:
                 auto count_data = w({3 * r["l"]}, {0});
                 n_count = static_cast<int>(count_data[0]) + 1;
                 
-                // 🔧 关键修正：只有第一次才初始化
+                // 🔧 关键修正: 只有第一次才初始化
                 if (!t_initialized) {
                     result.push_back(current_date);
                     n_count--;
@@ -354,7 +354,7 @@ private:
         if (s >= 1)
             return result;
 
-        // 实现自定义数据解码逻辑（简化版本）
+        // 实现自定义数据解码逻辑(简化版本)
         return result;
     }
 
@@ -387,7 +387,7 @@ public:
     }
 
     std::vector<std::map<std::string, std::string>> decode() {
-        // 直接使用保存的分支值，不再重复调用 w({12, 6})
+        // 直接使用保存的分支值, 不再重复调用 w({12, 6})
         int branch = branch_type;
 
         switch (branch) {

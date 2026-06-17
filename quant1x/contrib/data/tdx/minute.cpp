@@ -21,7 +21,7 @@ namespace tdx {
         try {
             auto conn = level1::get_std_conn();
             // 使用标准行情连接获取历史分时数据
-            auto date_int = static_cast<uint32_t>(date.yyyymmdd_int());
+            auto date_int = static_cast<uint32_t>(date.yyyymmdd_u32());
             level1::HistoryMinuteTime minute(code, date_int);
             level1::process(conn->socket(), minute);
             // 保存到 {cache}/minute/{cache_dir}/{symbol}.csv

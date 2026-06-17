@@ -3,7 +3,7 @@
 // Licensed under the MIT License.
 //
 // std — 标准行情协议消息
-// 按命令字拆分为独立子模块，统一通过 mod.rs 重新导出
+// 按命令字拆分为独立子模块, 统一通过 mod.rs 重新导出
 
 pub mod hello;
 pub mod heartbeat;

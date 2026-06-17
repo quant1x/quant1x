@@ -1,8 +1,8 @@
 // Copyright (c) Quant1X <wangfengxy@sina.cn>.
 // Licensed under the MIT License.
 //
-// kline — 前复权K线数据缓存读取，与 Python contrib/data/tdx/kline.py 对齐
-// 作为 datasource 的本地代理，仅从本地缓存CSV文件读取数据，不依赖 level1 协议
+// kline — 前复权K线数据缓存读取, 与 Python contrib/data/tdx/kline.py 对齐
+// 作为 datasource 的本地代理, 仅从本地缓存CSV文件读取数据, 不依赖 level1 协议
 
 use std::sync::Arc;
 
@@ -17,7 +17,7 @@ use crate::data::{BaseKLine, DEFAULT_DATA_PROVIDER};
 /// 中国股市首日上市日期
 const MARKET_CN_FIRST_LIST_TIME: &str = "1990-12-19";
 
-/// 每页请求的最大K线数量，与 Python SECURITY_BARS_PRE_REQUEST_MAX 对齐
+/// 每页请求的最大K线数量, 与 Python SECURITY_BARS_PRE_REQUEST_MAX 对齐
 const SECURITY_BARS_PRE_REQUEST_MAX: usize = 700;
 
 /// 日线增量更新时丢弃的缓存天数
@@ -65,7 +65,7 @@ fn read_kline_from_csv(filename: &str) -> Vec<Bar> {
                 }
             }
         }
-        Err(_) => { /* 文件不存在，返回空列表 */ }
+        Err(_) => { /* 文件不存在, 返回空列表 */ }
     }
     klines
 }
@@ -128,7 +128,7 @@ fn save_kline(filename: &str, values: &[Bar]) {
 // 前复权逻辑 — 与 Python kline.py 对齐
 // ============================================================
 
-/// 对K线数据进行前复权处理（事件驱动模式）
+/// 对K线数据进行前复权处理(事件驱动模式)
 /// 与 Python apply_forward_adjustment_for_event(klines, current_start_date, dividends) 对齐
 fn apply_forward_adjustment_for_event(
     klines: &mut [Bar],
@@ -153,7 +153,7 @@ fn apply_forward_adjustment_for_event(
     let last_day_next = last_trading_day_ts.only_date();
     let start_date_str = current_start_date.only_date();
 
-    // 过滤 category == 1 的除权除息记录，且日期 <= last_day_next
+    // 过滤 category == 1 的除权除息记录, 且日期 <= last_day_next
     let xdxr_infos: Vec<&XdxrInfo> = dividends
         .iter()
         .filter(|x| x.date <= last_day_next && x.category == 1)
@@ -338,7 +338,7 @@ impl DataAdapter for DataKLine {
             start += count as u32;
         }
 
-        // 4. 反转页面（时间升序）
+        // 4. 反转页面(时间升序)
         hs.reverse();
 
         // 5. 构建增量K线列表
@@ -389,7 +389,7 @@ impl DataAdapter for DataKLine {
         if klines_length > klines_offset_days {
             klines.extend_from_slice(&cache_klines[..(klines_length - klines_offset_days)]);
         }
-        // 如果拉取失败且没有缓存数据，不要写入空文件
+        // 如果拉取失败且没有缓存数据, 不要写入空文件
         if fetch_failed && klines.is_empty() && incremental_klines.is_empty() {
             log::warn!(
                 "[DataKLine] [{}] no data fetched and no cache — skipping save",
@@ -399,7 +399,7 @@ impl DataAdapter for DataKLine {
         }
         klines.extend(incremental_klines);
 
-        // 8. 对新合并的数据再复权（非首次拉取的情况）
+        // 8. 对新合并的数据再复权(非首次拉取的情况)
         if !is_fresh_fetch_require_adjustment {
             apply_forward_adjustment_for_event(&mut klines, &current_start_date, &dividends);
         }
@@ -431,7 +431,7 @@ pub fn get_cross_section_forward_adjusted_klines(
         filename
     );
 
-    // 如果缓存文件不存在，先通过 DataKLine adapter 从服务器拉取数据并生成缓存
+    // 如果缓存文件不存在, 先通过 DataKLine adapter 从服务器拉取数据并生成缓存
     if !std::path::Path::new(&filename).exists() {
         log::info!(
             "[kline] cache not found for {}, triggering DataKLine update",
@@ -472,7 +472,7 @@ pub fn resolve_as_of_date(inst: &Instrument, end_date: Option<&str>) -> String {
             {
                 crate::data::meta::calendar::last_trading_day(Timestamp::now()).only_date()
             } else {
-                // 非A股：当天日期
+                // 非A股: 当天日期
                 Timestamp::now().only_date()
             }
         }

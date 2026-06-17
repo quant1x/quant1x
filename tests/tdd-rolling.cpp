@@ -9,7 +9,7 @@ auto rolling(const xt::xexpression<E>& data_expr, const xt::xexpression<W>& wind
     const auto& data = data_expr.derived_cast();
     const auto& windows = window_expr.derived_cast();
 
-    // 结果容器（与输入数据同形状）
+    // 结果容器(与输入数据同形状)
     xt::xarray<double> result = xt::empty<double>(data.shape());
 
     for (size_t i = 0; i < data.size(); ++i) {
@@ -62,24 +62,24 @@ TEST_CASE("rolling-const", "[pandas]") {
     // 示例数据
     xt::xarray<double> prices = {1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8, 9.9};
 
-    // 情况1：固定窗口
+    // 情况1: 固定窗口
     xt::xarray<size_t> fixed_window = {3, 3, 3, 3, 3, 3, 3, 3, 3}; // 全部为3
     auto fixed_result = rolling(prices, fixed_window);
     std::cout << "fixed_result: " << fixed_result << std::endl;
 
-    // 情况2：可变窗口
+    // 情况2: 可变窗口
     xt::xarray<size_t> dynamic_window = {1, 2, 3, 4, 3, 2, 3, 4, 5}; // 变化窗口
     auto dynamic_result = rolling_mean(prices, dynamic_window);
     std::cout << "dynamic_result: " << dynamic_result << std::endl;
 
-    // 情况3：边界检查
+    // 情况3: 边界检查
     xt::xarray<size_t> edge_case_window = {5, 5, 5, 5, 5, 5, 5, 5, 5};
     auto edge_result = rolling_sum(prices, edge_case_window); // 前4个会是NaN
     std::cout << "edge_result: " << edge_result << std::endl;
 
 }
 
-// 统一rolling函数（支持标量和动态窗口）
+// 统一rolling函数(支持标量和动态窗口)
 
 template <typename DataType, typename WindowType, typename Func>
 auto rolling(const xt::xexpression<DataType>& data_expr,
@@ -152,7 +152,7 @@ TEST_CASE("rolling-release", "[pandas]") {
     xt::xarray<double> data = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0};
 
 
-    // 情况1：标量窗口（所有窗口大小相同）
+    // 情况1: 标量窗口(所有窗口大小相同)
     size_t fixed_window = 5;
     auto fixed_mean = rolling(data, fixed_window, mean);
     auto fixed_std = rolling(data, fixed_window, stddev(0));
@@ -162,7 +162,7 @@ TEST_CASE("rolling-release", "[pandas]") {
     std::cout << "Fixed window (size=3) std:\n" << fixed_std << "\n";
     std::cout << "Fixed window (size=3) hhv:\n" << fixed_hhv << "\n";
 
-    // 情况2：动态窗口（每个点有独立窗口大小）
+    // 情况2: 动态窗口(每个点有独立窗口大小)
     xt::xarray<size_t> dynamic_windows = {5, 5, 5, 5, 5, 100, 5, 5, 5, 5};
     auto dynamic_sum = rolling(data, dynamic_windows, sum);
     auto dynamic_std = rolling(data, dynamic_windows, stddev(0));
@@ -170,7 +170,7 @@ TEST_CASE("rolling-release", "[pandas]") {
     std::cout << "\nDynamic window sum:\n" << dynamic_sum << "\n";
     std::cout << "Dynamic window std (ddof=0):\n" << dynamic_std << "\n";
 
-    // 情况3：边界情况测试
+    // 情况3: 边界情况测试
     xt::xarray<size_t> edge_windows = {0, 10, 3, 100, 2}; // 测试超限窗口
     auto edge_result = rolling(data, edge_windows, mean);
     std::cout << "\nEdge case handling:\n" << edge_result << "\n";
@@ -180,7 +180,7 @@ TEST_CASE("Rolling Window Benchmark", "[benchmark]") {
     const size_t data_size = 10'000;  // 1万数据点
     const size_t window_size = 20;       // 固定窗口大小
 
-    // 生成随机测试数据（每个SECTION独立生成）
+    // 生成随机测试数据(每个SECTION独立生成)
     xt::xarray<double> data;
 
     BENCHMARK_ADVANCED("Fixed Window Rolling Sum")(Catch::Benchmark::Chronometer meter) {
@@ -245,7 +245,7 @@ void rolling_stddev_simd(const double* data, size_t size, size_t window, double*
             sum_sq = _mm256_add_pd(sum_sq, _mm256_mul_pd(x, x));
         }
 
-        // 处理剩余元素（不足4个）
+        // 处理剩余元素(不足4个)
         double tail_sum = 0.0, tail_sum_sq = 0.0;
         for (; j < window; ++j) {
             double val = data[i-window+1+j];

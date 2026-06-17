@@ -31,7 +31,7 @@ impl BaseConfig {
         config.filename = filename.trim().to_string();
         config.config_map = HashMap::new();
 
-        // 若配置文件不存在：使用默认 BaseDir/LogDir，并保留空 map
+        // 若配置文件不存在: 使用默认 BaseDir/LogDir, 并保留空 map
         if !PathBuf::from(filename).exists() {
             config.basedir = Some(get_base_path().to_string());
             config.logdir = Some(format!("{}/logs", config.basedir.as_ref().unwrap()));
@@ -101,7 +101,7 @@ fn lazy_init_base_path() -> String {
         .unwrap_or_else(|_| DEFAULT_BASE_PATH_TEMPLATE.to_string())
 }
 
-/// 返回默认的基础路径，如果无法展开用户目录则返回默认路径
+/// 返回默认的基础路径, 如果无法展开用户目录则返回默认路径
 pub fn get_base_path() -> &'static str {
     QUANT1X_BASE_PATH.get_or_init(lazy_init_base_path)
 }
@@ -114,7 +114,7 @@ pub fn get_meta_path() -> PathBuf {
     PathBuf::from(base).join("meta")
 }
 
-// 全局函数，与Go/C++版本保持一致的调用方式
+// 全局函数, 与Go/C++版本保持一致的调用方式
 pub fn get_configfile_path() -> &'static str {
     ensure_initialized();
     CACHE_CFG.get().unwrap().filename.as_str()

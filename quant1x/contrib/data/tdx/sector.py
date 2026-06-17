@@ -55,7 +55,7 @@ def sector_type_name_by_code(sector_code: int) -> str | None:
         sector_code: 板块类型代码
 
     Returns:
-        板块类型名称，找不到返回 None
+        板块类型名称, 找不到返回 None
     """
     sector_type = SectorType(sector_code)
     return sector_type_name_by_type(sector_type)
@@ -68,7 +68,7 @@ def sector_type_name_by_type(sector_type: SectorType) -> str | None:
         sector_type: 板块类型枚举
 
     Returns:
-        板块类型名称，找不到返回 None
+        板块类型名称, 找不到返回 None
     """
     return _SECTOR_TYPE_NAME_MAP.get(sector_type)
 

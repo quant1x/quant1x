@@ -6,8 +6,8 @@
 """
 二进制文件转C/C++头文件转换器
 
-将二进制文件转换为包含嵌入式资源数据的C/C++头文件。
-针对可读性和可维护性进行了优化。
+将二进制文件转换为包含嵌入式资源数据的C/C++头文件. 
+针对可读性和可维护性进行了优化. 
 
 用法:
     python b2c.py <输入文件> <输出文件> [选项]
@@ -27,13 +27,13 @@ from typing import BinaryIO, TextIO, Optional
 
 
 class BinaryToCConverter:
-    """将二进制文件转换为C/C++头文件的转换器。"""
+    """将二进制文件转换为C/C++头文件的转换器. """
 
     def __init__(self, bytes_per_line: int = 16):
         self.bytes_per_line = bytes_per_line
 
     def generate_include_guard(self, filepath: str) -> str:
-        """从文件路径生成唯一的包含保护符。"""
+        """从文件路径生成唯一的包含保护符. """
         # 将路径转换为有效的C标识符
         guard = str(filepath)
         guard = guard.replace(os.sep, '_').replace('.', '_').replace('-', '_')
@@ -43,7 +43,7 @@ class BinaryToCConverter:
         return f"{guard.upper()}_INC"
 
     def generate_variable_name(self, filename: str) -> str:
-        """从文件名生成有效的C变量名。"""
+        """从文件名生成有效的C变量名. """
         name = Path(filename).stem
         # 将无效字符替换为下划线
         name = ''.join(c if c.isalnum() or c == '_' else '_' for c in name)
@@ -53,7 +53,7 @@ class BinaryToCConverter:
         return name
 
     def format_byte_array(self, data: bytes) -> str:
-        """将二进制数据格式化为带适当换行符的C数组。"""
+        """将二进制数据格式化为带适当换行符的C数组. """
         if not data:
             return "    // 空文件"
 
@@ -69,7 +69,7 @@ class BinaryToCConverter:
     def convert(self, input_path: str, output_path: str,
                 namespace: Optional[str] = None, include_timestamp: bool = True,
                 include_filename: bool = True) -> None:
-        """将二进制文件转换为C/C++头文件。"""
+        """将二进制文件转换为C/C++头文件. """
 
         input_file = Path(input_path)
         output_file = Path(output_path)
@@ -115,7 +115,7 @@ class BinaryToCConverter:
             print(f"  时间戳: {mtime_ms}")
 
     def _write_header(self, f: TextIO, include_guard: str, namespace: Optional[str] = None) -> None:
-        """写入文件头，包含包含保护符和命名空间。"""
+        """写入文件头, 包含包含保护符和命名空间. """
         f.write("#pragma once\n")
         f.write(f"#ifndef {include_guard}\n")
         f.write(f"#define {include_guard} 1\n\n")
@@ -124,32 +124,32 @@ class BinaryToCConverter:
             f.write(f"namespace {namespace} {{\n\n")
 
     def _write_filename(self, f: TextIO, var_name: str, filename: str, include_filename: bool) -> None:
-        """如果请求，写入文件名常量。"""
+        """如果请求, 写入文件名常量. """
         if include_filename:
             f.write(f'const char* const {var_name}_filename = "{filename}";\n\n')
 
     def _write_data_array(self, f: TextIO, var_name: str, data: bytes) -> None:
-        """将二进制数据写入为C数组。"""
+        """将二进制数据写入为C数组. """
         f.write(f"const unsigned char {var_name}_data[] = {{\n")
         f.write(self.format_byte_array(data))
         f.write("\n};\n\n")
 
     def _write_metadata(self, f: TextIO, var_name: str, data: bytes,
                        mtime_ms: Optional[int] = None, include_timestamp: bool = True) -> None:
-        """写入元数据常量。"""
+        """写入元数据常量. """
         f.write(f"const unsigned int {var_name}_length = {len(data)};\n")
         if include_timestamp and mtime_ms is not None:
             f.write(f"const long long {var_name}_timestamp = {mtime_ms}LL;\n")
 
     def _write_footer(self, f: TextIO, include_guard: str, namespace: Optional[str] = None) -> None:
-        """写入文件尾，包含命名空间结束和包含保护符。"""
+        """写入文件尾, 包含命名空间结束和包含保护符. """
         if namespace:
             f.write(f"\n}} // namespace {namespace}\n")
         f.write(f"\n#endif // {include_guard}\n")
 
 
 def main():
-    """主入口点。"""
+    """主入口点. """
     parser = argparse.ArgumentParser(
         description="将二进制文件转换为C/C++头文件",
         formatter_class=argparse.RawDescriptionHelpFormatter,

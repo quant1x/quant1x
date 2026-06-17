@@ -120,7 +120,7 @@ std::vector<meta::schema::Bar> load_kline(const meta::Instrument& inst) {
 // =============================
 
 std::vector<level1::XdxrInfo> get_xdxr_list(const std::string& security_code) {
-    auto inst_opt = instruments::GetInstrumentInfo(security_code);
+    auto inst_opt = instruments::get_instrument_info(security_code);
     if (!inst_opt) return {};
     return get_xdxr_list(*inst_opt);
 }
@@ -391,7 +391,7 @@ std::vector<meta::schema::Bar> get_cross_section_forward_adjusted_klines(
     spdlog::debug("[get_cross_section_forward_adjusted_klines] loading for {} from {}",
                   inst.symbol(), filename);
 
-    // 如果缓存文件不存在，先通过 DataKLine adapter 拉取并生成缓存
+    // 如果缓存文件不存在, 先通过 DataKLine adapter 拉取并生成缓存
     if (!std::filesystem::exists(filename)) {
         spdlog::info("[get_cross_section_forward_adjusted_klines] cache not found for {}, triggering DataKLine update",
                      inst.symbol());
@@ -445,7 +445,7 @@ static std::vector<data::KLine> bars_to_klines(
 
 std::vector<data::KLine> checkout_klines(const std::string& code, const std::string& date) {
     std::string sec_code = data::correct_security_code(code);
-    auto inst_opt = instruments::GetInstrumentInfo(sec_code);
+    auto inst_opt = instruments::get_instrument_info(sec_code);
     if (!inst_opt) return {};
     auto bars = get_cross_section_forward_adjusted_klines(*inst_opt, date);
     return bars_to_klines(std::move(bars), sec_code);
@@ -519,7 +519,7 @@ void DataKLine::Update(const meta::Instrument& inst, const meta::Timestamp& date
         start += count;
     }
 
-    // 对齐 Python: 如果首次请求就失败，直接返回
+    // 对齐 Python: 如果首次请求就失败, 直接返回
     if (batches.empty()) {
         spdlog::debug("[DataKLine] no data from server for {}", code);
         return;

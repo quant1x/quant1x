@@ -27,7 +27,7 @@ def usa_ticker_to_code(ticker: str) -> str:
         ticker (str): 输入的美国股票代码
     
     Returns:
-        str: 转换后的标准符号，如果未找到映射则返回原代码
+        str: 转换后的标准符号, 如果未找到映射则返回原代码
     """
     ticker = ticker.upper()
     code = _ticker_to_protocol_symbol_mapping.get(ticker, ticker)
@@ -41,7 +41,7 @@ def usa_code_to_ticker(code: str) -> str:
         code (str): 输入的美国股票协议代码
     
     Returns:
-        str: 对应的股票代码，如果未找到映射则返回原输入代码
+        str: 对应的股票代码, 如果未找到映射则返回原输入代码
     """
     for ticker, mapped_code in _ticker_to_protocol_symbol_mapping.items():
         if mapped_code == code:

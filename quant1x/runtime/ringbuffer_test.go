@@ -57,7 +57,7 @@ func TestMPMCRingBuffer(t *testing.T) {
 		}()
 	}
 
-	// 关闭：生产者完成 -> Close
+	// 关闭: 生产者完成 -> Close
 	go func() {
 		producerWg.Wait()
 		rb.Close()
@@ -80,7 +80,7 @@ func TestMPMCRingBuffer(t *testing.T) {
 		t.Fatalf("expected %d items, got %d", totalData, len(result))
 	}
 
-	// 验证内容（排序后）
+	// 验证内容(排序后)
 	sort.Ints(result)
 	for i := 0; i < totalData; i++ {
 		if result[i] != i {
@@ -108,10 +108,10 @@ func TestStressMPMCRingBuffer(t *testing.T) {
 	var producerWg sync.WaitGroup
 	var consumerWg sync.WaitGroup
 
-	// 使用无缓冲 channel 收集，避免内存膨胀
+	// 使用无缓冲 channel 收集, 避免内存膨胀
 	collected := make(chan int, totalData)
 
-	// 生产者：高并发写入
+	// 生产者: 高并发写入
 	producerWg.Add(numProducers)
 	for i := 0; i < numProducers; i++ {
 		go func(id int) {
@@ -122,7 +122,7 @@ func TestStressMPMCRingBuffer(t *testing.T) {
 					if err := rb.Write(value); err == nil {
 						break
 					}
-					// 只有 ErrQueueFull 才重试，其他错误 panic
+					// 只有 ErrQueueFull 才重试, 其他错误 panic
 					if err != ErrQueueFull {
 						t.Errorf("unexpected write error: %v", err)
 						return
@@ -133,7 +133,7 @@ func TestStressMPMCRingBuffer(t *testing.T) {
 		}(i)
 	}
 
-	// 消费者：读取并发送到 channel
+	// 消费者: 读取并发送到 channel
 	consumerWg.Add(numConsumers)
 	for i := 0; i < numConsumers; i++ {
 		go func() {
@@ -154,7 +154,7 @@ func TestStressMPMCRingBuffer(t *testing.T) {
 		}()
 	}
 
-	// 关闭逻辑：生产者完成 → Close
+	// 关闭逻辑: 生产者完成 → Close
 	go func() {
 		producerWg.Wait()
 		rb.Close()
@@ -252,7 +252,7 @@ func BenchmarkRingBuffer_ReadOnly(b *testing.B) {
 		for pb.Next() {
 			_, err := rb.Read()
 			if err != nil {
-				// 如果空了，重写一些
+				// 如果空了, 重写一些
 				rb.Write(42)
 			}
 		}
@@ -346,7 +346,7 @@ func TestRingBuffer_CloseBehavior(t *testing.T) {
 		t.Fatalf("expected 'hello', got %q", v)
 	}
 
-	// 再读一次，应该返回 ErrClosed
+	// 再读一次, 应该返回 ErrClosed
 	_, err = rb.Read()
 	if err == nil {
 		t.Fatal("expected error after close and empty, got nil")
@@ -362,7 +362,7 @@ func TestRingBuffer_CloseBehavior(t *testing.T) {
 	}
 }
 
-// 测试读写速度：单生产者单消费者
+// 测试读写速度: 单生产者单消费者
 func TestReadWriteSpeed(t *testing.T) {
 	rb, err := New[int](1024)
 	if err != nil {
@@ -406,7 +406,7 @@ func TestReadWriteSpeed(t *testing.T) {
 	<-done
 }
 
-// MPMC 性能测试：测量吞吐量
+// MPMC 性能测试: 测量吞吐量
 func TestMPMCPerformance(t *testing.T) {
 	t.Parallel()
 	start := time.Now()
@@ -425,10 +425,10 @@ func TestMPMCPerformance(t *testing.T) {
 	var producerWg sync.WaitGroup
 	var consumerWg sync.WaitGroup
 
-	// 使用无缓冲 channel 收集，避免内存膨胀
+	// 使用无缓冲 channel 收集, 避免内存膨胀
 	collected := make(chan int64, totalData)
 
-	// 生产者：高并发写入
+	// 生产者: 高并发写入
 	producerWg.Add(numProducers)
 	dataPerProducer_ := int64(dataPerProducer)
 	for i := 0; i < numProducers; i++ {
@@ -441,7 +441,7 @@ func TestMPMCPerformance(t *testing.T) {
 					if err := rb.Write(value); err == nil {
 						break
 					}
-					// 只有 ErrQueueFull 才重试，其他错误 panic
+					// 只有 ErrQueueFull 才重试, 其他错误 panic
 					if err != ErrQueueFull {
 						t.Errorf("unexpected write error: %v", err)
 						return
@@ -452,7 +452,7 @@ func TestMPMCPerformance(t *testing.T) {
 		}(i)
 	}
 
-	// 消费者：读取并发送到 channel
+	// 消费者: 读取并发送到 channel
 	consumerWg.Add(numConsumers)
 	for i := 0; i < numConsumers; i++ {
 		go func() {
@@ -468,7 +468,7 @@ func TestMPMCPerformance(t *testing.T) {
 		}()
 	}
 
-	// 关闭逻辑：生产者完成 → Close
+	// 关闭逻辑: 生产者完成 → Close
 	producerWg.Wait()
 	rb.Close()
 

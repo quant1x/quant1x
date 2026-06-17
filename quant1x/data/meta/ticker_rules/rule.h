@@ -12,7 +12,7 @@
 namespace meta {
 namespace ticker_rules {
 
-/// 规则前缀：可以是字符串前缀或数字范围
+/// 规则前缀: 可以是字符串前缀或数字范围
 /// 对应 Python 的 str | NumberRange, Rust 的 RulePrefix 枚举
 struct RulePrefix {
     enum Type { Str, Range };
@@ -35,17 +35,17 @@ struct RulePrefix {
     bool matches(const std::string& code) const {
         if (type == Str) {
             if (prefix_str.empty()) {
-                return true; // 空前缀匹配一切（如美股默认规则）
+                return true; // 空前缀匹配一切(如美股默认规则)
             }
             return code.size() >= prefix_str.size() &&
                    code.compare(0, prefix_str.size(), prefix_str) == 0;
         } else {
-            // 对于数字范围，按字符串比较（代码可能是前导零的数字字符串）
+            // 对于数字范围, 按字符串比较(代码可能是前导零的数字字符串)
             return code >= range_start && code <= range_end;
         }
     }
 
-    /// 返回前缀长度（用于最佳匹配排序）
+    /// 返回前缀长度(用于最佳匹配排序)
     size_t match_length() const {
         if (type == Str) {
             return prefix_str.size();
@@ -118,7 +118,7 @@ inline CodeRule match_rule(const std::string& code, const std::vector<CodeRule>&
     }
 }
 
-/// 全局规则（跨市场优先）
+/// 全局规则(跨市场优先)
 /// 对应 Python 的 global_rules, Rust 的 global_rules()
 inline std::vector<CodeRule> global_rules() {
     return {

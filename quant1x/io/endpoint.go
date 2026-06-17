@@ -16,11 +16,11 @@ type EndpointData struct {
 	ActiveConnections int
 }
 
-// EndpointManager 管理一组 TCP 端点（ip:port），并维护每个端点的最大连接数与当前活跃连接数。
+// EndpointManager 管理一组 TCP 端点(ip:port), 并维护每个端点的最大连接数与当前活跃连接数.
 //
-// 实现说明：
-// - 使用字符串形式 "host:port" 作为 map 的 key（因为 net.TCPAddr 包含切片，不能直接作为 map key）。
-// - 所有访问共享状态的操作都使用 mutex 保护，保证线程安全。
+// 实现说明:
+// - 使用字符串形式 "host:port" 作为 map 的 key(因为 net.TCPAddr 包含切片, 不能直接作为 map key).
+// - 所有访问共享状态的操作都使用 mutex 保护, 保证线程安全.
 type EndpointManager struct {
 	mutex         sync.Mutex
 	endpointsList []string // 按插入顺序保存的 endpoint 字符串 (host:port)
@@ -34,7 +34,7 @@ func NewEndpointManager() *EndpointManager {
 	}
 }
 
-// AddEndpoint 接受 ip 字符串与端口并验证，然后添加到管理器中
+// AddEndpoint 接受 ip 字符串与端口并验证, 然后添加到管理器中
 func (m *EndpointManager) AddEndpoint(ip string, port uint16, maxConnections int) bool {
 	// 验证端口
 	if port == 0 || port == 65535 {
@@ -60,7 +60,7 @@ func (m *EndpointManager) AddEndpointAddr(addr *net.TCPAddr, maxConnections int)
 	return m.addEndpointByString(key, maxConnections)
 }
 
-// addEndpointByString 为内部实现，key 为 "host:port" 格式
+// addEndpointByString 为内部实现, key 为 "host:port" 格式
 func (m *EndpointManager) addEndpointByString(key string, maxConnections int) bool {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
@@ -74,7 +74,7 @@ func (m *EndpointManager) addEndpointByString(key string, maxConnections int) bo
 	return true
 }
 
-// RemoveEndpoint 移除指定端点（使用 net.TCPAddr）
+// RemoveEndpoint 移除指定端点(使用 net.TCPAddr)
 func (m *EndpointManager) RemoveEndpoint(addr *net.TCPAddr) {
 	if addr == nil {
 		return
@@ -99,7 +99,7 @@ func (m *EndpointManager) removeEndpointByString(key string) {
 	}
 }
 
-// AcquireEndpoint 返回第一个仍有可用连接配额的端点，并同时增加其活跃连接数
+// AcquireEndpoint 返回第一个仍有可用连接配额的端点, 并同时增加其活跃连接数
 // 返回值为解析后的 *net.TCPAddr 与 ok 标志；若无可用端点则返回 (nil, false)
 func (m *EndpointManager) AcquireEndpoint() (*net.TCPAddr, bool) {
 	m.mutex.Lock()
@@ -112,7 +112,7 @@ func (m *EndpointManager) AcquireEndpoint() (*net.TCPAddr, bool) {
 		}
 		if data.ActiveConnections < data.MaxConnections {
 			data.ActiveConnections++
-			// 解析地址为 net.TCPAddr，理论上解析不会失败，因为添加时已验证
+			// 解析地址为 net.TCPAddr, 理论上解析不会失败, 因为添加时已验证
 			tcpAddr, err := net.ResolveTCPAddr("tcp", key)
 			if err != nil {
 				// 解析失败时回退计数并继续
@@ -128,7 +128,7 @@ func (m *EndpointManager) AcquireEndpoint() (*net.TCPAddr, bool) {
 	return nil, false
 }
 
-// ReleaseEndpoint 释放指定端点的活跃连接计数（若存在且大于0）
+// ReleaseEndpoint 释放指定端点的活跃连接计数(若存在且大于0)
 func (m *EndpointManager) ReleaseEndpoint(addr *net.TCPAddr) {
 	if addr == nil {
 		return
@@ -160,7 +160,7 @@ func (m *EndpointManager) GetEndpointStats(addr *net.TCPAddr) (int, int, error) 
 	return 0, 0, fmt.Errorf("endpoint not found: %s", key)
 }
 
-// GetAllEndpoints 返回当前所有的端点（解析为 []*net.TCPAddr）
+// GetAllEndpoints 返回当前所有的端点(解析为 []*net.TCPAddr)
 func (m *EndpointManager) GetAllEndpoints() ([]*net.TCPAddr, error) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()

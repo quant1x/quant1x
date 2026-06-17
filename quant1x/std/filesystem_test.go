@@ -7,16 +7,16 @@ import (
 	"testing"
 )
 
-// patchEnv 临时修改或取消环境变量，并返回恢复原值的函数
+// patchEnv 临时修改或取消环境变量, 并返回恢复原值的函数
 //
 // 参数:
 //
 //	key - 要修改的环境变量名
-//	value - 要设置的新值，空字符串表示取消该变量
+//	value - 要设置的新值, 空字符串表示取消该变量
 //
 // 返回值:
 //
-//	返回一个函数，调用该函数可将环境变量恢复为原值
+//	返回一个函数, 调用该函数可将环境变量恢复为原值
 func patchEnv(key, value string) func() {
 	bck := os.Getenv(key)
 	deferFunc := func() {
@@ -46,7 +46,7 @@ func BenchmarkHomeDir(b *testing.B) {
 
 // TestHomeDir 测试HomeDir函数是否正确返回当前用户的主目录路径
 //
-// 测试场景包括：
+// 测试场景包括:
 //  1. 正常情况下的主目录获取
 //  2. 禁用缓存后的主目录获取
 //  3. 环境变量HOME为空时的主目录获取
@@ -80,7 +80,7 @@ func TestHomeDir(t *testing.T) {
 
 // TestExpandUser 测试 ExpandUser 函数的功能
 //
-// 测试用例包括：
+// 测试用例包括:
 //   - 普通路径处理
 //   - 用户主目录(~)扩展
 //   - 空字符串处理

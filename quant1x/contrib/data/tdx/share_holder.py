@@ -6,7 +6,7 @@
 前十大流通股股东数据获取 (东方财富API)
 
 从 factors/share_holder.py 迁移, 去掉对 quant1x.exchange 的依赖,
-改用 quant1x.data.market.detect_symbol 和 data.meta.timestamp。
+改用 quant1x.data.market.detect_symbol 和 data.meta.timestamp. 
 """
 
 import os

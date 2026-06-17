@@ -11,7 +11,7 @@ import (
 	logger "github.com/quant1x/quant1x/quant1x/log"
 )
 
-// tdxFetchRawSecurityBars 执行底层 level1 SecurityBars 请求并返回原始响应列表（未转换）。
+// tdxFetchRawSecurityBars 执行底层 level1 SecurityBars 请求并返回原始响应列表(未转换).
 func tdxFetchRawSecurityBars(securityCode exchange.InstrumentInfo, category std.KLineType, start, count uint16) ([]std.SecurityBar, error) {
 	conn, release, err := std.GetStdConnection()
 	if err != nil {
@@ -32,8 +32,8 @@ func tdxFetchRawSecurityBars(securityCode exchange.InstrumentInfo, category std.
 	return resp.List, nil
 }
 
-// Update 对应 C++ DataKLine::Update 的行为：读取本地缓存、确定时间窗口、分页拉取 level1 数据、
-// 反转与合并结果、在适当时机应用前复权，并写回缓存文件。
+// Update 对应 C++ DataKLine::Update 的行为: 读取本地缓存, 确定时间窗口, 分页拉取 level1 数据,
+// 反转与合并结果, 在适当时机应用前复权, 并写回缓存文件.
 func tdxUpdateKLine(symbol exchange.InstrumentInfo, _date exchange.Timestamp) {
 	_ = _date
 	if symbol.Type == exchange.SecurityTypeUnknown {
@@ -53,7 +53,7 @@ func tdxUpdateKLine(symbol exchange.InstrumentInfo, _date exchange.Timestamp) {
 	klinesOffsetDays := data.MaxCachedDaysToDropOnIncrementalUpdate
 	adjustTimes := 0
 
-	// 默认起始日期（使用 datasets.MarketFirstDate，与 C++ 的 market_first_date 等价）
+	// 默认起始日期(使用 datasets.MarketFirstDate, 与 C++ 的 market_first_date 等价)
 	currentStartDate := exchange.GetFirstMarketDate(symbol.Exchange)
 	if klinesLength > 0 {
 		if klinesOffsetDays > klinesLength {
@@ -66,7 +66,7 @@ func tdxUpdateKLine(symbol exchange.InstrumentInfo, _date exchange.Timestamp) {
 				currentStartDate = ts.PreMarketTime()
 			}
 		}
-		// 查找第一个未复权的 K 线记录，以决定是否需要复权
+		// 查找第一个未复权的 K 线记录, 以决定是否需要复权
 		firstNotAdjustedIdx := -1
 		for i := klinesLength - 1; i >= 0; i-- {
 			if cacheKLines[i].AdjustmentCount == 0 {
@@ -85,7 +85,7 @@ func tdxUpdateKLine(symbol exchange.InstrumentInfo, _date exchange.Timestamp) {
 	}
 
 	// 2. 确定结束日期
-	// 使用当前时间的盘前时间作为结束日期，并生成每日序列作为拉取区间（C++ 使用交易日历的 date_range）
+	// 使用当前时间的盘前时间作为结束日期, 并生成每日序列作为拉取区间(C++ 使用交易日历的 date_range)
 	currentEndDate := exchange.NowTimestamp().PreMarketTime()
 	startT := currentStartDate
 	endT := currentEndDate
@@ -133,12 +133,12 @@ func tdxUpdateKLine(symbol exchange.InstrumentInfo, _date exchange.Timestamp) {
 		}
 	}
 
-	// 4. 反转分段数据（服务器按最新->最旧返回）
+	// 4. 反转分段数据(服务器按最新->最旧返回)
 	for i, j := 0, len(hs)-1; i < j; i, j = i+1, j-1 {
 		hs[i], hs[j] = hs[j], hs[i]
 	}
 
-	// 5. 转换为增量 K 线并调整单位（成交量单位从手转为股）
+	// 5. 转换为增量 K 线并调整单位(成交量单位从手转为股)
 	incremental := make([]data.KLine, 0, elementCount)
 	for _, vec := range hs {
 		for _, row := range vec {
@@ -181,12 +181,12 @@ func tdxUpdateKLine(symbol exchange.InstrumentInfo, _date exchange.Timestamp) {
 		klines = append(klines, incremental...)
 	}
 
-	// 8. 若不是仅更新最新记录，则对全量数据做前复权处理
+	// 8. 若不是仅更新最新记录, 则对全量数据做前复权处理
 	if !isFreshFetchRequireAdjustment {
 		data.ApplyForwardAdjustmentForEvent(klines, currentStartDate.OnlyDate(), dividends)
 	}
 
-	// 9. 保存缓存（确保父目录存在）
+	// 9. 保存缓存(确保父目录存在)
 	encoding.SlicesToCsv(cacheFilename, klines, true)
 }
 

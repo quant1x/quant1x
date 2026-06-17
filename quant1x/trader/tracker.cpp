@@ -44,7 +44,7 @@ namespace trader {
         spdlog::warn("[tracker] {}号策略, 交易流程, 开始", strategy_id);
         // 加载快照
         realtime::load_snapshots();
-        auto all_codes = instruments::GetCodeList();
+        auto all_codes = instruments::get_code_list();
         auto codeCount = all_codes.size();
         {
             mpb::ProgressBar bar{

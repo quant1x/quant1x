@@ -71,7 +71,7 @@ pub fn get_today() -> String {
     now.format(FORMAT_ONLY_DATE).to_string()
 }
 
-/// 获取最近交易日（字符串格式）
+/// 获取最近交易日(字符串格式)
 pub fn last_trade_date() -> String {
     let list = get_calendar_list();
 
@@ -127,7 +127,7 @@ fn trade_session() -> &'static TimeRange {
 })
 }
 
-/// 是否盘前（时间判断）
+/// 是否盘前(时间判断)
 // fn is_session_pre() -> bool {
 //     let now = Local::now();
 //     let now = now.format("%H:%M:%S").to_string();
@@ -165,7 +165,7 @@ mod tests {
         assert_eq!(last_trade_date(), "2023-10-05");
 
         // 测试盘前情况
-        // 需要模拟时间，这里仅演示逻辑
+        // 需要模拟时间, 这里仅演示逻辑
     }
 
     #[test]

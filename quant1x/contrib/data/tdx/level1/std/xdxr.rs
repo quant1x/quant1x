@@ -150,7 +150,7 @@ impl BaseMessage for XdxrRequest {
                     info.fen_shu = tmp.get_f32()? as f64;
                 }
                 _ => {
-                    // 其他类型：股本变动
+                    // 其他类型: 股本变动
                     let v1 = tmp.get_u32()?;
                     info.qian_liu_tong = Self::get_v(v1);
                     let v2 = tmp.get_u32()?;
@@ -173,7 +173,7 @@ impl BaseMessage for XdxrRequest {
 }
 
 impl XdxrRequest {
-    /// 将 u32 整数转换为 f64 浮点数（与 level1 协议中使用的转换一致）
+    /// 将 u32 整数转换为 f64 浮点数(与 level1 协议中使用的转换一致)
     fn get_v(v: u32) -> f64 {
         if v == 0 {
             return 0.0;

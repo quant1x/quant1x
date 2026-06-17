@@ -19,14 +19,14 @@ sse_rules = [
     CodeRule(Exchange.SSE, "091", InstrumentType.BOND, "国债质押回购出入库", "对应019***"),
     CodeRule(Exchange.SSE, "099", InstrumentType.BOND, "国债质押回购出入库", "对应009***"),
     
-    CodeRule(Exchange.SSE, "0", InstrumentType.INDEX, "指数/国债", "首位 0: 指数、国债"),
+    CodeRule(Exchange.SSE, "0", InstrumentType.INDEX, "指数/国债", "首位 0: 指数, 国债"),
 
     CodeRule(Exchange.SSE, "100", InstrumentType.BOND, "债券回售/可转债", "100000-100899 用于可转换公司债券(对应600***); 100900-100999 用于债券回售(不再增用部分)"),
     CodeRule(Exchange.SSE, "101", InstrumentType.BOND, "地方政府债", "地方政府债券"),
     CodeRule(Exchange.SSE, "102", InstrumentType.BOND, "企业债质押出入库", "对应127000-127999"),
     CodeRule(Exchange.SSE, "103", InstrumentType.BOND, "企业债质押出入库", "对应124000-124999"),
     CodeRule(Exchange.SSE, "104", InstrumentType.BOND, "公司/企业债质押出入库", "104000-104499 用于公司债质押(对应122000-122499); 104500-104999 用于企业债质押(对应122500-122999)"),
-    CodeRule(Exchange.SSE, "105", InstrumentType.BOND, "债券质押出入库", "105000-105699 分离交易的可转债质押(对应126***); 105700-105799 债券ETF质押; 105800-105899 可转债质押(对应110***、113***); 105900-105999 企业债质押(对应120***、129***)"),
+    CodeRule(Exchange.SSE, "105", InstrumentType.BOND, "债券质押出入库", "105000-105699 分离交易的可转债质押(对应126***); 105700-105799 债券ETF质押; 105800-105899 可转债质押(对应110***, 113***); 105900-105999 企业债质押(对应120***, 129***)"),
     CodeRule(Exchange.SSE, "106", InstrumentType.BOND, "地方政府债质押出入库", "对应130***"),
     CodeRule(Exchange.SSE, "107", InstrumentType.BOND, "记账式贴现国债质押出入库", "对应020***"),
     CodeRule(Exchange.SSE, "108", InstrumentType.BOND, "政策性银行债质押出入库", "对应018***"),
@@ -45,7 +45,7 @@ sse_rules = [
     CodeRule(Exchange.SSE, "122", InstrumentType.BOND, "公司债/企业债", "122000-122499 用于公司债券; 122500-122999 用于企业债券"),
     CodeRule(Exchange.SSE, "123", InstrumentType.BOND, "公司/企业债/ABS", "123000-123499 用于企业/公司债; 123500-123999 用于资产支持证券"),
     CodeRule(Exchange.SSE, "124", InstrumentType.BOND, "企业债质押出入库", "对应124000-124999"),
-    CodeRule(Exchange.SSE, "125", InstrumentType.BOND, "中小企业私募债/非公开公司债", "中小企业私募债券、非公开发行公司债券"),
+    CodeRule(Exchange.SSE, "125", InstrumentType.BOND, "中小企业私募债/非公开公司债", "中小企业私募债券, 非公开发行公司债券"),
     CodeRule(Exchange.SSE, "126", InstrumentType.BOND, "分离交易可转债", "分离交易的可转换公司债券"),
     CodeRule(Exchange.SSE, "127", InstrumentType.BOND, "企业债", "127000-127899 用于企业债券; 127900-127999 用于政府支持债(中国铁路建设债专用)"),
     CodeRule(Exchange.SSE, "128", InstrumentType.BOND, "信贷资产支持证券", "信贷资产支持证券"),
@@ -56,7 +56,7 @@ sse_rules = [
     CodeRule(Exchange.SSE, "132", InstrumentType.BOND, "可交换公司债", "可交换公司债券"),
     CodeRule(Exchange.SSE, "133", InstrumentType.BOND, "可交换债质押出入库", "对应132***"),
     CodeRule(Exchange.SSE, "134", InstrumentType.BOND, "公开公司债质押出入库", "对应136***"),
-    CodeRule(Exchange.SSE, "135", InstrumentType.BOND, "证券公司短期债/并购私募债", "证券公司短期债、并购重组私募债券、非公开发行公司债券"),
+    CodeRule(Exchange.SSE, "135", InstrumentType.BOND, "证券公司短期债/并购私募债", "证券公司短期债, 并购重组私募债券, 非公开发行公司债券"),
     CodeRule(Exchange.SSE, "136", InstrumentType.BOND, "公开公司债质押出入库", "对应136***"),
     CodeRule(Exchange.SSE, "137", InstrumentType.BOND, "可交换/公开公司债", "137000-137499 非公开可交换; 137500-137999 公开公司债"),
     CodeRule(Exchange.SSE, "138", InstrumentType.BOND, "可交换换股/公开公司债", "138000-138499 非公开可交换换股(对应137000-137499); 138500-138999 公开公司债"),
@@ -122,7 +122,7 @@ sse_rules = [
     CodeRule(Exchange.SSE, "192", InstrumentType.BOND, "可交换债换股", "对应132***"),
     CodeRule(Exchange.SSE, "193", InstrumentType.BOND, "创新创业转股/ABS", "193000-193099 创新创业公司非公开可转债转股(对应145900-145999); 193100-193999 用于资产支持证券"),
     CodeRule(Exchange.SSE, "194", InstrumentType.BOND, "非公开公司债", "非公开发行公司债券"),
-    CodeRule(Exchange.SSE, "195", InstrumentType.BOND, "可转债转股", "195000-195499 用于可转债转股，对应605***"),
+    CodeRule(Exchange.SSE, "195", InstrumentType.BOND, "可转债转股", "195000-195499 用于可转债转股, 对应605***"),
     CodeRule(Exchange.SSE, "196", InstrumentType.BOND, "非公开公司债", "非公开发行公司债券"),
     CodeRule(Exchange.SSE, "197", InstrumentType.BOND, "非公开公司债", "非公开发行公司债券"),
     CodeRule(Exchange.SSE, "198", InstrumentType.BOND, "地方政府债", "地方政府债券"),
@@ -165,13 +165,13 @@ sse_rules = [
     CodeRule(Exchange.SSE, "271", InstrumentType.BOND, "企业债", "企业债券"),
     CodeRule(Exchange.SSE, "272", InstrumentType.BOND, "企业债", "企业债券"),
     
-    CodeRule(Exchange.SSE, "2", InstrumentType.BOND, "债券回购/借贷", "首位 2: 债券回购、债券借贷等"),
+    CodeRule(Exchange.SSE, "2", InstrumentType.BOND, "债券回购/借贷", "首位 2: 债券回购, 债券借贷等"),
 
     CodeRule(Exchange.SSE, "310", InstrumentType.BOND, "国债期货", "国债期货(已暂停)"),
     CodeRule(Exchange.SSE, "330", InstrumentType.IPO, "优先股(公开)", "公开发行优先股"),
     CodeRule(Exchange.SSE, "360", InstrumentType.OTHER, "非公开优先股", "非公开发行优先股"),
     
-    CodeRule(Exchange.SSE, "3", InstrumentType.OTHER, "优先股/国债期货", "首位 3: 优先股、国债期货(已暂停)"),
+    CodeRule(Exchange.SSE, "3", InstrumentType.OTHER, "优先股/国债期货", "首位 3: 优先股, 国债期货(已暂停)"),
     
     CodeRule(Exchange.SSE, "4", InstrumentType.OTHER, "备用", "首位 4: 备用"),
     
@@ -181,7 +181,7 @@ sse_rules = [
     CodeRule(Exchange.SSE, "505", InstrumentType.FUND, "创新封闭式基金", "505800-505899 用于创新型封闭式证券投资基金"),
     CodeRule(Exchange.SSE, "506", InstrumentType.FUND, "科创板LOF", "506000-506099 用于科创板相关 LOF"),
     CodeRule(Exchange.SSE, "508", InstrumentType.FUND, "公募REITs", "508000-508099 用于公募 REITs"),
-    CodeRule(Exchange.SSE, "510", InstrumentType.ETF, "交易型开放式指数证券投资基金", "标的指数为沪市指数、跨市场指数或跨境指数"),
+    CodeRule(Exchange.SSE, "510", InstrumentType.ETF, "交易型开放式指数证券投资基金", "标的指数为沪市指数, 跨市场指数或跨境指数"),
     CodeRule(Exchange.SSE, "511", InstrumentType.ETF, "债券ETF/货基", "511000-511299 单市场债券(沪)ETF; 511300-511599 现金申赎类债券ETF; 511600-511999 交易型货币基金"),
     CodeRule(Exchange.SSE, "512", InstrumentType.ETF, "交易型开放式指数证券投资基金", "标的指数为跨市场指数"),
     CodeRule(Exchange.SSE, "513", InstrumentType.ETF, "交易型开放式指数证券投资基金", "标的指数为跨境指数"),
@@ -201,11 +201,11 @@ sse_rules = [
     CodeRule(Exchange.SSE, "561", InstrumentType.ETF, "交易型开放式指数证券投资基金", "标的指数为跨市场指数"),
     CodeRule(Exchange.SSE, "562", InstrumentType.ETF, "交易型开放式指数证券投资基金", "标的指数为跨市场指数"),
     CodeRule(Exchange.SSE, "563", InstrumentType.ETF, "交易型开放式指数证券投资基金", "标的指数为跨市场指数"),
-    CodeRule(Exchange.SSE, "580", InstrumentType.WARRANT, "权证", "含股改权证、公司权证"),
+    CodeRule(Exchange.SSE, "580", InstrumentType.WARRANT, "权证", "含股改权证, 公司权证"),
     CodeRule(Exchange.SSE, "582", InstrumentType.WARRANT, "权证行权", "用于权证行权/行权相关代码"),
     CodeRule(Exchange.SSE, "588", InstrumentType.ETF, "科创板ETF", "588000-588299 单市场(科创板)ETF; 588300-588699 跨市场(含科创板)ETF; 588700-588999 单市场(科创板)ETF"),
     
-    CodeRule(Exchange.SSE, "5", InstrumentType.FUND, "基金/REITs/权证", "首位 5: 基金、公募 REITs、权证"),
+    CodeRule(Exchange.SSE, "5", InstrumentType.FUND, "基金/REITs/权证", "首位 5: 基金, 公募 REITs, 权证"),
     
     CodeRule(Exchange.SSE, "600", InstrumentType.STOCK, "主板A股", "主板 A 股"),
     CodeRule(Exchange.SSE, "601", InstrumentType.STOCK, "主板A股", "主板 A 股"),
@@ -214,7 +214,7 @@ sse_rules = [
     CodeRule(Exchange.SSE, "688", InstrumentType.STOCK, "科创板", "科创板股票"),
     CodeRule(Exchange.SSE, "689", InstrumentType.STOCK, "科创板存托凭证", "科创板存托凭证"),
     
-    CodeRule(Exchange.SSE, "6", InstrumentType.STOCK, "A股/存托凭证", "首位 6: A 股、存托凭证"),
+    CodeRule(Exchange.SSE, "6", InstrumentType.STOCK, "A股/存托凭证", "首位 6: A 股, 存托凭证"),
     
     CodeRule(Exchange.SSE, "700", InstrumentType.OTHER, "配股", "配股(对应600***)"),
     CodeRule(Exchange.SSE, "701", InstrumentType.OTHER, "转配股", "转配股"),
@@ -239,9 +239,9 @@ sse_rules = [
 
     CodeRule(Exchange.SSE, "880", InstrumentType.SECTOR, "板块指数", "通达信"),
     CodeRule(Exchange.SSE, "881", InstrumentType.SECTOR, "板块指数", "通达信"),
-    CodeRule(Exchange.SSE, "888", InstrumentType.BOND, "标准券", "888880 为新标准券，用于债券回购转换成标准券"),
+    CodeRule(Exchange.SSE, "888", InstrumentType.BOND, "标准券", "888880 为新标准券, 用于债券回购转换成标准券"),
     
-    CodeRule(Exchange.SSE, "8", InstrumentType.BOND, "标准券/备用", "首位 8: 标准券、备用"),
+    CodeRule(Exchange.SSE, "8", InstrumentType.BOND, "标准券/备用", "首位 8: 标准券, 备用"),
 
     CodeRule(Exchange.SSE, "900", InstrumentType.BSTOCK, "B股", "B 股"),
     CodeRule(Exchange.SSE, "901", InstrumentType.BSTOCK, "B转H", "901000-901099 用于 B 转 H"),

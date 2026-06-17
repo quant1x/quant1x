@@ -48,7 +48,7 @@ class ExchangeRateCache(MetaFileStorage):
         检查当前是否需要初始化文件
         
         Args:
-            timestamp (Timestamp): 可选的时间戳参数，默认为当前时间
+            timestamp (Timestamp): 可选的时间戳参数, 默认为当前时间
         
         Returns:
             bool: 如果满足以下条件则返回True:
@@ -97,7 +97,7 @@ class ExchangeRateCache(MetaFileStorage):
         self.sorted_dates = sorted(self.data.keys())
     
     def _save_cache(self):
-        """保存 CSV 缓存（按日期排序）"""
+        """保存 CSV 缓存(按日期排序)"""
         with open(self.file_name(), 'w', encoding='utf-8', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(self.fields)
@@ -115,7 +115,7 @@ class ExchangeRateCache(MetaFileStorage):
         时间复杂度: O(log n)
         """
         if not self.sorted_dates:
-            raise RuntimeError("缓存为空，请先调用 fetch_all_history()")
+            raise RuntimeError("缓存为空, 请先调用 fetch_all_history()")
         
         date = date.strip()
         

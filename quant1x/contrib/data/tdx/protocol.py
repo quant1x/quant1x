@@ -27,7 +27,7 @@ class RequestHeader(Stringable, Sizeable, abc.ABC):
     """请求头基类"""
     
     LENGTH_BIAS: int = 0x02
-    """协议长度计算偏置: body 长度需 +2 填入 pkg_len 字段，无实际填充字节"""
+    """协议长度计算偏置: body 长度需 +2 填入 pkg_len 字段, 无实际填充字节"""
     
     frame_type:    int #: u8
     """帧标识, u8"""
@@ -66,10 +66,10 @@ class RequestHeader(Stringable, Sizeable, abc.ABC):
         将 header 字段按小端字节序打包为二进制数据
         
         Args:
-            无显式参数，使用类实例属性
+            无显式参数, 使用类实例属性
         
         Returns:
-            bytes: 打包后的二进制数据，包含以下字段按顺序排列：
+            bytes: 打包后的二进制数据, 包含以下字段按顺序排列: 
                 - frame_type (1字节)
                 - sequence_id (4字节)
                 - packet_ctrl (1字节)
@@ -124,7 +124,7 @@ class ResponseHeader(Stringable, Sizeable, abc.ABC):
         Args:
             data: 协议头字节数据
         """
-        # 解析协议头格式：I1(4字节), frame_type(1字节), sequence_id(4字节), packet_ctrl(1字节), command(2字节), body_wire_len(2字节), body_raw_len(2字节)
+        # 解析协议头格式: I1(4字节), frame_type(1字节), sequence_id(4字节), packet_ctrl(1字节), command(2字节), body_wire_len(2字节), body_raw_len(2字节)
         self.magic_number, self.frame_type, self.sequence_id, self.packet_ctrl, cmd_value, self.body_wire_len, self.body_raw_len = struct.unpack('<I B I B H H H', data)
         # - packet_ctrl (unsigned char): 1字节无符号整数
         # - command (unsigned short): 2字节无符号整数
@@ -135,7 +135,7 @@ class ResponseHeader(Stringable, Sizeable, abc.ABC):
         try:
             self.command = Command(cmd_value)
         except ValueError:
-            # 如果找不到对应的枚举，可以创建一个默认值或抛出异常
+            # 如果找不到对应的枚举, 可以创建一个默认值或抛出异常
             logger.exception(f"警告: 未知的命令值 0x{cmd_value:04x}")
             # 或者设置一个默认值
             self.command = Command.UNKNOWN
@@ -147,7 +147,7 @@ class BaseMessage(abc.ABC):
     """
     消息基类
     
-    用于处理消息头和消息体的解析和序列化。
+    用于处理消息头和消息体的解析和序列化. 
     """
     def __init__(self, command: Command, frame_type: int = FLAG_UNCOMPRESSED, packet_ctrl: int = 0x01):
         self.request_header = RequestHeader(command=command, frame_type=frame_type, packet_ctrl=packet_ctrl)
@@ -157,7 +157,7 @@ class BaseMessage(abc.ABC):
     @abc.abstractmethod
     def serialize_request_body(self) -> bytes:
         """
-        将消息体序列化为二进制数据。
+        将消息体序列化为二进制数据. 
 
         Returns:
             bytes: 序列化后的二进制数据
@@ -166,21 +166,21 @@ class BaseMessage(abc.ABC):
     
     def serialize_request(self) -> bytes:
         """
-        将消息头和消息体序列化为二进制数据。
+        将消息头和消息体序列化为二进制数据. 
         
         Returns:
-            bytes: 序列化后的二进制数据，包含以下内容：
+            bytes: 序列化后的二进制数据, 包含以下内容: 
                 - 消息头(12字节)
                 - 消息体(可变长度)
         """
-        body_bytes = self.serialize_request_body()  # 安全：子类一定实现了
+        body_bytes = self.serialize_request_body()  # 安全: 子类一定实现了
         self.request_header.body_wire_len = 2 + len(body_bytes)
         self.request_header.body_raw_len = 2 + len(body_bytes)
         return self.request_header.serialize() + body_bytes
     
     def deserialize_response_header(self, data: bytes) -> None:
         """
-        从二进制数据中解析消息头。
+        从二进制数据中解析消息头. 
         
         Args:
             data (bytes): 二进制数据
@@ -190,7 +190,7 @@ class BaseMessage(abc.ABC):
     @abc.abstractmethod
     def deserialize_response_body(self, data: bytes) -> None:
         """
-        从二进制数据中解析消息体（抽象方法，需子类实现）。
+        从二进制数据中解析消息体(抽象方法, 需子类实现). 
         
         Args:
             data (bytes): 包含消息体的二进制数据
@@ -203,10 +203,10 @@ class BaseMessage(abc.ABC):
 
 def _recv_exact(conn_like: ConnectionHandle, n: int) -> bytes:
     """
-    从支持 `recv(n)` 的对象读取恰好 `n` 字节的数据。
+    从支持 `recv(n)` 的对象读取恰好 `n` 字节的数据. 
     
     Args:
-        conn_like (ConnectionHandle): 实现 `recv` 方法的连接对象，用于屏蔽对原始 socket 的直接访问
+        conn_like (ConnectionHandle): 实现 `recv` 方法的连接对象, 用于屏蔽对原始 socket 的直接访问
         n (int): 需要读取的字节数
     
     Returns:
@@ -246,7 +246,7 @@ def process_level1_new(conn_handle: ConnectionHandle, msg: BaseMessage) -> None:
     logger.debug(f"process_level1: response_header={msg.response_header.to_string()}")
     resp_body_bytes = _recv_exact(conn_handle, msg.response_header.body_wire_len)
     if msg.response_header.body_wire_len != msg.response_header.body_raw_len:
-        # 如果压缩长度与解压长度不一致，则为 zlib 压缩数据，需要解压
+        # 如果压缩长度与解压长度不一致, 则为 zlib 压缩数据, 需要解压
         resp_body_bytes = zlib.decompress(resp_body_bytes)
     
     msg.deserialize_response_body(resp_body_bytes)
@@ -255,7 +255,7 @@ def process_level1_new(conn_handle: ConnectionHandle, msg: BaseMessage) -> None:
 from quant1x.net.handler import NetworkOperationHandler
 
 class StandardProtocolHandler(NetworkOperationHandler):
-    """标准协议处理器, 执行Synchronize1/Synchronize2握手和心跳。
+    """标准协议处理器, 执行Synchronize1/Synchronize2握手和心跳. 
 
     此实现调用`level1.protocol`来序列化请求, 并在提供的套接字上执行阻塞读/写.
     """
@@ -287,9 +287,9 @@ class StandardProtocolHandler(NetworkOperationHandler):
             return False
 
 class ExtensionProtocolHandler(NetworkOperationHandler):
-    """标准协议处理器, 执行ext_hello握手和心跳。
+    """标准协议处理器, 执行ext_hello握手和心跳. 
 
-    此实现调用`level1.protocol`来序列化请求，并在提供的套接字上执行阻塞读/写。
+    此实现调用`level1.protocol`来序列化请求, 并在提供的套接字上执行阻塞读/写. 
     """
 
     def handshake(self, conn) -> bool:

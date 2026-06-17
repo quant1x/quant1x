@@ -66,12 +66,12 @@ impl Command {
         Self { quote_type, value, desc }
     }
 
-    /// 从数值查找已定义的 Command（仅限标准+扩展命令）
+    /// 从数值查找已定义的 Command(仅限标准+扩展命令)
     pub fn from_value(value: u16) -> Option<&'static Command> {
         ALL_COMMANDS.iter().find(|c| c.value == value).copied()
     }
 
-    /// 创建未注册的临时 Command（不加入全局表）
+    /// 创建未注册的临时 Command(不加入全局表)
     pub const fn adhoc(quote_type: QuoteType, value: u16, desc: &'static str) -> Self {
         Self { quote_type, value, desc }
     }
@@ -136,7 +136,7 @@ pub const EXT_INTRADAY_CHART_SAMPLING: Command      = Command::new(QuoteType::Ex
 pub const L2_0x0547: Command                        = Command::new(QuoteType::Level2, 0x0547, "L2-即时行情");
 
 // ============================================================
-// 全局命令表（用于 from_value 查找）
+// 全局命令表(用于 from_value 查找)
 // ============================================================
 
 static ALL_COMMANDS: &[&Command] = &[
@@ -192,7 +192,7 @@ static ALL_COMMANDS: &[&Command] = &[
 pub const FLAG_ZIP: u8           = 0x10;
 /// 未压缩标志
 pub const FLAG_UNCOMPRESSED: u8  = 0x0C;
-/// 压缩标志（ZIP | UNCOMPRESSED）
+/// 压缩标志(ZIP | UNCOMPRESSED)
 pub const FLAG_ZIPPED: u8        = FLAG_ZIP | FLAG_UNCOMPRESSED;
 /// 一般性标志
 pub const FLAG_GENERIC: u8       = 0x01;

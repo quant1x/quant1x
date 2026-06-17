@@ -10,7 +10,7 @@ from quant1x.data.schema import Sector
 from enum import Enum
 
 class PlateCategory(Enum):
-    """板块类别：用于区分不同逻辑类型的股票分组"""
+    """板块类别: 用于区分不同逻辑类型的股票分组"""
     UNKNOWN = (0, "未知")
     INDUSTRY = (2, "行业")
     REGION = (3, "地区")
@@ -20,12 +20,12 @@ class PlateCategory(Enum):
     RESEARCH_INDUSTRY = (12, "研究行业")
 
     def __init__(self, code: int, label: str):
-        self.code = code      # 保留原始数字值（用于兼容旧系统、数据库等）
+        self.code = code      # 保留原始数字值(用于兼容旧系统, 数据库等)
         self.label = label    # 中文显示名
 
     @property
     def value(self) -> int:
-        """覆盖 value 属性，使其返回 code（默认行为）"""
+        """覆盖 value 属性, 使其返回 code(默认行为)"""
         return self.code
 
     def __str__(self) -> str:
@@ -38,7 +38,7 @@ class DataHandler(ABC):
     """
     市场接口抽象基类
 
-    所有具体市场（如 A 股、港股、美股）应继承此接口并实现方法。
+    所有具体市场(如 A 股, 港股, 美股)应继承此接口并实现方法. 
     """
     
     @abstractmethod
@@ -47,7 +47,7 @@ class DataHandler(ABC):
         返回该市场对应的市场列表
         
         Returns:
-            List[Exchange]: 市场对象列表，包含该市场所有市场信息
+            List[Exchange]: 市场对象列表, 包含该市场所有市场信息
             
         Raises:
             NotImplementedError: 如果子类未实现此方法
@@ -60,7 +60,7 @@ class DataHandler(ABC):
         返回指定市场对应的指数列表
         
         Args:
-            market (Union[List, str]): 市场标识，可以是字符串或列表。默认为"all"表示所有市场
+            market (Union[List, str]): 市场标识, 可以是字符串或列表. 默认为"all"表示所有市场
         
         Returns:
             List[Instrument]: 包含指定市场所有指数对象的列表
@@ -76,7 +76,7 @@ class DataHandler(ABC):
         获取指定类别的板块列表
         
         Args:
-            category (PlateCategory): 板块类别，默认为 PlateCategory.UNKNOWN
+            category (PlateCategory): 板块类别, 默认为 PlateCategory.UNKNOWN
         
         Returns:
             List[Sector]: 返回指定类别的板块列表
@@ -92,7 +92,7 @@ class DataHandler(ABC):
         返回指定市场对应的所有证券列表
         
         Args:
-            market (Union[List, str]): 市场标识，可以是字符串或列表。默认为"all"表示所有市场
+            market (Union[List, str]): 市场标识, 可以是字符串或列表. 默认为"all"表示所有市场
         
         Returns:
             List[Instrument]: 包含指定市场所有证券对象的列表
@@ -108,7 +108,7 @@ class DataHandler(ABC):
         获取指定证券代码对应的证券信息
         
         Args:
-            symbol (str): 证券代码，如"sh600000"
+            symbol (str): 证券代码, 如"sh600000"
         
         Returns:
             Instrument: 包含指定证券信息的Instrument对象
@@ -125,10 +125,10 @@ class DataHandler(ABC):
         获取指定证券代码的K线数据
         
         Args:
-            symbol (str): 证券代码，如"sh600000"
-            start_date (str): 起始日期，如"2020-01-01"
-            end_date (str): 结束日期，如"2020-12-31"
-            freq (str): 周期，如"1d"
+            symbol (str): 证券代码, 如"sh600000"
+            start_date (str): 起始日期, 如"2020-01-01"
+            end_date (str): 结束日期, 如"2020-12-31"
+            freq (str): 周期, 如"1d"
         
         Returns:
             DataFrame: 包含K线数据的DataFrame
@@ -144,8 +144,8 @@ class DataHandler(ABC):
         获取指定证券代码的交易数据
         
         Args:
-            symbol (str): 证券代码，如"sh600000"
-            date (str): 交易日期，如"2020-01-01", 默认None表示当天
+            symbol (str): 证券代码, 如"sh600000"
+            date (str): 交易日期, 如"2020-01-01", 默认None表示当天
         
         Returns:
             DataFrame: 包含交易数据的DataFrame

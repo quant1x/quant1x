@@ -10,10 +10,10 @@
 #include <optional>
 
 namespace safe {
-    // 安全的 localtime 函数，避免线程不安全
+    // 安全的 localtime 函数, 避免线程不安全
     std::tm localtime(std::time_t t) noexcept;
 
-    // 安全的 gmtime 函数，避免线程不安全
+    // 安全的 gmtime 函数, 避免线程不安全
     std::tm gmtime(std::time_t t) noexcept;
 
     // 跨平台安全获取环境变量

@@ -28,7 +28,7 @@ namespace tdx {
         try {
             auto conn = level1::get_std_conn();
             // 使用标准行情连接获取历史分笔成交
-            auto date_int = static_cast<uint32_t>(date.yyyymmdd_int());
+            auto date_int = static_cast<uint32_t>(date.yyyymmdd_u32());
             level1::HistoryTransaction trans(code, date_int, 0, 1000);
             level1::process(conn->socket(), trans);
             // 保存到 {cache}/trans/{cache_dir}/{year}/{YYYYMMDD}/{symbol}.csv (对齐 Rust/Python)

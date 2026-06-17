@@ -21,7 +21,7 @@ pub fn sse_rules() -> Vec<CodeRule> {
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("090"), instrument_type: InstrumentType::BOND, name: "国债质押回购出入库", desc: "国债质押式回购质押券出入库" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("091"), instrument_type: InstrumentType::BOND, name: "国债质押回购出入库", desc: "对应019***" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("099"), instrument_type: InstrumentType::BOND, name: "国债质押回购出入库", desc: "对应009***" },
-        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("0"), instrument_type: InstrumentType::INDEX, name: "指数/国债", desc: "首位 0: 指数、国债" },
+        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("0"), instrument_type: InstrumentType::INDEX, name: "指数/国债", desc: "首位 0: 指数, 国债" },
 
         // === 债券 1xx ===
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("100"), instrument_type: InstrumentType::BOND, name: "债券回售/可转债", desc: "100000-100899 用于可转换公司债券(对应600***); 100900-100999 用于债券回售" },
@@ -46,7 +46,7 @@ pub fn sse_rules() -> Vec<CodeRule> {
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("122"), instrument_type: InstrumentType::BOND, name: "公司债/企业债", desc: "122000-122499 用于公司债券; 122500-122999 用于企业债券" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("123"), instrument_type: InstrumentType::BOND, name: "公司/企业债/ABS", desc: "123000-123499 用于企业/公司债; 123500-123999 用于资产支持证券" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("124"), instrument_type: InstrumentType::BOND, name: "企业债质押出入库", desc: "对应124000-124999" },
-        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("125"), instrument_type: InstrumentType::BOND, name: "中小企业私募债/非公开公司债", desc: "中小企业私募债券、非公开发行公司债券" },
+        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("125"), instrument_type: InstrumentType::BOND, name: "中小企业私募债/非公开公司债", desc: "中小企业私募债券, 非公开发行公司债券" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("126"), instrument_type: InstrumentType::BOND, name: "分离交易可转债", desc: "分离交易的可转换公司债券" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("127"), instrument_type: InstrumentType::BOND, name: "企业债", desc: "127000-127899 用于企业债券; 127900-127999 用于政府支持债" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("128"), instrument_type: InstrumentType::BOND, name: "信贷资产支持证券", desc: "信贷资产支持证券" },
@@ -56,7 +56,7 @@ pub fn sse_rules() -> Vec<CodeRule> {
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("132"), instrument_type: InstrumentType::BOND, name: "可交换公司债", desc: "可交换公司债券" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("133"), instrument_type: InstrumentType::BOND, name: "可交换债质押出入库", desc: "对应132***" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("134"), instrument_type: InstrumentType::BOND, name: "公开公司债质押出入库", desc: "对应136***" },
-        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("135"), instrument_type: InstrumentType::BOND, name: "证券公司短期债/并购私募债", desc: "证券公司短期债、并购重组私募债券、非公开发行公司债券" },
+        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("135"), instrument_type: InstrumentType::BOND, name: "证券公司短期债/并购私募债", desc: "证券公司短期债, 并购重组私募债券, 非公开发行公司债券" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("136"), instrument_type: InstrumentType::BOND, name: "公开公司债质押出入库", desc: "对应136***" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("137"), instrument_type: InstrumentType::BOND, name: "可交换/公开公司债", desc: "137000-137499 非公开可交换; 137500-137999 公开公司债" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("138"), instrument_type: InstrumentType::BOND, name: "可交换换股/公开公司债", desc: "138000-138499 非公开可交换换股; 138500-138999 公开公司债" },
@@ -116,7 +116,7 @@ pub fn sse_rules() -> Vec<CodeRule> {
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("192"), instrument_type: InstrumentType::BOND, name: "可交换债换股", desc: "对应132***" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("193"), instrument_type: InstrumentType::BOND, name: "创新创业转股/ABS", desc: "193000-193099 创新创业公司非公开可转债转股; 193100-193999 用于资产支持证券" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("194"), instrument_type: InstrumentType::BOND, name: "非公开公司债", desc: "非公开发行公司债券" },
-        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("195"), instrument_type: InstrumentType::BOND, name: "可转债转股", desc: "195000-195499 用于可转债转股，对应605***" },
+        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("195"), instrument_type: InstrumentType::BOND, name: "可转债转股", desc: "195000-195499 用于可转债转股, 对应605***" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("196"), instrument_type: InstrumentType::BOND, name: "非公开公司债", desc: "非公开发行公司债券" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("197"), instrument_type: InstrumentType::BOND, name: "非公开公司债", desc: "非公开发行公司债券" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("198"), instrument_type: InstrumentType::BOND, name: "地方政府债", desc: "地方政府债券" },
@@ -153,13 +153,13 @@ pub fn sse_rules() -> Vec<CodeRule> {
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("270"), instrument_type: InstrumentType::BOND, name: "企业债", desc: "企业债券" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("271"), instrument_type: InstrumentType::BOND, name: "企业债", desc: "企业债券" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("272"), instrument_type: InstrumentType::BOND, name: "企业债", desc: "企业债券" },
-        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("2"), instrument_type: InstrumentType::BOND, name: "债券回购/借贷", desc: "首位 2: 债券回购、债券借贷等" },
+        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("2"), instrument_type: InstrumentType::BOND, name: "债券回购/借贷", desc: "首位 2: 债券回购, 债券借贷等" },
 
         // === 优先股/国债期货 3xx ===
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("310"), instrument_type: InstrumentType::BOND, name: "国债期货", desc: "国债期货(已暂停)" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("330"), instrument_type: InstrumentType::IPO, name: "优先股(公开)", desc: "公开发行优先股" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("360"), instrument_type: InstrumentType::OTHER, name: "非公开优先股", desc: "非公开发行优先股" },
-        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("3"), instrument_type: InstrumentType::OTHER, name: "优先股/国债期货", desc: "首位 3: 优先股、国债期货(已暂停)" },
+        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("3"), instrument_type: InstrumentType::OTHER, name: "优先股/国债期货", desc: "首位 3: 优先股, 国债期货(已暂停)" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("4"), instrument_type: InstrumentType::OTHER, name: "备用", desc: "首位 4: 备用" },
 
         // === 基金/REITs/权证 5xx ===
@@ -169,7 +169,7 @@ pub fn sse_rules() -> Vec<CodeRule> {
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("505"), instrument_type: InstrumentType::FUND, name: "创新封闭式基金", desc: "505800-505899 用于创新型封闭式证券投资基金" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("506"), instrument_type: InstrumentType::FUND, name: "科创板LOF", desc: "506000-506099 用于科创板相关 LOF" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("508"), instrument_type: InstrumentType::FUND, name: "公募REITs", desc: "508000-508099 用于公募 REITs" },
-        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("510"), instrument_type: InstrumentType::ETF, name: "交易型开放式指数证券投资基金", desc: "标的指数为沪市指数、跨市场指数或跨境指数" },
+        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("510"), instrument_type: InstrumentType::ETF, name: "交易型开放式指数证券投资基金", desc: "标的指数为沪市指数, 跨市场指数或跨境指数" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("511"), instrument_type: InstrumentType::ETF, name: "债券ETF/货基", desc: "511000-511299 单市场债券(沪)ETF; 511300-511599 现金申赎类债券ETF; 511600-511999 交易型货币基金" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("512"), instrument_type: InstrumentType::ETF, name: "交易型开放式指数证券投资基金", desc: "标的指数为跨市场指数" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("513"), instrument_type: InstrumentType::ETF, name: "交易型开放式指数证券投资基金", desc: "标的指数为跨境指数" },
@@ -189,10 +189,10 @@ pub fn sse_rules() -> Vec<CodeRule> {
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("561"), instrument_type: InstrumentType::ETF, name: "交易型开放式指数证券投资基金", desc: "标的指数为跨市场指数" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("562"), instrument_type: InstrumentType::ETF, name: "交易型开放式指数证券投资基金", desc: "标的指数为跨市场指数" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("563"), instrument_type: InstrumentType::ETF, name: "交易型开放式指数证券投资基金", desc: "标的指数为跨市场指数" },
-        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("580"), instrument_type: InstrumentType::WARRANT, name: "权证", desc: "含股改权证、公司权证" },
+        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("580"), instrument_type: InstrumentType::WARRANT, name: "权证", desc: "含股改权证, 公司权证" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("582"), instrument_type: InstrumentType::WARRANT, name: "权证行权", desc: "用于权证行权/行权相关代码" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("588"), instrument_type: InstrumentType::ETF, name: "科创板ETF", desc: "588000-588299 单市场(科创板)ETF; 588300-588699 跨市场(含科创板)ETF; 588700-588999 单市场(科创板)ETF" },
-        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("5"), instrument_type: InstrumentType::FUND, name: "基金/REITs/权证", desc: "首位 5: 基金、公募 REITs、权证" },
+        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("5"), instrument_type: InstrumentType::FUND, name: "基金/REITs/权证", desc: "首位 5: 基金, 公募 REITs, 权证" },
 
         // === A股/存托凭证 6xx ===
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("600"), instrument_type: InstrumentType::STOCK, name: "主板A股", desc: "主板 A 股" },
@@ -201,7 +201,7 @@ pub fn sse_rules() -> Vec<CodeRule> {
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("605"), instrument_type: InstrumentType::STOCK, name: "主板A股", desc: "主板 A 股(配套号段)" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("688"), instrument_type: InstrumentType::STAR_MARKET, name: "科创板", desc: "科创板股票" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("689"), instrument_type: InstrumentType::STAR_MARKET, name: "科创板存托凭证", desc: "科创板存托凭证" },
-        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("6"), instrument_type: InstrumentType::STOCK, name: "A股/存托凭证", desc: "首位 6: A 股、存托凭证" },
+        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("6"), instrument_type: InstrumentType::STOCK, name: "A股/存托凭证", desc: "首位 6: A 股, 存托凭证" },
 
         // === 非交易业务 7xx ===
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("700"), instrument_type: InstrumentType::OTHER, name: "配股", desc: "配股(对应600***)" },
@@ -227,8 +227,8 @@ pub fn sse_rules() -> Vec<CodeRule> {
         // === 标准券/板块 8xx ===
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("880"), instrument_type: InstrumentType::SECTOR, name: "板块指数", desc: "通达信" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("881"), instrument_type: InstrumentType::SECTOR, name: "板块指数", desc: "通达信" },
-        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("888"), instrument_type: InstrumentType::BOND, name: "标准券", desc: "888880 为新标准券，用于债券回购转换成标准券" },
-        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("8"), instrument_type: InstrumentType::BOND, name: "标准券/备用", desc: "首位 8: 标准券、备用" },
+        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("888"), instrument_type: InstrumentType::BOND, name: "标准券", desc: "888880 为新标准券, 用于债券回购转换成标准券" },
+        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("8"), instrument_type: InstrumentType::BOND, name: "标准券/备用", desc: "首位 8: 标准券, 备用" },
 
         // === B股 9xx ===
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("900"), instrument_type: InstrumentType::BSTOCK, name: "B股", desc: "B 股" },

@@ -140,7 +140,7 @@ impl BaseMessage for InstrumentCountRequest {
 // 命令字: EXT_INSTRUMENT_INFO (0x23f5)
 // ============================================================
 
-/// 单次最大获取数量，Python PRE_REQUEST_MAX = 1021
+/// 单次最大获取数量, Python PRE_REQUEST_MAX = 1021
 pub const EXT_PRE_REQUEST_MAX: u16 = 1021;
 
 #[derive(Debug, Clone)]

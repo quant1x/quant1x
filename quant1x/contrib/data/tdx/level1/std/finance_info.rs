@@ -309,8 +309,8 @@ impl RawFinanceInfo {
     }
 }
 
-/// FinanceInfoResponse 已合并到 FinanceInfoRequest 中。
-/// 保留类型别名以兼容旧代码。
+/// FinanceInfoResponse 已合并到 FinanceInfoRequest 中. 
+/// 保留类型别名以兼容旧代码. 
 pub type FinanceInfoResponse = FinanceInfoRequest;
 
 pub fn fetch_finance_info(security_code: &str) -> Option<FinanceInfoResponse> {

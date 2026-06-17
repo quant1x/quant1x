@@ -27,7 +27,7 @@ def match_rule(code: str, rules: List[CodeRule]) -> CodeRule:
         rules (List[CodeRule]): 可匹配的规则列表
     
     Returns:
-        CodeRule: 匹配到的最优规则，若无匹配则返回默认的未知规则
+        CodeRule: 匹配到的最优规则, 若无匹配则返回默认的未知规则
     """
     code = code.upper().strip()
     best_match: CodeRule | None = None
@@ -36,7 +36,7 @@ def match_rule(code: str, rules: List[CodeRule]) -> CodeRule:
     for entry in rules:
         prefix = entry.prefix
         #print(prefix)
-        # 跳过空前缀(可选，根据业务)
+        # 跳过空前缀(可选, 根据业务)
         # if not prefix:
         #     continue
         if isinstance(prefix, str) and code.startswith(prefix) and len(prefix) > best_len:
@@ -66,14 +66,14 @@ def match_rule(code: str, rules: List[CodeRule]) -> CodeRule:
 
 def detect_instrument_type_by_rule(exchange: Exchange, code: str) -> InstrumentType:
     """
-    根据交易所和代码，使用对应规则检测证券类型
+    根据交易所和代码, 使用对应规则检测证券类型
     
     Args:
         exchange (Exchange): 交易所枚举
         code (str): 证券代码字符串
     
     Returns:
-        InstrumentType: 检测到的证券类型，若无匹配则返回 Unknown
+        InstrumentType: 检测到的证券类型, 若无匹配则返回 Unknown
     """
     rules = None
     match exchange:
@@ -115,7 +115,7 @@ def detect_symbol(input_str: str) -> Instrument:
     检测并解析证券代码的市场类型及证券类型
     
     Args:
-        input_str (str): 输入的证券代码字符串，支持多种格式: 
+        input_str (str): 输入的证券代码字符串, 支持多种格式: 
             - 前缀形式: sh600000(上海交易所)
             - 后缀形式: 600000.sh 或 APPL.us
             - 纯数字形式: 600000(自动推断交易所)
@@ -135,7 +135,7 @@ def detect_symbol(input_str: str) -> Instrument:
             - 香港交易所(HKEX)
             - 香港期货交易所(HKFE)
             - 美国市场(USA)
-        自动根据代码规则推断证券类型(股票、债券等)
+        自动根据代码规则推断证券类型(股票, 债券等)
     """
     #print(f"detect_symbol: {input_str}")
     s = (input_str or "").strip()
@@ -185,14 +185,14 @@ def detect_symbol(input_str: str) -> Instrument:
                     typ = cr.type
                     return Instrument(exchange, typ, pure_code, "", 0, 0)
                 # 2. 按市场匹配规则
-                # 2.1 0、159和3开头，优先匹配深交所
+                # 2.1 0, 159和3开头, 优先匹配深交所
                 if pure_code.startswith(('0', '159', '3')):
                     cr = match_rule(pure_code, szse_rules)
                     if cr.exchange != Exchange.UNKNOWN:
                         exchange = cr.exchange
                         typ = cr.type
                         return Instrument(exchange, typ, pure_code, "", 0, 0)
-                # 2.2 6和5开头，优先匹配上交所
+                # 2.2 6和5开头, 优先匹配上交所
                 if pure_code.startswith(('6', '5')):
                     cr = match_rule(pure_code, sse_rules)
                     if cr.exchange != Exchange.UNKNOWN:
@@ -221,7 +221,7 @@ def detect_symbol(input_str: str) -> Instrument:
                 exchange = Exchange.UNKNOWN
                 typ = InstrumentType.Unknown
 
-    # 3. 如果exchange是UNKNOWN，则返回未知规则
+    # 3. 如果exchange是UNKNOWN, 则返回未知规则
     if exchange == Exchange.UNKNOWN:
         return Instrument(Exchange.UNKNOWN, InstrumentType.Unknown, "", "", 0, 0)
 
@@ -257,7 +257,7 @@ def assert_stock_by_security_code(security_code: str) -> bool:
         security_code (str): 证券代码字符串
     
     Returns:
-        bool: 如果是股票返回True，否则返回False
+        bool: 如果是股票返回True, 否则返回False
     """
     inst = detect_symbol(security_code)
     return inst.type.is_stock()
@@ -270,17 +270,17 @@ def assert_index_by_security_code(security_code: str) -> bool:
         security_code (str): 证券代码字符串
     
     Returns:
-        bool: 如果是指数返回True，否则返回False
+        bool: 如果是指数返回True, 否则返回False
     """
     inst = detect_symbol(security_code)
     return inst.type.is_index()
 
 def correct_security_code(code: str) -> str:
     """
-    纠正证券代码格式，补全前缀或后缀
+    纠正证券代码格式, 补全前缀或后缀
     
     Args:
-        code (str): 输入的证券代码字符串，支持多种格式: 
+        code (str): 输入的证券代码字符串, 支持多种格式: 
             - 前缀形式: sh600000(上海交易所)
             - 后缀形式: 600000.sh 或 APPL.us
             - 纯数字形式: 600000(自动推断交易所)

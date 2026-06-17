@@ -16,8 +16,8 @@ var (
 )
 
 // initContext 初始化全局上下文并启动信号监听goroutine
-// 该函数会创建全局可取消的context，并监听系统中断信号
-// 当收到中断信号时，会触发优雅关闭流程
+// 该函数会创建全局可取消的context, 并监听系统中断信号
+// 当收到中断信号时, 会触发优雅关闭流程
 func initContext() {
 	globalContext, globalCancel = context.WithCancel(context.Background())
 	// 启动goroutine监听退出信号
@@ -34,7 +34,7 @@ func Context() context.Context {
 	return globalContext
 }
 
-// CancelContext 取消全局context，通知所有协程退出
+// CancelContext 取消全局context, 通知所有协程退出
 func CancelContext() {
 	globalOnce.Do(initContext)
 	if globalCancel != nil {
@@ -43,7 +43,7 @@ func CancelContext() {
 }
 
 // GetContextWithCancel 返回一个可取消的上下文和对应的取消函数
-// 该函数会确保全局上下文只初始化一次，并在返回前增加全局等待组的计数
+// 该函数会确保全局上下文只初始化一次, 并在返回前增加全局等待组的计数
 func GetContextWithCancel() (context.Context, context.CancelFunc) {
 	globalOnce.Do(initContext)
 	ctx, cancel := context.WithCancel(globalContext)
@@ -74,7 +74,7 @@ func RegisterHook(name string, cb func()) context.Context {
 	return ctx
 }
 
-// GracefulShutdown 优雅关闭应用程序，等待所有hook完成并退出
+// GracefulShutdown 优雅关闭应用程序, 等待所有hook完成并退出
 func GracefulShutdown() {
 	CancelContext()
 	globalWaitGroup.Wait()

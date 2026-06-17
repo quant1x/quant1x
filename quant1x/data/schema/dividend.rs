@@ -105,15 +105,15 @@ impl ActionType {
     }
 }
 
-// ================= 核心数据模型（扁平化，含 Bonus）=================
+// ================= 核心数据模型(扁平化, 含 Bonus)=================
 
 /// 除权除息记录 - 扁平化设计
 ///
-/// 明确区分：
-/// - Dividend（现金分红）
-/// - Bonus（送红股）
-/// - Split（拆股）
-/// - Consolidation（缩股/合并）
+/// 明确区分: 
+/// - Dividend(现金分红)
+/// - Bonus(送红股)
+/// - Split(拆股)
+/// - Consolidation(缩股/合并)
 ///
 /// 金额与币种独立存储
 #[derive(Debug, Clone)]
@@ -131,12 +131,12 @@ pub struct DividendAdjustmentRecord {
     pub announcement_date: Option<String>,
     /// 股权登记日
     pub record_date: Option<String>,
-    /// 除权除息日（核心）
+    /// 除权除息日(核心)
     pub ex_date: Option<String>,
     /// 派息/到账日
     pub payment_date: Option<String>,
 
-    // ===== Dividend 专用字段（现金分红）=====
+    // ===== Dividend 专用字段(现金分红)=====
     /// 每股现金分红金额
     pub dividend_amount: Option<f64>,
     /// 分红币种 (CNY/HKD/USD)
@@ -144,17 +144,17 @@ pub struct DividendAdjustmentRecord {
     /// 分红类型
     pub dividend_type: DividendType,
 
-    // ===== Bonus 专用字段（送红股）=====
+    // ===== Bonus 专用字段(送红股)=====
     /// 红股比例 (如 10 送 3 -> 0.3)
     pub bonus_ratio: Option<f64>,
     /// 红股类型
     pub bonus_type: BonusType,
 
-    // ===== Split 专用字段（拆股）=====
+    // ===== Split 专用字段(拆股)=====
     /// 拆股比例 (1 拆 5 -> 5.0)
     pub split_ratio: Option<f64>,
 
-    // ===== Rights Issue 专用字段（供股/配股）=====
+    // ===== Rights Issue 专用字段(供股/配股)=====
     /// 配股比例
     pub rights_ratio: Option<f64>,
     /// 配股价
@@ -162,7 +162,7 @@ pub struct DividendAdjustmentRecord {
     /// 配股价币种
     pub rights_currency: Option<String>,
 
-    // ===== Consolidation 专用字段（缩股/合并）=====
+    // ===== Consolidation 专用字段(缩股/合并)=====
     /// 缩股比例 (10 合 1 -> 0.1)
     pub consolidation_ratio: Option<f64>,
     /// 合并基数 (10)
@@ -266,9 +266,9 @@ impl DividendAdjustmentRecord {
         }
     }
 
-    /// 获取除权除息因子（用于复权计算）
+    /// 获取除权除息因子(用于复权计算)
     ///
-    /// 返回：(price_factor, share_factor, cash_dividend)
+    /// 返回: (price_factor, share_factor, cash_dividend)
     pub fn get_adjustment_factor(&self) -> (f64, f64, f64) {
         let mut price_factor = 1.0_f64;
         let mut share_factor = 1.0_f64;
@@ -279,21 +279,21 @@ impl DividendAdjustmentRecord {
             cash_dividend = self.dividend_amount.unwrap();
         }
 
-        // 2. Bonus 红股（股份扩张，价格下降）
+        // 2. Bonus 红股(股份扩张, 价格下降)
         if self.has_bonus() {
             let bonus_factor = self.get_bonus_factor();
             price_factor /= bonus_factor;
             share_factor *= bonus_factor;
         }
 
-        // 3. Split 拆股（股份扩张，价格下降）
+        // 3. Split 拆股(股份扩张, 价格下降)
         if self.has_split() {
             let split_factor = self.get_split_factor();
             price_factor /= split_factor;
             share_factor *= split_factor;
         }
 
-        // 4. Consolidation 缩股/合并（股份收缩，价格上升）
+        // 4. Consolidation 缩股/合并(股份收缩, 价格上升)
         if self.has_consolidation() {
             if let Some(cf) = self.get_consolidation_factor() {
                 if cf > 0.0 {
@@ -359,9 +359,9 @@ impl DividendAdjustmentRecord {
 
 /// 分红除权除息数据处理中心
 ///
-/// 功能：
-/// 1. 统一存储 A 股、港股、美股、英股等多市场数据
-/// 2. 明确区分 Dividend（现金）、Bonus（红股）、Split（拆股）
+/// 功能: 
+/// 1. 统一存储 A 股, 港股, 美股, 英股等多市场数据
+/// 2. 明确区分 Dividend(现金), Bonus(红股), Split(拆股)
 /// 3. 金额与币种独立存储
 /// 4. 支持复权计算
 #[derive(Debug, Clone, Default)]

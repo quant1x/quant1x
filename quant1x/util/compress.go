@@ -45,15 +45,15 @@ func ZlibUnCompress(compressSrc []byte) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-// UnzipPreserveTimes 解压 src zip 到 dest 目录，并尽量保留每个文件/目录的修改时间。
-// 返回遇到的第一个错误（若有）。
+// UnzipPreserveTimes 解压 src zip 到 dest 目录, 并尽量保留每个文件/目录的修改时间.
+// 返回遇到的第一个错误(若有).
 func UnzipPreserveTimes(srcZip, dest string, includes ...string) error {
 	r, err := zip.OpenReader(srcZip)
 	if err != nil {
 		return err
 	}
 	defer r.Close()
-	// 规范化目标路径为绝对并清理（不带尾部分隔符），用于更可靠的 ZipSlip 检查
+	// 规范化目标路径为绝对并清理(不带尾部分隔符), 用于更可靠的 ZipSlip 检查
 	destAbs, err := filepath.Abs(dest)
 	if err != nil {
 		return err
@@ -80,7 +80,7 @@ func UnzipPreserveTimes(srcZip, dest string, includes ...string) error {
 		}
 		targetAbs = filepath.Clean(targetAbs)
 
-		// 更可靠的 ZipSlip 检查：使用 filepath.Rel 判断是否在 destAbs 内
+		// 更可靠的 ZipSlip 检查: 使用 filepath.Rel 判断是否在 destAbs 内
 		rel, err := filepath.Rel(destAbs, targetAbs)
 		if err != nil {
 			return err
@@ -96,7 +96,7 @@ func UnzipPreserveTimes(srcZip, dest string, includes ...string) error {
 			if err := os.MkdirAll(targetAbs, info.Mode().Perm()); err != nil {
 				return err
 			}
-			// 最佳努力设置时间戳（部分平台对目录时间设置有限制）
+			// 最佳努力设置时间戳(部分平台对目录时间设置有限制)
 			_ = os.Chtimes(targetAbs, modTime, modTime)
 			continue
 		}
@@ -106,7 +106,7 @@ func UnzipPreserveTimes(srcZip, dest string, includes ...string) error {
 			return err
 		}
 
-		// 处理符号链接（若 zip 中保留了该位标志）
+		// 处理符号链接(若 zip 中保留了该位标志)
 		if info.Mode()&os.ModeSymlink != 0 {
 			rc, err := f.Open()
 			if err != nil {
@@ -117,7 +117,7 @@ func UnzipPreserveTimes(srcZip, dest string, includes ...string) error {
 			if err != nil {
 				return err
 			}
-			// 尝试创建符号链接，否则回退为写入目标内容的普通文件（Windows 上常见）
+			// 尝试创建符号链接, 否则回退为写入目标内容的普通文件(Windows 上常见)
 			_ = os.Remove(targetAbs)
 			if err := os.Symlink(string(linkBytes), targetAbs); err != nil {
 				if err := os.WriteFile(targetAbs, linkBytes, info.Mode().Perm()); err != nil {
@@ -129,7 +129,7 @@ func UnzipPreserveTimes(srcZip, dest string, includes ...string) error {
 			continue
 		}
 
-		// 普通文件：打开并写入
+		// 普通文件: 打开并写入
 		rc, err := f.Open()
 		if err != nil {
 			return err
@@ -146,11 +146,11 @@ func UnzipPreserveTimes(srcZip, dest string, includes ...string) error {
 		}
 		rc.Close()
 
-		// 在文件写入后确保权限（考虑 umask）
+		// 在文件写入后确保权限(考虑 umask)
 		_ = os.Chmod(targetAbs, info.Mode().Perm())
 		out.Close()
 
-		// 尝试保留时间戳（atime 和 mtime 都设为 modTime）
+		// 尝试保留时间戳(atime 和 mtime 都设为 modTime)
 		_ = os.Chtimes(targetAbs, modTime, modTime)
 	}
 	return nil

@@ -8,15 +8,15 @@
 namespace quant1x {
 namespace core {
 
-// 懒加载模板类，提供线程安全的延迟初始化
+// 懒加载模板类, 提供线程安全的延迟初始化
 template <typename T>
 class Lazy {
 public:
-    // 构造函数，接受初始化函数
+    // 构造函数, 接受初始化函数
     explicit Lazy(std::function<T()> initializer)
         : initializer_(std::move(initializer)) {}
 
-    // 获取值的引用（适用于不可拷贝的类型）
+    // 获取值的引用(适用于不可拷贝的类型)
     const T& get() {
         std::call_once(flag_, [this]() {
             value_ = initializer_();
@@ -24,7 +24,7 @@ public:
         return value_;
     }
 
-    // 获取值的拷贝（适用于可拷贝的类型）
+    // 获取值的拷贝(适用于可拷贝的类型)
     T get_copy() {
         std::call_once(flag_, [this]() {
             value_ = initializer_();
@@ -38,7 +38,7 @@ private:
     mutable T value_;
 };
 
-// 简化版本：直接返回值的懒加载（适用于可默认构造的类型）
+// 简化版本: 直接返回值的懒加载(适用于可默认构造的类型)
 template <typename T>
 class LazyValue {
 public:

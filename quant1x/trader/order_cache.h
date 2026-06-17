@@ -10,7 +10,7 @@ namespace trader {
 
     //extern std::string traderQmtOrderPath;
 
-    // 获取订单文件名（支持传入日期）
+    // 获取订单文件名(支持传入日期)
     std::string GetOrderFilename(const std::string& date = "");
 
     // 获取指定日期的订单列表

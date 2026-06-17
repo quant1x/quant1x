@@ -43,7 +43,7 @@ namespace level1 {
         u16 market;   // 交易市场
         u32 start;    // 起始位置
         u32 count;    // 请求数量
-        u32 unknown;  // 未知字段，通常为0x00000000
+        u32 unknown;  // 未知字段, 通常为0x00000000
 
         u16                   Count;     // 响应: 返回记录数
         std::vector<Security> List;      // 响应: 证券列表

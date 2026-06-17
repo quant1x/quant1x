@@ -28,7 +28,7 @@
 // == 编译器类型判断 ==
 // ==================================================================
 
-// 先全部置为0，后面再根据实际编译器置为1
+// 先全部置为0, 后面再根据实际编译器置为1
 #if defined(_MSC_VER)
 #define TARGET_COMPILER_IS_MSVC 1
 #else
@@ -53,7 +53,7 @@
 #define TARGET_COMPILER_IS_ICC 0
 #endif
 
-// 编译器版本检测（可选）
+// 编译器版本检测(可选)
 #if TARGET_COMPILER_IS_MSVC
 #define COMPILER_VERSION (_MSC_VER)
 #elif TARGET_COMPILER_IS_GCC
@@ -66,7 +66,7 @@
     #define COMPILER_VERSION 0
 #endif
 
-// 强制内联宏定义（示例）
+// 强制内联宏定义(示例)
 #if TARGET_COMPILER_IS_MSVC
 #define FORCE_INLINE __forceinline
 #elif TARGET_COMPILER_IS_GCC || TARGET_COMPILER_IS_CLANG
@@ -162,7 +162,7 @@
 // 是否是 32 位架构
 #define TARGET_CPU_BITS_32 (!TARGET_CPU_BITS_64 && CURRENT_CPU_ARCH != CPU_ARCH_UNKNOWN)
 
-// 判断是否支持 inline 关键字（所有现代编译器都支持）
+// 判断是否支持 inline 关键字(所有现代编译器都支持)
 #define TARGET_COMPILER_HAS_INLINE_KEYWORD 1
 
 // 判断是否支持 C++17 的 inline 变量
@@ -172,10 +172,10 @@
 #define CPP_HAS_INLINE_VARIABLES 0
 #endif
 
-// 判断是否支持函数模板内联优化（一般都支持）
+// 判断是否支持函数模板内联优化(一般都支持)
 #define CPP_HAS_INLINE_TEMPLATES 1
 
-// 判断是否支持内联汇编（取决于编译器和平台）
+// 判断是否支持内联汇编(取决于编译器和平台)
 #if TARGET_COMPILER_IS_MSVC && (defined(_M_IX86) || defined(_M_X64))
 #define TARGET_HAS_INLINE_ASM 1
 #elif (IS_GCC || IS_CLANG) && !defined(__arm__) && !defined(__aarch64__)

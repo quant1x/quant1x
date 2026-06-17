@@ -31,13 +31,13 @@ fn main() -> Result<(), Error> {
     unsafe {
         low_level::register(SIGTERM, move || {
             r_term.store(false, Ordering::SeqCst);
-            info!("捕获到 SIGTERM（系统重启/关闭）");
+            info!("捕获到 SIGTERM(系统重启/关闭)");
         })?;
 
         // 注册 SIGINT 处理
         low_level::register(SIGINT, move || {
             r_int.store(false, Ordering::SeqCst);
-            info!("捕获到 SIGINT（Ctrl+C）");
+            info!("捕获到 SIGINT(Ctrl+C)");
         })?;
     }
 

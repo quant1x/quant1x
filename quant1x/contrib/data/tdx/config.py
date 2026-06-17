@@ -260,7 +260,7 @@ def save_cached_servers(servers: OrderedDict[str, List[Dict[str, Any]]]) -> None
                       allow_unicode=True,
                       default_flow_style=False,
                       sort_keys=False,
-                      indent=2,                      # 显式设置缩进（可选, 增强一致性）
+                      indent=2,                      # 显式设置缩进(可选, 增强一致性)
                       width=float("inf")             # 避免长行被折行
             )
     except Exception:

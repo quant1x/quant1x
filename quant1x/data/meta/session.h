@@ -225,6 +225,34 @@ struct RuntimeStatus {
     TimeStatus status                = TS_CLOSED;
 };
 
+// =====================================================================
+// 7. 运行时状态检查函数
+// =====================================================================
+
+/// 获取今天的盘前初始化时间戳
+/// 对齐 Python session.get_today() / Rust session::get_today()
+Timestamp get_today();
+
+/// 检查交易时间戳状态
+/// 对齐 Python session.check_trading_timestamp() / Rust session::check_trading_timestamp()
+///
+/// @param exchange 交易所, 默认 SSE
+/// @param last_modified 文件修改时间, 为 nullopt 时使用当前时间
+/// @return RuntimeStatus 运行时状态
+RuntimeStatus check_trading_timestamp(
+    Exchange exchange = Exchange::SSE,
+    std::optional<Timestamp> last_modified = std::nullopt);
+
+/// 是否可以初始化
+/// 对齐 Python session.can_initialize() / Rust session::can_initialize()
+///
+/// @param exchange 交易所, 默认 SSE
+/// @param last_modified 文件修改时间, 为 nullopt 时使用当前时间
+/// @return true 可以初始化, false 不需要初始化
+bool can_initialize(
+    Exchange exchange = Exchange::SSE,
+    std::optional<Timestamp> last_modified = std::nullopt);
+
 } // namespace meta
 
 #endif // QUANT1X_DATA_META_SESSION_H

@@ -138,8 +138,8 @@ pub fn get_xdxr_filename(code: &str) -> String {
 /// DEPRECATED: Use the Instrument-based path generation in kline.rs instead.
 /// Kept for backward compatibility with old callers.
 pub fn get_kline_filename(code: &str, forward: bool) -> String {
-    // 兼容旧格式：code 如 "sh600000" (长度可能不是8)
-    // 对于 Instrument 格式，使用 detect_symbol 解析后按新规则生成路径
+    // 兼容旧格式: code 如 "sh600000" (长度可能不是8)
+    // 对于 Instrument 格式, 使用 detect_symbol 解析后按新规则生成路径
     let inst = crate::data::market::detect_symbol(code);
     if !inst.can_construct_symbol() {
         // 回退到旧逻辑

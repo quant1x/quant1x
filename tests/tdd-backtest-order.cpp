@@ -17,7 +17,7 @@ struct Position {
     }
 };
 
-// 打印函数，用于调试
+// 打印函数, 用于调试
 void PrintMap(const std::unordered_map<std::string, Position>& map) {
     for (const auto& [key, pos] : map) {
         std::cout << "Key: " << key << ", "
@@ -50,7 +50,7 @@ TEST_CASE("order-basic", "[backtest]") {
 
         Position& position = it->second;
 
-        // 不管是新增还是已有项，都调用 Sync
+        // 不管是新增还是已有项, 都调用 Sync
         position.Sync(code, v.Volume);
 
         std::cout << (inserted ? "Inserted" : "Updated") << " - "

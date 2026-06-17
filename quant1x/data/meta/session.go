@@ -51,13 +51,13 @@ const (
 	// ========== 常用组合 ==========
 	PermissionMatchingTransaction Permission = PermissionMatching | PermissionFill // 撮合成交, 正在撮合中, 会产生成交记录
 
-	// 连续交易：市价 + 限价 + 可成交 + 撤单 + 改单 + 计入分钟数
+	// 连续交易: 市价 + 限价 + 可成交 + 撤单 + 改单 + 计入分钟数
 	PermissionContinuousTrading Permission = PermissionMarket | PermissionLimit | PermissionCancel | PermissionModify | PermissionOpen | PermissionMatchingTransaction
 
 	PermissionInitializing Permission = PermissionIsTemporary // 初始化阶段
 
-	PermissionPreMarket  Permission = PermissionIsTemporary | PermissionCancel | PermissionLimit // 盘前, 允许下单、撤单, 但不允许市价单
-	PermissionAfterHours Permission = PermissionIsTemporary | PermissionCancel | PermissionLimit // 盘后, 允许下单、撤单, 但不允许市价单
+	PermissionPreMarket  Permission = PermissionIsTemporary | PermissionCancel | PermissionLimit // 盘前, 允许下单, 撤单, 但不允许市价单
+	PermissionAfterHours Permission = PermissionIsTemporary | PermissionCancel | PermissionLimit // 盘后, 允许下单, 撤单, 但不允许市价单
 
 	// 早盘集合竞价 = POS (Pre-Opening Session)
 	// 收盘竞价时段 = CAS Closing Auction Session)
@@ -76,7 +76,7 @@ const (
 
 	PermissionEmergencyHalt Permission = PermissionOpen // 紧急停牌 (市场活跃但不能撮合, 只有 OPEN 位)
 
-	PermissionLunchBreak Permission = PermissionAcceptOrderOnly | PermissionIsTemporary // 交易日休息时段 (允许下单、撤单, 但不允许市价单)
+	PermissionLunchBreak Permission = PermissionAcceptOrderOnly | PermissionIsTemporary // 交易日休息时段 (允许下单, 撤单, 但不允许市价单)
 )
 
 // CanMatch 是否允许成交 (连续或集合竞价)
@@ -115,7 +115,7 @@ func (p Permission) IsContinuousTrading() bool {
 }
 
 // ======================================================================
-// 时间状态枚举（使用掩码组合）
+// 时间状态枚举(使用掩码组合)
 // ======================================================================
 
 // TimeStatus 全球统一交易时间状态枚举, 使用掩码组合表示不同状态
@@ -123,11 +123,11 @@ type TimeStatus uint8
 
 const (
 	TimeStatusOpen              TimeStatus = TimeStatus(PermissionOpen)              // 开盘
-	TimeStatusClosed            TimeStatus = TimeStatus(PermissionClosed)            // 当日收盘（默认状态，不可交易）
-	TimeStatusPreMarket         TimeStatus = TimeStatus(PermissionPreMarket)         // 盘前（活跃但未开始交易）
-	TimeStatusAfterHours        TimeStatus = TimeStatus(PermissionAfterHours)        // 盘后（活跃但已结束交易）
-	TimeStatusSuspend           TimeStatus = TimeStatus(PermissionLunchBreak)        // 休市中(非活跃，不可交易)
-	TimeStatusContinuousTrading TimeStatus = TimeStatus(PermissionContinuousTrading) // 连续竞价(上午/下午，可撤单)
+	TimeStatusClosed            TimeStatus = TimeStatus(PermissionClosed)            // 当日收盘(默认状态, 不可交易)
+	TimeStatusPreMarket         TimeStatus = TimeStatus(PermissionPreMarket)         // 盘前(活跃但未开始交易)
+	TimeStatusAfterHours        TimeStatus = TimeStatus(PermissionAfterHours)        // 盘后(活跃但已结束交易)
+	TimeStatusSuspend           TimeStatus = TimeStatus(PermissionLunchBreak)        // 休市中(非活跃, 不可交易)
+	TimeStatusContinuousTrading TimeStatus = TimeStatus(PermissionContinuousTrading) // 连续竞价(上午/下午, 可撤单)
 	TimeStatusTrading           TimeStatus = TimeStatusContinuousTrading             // 连续竞价, 盘中交易别名
 	TimeStatusCallAuction       TimeStatus = TimeStatus(PermissionCallAuction)       // 集合竞价(开盘/收盘)
 
@@ -140,7 +140,7 @@ const (
 	TimeStatusAuctionMatchingToOpening TimeStatus = TimeStatusCallAuction | TimeStatus(PermissionFill) // 集合竞价开盘 阶段
 	TimeStatusAuctionMatchingToClosing TimeStatus = TimeStatusCallAuction | TimeStatus(PermissionFill) // 集合竞价收盘 阶段
 
-	TimeStatusExchangeHaltTrading TimeStatus = TimeStatusOpen // 市场活跃但暂停交易(如临时停牌、熔断等)
+	TimeStatusExchangeHaltTrading TimeStatus = TimeStatusOpen // 市场活跃但暂停交易(如临时停牌, 熔断等)
 )
 
 // IsMarketActive 市场是否活跃 (允许下单或撤单)
@@ -454,7 +454,7 @@ func (ts *TradingSession) CheckStatus(timestamp interface{}) TimeStatus {
 		}
 	}
 
-	// 不在任何交易时段内, 进一步判断是盘前、盘后还是休市
+	// 不在任何交易时段内, 进一步判断是盘前, 盘后还是休市
 
 	// 全天交易开始前
 	if tsTime.Less(ts.EarliestStart) {
@@ -614,13 +614,13 @@ func InitCNSession() (*TradingSession, error) {
 
 // InitHKSession 初始化当日的交易会话时段 (港股)
 func InitHKSession() (*TradingSession, error) {
-	// 1. 输入买卖盘时段：上午9:00-9:15
+	// 1. 输入买卖盘时段: 上午9:00-9:15
 	tr1, _ := NewTimeRange("09:00:00 ~ 09:15:00", TimeStatusAuctionOrderInputPeriod, RegionHK)
-	// 2. 不可取消时段：上午9:15-9:20
+	// 2. 不可取消时段: 上午9:15-9:20
 	tr2, _ := NewTimeRange("09:15:00 ~ 09:20:00", TimeStatusAuctionNoCancellationPeriod, RegionHK)
-	// 3. 随机对盘时段：上午9:20-9:22
+	// 3. 随机对盘时段: 上午9:20-9:22
 	tr3, _ := NewTimeRange("09:20:00 ~ 09:22:00", TimeStatusAuctionMatchingToOpening, RegionHK)
-	// 4. 暂停时段：完成对盘后-上午9:30
+	// 4. 暂停时段: 完成对盘后-上午9:30
 	tr4, _ := NewTimeRange("09:22:00 ~ 09:30:00", TimeStatusSuspend, RegionHK)
 	tr5, _ := NewTimeRange("09:30:00 ~ 12:00:00", TimeStatusContinuousTrading, RegionHK)
 	tr6, _ := NewTimeRange("12:00:00 ~ 13:00:00", TimeStatusSuspend, RegionHK)

@@ -55,7 +55,7 @@ TEST_CASE("klines-check", "[xdxr]") {
 
 std::unordered_map<std::string, std::vector<factors::CumulativeAdjustment>> checkout_dividends_map(const meta::Timestamp &current) {
     std::unordered_map<std::string, std::vector<factors::CumulativeAdjustment>> result_map;
-    auto all_codes = instruments::GetCodeList();
+    auto all_codes = instruments::get_code_list();
     //auto now = meta::Timestamp::now();
     for(auto const & security_code : all_codes) {
         // 1. 首先加载除权除息记录

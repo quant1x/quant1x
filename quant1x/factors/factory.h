@@ -47,7 +47,7 @@ namespace factors {
             auto &cache = instance();
 
             // 1. 尝试更新 (如果处于重置状态)
-            // RollingOnce::Do 内部使用原子操作检查状态，只有在需要更新时才加锁
+            // RollingOnce::Do 内部使用原子操作检查状态, 只有在需要更新时才加锁
             cache.once->Do([&]() {
                 auto adapter        = Adapter();
                 meta::Timestamp align_date = timestamp.pre_market_time();
@@ -62,15 +62,15 @@ namespace factors {
                         new_data->map.insert_or_assign(v.Code, v);
                     }
                 }
-                // 原子替换数据，实现 Copy-On-Write，避免读锁
+                // 原子替换数据, 实现 Copy-On-Write, 避免读锁
                 cache.data.store(new_data);
             });
 
             // 2. 原子读取数据 (无锁)
             auto current_data = cache.data.load();
             if (current_data) {
-                // 如果需要严格的日期匹配，可以在这里检查 current_data->date
-                // 但考虑到 RollingOnce 的特性，这里默认返回缓存的数据
+                // 如果需要严格的日期匹配, 可以在这里检查 current_data->date
+                // 但考虑到 RollingOnce 的特性, 这里默认返回缓存的数据
                 auto it = current_data->map.find(code);
                 if (it != current_data->map.end()) {
                     return it->second;

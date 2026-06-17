@@ -1,7 +1,7 @@
 // Copyright (c) Quant1X <wangfengxy@sina.cn>.
 // Licensed under the MIT License.
 //
-// market — 市场/证券代码识别与纠正，与 Python data/market.py 对齐
+// market — 市场/证券代码识别与纠正, 与 Python data/market.py 对齐
 
 #include "market.h"
 #include "meta/ticker_rules/market_sse.h"
@@ -143,7 +143,7 @@ Instrument detect_symbol(const std::string& input_str) {
         }
     }
 
-    // 3. 纯数字或者字母（无显式前缀/后缀）
+    // 3. 纯数字或者字母(无显式前缀/后缀)
     if (exchange == Exchange::UNKNOWN) {
         size_t code_len = pure_code.size();
         switch (code_len) {
@@ -169,14 +169,14 @@ Instrument detect_symbol(const std::string& input_str) {
                 }
 
                 // 3.2 按市场匹配规则
-                // 3.2.1 0、159和3开头，优先匹配深交所
+                // 3.2.1 0, 159和3开头, 优先匹配深交所
                 if (pure_code[0] == '0' || pure_code.substr(0, 3) == "159" || pure_code[0] == '3') {
                     cr = match_rule(pure_code, meta::ticker_rules::szse_rules());
                     if (cr.exchange != Exchange::UNKNOWN) {
                         return Instrument{cr.exchange, cr.instrument_type, pure_code, "", 100, 2, 0, 0, "", ""};
                     }
                 }
-                // 3.2.2 6和5开头，优先匹配上交所
+                // 3.2.2 6和5开头, 优先匹配上交所
                 if (pure_code[0] == '6' || pure_code[0] == '5') {
                     cr = match_rule(pure_code, meta::ticker_rules::sse_rules());
                     if (cr.exchange != Exchange::UNKNOWN) {
@@ -205,12 +205,12 @@ Instrument detect_symbol(const std::string& input_str) {
         }
     }
 
-    // 4. 如果exchange是UNKNOWN，则返回未知
+    // 4. 如果exchange是UNKNOWN, 则返回未知
     if (exchange == Exchange::UNKNOWN) {
         return Instrument{};
     }
 
-    // 5. 如果typ是Unknown，按市场规则匹配
+    // 5. 如果typ是Unknown, 按市场规则匹配
     if (typ == InstrumentType::Unknown) {
         std::vector<meta::ticker_rules::CodeRule> rules;
         switch (exchange) {

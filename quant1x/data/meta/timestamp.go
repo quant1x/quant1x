@@ -37,8 +37,8 @@ func SinceZeroHour(t time.Time) int64 {
 	return t.Sub(zero).Milliseconds()
 }
 
-// Timestamp C++风格的时间戳实现，提供与C++ timestamp类相同的API
-// 这是一个兼容层，基于Go的核心timestamp实现
+// Timestamp C++风格的时间戳实现, 提供与C++ timestamp类相同的API
+// 这是一个兼容层, 基于Go的核心timestamp实现
 type Timestamp struct {
 	ms int64 // 毫秒数
 }
@@ -279,7 +279,7 @@ func (t Timestamp) YYYYMMDD() uint32 {
 	return uint32(y*10000 + m*100 + d)
 }
 
-// IsEmpty 是否为空（零值） - 对应C++的empty()
+// IsEmpty 是否为空(零值) - 对应C++的empty()
 func (t Timestamp) IsEmpty() bool {
 	return t.Value() == 0
 }
@@ -291,9 +291,9 @@ func (t Timestamp) IsSameDate(other Timestamp) bool {
 	return day1 == day2
 }
 
-// ParseTimestamp 解析日期时间字符串 - 主要用于日期格式，也支持包含时间 - 对应C++的parse()
+// ParseTimestamp 解析日期时间字符串 - 主要用于日期格式, 也支持包含时间 - 对应C++的parse()
 func ParseTimestamp(str string) (Timestamp, error) {
-	// 尝试多种格式解析，偏向日期格式
+	// 尝试多种格式解析, 偏向日期格式
 	formats := []string{
 		"2006-01-02 15:04:05.000",       // 完整日期时间+毫秒
 		"2006-01-02 15:04:05",           // 完整日期时间
@@ -318,10 +318,10 @@ func ParseTimestamp(str string) (Timestamp, error) {
 	return ZeroTimestamp(), fmt.Errorf("unable to parse date string: %s", str)
 }
 
-// ParseTimeOnly 解析时间字符串 - 主要用于时间格式，但也兼容完整日期时间 - 对应C++的parse_time()
+// ParseTimeOnly 解析时间字符串 - 主要用于时间格式, 但也兼容完整日期时间 - 对应C++的parse_time()
 func ParseTimeOnly(str string) (Timestamp, error) {
-	// 设计目的：用户关注时分秒时使用，但不限制输入格式
-	// 既支持纯时间，也支持包含日期的格式
+	// 设计目的: 用户关注时分秒时使用, 但不限制输入格式
+	// 既支持纯时间, 也支持包含日期的格式
 	timeFormats := []string{
 		"15:04:05",                      // 纯时间
 		"2006-01-02 15:04:05",           // 完整日期时间
@@ -386,7 +386,7 @@ func (t Timestamp) GreaterOrEqual(other Timestamp) bool {
 
 // UnixMilli 转换为Unix毫秒时间戳
 func (t Timestamp) UnixMilli() int64 {
-	// 使用现有的Time函数转换，然后获取Unix毫秒
+	// 使用现有的Time函数转换, 然后获取Unix毫秒
 	return t.ToTime().UnixMilli()
 }
 

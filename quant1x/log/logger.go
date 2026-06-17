@@ -31,10 +31,10 @@ func getLogger(cfg Config, level zapcore.Level) (zapcore.Core, error) {
 	if !ok {
 		panic("invalid log level")
 	}
-	// 配置日志滚动器，按天切割
+	// 配置日志滚动器, 按天切割
 	path := filepath.Join(cfg.Path, filename+"_%Y%m%d.log")
 	rl, err := rotatelogs.New(
-		path,                              // 文件名格式，带日期
+		path,                              // 文件名格式, 带日期
 		rotatelogs.WithMaxAge(cfg.MaxAge), // 保留7天的日志
 		rotatelogs.WithRotationTime(cfg.RotationTime), // 每24小时切割一次
 		rotatelogs.WithHandler(rotatelogs.HandlerFunc(
@@ -55,7 +55,7 @@ func getLogger(cfg Config, level zapcore.Level) (zapcore.Core, error) {
 		return nil, err
 	}
 	writeSyncer := zapcore.AddSync(rl)
-	// 带缓冲的 WriteSyncer（缓冲区大小 256KB）
+	// 带缓冲的 WriteSyncer(缓冲区大小 256KB)
 	bufferedWriteSyncer := &zapcore.BufferedWriteSyncer{
 		WS:            writeSyncer,
 		Size:          cfg.BufferSize * 1024,           // 缓冲区大小
@@ -94,7 +94,7 @@ func compressOldLogs(previousFile string) {
 		if err != nil {
 			return
 		}
-		// 压缩文件：原文件 → 原文件.gz
+		// 压缩文件: 原文件 → 原文件.gz
 		gzPath := previousFile[:len(previousFile)-logExtLength] + ".gz"
 		dst, _ := os.Create(gzPath)
 		defer std.CloseQuietly(dst)
@@ -120,9 +120,9 @@ func compressOldLogs(previousFile string) {
 // NewTextLoggerWithCompression 初始化支持压缩的纯文本日志配置
 func NewTextLoggerWithCompression(cfg Config) *zap.Logger {
 	// --------------------------------------------
-	// 2. 按级别配置日志文件（启用压缩）
+	// 2. 按级别配置日志文件(启用压缩)
 	// --------------------------------------------
-	// 配置日志滚动器，按天切割
+	// 配置日志滚动器, 按天切割
 	var cores []zapcore.Core
 	// debug日志
 	if cfg.Level <= zapcore.DebugLevel {

@@ -6,7 +6,7 @@
 TEST_CASE("base-snapshot", "[runtime]") {
     runtime::global_init();
     runtime::logger_set(false, false);
-    auto all_codes = instruments::GetCodeList();
+    auto all_codes = instruments::get_code_list();
     //std::span<std::string> codes(all_codes);
     auto count = all_codes.size();
     size_t start = 0;
@@ -157,7 +157,7 @@ void ensure_file_size(const std::string& path, size_t required_size) {
         file.open(path, std::ios::in | std::ios::out | std::ios::binary);
     }
 
-    // 移动指针到指定位置，并写入一个字节触发扩容
+    // 移动指针到指定位置, 并写入一个字节触发扩容
     file.seekp(required_size - 1);
     file.write("\0", 1);
 
@@ -171,7 +171,7 @@ void ensure_file_size(const std::string& path, size_t required_size) {
 TEST_CASE("test-buffer-size", "[capnp]") {
     runtime::global_init();
     runtime::logger_set(false, false);
-    auto all_codes = instruments::GetCodeList();
+    auto all_codes = instruments::get_code_list();
     auto count = all_codes.size();
     capnp::MallocMessageBuilder message;
     auto quoteList = message.initRoot<QuoteList>();
@@ -188,7 +188,7 @@ TEST_CASE("test-buffer-size", "[capnp]") {
 TEST_CASE("tick-snapshot", "[runtime]") {
     runtime::global_init();
     runtime::logger_set(false, false);
-    auto all_codes = instruments::GetCodeList();
+    auto all_codes = instruments::get_code_list();
     auto count = all_codes.size();
 
     // 确保文件存在且大小合适
@@ -213,7 +213,7 @@ TEST_CASE("tick-snapshot", "[runtime]") {
 //        reinterpret_cast<kj::byte*>(base),
 //        capacity
 //    ));
-//    // 转换为 Cap'n Proto 可用的内存块（按 word 对齐）
+//    // 转换为 Cap'n Proto 可用的内存块(按 word 对齐)
 //    kj::ArrayPtr<capnp::word> mmapWords(reinterpret_cast<capnp::word*>(base), capacity / sizeof(capnp::word));
 //    // 使用 FlatMessageBuilder 在 mmap 内存上构建消息
 //    capnp::FlatMessageBuilder builder(mmapWords);

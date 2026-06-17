@@ -52,7 +52,7 @@ fn main() {
         println!("每日任务执行 - 本地时间: {}", chrono::Local::now());
     });
 
-    // 每分钟第0秒执行（测试用）
+    // 每分钟第0秒执行(测试用)
     scheduler.add_local_cron_job("*/5 * * * * *", || {
         println!("每分钟任务 - 本地时间: {}", chrono::Local::now());
     });

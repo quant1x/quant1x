@@ -1,8 +1,8 @@
 // Copyright (c) Quant1X <wangfengxy@sina.cn>.
 // Licensed under the MIT License.
 //
-// sector — 板块列表加载与下载，与 Python contrib/data/tdx/sector.py 对齐
-// 作为 datasource 的本地代理，从 level1 下载板块文件并解析为 CSV 缓存
+// sector — 板块列表加载与下载, 与 Python contrib/data/tdx/sector.py 对齐
+// 作为 datasource 的本地代理, 从 level1 下载板块文件并解析为 CSV 缓存
 
 use crate::data::schema::Sector;
 use std::collections::HashMap;
@@ -39,7 +39,7 @@ pub fn get_sector_filename() -> String {
 // 从 level1 下载原始板块文件
 // ============================================================
 
-/// 从 level1 连接获取板块原始数据，对应 Python `_get_block_info_from_level1`
+/// 从 level1 连接获取板块原始数据, 对应 Python `_get_block_info_from_level1`
 fn get_block_info_from_level1(filename: &str) -> Option<Vec<u8>> {
     let mut conn = match get_std_conn() {
         Ok(c) => c,
@@ -74,13 +74,13 @@ fn get_block_info_from_level1(filename: &str) -> Option<Vec<u8>> {
     Some(result)
 }
 
-/// 下载原始板块文件到 meta_path，对应 Python `download_block_raw_data`
+/// 下载原始板块文件到 meta_path, 对应 Python `download_block_raw_data`
 fn download_block_raw_data(filename: &str) -> Option<String> {
     let meta_path = crate::config::get_meta_path();
     let _ = fs::create_dir_all(&meta_path);
     let filepath = format!("{}/{}", meta_path, filename);
 
-    // 文件已存在且不需要更新，跳过下载
+    // 文件已存在且不需要更新, 跳过下载
     if Path::new(&filepath).exists() {
         if !crate::data::status::should_initialize_file(&filepath, crate::data::meta::exchange::Exchange::SSE) {
             log::debug!("sector: {} exists and is up-to-date, skip download", filename);
@@ -115,7 +115,7 @@ struct RawBlockRecord {
     codes: Vec<String>,
 }
 
-/// 解析原始板块二进制文件，对应 Python `parse_raw_block_file`
+/// 解析原始板块二进制文件, 对应 Python `parse_raw_block_file`
 fn parse_raw_block_file(block_filename: &str) -> Vec<RawBlockRecord> {
     let meta_path = crate::config::get_meta_path();
     let filepath = format!("{}/{}", meta_path, block_filename);
@@ -212,7 +212,7 @@ struct BlockIndexEntry {
     block: String,
 }
 
-/// 从配置文件加载板块索引，对应 Python `get_block_info_from_config`
+/// 从配置文件加载板块索引, 对应 Python `get_block_info_from_config`
 fn get_block_info_from_config(cfg_name: &str) -> Vec<BlockIndexEntry> {
     let meta_path = crate::config::get_meta_path();
     let filepath = format!("{}/{}", meta_path, cfg_name);
@@ -258,7 +258,7 @@ fn get_block_info_from_config(cfg_name: &str) -> Vec<BlockIndexEntry> {
 // 行业配置
 // ============================================================
 
-/// 行业信息，对应 Python `IndustryInfo`
+/// 行业信息, 对应 Python `IndustryInfo`
 #[derive(Debug, Clone)]
 struct IndustryInfo {
     market_id: i32,
@@ -269,7 +269,7 @@ struct IndustryInfo {
     xblock5: String,
 }
 
-/// 加载行业配置，对应 Python `load_industry_blocks`
+/// 加载行业配置, 对应 Python `load_industry_blocks`
 fn load_industry_blocks() -> Vec<IndustryInfo> {
     let meta_path = crate::config::get_meta_path();
     let filepath = format!("{}/tdxhy.cfg", meta_path);
@@ -318,7 +318,7 @@ fn load_industry_blocks() -> Vec<IndustryInfo> {
     out
 }
 
-/// 行业成分股列表，对应 Python `industry_constituent_stock_list`
+/// 行业成分股列表, 对应 Python `industry_constituent_stock_list`
 fn industry_constituent_stock_list(hys: &[IndustryInfo], block: &str) -> Vec<String> {
     let mut lst: Vec<String> = Vec::new();
     for v in hys {
@@ -341,7 +341,7 @@ fn industry_constituent_stock_list(hys: &[IndustryInfo], block: &str) -> Vec<Str
 // 解析并生成板块CSV缓存文件
 // ============================================================
 
-/// 解析所有原始文件并生成板块CSV，对应 Python `parse_and_generate_block_file`
+/// 解析所有原始文件并生成板块CSV, 对应 Python `parse_and_generate_block_file`
 fn parse_and_generate_block_file() -> Option<String> {
     // 1) 加载 zs* 配置文件
     let bks_cfg = ["tdxzs.cfg", "tdxzs3.cfg"];
@@ -464,10 +464,10 @@ fn parse_and_generate_block_file() -> Option<String> {
 }
 
 // ============================================================
-// 同步板块文件（下载 + 解析 + 生成CSV）
+// 同步板块文件(下载 + 解析 + 生成CSV)
 // ============================================================
 
-/// 同步所有板块文件，对应 Python `sync_block_files`
+/// 同步所有板块文件, 对应 Python `sync_block_files`
 pub fn sync_block_files() -> Option<String> {
     log::info!("sector: sync_block_files start");
 
@@ -518,12 +518,12 @@ pub fn sync_block_files() -> Option<String> {
 // 缓存加载
 // ============================================================
 
-/// 加载缓存板块数据，必要时触发同步
+/// 加载缓存板块数据, 必要时触发同步
 /// 对应 Python `load_cache_block_infos`
 fn load_cache_block_infos() {
     let bk_filename = get_sector_filename();
 
-    // 如果CSV不存在或需要更新，先同步
+    // 如果CSV不存在或需要更新, 先同步
     if !Path::new(&bk_filename).exists() || crate::data::status::should_initialize_file(&bk_filename, crate::data::meta::exchange::Exchange::SSE) {
         log::info!("sector: cache missing or outdated, triggering sync_block_files");
         match sync_block_files() {
@@ -596,7 +596,7 @@ pub fn get_sector_list() -> Vec<Sector> {
         }
     }
 
-    // 触发加载（含首次同步）
+    // 触发加载(含首次同步)
     load_cache_block_infos();
 
     let cache = SECTOR_CACHE.lock().unwrap();
@@ -632,15 +632,15 @@ mod tests {
         }
     }
 
-    /// 测试缓存命中：第二次调用应该直接返回缓存
+    /// 测试缓存命中: 第二次调用应该直接返回缓存
     #[test]
     #[ignore]
     fn test_get_sector_list_cached() {
         let _ = env_logger::try_init();
-        // 第一次调用：触发下载+解析
+        // 第一次调用: 触发下载+解析
         let sectors1 = get_sector_list();
         assert!(!sectors1.is_empty());
-        // 第二次调用：应该命中缓存
+        // 第二次调用: 应该命中缓存
         let sectors2 = get_sector_list();
         assert!(!sectors2.is_empty());
         assert_eq!(sectors1.len(), sectors2.len());
@@ -706,8 +706,8 @@ mod tests {
     #[test]
     fn test_load_industry_blocks_nonexistent() {
         let hys = load_industry_blocks();
-        // 如果没有 tdxhy.cfg，应返回空
-        // 如果存在（测试环境），至少有数据
+        // 如果没有 tdxhy.cfg, 应返回空
+        // 如果存在(测试环境), 至少有数据
         log::info!("[sector test] load_industry_blocks returned {} entries", hys.len());
     }
 

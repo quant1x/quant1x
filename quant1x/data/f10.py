@@ -17,7 +17,7 @@ def cache_f10(date: str = None) -> DataFrame:
     从闪存数据中读取F10因子数据
     
     Args:
-        date (str, optional): 交易日期，格式为'YYYYMMDD'。如果未提供，则使用交易所最后一个交易日
+        date (str, optional): 交易日期, 格式为'YYYYMMDD'. 如果未提供, 则使用交易所最后一个交易日
     
     Returns:
         DataFrame: 包含F10因子数据的Pandas DataFrame
@@ -49,5 +49,5 @@ def get_f10(code: str, date: str = None) -> Dict[str, Any]:
     if result_df.empty:
         return {}
 
-    # 取第一行，转为字典
+    # 取第一行, 转为字典
     return result_df.iloc[0].to_dict()

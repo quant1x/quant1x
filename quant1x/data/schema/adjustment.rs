@@ -9,13 +9,13 @@ use crate::data::meta::{Exchange, Timestamp};
 pub enum XdxrCategory {
     /// 除权除息
     ExDividend = 1,
-    /// 送股上市（无偿）
+    /// 送股上市(无偿)
     BonusSharesListing = 2,
-    /// 非流通股上市（受限股解禁）
+    /// 非流通股上市(受限股解禁)
     RestrictedSharesListing = 3,
     /// 未知股本变动
     UnspecifiedCapitalAdjustment = 4,
-    /// 股本变化（保留，但慎用）
+    /// 股本变化(保留, 但慎用)
     GeneralCapitalAdjustment = 5,
     /// 增发新股
     NewShareIssuance = 6,
@@ -23,7 +23,7 @@ pub enum XdxrCategory {
     ShareRepurchase = 7,
     /// 增发新股上市
     NewSharesListing = 8,
-    /// 转配股上市（中国特有）
+    /// 转配股上市(中国特有)
     TransferredRightsSharesListing = 9,
     /// 可转债上市
     ConvertibleBondListing = 10,
@@ -158,15 +158,15 @@ pub struct XdxrEntry {
 pub struct CumulativeAdjustment {
     /// 复权日期
     pub timestamp: Timestamp,
-    /// 乘性因子（Multiplier），处理比例调整（如送股）
+    /// 乘性因子(Multiplier), 处理比例调整(如送股)
     pub m: f64,
-    /// 加性因子（Additive），处理平移调整（如分红）
+    /// 加性因子(Additive), 处理平移调整(如分红)
     pub a: f64,
-    /// 货币调整，用于价格复权（P' = P * (1 + ratio)）
+    /// 货币调整, 用于价格复权(P' = P * (1 + ratio))
     pub monetary_adjustment: f64,
-    /// 股本调整比率，用于成交量复权（V' = V * (1 + ratio)）
+    /// 股本调整比率, 用于成交量复权(V' = V * (1 + ratio))
     pub share_adjustment_ratio: f64,
-    /// 本次复权调整的序号（从1开始），用于追踪应用顺序
+    /// 本次复权调整的序号(从1开始), 用于追踪应用顺序
     pub no: i32,
 }
 

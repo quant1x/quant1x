@@ -45,13 +45,13 @@ type serverListWrapper struct {
 	Extension []serverInfo `yaml:"extension"` // 扩展服务器列表
 }
 
-// StandardProtocolHandler 与 C++ 版本保持一致，实现握手与心跳逻辑。
+// StandardProtocolHandler 与 C++ 版本保持一致, 实现握手与心跳逻辑.
 type StandardProtocolHandler struct {
 	timeout       time.Duration
 	checkInterval time.Duration
 }
 
-// NewStandardProtocolHandler 构造协议处理器。
+// NewStandardProtocolHandler 构造协议处理器.
 func NewStandardProtocolHandler(timeout, interval time.Duration) qio.NetworkOperationHandler {
 	if timeout <= 0 {
 		timeout = 10 * time.Second
@@ -146,7 +146,7 @@ func (h *StandardProtocolHandler) Keepalive(conn *net.TCPConn) (bool, error) {
 	return true, nil
 }
 
-// GetStdConnection 获取标准连接池中的连接，返回连接对象、关闭函数和可能的错误
+// GetStdConnection 获取标准连接池中的连接, 返回连接对象, 关闭函数和可能的错误
 func GetStdConnection() (*qio.Connection, func(), error) {
 	pool, err := getStandardConnectionPool()
 	if err != nil {
@@ -220,7 +220,7 @@ func initStandardConnectionPool() (*qio.TcpConnectionPool, error) {
 	return pool, nil
 }
 
-// ensureServerCachePath 确保服务器缓存路径存在，并返回缓存文件路径
+// ensureServerCachePath 确保服务器缓存路径存在, 并返回缓存文件路径
 // 返回:
 //
 //	string - 服务器缓存文件完整路径

@@ -29,13 +29,13 @@ namespace instruments {
     /// 获取所有证券代码列表 (symbol 格式, 如 sh600000)
     /// 对齐 Python instruments.py 中遍历 _SECURITY_MAP 获取 keys 的行为
     /// 首次调用时若缓存为空, 自动触发 init_securities()
-    std::vector<std::string> GetCodeList();
+    std::vector<std::string> get_code_list();
 
     /// 根据证券代码获取证券信息
     /// 对齐 Python get_instrument_info() / Rust get_instrument_info()
     /// @param symbol 证券代码 (支持 sh600000 / 600000.sh / 600000 等格式)
     /// @return 找到返回 Instrument, 否则 std::nullopt
-    std::optional<meta::Instrument> GetInstrumentInfo(const std::string& symbol);
+    std::optional<meta::Instrument> get_instrument_info(const std::string& symbol);
 
     /// 确保证券缓存已初始化 (供外部在策略启动时调用)
     /// 对齐 Rust ensure_securities_initialized()

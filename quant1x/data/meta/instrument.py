@@ -12,7 +12,7 @@ from .region import Region
     
 class Subtype(IntEnum):
     """资产子类型(高4位), 语义由主类型(InstrumentType)决定"""
-    DEFAULT = 0x00  # 默认/无特殊子类(如A股、普通指数)
+    DEFAULT = 0x00  # 默认/无特殊子类(如A股, 普通指数)
     """默认市场"""
     CHINEXT = 0x10  # 深交所, 创业板, ChiNext
     STAR    = 0x20  # 上交所, 科创板, STAR(The Science and Technology Innovation Board)
@@ -36,14 +36,14 @@ class Subtype(IntEnum):
     """私募市场"""
     MONEY   = 0xD0  # 货币(FOREX)
     """货币市场"""
-    SPECIAL = 0xE0  # 特殊变体：IPO(STOCK)、板块(INDEX)等
+    SPECIAL = 0xE0  # 特殊变体: IPO(STOCK), 板块(INDEX)等
     """特殊变体"""
-    TEMPORARY = 0xF0  # 临时市场：临时合约(FUTURE)等
+    TEMPORARY = 0xF0  # 临时市场: 临时合约(FUTURE)等
 
 class InstrumentType(IntEnum):
     """合约类型(低4位=资产大类, 高4位=子类型扩展)"""
     Unknown   = 0x00  # 未知类型
-    INDEX     = 0x01  # 指数(含普通指数、板块等)
+    INDEX     = 0x01  # 指数(含普通指数, 板块等)
     """指数"""
     STOCK     = 0x02  # 股票(默认A股)
     """股票"""
@@ -119,7 +119,7 @@ class InstrumentType(IntEnum):
         return self.base_type() == InstrumentType.STOCK
     
     def is_index(self) -> bool:
-        """判断是否为指数类(含普通指数、板块等)"""
+        """判断是否为指数类(含普通指数, 板块等)"""
         return self.base_type() == InstrumentType.INDEX  # ✅ 仅需判断低位
     
     def __str__(self) -> str:
@@ -174,10 +174,10 @@ class Instrument:
     
     def cache_dir(self) -> str:
         """
-        获取缓存目录路径，用于存储交易所相关数据文件
+        获取缓存目录路径, 用于存储交易所相关数据文件
         
         Note:
-            返回的路径包含交易所标识符作为目录名的一部分，以便区分不同交易所的数据
+            返回的路径包含交易所标识符作为目录名的一部分, 以便区分不同交易所的数据
         
         Returns:
             str: 缓存目录路径
@@ -255,7 +255,7 @@ class Instrument:
     
     def can_construct_symbol(self) -> bool:
         """
-        检查当前对象是否可以构造有效的交易符号。
+        检查当前对象是否可以构造有效的交易符号. 
         
         Args:
             无显式参数, 但依赖于对象属性:

@@ -43,7 +43,7 @@ namespace realtime {
         int64_t totalBidVol = 0;
         int64_t totalAskVol = 0;
 
-        // 加权挂单量（price × volume）
+        // 加权挂单量(price × volume)
         double weightedBid = 0.0;
         double weightedAsk = 0.0;
 
@@ -55,7 +55,7 @@ namespace realtime {
             weightedAsk += askPrices[i] * double(askVolumes[i]);
         }
 
-        // 简单 imbalance：(bid - ask) / (bid + ask)
+        // 简单 imbalance: (bid - ask) / (bid + ask)
         double simpleImbalance = 0.0;
         if (totalBidVol + totalAskVol > 0) {
             simpleImbalance = static_cast<double>(totalBidVol - totalAskVol) /
@@ -104,7 +104,7 @@ namespace realtime {
             file.open(path, std::ios::in | std::ios::out | std::ios::binary);
         }
 
-        // 移动指针到指定位置，并写入一个字节触发扩容
+        // 移动指针到指定位置, 并写入一个字节触发扩容
         file.seekp(required_size - 1);
         file.write("\0", 1);
 
@@ -121,7 +121,7 @@ namespace realtime {
     }
 
     void sync_snapshots() {
-        auto all_codes = instruments::GetCodeList();
+        auto all_codes = instruments::get_code_list();
         auto count = all_codes.size();
         filesystem::check_filepath(capnp_cache_filename, true);
         // 确保文件存在且大小合适
@@ -322,7 +322,7 @@ namespace realtime {
             auto new_reader = std::make_unique<capnp::FlatArrayMessageReader>(words);
             auto quoteList = new_reader->getRoot<QuoteList>();
 
-            // 4. 更新缓存（加锁）
+            // 4. 更新缓存(加锁)
             {
                 std::lock_guard<std::mutex> lock(cache_mutex);
                 cache_snapshots.clear();

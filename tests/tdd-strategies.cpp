@@ -55,7 +55,7 @@ TEST_CASE("strategy-backtest", "[strategies]") {
         };
         bars.push_back(barMain);
         bars[0].set_progress(0);
-        auto all_codes = instruments::GetCodeList();
+        auto all_codes = instruments::get_code_list();
         auto codeCount = all_codes.size();
         indicators::ProgressBar barCodes(
             indicators::option::ForegroundColor{indicators::Color::yellow},
@@ -127,7 +127,7 @@ TEST_CASE("strategy-backtest", "[strategies]") {
                         // 不存在订单, 则忽略
                     }
                 } else {
-                    // 不买也不买，hold持股, 计算当日浮动盈亏
+                    // 不买也不买, hold持股, 计算当日浮动盈亏
                     // 先看订单是否存在
                     auto it = orders.find(code);
                     if(it != orders.end()) {
@@ -440,7 +440,7 @@ private:
     // 执行交易
     void executeTrade(const BarData& bar, TradeDirection direction) {
         if (direction == TradeDirection::FLAT && backtest_data.positions.empty()) {
-            return;  // 无持仓且信号为平仓，不执行
+            return;  // 无持仓且信号为平仓, 不执行
         }
 
         // 创建订单
@@ -482,7 +482,7 @@ private:
 
     // 计算头寸大小
     double calculatePositionSize(double price) {
-        // 简单起见，使用固定比例(如账户资金的20%)
+        // 简单起见, 使用固定比例(如账户资金的20%)
         double position_value = backtest_data.account.current_capital * 0.2;
         return position_value / price;
     }
@@ -528,7 +528,7 @@ private:
                 pos.avg_price = total_cost / pos.quantity;
             } else {
                 // 反向交易(减仓或反转)
-                // 简化处理: 平掉原有仓位，开新仓位
+                // 简化处理: 平掉原有仓位, 开新仓位
                 double pnl = (trade.price - pos.avg_price) * pos.quantity *
                              (pos.direction == TradeDirection::LONG ? 1.0 : -1.0);
                 pos.realized_pnl += pnl;
@@ -588,7 +588,7 @@ private:
         backtest_data.result.total_return = (final - initial) / initial * 100.0;
 
         // 计算年化收益率(简化计算)
-        // 假设数据是日线，每年252个交易日
+        // 假设数据是日线, 每年252个交易日
         size_t num_days = backtest_data.result.equity_curve.size();
         double years = num_days / 252.0;
         backtest_data.result.annualized_return =
@@ -625,7 +625,7 @@ private:
         backtest_data.result.max_drawdown = max_drawdown;
 
     // 计算交易统计(简化)
-    // 原子成交事件数（每笔 fill）
+    // 原子成交事件数(每笔 fill)
     backtest_data.result.trade_events_count = backtest_data.trades.size();
         // ... 其他统计指标可以类似计算
     }
@@ -672,7 +672,7 @@ TEST_CASE("back-test-v0", "[strategy]") {
     // 2. 创建回测引擎
     BacktestEngine engine(config);
 
-    // 3. 加载市场数据(这里应该是从文件或数据库读取，示例中简化为手动创建)
+    // 3. 加载市场数据(这里应该是从文件或数据库读取, 示例中简化为手动创建)
     std::vector<BarData> market_data;
     // 填充market_data...
     // 实际应用中应该从CSV或数据库加载真实数据

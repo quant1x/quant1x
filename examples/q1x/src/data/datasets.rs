@@ -39,9 +39,9 @@ pub struct HistoricalTrade {
     pub direction: TradeDirection,
 }
 
-/// 交易类型枚举（对应Go中的TradeType）
+/// 交易类型枚举(对应Go中的TradeType)
 ///
-/// 基础类型为i32，与Go的int32保持一致
+/// 基础类型为i32, 与Go的int32保持一致
 #[derive(Debug, Clone, Copy, PartialEq, Serialize_repr, Deserialize_repr)]
 #[repr(i32)]
 pub enum TradeDirection {
@@ -54,7 +54,7 @@ pub enum TradeDirection {
     /// 中性盘 (对应Go的TDX_TICK_NEUTRAL)
     Neutral = 2,
 
-    /// 未知类型（出现在09:27历史数据中，暂时归类为中性盘）
+    /// 未知类型(出现在09:27历史数据中, 暂时归类为中性盘)
     Unknown = 3,
 }
 
@@ -104,7 +104,7 @@ impl From<TradeDirection> for i32 {
 //     let iter = df.iter().map(|row| {
 //         let values: Vec<_> = row.iter().collect();
 //
-//         // 手动解析字段（根据实际类型调整）
+//         // 手动解析字段(根据实际类型调整)
 //         HistoricalTrade {
 //             time: values[0].extract::<&str>().unwrap_or("").to_string(),
 //             price: values[1].extract::<f64>().unwrap(),
@@ -222,7 +222,7 @@ mod tests {
     //     let mut writer = BufWriter::new(file);
     //     let mut buffer = Vec::new();
     //
-    //     // 获取列的引用（按类型）
+    //     // 获取列的引用(按类型)
     //     let price_series = result.column("price")?.f64()?;
     //     let vol_series = result.column("vol")?.i64()?;
     //     let amount_series = result.column("amount")?.f64()?;
@@ -290,7 +290,7 @@ mod tests {
                 let original_len = buffer.len();
                 println!("1-buffer-length: {:?}", buffer.len());
                 if message_length == 0 {
-                    // 尝试解码消息头（长度前缀）
+                    // 尝试解码消息头(长度前缀)
                     match prost::decode_length_delimiter(&mut buffer) {
                         Ok(msg_len) => {
                             message_length = msg_len;
@@ -301,7 +301,7 @@ mod tests {
                 // 检查是否包含完整消息体
                 println!("buffer.len(): {}, total_needed: {}", buffer.len(), message_length);
                 if buffer.len() < message_length {
-                    break; // 数据不足，继续读取
+                    break; // 数据不足, 继续读取
                 }
                 let ldl = prost::length_delimiter_len(message_length);
                 println!("ldl: {:?}", ldl);
@@ -320,7 +320,7 @@ mod tests {
             }
         }
 
-        // 3. 检查剩余数据（可能包含不完整消息）
+        // 3. 检查剩余数据(可能包含不完整消息)
         if !buffer.is_empty() {
             eprintln!("Warning: {} bytes unprocessed", buffer.len());
         }

@@ -7,7 +7,7 @@ from ... import protocol
 
 
 class Heartbeat(protocol.BaseMessage):
-    """心跳（合并Request和Response）"""
+    """心跳(合并Request和Response)"""
     def __init__(self):
         super().__init__(Command.STD_HEARTBEAT)
         self.info = ""

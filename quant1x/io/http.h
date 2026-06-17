@@ -5,7 +5,7 @@
 #include <string>
 #include <cstdint>
 
-namespace io {
+namespace http {
     // If-Modified-Since
     std::tuple<std::string, int64_t> request(const std::string &url, int64_t fileLastModified = 0);
 }

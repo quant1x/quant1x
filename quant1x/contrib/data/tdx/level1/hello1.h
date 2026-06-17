@@ -53,7 +53,7 @@ namespace level1 {
 
 template <>
 struct fmt::formatter<level1::Hello1> {
-    // 解析格式化规则（这里不需要特殊处理，直接返回）
+    // 解析格式化规则(这里不需要特殊处理, 直接返回)
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
         return ctx.begin();
     }

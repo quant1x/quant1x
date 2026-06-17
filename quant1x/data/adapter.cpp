@@ -85,7 +85,7 @@ namespace data {
             }
         }
 
-        // 按 kind 排序（升序）
+        // 按 kind 排序(升序)
         std::sort(result.begin(), result.end(),
                   [](DataAdapter *a, DataAdapter *b) {
                       return a->Kind() < b->Kind();

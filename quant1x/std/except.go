@@ -33,7 +33,7 @@ func (e Exception) Code() int {
 	return e.code
 }
 
-// Success 判断异常是否为成功状态（code为0）
+// Success 判断异常是否为成功状态(code为0)
 func (e Exception) Success() bool {
 	return e.code == 0
 }

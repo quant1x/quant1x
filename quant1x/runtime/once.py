@@ -15,8 +15,8 @@ class RollingOnce:
     ):
         """
         :param name: 唯一标识
-        :param cron: Cron 表达式（如 "0 30 8 * * *"）
-        :param timezone: 时区（仅在首次创建全局调度器时生效）
+        :param cron: Cron 表达式(如 "0 30 8 * * *")
+        :param timezone: 时区(仅在首次创建全局调度器时生效)
         """
         self.name = name
         self._done = False
@@ -25,10 +25,10 @@ class RollingOnce:
         self._has_cron = cron is not None
 
         if cron is not None:
-            # 获取全局调度器（自动创建）
+            # 获取全局调度器(自动创建)
             scheduler = Scheduler.get_instance(timezone=timezone)
 
-            # 先移除可能存在的旧任务，避免冲突
+            # 先移除可能存在的旧任务, 避免冲突
             scheduler.remove_job(self._job_id, force=True)
 
             # 添加 reset 任务
@@ -56,7 +56,7 @@ class RollingOnce:
             logger.debug(f"[{self.name}] Reset triggered (was {'active' if was_done else 'idle'})")
 
     def close(self):
-        """手动清理（通常不需要，由全局调度器统一管理）"""
+        """手动清理(通常不需要, 由全局调度器统一管理)"""
         if self._has_cron:
             scheduler = Scheduler.get_instance()
             scheduler.remove_job(self._job_id, force=True)

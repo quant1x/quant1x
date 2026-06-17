@@ -31,12 +31,12 @@ struct ServerConfig {
     i64         latency_ms;  ///< 延迟
 };
 
-// 应用配置（包含服务器列表）
+// 应用配置(包含服务器列表)
 struct AppConfig {
     std::vector<ServerConfig> servers;
 };
 
-// 类型特征：判断是否为 vector
+// 类型特征: 判断是否为 vector
 template <typename T>
 struct is_vector : std::false_type {};
 
@@ -46,7 +46,7 @@ struct is_vector<std::vector<T, A>> : std::true_type {};
 template <typename T>
 constexpr bool is_vector_v = is_vector<T>::value;
 
-// YAML 反序列化器（修复 string_view 问题）
+// YAML 反序列化器(修复 string_view 问题)
 class YamlDeserializer {
 public:
     template <typename T>
@@ -57,7 +57,7 @@ public:
     }
 
 private:
-    // 主要：将 YAML 节点映射到结构体对象
+    // 主要: 将 YAML 节点映射到结构体对象
     template <typename T>
     static void deserialize_to_object(const YAML::Node &node, T &obj) {
         boost::pfr::for_each_field(obj, [&](auto &field, std::size_t idx) {
@@ -69,7 +69,7 @@ private:
         });
     }
 
-    // 基础字段解析（递归支持嵌套结构体、容器等）
+    // 基础字段解析(递归支持嵌套结构体, 容器等)
     template <typename T>
     static void deserialize_field(const YAML::Node &node, T &field) {
         if constexpr (std::is_same_v<T, std::string>) {
@@ -79,7 +79,7 @@ private:
         } else if constexpr (is_vector_v<T>) {
             deserialize_vector(node, field);
         } else {
-            // 假设是嵌套结构体，递归处理
+            // 假设是嵌套结构体, 递归处理
             deserialize_to_object(node, field);
         }
     }
@@ -102,7 +102,7 @@ private:
 // ================================================
 class YamlSerializer {
 public:
-    // 反序列化：YAML → struct
+    // 反序列化: YAML → struct
     template<typename T>
     static T deserialize(const YAML::Node& node) {
         T obj{};
@@ -110,7 +110,7 @@ public:
         return obj;
     }
 
-    // 序列化：struct → YAML
+    // 序列化: struct → YAML
     template<typename T>
     static YAML::Node serialize(const T& obj) {
         return serialize_to_node(obj);

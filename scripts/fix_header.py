@@ -4,8 +4,8 @@
 """
 一次性修复所有文件的头部
 
-这个脚本用于为项目中的所有Python文件添加统一的许可证头部。
-只在项目初始化时使用一次，不要重复运行。
+这个脚本用于为项目中的所有Python文件添加统一的许可证头部. 
+只在项目初始化时使用一次, 不要重复运行. 
 """
 
 import os
@@ -56,7 +56,7 @@ def should_add_header(filepath):
         has_coding = any('coding: utf-8' in line.lower() for line in lines[:5])
         has_copyright = any('Copyright' in line for line in lines[:10])
         
-        # 如果已经有编码声明但没有版权信息，需要添加
+        # 如果已经有编码声明但没有版权信息, 需要添加
         if has_coding and not has_copyright:
             return True
         
@@ -74,7 +74,7 @@ def should_add_header(filepath):
 def add_header_smart(filepath):
     """智能添加头部到文件"""
     try:
-        # 再次检查是否为空文件（防止在检查后文件被修改）
+        # 再次检查是否为空文件(防止在检查后文件被修改)
         if is_empty_file(filepath):
             print(f"⏭️  跳过空文件: {filepath}")
             return False
@@ -165,7 +165,7 @@ def main():
     
     print(f"📁 找到 {len(files)} 个Python文件")
     
-    # 检查文件，跳过空文件
+    # 检查文件, 跳过空文件
     need_header_files = []
     empty_files = []
     
@@ -189,7 +189,7 @@ def main():
     
     # 确认操作
     if len(need_header_files) > 10:
-        response = input(f"\n⚠️  将要修改 {len(need_header_files)} 个文件，确认继续? (y/N): ")
+        response = input(f"\n⚠️  将要修改 {len(need_header_files)} 个文件, 确认继续? (y/N): ")
         if response.lower() not in ('y', 'yes'):
             print("操作已取消")
             return 0

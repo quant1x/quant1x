@@ -16,7 +16,7 @@ use super::helpers::msg_sequence_id;
 // 请求头 (12 字节)
 // ============================================================
 
-/// 请求头，对应 Python `RequestHeader`
+/// 请求头, 对应 Python `RequestHeader`
 ///
 /// 布局 (小端): frame_type(u8) + sequence_id(u32) + packet_ctrl(u8) + body_wire_len(u16) + body_raw_len(u16) + command(u16) = 12 字节
 #[derive(Debug, Clone)]
@@ -30,7 +30,7 @@ pub struct RequestHeader {
 }
 
 impl RequestHeader {
-    /// 创建请求头，自动分配 sequence_id
+    /// 创建请求头, 自动分配 sequence_id
     pub fn new(cmd: Command, frame_type: u8) -> Self {
         Self {
             frame_type,
@@ -71,7 +71,7 @@ impl RequestHeader {
 // 响应头 (16 字节)
 // ============================================================
 
-/// 响应头，对应 Python `ResponseHeader`
+/// 响应头, 对应 Python `ResponseHeader`
 ///
 /// 布局 (小端): magic_number(u32) + frame_type(u8) + sequence_id(u32) + packet_ctrl(u8) + command(u16) + body_wire_len(u16) + body_raw_len(u16) = 16 字节
 #[derive(Debug, Clone)]
@@ -114,7 +114,7 @@ impl ResponseHeader {
         self.body_wire_len = bs.get_u16()?;
         self.body_raw_len = bs.get_u16()?;
 
-        // 尝试查找已知命令，未知则用 UNKNOWN
+        // 尝试查找已知命令, 未知则用 UNKNOWN
         self.command = Command::from_value(cmd_value)
             .copied()
             .unwrap_or_else(|| {
@@ -137,9 +137,9 @@ impl ResponseHeader {
 // 消息基类 — BaseMessage
 // ============================================================
 
-/// 消息基类，对应 Python `BaseMessage`
+/// 消息基类, 对应 Python `BaseMessage`
 ///
-/// 包含请求头和响应头，子类需实现 `serialize_request_body` 和 `deserialize_response_body`。
+/// 包含请求头和响应头, 子类需实现 `serialize_request_body` 和 `deserialize_response_body`. 
 pub trait BaseMessage {
     fn request_header(&self) -> &RequestHeader;
     fn request_header_mut(&mut self) -> &mut RequestHeader;
@@ -152,7 +152,7 @@ pub trait BaseMessage {
     /// 反序列化响应体
     fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError>;
 
-    /// 完整序列化请求（头 + 体）
+    /// 完整序列化请求(头 + 体)
     fn serialize_request(&mut self) -> Vec<u8> {
         let body = self.serialize_request_body();
         let header = self.request_header_mut();
@@ -188,7 +188,7 @@ pub trait BaseMessage {
 ///
 /// 对应 Python `_recv_exact`
 ///
-/// 兼容阻塞和非阻塞 socket：遇到 WouldBlock 时短暂等待后重试。
+/// 兼容阻塞和非阻塞 socket: 遇到 WouldBlock 时短暂等待后重试. 
 pub fn recv_exact<R: Read>(reader: &mut R, n: usize) -> std::io::Result<Vec<u8>> {
     let mut buf = vec![0u8; n];
     let mut offset = 0;
@@ -229,9 +229,9 @@ fn unzip(body: Vec<u8>, unzipped_size: usize) -> std::io::Result<Vec<u8>> {
 // process_level1 — 泛型协议处理
 // ============================================================
 
-/// 泛型 process 函数，对应 Python `process_level1_new`
+/// 泛型 process 函数, 对应 Python `process_level1_new`
 ///
-/// 发送请求、读取响应头、按需解压响应体、解析响应体。
+/// 发送请求, 读取响应头, 按需解压响应体, 解析响应体. 
 pub fn process_level1<M: BaseMessage, R: Read>(
     reader: &mut R,
     writer: &mut dyn std::io::Write,
@@ -241,7 +241,7 @@ pub fn process_level1<M: BaseMessage, R: Read>(
 }
 
 /// 对单一 Read+Write stream 执行 process_level1
-/// 使用阻塞 std::net::TcpStream，已设置读写超时
+/// 使用阻塞 std::net::TcpStream, 已设置读写超时
 pub fn process_level1_stream<M: BaseMessage, T: Read + Write>(
     stream: &mut T,
     msg: &mut M,
@@ -265,7 +265,7 @@ pub fn process_level1_stream<M: BaseMessage, T: Read + Write>(
     // 3. 反序列化响应头
     msg.deserialize_response_header(&resp_header_bytes)?;
 
-    // 4. 如果没有 body，直接返回
+    // 4. 如果没有 body, 直接返回
     if msg.response_zip_size() == 0 {
         return Ok(());
     }
@@ -276,7 +276,7 @@ pub fn process_level1_stream<M: BaseMessage, T: Read + Write>(
     let resp_body_bytes = recv_exact(stream, msg.response_zip_size())
         .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
 
-    // 6. 如果压缩长度 != 解压长度，zlib 解压
+    // 6. 如果压缩长度 != 解压长度, zlib 解压
     let final_body = if msg.response_zip_size() != msg.response_unzip_size() {
         unzip(resp_body_bytes, msg.response_unzip_size())
             .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?
@@ -320,7 +320,7 @@ fn process_level1_impl<M: BaseMessage, R: Read>(
     // 3. 反序列化响应头
     msg.deserialize_response_header(&resp_header_bytes)?;
 
-    // 4. 如果没有 body，直接返回
+    // 4. 如果没有 body, 直接返回
     if msg.response_zip_size() == 0 {
         return Ok(());
     }
@@ -331,7 +331,7 @@ fn process_level1_impl<M: BaseMessage, R: Read>(
     let resp_body_bytes = recv_exact(reader, msg.response_zip_size())
         .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
 
-    // 6. 如果压缩长度 != 解压长度，zlib 解压
+    // 6. 如果压缩长度 != 解压长度, zlib 解压
     let final_body = if msg.response_zip_size() != msg.response_unzip_size() {
         unzip(resp_body_bytes, msg.response_unzip_size())
             .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?

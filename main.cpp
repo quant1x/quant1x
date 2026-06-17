@@ -9,7 +9,7 @@
 #include <quant1x/config/config.h>
 #include <quant1x/cache.h>
 #include <quant1x/std/api.h>
-#include <quant1x/io/file.h>
+#include <quant1x/std/filesystem.h>
 #include <quant1x/runtime/core.h>
 
 // TDX 数据适配器 — 显式注册以强制 linker 拉入对应目标文件
@@ -25,7 +25,7 @@
 
 static std::string build_version_info() {
     std::ostringstream oss;
-    oss << "  quant1x project: "<< io::executable_name() << " - Build Info\n";
+    oss << "  quant1x project: "<< filesystem::executable_name() << " - Build Info\n";
     oss << "--------------------------------------------------------------------------------\n";
     oss << "               Version : " << VERSION_STRING << "\n";
     oss << "                Author : " << GIT_AUTHOR_NAME << " <" << GIT_AUTHOR_EMAIL << ">\n";
@@ -98,9 +98,9 @@ static std::string build_version_info() {
 // 应用入口
 int main(const int argc, const char *const argv[]) {
     // 提取默认的 program_name
-    std::string program_name = io::executable_name();
+    std::string program_name = filesystem::executable_name();
     std::string program_version = build_version_info();
-    // 创建主解析器，使用动态的 program_name
+    // 创建主解析器, 使用动态的 program_name
     argparse::ArgumentParser program(program_name, program_version);
     bool verbose = false;
     program.add_argument("--verbose")
@@ -124,7 +124,7 @@ int main(const int argc, const char *const argv[]) {
 
     program.add_subparser(service_command);
 
-    // 存储子命令解析器，确保其生命周期与主解析器一致
+    // 存储子命令解析器, 确保其生命周期与主解析器一致
     std::vector<std::unique_ptr<argparse::ArgumentParser>> subparsers;
 
     // 存储子命令名称与对应解析器的映射
@@ -137,7 +137,7 @@ int main(const int argc, const char *const argv[]) {
     }
     // 动态注册子命令
     for (auto &subcommand: quant1x::subcommands) {
-        // 创建子命令解析器，并使用 unique_ptr 管理其生命周期
+        // 创建子命令解析器, 并使用 unique_ptr 管理其生命周期
         auto sub_parser = std::make_unique<argparse::ArgumentParser>(subcommand.name);
         sub_parser->add_description(subcommand.help);
         for(auto flag : subcommand.args) {
@@ -151,7 +151,7 @@ int main(const int argc, const char *const argv[]) {
         // 将子命令解析器添加到主解析器中
         program.add_subparser(*sub_parser);
 
-        // 将子解析器存储到容器中，确保其生命周期足够长
+        // 将子解析器存储到容器中, 确保其生命周期足够长
         subparser_map[subcommand.name] = sub_parser.get();  // 保存子命令名称与解析器的映射
         subparsers.push_back(std::move(sub_parser));
     }

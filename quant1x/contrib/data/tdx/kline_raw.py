@@ -27,7 +27,7 @@ def frequency_to_kline_type(freq: Frequency) -> KLineType:
     将时间频率转换为对应的K线类型
     
     Args:
-        freq (Frequency): 时间频率对象，包含单位和数值
+        freq (Frequency): 时间频率对象, 包含单位和数值
     
     Returns:
         KLineType: 对应的K线类型枚举值
@@ -71,13 +71,13 @@ def validate_csv_columns(df: pd.DataFrame, required_columns: List[str],
     Args:
         df: pandas DataFrame
         required_columns: 必需的列名列表
-        filename: 文件名（用于日志）
+        filename: 文件名(用于日志)
         strict_order: 是否要求列的顺序严格匹配
 
     Returns:
         bool: 验证是否通过
     """
-    # 清理列名（去除空格），但保持原始大小写
+    # 清理列名(去除空格), 但保持原始大小写
     actual_columns = clean_column_names(df)
 
     # 方法1: 检查必需列是否存在
@@ -88,7 +88,7 @@ def validate_csv_columns(df: pd.DataFrame, required_columns: List[str],
         logger.error(f"期望列名: {required_columns}")
         return False
 
-    # 方法2: 检查列顺序（可选）
+    # 方法2: 检查列顺序(可选)
     if strict_order and actual_columns != required_columns:
         logger.warning(f"CSV文件 {filename} 列名顺序不匹配")
         logger.warning(f"期望顺序: {required_columns}")
@@ -104,7 +104,7 @@ def validate_csv_columns(df: pd.DataFrame, required_columns: List[str],
 
 def clean_column_names(df: pd.DataFrame) -> List[str]:
     """
-    清理列名：只去除空格和不可见字符，保持原始大小写格式
+    清理列名: 只去除空格和不可见字符, 保持原始大小写格式
 
     Args:
         df: 输入DataFrame
@@ -136,7 +136,7 @@ class BarRaw:
         根据复权因子调整K线价格数据
         
         Args:
-            factor: CumulativeAdjustment对象，包含复权因子
+            factor: CumulativeAdjustment对象, 包含复权因子
         """
         if hasattr(factor, 'apply'):
             self.open = factor.apply(self.open)
@@ -144,7 +144,7 @@ class BarRaw:
             self.high = factor.apply(self.high)
             self.low = factor.apply(self.low)
         else:
-            # 如果factor没有apply方法，假设它有m和a属性
+            # 如果factor没有apply方法, 假设它有m和a属性
             self.open = self.open * factor.m + factor.a
             self.close = self.close * factor.m + factor.a
             self.high = self.high * factor.m + factor.a
@@ -188,12 +188,12 @@ def read_kline_raw_from_csv(filename: str) -> List[BarRaw]:
     try:
         df = pd.read_csv(filename)
 
-        # 使用通用列名验证函数，默认保持原始格式
+        # 使用通用列名验证函数, 默认保持原始格式
         required_cols = BarRaw.headers()
         if not validate_csv_columns(df, required_cols, filename, strict_order=True):
             return klines
 
-        # 可选：如果需要处理列名问题，可以启用清理
+        # 可选: 如果需要处理列名问题, 可以启用清理
         # df = clean_column_names(df)
 
         # 数据类型验证和转换
@@ -252,7 +252,7 @@ def ensure_kline_raw_updated(inst: Instrument, freq: Frequency=FREQ_DAILY):
 
 def checkout_kline_raw(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[BarRaw]:
     """
-    获取指定证券的未复权K线数据，如果数据不存在则下载
+    获取指定证券的未复权K线数据, 如果数据不存在则下载
     
     Args:
         code (str): 证券代码

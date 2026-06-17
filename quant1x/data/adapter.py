@@ -39,7 +39,7 @@ class Schema(ABC):
 
     @abstractmethod
     def key(self) -> str:
-        """数据关键词，key与cache落地强关联"""
+        """数据关键词, key与cache落地强关联"""
         pass
 
     @abstractmethod
@@ -49,7 +49,7 @@ class Schema(ABC):
 
     @abstractmethod
     def usage(self) -> str:
-        """控制台参数提示信息，数据描述"""
+        """控制台参数提示信息, 数据描述"""
         pass
 
 
@@ -144,7 +144,7 @@ def plugins_with_name(plugin_type: Kind, keywords: List[str]) -> List[DataAdapte
 
 
 def plugins(mask: Kind = 0) -> List[DataAdapter]:
-    """返回按 kind 排序的适配器列表。mask 为 0 返回全部。"""
+    """返回按 kind 排序的适配器列表. mask 为 0 返回全部. """
     with _plugin_mutex:
         plugin_list = []
         for plugin in _plugin_map.values():
@@ -166,5 +166,5 @@ class register:
             plugin = plugin_class()
             register_plugin(plugin)
         except PluginAlreadyExistsError:
-            # 插件已存在，忽略
+            # 插件已存在, 忽略
             pass

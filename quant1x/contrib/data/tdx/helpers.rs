@@ -14,9 +14,9 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 static SEQ_ID: AtomicU32 = AtomicU32::new(0);
 
-/// 生成并返回一个全局唯一的序列ID。
+/// 生成并返回一个全局唯一的序列ID. 
 ///
-/// 每次调用时, 序列ID会递增1, 并保证在32位无符号整数范围内循环(0xFFFFFFFF)。
+/// 每次调用时, 序列ID会递增1, 并保证在32位无符号整数范围内循环(0xFFFFFFFF). 
 pub fn msg_sequence_id() -> u32 {
     SEQ_ID.fetch_add(1, Ordering::SeqCst).wrapping_add(1)
 }
@@ -25,9 +25,9 @@ pub fn msg_sequence_id() -> u32 {
 // Varint 编解码 (Python helpers.py 28-85)
 // ============================================================
 
-/// 将整数编码为 varint 字节序列。
+/// 将整数编码为 varint 字节序列. 
 ///
-/// 返回值为包含编码后字节的 `Vec<u8>`。
+/// 返回值为包含编码后字节的 `Vec<u8>`. 
 pub fn varint_encode(value: i64) -> Vec<u8> {
     let mut buf = Vec::new();
     let sign = value < 0;
@@ -60,9 +60,9 @@ pub fn varint_encode(value: i64) -> Vec<u8> {
     buf
 }
 
-/// 从 `data` 的位置 `pos` 解码一个 varint。
+/// 从 `data` 的位置 `pos` 解码一个 varint. 
 ///
-/// 返回 `(value, new_pos)`，其中 `new_pos` 是下一个未读取的索引位置。
+/// 返回 `(value, new_pos)`, 其中 `new_pos` 是下一个未读取的索引位置. 
 pub fn varint_decode(data: &[u8], pos: usize) -> (i64, usize) {
     if pos >= data.len() {
         panic!("varint_decode: index out of range");
@@ -96,7 +96,7 @@ pub fn varint_decode(data: &[u8], pos: usize) -> (i64, usize) {
 // 日期时间解析
 // ============================================================
 
-/// 对应 C++ helpers::getDatetimeFromUint32，用于从压缩的日期/分钟编码中恢复年月日时分
+/// 对应 C++ helpers::getDatetimeFromUint32, 用于从压缩的日期/分钟编码中恢复年月日时分
 pub fn get_datetime_from_u32(
     category: i32,
     zipday: u32,
@@ -122,9 +122,9 @@ pub fn get_datetime_from_u32(
 // 整数转浮点价格 (C++ helpers::integerToFloat64)
 // ============================================================
 
-/// 将 32 位无符号整数解释并转换为浮点数（与 level1 协议中使用的转换一致）。
+/// 将 32 位无符号整数解释并转换为浮点数(与 level1 协议中使用的转换一致). 
 ///
-/// 该函数把输入分解成四个字节并依照协议的位权与指数规则重建浮点值。
+/// 该函数把输入分解成四个字节并依照协议的位权与指数规则重建浮点值. 
 pub fn int_to_float64(v: u32) -> f64 {
     if v == 0 {
         return 0.0;
@@ -175,7 +175,7 @@ pub fn int_to_float64(v: u32) -> f64 {
 // 默认价格基数 (Python helpers.py default_base_unit)
 // ============================================================
 
-/// TDX 市场 ID 常量（本地定义，不依赖外部 exchange 模块）
+/// TDX 市场 ID 常量(本地定义, 不依赖外部 exchange 模块)
 pub const TDX_MARKET_SHENZHEN: i32 = 0;
 pub const TDX_MARKET_SHANGHAI: i32 = 1;
 pub const TDX_MARKET_BEIJING: i32 = 2;
@@ -183,13 +183,13 @@ pub const TDX_MARKET_HONGKONG: i32 = 31;
 pub const TDX_MARKET_HKFE: i32 = 27;
 pub const TDX_MARKET_USA: i32 = 74;
 
-/// 获取价格计算所用的默认基数（单位）。
+/// 获取价格计算所用的默认基数(单位). 
 ///
-/// 参数：
-///     market_id: 市场编号（例如 0=深市, 1=沪市）
+/// 参数: 
+///     market_id: 市场编号(例如 0=深市, 1=沪市)
 ///     code: 证券代码
 ///
-/// 返回：基数（`100.0` 或 `1000.0`）。
+/// 返回: 基数(`100.0` 或 `1000.0`). 
 pub fn default_base_unit(market_id: i32, code: &str) -> f64 {
     let s = code.trim();
     if s.is_empty() {
@@ -197,11 +197,11 @@ pub fn default_base_unit(market_id: i32, code: &str) -> f64 {
     }
 
     // market_id: 1=ShangHai, 0=ShenZhen
-    // 沪市 5 开头（ETF/基金）→ 1000
+    // 沪市 5 开头(ETF/基金)→ 1000
     if market_id == TDX_MARKET_SHANGHAI && s.as_bytes()[0] == b'5' {
         return 1000.0;
     }
-    // 深市 159 开头（ETF）→ 1000
+    // 深市 159 开头(ETF)→ 1000
     if market_id == TDX_MARKET_SHENZHEN && s.starts_with("159") {
         return 1000.0;
     }

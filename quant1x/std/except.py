@@ -58,7 +58,7 @@ class Exception(Exception, Throwable):
         检查异常是否表示成功状态
 
         Returns:
-            bool: 如果 code == 0 则返回 True，表示成功
+            bool: 如果 code == 0 则返回 True, 表示成功
         """
         return self._code == 0
 

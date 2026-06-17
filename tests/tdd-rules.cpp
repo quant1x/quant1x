@@ -36,7 +36,7 @@ TEST_CASE("rule-test", "[rules]") {
     if (err == engine::RuleError::OK) {
         std::cout << "通过的规则数: " << passed.size() << std::endl;
     } else {
-        std::cerr << "规则失败，错误码: " << engine::to_string(err) << std::endl;
+        std::cerr << "规则失败, 错误码: " << engine::to_string(err) << std::endl;
     }
 
     // 打印规则列表

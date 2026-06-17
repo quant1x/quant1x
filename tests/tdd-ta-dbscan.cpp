@@ -124,7 +124,7 @@ TEST_CASE("dbscan-v1", "[ta]") {
 
     int numClusters = dbscan.run();
 
-    cout << "找到 " << numClusters << " 个簇：" << endl;
+    cout << "找到 " << numClusters << " 个簇: " << endl;
     for (size_t i = 0; i < dbscan.points.size(); ++i) {
         cout << "点 (" << dbscan.points[i].x << ", " << dbscan.points[i].y
              << ") 属于簇: " << dbscan.points[i].cluster << endl;

@@ -38,7 +38,7 @@ public:
         row_count_ = data.size();
     }
 
-    // 从结构体 vector 自动构建 DataFrame（带字段名）
+    // 从结构体 vector 自动构建 DataFrame(带字段名)
     template <typename T>
     static DataFrame from_struct_vector(const std::vector<T>& data) {
         DataFrame df;
@@ -48,7 +48,7 @@ public:
         // 使用 Boost.PFR 获取字段数量
         constexpr size_t field_count = boost::pfr::tuple_size_v<T>;
 
-        // 为每个字段创建列（带字段名）
+        // 为每个字段创建列(带字段名)
         [&]<size_t... I>(std::index_sequence<I...>) {
             (create_column_for_field<T, I>(df, data), ...);
         }(std::make_index_sequence<field_count>{});
@@ -57,7 +57,7 @@ public:
     }
 
 private:
-    // 为特定字段创建列（带字段名）
+    // 为特定字段创建列(带字段名)
     template <typename T, size_t I>
     static void create_column_for_field(DataFrame& df, const std::vector<T>& data) {
         using FieldType = std::decay_t<decltype(boost::pfr::get<I>(data[0]))>;
@@ -111,8 +111,8 @@ public:
         const size_t display_head_rows = should_truncate ? 5 : row_count_;
         const size_t display_tail_rows = should_truncate ? 5 : 0;
         const size_t index_col_width = std::max(
-            static_cast<size_t>(4), // 最小宽度为3（"No."和单数字）
-            std::to_string(row_count_ - 1).size() + 1 // 最大索引数字的位数+1（例如2453→宽度5）
+            static_cast<size_t>(4), // 最小宽度为3("No."和单数字)
+            std::to_string(row_count_ - 1).size() + 1 // 最大索引数字的位数+1(例如2453→宽度5)
         );
 
         // 1. 计算各列最大宽度
@@ -131,7 +131,7 @@ public:
                 for (size_t row = 0; row < display_head_rows; ++row) {
                     update_width(vec, row);
                 }
-                // 后N行（如果需要截断）
+                // 后N行(如果需要截断)
                 if (should_truncate) {
                     for (size_t row = row_count_ - display_tail_rows; row < row_count_; ++row) {
                         update_width(vec, row);
@@ -170,7 +170,7 @@ public:
             print_row(row);
         }
 
-        // 打印省略行（如果需要）
+        // 打印省略行(如果需要)
         if (should_truncate && row_count_ > display_head_rows + display_tail_rows) {
             oss << std::setw(index_col_width) << std::right << "..." << " ";
             for (size_t col = 0; col < column_count(); ++col) {
@@ -179,7 +179,7 @@ public:
             oss << "\n";
         }
 
-        // 打印后N行（如果需要截断）
+        // 打印后N行(如果需要截断)
         if (should_truncate) {
             for (size_t row = row_count_ - display_tail_rows; row < row_count_; ++row) {
                 print_row(row);
@@ -251,7 +251,7 @@ public:
     }
 private:
 
-    // 辅助函数：不区分大小写的字符串比较
+    // 辅助函数: 不区分大小写的字符串比较
     static bool iequals(const std::string& a, const std::string& b) {
         return std::equal(a.begin(), a.end(), b.begin(), b.end(),
                           [](char a, char b) {
@@ -259,7 +259,7 @@ private:
                           });
     }
 
-    // 辅助函数：更新列宽
+    // 辅助函数: 更新列宽
     template <typename T>
     static void update_col_width(size_t& current_width, const T& value) {
         std::ostringstream tmp;

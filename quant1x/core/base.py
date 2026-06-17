@@ -26,7 +26,7 @@ _QUANT1X_BASEDATA_PATH = None
 
 def get_base_path() -> str:
     """
-    返回默认的基础路径，如果无法展开用户目录则返回默认路径
+    返回默认的基础路径, 如果无法展开用户目录则返回默认路径
     """
     global _QUANT1X_BASEDATA_PATH
     if _QUANT1X_BASEDATA_PATH is None:

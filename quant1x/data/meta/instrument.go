@@ -12,7 +12,7 @@ import (
 type Subtype uint8
 
 const (
-	SubtypeDefault        Subtype = 0x00 // 默认/无特殊子类(如A股、普通指数), 默认市场
+	SubtypeDefault        Subtype = 0x00 // 默认/无特殊子类(如A股, 普通指数), 默认市场
 	SubtypeChiNext        Subtype = 0x10 // 深交所, 创业板, ChiNext
 	SubtypeStar           Subtype = 0x20 // 上交所, 科创板, STAR(The Science and Technology Innovation Board)
 	SubtypeB              Subtype = 0x30 // B股(STOCK)/ 认购(OPTION预留), B股市场
@@ -24,8 +24,8 @@ const (
 	SubtypeMutual         Subtype = 0xB0 // 公募市场
 	SubtypePrivate        Subtype = 0xC0 // 私募市场
 	SubtypeMoney          Subtype = 0xD0 // 货币(FOREX), 货币市场
-	SubtypeSpecial        Subtype = 0xE0 // 特殊变体：IPO(STOCK)、板块(INDEX)等
-	SubtypeTemporary      Subtype = 0xF0 // 临时市场：临时合约(FUTURE)等
+	SubtypeSpecial        Subtype = 0xE0 // 特殊变体: IPO(STOCK), 板块(INDEX)等
+	SubtypeTemporary      Subtype = 0xF0 // 临时市场: 临时合约(FUTURE)等
 )
 
 // InstrumentType 合约类型(低4位=资产大类, 高4位=子类型扩展)
@@ -33,7 +33,7 @@ type InstrumentType uint8
 
 const (
 	InstrumentTypeUnknown   InstrumentType = 0x00 // 未知类型
-	InstrumentTypeIndex     InstrumentType = 0x01 // 指数(含普通指数、板块等)
+	InstrumentTypeIndex     InstrumentType = 0x01 // 指数(含普通指数, 板块等)
 	InstrumentTypeStock     InstrumentType = 0x02 // 股票(默认A股)
 	InstrumentTypeFund      InstrumentType = 0x03 // 基金
 	InstrumentTypeBond      InstrumentType = 0x04 // 债券
@@ -85,7 +85,7 @@ func (it InstrumentType) IsStock() bool {
 	return it.BaseType() == InstrumentTypeStock
 }
 
-// IsIndex 判断是否为指数类(含普通指数、板块等)
+// IsIndex 判断是否为指数类(含普通指数, 板块等)
 func (it InstrumentType) IsIndex() bool {
 	return it.BaseType() == InstrumentTypeIndex
 }
@@ -204,7 +204,7 @@ func (i *Instrument) Symbol() string {
 	return fmt.Sprintf("%s.%s", i.Ticker, i.Exchange.Identifier())
 }
 
-// CacheDir 获取缓存目录路径，用于存储交易所相关数据文件
+// CacheDir 获取缓存目录路径, 用于存储交易所相关数据文件
 func (i *Instrument) CacheDir() string {
 	return strings.ToLower(i.Exchange.String())
 }

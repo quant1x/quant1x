@@ -303,10 +303,10 @@ void init_securities() {
 }
 
 // ============================================================
-// GetCodeList() — 返回所有 symbol 字符串
+// get_code_list() — 返回所有 symbol 字符串
 // 首次调用时若缓存为空, 自动触发 init_securities()
 // ============================================================
-std::vector<std::string> GetCodeList() {
+std::vector<std::string> get_code_list() {
     if (!load_securities()) {
         // 缓存为空或文件不存在, 尝试初始化
         spdlog::info("[tdx/instruments] cache empty, triggering init_securities()...");
@@ -325,11 +325,11 @@ std::vector<std::string> GetCodeList() {
 }
 
 // ============================================================
-// GetInstrumentInfo() — 查找单个证券
+// get_instrument_info() — 查找单个证券
 // ============================================================
-std::optional<meta::Instrument> GetInstrumentInfo(const std::string& symbol) {
+std::optional<meta::Instrument> get_instrument_info(const std::string& symbol) {
     std::string security_code = data::correct_security_code(symbol);
-    spdlog::debug("[tdx/instruments] GetInstrumentInfo: symbol={}, security_code={}", symbol, security_code);
+    spdlog::debug("[tdx/instruments] get_instrument_info: symbol={}, security_code={}", symbol, security_code);
 
     load_securities();
 

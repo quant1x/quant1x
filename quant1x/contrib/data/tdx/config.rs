@@ -43,7 +43,7 @@ pub const CRON_EXPR_SERVER_INIT: &str = "0 55 8 * * MON-FRI";
 // ServerInfo
 // ============================================================
 
-/// 服务器信息, 对应 Python `_config.py` 中的服务器字典。
+/// 服务器信息, 对应 Python `_config.py` 中的服务器字典. 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ServerInfo {
     pub source: String,
@@ -61,11 +61,11 @@ impl ServerInfo {
 }
 
 // ============================================================
-// 标准服务器候选列表 (来自通达信、中信证券、华泰证券、国泰君安)
+// 标准服务器候选列表 (来自通达信, 中信证券, 华泰证券, 国泰君安)
 // 完整对齐 Python `_config.py:StandardServerList`
 // ============================================================
 
-/// 返回完整的标准行情服务器候选列表。
+/// 返回完整的标准行情服务器候选列表. 
 pub fn standard_server_list() -> Vec<ServerInfo> {
     vec![
         // ======================== 通达信 ========================
@@ -215,7 +215,7 @@ pub fn standard_server_list() -> Vec<ServerInfo> {
 // 完整对齐 Python `_config.py:ExtensionServerList`
 // ============================================================
 
-/// 返回通达信官方的扩展市场服务器候选列表 (支持港股金融指数)。
+/// 返回通达信官方的扩展市场服务器候选列表 (支持港股金融指数). 
 pub fn extension_server_list() -> Vec<ServerInfo> {
     vec![
         // ======================== 通达信 ========================
@@ -252,7 +252,7 @@ pub fn extension_server_list() -> Vec<ServerInfo> {
 // 完整对齐 Python `_config.py:ExtensionServerList2`
 // ============================================================
 
-/// 返回券商版本的扩展市场服务器候选列表 (不支持港股金融指数)。
+/// 返回券商版本的扩展市场服务器候选列表 (不支持港股金融指数). 
 pub fn extension_server_list2() -> Vec<ServerInfo> {
     vec![
         // ======================== 中信证券 ========================
@@ -308,9 +308,9 @@ fn cache_filename() -> Option<PathBuf> {
     Some(p)
 }
 
-/// 将服务器字典写入 YAML 缓存文件。
+/// 将服务器字典写入 YAML 缓存文件. 
 ///
-/// 对应 Python `_config.py:save_cached_servers()`。
+/// 对应 Python `_config.py:save_cached_servers()`. 
 pub fn save_cached_servers(servers: &BTreeMap<String, Vec<ServerInfo>>) {
     let Some(path) = cache_filename() else {
         return;
@@ -325,9 +325,9 @@ pub fn save_cached_servers(servers: &BTreeMap<String, Vec<ServerInfo>>) {
     }
 }
 
-/// 从 YAML 缓存文件中读取服务器列表。
+/// 从 YAML 缓存文件中读取服务器列表. 
 ///
-/// 对应 Python `_config.py:load_cached_servers()`。
+/// 对应 Python `_config.py:load_cached_servers()`. 
 /// - key: "standard" 或 "extension"
 pub fn load_cached_servers(key: &str) -> Vec<ServerInfo> {
     let Some(path) = cache_filename() else {
@@ -364,10 +364,10 @@ pub fn load_cached_servers(key: &str) -> Vec<ServerInfo> {
 // 服务器探测
 // ============================================================
 
-/// 探测单个候选服务器的连通性。
+/// 探测单个候选服务器的连通性. 
 ///
-/// 对应 Python `_config.py:_try_probe_one()`。
-/// 使用标准协议握手进行验证。
+/// 对应 Python `_config.py:_try_probe_one()`. 
+/// 使用标准协议握手进行验证. 
 fn try_probe_one(
     candidate: &ServerInfo,
     connect_timeout_ms: i32,
@@ -448,9 +448,9 @@ fn try_probe_one(
     }
 }
 
-/// 并行探测并筛选可用的服务器。
+/// 并行探测并筛选可用的服务器. 
 ///
-/// 对应 Python `_config.py:detect()`。
+/// 对应 Python `_config.py:detect()`. 
 ///
 /// # 参数
 /// * `elapsed_time_ms` - 探测超时时间 (毫秒), 默认 100ms
@@ -477,9 +477,9 @@ pub fn detect(
     selected.insert("standard".to_string(), standard_servers);
 
     // ---- 探测扩展行情服务器 ----
-    // 扩展行情使用 ExtensionProtocolHandler，对应 Python ExtensionProtocolHandler.handshake
+    // 扩展行情使用 ExtensionProtocolHandler, 对应 Python ExtensionProtocolHandler.handshake
     let extension_candidates = extension_server_list();
-    // 合并券商版扩展服务器列表 (list2 端口不同，暂不混用)
+    // 合并券商版扩展服务器列表 (list2 端口不同, 暂不混用)
     //extension_candidates.extend(extension_server_list2());
     log::info!("Starting detection for extension servers, total candidates: {}", extension_candidates.len());
 
@@ -490,9 +490,9 @@ pub fn detect(
     selected
 }
 
-/// 并行探测扩展行情候选服务器列表。
+/// 并行探测扩展行情候选服务器列表. 
 ///
-/// 使用 ExtensionProtocolHandler 进行协议握手 (ExtSynchronizeRequest, 0x2454)。
+/// 使用 ExtensionProtocolHandler 进行协议握手 (ExtSynchronizeRequest, 0x2454). 
 fn detect_extension_servers(
     candidates: &[ServerInfo],
     elapsed_time_ms: i64,
@@ -558,9 +558,9 @@ fn detect_extension_servers(
     results.into_iter().take(limit).collect()
 }
 
-/// 探测单个扩展行情候选服务器的连通性。
+/// 探测单个扩展行情候选服务器的连通性. 
 ///
-/// 使用 ExtensionProtocolHandler 进行协议握手 (ExtSynchronizeRequest, 0x2454)。
+/// 使用 ExtensionProtocolHandler 进行协议握手 (ExtSynchronizeRequest, 0x2454). 
 fn try_probe_extension_one(
     candidate: &ServerInfo,
     connect_timeout_ms: i32,
@@ -635,7 +635,7 @@ fn try_probe_extension_one(
     }
 }
 
-/// 并行探测给定候选服务器列表。
+/// 并行探测给定候选服务器列表. 
 fn detect_servers(
     candidates: &[ServerInfo],
     elapsed_time_ms: i64,

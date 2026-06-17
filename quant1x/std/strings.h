@@ -26,7 +26,7 @@ namespace strings {
         return from(start, N);
     }
 
-    // 将字符串转为 T 类型，失败则返回默认值
+    // 将字符串转为 T 类型, 失败则返回默认值
     template<typename T>
     inline T from_string(const std::string& s, T default_val= T{}) {
         if (s.empty()) {
@@ -37,7 +37,7 @@ namespace strings {
         T val{};
         iss >> val;
 
-        // 如果转换失败，仍返回默认值
+        // 如果转换失败, 仍返回默认值
         if (iss.fail() || iss.bad()) {
             return default_val;
         }
@@ -163,7 +163,7 @@ namespace strings {
 //        std::is_same_v<StringT, std::string_view>
 //    >;
 //
-//    // 约束 DelimiterT 只能是 char、std::string 或 std::string_view
+//    // 约束 DelimiterT 只能是 char, std::string 或 std::string_view
 //    template <typename DelimiterT>
 //    using EnableIfDelimiterLike = std::enable_if_t<
 //        std::is_same_v<DelimiterT, char> ||
@@ -237,23 +237,23 @@ namespace strings {
         return str;
     }
 
-    // 安全小写转换（仅修改A-Z）
+    // 安全小写转换(仅修改A-Z)
     inline char* strtolc(char *str) {
         if (!str) return NULL; // 处理NULL输入
 
         for (unsigned char *p = (unsigned char*)str; *p; p++) {
-            // 位运算+范围判断：仅修改A-Z，避免影响其他字符
+            // 位运算+范围判断: 仅修改A-Z, 避免影响其他字符
             *p = ( *p >= 'A' && *p <= 'Z' ) ? (*p | 0x20) : *p;
         }
         return str;
     }
 
-    // 安全大写转换（仅修改a-z）
+    // 安全大写转换(仅修改a-z)
     inline char* strtouc(char *str) {
         if (!str) return NULL;
 
         for (unsigned char *p = (unsigned char*)str; *p; p++) {
-            // 位运算+范围判断：仅修改a-z，避免影响其他字符
+            // 位运算+范围判断: 仅修改a-z, 避免影响其他字符
             *p = ( *p >= 'a' && *p <= 'z' ) ? (*p & ~0x20) : *p;
         }
         return str;
@@ -263,7 +263,7 @@ namespace strings {
     // 字符串(std::string) 大小写转换
     // ==============================
 
-//    // 使用模板 + SFINAE 禁止非 std::string 类型（可用于通用库）
+//    // 使用模板 + SFINAE 禁止非 std::string 类型(可用于通用库)
 //    template <typename T>
 //    std::enable_if_t<std::is_same_v<T, std::string>, std::string>
 //    to_lower(const T& origin) {
@@ -272,7 +272,7 @@ namespace strings {
 //        return str;
 //    }
 //
-//    // 使用模板 + SFINAE 禁止非 std::string 类型（可用于通用库）
+//    // 使用模板 + SFINAE 禁止非 std::string 类型(可用于通用库)
 //    template <typename T>
 //    std::enable_if_t<std::is_same_v<T, std::string>, std::string>
 //    to_upper(const T& origin) {
@@ -315,7 +315,7 @@ namespace strings {
 
     /**
      * @brief 检查字符串是否以指定前缀列表中的任一前缀开头
-     * @tparam Container 容器类型（支持vector, initializer_list等）
+     * @tparam Container 容器类型(支持vector, initializer_list等)
      * @param str 目标字符串
      * @param prefixes 前缀容器
      * @return 是否存在匹配的前缀
@@ -354,7 +354,7 @@ namespace strings {
         return false;
     }
 
-    // 工具函数：去除双引号
+    // 工具函数: 去除双引号
     inline std::string remove_quotes(const std::string& s) {
         std::string processed = trim(s);
         if (processed.size() >= 2 && processed.front() == '"' && processed.back() == '"') {
@@ -368,7 +368,7 @@ namespace strings {
     // ==============================
 
 //    /**
-//     * @brief  string转换其它数据类型 主模板（拦截未支持的类型）
+//     * @brief  string转换其它数据类型 主模板(拦截未支持的类型)
 //     * @tparam T
 //     * @param str
 //     * @param out_value
@@ -380,7 +380,7 @@ namespace strings {
 //        return false;
 //    }
 
-    //  数值类型的通用实现（int, double, float 等）
+    //  数值类型的通用实现(int, double, float 等)
     template<typename T>
     //std::enable_if_t<std::is_arithmetic_v<T>, bool>
     inline bool try_parse(const std::string& str, T& out_value) {
@@ -403,7 +403,7 @@ namespace strings {
 //    }
 
     /**
-     * @brief 特化：bool 类型
+     * @brief 特化: bool 类型
      * @param str
      * @param out_value
      * @return
@@ -431,14 +431,14 @@ namespace strings {
         return false;
     }
 
-    // 特化：std::string
+    // 特化: std::string
     template<>
     inline bool try_parse<std::string>(const std::string& str, std::string& out_value) {
         out_value = str;
         return true;
     }
 
-//    // 特化：std::vector<T>
+//    // 特化: std::vector<T>
 //    template<typename T>
 //    inline bool try_parse(const std::string& str, std::vector<T>& out_value) {
 //        std::string processed = remove_quotes(str);
@@ -461,36 +461,36 @@ namespace strings {
     // 类型 T → 字符串(std::string)
     // ==============================
 
-//    // 类型 T → 字符串 主模板声明（未定义）
+//    // 类型 T → 字符串 主模板声明(未定义)
 //    template <typename T>
 //    std::string to_string(const T& value);
 
-    // 特化：int, double, float 等数值类型
+    // 特化: int, double, float 等数值类型
     template <typename T>
     //std::enable_if_t<std::is_arithmetic_v<T>, std::string>
     inline std::string to_string(const T& value) {
         return std::to_string(value);
     }
 
-    // 特化：bool 类型
+    // 特化: bool 类型
     template <>
     inline std::string to_string<bool>(const bool& value) {
         return value ? "true" : "false";
     }
 
-    // 特化：std::string
+    // 特化: std::string
     template <>
     inline std::string to_string<std::string>(const std::string& value) {
         return value;
     }
 
-    // 特化：const char*
+    // 特化: const char*
     template <>
     inline std::string to_string<const char*>(const char* const& value) {
         return value;
     }
 
-    // 特化：char*
+    // 特化: char*
     template <>
     inline std::string to_string<char*>(char* const& value) {
         return value;
@@ -502,7 +502,7 @@ namespace strings {
         return std::string(value);
     }
 
-    // 特化：std::vector<T>
+    // 特化: std::vector<T>
     template <typename T>
     inline std::string to_string(const std::vector<T>& vec) {
         std::ostringstream oss;
@@ -521,7 +521,7 @@ namespace strings {
     // 将 string 的每个字节转为十六进制字符串
     std::string to_hex_string(const std::string& input);
 
-    // 将字节数组转换为十六进制字符串（默认大写）
+    // 将字节数组转换为十六进制字符串(默认大写)
     std::string bytesToHex(const std::vector<uint8_t>& bytes, bool uppercase = true);
     // 将16进制字符串传承uint8_t数组
     std::vector<uint8_t> hexToBytes(const std::string& hex);

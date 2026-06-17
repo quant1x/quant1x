@@ -42,7 +42,7 @@ fn get_security_map() -> &'static HashMap<String, String> {
     })
 }
 
-/// 带缓存的证券列表读取（移除参数）
+/// 带缓存的证券列表读取(移除参数)
 /// 修改缓存宏并调整错误处理
 fn lazy_load_security_list() -> anyhow::Result<Vec<Security>> {
     let path = QUANT1X_CACHE_CONFIG.meta_path("securities.csv");
@@ -156,9 +156,9 @@ fn __lazy_load_sector_list() -> Result<Vec<SectorRecord>> {
     let mut reader = csv::Reader::from_path(&path)?;
     reader.deserialize()
         .map(|result| {
-            // 1. 先处理反序列化错误，转换为 anyhow::Error
+            // 1. 先处理反序列化错误, 转换为 anyhow::Error
             let mut sr:SectorRecord = result.map_err(|e| anyhow::anyhow!("证券代码列表缓存文件{}解析失败: {}",path.display(),e))?;
-            // 2. 修改 code 字段（确保 correct_security_code 返回 String）
+            // 2. 修改 code 字段(确保 correct_security_code 返回 String)
             sr.code = symbol::correct_security_code(sr.code.as_str());
             {
                 let cs = serde_json::from_str::<Vec<String>>(&sr.constituent_stocks__)

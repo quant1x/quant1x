@@ -1,7 +1,7 @@
 // Copyright (c) Quant1X <wangfengxy@sina.cn>.
 // Licensed under the MIT License.
 //
-// CodeRule — 证券代码规则，与 Python data/meta/ticker_rules/rule.py 对齐
+// CodeRule — 证券代码规则, 与 Python data/meta/ticker_rules/rule.py 对齐
 
 use super::super::exchange::Exchange;
 use super::super::instrument::InstrumentType;
@@ -16,7 +16,7 @@ pub struct CodeRule {
     pub desc: &'static str,
 }
 
-/// 规则前缀：可以是字符串前缀或数字范围
+/// 规则前缀: 可以是字符串前缀或数字范围
 #[derive(Debug, Clone)]
 pub enum RulePrefix {
     Str(&'static str),
@@ -29,24 +29,24 @@ impl RulePrefix {
         match self {
             RulePrefix::Str(prefix) => {
                 if prefix.is_empty() {
-                    true // 空前缀匹配一切（如美股默认规则）
+                    true // 空前缀匹配一切(如美股默认规则)
                 } else {
                     code.starts_with(prefix)
                 }
             }
             RulePrefix::Range { start, end } => {
-                // 对于数字范围，按字符串比较（因为代码可能是前导零的数字字符串）
+                // 对于数字范围, 按字符串比较(因为代码可能是前导零的数字字符串)
                 code >= *start && code <= *end
             }
         }
     }
 
-    /// 返回前缀长度（用于最佳匹配排序）
+    /// 返回前缀长度(用于最佳匹配排序)
     pub fn match_length(&self) -> usize {
         match self {
             RulePrefix::Str(s) => s.len(),
             RulePrefix::Range { start, end: _ } => {
-                // 对于范围，返回起始值的长度作为匹配长度
+                // 对于范围, 返回起始值的长度作为匹配长度
                 start.len()
             }
         }
@@ -98,7 +98,7 @@ pub fn match_rule(code: &str, rules: &[CodeRule]) -> CodeRule {
     }
 }
 
-/// 全局规则（跨市场优先）
+/// 全局规则(跨市场优先)
 pub fn global_rules() -> Vec<CodeRule> {
     vec![
         CodeRule {

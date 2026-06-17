@@ -138,7 +138,7 @@ fn main() -> io::Result<()> {
                         }
 
                         if is_closed {
-                            // 关键修改：使用 finish_and_clear 清除进度条
+                            // 关键修改: 使用 finish_and_clear 清除进度条
                             connection.progress_bar.finish_and_clear();
                             poll.registry().deregister(connection.stream.as_mut())?;
                             connections.remove(&token);

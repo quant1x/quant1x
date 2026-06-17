@@ -24,7 +24,7 @@ impl TaskScheduler {
         TaskScheduler { sender }
     }
 
-    // 添加新任务（间隔单位：秒）
+    // 添加新任务(间隔单位: 秒)
     pub fn add_task<F>(&self, interval_seconds: u64, task: F)
     where
         F: Fn() + Send + 'static + Clone,

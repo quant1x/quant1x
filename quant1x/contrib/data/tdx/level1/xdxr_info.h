@@ -16,14 +16,14 @@ namespace level1 {
     // XDXR类型映射表
     enum XdxrCategory : int {
         EX_DIVIDEND                       = 1,   // 除权除息
-        BONUS_SHARES_LISTING              = 2,   // 送股上市（无偿）
-        RESTRICTED_SHARES_LISTING         = 3,   // 非流通股上市（受限股解禁）
+        BONUS_SHARES_LISTING              = 2,   // 送股上市(无偿)
+        RESTRICTED_SHARES_LISTING         = 3,   // 非流通股上市(受限股解禁)
         UNSPECIFIED_CAPITAL_ADJUSTMENT    = 4,   // 未知股本变动
-        GENERAL_CAPITAL_ADJUSTMENT        = 5,   // 股本变化（保留，但慎用）
+        GENERAL_CAPITAL_ADJUSTMENT        = 5,   // 股本变化(保留, 但慎用)
         NEW_SHARE_ISSUANCE                = 6,   // 增发新股
         SHARE_REPURCHASE                  = 7,   // 股份回购
         NEW_SHARES_LISTING                = 8,   // 增发新股上市
-        TRANSFERRED_RIGHTS_SHARES_LISTING = 9,   // 转配股上市（中国特有）
+        TRANSFERRED_RIGHTS_SHARES_LISTING = 9,   // 转配股上市(中国特有)
         CONVERTIBLE_BOND_LISTING          = 10,  // 可转债上市
         STOCK_SPLIT_OR_REVERSE_SPLIT      = 11,  // 拆股或合股
         RESTRICTED_SHARES_CONSOLIDATION   = 12,  // 非流通股缩股
@@ -53,7 +53,7 @@ namespace level1 {
     }
 
     // ==========================================================
-    // 解析后的除权除息信息 (定义在前，被 Xdxr 使用)
+    // 解析后的除权除息信息 (定义在前, 被 Xdxr 使用)
     // ==========================================================
     struct XdxrInfo {
         std::string Date;           // 日期 YYYY-MM-DD格式
@@ -84,18 +84,18 @@ namespace level1 {
         /**
          * @brief 计算调整因子m和a
          *
-         * 根据股票分红配股等参数计算价格调整因子，用于复权计算
+         * 根据股票分红配股等参数计算价格调整因子, 用于复权计算
          *
          * @return std::tuple<f64, f64> 返回调整因子m和a的元组
          *         - m: 价格调整乘数因子
          *         - a: 价格调整加数因子
          *
-         * @note 当1+B接近0时，会返回默认值m=1.0和a=0.0
+         * @note 当1+B接近0时, 会返回默认值m=1.0和a=0.0
          */
         std::tuple<f64, f64> adjustFactor() const {
             f64 m = 0, a = 0;
 
-            // 计算货币调整项和股本调整比率（通过独立函数）
+            // 计算货币调整项和股本调整比率(通过独立函数)
             f64 A = computeMonetaryAdjustment();
             f64 B = computeShareAdjustmentRatio();
 
@@ -123,7 +123,7 @@ namespace level1 {
         }
 
         // 判断是否是股本变化
-        // 返回: true表示是股本变化，false表示不是
+        // 返回: true表示是股本变化, false表示不是
         [[nodiscard]] bool IsCapitalChange() const {
             switch (Category) {
                 case EX_DIVIDEND:                      // 除权除息
@@ -301,7 +301,7 @@ namespace level1 {
         std::vector<RawXdxrInfo> List;        // 原始数据列表
     };
 
-    // 除权除息批量请求 (对齐 Python XdxrBatch, Python有，C++原无)
+    // 除权除息批量请求 (对齐 Python XdxrBatch, Python有, C++原无)
     struct XdxrBatch : public BaseMessage<XdxrBatch> {
         struct StockEntry {
             u8 market;

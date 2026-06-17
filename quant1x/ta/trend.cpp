@@ -1,7 +1,7 @@
 #include <quant1x/ta/trend.h>
 
 namespace ta {
-    // 计算两条直线的交点（如果存在）
+    // 计算两条直线的交点(如果存在)
     std::optional<point> line_intersection(
         const point &p1, const point &p2,
         const point &v1, const point &v2) {
@@ -18,7 +18,7 @@ namespace ta {
 
         double denominator = dy2 * dx1 - dx2 * dy1;
 
-        // 如果分母为0，说明两直线平行或重合
+        // 如果分母为0, 说明两直线平行或重合
         if (std::abs(denominator) < 1e-8) {
             return std::nullopt;
         }
@@ -28,7 +28,7 @@ namespace ta {
         double s_numerator = dx1 * (y1 - y3) - dy1 * (x1 - x3);
 
         double t = t_numerator / denominator;
-        // double s = s_numerator / denominator; // s 可选，用于其他用途
+        // double s = s_numerator / denominator; // s 可选, 用于其他用途
         (void)s_numerator;
 
         // 交点坐标

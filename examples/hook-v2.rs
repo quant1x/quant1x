@@ -32,7 +32,7 @@ impl Runtime {
         })
     }
 
-    /// 注册退出回调（FILO顺序）
+    /// 注册退出回调(FILO顺序)
     pub fn register_shutdown_hook<F>(&self, f: F)
     where
         F: Fn() + Send + Sync + 'static,
@@ -49,7 +49,7 @@ impl Runtime {
             started = cvar.wait(started).unwrap();
         }
 
-        // 执行所有回调（FILO顺序）
+        // 执行所有回调(FILO顺序)
         while let Some(callback) = self.callbacks.lock().unwrap().pop_front() {
             (callback)();
         }

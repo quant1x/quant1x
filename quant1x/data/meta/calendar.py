@@ -36,7 +36,7 @@ def _get_calendar_marker_filename() -> str:
 
 
 def _preprocess_sina_text(text: str) -> str:
-    """预处理JS-like响应文本（去除赋值、尾部分号和引号）"""
+    """预处理JS-like响应文本(去除赋值, 尾部分号和引号)"""
     s = text
     if "=" in s:
         pos = s.find("=")
@@ -84,7 +84,7 @@ def _update_calendar():
 
         resp = requests.get(SINA_CALENDAR_URL, timeout=15, headers=headers)
         if resp.status_code == 304:
-            # 未修改，直接返回
+            # 未修改, 直接返回
             return
         resp.raise_for_status()
 
@@ -149,19 +149,19 @@ def lazy_load_calendar():
     mod_time = cache.get_filename_modified_time(marker)
     today_init_time = now_time.get_pre_market_time()
     if now_time > today_init_time and mod_time < today_init_time:
-        logger.debug("交易日历缓存文件过期，执行更新")
+        logger.debug("交易日历缓存文件过期, 执行更新")
         try:
             _update_calendar()
             fs.update_file_mtime(marker)
         except Exception:
             pass
     else:
-        logger.debug("交易日历缓存文件未过期，跳过更新")
+        logger.debug("交易日历缓存文件未过期, 跳过更新")
     logger.debug("加载交易日历缓存文件到内存")
     #ensure_updated = False
     fn = _get_calendar_filename()
     if not os.path.exists(fn):
-        logger.debug("交易日历缓存文件不存在，跳过加载")
+        logger.debug("交易日历缓存文件不存在, 跳过加载")
         return
 
     try:
@@ -187,7 +187,7 @@ def lazy_load_calendar():
                 except Exception:
                     pass
     except Exception:
-        logger.error("加载交易日历缓存文件失败，跳过加载")
+        logger.error("加载交易日历缓存文件失败, 跳过加载")
         return
 
     global globalCalendarsString, globalCalendarsTimestamp
@@ -198,7 +198,7 @@ class Calendar(ThreadSafeSingletonABC):
     """
     交易日历单例管理器
 
-    功能：
+    功能: 
     1. 从网络或缓存加载交易日历
     2. 提供日期查询功能
     3. 线程安全的单例实现
@@ -228,19 +228,19 @@ class Calendar(ThreadSafeSingletonABC):
         today_init_time = now_time.get_pre_market_time()
 
         if now_time > today_init_time and mod_time < today_init_time:
-            logger.debug("交易日历缓存文件过期，执行更新")
+            logger.debug("交易日历缓存文件过期, 执行更新")
             try:
                 _update_calendar()
                 fs.update_file_mtime(marker)
             except Exception:
                 pass
         else:
-            logger.debug("交易日历缓存文件未过期，跳过更新")
+            logger.debug("交易日历缓存文件未过期, 跳过更新")
 
         logger.debug("加载交易日历缓存文件到内存")
         fn = _get_calendar_filename()
         if not os.path.exists(fn):
-            logger.debug("交易日历缓存文件不存在，跳过加载")
+            logger.debug("交易日历缓存文件不存在, 跳过加载")
             return
 
         try:
@@ -269,7 +269,7 @@ class Calendar(ThreadSafeSingletonABC):
             self._calendars_string = ss
             self._calendars_timestamp = ts
             self._loaded = True
-            logger.debug(f"交易日历加载完成，共 {len(ss)} 个交易日")
+            logger.debug(f"交易日历加载完成, 共 {len(ss)} 个交易日")
         except Exception as e:
             logger.error(f"加载交易日历缓存文件失败: {e}")
 
@@ -385,7 +385,7 @@ class Calendar(ThreadSafeSingletonABC):
         return trade_dates[lower:upper]
 
     def get_date_range(self, begin: str, end: str, skip_today: bool = False) -> List[str]:
-        """获取日期范围（字符串版本）"""
+        """获取日期范围(字符串版本)"""
         if begin > end:
             return []
 
@@ -421,7 +421,7 @@ def fix_trade_date(date_str: str, fmt: str = "%Y-%m-%d") -> str:
 
     参数:
         date_str: 输入日期字符串
-        fmt: 目标格式（默认%Y-%m-%d）
+        fmt: 目标格式(默认%Y-%m-%d)
 
     返回:
         统一格式的日期字符串
@@ -476,7 +476,7 @@ def date_range(begin: Timestamp, end: Optional[Timestamp] = None, skip_today: bo
 
 
 def get_date_range(begin: str, end: str, skip_today: bool = False) -> List[str]:
-    """获取日期范围（字符串版本）"""
+    """获取日期范围(字符串版本)"""
     return get_calendar_instance().get_date_range(begin, end, skip_today)
 
 if __name__ == '__main__':

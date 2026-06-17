@@ -57,7 +57,7 @@ namespace formula {
             return result;
         }
 
-        // 编译期已知周期，可能触发循环展开
+        // 编译期已知周期, 可能触发循环展开
         for (size_t i = N - 1; i < S.size(); ++i) {
             auto window = xt::view(S, xt::range(i - N + 1, i + 1));
             result[i]   = xt::mean(window)();
@@ -94,7 +94,7 @@ namespace formula {
         const double       alpha = 2.0 / (N + 1);
         xt::xarray<double> ema   = xt::empty<double>({S.size()});
 
-        // 首值处理（可用首价或SMA初始化）
+        // 首值处理(可用首价或SMA初始化)
         ema[0] = std::isnan(S[0]) ? double(0) : S[0];
 
         // 递归计算EMA
@@ -199,7 +199,7 @@ namespace formula {
     struct is_string_type<E, std::enable_if_t<std::is_same_v<typename std::decay_t<E>::value_type, std::string>>>
         : std::true_type {};
 
-    //    // 主模板声明（仅声明，不定义）
+    //    // 主模板声明(仅声明, 不定义)
     //    template <typename E, typename = void>
     //    xt::xarray<typename std::decay_t<E>::value_type> hhv(E&& high, std::size_t N);
 
@@ -321,12 +321,12 @@ namespace formula {
         // 获取表达式的实际类型
         using value_type = typename std::remove_reference_t<decltype(cond.derived_cast())>::value_type;
 
-        // 如果表达式已经是 bool 类型，则直接使用
+        // 如果表达式已经是 bool 类型, 则直接使用
         xt::xarray<bool> condition;
         if constexpr (std::is_same_v<value_type, bool>) {
             condition = xt::eval(cond.derived_cast());
         } else {
-            // 否则判断是否不等于 0（适用于数值类型）
+            // 否则判断是否不等于 0(适用于数值类型)
             condition = xt::eval(cond.derived_cast() != 0);
         }
 
@@ -364,7 +364,7 @@ namespace formula {
                 if (cond[j]) {
                     count++;
                     if (count == N) {
-                        // 计算周期数（包含两端）
+                        // 计算周期数(包含两端)
                         result[i] = i - j + 1;
                         break;
                     }
@@ -393,7 +393,7 @@ namespace formula {
             // 在最近N个周期内查找第一次满足条件的位置
             for (int j = start_pos; j <= i; ++j) {
                 if (cond[j]) {
-                    // 找到第一次满足条件的位置，计算周期数（包含两端）
+                    // 找到第一次满足条件的位置, 计算周期数(包含两端)
                     result[i] = i - j + 1;
                     break;
                 }
@@ -427,13 +427,13 @@ namespace formula {
     // IFN
     // ==============================
 
-    // 标量版本：如果条件为 FALSE 返回 true_expr，否则返回 false_expr
+    // 标量版本: 如果条件为 FALSE 返回 true_expr, 否则返回 false_expr
     template <typename T, typename F>
     inline auto ifn(bool condition, T &&true_expr, F &&false_expr) {
         return !condition ? std::forward<T>(true_expr) : std::forward<F>(false_expr);
     }
 
-    // xtensor 版本：对条件取反后调用 where
+    // xtensor 版本: 对条件取反后调用 where
     template <typename Cond,
               typename T,
               typename F,
@@ -441,7 +441,7 @@ namespace formula {
     inline auto ifn(Cond &&condition, T &&true_expr, F &&false_expr) {
         static_assert(std::is_same_v<typename std::decay_t<Cond>::value_type, bool>,
                       "Condition must be a boolean xtensor expression");
-        return xt::where(!std::forward<Cond>(condition),  // 关键区别：对条件取反
+        return xt::where(!std::forward<Cond>(condition),  // 关键区别: 对条件取反
                          std::forward<T>(true_expr),
                          std::forward<F>(false_expr));
     }
@@ -451,13 +451,13 @@ namespace formula {
     // ==============================
 
     /**
-     * @brief 计算输入数组的绝对值，返回xarray
+     * @brief 计算输入数组的绝对值, 返回xarray
      * @param x 输入数组
      * @return 绝对值数组
      */
     template <typename E>
     inline xt::xarray<typename std::decay_t<E>::value_type> abs(E &&x) {
-        // 使用xt::abs计算绝对值，并确保返回xarray类型
+        // 使用xt::abs计算绝对值, 并确保返回xarray类型
         return xt::xarray<typename std::decay_t<E>::value_type>(xt::abs(std::forward<E>(x)));
     }
 
@@ -466,7 +466,7 @@ namespace formula {
     // ==============================
 
     /**
-     * @brief 计算两个数组的逐元素最大值，统一返回xarray
+     * @brief 计算两个数组的逐元素最大值, 统一返回xarray
      * @param a 第一个输入数组/表达式
      * @param b 第二个输入数组/表达式
      * @return xt::xarray<T> 最大值数组
@@ -496,7 +496,7 @@ namespace formula {
     }
 
     /**
-     * @brief 返回数组中的最大值（单个值）
+     * @brief 返回数组中的最大值(单个值)
      * @param arr 输入数组
      * @return 数组中的最大值
      */
@@ -506,7 +506,7 @@ namespace formula {
     }
 
     /**
-     * @brief 返回数组中的最大值（单个值）的索引
+     * @brief 返回数组中的最大值(单个值)的索引
      * @param arr 输入数组
      * @return 数组中的最小值的索引
      */
@@ -520,7 +520,7 @@ namespace formula {
     // ==============================
 
     /**
-     * @brief 计算两个数组的逐元素最小值，统一返回xarray
+     * @brief 计算两个数组的逐元素最小值, 统一返回xarray
      * @param a 第一个输入数组/表达式
      * @param b 第二个输入数组/表达式
      * @return xt::xarray<T> 最小值数组
@@ -550,7 +550,7 @@ namespace formula {
     }
 
     /**
-     * @brief 返回数组中的最小值（单个值）
+     * @brief 返回数组中的最小值(单个值)
      * @param arr 输入数组
      * @return 数组中的最小值
      */
@@ -560,7 +560,7 @@ namespace formula {
     }
 
     /**
-     * @brief 返回数组中的最小值（单个值）的索引
+     * @brief 返回数组中的最小值(单个值)的索引
      * @param arr 输入数组
      * @return 数组中的最小值
      */
@@ -605,7 +605,7 @@ namespace formula {
 
         // 只有数据足够时才计算
         if (data.size() >= period) {
-            // 计算有效部分（从period-1开始）
+            // 计算有效部分(从period-1开始)
             for (size_t i = period - 1; i < data.size(); ++i) {
                 auto window = xt::view(data, xt::range(i - period + 1, i + 1));
                 result(i)   = xt::stddev(window)();
@@ -663,18 +663,18 @@ namespace formula {
 
     // 填充策略枚举
     enum class PaddingPolicy {
-        Left,            // 左填充（右对齐）
-        Right,           // 右填充（左对齐）
+        Left,            // 左填充(右对齐)
+        Right,           // 右填充(左对齐)
         Both,            // 双侧填充
         Default = Left,  // 默认: 左填充右对齐
     };
 
     /**
-     * @brief 对齐两个数组，默认右填充（不抛异常）
+     * @brief 对齐两个数组, 默认右填充(不抛异常)
      * @param a 第一个数组
      * @param b 第二个数组
-     * @param policy 填充策略（默认右填充）
-     * @param pad_value 填充值（默认为NaN）
+     * @param policy 填充策略(默认右填充)
+     * @param pad_value 填充值(默认为NaN)
      * @return 对齐后的数组 tuple
      */
     template <typename T>
@@ -682,7 +682,7 @@ namespace formula {
                                                                const xt::xarray<T> &b,
                                                                PaddingPolicy        policy = PaddingPolicy::Left,
                                                                T pad_value = std::numeric_limits<T>::quiet_NaN()) {
-        // 处理空输入：直接返回空数组（不抛异常）
+        // 处理空输入: 直接返回空数组(不抛异常)
         if (a.size() == 0 || b.size() == 0) {
             return {a, b};
         }
@@ -791,15 +791,15 @@ namespace formula {
     }
 
     /**
-     * @brief 计算两条曲线的交叉点（安全版，不抛异常）
+     * @brief 计算两条曲线的交叉点(安全版, 不抛异常)
      * @param S1 第一条曲线
      * @param S2 第二条曲线
-     * @param policy 填充策略（默认右填充）
+     * @param policy 填充策略(默认右填充)
      * @return 交叉点标记数组
      */
     inline xt::xarray<bool>
     cross(const xt::xarray<double> &S1, const xt::xarray<double> &S2, PaddingPolicy policy = PaddingPolicy::Left) {
-        // 安全对齐数据（即使长度不一致或为空也不会抛异常）
+        // 安全对齐数据(即使长度不一致或为空也不会抛异常)
         auto [aligned_S1, aligned_S2] = safe_align(S1, S2, policy);
         const size_t n = aligned_S1.size();
 
@@ -821,7 +821,7 @@ namespace formula {
         return result;
     }
 
-    // 统一rolling函数（支持标量和动态窗口）
+    // 统一rolling函数(支持标量和动态窗口)
 
     template <typename DataType, typename WindowType, typename Func>
     auto rolling(const xt::xexpression<DataType> &data_expr, WindowType &&N, Func agg_func) {
@@ -888,7 +888,7 @@ namespace formula {
      * @brief 使用xtensor实现通达信VALUEWHEN函数
      * @param condition 条件数组
      * @param value 取值数组
-     * @return 返回结果数组，形状与输入相同
+     * @return 返回结果数组, 形状与输入相同
      */
     xt::xarray<double> value_when(const xt::xarray<bool>& condition, const xt::xarray<double>& value);
 
@@ -897,7 +897,7 @@ namespace formula {
      * @tparam E 条件表达式类型
      * @param cond 条件表达式(可以是任何xtensor表达式)
      * @param value 取值数组
-     * @return 返回结果数组，形状与输入相同
+     * @return 返回结果数组, 形状与输入相同
      */
     template <typename E>
     xt::xarray<double> value_when(const xt::xexpression<E>& cond, const xt::xarray<double>& value) {
@@ -924,7 +924,7 @@ namespace formula {
                 if (lastValidValue.has_value()) {
                     result.flat(i) = lastValidValue.value();
                 } else {
-                    // 如果之前没有满足条件的值，返回NaN
+                    // 如果之前没有满足条件的值, 返回NaN
                     result.flat(i) = std::numeric_limits<double>::quiet_NaN();
                 }
             }

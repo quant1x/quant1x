@@ -53,7 +53,7 @@ class ThreadSafeSingletonMeta(ABCMeta):
     支持多种线程安全策略
     """
     
-    # 类级别的锁，用于保护实例创建
+    # 类级别的锁, 用于保护实例创建
     _class_lock: ClassVar[Lock] = Lock()
     
     # 存储所有单例实例
@@ -80,7 +80,7 @@ class ThreadSafeSingletonMeta(ABCMeta):
         if not hasattr(cls, '_thread_safe_strategy'):
             cls._thread_safe_strategy = ThreadSafeStrategy.DOUBLE_CHECKED
         
-        # 如果是提前初始化策略，在类定义时创建实例
+        # 如果是提前初始化策略, 在类定义时创建实例
         if cls._init_policy == SingletonInitPolicy.EAGER:
             cls._eager_init()
     
@@ -102,12 +102,12 @@ class ThreadSafeSingletonMeta(ABCMeta):
         if len(cls.__abstractmethods__) > 0:
             abstract_methods = list(cls.__abstractmethods__)
             raise TypeError(
-                f"无法实例化抽象类 {cls.__name__}。"
+                f"无法实例化抽象类 {cls.__name__}. "
                 f"未实现的抽象方法: {abstract_methods}"
             )
     
     def _create_instance_safely(cls, *args, **kwargs) -> Any:
-        """安全创建实例，防止重复初始化"""
+        """安全创建实例, 防止重复初始化"""
         with cls._instance_lock:
             if cls in cls._initializing and cls._initializing[cls]:
                 raise SingletonInitializationError(
@@ -131,7 +131,7 @@ class ThreadSafeSingletonMeta(ABCMeta):
             return cls._instances[cls]
     
     def _get_instance_with_double_checked(cls, *args, **kwargs) -> Any:
-        """使用双重检查锁定策略（推荐）"""
+        """使用双重检查锁定策略(推荐)"""
         if cls not in cls._instances:
             with cls._instance_lock:
                 if cls not in cls._instances:
@@ -161,7 +161,7 @@ class ThreadSafeSingletonMeta(ABCMeta):
     def __call__(cls, *args, **kwargs) -> Any:
         """根据线程安全策略创建/获取实例"""
         
-        # 如果已经有实例，直接返回
+        # 如果已经有实例, 直接返回
         if cls in cls._instances and cls._initialized.get(cls, False):
             return cls._instances[cls]
         
@@ -185,7 +185,7 @@ class ThreadSafeSingletonMeta(ABCMeta):
         return method(*args, **kwargs)
     
     def reset_instance(cls):
-        """重置单例实例（主要用于测试）"""
+        """重置单例实例(主要用于测试)"""
         with cls._class_lock:
             if cls in cls._instances:
                 if hasattr(cls._instances[cls], '_cleanup'):
@@ -200,7 +200,7 @@ class ThreadSafeSingletonMeta(ABCMeta):
         return cls._initialized.get(cls, False)
     
     def get_instance_count(cls) -> int:
-        """获取单例实例数量（用于调试）"""
+        """获取单例实例数量(用于调试)"""
         if cls._thread_safe_strategy == ThreadSafeStrategy.THREAD_LOCAL:
             if hasattr(cls._thread_local, 'instances'):
                 return len([1 for c in cls._thread_local.instances.keys() 
@@ -213,13 +213,13 @@ class ThreadSafeSingletonABC(ABC, metaclass=ThreadSafeSingletonMeta):
     """
     线程安全的单例抽象基类
     
-    特性：
+    特性: 
     1. 线程安全的单例模式
     2. 支持多种线程安全策略
     3. 支持多种初始化策略
     4. 防止抽象类实例化
     5. 提供资源清理钩子
-    6. 支持实例重置（主要用于测试）
+    6. 支持实例重置(主要用于测试)
     """
     
     # 线程安全策略
@@ -231,7 +231,7 @@ class ThreadSafeSingletonABC(ABC, metaclass=ThreadSafeSingletonMeta):
     def __new__(cls, *args, **kwargs):
         # 防止直接实例化抽象基类
         if cls is ThreadSafeSingletonABC or cls.__name__ == 'ThreadSafeSingletonABC':
-            raise TypeError(f"{cls.__name__} 是抽象基类，不能直接实例化")
+            raise TypeError(f"{cls.__name__} 是抽象基类, 不能直接实例化")
         return super().__new__(cls)
     
     def __init__(self, *args, **kwargs):
@@ -259,7 +259,7 @@ class ThreadSafeSingletonABC(ABC, metaclass=ThreadSafeSingletonMeta):
     @abstractmethod
     def initialize(self) -> None:
         """
-        初始化方法（抽象方法）
+        初始化方法(抽象方法)
         子类必须实现此方法来完成初始化
         """
         pass
@@ -267,7 +267,7 @@ class ThreadSafeSingletonABC(ABC, metaclass=ThreadSafeSingletonMeta):
     @abstractmethod
     def cleanup(self) -> None:
         """
-        清理方法（抽象方法）
+        清理方法(抽象方法)
         子类必须实现此方法来清理资源
         """
         pass
@@ -292,7 +292,7 @@ class ThreadSafeSingletonABC(ABC, metaclass=ThreadSafeSingletonMeta):
     
     @classmethod
     def get_or_create(cls, *args, **kwargs) -> 'ThreadSafeSingletonABC':
-        """别名方法，用于提高代码可读性"""
+        """别名方法, 用于提高代码可读性"""
         return cls.get_instance(*args, **kwargs)
     
     @classmethod
@@ -308,7 +308,7 @@ class ThreadSafeSingletonABC(ABC, metaclass=ThreadSafeSingletonMeta):
     
     @final
     def __del__(self):
-        """析构函数，记录清理信息"""
+        """析构函数, 记录清理信息"""
         logger.debug(f"单例实例 {self.__class__.__name__} 正在被销毁")
 
 
@@ -365,7 +365,7 @@ def singleton_method(method):
         
         return method(self, *args, **kwargs)
     
-    # 标记为单例方法，可用于反射和检查
+    # 标记为单例方法, 可用于反射和检查
     setattr(wrapper, '_is_singleton_method', True)  # type: ignore[attr-defined]
     return wrapper
 
@@ -432,7 +432,7 @@ def get_singleton_methods(cls: Type) -> list:
     
 #     @synchronized()
 #     def get_connection(self) -> dict:
-#         """获取数据库连接（线程安全）"""
+#         """获取数据库连接(线程安全)"""
 #         self._connection_count += 1
 #         conn = {
 #             "id": self._connection_count,
@@ -474,7 +474,7 @@ def get_singleton_methods(cls: Type) -> list:
     
 #     @synchronized('_log_lock')
 #     def log(self, message: str, level: str = "INFO") -> None:
-#         """记录日志（使用单独的锁）"""
+#         """记录日志(使用单独的锁)"""
 #         timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 #         log_entry = f"[{timestamp}] [{level}] {message}"
 #         self.logs.append(log_entry)
@@ -554,8 +554,8 @@ def get_singleton_methods(cls: Type) -> list:
 #     """测试并发访问"""
 #     print("\n=== 测试并发访问 ===")
     
-#     # 测试数据库配置（全局单例）
-#     print("\n1. 测试全局单例（DatabaseConfig）:")
+#     # 测试数据库配置(全局单例)
+#     print("\n1. 测试全局单例(DatabaseConfig):")
 #     threads = []
 #     configs = []
     
@@ -577,7 +577,7 @@ def get_singleton_methods(cls: Type) -> list:
 #         print("✗ 实例不一致！")
     
 #     # 测试线程本地单例
-#     print("\n2. 测试线程本地单例（Logger）:")
+#     print("\n2. 测试线程本地单例(Logger):")
 #     threads.clear()
 #     loggers = []
     
@@ -594,10 +594,10 @@ def get_singleton_methods(cls: Type) -> list:
     
 #     # 检查是否是不同实例
 #     unique_instances = len(set(id(l) for l in loggers))
-#     print(f"✓ 创建了 {unique_instances} 个不同的 Logger 实例（每个线程一个）")
+#     print(f"✓ 创建了 {unique_instances} 个不同的 Logger 实例(每个线程一个)")
     
 #     # 测试缓存管理器
-#     print("\n3. 测试缓存管理器（提前初始化）:")
+#     print("\n3. 测试缓存管理器(提前初始化):")
 #     cache1 = CacheManager.get_instance()
 #     cache2 = CacheManager.get_instance()
     
@@ -612,7 +612,7 @@ def get_singleton_methods(cls: Type) -> list:
 #     # 1. 测试抽象类不能实例化
 #     print("1. 测试抽象类不能实例化:")
 #     try:
-#         # 这会失败，因为 ThreadSafeSingletonABC 是抽象类
+#         # 这会失败, 因为 ThreadSafeSingletonABC 是抽象类
 #         abstract_instance = ThreadSafeSingletonABC()
 #     except TypeError as e:
 #         print(f"   预期异常: {e}\n")
@@ -633,7 +633,7 @@ def get_singleton_methods(cls: Type) -> list:
 #     print(f"   CacheManager 已初始化: {CacheManager.is_initialized()}\n")
     
 #     # 4. 测试实例重置
-#     print("4. 测试实例重置（用于测试）:")
+#     print("4. 测试实例重置(用于测试):")
 #     original_config = DatabaseConfig.get_instance()
 #     DatabaseConfig.reset_instance()
 #     new_config = DatabaseConfig.get_instance()

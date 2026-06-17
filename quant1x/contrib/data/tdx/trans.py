@@ -280,7 +280,7 @@ class DataTrans(DataAdapter):
         
     def update(self, inst: Instrument, date: Optional[Timestamp] = None) -> None:
         if date is None:
-            # 如果没有提供日期，使用当前日期或其他默认逻辑
+            # 如果没有提供日期, 使用当前日期或其他默认逻辑
             # 这里可能需要根据业务逻辑决定如何处理
             raise ValueError("Date is required for transaction data update")
         # corrected_code = inst.symbol()

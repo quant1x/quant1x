@@ -97,7 +97,7 @@ func GetMinutePath() string {
 //
 //	参数 code: 8位证券代码
 //	返回: 完整的文件路径字符串
-//	如果证券代码长度不为8位，会触发panic
+//	如果证券代码长度不为8位, 会触发panic
 func GetXdxrFilename(code string) string {
 	if len(code) != 8 {
 		panic("invalid security code length")

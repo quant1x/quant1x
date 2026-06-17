@@ -160,7 +160,7 @@ TEST_CASE("security-quote-network", "[level1]") {
     tsl::robin_map<std::string, level1::StockInfo> maps;
     //maps["sz300225"] = level1::StockInfo{0, "300225"}; // 2025-06-10 停牌
     //std::vector<std::string> list={"sz300225"};
-    maps["sz301678"] = level1::StockInfo{0, "301678"}; // 2025-06-10 未上市，状态IPO
+    maps["sz301678"] = level1::StockInfo{0, "301678"}; // 2025-06-10 未上市, 状态IPO
     std::vector<std::string> list={"sz301678"};
 
     level1::SecurityQuoteRequest request(list);

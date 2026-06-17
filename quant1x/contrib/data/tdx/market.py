@@ -6,7 +6,7 @@ from typing import Tuple, Dict
 from quant1x.data.meta import Exchange
 from quant1x.data.meta import InstrumentType
 
-# 正向映射：(market, category) → (mic, asset_class, protocol_segment)
+# 正向映射: (market, category) → (mic, asset_class, protocol_segment)
 TDX_MARKET_CATEGORY_MAPPING: Dict[Tuple[int, int], Tuple[Exchange, InstrumentType]] = {
     # 1,1,临时股,TP
     (0, 0): (Exchange.TEMP, InstrumentType.OTHER),
@@ -126,7 +126,7 @@ TDX_MARKET_CATEGORY_MAPPING: Dict[Tuple[int, int], Tuple[Exchange, InstrumentTyp
     (102, 5): (Exchange.CNI, InstrumentType.INDEX),
 }
 
-# 反向映射：(mic, asset_class, protocol_segment) → (market, category, endpoint)
+# 反向映射: (mic, asset_class, protocol_segment) → (market, category, endpoint)
 TDX_REVERSE_ROUTING: Dict[Tuple[Exchange, InstrumentType], Tuple[int, int]] = {
     (mic, asset_cls): (market, category) for (market, category), (mic, asset_cls) in TDX_MARKET_CATEGORY_MAPPING.items()
 }

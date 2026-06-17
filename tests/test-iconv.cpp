@@ -101,10 +101,10 @@ int main() {
 
     printf("origin string: %s\n", teststr.c_str());
     std::cout << "origin string: " << teststr.c_str() << std::endl;
-    std::cout << "UTF8 => GBK ：" << UTFtoGBK(teststr.c_str()).c_str() << std::endl;
-    std::cout << "UTF8 => GBK ：" << GBKToUTF8(teststr.c_str()).c_str() << std::endl;
-    std::cout << " GBK => UTF8：" << GBKToUTF8(UTFtoGBK(teststr.c_str()).c_str()).c_str() << std::endl;
-    //std::cout << " GBK => UTF8：" << UTFtoGBK(GBKToUTF8(teststr.c_str()).c_str()).c_str() << std::endl;
+    std::cout << "UTF8 => GBK : " << UTFtoGBK(teststr.c_str()).c_str() << std::endl;
+    std::cout << "UTF8 => GBK : " << GBKToUTF8(teststr.c_str()).c_str() << std::endl;
+    std::cout << " GBK => UTF8: " << GBKToUTF8(UTFtoGBK(teststr.c_str()).c_str()).c_str() << std::endl;
+    //std::cout << " GBK => UTF8: " << UTFtoGBK(GBKToUTF8(teststr.c_str()).c_str()).c_str() << std::endl;
     //getchar();
     std::cout << "simd\n";
     vector_type a,b,c;
@@ -135,7 +135,7 @@ int main() {
 
     int n = 8; // 小数位数为 8
     int result = (3 << n) >> 1; // 左移 8 位 → 右移 1 位
-    float final = (float)result / (1 << n); // 解释为浮点数（仅用于验证）
+    float final = (float)result / (1 << n); // 解释为浮点数(仅用于验证)
     printf("%f\n", final); // 输出 1.5
     return 0;
 }

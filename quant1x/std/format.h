@@ -45,7 +45,7 @@ void outputWithPriority(std::ostream& os, const T& value) {
     }
 }
 
-// 您原有的 << 重载（修改版）
+// 您原有的 << 重载(修改版)
 template<typename T>
 std::ostream& operator<<(std::ostream& os, const std::vector<T>& vec) {
     os << "[";

@@ -46,7 +46,7 @@ private:
     std::thread display_thread_;
     int term_width_ = 80;
 
-    // 原子状态变量（缓存行对齐）
+    // 原子状态变量(缓存行对齐)
     struct alignas(64) DisplayState {
         std::atomic<int64_t> current{0};
         std::atomic<int64_t> speed{0};
@@ -79,7 +79,7 @@ private:
     }
 
     void set_color(int64_t speed) {
-        // 速度阈值配置（可根据需要调整）
+        // 速度阈值配置(可根据需要调整)
         const int64_t slow = 50'000;    // <50k ops/s: 红色
         const int64_t fast = 200'000;   // >200k ops/s: 绿色
 
@@ -167,7 +167,7 @@ private:
                 const int cost = state_.cost.load(std::memory_order_relaxed);
                 const int estimate = state_.estimate.load(std::memory_order_relaxed);
 
-                // 动态调整刷新率（最高60FPS）
+                // 动态调整刷新率(最高60FPS)
                 const auto now = std::chrono::steady_clock::now();
                 if (rate < 100 && rate == last_rate && (now - last_update) < std::chrono::milliseconds(16)) {
                     std::this_thread::sleep_for(std::chrono::milliseconds(1));

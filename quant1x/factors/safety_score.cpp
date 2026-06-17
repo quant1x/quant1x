@@ -19,7 +19,7 @@ const int         defaultSafetyScoreOfIgnore   = 0;
 namespace risks {
 
     // ========================
-    // 工具函数：安全获取字段（保留默认值）
+    // 工具函数: 安全获取字段(保留默认值)
     // ========================
 
     template <typename T>
@@ -32,7 +32,7 @@ namespace risks {
         }
     }
 
-    // 特化：int 类型
+    // 特化: int 类型
     template <>
     void safe_get<int>(const json &j, const std::string &key, int &value) {
         if (j.contains(key) && j[key].is_number_integer()) {
@@ -43,7 +43,7 @@ namespace risks {
         }
     }
 
-    // 特化：std::string 类型
+    // 特化: std::string 类型
     template <>
     void safe_get<std::string>(const json &j, const std::string &key, std::string &value) {
         if (j.contains(key) && j[key].is_string()) {
@@ -55,13 +55,13 @@ namespace risks {
     }
 
     struct CommonLxId {
-        int         fs    = 0;  // 默认值：0
-        int         level = 0;  // 默认值：0
-        int         trig  = 0;  // 默认值：0
-        int         pos   = 0;  // 默认值：0
-        int         id    = 0;  // 默认值：0
-        std::string lx;         // 默认值：空字符串
-        std::string trigyy;     // 默认值：空字符串
+        int         fs    = 0;  // 默认值: 0
+        int         level = 0;  // 默认值: 0
+        int         trig  = 0;  // 默认值: 0
+        int         pos   = 0;  // 默认值: 0
+        int         id    = 0;  // 默认值: 0
+        std::string lx;         // 默认值: 空字符串
+        std::string trigyy;     // 默认值: 空字符串
 
         friend void from_json(const json &j, CommonLxId &item) {
             safe_get(j, "fs", item.fs);

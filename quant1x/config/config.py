@@ -91,7 +91,7 @@ def load_config(file_path: str) -> dict:
         file_path (str): YAML配置文件的路径
         
     Returns:
-        dict: 解析后的配置字典，如果文件不存在则返回空字典
+        dict: 解析后的配置字典, 如果文件不存在则返回空字典
         
     Raises:
         ValueError: 当YAML格式错误或其他加载错误时抛出
@@ -101,7 +101,7 @@ def load_config(file_path: str) -> dict:
             config = yaml.safe_load(f) or {}
             return config
     except FileNotFoundError:
-        logger.warning(f"配置文件 {file_path} 不存在，使用默认配置")
+        logger.warning(f"配置文件 {file_path} 不存在, 使用默认配置")
         return {}
     except yaml.YAMLError as e:
         raise ValueError(f"YAML格式错误: {str(e)}")
@@ -120,30 +120,30 @@ class Quant1XConfig:
 
     def _initialize(self):
         """
-        初始化配置，包括加载配置文件、设置路径和调试模式
+        初始化配置, 包括加载配置文件, 设置路径和调试模式
         
-        主要功能：
+        主要功能: 
         - 加载或创建默认配置文件
-        - 设置工作路径、数据路径、日志路径等
+        - 设置工作路径, 数据路径, 日志路径等
         - 解析调试模式设置
         - 确保所有路径存在并已展开用户路径
         
-        属性初始化：
+        属性初始化: 
         - debug (bool): 是否启用调试模式
         - __home_path (str): 用户主目录路径
         - __config_filename (str): 配置文件路径
         - __config (dict): 加载的配置字典
         - __work_keyword (str): 工作目录关键字
-        - __default_path (str): 默认路径（带~符号）
-        - __default_main_path (str): 默认主路径（完整路径）
+        - __default_path (str): 默认路径(带~符号)
+        - __default_main_path (str): 默认主路径(完整路径)
         - meta_path (str): 元数据存储路径
         - data_path (str): 数据存储路径
         - log_path (str): 日志存储路径
         - kline_path (str): K线数据存储路径
         
-        处理逻辑：
-        1. 加载配置文件，不存在则创建默认配置
-        2. 解析调试模式设置，支持多种格式
+        处理逻辑: 
+        1. 加载配置文件, 不存在则创建默认配置
+        2. 解析调试模式设置, 支持多种格式
         3. 设置并验证各路径
         4. 确保配置文件目录存在
         """
@@ -155,8 +155,8 @@ class Quant1XConfig:
         self.__work_keyword = quant1x_work
 
         # 初始化路径
-        # 如果 work_keyword 为空（表示未通过环境变量指定），
-        # 在构建默认主路径时应回退到默认关键词，避免生成类似 '~/.\' 的路径。
+        # 如果 work_keyword 为空(表示未通过环境变量指定), 
+        # 在构建默认主路径时应回退到默认关键词, 避免生成类似 '~/.\' 的路径. 
         effective_work = self.__work_keyword if self.__work_keyword else default_workspace_path
         self.__default_path = f'~/.{effective_work}'
         self.__default_main_path = os.path.join(self.__home_path, f'.{effective_work}')
@@ -164,7 +164,7 @@ class Quant1XConfig:
         self.meta_path = os.path.join(self.__default_main_path, 'meta')
         """str: 元数据路径"""
 
-        # 解析 debug，兼容 bool/int/str 等类型
+        # 解析 debug, 兼容 bool/int/str 等类型
         # 开发环境.env优先
         # fallback: read project .env in a read-only way via system helper (does not mutate os.environ)
         dbg_str = get_quant1x_env('QUANT1X_DEBUG')
@@ -182,7 +182,7 @@ class Quant1XConfig:
         except Exception:
             self.debug = False
 
-        # 解析 basedir，保证为字符串并去除空白
+        # 解析 basedir, 保证为字符串并去除空白
         data_path_raw = self.__config.get('basedir', '') or ''
         self.data_path = str(data_path_raw).strip()
         """str: 数据目录 """
@@ -191,7 +191,7 @@ class Quant1XConfig:
             self.data_path = self.__default_main_path
         self.data_path = fs.expand_user(self.data_path)
 
-        # 解析 logdir，保证为字符串并去除空白
+        # 解析 logdir, 保证为字符串并去除空白
         log_path_raw = self.__config.get('logdir', '') or ''
         self.log_path = str(log_path_raw).strip()
         """str: 日志目录 """
@@ -204,10 +204,10 @@ class Quant1XConfig:
         self.kline_path = os.path.join(self.data_path, 'day')
         """str: K线路径 """
         
-        # 如果配置文件不存在，则回写一个默认的 yaml 配置文件，并添加注释
+        # 如果配置文件不存在, 则回写一个默认的 yaml 配置文件, 并添加注释
         try:
             if not os.path.isfile(self.__config_filename):
-                # 使用已加载的配置作为默认，否则使用基于主路径的默认 basedir
+                # 使用已加载的配置作为默认, 否则使用基于主路径的默认 basedir
                 cfg_dir = os.path.dirname(self.__config_filename)
                 if cfg_dir and not os.path.isdir(cfg_dir):
                     os.makedirs(cfg_dir, exist_ok=True)
@@ -223,17 +223,17 @@ class Quant1XConfig:
                     with open(self.__config_filename, 'w', encoding='utf-8') as wf:
                         wf.write(header)
                         wf.write("\n")
-                        # 如果包含 debug，则按用户期望的格式写入一行，并附带注释
+                        # 如果包含 debug, 则按用户期望的格式写入一行, 并附带注释
                         wf.write(f"debug: {'true' if self.debug else 'false'} # 是否启用调试模式\n")
-                        # 如果包含 basedir，则按用户期望的格式写入一行，并附带注释
+                        # 如果包含 basedir, 则按用户期望的格式写入一行, 并附带注释
                         wf.write(f"basedir: {self.__default_path} # 数据路径\n")
                         wf.write(f"logdir: {self.__default_path}/logs # 日志路径\n")
                         
-                    logger.info(f"配置文件 {self.__config_filename} 不存在，已创建默认配置文件")
+                    logger.info(f"配置文件 {self.__config_filename} 不存在, 已创建默认配置文件")
                 except Exception as e:
                     logger.warning(f"创建默认配置文件失败: {e}")
         except Exception:
-            # 不要阻塞初始化流程，记录错误继续
+            # 不要阻塞初始化流程, 记录错误继续
             logger.exception("检查或创建配置文件时发生错误")
 
 # 创建配置单例

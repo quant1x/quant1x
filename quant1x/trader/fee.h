@@ -20,7 +20,7 @@ namespace trader {
 
     // 交易方向
     enum class Direction {
-        UNKNOWN,  // 未知、无效的
+        UNKNOWN,  // 未知, 无效的
         BUY,      // 买入
         SELL,     // 卖出
         JUNK      // 废单

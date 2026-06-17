@@ -9,8 +9,8 @@ from quant1x.level1.security_bars import KLineType
 
 class TestRealKLine(unittest.TestCase):
     def setUp(self):
-        # 为了完全模拟真实环境，我们不写入任何预设的缓存文件。
-        # 相反，我们尝试删除现有的缓存文件，强制触发 client.init_pool() 中的服务器探测逻辑。
+        # 为了完全模拟真实环境, 我们不写入任何预设的缓存文件. 
+        # 相反, 我们尝试删除现有的缓存文件, 强制触发 client.init_pool() 中的服务器探测逻辑. 
         from quant1x.level1 import config as l1config
         import os
         
@@ -18,12 +18,12 @@ class TestRealKLine(unittest.TestCase):
         if os.path.exists(cache_file):
             try:
                 os.remove(cache_file)
-                print(f"已删除缓存文件 {cache_file}，将触发实时服务器探测...")
+                print(f"已删除缓存文件 {cache_file}, 将触发实时服务器探测...")
             except Exception as e:
                 print(f"删除缓存文件失败: {e}")
 
-        # 初始化连接池，这将执行真实的服务器探测 (detect)
-        # 注意：这取决于网络状况，可能会耗时几秒钟
+        # 初始化连接池, 这将执行真实的服务器探测 (detect)
+        # 注意: 这取决于网络状况, 可能会耗时几秒钟
         init_std_pool()
 
     def test_fetch_real_kline(self):
@@ -37,7 +37,7 @@ class TestRealKLine(unittest.TestCase):
         bars = kline.fetch_kline(code, start, count, KLineType.DAILY)
         
         self.assertTrue(len(bars) > 0, "未能获取到任何K线数据")
-        self.assertEqual(len(bars), count, f"请求{count}根，实际获取{len(bars)}根")
+        self.assertEqual(len(bars), count, f"请求{count}根, 实际获取{len(bars)}根")
         
         print(f"成功获取 {len(bars)} 根K线数据:")
         

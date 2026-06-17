@@ -78,7 +78,7 @@ namespace backtest {
             // 买入必须≥1手
             order.quantity = std::max(rounded_quantity, lot_size);
         } else {
-            // 卖出可以零股（但建议整手）
+            // 卖出可以零股(但建议整手)
             order.quantity = getPositionQuantity(code);
         }
         // order.quantity    = calculatePositionSize(bar.Close);
@@ -118,7 +118,7 @@ namespace backtest {
         DailyPositionStatus status;
         status.timestamp = bar.datetime;
 
-        //  包含浮动盈亏的账户快照（避免频繁拷贝positions map）
+        //  包含浮动盈亏的账户快照(避免频繁拷贝positions map)
         Account     snap      = backtest_data.account;
         const auto &positions = position_manager.getPositions();
         status.positions.reserve(positions.size());
@@ -153,21 +153,21 @@ namespace backtest {
             backtest_data.result.total_return = (final - initial) / initial * 100.0;
         }
 
-        // 计算年化收益率：使用实际记录的交易日数（daily_status）来估算年化，避免用 equity_curve.size() 导致的异常放大
+        // 计算年化收益率: 使用实际记录的交易日数(daily_status)来估算年化, 避免用 equity_curve.size() 导致的异常放大
         double annualized           = 0.0;
         double total_return_decimal = 0.0;
         if (initial > 0.0) {
             total_return_decimal = (final / initial) - 1.0;
         }
 
-        // 交易日数：以每日结算记录为准
+        // 交易日数: 以每日结算记录为准
         size_t trading_days = backtest_data.daily_status.size();
 
-        // 尝试基于实际的日历天数来计算年化（更稳健），fallback 到交易日/252 计法
+        // 尝试基于实际的日历天数来计算年化(更稳健), fallback 到交易日/252 计法
         double years        = 0.0;
         double elapsed_days = 0.0;
 
-        // 调试日志：打印用于年化计算的中间值，便于排查异常年化收益
+        // 调试日志: 打印用于年化计算的中间值, 便于排查异常年化收益
         spdlog::debug("calculateResults: initial={}, final={}, trading_days={}, equity_curve_size={}",
                       initial,
                       final,
@@ -175,7 +175,7 @@ namespace backtest {
                       equity_curve.size());
 
         if (trading_days >= 2) {
-            // daily_status.timestamp 格式为 "YYYY-MM-DD HH:MM:SS"，取前10位日期部分
+            // daily_status.timestamp 格式为 "YYYY-MM-DD HH:MM:SS", 取前10位日期部分
             try {
                 std::string        first_date_str = backtest_data.daily_status.front().timestamp.substr(0, 10);
                 std::string        last_date_str  = backtest_data.daily_status.back().timestamp.substr(0, 10);
@@ -199,7 +199,7 @@ namespace backtest {
                               elapsed_days,
                               years);
             } catch (...) {
-                spdlog::warn("calculateResults: 无法解析日期，回退到交易日计数作为年化基准");
+                spdlog::warn("calculateResults: 无法解析日期, 回退到交易日计数作为年化基准");
                 years = (trading_days > 0) ? (static_cast<double>(trading_days) / 252.0) : 0.0;
             }
         } else {
@@ -209,21 +209,21 @@ namespace backtest {
         spdlog::debug("calculateResults: total_return_decimal={}, years={} ", total_return_decimal, years);
 
         if (trading_days <= 1 || initial <= 0.0) {
-            // 无法年化（只有1日或更少），将年化收益设为总收益（不年化）以避免夸大
-            spdlog::warn("calculateResults: 交易日过少（{}），不进行年化，直接返回总收益率作为年化近似", trading_days);
+            // 无法年化(只有1日或更少), 将年化收益设为总收益(不年化)以避免夸大
+            spdlog::warn("calculateResults: 交易日过少({}), 不进行年化, 直接返回总收益率作为年化近似", trading_days);
             annualized = total_return_decimal;
         } else if (years <= 0.0) {
-            // 无法计算有效年份（例如日期解析失败），回退到交易日/252的方法
+            // 无法计算有效年份(例如日期解析失败), 回退到交易日/252的方法
             double fallback_years = static_cast<double>(trading_days) / 252.0;
-            spdlog::warn("calculateResults: 无法基于日历天数计算年份，使用交易日退化年数={}进行年化", fallback_years);
+            spdlog::warn("calculateResults: 无法基于日历天数计算年份, 使用交易日退化年数={}进行年化", fallback_years);
             if (fallback_years > 0.0 && std::isfinite(total_return_decimal) && (1.0 + total_return_decimal) > 0.0) {
                 annualized = std::pow(1.0 + total_return_decimal, 1.0 / fallback_years) - 1.0;
             } else {
                 annualized = 0.0;
             }
         } else if (years < 0.0833333) {  // 小于约1个月 (1/12年)
-            // 时间窗口过短，年化会极度放大。为避免误导，保持不年化并输出告警。
-            spdlog::warn("calculateResults: 回测时间窗口过短（{:.1f}天），跳过年化以避免夸大结果", elapsed_days);
+            // 时间窗口过短, 年化会极度放大. 为避免误导, 保持不年化并输出告警. 
+            spdlog::warn("calculateResults: 回测时间窗口过短({:.1f}天), 跳过年化以避免夸大结果", elapsed_days);
             annualized = total_return_decimal;
         } else {
             // 正常计算 CAGR
@@ -277,9 +277,9 @@ namespace backtest {
         }
         backtest_data.result.max_drawdown = max_drawdown;
 
-        // // 计算交易统计：按完整回合（round-trip）统计已平仓回合数，支持部分成交（multi-fill）
-        // // 思路：对每个品种维护 FIFO 的开仓队列（每次买入产生一个 OpenLot），卖出（平仓）时按 FIFO 抵消开仓，
-        // //      仅当一个 OpenLot 被完全抵消（其剩余数量变为0）时，计为一个已完成的 round-trip。
+        // // 计算交易统计: 按完整回合(round-trip)统计已平仓回合数, 支持部分成交(multi-fill)
+        // // 思路: 对每个品种维护 FIFO 的开仓队列(每次买入产生一个 OpenLot), 卖出(平仓)时按 FIFO 抵消开仓, 
+        // //      仅当一个 OpenLot 被完全抵消(其剩余数量变为0)时, 计为一个已完成的 round-trip. 
         // size_t closed_roundtrips = 0;
         // size_t winning_roundtrips = 0;
         // double total_profit = 0.0;
@@ -299,7 +299,7 @@ namespace backtest {
             backtest_data.daily_status.empty()
                 ? 0.0
                 : (static_cast<double>(covered_days) / static_cast<double>(backtest_data.daily_status.size()) * 100.0);
-        // 兼容字段，保持旧名返回日级覆盖率
+        // 兼容字段, 保持旧名返回日级覆盖率
         backtest_data.result.coverage_rate = backtest_data.result.coverage_days_rate;
 
         // 统计未平仓头寸
@@ -318,7 +318,7 @@ namespace backtest {
     }
 
     void BacktestEngine::finalizeBacktest(const std::string &code, const data::KLine &last_bar) {
-        // 调试：打印开始结算信息
+        // 调试: 打印开始结算信息
         spdlog::debug("开始结算未平仓头寸...");
         // 检查剩余持仓
         auto &positions = position_manager.getPositions();
@@ -354,7 +354,7 @@ namespace backtest {
     }
 
     /**
-     * 计算持仓浮动盈亏（回测结束时调用）
+     * 计算持仓浮动盈亏(回测结束时调用)
      * @param last_price 最后交易日收盘价
      * @return 总浮动盈亏金额
      */
@@ -362,8 +362,8 @@ namespace backtest {
         double total_pnl = 0.0;
 
         for (auto &[symbol, position] : position_manager.getPositions()) {
-            // 多头：(现价 - 成本价)*数量
-            // 空头：(成本价 - 现价)*数量
+            // 多头: (现价 - 成本价)*数量
+            // 空头: (成本价 - 现价)*数量
             double pnl = (position.direction == TradeDirection::LONG)
                              ? (last_price - position.avg_price) * position.quantity
                              : (position.avg_price - last_price) * position.quantity;
@@ -371,7 +371,7 @@ namespace backtest {
             position.unrealized_pnl = pnl;
             total_pnl += pnl;
 
-            // 记录日志（生产环境可降低为DEBUG级别）
+            // 记录日志(生产环境可降低为DEBUG级别)
             spdlog::debug("[结算] {} 持仓量:{} 成本价:{} 结算价:{} 盈亏:{}",
                           symbol,
                           position.quantity,
@@ -411,7 +411,7 @@ namespace backtest {
             filtered_market_data.assign(market_data.begin(), market_data.end());
         }
 
-        // 预分配，避免频繁扩容
+        // 预分配, 避免频繁扩容
         backtest_data.result.equity_curve.clear();
         backtest_data.result.equity_curve.reserve(filtered_market_data.size());
         backtest_data.daily_status.clear();
@@ -422,7 +422,7 @@ namespace backtest {
         for (size_t i = 0; i < filtered_market_data.size(); ++i) {
             const auto &bar = filtered_market_data[i];
 
-            // 调试：打印当前处理日期
+            // 调试: 打印当前处理日期
             // spdlog::debug("处理日期: {}", bar.Datetime);
             // 更新持仓市值
             position_manager.updatePositions(code, bar);
@@ -437,12 +437,12 @@ namespace backtest {
                 continue;
             }
             if (signal != TradeDirection::FLAT) {
-                // 只有当有持仓时才允许卖出（平仓）
+                // 只有当有持仓时才允许卖出(平仓)
                 if (signal == TradeDirection::SHORT) {
                     if (!position_manager.hasPosition(code)) {
-                        // 没有持仓，禁止卖出
+                        // 没有持仓, 禁止卖出
                         spdlog::warn(
-                            "{} {}, signal:{}, 没有持仓，禁止卖出", bar.datetime, code, magic_enum::enum_name(signal));
+                            "{} {}, signal:{}, 没有持仓, 禁止卖出", bar.datetime, code, magic_enum::enum_name(signal));
                         continue;
                     }
                 }
@@ -460,7 +460,7 @@ namespace backtest {
                 Trade trade = executeOrder(order);
                 backtest_data.trades.push_back(trade);
 
-                // 调试：打印交易详情
+                // 调试: 打印交易详情
                 if (backtest_data.config.verbose)
                     spdlog::warn("执行交易: {} {}股 @{}  当前持仓量: {}",
                                  (trade.direction == TradeDirection::LONG ? "买入" : "卖出"),
@@ -472,13 +472,13 @@ namespace backtest {
                 position_manager.processTrade(trade);
             }
 
-            // 调试：打印每日持仓状态
+            // 调试: 打印每日持仓状态
             // spdlog::debug("日期结束持仓: {}股", position_manager.getPositionQuantity(code));
             // 记录每日状态
             backtest_data.result.equity_curve.push_back(backtest_data.account.current_capital +
                                                         position_manager.calculateTotalFloatingPnL(bar.close));
             recordDailyStatus(bar);
-            // 记录本Bar是否存在任何持仓（用于覆盖率计算）
+            // 记录本Bar是否存在任何持仓(用于覆盖率计算)
             if (!position_manager.getPositions().empty()) {
                 ++bars_with_positions;
             }
@@ -489,9 +489,9 @@ namespace backtest {
         if (!market_data.empty()) {
             finalizeBacktest(code, market_data.back());
         }
-        // 日内/Bar级覆盖率（保留供调试/扩展使用）
+        // 日内/Bar级覆盖率(保留供调试/扩展使用)
         if (!filtered_market_data.empty()) {
-            // 存储为 bar 级覆盖率（百分比）
+            // 存储为 bar 级覆盖率(百分比)
             backtest_data.result.coverage_bars_rate = static_cast<double>(bars_with_positions) /
                                                       static_cast<double>(filtered_market_data.size()) * 100.0;
         } else {
@@ -511,7 +511,7 @@ namespace backtest {
         backtest_data.trades = trades;
     }
 
-    // 从 trades 中重建 round-trip 统计（FIFO 开仓匹配），处理部分成交
+    // 从 trades 中重建 round-trip 统计(FIFO 开仓匹配), 处理部分成交
     void BacktestEngine::computeRoundTripStats() {
     // Delegate to the pure helper to allow reuse in tests
     backtest::computeRoundTripStatsFromTrades(backtest_data.trades, backtest_data.result);
@@ -535,9 +535,9 @@ namespace backtest {
         std::cout << "年化波动率: " << result.annualized_volatility << "%\n";
         std::cout << "夏普比率: " << result.sharpe_ratio << "\n";
         std::cout << "最大回撤: " << result.max_drawdown << "%\n";
-    // 区分两个概念：
-    //  - 总成交事件数: backtest_data.trades.size()（每一笔成交/fill）
-    //  - 总回合数(已平仓): result.total_trades（按完整 round-trip 统计的已闭合回合数）
+    // 区分两个概念: 
+    //  - 总成交事件数: backtest_data.trades.size()(每一笔成交/fill)
+    //  - 总回合数(已平仓): result.total_trades(按完整 round-trip 统计的已闭合回合数)
     std::cout << "总成交事件数: " << backtest_data.trades.size() << "\n";
     std::cout << "总回合数(已平仓): " << result.total_trades << "\n";
         std::cout << "胜率: " << result.win_rate << "%\n";

@@ -6,9 +6,9 @@ namespace strings {
         return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
     }
 
-    // 使用位掩码优化，性能好且易于扩展 [存在掩码误报的情况]
+    // 使用位掩码优化, 性能好且易于扩展 [存在掩码误报的情况]
     bool v1_is_whitespace(char ch) {
-        // 定义空白字符的掩码：
+        // 定义空白字符的掩码: 
         // 空格 ' ' (0x20), 制表符 '\t' (0x09), 换行 '\n' (0x0A), 回车 '\r' (0x0D)
         constexpr unsigned int whitespace_mask =
             (1 << (' '  & 0x1F)) |  // 空格
@@ -137,16 +137,16 @@ namespace strings {
         return ss.str();
     }
 
-    // 将字节数组转换为十六进制字符串（默认大写）
+    // 将字节数组转换为十六进制字符串(默认大写)
     std::string bytesToHex(const std::vector<uint8_t>& bytes, bool uppercase) {
         std::string hex;
-        hex.reserve(bytes.size() * 2); // 预分配内存，避免多次扩容
+        hex.reserve(bytes.size() * 2); // 预分配内存, 避免多次扩容
 
-        // 十六进制字符表（大写或小写）
+        // 十六进制字符表(大写或小写)
         const char* hex_chars = uppercase ? "0123456789ABCDEF" : "0123456789abcdef";
 
         for (uint8_t byte : bytes) {
-            // 提取高4位和低4位，并映射到对应的字符
+            // 提取高4位和低4位, 并映射到对应的字符
             hex.push_back(hex_chars[byte >> 4]);    // 高四位
             hex.push_back(hex_chars[byte & 0x0F]);  // 低四位
         }

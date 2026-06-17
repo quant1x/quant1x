@@ -45,18 +45,18 @@ class ActionType(Enum):
     MIXED = "混合方案"
     SPIN_OFF = "分拆上市"
 
-# ================= 核心数据模型（扁平化，含 Bonus）=================
+# ================= 核心数据模型(扁平化, 含 Bonus)=================
 
 @dataclass
 class DividendAdjustmentRecord:
     """
     除权除息记录 - 扁平化设计
     
-    明确区分：
-    - Dividend（现金分红）
-    - Bonus（送红股）
-    - Split（拆股）
-    - Consolidation（缩股/合并）
+    明确区分: 
+    - Dividend(现金分红)
+    - Bonus(送红股)
+    - Split(拆股)
+    - Consolidation(缩股/合并)
     
     金额与币种独立存储
     """
@@ -68,27 +68,27 @@ class DividendAdjustmentRecord:
     # ===== 日期字段 =====
     announcement_date: Optional[str] = None   # 公告日期
     record_date: Optional[str] = None         # 股权登记日
-    ex_date: Optional[str] = None             # 除权除息日（核心）
+    ex_date: Optional[str] = None             # 除权除息日(核心)
     payment_date: Optional[str] = None        # 派息/到账日
     
-    # ===== Dividend 专用字段（现金分红）⭐ =====
+    # ===== Dividend 专用字段(现金分红)⭐ =====
     dividend_amount: Optional[float] = None   # 每股现金分红金额
     dividend_currency: Optional[str] = None   # 分红币种 (CNY/HKD/USD)
     dividend_type: DividendType = DividendType.NONE
     
-    # ===== Bonus 专用字段（送红股）⭐ 新增 =====
+    # ===== Bonus 专用字段(送红股)⭐ 新增 =====
     bonus_ratio: Optional[float] = None       # 红股比例 (如 10 送 3 -> 0.3)
     bonus_type: BonusType = BonusType.NONE    # 红股类型
     
-    # ===== Split 专用字段（拆股）=====
+    # ===== Split 专用字段(拆股)=====
     split_ratio: Optional[float] = None       # 拆股比例 (1 拆 5 -> 5.0)
     
-    # ===== Rights Issue 专用字段（供股/配股）=====
+    # ===== Rights Issue 专用字段(供股/配股)=====
     rights_ratio: Optional[float] = None      # 配股比例
     rights_price: Optional[float] = None      # 配股价
     rights_currency: Optional[str] = None     # 配股价币种
     
-    # ===== Consolidation 专用字段（缩股/合并）=====
+    # ===== Consolidation 专用字段(缩股/合并)=====
     consolidation_ratio: Optional[float] = None  # 缩股比例 (10 合 1 -> 0.1)
     consolidation_base: Optional[int] = None     # 合并基数 (10)
     consolidation_target: Optional[int] = None   # 合并目标 (1)
@@ -141,8 +141,8 @@ class DividendAdjustmentRecord:
     
     def get_adjustment_factor(self) -> Dict[str, float]:
         """
-        获取除权除息因子（用于复权计算）
-        返回：{price_factor, share_factor, cash_dividend}
+        获取除权除息因子(用于复权计算)
+        返回: {price_factor, share_factor, cash_dividend}
         """
         factor = {
             "price_factor": 1.0,
@@ -154,19 +154,19 @@ class DividendAdjustmentRecord:
         if self.has_cash_dividend():
             factor["cash_dividend"] = self.dividend_amount
         
-        # 2. Bonus 红股（股份扩张，价格下降）⭐
+        # 2. Bonus 红股(股份扩张, 价格下降)⭐
         if self.has_bonus():
             bonus_factor = self.get_bonus_factor()
             factor["price_factor"] /= bonus_factor
             factor["share_factor"] *= bonus_factor
         
-        # 3. Split 拆股（股份扩张，价格下降）
+        # 3. Split 拆股(股份扩张, 价格下降)
         if self.has_split():
             split_factor = self.get_split_factor()
             factor["price_factor"] /= split_factor
             factor["share_factor"] *= split_factor
         
-        # 4. Consolidation 缩股/合并（股份收缩，价格上升）
+        # 4. Consolidation 缩股/合并(股份收缩, 价格上升)
         if self.has_consolidation():
             cf = self.get_consolidation_factor()
             if cf and cf > 0:
@@ -206,9 +206,9 @@ class DividendAdjustment:
     """
     分红除权除息数据处理中心
     
-    功能：
-    1. 统一存储 A 股、港股、美股、英股等多市场数据
-    2. 明确区分 Dividend（现金）、Bonus（红股）、Split（拆股）
+    功能: 
+    1. 统一存储 A 股, 港股, 美股, 英股等多市场数据
+    2. 明确区分 Dividend(现金), Bonus(红股), Split(拆股)
     3. 金额与币种独立存储
     4. 支持复权计算
     """
@@ -379,7 +379,7 @@ class DividendAdjustment:
                 ])
 
 
-# ================= 使用示例（含 Bonus 场景）⭐ =================
+# ================= 使用示例(含 Bonus 场景)⭐ =================
 
 if __name__ == "__main__":
     import json
@@ -482,7 +482,7 @@ if __name__ == "__main__":
         rights_ratio=0.5,  # 2 供 1
         rights_price=10.0,
         rights_currency="HKD",
-        raw_description="每 2 股供 1 股，供股价 10 港元"
+        raw_description="每 2 股供 1 股, 供股价 10 港元"
     ))
     
     # 输出汇总
@@ -492,37 +492,37 @@ if __name__ == "__main__":
     print("\n=== 除息价格计算 ===")
     original_price = 400.0
     ex_price = dividend_processor.calculate_ex_dividend_price("00700.HK", original_price, "2025-05-16")
-    print(f"腾讯控股 除息前：{original_price} HKD → 除息后：{ex_price} HKD")
+    print(f"腾讯控股 除息前: {original_price} HKD → 除息后: {ex_price} HKD")
     
     # 测试 Bonus 价格计算
     print("\n=== 送红股价格计算 ===")
     original_price = 100.0
     ex_price = dividend_processor.calculate_ex_dividend_price("00005.HK", original_price, "2024-05-21")
-    print(f"送红股前：{original_price} HKD → 送红股后：{ex_price} HKD (10 送 2)")
+    print(f"送红股前: {original_price} HKD → 送红股后: {ex_price} HKD (10 送 2)")
     
     # 测试混合方案价格计算
     print("\n=== 混合方案价格计算 ===")
     original_price = 80.0
     ex_price = dividend_processor.calculate_ex_dividend_price("00001.HK", original_price, "2024-05-26")
-    print(f"混合方案前：{original_price} HKD → 除权后：{ex_price} HKD (派息 1.5 + 10 送 1)")
+    print(f"混合方案前: {original_price} HKD → 除权后: {ex_price} HKD (派息 1.5 + 10 送 1)")
     
     # 测试缩股价格计算
     print("\n=== 缩股价格计算 ===")
     original_price = 1.5
     ex_price = dividend_processor.calculate_ex_dividend_price("01234.HK", original_price, "2024-07-11")
-    print(f"缩股前：{original_price} HKD → 缩股后：{ex_price} HKD (10 合 1)")
+    print(f"缩股前: {original_price} HKD → 缩股后: {ex_price} HKD (10 合 1)")
     
     # 测试分红收入计算
     print("\n=== 分红收入计算 ===")
     shares = 1000
     income = dividend_processor.get_total_dividend_income("00700.HK", shares)
-    print(f"持有 {shares} 股腾讯控股，预计现金分红收入：{income} HKD")
+    print(f"持有 {shares} 股腾讯控股, 预计现金分红收入: {income} HKD")
     
     # 测试红股数量计算 ⭐ 新增
     print("\n=== 送红股数量计算 ===")
     shares = 1000
     bonus_shares = dividend_processor.get_total_bonus_shares("00005.HK", shares)
-    print(f"持有 {shares} 股，预计获得红股：{bonus_shares} 股 (10 送 2)")
+    print(f"持有 {shares} 股, 预计获得红股: {bonus_shares} 股 (10 送 2)")
     
     # 测试除权描述
     print("\n=== 除权描述 ===")

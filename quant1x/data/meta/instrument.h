@@ -11,7 +11,7 @@ namespace meta {
 
 /// 资产子类型(高4位), 语义由主类型(InstrumentType)决定
 enum Subtype : uint8_t {
-    SubtypeDefault        = 0x00, ///< 默认/无特殊子类(如A股、普通指数)
+    SubtypeDefault        = 0x00, ///< 默认/无特殊子类(如A股, 普通指数)
     SubtypeChinext        = 0x10, ///< 深交所, 创业板
     SubtypeStar           = 0x20, ///< 上交所, 科创板
     SubtypeB              = 0x30, ///< B股
@@ -183,7 +183,7 @@ struct Instrument {
                lot_size > 0 && price_precision > 0;
     }
 
-    /// 获取证券代码（优先返回 alias_ticker）
+    /// 获取证券代码(优先返回 alias_ticker)
     std::string code() const {
         return alias_ticker.empty() ? ticker : alias_ticker;
     }

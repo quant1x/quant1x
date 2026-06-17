@@ -4,44 +4,48 @@
 
 /// data/status — 数据源无关的文件状态检查
 /// 与 Python data/status.py 和 Rust data/status.rs 对齐
+///
+/// Python status.py 调用 cache.get_filename_modified_time() + session.can_initialize()/check_trading_timestamp()
+/// C++ 同样调用 data::get_filename_modified_time() + meta::can_initialize()/meta::check_trading_timestamp()
 
-#include <quant1x/data/meta/timestamp.h>
-#include <quant1x/io/file.h>
-#include <filesystem>
+#include <quant1x/data/cache.h>
+#include <quant1x/data/meta/session.h>
 
 namespace data {
 
-/// 检查文件是否需要 (重新) 初始化
-/// 规则:
-///   - 文件不存在或为空 → true
-///   - 文件修改时间早于今日盘前时间 → true (文件过期, 需刷新)
-///   - 否则 → false (今日已生成)
+/// 检查是否应该初始化文件, 基于文件修改时间和交易所交易时段
 ///
-/// 对齐 Python data/status.py should_initialize_file()
-/// C++ 简化版: 不依赖完整交易日历 (待后续接入)
-inline bool should_initialize_file(const std::string& fname) {
-    if (!std::filesystem::exists(fname)) {
+/// 对齐 Python status.should_initialize_file()
+/// - 获取文件修改时间失败 → true
+/// - 调用 meta::can_initialize() 判断
+///
+/// @param fname 文件路径
+/// @param exchange 交易所, 默认 SSE
+/// @return true 需要初始化, false 不需要
+inline bool should_initialize_file(const std::string& fname, meta::Exchange exchange = meta::Exchange::SSE) {
+    meta::Timestamp mod_time = get_filename_modified_time(fname);
+    if (mod_time == meta::Timestamp::zero()) {
         return true;
     }
-    if (std::filesystem::file_size(fname) == 0) {
-        return true;
-    }
-    int64_t mod_ms = 0;
-    try {
-        mod_ms = io::last_modified_time(fname);
-    } catch (const std::exception&) {
-        return true; // cannot stat → treat as stale
-    }
-    if (mod_ms <= 0) return true;
+    return meta::can_initialize(exchange, mod_time);
+}
 
-    meta::Timestamp mod_time(mod_ms);
-    meta::Timestamp pre_market = meta::Timestamp::now().pre_market_time();
-
-    // 如果最后修改时间早于今日盘前, 文件已陈旧
-    if (mod_time < pre_market) {
+/// 检查文件是否需要更新, 基于文件修改时间和交易所交易时间
+///
+/// 对齐 Python status.should_update_file()
+/// - 获取文件修改时间失败 → true
+/// - 调用 meta::check_trading_timestamp() 判断 update_in_real_time
+///
+/// @param fname 文件路径
+/// @param exchange 交易所, 默认 SSE
+/// @return true 需要更新, false 不需要
+inline bool should_update_file(const std::string& fname, meta::Exchange exchange = meta::Exchange::SSE) {
+    meta::Timestamp mod_time = get_filename_modified_time(fname);
+    if (mod_time == meta::Timestamp::zero()) {
         return true;
     }
-    return false;
+    meta::RuntimeStatus rs = meta::check_trading_timestamp(exchange, mod_time);
+    return rs.update_in_real_time;
 }
 
 } // namespace data

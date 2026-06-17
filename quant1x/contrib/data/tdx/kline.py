@@ -281,7 +281,7 @@ def check_kline_offset(klines: List[Any], as_of_date: str, freq: Frequency=FREQ_
         freq (Frequency): K线频率, 默认为日线
     
     Returns:
-        int: 目标日期在K线中的偏移量（从最新数据开始计数）, 
+        int: 目标日期在K线中的偏移量(从最新数据开始计数), 
              如果未找到或日期早于最早数据则返回-1
     """
     rows = len(klines)
@@ -371,7 +371,7 @@ def apply_forward_adjustment_incrementally(klines: List[Bar],
                                            as_of_date: Timestamp,
                                            truncate_to_as_of_date: bool = True):
     """
-    对K线数据进行增量式前复权处理, 按时间顺序逐步应用复权因子。
+    对K线数据进行增量式前复权处理, 按时间顺序逐步应用复权因子. 
     
     Args:
         klines (List[Any]): 待复权的K线数据列表, 会被原地修改
@@ -460,7 +460,7 @@ def get_cross_section_forward_adjusted_klines(inst: Instrument, as_of_date: str)
         as_of_date (str): 截止日期, 格式为YYYY-MM-DD
     
     Returns:
-        List[Bar]: 从上市首日至截止日期的所有前复权K线记录列表, 包含日期、开盘价、收盘价、最高价、最低价、成交量等字段
+        List[Bar]: 从上市首日至截止日期的所有前复权K线记录列表, 包含日期, 开盘价, 收盘价, 最高价, 最低价, 成交量等字段
     
     Note:
         1. 会自动处理证券代码格式转换

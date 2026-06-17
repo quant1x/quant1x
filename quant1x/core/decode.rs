@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
 
-// DecodeTo 将 src（通常是 map[string]any / []any / 基础类型）解码到 dst（通常是 *Struct）。
+// DecodeTo 将 src(通常是 map[string]any / []any / 基础类型)解码到 dst(通常是 *Struct). 
 //
-// 采用 yaml 的 marshal/unmarshal 作为桥接，适合从动态 map 转成强类型结构体。
+// 采用 yaml 的 marshal/unmarshal 作为桥接, 适合从动态 map 转成强类型结构体. 
 pub fn decode_to<T: for<'de> Deserialize<'de>>(dst: &mut T, src: &serde_yaml::Value) -> Result<(), Box<dyn std::error::Error>> {
     let cleaned = prune_nil(src.clone());
     let data = serde_yaml::to_string(&cleaned)?;
@@ -13,9 +13,9 @@ pub fn decode_to<T: for<'de> Deserialize<'de>>(dst: &mut T, src: &serde_yaml::Va
     Ok(())
 }
 
-// LookupConfig 从 GetConfigMapRef() 中按路径查找值。
+// LookupConfig 从 GetConfigMapRef() 中按路径查找值. 
 //
-// path 支持用 '.' 分隔的多级 key，例如："engine.mysql"。
+// path 支持用 '.' 分隔的多级 key, 例如: "engine.mysql". 
 pub fn lookup_config(path: &str) -> Option<serde_yaml::Value> {
     let config_map = crate::core::get_config_map_ref();
     if path.is_empty() {
@@ -39,10 +39,10 @@ pub fn lookup_config(path: &str) -> Option<serde_yaml::Value> {
     Some(current)
 }
 
-// DecodeConfig 按 path 查找配置段，并解码到 dst。
+// DecodeConfig 按 path 查找配置段, 并解码到 dst. 
 //
-// - 如果目标结构体字段带有 `default:"..."`，会在解码后调用 ApplyDefaults(dst) 填充零值默认值。
-// - 如果配置文件中配置项存在且有效，则覆盖默认值；如果不存在，则仅使用默认值。
+// - 如果目标结构体字段带有 `default:"..."`, 会在解码后调用 ApplyDefaults(dst) 填充零值默认值. 
+// - 如果配置文件中配置项存在且有效, 则覆盖默认值；如果不存在, 则仅使用默认值. 
 pub fn decode_config<T: for<'de> Deserialize<'de> + Default>(path: &str, dst: &mut T) -> Result<(), Box<dyn std::error::Error>> {
     // Apply defaults first
     *dst = T::default();

@@ -38,7 +38,7 @@ struct History {
     int         NewNoLowN;            // 低点提高次数
     int         NewLowN;              // 新低次数
     int64_t     OpenVolume;           // 开盘量
-    int         AdjustmentCount;      // 新增：除权除息次数
+    int         AdjustmentCount;      // 新增: 除权除息次数
     std::string UpdateTime;           // 更新时间
     uint64_t    State;                // 样本状态
 

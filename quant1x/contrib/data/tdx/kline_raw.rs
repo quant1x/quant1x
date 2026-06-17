@@ -1,9 +1,9 @@
 // Copyright (c) Quant1X <wangfengxy@sina.cn>.
 // Licensed under the MIT License.
 //
-// kline_raw — 未复权K线数据适配器，与 Python contrib/data/tdx/kline_raw.py 对齐
+// kline_raw — 未复权K线数据适配器, 与 Python contrib/data/tdx/kline_raw.py 对齐
 //
-// 不依赖 crate::contrib::data::tdx::standard，所有类型均使用 tdx/ 本地模块定义。
+// 不依赖 crate::contrib::data::tdx::standard, 所有类型均使用 tdx/ 本地模块定义. 
 
 use std::sync::Arc;
 use serde::{Deserialize, Serialize};
@@ -18,17 +18,17 @@ use super::level1::std::security_bars::{SecurityBarsRequest, SecurityBar as StdS
 use super::protocol::{BaseMessage, RequestHeader, ResponseHeader};
 use crate::std::BinaryStream;
 
-/// 日线增量更新时丢弃的缓存天数，与 Python MaxCachedDaysToDropOnIncrementalUpdate 对齐
+/// 日线增量更新时丢弃的缓存天数, 与 Python MaxCachedDaysToDropOnIncrementalUpdate 对齐
 const MAX_CACHED_DAYS_TO_DROP: usize = 1;
 
-/// 每页请求的最大K线数量，与 Python SECURITY_BARS_PRE_REQUEST_MAX 对齐
+/// 每页请求的最大K线数量, 与 Python SECURITY_BARS_PRE_REQUEST_MAX 对齐
 const SECURITY_BARS_PRE_REQUEST_MAX: usize = 800;
 
 // ============================================================
-// SecurityBar — 本地定义的K线Bar（不依赖 crate::level1）
+// SecurityBar — 本地定义的K线Bar(不依赖 crate::level1)
 // ============================================================
 
-/// 单根K线数据，与 Python level1/__init__.py 的 SecurityBar 对齐
+/// 单根K线数据, 与 Python level1/__init__.py 的 SecurityBar 对齐
 #[derive(Debug, Clone)]
 pub struct SecurityBar {
     pub open: f64,
@@ -47,7 +47,7 @@ pub struct SecurityBar {
     pub down_count: i32,
 }
 
-/// SecurityBars 响应包装（本地定义）
+/// SecurityBars 响应包装(本地定义)
 #[derive(Debug, Clone)]
 pub struct SecurityBarsResponse {
     pub count: u16,
@@ -63,10 +63,10 @@ impl SecurityBarsResponse {
 }
 
 // ============================================================
-// KLineType — 本地定义，不依赖 crate::contrib::data::tdx::standard
+// KLineType — 本地定义, 不依赖 crate::contrib::data::tdx::standard
 // ============================================================
 
-/// K线类型，与 Python level1/__init__.py 的 KLineType 对齐
+/// K线类型, 与 Python level1/__init__.py 的 KLineType 对齐
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
 pub enum KLineType {
@@ -84,7 +84,7 @@ pub enum KLineType {
     RiK,
 }
 
-/// 将 KLineType 转换为频率值（用于 InstrumentBars）
+/// 将 KLineType 转换为频率值(用于 InstrumentBars)
 fn kline_type_to_value(kline_type: KLineType) -> u16 {
     match kline_type {
         KLineType::_1Min => 8,
@@ -106,7 +106,7 @@ fn kline_type_to_value(kline_type: KLineType) -> u16 {
 // 对应 Python level1/ext.py 的 InstrumentBars
 // ============================================================
 
-/// 扩展行情K线请求（同时承载响应数据，与 Python InstrumentBars 设计一致）
+/// 扩展行情K线请求(同时承载响应数据, 与 Python InstrumentBars 设计一致)
 /// 命令字: EXT_INSTRUMENT_BARS (0x23ff)
 #[derive(Debug, Clone)]
 pub struct InstrumentBars {
@@ -286,7 +286,7 @@ impl KLineRaw {
     }
 }
 
-/// 生成原始K线缓存文件路径，与 Python get_kline_raw_filename 对齐
+/// 生成原始K线缓存文件路径, 与 Python get_kline_raw_filename 对齐
 pub fn get_kline_raw_filename(inst: &Instrument) -> String {
     let symbol = inst.symbol();
     let sub = format!("day_raw/{}", inst.cache_dir());
@@ -316,7 +316,7 @@ pub fn ensure_kline_raw_updated(inst: &Instrument) {
     adapter.update(inst, Timestamp::now());
 }
 
-/// 获取未复权K线数据，如果缓存不存在或过期则先更新
+/// 获取未复权K线数据, 如果缓存不存在或过期则先更新
 pub fn checkout_kline_raw(inst: &Instrument) -> Vec<KLineRaw> {
     ensure_kline_raw_updated(inst);
     load_kline_raw(inst)
@@ -388,7 +388,7 @@ pub fn fetch_kline_raw(
 /// 从标准行情获取原始K线
 /// 对应 Python kline_raw.py fetch_kline_raw_from_std:
 ///   msg = SecurityBars(inst.exchange, inst.ticker, kline_type, start, count, inst.type.is_index())
-/// 使用 STD_SECURITY_BARS (0x052d) 命令，通过标准行情连接获取
+/// 使用 STD_SECURITY_BARS (0x052d) 命令, 通过标准行情连接获取
 fn fetch_kline_raw_from_std(
     inst: &Instrument,
     start: u32,
@@ -400,7 +400,7 @@ fn fetch_kline_raw_from_std(
 
     match super::client::get_std_conn() {
         Ok(mut conn) => {
-            // 使用 SecurityBarsRequest (STD_SECURITY_BARS, 0x052d)，不是 InstrumentBars (EXT_INSTRUMENT_BARS, 0x23ff)
+            // 使用 SecurityBarsRequest (STD_SECURITY_BARS, 0x052d), 不是 InstrumentBars (EXT_INSTRUMENT_BARS, 0x23ff)
             let symbol = format!("{}{}", inst.exchange.identifier(), ticker);
             let mut bars = SecurityBarsRequest::with_is_index(
                 &symbol,
@@ -448,7 +448,7 @@ fn fetch_kline_raw_from_std(
     }
 }
 
-/// 从扩展行情获取原始K线（港股/美股等）
+/// 从扩展行情获取原始K线(港股/美股等)
 /// 复用 client::get_ext_conn() 连接池
 fn fetch_kline_raw_from_ext(
     inst: &Instrument,
@@ -567,7 +567,7 @@ impl DataAdapter for DataKLineRaw {
             }
         }
 
-        // 4. 反转页面（时间升序）
+        // 4. 反转页面(时间升序)
         hs.reverse();
 
         // 5. 构建增量K线列表

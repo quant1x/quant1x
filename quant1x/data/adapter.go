@@ -35,7 +35,7 @@ type Schema interface {
 // DataAdapter 基础数据适配器接口
 type DataAdapter interface {
 	Schema
-	// Print 控制台打印，dates 可选
+	// Print 控制台打印, dates 可选
 	Print(instrument exchange.InstrumentInfo, dates ...exchange.Timestamp)
 	// Update 更新数据
 	Update(instrument exchange.InstrumentInfo, date exchange.Timestamp)
@@ -59,12 +59,12 @@ const cache1dPrefix = "flash"
 //
 // 参数:
 //
-//	f: FeatureAdapter实例，提供缓存键值
-//	timestamp: 交易所时间戳，用于确定日期路径
+//	f: FeatureAdapter实例, 提供缓存键值
+//	timestamp: 交易所时间戳, 用于确定日期路径
 //
 // 返回:
 //
-//	生成的完整缓存文件路径，路径已清理
+//	生成的完整缓存文件路径, 路径已清理
 func FeatureFilename(f FeatureAdapter, timestamp exchange.Timestamp) string {
 	key := f.Key()
 	pos := strings.IndexByte(key, '/')
@@ -94,7 +94,7 @@ var (
 	ErrAlreadyExists = errors.New("the plugin already exists")
 )
 
-// GetDataAdapter 按 Kind 获取已注册的适配器（或 nil）
+// GetDataAdapter 按 Kind 获取已注册的适配器(或 nil)
 func GetDataAdapter(kind Kind) DataAdapter {
 	pluginMutex.Lock()
 	defer pluginMutex.Unlock()
@@ -104,7 +104,7 @@ func GetDataAdapter(kind Kind) DataAdapter {
 	return nil
 }
 
-// Register 注册一个 DataAdapter，若已存在返回 ErrAlreadyExists
+// Register 注册一个 DataAdapter, 若已存在返回 ErrAlreadyExists
 func Register(plugin DataAdapter) error {
 	pluginMutex.Lock()
 	defer pluginMutex.Unlock()
@@ -157,7 +157,7 @@ func PluginsWithName(pluginType Kind, keywords ...string) []DataAdapter {
 	return out
 }
 
-// Plugins 返回按 kind 排序的适配器列表。mask 为 0 返回全部。
+// Plugins 返回按 kind 排序的适配器列表. mask 为 0 返回全部.
 func Plugins(mask Kind) []DataAdapter {
 	pluginMutex.Lock()
 	defer pluginMutex.Unlock()

@@ -28,7 +28,7 @@ _SCHEDULER_LOCK = threading.Lock()
 class Scheduler:
     """
     动态任务调度器
-    支持启动后动态添加、删除任务，优雅关闭
+    支持启动后动态添加, 删除任务, 优雅关闭
     """
     
     def __init__(self, 
@@ -50,7 +50,7 @@ class Scheduler:
             job_defaults = {
                 'coalesce': False,  # 是否合并错过执行的任务
                 'max_instances': 3,  # 最大并发实例数
-                'misfire_grace_time': 30  # 错过执行的容忍时间（秒）
+                'misfire_grace_time': 30  # 错过执行的容忍时间(秒)
             }
         
         if executor_defaults is None:
@@ -105,13 +105,13 @@ class Scheduler:
     
     def _signal_handler(self, signum, frame):
         """信号处理器"""
-        logger.debug(f"接收到信号 {signum}，正在关闭调度器...")
+        logger.debug(f"接收到信号 {signum}, 正在关闭调度器...")
         self.shutdown()
     
     def _cleanup(self):
         """清理函数"""
         if not self._is_shutting_down and self._is_running:
-            logger.debug("程序退出，正在清理调度器...")
+            logger.debug("程序退出, 正在清理调度器...")
             self.shutdown()
     
     def start(self) -> bool:
@@ -127,7 +127,7 @@ class Scheduler:
                 return False
             
             if self._is_shutting_down:
-                logger.warning("调度器正在关闭中，无法启动")
+                logger.warning("调度器正在关闭中, 无法启动")
                 return False
             
             try:
@@ -157,14 +157,14 @@ class Scheduler:
             seconds: 间隔秒数
             minutes: 间隔分钟数
             hours: 间隔小时数
-            id: 任务ID，如果为None则自动生成
+            id: 任务ID, 如果为None则自动生成
             args: 函数位置参数
             kwargs: 函数关键字参数
             replace_existing: 是否替换已存在的任务
             **job_kwargs: 其他任务参数
             
         Returns:
-            Optional[str]: 任务ID，如果添加失败则返回None
+            Optional[str]: 任务ID, 如果添加失败则返回None
         """
         if kwargs is None:
             kwargs = {}
@@ -174,7 +174,7 @@ class Scheduler:
         
         with self._lock:
             if id in self.jobs_registry and not replace_existing:
-                logger.warning(f"任务 {id} 已存在，使用 replace_existing=True 替换")
+                logger.warning(f"任务 {id} 已存在, 使用 replace_existing=True 替换")
                 return None
             
             try:
@@ -227,7 +227,7 @@ class Scheduler:
         
         Args:
             func: 要执行的函数
-            cron_expression: Cron表达式，可以是字符串或字典
+            cron_expression: Cron表达式, 可以是字符串或字典
             id: 任务ID
             args: 函数位置参数
             kwargs: 函数关键字参数
@@ -245,13 +245,13 @@ class Scheduler:
         
         with self._lock:
             if id in self.jobs_registry and not replace_existing:
-                logger.warning(f"任务 {id} 已存在，使用 replace_existing=True 替换")
+                logger.warning(f"任务 {id} 已存在, 使用 replace_existing=True 替换")
                 return None
             
             try:
                 # 解析Cron表达式
                 if isinstance(cron_expression, str):
-                    # 字符串格式: "*/5 * * * * *" (6字段，包含秒)
+                    # 字符串格式: "*/5 * * * * *" (6字段, 包含秒)
                     fields = cron_expression.strip().split()
                     if len(fields) == 6:
                         # 6字段: 秒 分 时 日 月 星期
@@ -313,18 +313,18 @@ class Scheduler:
         
         Args:
             id: 任务ID
-            force: 是否强制删除（即使任务正在运行）
+            force: 是否强制删除(即使任务正在运行)
             
         Returns:
             bool: 是否删除成功
         """
         with self._lock:
             if not self._is_running:
-                logger.warning("调度器未运行，无法删除任务")
+                logger.warning("调度器未运行, 无法删除任务")
                 return False
             
             if id not in self.jobs_registry:
-                # 屏蔽日志，避免频繁输出
+                # 屏蔽日志, 避免频繁输出
                 #logger.warning(f"任务 {id} 不存在")
                 return False
             
@@ -336,7 +336,7 @@ class Scheduler:
                     self.jobs_registry.pop(id, None)
                     return False
                 
-                # 如果任务正在运行且不强制删除，则先暂停
+                # 如果任务正在运行且不强制删除, 则先暂停
                 if job.next_run_time and not force:
                     logger.debug(f"任务 {id} 将在下次执行时删除")
                 
@@ -365,7 +365,7 @@ class Scheduler:
         """
         with self._lock:
             if not self._is_running:
-                logger.warning("调度器未运行，无法暂停任务")
+                logger.warning("调度器未运行, 无法暂停任务")
                 return False
             
             if id not in self.jobs_registry:
@@ -392,7 +392,7 @@ class Scheduler:
         """
         with self._lock:
             if not self._is_running:
-                logger.warning("调度器未运行，无法恢复任务")
+                logger.warning("调度器未运行, 无法恢复任务")
                 return False
             
             if id not in self.jobs_registry:
@@ -498,7 +498,7 @@ class Scheduler:
         
         Args:
             wait: 是否等待任务完成
-            timeout: 等待超时时间（秒）
+            timeout: 等待超时时间(秒)
             
         Returns:
             bool: 是否关闭成功
@@ -518,7 +518,7 @@ class Scheduler:
                 
                 # 等待运行中的任务完成
                 if wait:
-                    logger.debug(f"等待运行中的任务完成（最多等待{timeout}秒）...")
+                    logger.debug(f"等待运行中的任务完成(最多等待{timeout}秒)...")
                     start_time = time.time()
                     
                     while time.time() - start_time < timeout:
@@ -588,7 +588,7 @@ class Scheduler:
     @classmethod
     def get_instance(cls, **kwargs) -> 'Scheduler':
         """
-        获取全局调度器实例（懒加载）
+        获取全局调度器实例(懒加载)
         kwargs 仅在首次创建时生效
         """
         global _GLOBAL_SCHEDULER
@@ -617,11 +617,11 @@ if __name__ == "__main__":
         time.sleep(1)  # 模拟耗时操作
     
     def sample_task2(name: str, count: int = 1):
-        """示例任务2，带参数"""
+        """示例任务2, 带参数"""
         print(f"[任务2-{name}] 执行第{count}次: {datetime.now().strftime('%H:%M:%S')}")
     
     def sample_task3():
-        """示例任务3，长时间运行"""
+        """示例任务3, 长时间运行"""
         print(f"[任务3] 开始长时间任务: {datetime.now().strftime('%H:%M:%S')}")
         time.sleep(5)
         print(f"[任务3] 长时间任务完成: {datetime.now().strftime('%H:%M:%S')}")
@@ -679,14 +679,14 @@ if __name__ == "__main__":
             
             time.sleep(5)
         else:
-            print("\n❌ 任务2添加失败，跳过暂停/恢复操作")
+            print("\n❌ 任务2添加失败, 跳过暂停/恢复操作")
         
         # 删除任务
         if job1_id:
             print(f"\n🗑️  删除任务 {job1_id}")
             scheduler.remove_job(job1_id)
         else:
-            print("\n❌ 任务1添加失败，跳过删除操作")
+            print("\n❌ 任务1添加失败, 跳过删除操作")
         
         # 获取统计信息
         print("\n📊 调度器统计:")
@@ -695,8 +695,8 @@ if __name__ == "__main__":
             if key != 'next_run_times':
                 print(f"  - {key}: {value}")
         
-        # 等待一段时间，观察任务执行
-        print("\n⏳ 观察任务执行（10秒）...")
+        # 等待一段时间, 观察任务执行
+        print("\n⏳ 观察任务执行(10秒)...")
         time.sleep(10)
         
         # 优雅关闭

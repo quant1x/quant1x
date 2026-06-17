@@ -12,14 +12,14 @@ RATIO_PATTERN = re.compile(r'每\s*(\d+)\s*股')
 SPECIAL_PATTERN = re.compile(r'特别')
 BONUS_PATTERN = re.compile(r'每\s*(\d+)\s*股[^\n\r]*获发\s*(\d+)\s*股')
 BONUS_SIMPLE_PATTERN = re.compile(r'(获发|派)\s*(\d+)\s*股')
-MONEY_WITH_UNIT_PATTERN = re.compile(r'(港元|港币|美元|欧元|英镑|人民币)\s*(\d{1,3}(?:[,，]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*(分|仙)')
-MONEY_PATTERN = re.compile(r'(\d{1,3}(?:[,，]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*(港元|港仙|港币|美元|美仙|欧元|英镑|人民币|元)')
+MONEY_WITH_UNIT_PATTERN = re.compile(r'(港元|港币|美元|欧元|英镑|人民币)\s*(\d{1,3}(?:[,, ]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*(分|仙)')
+MONEY_PATTERN = re.compile(r'(\d{1,3}(?:[,, ]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*(港元|港仙|港币|美元|美仙|欧元|英镑|人民币|元)')
 SEPARATOR_PATTERN = re.compile(r'[\uff0c,\uff1b;]')
 
 def parse_money(text):
     """
-    从文本中提取金额和币种。
-    返回 (amount, currency)，如果没有找到则返回 (None, None)
+    从文本中提取金额和币种. 
+    返回 (amount, currency), 如果没有找到则返回 (None, None)
     """
     if not text:
         return None, None
@@ -32,7 +32,7 @@ def parse_money(text):
         currency = match.group(1)
         amount_str = match.group(2)
         unit = match.group(3)  # 分或仙
-        amount_str = amount_str.replace(',', '').replace('，', '')
+        amount_str = amount_str.replace(',', '').replace(', ', '')
 
         # 规范化货币词
         if currency == '港币':
@@ -67,21 +67,21 @@ def parse_money(text):
 
         return amount, currency_code
 
-    # 如果没有匹配到"货币+数字+分"模式，使用原来的模式
-    # 匹配数字 (整数或小数，支持千分位逗号) 后跟货币单位
-    # 支持：港元、港仙、港币、美元、美仙、欧元、英镑、人民币/元
-    # 注意顺序：长词优先以避免被短词（如"元"）误匹配
+    # 如果没有匹配到"货币+数字+分"模式, 使用原来的模式
+    # 匹配数字 (整数或小数, 支持千分位逗号) 后跟货币单位
+    # 支持: 港元, 港仙, 港币, 美元, 美仙, 欧元, 英镑, 人民币/元
+    # 注意顺序: 长词优先以避免被短词(如"元")误匹配
     matches = MONEY_PATTERN.findall(text)
 
     if matches:
-        # 如果有多个匹配（例如既有股息又有特别股息），取第一个作为主股息
+        # 如果有多个匹配(例如既有股息又有特别股息), 取第一个作为主股息
         amount_str, currency = matches[0]
-        # 规范化金额字符串（去千分位分隔符）
-        amount_str = amount_str.replace(',', '').replace('，', '')
-        # 规范化货币词：'元' -> '人民币'
+        # 规范化金额字符串(去千分位分隔符)
+        amount_str = amount_str.replace(',', '').replace(', ', '')
+        # 规范化货币词: '元' -> '人民币'
         if currency == '元':
             currency = '人民币'
-        # 规范化：'港币' -> '港元'
+        # 规范化: '港币' -> '港元'
         elif currency == '港币':
             currency = '港元'
 
@@ -90,7 +90,7 @@ def parse_money(text):
         except ValueError:
             return amount_str, currency
 
-        # 映射本地货币名称到 ISO 3-letter 代码，并处理港仙/美仙为小数表示
+        # 映射本地货币名称到 ISO 3-letter 代码, 并处理港仙/美仙为小数表示
         currency_map = {
             '港元': 'HKD',
             '港仙': 'HKD',
@@ -104,7 +104,7 @@ def parse_money(text):
 
         currency_code = currency_map.get(currency, currency)
 
-        # 如果原文是港仙或美仙（分），将数值除以100以得到对应货币
+        # 如果原文是港仙或美仙(分), 将数值除以100以得到对应货币
         if currency in ('港仙', '美仙'):
             try:
                 amount = float(amount) / 100.0
@@ -118,7 +118,7 @@ def parse_money(text):
 
 def parse_money_all(text):
     """
-    从文本中提取所有金额和币种。
+    从文本中提取所有金额和币种. 
     返回列表 [(amount, currency_code, raw_currency_word, original_amount_str), ...]
     """
     if not text:
@@ -126,7 +126,7 @@ def parse_money_all(text):
 
     results = []
 
-    # 首先匹配模式: "港币23分"、"港币21.1仙" 或 "美元23分" 等
+    # 首先匹配模式: "港币23分", "港币21.1仙" 或 "美元23分" 等
     # 模式: 货币名称 + 数字 + 分/仙
     context_matches = MONEY_WITH_UNIT_PATTERN.findall(text)
 
@@ -143,7 +143,7 @@ def parse_money_all(text):
 
     for currency, amount_str, unit in context_matches:
         orig = amount_str
-        amount_str = amount_str.replace(',', '').replace('，', '')
+        amount_str = amount_str.replace(',', '').replace(', ', '')
         # 规范化货币词
         if currency == '港币':
             currency = '港元'
@@ -168,7 +168,7 @@ def parse_money_all(text):
 
     for amount_str, currency_word in matches:
         orig = amount_str
-        amount_str = amount_str.replace(',', '').replace('，', '')
+        amount_str = amount_str.replace(',', '').replace(', ', '')
         if currency_word == '元':
             currency_word = '人民币'
         elif currency_word == '港币':
@@ -189,7 +189,7 @@ def parse_money_all(text):
 
 def parse_table_rows(section_text):
     """
-    解析 ASCII 表格文本，处理多行合并的情况，返回单元格列表的列表
+    解析 ASCII 表格文本, 处理多行合并的情况, 返回单元格列表的列表
     """
     lines = section_text.strip().split('\n')
     rows = []
@@ -204,19 +204,19 @@ def parse_table_rows(section_text):
         if '│' not in line:
             continue
             
-        # 分割单元格，去掉首尾空字符串
+        # 分割单元格, 去掉首尾空字符串
         cells = [c.strip() for c in line.split('│')]
         # 去掉首尾因为分割产生的空元素
         if cells and cells[0] == '': cells.pop(0)
         if cells and cells[-1] == '': cells.pop(-1)
         
         # 检查是否是续行 (第一列为空)
-        # 在分红派息表中，第一列是公告日期。如果第一列为空，说明是上一行的续行
+        # 在分红派息表中, 第一列是公告日期. 如果第一列为空, 说明是上一行的续行
         if len(cells) > 1 and not cells[0]:
             if current_row:
                 # 将第二列 (方案概述) 的内容追加到上一行
-                # 注意：不同表格列数可能不同，这里假设续行主要是为了补充长文本
-                # 找到非空的单元格追加到对应位置，通常是在第 2 列 (index 1)
+                # 注意: 不同表格列数可能不同, 这里假设续行主要是为了补充长文本
+                # 找到非空的单元格追加到对应位置, 通常是在第 2 列 (index 1)
                 for i, cell in enumerate(cells):
                     if cell:
                         if i < len(current_row):
@@ -240,7 +240,7 @@ def parse_table_rows(section_text):
 
 def parse_scheme_schemes(overview):
     """
-    拆分方案概述文本，识别有多少个子方案。
+    拆分方案概述文本, 识别有多少个子方案. 
 
     参数:
         overview: 方案概述文本
@@ -256,21 +256,21 @@ def parse_scheme_schemes(overview):
     if len(schemes) > 1:
         return schemes
 
-    # 如果无法拆分，返回原始文本
+    # 如果无法拆分, 返回原始文本
     return [overview]
 
 
 def parse_single_scheme(scheme_text):
     """
-    解析单个方案，抽象出分配方案的股数基数和金额描述两个部分。
+    解析单个方案, 抽象出分配方案的股数基数和金额描述两个部分. 
 
     参数:
-        scheme_text: 单个方案文本，例如 "末期股息每股4.5港元" 或 "每10股派息18.13港元"
+        scheme_text: 单个方案文本, 例如 "末期股息每股4.5港元" 或 "每10股派息18.13港元"
 
     返回:
         dict: {
-            'ratio_shares': int,  # 分配基数（每多少股）
-            'amount_text': str,   # 纯金额描述文本（如 "4.5港元"）
+            'ratio_shares': int,  # 分配基数(每多少股)
+            'amount_text': str,   # 纯金额描述文本(如 "4.5港元")
             'has_special': bool,  # 是否特别股息
             'bonus': bool,        # 是否送股
             'bonus_desc': str     # 送股描述
@@ -284,7 +284,7 @@ def parse_single_scheme(scheme_text):
         'bonus_desc': None
     }
 
-    # 提取分配基数（每x股）
+    # 提取分配基数(每x股)
     match_ratio = RATIO_PATTERN.search(scheme_text)
     if match_ratio:
         try:
@@ -292,7 +292,7 @@ def parse_single_scheme(scheme_text):
         except ValueError:
             pass
 
-    # 提取金额文本（数字+货币单位）
+    # 提取金额文本(数字+货币单位)
     # 优先匹配"货币+数字+分/仙"格式
     match = MONEY_WITH_UNIT_PATTERN.search(scheme_text)
     if not match:
@@ -322,7 +322,7 @@ def parse_single_scheme(scheme_text):
 
 def parse_scheme_info(overview, preferred_currency=None):
     """
-    解析方案概述文本的所有信息。
+    解析方案概述文本的所有信息. 
 
     参数:
         overview: 方案概述文本
@@ -331,7 +331,7 @@ def parse_scheme_info(overview, preferred_currency=None):
     返回:
         dict: 包含所有解析字段的字典
     """
-    # 拆分子方案（可能包含多个货币方案）
+    # 拆分子方案(可能包含多个货币方案)
     schemes = parse_scheme_schemes(overview)
 
     # 解析所有子方案
@@ -345,7 +345,7 @@ def parse_scheme_info(overview, preferred_currency=None):
             'currency': dividend_currency
         })
 
-    # 使用第一个方案的结构信息（特别股息、送股、股数基数等）
+    # 使用第一个方案的结构信息(特别股息, 送股, 股数基数等)
     first_scheme = parsed_schemes[0]['scheme']
 
     result = {
@@ -372,7 +372,7 @@ def parse_scheme_info(overview, preferred_currency=None):
                 'raw': str(ps['amount'])
             })
 
-    # 如果有多个货币方案，根据 preferred_currency 选择
+    # 如果有多个货币方案, 根据 preferred_currency 选择
     if len(parsed_schemes) > 1:
         chosen = None
         preferred_upper = preferred_currency.upper() if isinstance(preferred_currency, str) else None
@@ -392,7 +392,7 @@ def parse_scheme_info(overview, preferred_currency=None):
         result['dividend_amount'] = chosen['amount']
         result['dividend_currency'] = chosen['currency']
     else:
-        # 只有一个方案，直接使用
+        # 只有一个方案, 直接使用
         result['dividend_amount'] = parsed_schemes[0]['amount']
         result['dividend_currency'] = parsed_schemes[0]['currency']
         result['dividend_selection'] = 'single_scheme'
@@ -400,13 +400,13 @@ def parse_scheme_info(overview, preferred_currency=None):
     return result
 
 def parse_date_safe(date_str):
-    """尝试将 YYYY-MM-DD 格式字符串解析为 date 对象，失败返回 None"""
+    """尝试将 YYYY-MM-DD 格式字符串解析为 date 对象, 失败返回 None"""
     if not date_str or date_str.strip() in ('---', ''):
         return None
     try:
         return datetime.datetime.strptime(date_str.strip(), "%Y-%m-%d").date()
     except Exception:
-        # 有时日期可能是其他格式，尝试常见替代
+        # 有时日期可能是其他格式, 尝试常见替代
         try:
             return datetime.datetime.strptime(date_str.strip(), "%Y/%m/%d").date()
         except Exception:
@@ -419,12 +419,12 @@ def parse_dividends(text, preferred_currency=None):
     start_marker = "【1.分红派息】"
     end_marker = "【2.供股】"
     
-    # 可能在文首有一行索引性的摘要（例如"本栏包括【1.分红派息】【2.供股】..."），
+    # 可能在文首有一行索引性的摘要(例如"本栏包括【1.分红派息】【2.供股】..."), 
     # 因此优先选取第二个出现的章节标题作为实际内容起始点
     start_idx = text.find(start_marker)
     if start_idx == -1:
         return []
-    # 如果同一文档中该标记出现多次，取后一处出现作为真实章节开始
+    # 如果同一文档中该标记出现多次, 取后一处出现作为真实章节开始
     next_start = text.find(start_marker, start_idx + 1)
     if next_start != -1:
         start_idx = next_start
@@ -436,15 +436,15 @@ def parse_dividends(text, preferred_currency=None):
     rows = parse_table_rows(section_content)
     results = []
 
-    # 表头：公告日期，方案概述，截止日期，除净日，派付日，暂停过户起，暂停过户止
-    # 索引：0, 1, 2, 3, 4, 5, 6
+    # 表头: 公告日期, 方案概述, 截止日期, 除净日, 派付日, 暂停过户起, 暂停过户止
+    # 索引: 0, 1, 2, 3, 4, 5, 6
 
     for row in rows:
         if len(row) < 7:
             continue
 
         announce = row[0].strip()
-        # 跳过表头行（如表格中重复出现"公告日期"等）
+        # 跳过表头行(如表格中重复出现"公告日期"等)
         if '公告日期' in announce or announce.startswith('公告'):
             continue
         overview = row[1]
@@ -480,7 +480,7 @@ def parse_dividends(text, preferred_currency=None):
             "bonus_description": info['bonus_desc']
         }
 
-        # # 解析 announce_date 为 date 对象，便于排序
+        # # 解析 announce_date 为 date 对象, 便于排序
         # parsed = parse_date_safe(announce)
         # if parsed:
         #     record["announce_date_parsed"] = parsed.isoformat()
@@ -559,8 +559,8 @@ def parse_splits(text, preferred_currency=None):
     rows = parse_table_rows(section_content)
     results = []
     
-    # 表头：公告日期，重组方式，方案概述，一股合并基数，每股拆细 (股), 除净日，换领股票起，换领股票止，变更说明
-    # 索引：0, 1, 2, 3, 4, 5, 6, 7, 8
+    # 表头: 公告日期, 重组方式, 方案概述, 一股合并基数, 每股拆细 (股), 除净日, 换领股票起, 换领股票止, 变更说明
+    # 索引: 0, 1, 2, 3, 4, 5, 6, 7, 8
     
     for row in rows:
         if len(row) < 9:
@@ -585,8 +585,8 @@ def parse_splits(text, preferred_currency=None):
     return results
 
 def parse_text_to_list(text, preferred_currency=None):
-    """统一返回一个记录列表（分红/送股/拆分合并等均包含），并按公告日期升序排序（最早在前）。
-    支持传入字符串或字符串列表（会将列表以换行符连接）。"""
+    """统一返回一个记录列表(分红/送股/拆分合并等均包含), 并按公告日期升序排序(最早在前). 
+    支持传入字符串或字符串列表(会将列表以换行符连接). """
     if isinstance(text, list):
         normalized = []
         for item in text:
@@ -656,38 +656,38 @@ def parse_text_to_list(text, preferred_currency=None):
 
 def main():
     # 原始文本
-    raw_text = """分红送股☆ ◇00700 腾讯控股 更新日期：2026-02-27◇ 通达信港股F10
+    raw_text = """分红送股☆ ◇00700 腾讯控股 更新日期: 2026-02-27◇ 通达信港股F10
 ★本栏包括【1.分红派息】【2.供股】【3.拆分合并】
 
 【1.分红派息】
 ┌─────┬─────────────────────┬─────┬─────┬─────────┬─────┬─────┐
 │公告日期  │方案概述                                  │截止日期  │除净日    │派付日            │暂停过户起│暂停过户止│
 ├─────┼─────────────────────┼─────┼─────┼─────────┼─────┼─────┤
-│2025-03-19│末期股息每股4.5港元                       │2024-12-31│2025-05-16│现金：2025-05-30  │2025-05-20│2025-05-21│
-│2024-03-20│末期股息每股3.4港元                       │2023-12-31│2024-05-17│现金：2024-05-31  │2024-05-21│2024-05-22│
-│2023-03-22│末期股息每股2.4港元                       │2022-12-31│2023-05-19│现金：2023-06-05  │2023-05-23│2023-05-24│
+│2025-03-19│末期股息每股4.5港元                       │2024-12-31│2025-05-16│现金: 2025-05-30  │2025-05-20│2025-05-21│
+│2024-03-20│末期股息每股3.4港元                       │2023-12-31│2024-05-17│现金: 2024-05-31  │2024-05-21│2024-05-22│
+│2023-03-22│末期股息每股2.4港元                       │2022-12-31│2023-05-19│现金: 2023-06-05  │2023-05-23│2023-05-24│
 │2022-11-16│每10股股份获发1股美团B类普通股(相当于每股 │---       │2023-01-05│---               │2023-01-09│2023-01-10│
 │          │派息18.13港元)                            │          │          │                  │          │          │
-│2022-03-23│末期股息每股160港仙                       │2021-12-31│2022-05-20│现金：2022-06-06  │2022-05-24│2022-05-25│
-│2021-12-23│21股（00700）派1股京东集团-SW（09618）A类 │---       │2022-01-20│---               │2022-01-24│2022-01-25│
+│2022-03-23│末期股息每股160港仙                       │2021-12-31│2022-05-20│现金: 2022-06-06  │2022-05-24│2022-05-25│
+│2021-12-23│21股(00700)派1股京东集团-SW(09618)A类 │---       │2022-01-20│---               │2022-01-24│2022-01-25│
 │          │普通股(相当于每股派息13.4港元)            │          │          │                  │          │          │
-│2021-03-24│末期股息每股160港仙                       │2020-12-31│2021-05-24│现金：2021-06-07  │2021-05-26│2021-05-27│
-│2020-03-18│末期股息每股1.20港元                      │2019-12-31│2020-05-15│现金：2020-05-29  │2020-05-19│2020-05-20│
-│2019-03-21│末期股息每股1.00港元                      │2018-12-31│2019-05-17│现金：2019-05-31  │2019-05-21│2019-05-22│
-│2018-03-21│末期股息每股0.88港元                      │2017-12-31│2018-05-18│现金：2018-06-01  │2018-05-23│2018-05-24│
-│2017-03-22│末期股息每股0.61港元                      │2016-12-31│2017-05-19│现金：2017-06-02  │2017-05-23│2017-05-24│
-│2016-03-17│年度股息每股47港仙                        │2015-12-31│2016-05-20│现金：2016-06-02  │2016-05-24│2016-05-25│
-│2015-03-18│年度股息每股36港仙                        │2014-12-31│2015-05-15│现金：2015-05-29  │2015-05-19│2015-05-20│
-│2014-03-19│年度股息1.2港元                           │2013-12-31│2014-05-15│现金：2014-05-29  │2014-05-19│2014-05-20│
-│2013-03-20│年度股息1港元                             │2012-12-31│2013-05-20│现金：2013-05-30  │2013-05-22│2013-05-23│
-│2012-03-14│年度股息0.75港元                          │2011-12-31│2012-05-18│现金：2012-05-30  │2012-05-22│2012-05-23│
-│2011-03-16│年度股息0.55港元                          │2010-12-31│2011-05-03│现金：2011-05-25  │2011-05-05│2011-05-11│
-│2010-03-17│年度股息0.4港元                           │2009-12-31│2010-05-05│现金：2010-05-26  │2010-05-07│2010-05-12│
-│2009-03-18│年度股息0.25港元，特别股息0.1港元         │2008-12-31│2009-05-06│现金：2009-05-27  │2009-05-08│2009-05-13│
-│2008-03-19│年度股息0.16港元                          │2007-12-31│2008-05-06│现金：2008-05-28  │2008-05-08│2008-05-14│
-│2007-03-21│末期股息0.12港元                          │2006-12-31│2007-05-09│现金：2007-05-30  │2007-05-11│2007-05-16│
-│2006-03-22│末期股息8港仙                             │2005-12-31│2006-05-15│现金：2006-06-07  │2006-05-17│2006-05-24│
-│2005-03-17│末期股息7港仙                             │2004-12-31│2005-04-19│现金：2005-05-17  │2005-04-21│2005-04-27│
+│2021-03-24│末期股息每股160港仙                       │2020-12-31│2021-05-24│现金: 2021-06-07  │2021-05-26│2021-05-27│
+│2020-03-18│末期股息每股1.20港元                      │2019-12-31│2020-05-15│现金: 2020-05-29  │2020-05-19│2020-05-20│
+│2019-03-21│末期股息每股1.00港元                      │2018-12-31│2019-05-17│现金: 2019-05-31  │2019-05-21│2019-05-22│
+│2018-03-21│末期股息每股0.88港元                      │2017-12-31│2018-05-18│现金: 2018-06-01  │2018-05-23│2018-05-24│
+│2017-03-22│末期股息每股0.61港元                      │2016-12-31│2017-05-19│现金: 2017-06-02  │2017-05-23│2017-05-24│
+│2016-03-17│年度股息每股47港仙                        │2015-12-31│2016-05-20│现金: 2016-06-02  │2016-05-24│2016-05-25│
+│2015-03-18│年度股息每股36港仙                        │2014-12-31│2015-05-15│现金: 2015-05-29  │2015-05-19│2015-05-20│
+│2014-03-19│年度股息1.2港元                           │2013-12-31│2014-05-15│现金: 2014-05-29  │2014-05-19│2014-05-20│
+│2013-03-20│年度股息1港元                             │2012-12-31│2013-05-20│现金: 2013-05-30  │2013-05-22│2013-05-23│
+│2012-03-14│年度股息0.75港元                          │2011-12-31│2012-05-18│现金: 2012-05-30  │2012-05-22│2012-05-23│
+│2011-03-16│年度股息0.55港元                          │2010-12-31│2011-05-03│现金: 2011-05-25  │2011-05-05│2011-05-11│
+│2010-03-17│年度股息0.4港元                           │2009-12-31│2010-05-05│现金: 2010-05-26  │2010-05-07│2010-05-12│
+│2009-03-18│年度股息0.25港元, 特别股息0.1港元         │2008-12-31│2009-05-06│现金: 2009-05-27  │2009-05-08│2009-05-13│
+│2008-03-19│年度股息0.16港元                          │2007-12-31│2008-05-06│现金: 2008-05-28  │2008-05-08│2008-05-14│
+│2007-03-21│末期股息0.12港元                          │2006-12-31│2007-05-09│现金: 2007-05-30  │2007-05-11│2007-05-16│
+│2006-03-22│末期股息8港仙                             │2005-12-31│2006-05-15│现金: 2006-06-07  │2006-05-17│2006-05-24│
+│2005-03-17│末期股息7港仙                             │2004-12-31│2005-04-19│现金: 2005-05-17  │2005-04-21│2005-04-27│
 └─────┴─────────────────────┴─────┴─────┴─────────┴─────┴─────┘
 
 【2.供股】 暂无数据
@@ -700,17 +700,17 @@ def main():
 └─────┴────┴──────────┴──────┴──────┴─────┴─────┴─────┴───────┘
 
 〖免责条款〗
- 1、本公司力求但不保证提供的任何信息的真实性、准确性、完整性及原创性等，投资者使
- 用前请自行予以核实，如有错漏请以上市公司信息披露为准，本公司不对因上述信息全部
- 或部分内容而引致的盈亏承担任何责任。
- 2、本公司无法保证该项服务能满足用户的要求，也不担保服务不会受中断，对服务的及时
- 性、安全性以及出错发生都不作担保。
- 3、本公司提供的任何信息仅供投资者参考，不作为投资决策的依据，本公司不对投资者依
- 据上述信息进行投资决策所产生的收益和损失承担任何责任。投资有风险，应谨慎至上。
+ 1, 本公司力求但不保证提供的任何信息的真实性, 准确性, 完整性及原创性等, 投资者使
+ 用前请自行予以核实, 如有错漏请以上市公司信息披露为准, 本公司不对因上述信息全部
+ 或部分内容而引致的盈亏承担任何责任. 
+ 2, 本公司无法保证该项服务能满足用户的要求, 也不担保服务不会受中断, 对服务的及时
+ 性, 安全性以及出错发生都不作担保. 
+ 3, 本公司提供的任何信息仅供投资者参考, 不作为投资决策的依据, 本公司不对投资者依
+ 据上述信息进行投资决策所产生的收益和损失承担任何责任. 投资有风险, 应谨慎至上. 
 """
 
-    # 执行解析并输出统一结构的列表（按公告日期降序）
-    # 如果结果为空，输出一些调试信息以便定位问题
+    # 执行解析并输出统一结构的列表(按公告日期降序)
+    # 如果结果为空, 输出一些调试信息以便定位问题
     unified = parse_text_to_list(raw_text)
     if not unified:
         print('DEBUG: unified list is empty')
@@ -733,8 +733,8 @@ def main():
     print(json.dumps(unified, ensure_ascii=False, indent=2))
 
 if __name__ == "__main__":
-    text = "中期股息每股 9.18 港仙，一千股派 108 股盈大地产（432）(相当于每股派息 0.1922 港元)"
-    text = '第三次中期股息每股0.1美元，可选择货币0.777722港元或0.075079英镑'
+    text = "中期股息每股 9.18 港仙, 一千股派 108 股盈大地产(432)(相当于每股派息 0.1922 港元)"
+    text = '第三次中期股息每股0.1美元, 可选择货币0.777722港元或0.075079英镑'
     xx = parse_money_all(text)
     print(xx)
     #main()

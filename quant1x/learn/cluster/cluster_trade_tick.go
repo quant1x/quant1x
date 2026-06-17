@@ -11,21 +11,21 @@ import (
 
 // TradeBehavior 表示一个分笔窗口的交易行为特征
 //
-//	用于 KMeans 聚类分析，刻画市场参与者的交易模式
+//	用于 KMeans 聚类分析, 刻画市场参与者的交易模式
 type TradeBehavior struct {
 	MeanPrice       float64 // 窗口内成交价的算术平均值
-	StdPrice        float64 // 成交价的标准差，反映价格波动强度
-	VWAP            float64 // 成交量加权均价（Volume Weighted Average Price），反映实际成交成本。 公式: VWAP = Σ(Price × Volume) / Σ(Volume)
-	PriceChange     float64 // 窗口内价格变化 = 最后一笔价格 - 第一笔价格，反映趋势方向
-	VolumeImbalance float64 // 买卖不平衡度 = (主动买入量 - 主动卖出量) / 总成交量，>0 偏买，<0 偏卖
-	TradeCount      float64 // 窗口内的交易笔数，反映交易活跃度
-	TotalVolume     float64 // 窗口内所有成交的成交量总和（单位：手）
-	AvgTradeSize    float64 // 平均每笔成交量 = TotalVolume / TradeCount，用于区分散户/主力
-	BuyVolume       float64 // 主动买入成交量总和（价格上涨或平盘时成交），反映买方力量
-	SellVolume      float64 // 主动卖出成交量总和（价格下跌或平盘时成交），反映卖方力量
+	StdPrice        float64 // 成交价的标准差, 反映价格波动强度
+	VWAP            float64 // 成交量加权均价(Volume Weighted Average Price), 反映实际成交成本.  公式: VWAP = Σ(Price × Volume) / Σ(Volume)
+	PriceChange     float64 // 窗口内价格变化 = 最后一笔价格 - 第一笔价格, 反映趋势方向
+	VolumeImbalance float64 // 买卖不平衡度 = (主动买入量 - 主动卖出量) / 总成交量, >0 偏买, <0 偏卖
+	TradeCount      float64 // 窗口内的交易笔数, 反映交易活跃度
+	TotalVolume     float64 // 窗口内所有成交的成交量总和(单位: 手)
+	AvgTradeSize    float64 // 平均每笔成交量 = TotalVolume / TradeCount, 用于区分散户/主力
+	BuyVolume       float64 // 主动买入成交量总和(价格上涨或平盘时成交), 反映买方力量
+	SellVolume      float64 // 主动卖出成交量总和(价格下跌或平盘时成交), 反映卖方力量
 }
 
-// String 实现 fmt.Stringer 接口，用于格式化输出
+// String 实现 fmt.Stringer 接口, 用于格式化输出
 func (tb TradeBehavior) String() string {
 	buySellRatio := float64(tb.BuyVolume) / math.Max(1.0, float64(tb.SellVolume))
 	direction := "均衡"
@@ -46,7 +46,7 @@ func (tb TradeBehavior) String() string {
 	)
 }
 
-// ToSlice 从结构体转为 []float64（适配 KMeans）
+// ToSlice 从结构体转为 []float64(适配 KMeans)
 func (tb TradeBehavior) ToSlice() []float64 {
 	return []float64{
 		tb.MeanPrice,
@@ -62,7 +62,7 @@ func (tb TradeBehavior) ToSlice() []float64 {
 	}
 }
 
-// SliceToTradeBehavior 从 []float64 转为结构体（用于分析）
+// SliceToTradeBehavior 从 []float64 转为结构体(用于分析)
 func SliceToTradeBehavior(data []float64) TradeBehavior {
 	if len(data) < 10 {
 		return TradeBehavior{}
@@ -85,13 +85,13 @@ func SliceToTradeBehavior(data []float64) TradeBehavior {
 type TickDataExtractor struct {
 	WindowSize int
 
-	// 覆盖率统计字段（仅在 Extract 后有效）
-	TotalVolumeFromTicks int64   // 全天总成交量（股/手）
+	// 覆盖率统计字段(仅在 Extract 后有效)
+	TotalVolumeFromTicks int64   // 全天总成交量(股/手)
 	EffectiveVolumeInUse int64   // 被窗口使用的成交量
 	CoverageRate         float64 // 覆盖率
 }
 
-// Extract 提取数据并返回 [][]float64（用于 KMeans），同时计算覆盖率
+// Extract 提取数据并返回 [][]float64(用于 KMeans), 同时计算覆盖率
 func (e *TickDataExtractor) Extract(data any) [][]float64 {
 	ticks, ok := data.([]std.TickTransaction)
 	if !ok || len(ticks) == 0 {
@@ -119,7 +119,7 @@ func (e *TickDataExtractor) Extract(data any) [][]float64 {
 	//	behavior := e.extractAsStruct(window)
 	//	result = append(result, behavior.ToSlice())
 	//
-	//	// 累加该窗口的成交量（用于覆盖率）
+	//	// 累加该窗口的成交量(用于覆盖率)
 	//	for _, t := range window {
 	//		e.EffectiveVolumeInUse += int64(t.Vol)
 	//	}
@@ -137,7 +137,7 @@ func (e *TickDataExtractor) Extract(data any) [][]float64 {
 		behavior := e.extractAsStruct(window)
 		result = append(result, behavior.ToSlice())
 
-		// 累加该窗口的成交量（用于覆盖率）
+		// 累加该窗口的成交量(用于覆盖率)
 		for _, t := range window {
 			e.EffectiveVolumeInUse += int64(t.Vol)
 		}
@@ -157,7 +157,7 @@ func (e *TickDataExtractor) Extract(data any) [][]float64 {
 	return result
 }
 
-// extractAsStruct 核心特征提取（结构化）
+// extractAsStruct 核心特征提取(结构化)
 func (e *TickDataExtractor) extractAsStruct(window []std.TickTransaction) TradeBehavior {
 	n := len(window)
 	if n == 0 {
@@ -222,7 +222,7 @@ func (e *TickDataExtractor) extractAsStruct(window []std.TickTransaction) TradeB
 	}
 }
 
-// GetOriginalCentroids 反标准化并转为结构体（关键！）
+// GetOriginalCentroids 反标准化并转为结构体(关键！)
 func (e *TickDataExtractor) GetOriginalCentroids(scaler *preprocessing.StandardScaler, normalizedCentroids [][]float64) []TradeBehavior {
 	original := make([]TradeBehavior, len(normalizedCentroids))
 	for i, center := range normalizedCentroids {

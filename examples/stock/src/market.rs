@@ -277,13 +277,13 @@ impl SecurityParser {
 
     /// 解析交易所标识
     fn parse_exchange<'a>(&self, input: &'a str) -> Option<(Exchange, &'a str)> {
-        // 处理显式后缀格式：XXXXXX.XX
+        // 处理显式后缀格式: XXXXXX.XX
         if let Some((code, suffix)) = input.split_once('.') {
             return self.exchange_map.get(suffix.to_lowercase().as_str())
                 .map(|e| (*e, code));
         }
 
-        // 处理显式前缀格式：XXxxxxxx
+        // 处理显式前缀格式: XXxxxxxx
         if input.len() >= 8 {
             let (prefix, code) = input.split_at(2);
             return self.exchange_map.get(prefix.to_lowercase().as_str())
@@ -294,7 +294,7 @@ impl SecurityParser {
         self.infer_exchange(input).map(|e| (e, input))
     }
 
-    /// 推断交易所（并行加速）
+    /// 推断交易所(并行加速)
     fn infer_exchange(&self, code: &str) -> Option<Exchange> {
         self.prefix_trees.par_iter()
             .find_map_any(|(exchange, tree)| {
@@ -400,7 +400,7 @@ mod tests {
         let duration = start.elapsed();
 
         // 合理阈值调整为200ms
-        println!("实际耗时: {:?}，建议在release模式运行测试", duration
+        println!("实际耗时: {:?}, 建议在release模式运行测试", duration
         );
     }
 }

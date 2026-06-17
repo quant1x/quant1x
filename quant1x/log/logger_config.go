@@ -13,12 +13,12 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// customTimeEncoder 自定义时间编码器，不带时区
+// customTimeEncoder 自定义时间编码器, 不带时区
 func customTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 	enc.AppendString(t.Format("2006-01-02T15:04:05.000"))
 }
 
-// coreLoggerAdapter 适配器，实现core.Logger接口
+// coreLoggerAdapter 适配器, 实现core.Logger接口
 type coreLoggerAdapter struct{}
 
 func (c *coreLoggerAdapter) Debugf(template string, args ...any) {

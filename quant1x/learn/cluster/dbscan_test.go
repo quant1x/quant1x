@@ -26,7 +26,7 @@ func TestDBSCAN_Basic(t *testing.T) {
 	dbscan := NewDBSCAN(0.2, 2)
 	labels := dbscan.Fit(data)
 
-	fmt.Println("聚类结果：")
+	fmt.Println("聚类结果: ")
 	for i, p := range data {
 		if labels[i] == -1 {
 			fmt.Printf("点 %v -> 噪声\n", p)
@@ -36,7 +36,7 @@ func TestDBSCAN_Basic(t *testing.T) {
 	}
 
 	stats := dbscan.GetClusterStats(labels)
-	fmt.Println("\n统计：")
+	fmt.Println("\n统计: ")
 	for k, v := range stats {
 		if k == -1 {
 			fmt.Printf("噪声: %d\n", v)
@@ -47,7 +47,7 @@ func TestDBSCAN_Basic(t *testing.T) {
 
 	// 预测
 	test := [][]float64{{1.5, 2.0}, {5.5, 5.0}, {10, 10}}
-	fmt.Println("\n预测：")
+	fmt.Println("\n预测: ")
 	for _, p := range test {
 		l := dbscan.Predict(data, labels, p)
 		if l == -1 {
@@ -68,7 +68,7 @@ func TestDBSCAN_Basic(t *testing.T) {
 //		{1.55, 1.65, 1550, 155},
 //		{0.5, 0.6, 500, 50},
 //		{0.45, 0.55, 480, 48},
-//		// 添加一个新点，帮助形成第 4 个簇
+//		// 添加一个新点, 帮助形成第 4 个簇
 //		{0.8, 0.85, 800, 80},
 //		{0.75, 0.8, 750, 75},
 //	}
@@ -133,7 +133,7 @@ func TestDBSCAN_TickData(t *testing.T) {
 	}
 	fmt.Printf("✅ 获取 %d 条分笔数据\n", len(ticks))
 
-	// 2. 转换为Points类型（严格匹配函数签名）
+	// 2. 转换为Points类型(严格匹配函数签名)
 	X_scaled := make([][]float64, len(ticks))
 	totalAmount := 0.0
 	open_ := 0.0
@@ -144,7 +144,7 @@ func TestDBSCAN_TickData(t *testing.T) {
 		} else if i == len(ticks)-1 {
 			close_ = tick.Price
 		}
-		// 特征工程（与Python版本完全一致）
+		// 特征工程(与Python版本完全一致)
 		num := tick.Num
 		if num == 0 {
 			num = 1 // 处理除零
@@ -164,21 +164,21 @@ func TestDBSCAN_TickData(t *testing.T) {
 	}
 	//unit, divisor := qlab.GetAmountUnitAndDivisor(totalAmount)
 
-	// 3. 标准化（复用已有函数）
+	// 3. 标准化(复用已有函数)
 	scaler := preprocessing.NewStandardScaler()
 	X_scaled, err = scaler.FitTransform(X_scaled)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// 4. 调用聚类函数（严格匹配签名）
+	// 4. 调用聚类函数(严格匹配签名)
 	best_params, best_labels := find_4plus1_clusters(X_scaled, 50)
 	if best_params == nil {
 		t.Fatal("⚠️ 未找到4簇方案")
 	}
 	fmt.Printf("最佳参数: eps=%.2f, min_samples=%.2f\n", best_params["eps"], best_params["min_samples"])
 
-	// 5. 分析结果（复用原始数据ticks和labels）
+	// 5. 分析结果(复用原始数据ticks和labels)
 	fmt.Printf("涨跌幅: %+.2f\n", num.NetChangeRate(open_, close_))
 	analyzeResults(ticks, best_labels)
 }
@@ -197,21 +197,21 @@ type ClusterStat struct {
 }
 
 func analyzeResults(ticks []data.Transaction, labels []int) {
-	// 1. 方向预处理（严格匹配Python）
+	// 1. 方向预处理(严格匹配Python)
 	dirNums, buyCount, sellCount := preprocessDirection(ticks)
 	fmt.Printf("\n买卖方向分布:\nB    %d\nS    %d\n", buyCount, sellCount)
 
-	// 2. 初始化簇统计（保持Python的簇标签）
+	// 2. 初始化簇统计(保持Python的簇标签)
 	clusters := make(map[float64]*ClusterStat)
 
-	// 初始化噪声簇（必须保留-1标签）
+	// 初始化噪声簇(必须保留-1标签)
 	clusters[-1] = &ClusterStat{
 		Label:     -1,
 		Name:      "市场噪声",
 		MinAmount: math.MaxFloat64,
 	}
 
-	// 3. 统计交易数据（保持原始标签）
+	// 3. 统计交易数据(保持原始标签)
 	for i, label := range labels {
 		floatLabel := float64(label)
 		if _, exists := clusters[floatLabel]; !exists {
@@ -243,7 +243,7 @@ func analyzeResults(ticks []data.Transaction, labels []int) {
 		}
 	}
 
-	// 4. 按平均金额排序（不改变原始标签）
+	// 4. 按平均金额排序(不改变原始标签)
 	var sortedClusters []*ClusterStat
 	for _, c := range clusters {
 		if c.Label != -1 {
@@ -255,13 +255,13 @@ func analyzeResults(ticks []data.Transaction, labels []int) {
 			sortedClusters[j].TotalAmount/float64(sortedClusters[j].Count)
 	})
 
-	// 5. 命名规则（严格对应Python顺序）
+	// 5. 命名规则(严格对应Python顺序)
 	classNames := []string{"散户资金", "中单资金", "大单资金", "超大单资金"}
 	for i := 0; i < len(sortedClusters) && i < len(classNames); i++ {
 		sortedClusters[i].Name = classNames[i]
 	}
 
-	// 6. 打印簇信息（完全匹配Python格式）
+	// 6. 打印簇信息(完全匹配Python格式)
 	fmt.Println("\n===== 自动分类命名 =====")
 	fmt.Println("分类结果:")
 	for _, c := range sortedClusters {
@@ -271,7 +271,7 @@ func analyzeResults(ticks []data.Transaction, labels []int) {
 	noise := clusters[-1]
 	fmt.Printf("簇 -1: %s (样本数: %d, 平均金额: %.2f万)\n", noise.Name, noise.Count, noise.TotalAmount/float64(noise.Count)/1e4)
 
-	// 7. 资金流向分析（三部分完整输出）
+	// 7. 资金流向分析(三部分完整输出)
 	printMoneyFlowAnalysis(clusters, sortedClusters, ticks)
 
 	// 1. 计算各规模资金贡献
@@ -343,7 +343,7 @@ func analyzeResults(ticks []data.Transaction, labels []int) {
 		// 只显示有显著影响的信号
 		if math.Abs(netImpact) >= 0.1 {
 			signals = append(signals, fmt.Sprintf(
-				"%s: %s%s信号，净流入%+.2f万，影响%+.3f%%",
+				"%s: %s%s信号, 净流入%+.2f万, 影响%+.3f%%",
 				c.Name,
 				signalStrength,
 				signalType,
@@ -358,7 +358,7 @@ func analyzeResults(ticks []data.Transaction, labels []int) {
 			fmt.Printf("⚠️  %s\n", s)
 		}
 	} else {
-		fmt.Println("📊 市场资金流向相对平稳，无显著异常信号")
+		fmt.Println("📊 市场资金流向相对平稳, 无显著异常信号")
 	}
 }
 
@@ -373,9 +373,9 @@ func preprocessDirection(ticks []data.Transaction) (dirNums []int, buyCount, sel
 		case 1: // 卖出
 			dirNums[i] = -1
 			sellCount++
-		default: // 中性交易处理（严格匹配Python逻辑）
+		default: // 中性交易处理(严格匹配Python逻辑)
 			if i == 0 {
-				// 第一条中性交易：按位置奇偶决定
+				// 第一条中性交易: 按位置奇偶决定
 				if i%2 == 0 {
 					dirNums[i] = 1
 					buyCount++
@@ -384,7 +384,7 @@ func preprocessDirection(ticks []data.Transaction) (dirNums []int, buyCount, sel
 					sellCount++
 				}
 			} else {
-				// 非首条中性交易：通过价格变化判断
+				// 非首条中性交易: 通过价格变化判断
 				prevPrice := ticks[i-1].Price
 				currentPrice := ticks[i].Price
 
@@ -395,7 +395,7 @@ func preprocessDirection(ticks []data.Transaction) (dirNums []int, buyCount, sel
 					dirNums[i] = -1
 					sellCount++
 				} else {
-					// 价格相同：按位置奇偶决定
+					// 价格相同: 按位置奇偶决定
 					if i%2 == 0 {
 						dirNums[i] = 1
 						buyCount++
@@ -416,7 +416,7 @@ func printMoneyFlowAnalysis(
 	sortedClusters []*ClusterStat,
 	ticks []data.Transaction,
 ) {
-	// 第一部分：买卖金额表格
+	// 第一部分: 买卖金额表格
 	fmt.Println("\n===== 各资金规模买卖方向分析 =====")
 	fmt.Printf("%20s %14s %14s %14s %14s\n",
 		"", "buy_amount", "sell_amount", "net_amount", "buy_count_ratio")
@@ -448,7 +448,7 @@ func printMoneyFlowAnalysis(
 			buyRatio)
 	}
 
-	// 第二部分：详细资金流向分析
+	// 第二部分: 详细资金流向分析
 	fmt.Println("\n💰 资金流向分析:")
 	fmt.Println("============================================================")
 	for _, label := range printOrder {
@@ -467,12 +467,12 @@ func printMoneyFlowAnalysis(
 			buyRatio, 100-buyRatio, buyRatio-(100-buyRatio))
 		fmt.Printf("  → 金额: 买入%.2f万 vs 卖出%.2f万 (净%+.2f万)\n",
 			c.BuyAmount/1e4, c.SellAmount/1e4, netAmount/1e4)
-		fmt.Printf("  → 影响: 占市场%.2f%%，净流入贡献%+.3f%%\n",
+		fmt.Printf("  → 影响: 占市场%.2f%%, 净流入贡献%+.3f%%\n",
 			marketShare, netImpact)
 		fmt.Println("----------------------------------------")
 	}
 
-	// 第三部分：总体市场统计
+	// 第三部分: 总体市场统计
 	totalBuy, totalSell := 0.0, 0.0
 	for _, c := range clusters {
 		totalBuy += c.BuyAmount

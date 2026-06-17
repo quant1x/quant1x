@@ -28,7 +28,7 @@ class Transaction:
         return ["time", "price", "volume", "num", "amount", "direction"]    
 
     def to_dict(self):
-        """转为扁平字典，适配 DataFrame"""
+        """转为扁平字典, 适配 DataFrame"""
 
         return {
             "time": self.time,

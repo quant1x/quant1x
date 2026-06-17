@@ -47,7 +47,7 @@ namespace backtest {
     // 每日持仓状态
     struct DailyPositionStatus {
         std::string                     timestamp;
-        // 为了减少拷贝开销，日结只保留持仓摘要而非整张持仓表
+        // 为了减少拷贝开销, 日结只保留持仓摘要而非整张持仓表
         struct PositionSummary {
             std::string    symbol;
             TradeDirection direction;

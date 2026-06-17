@@ -10,27 +10,27 @@ var hello2Payload = []byte{
 	0xc9, 0xcc, 0xbd, 0xf0, 0xd7, 0xea, 0x00, 0x00, 0x00, 0x02,
 }
 
-// Hello2Request 对应第二次握手请求。
+// Hello2Request 对应第二次握手请求.
 type Hello2Request struct{}
 
-// Bytes 序列化请求数据。
+// Bytes 序列化请求数据.
 func (Hello2Request) Bytes() []byte {
 	return buildRequest(StdCommandLogin2, packetTypeRequest, hello2Payload)
 }
 
-// Command 返回命令类型。
+// Command 返回命令类型.
 func (Hello2Request) Command() StdCommand { return StdCommandLogin2 }
 
-// String 返回描述。
+// String 返回描述.
 func (Hello2Request) String() string { return "Hello2Request" }
 
-// Hello2Response 对应第二次握手响应。
+// Hello2Response 对应第二次握手响应.
 type Hello2Response struct {
 	ResponseBase
 	Info string
 }
 
-// Deserialize 解析响应数据。
+// Deserialize 解析响应数据.
 func (r *Hello2Response) Deserialize(body []byte) error {
 	info, err := decodeHelloInfo(body, hello2InfoOffset)
 	if err != nil {
@@ -40,5 +40,5 @@ func (r *Hello2Response) Deserialize(body []byte) error {
 	return nil
 }
 
-// String 返回响应描述。
+// String 返回响应描述.
 func (r *Hello2Response) String() string { return fmt.Sprintf("Hello2Response{Info:%q}", r.Info) }

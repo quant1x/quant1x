@@ -98,7 +98,7 @@ TEST_CASE("patterns-wave-v2", "[release]") {
                                            return a.y < b.y;
                                        });
 
-        std::cout << "\n最低波谷（std::min_element）: " << min_it->to_string() << std::endl;
+        std::cout << "\n最低波谷(std::min_element): " << min_it->to_string() << std::endl;
     }
     // 查找最低波谷
     if (valleys.empty()) {
@@ -141,8 +141,8 @@ TEST_CASE("patterns-wave-v2", "[release]") {
 
     std::cout << "线性回归方程: " << model.to_string() << std::endl;
 
-    // 可选：输出每个点和预测值对比
-    std::cout << "波峰点与预测值：" << std::endl;
+    // 可选: 输出每个点和预测值对比
+    std::cout << "波峰点与预测值: " << std::endl;
     for (const auto& pt : future_peaks) {
         double pred = model.predict(pt.x);
         std::cout << pt.to_string() << " -> 预测 y=" << pred << std::endl;

@@ -20,8 +20,10 @@ namespace data {
     constexpr data::Kind BaseChipDistribution    = data::PluginMaskBaseData | (baseKind + 10); // 基础数据-筹码分布
     constexpr data::Kind BaseMinuteKLine         = data::PluginMaskBaseData | (baseKind + 11); // 基础数据-分钟级别K线
 
+    constexpr const char *const MARKET_CN_FIRST_LISTTIME = "1990-12-19"; // A股首个交易日
+    constexpr const char *const GLOBAL_DEFAULT_START_DATE = "1900-01-01"; // 全球首个交易日
     // 市场开埠日期
-    inline meta::Timestamp market_first_date = meta::Timestamp::parse(meta::MARKET_CN_FIRST_LISTTIME).pre_market_time();
+    inline meta::Timestamp market_first_date = meta::Timestamp::parse(MARKET_CN_FIRST_LISTTIME).pre_market_time();
 }
 
 #endif //QUANT1X_DATASETS_BASE_H

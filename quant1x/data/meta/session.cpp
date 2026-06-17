@@ -1,5 +1,8 @@
 #include <quant1x/data/meta/session.h>
-#include <quant1x/data/meta/layout.h>
+#include <quant1x/data/meta/calendar.h>
+#include <quant1x/data/cache.h>
+#include <quant1x/runtime/once.h>
+#include <spdlog/spdlog.h>
 #include <sstream>
 #include <algorithm>
 #include <ctime>
@@ -297,6 +300,94 @@ TradingSession latest_session_by_exchange(Exchange exchange) {
         case Region::US: return init_us_session();
         default:         return init_cn_session();
     }
+}
+
+// =====================================================================
+// 运行时状态检查函数
+// =====================================================================
+
+/// 今日盘前初始化时间戳 (每日仅计算一次)
+static Timestamp ts_today_init_cache = Timestamp::zero();
+static auto ts_today_once = RollingOnce::create("session-today-init", cron_expr_daily_9am);
+
+Timestamp get_today() {
+    ts_today_once->Do([]() {
+        ts_today_init_cache = data::get_today_initialized_time();
+    });
+    return ts_today_init_cache;
+}
+
+RuntimeStatus check_trading_timestamp(
+    Exchange exchange,
+    std::optional<Timestamp> last_modified)
+{
+    spdlog::debug("check_trading_timestamp called with exchange={}, last_modified={}",
+                  exchange_code(exchange),
+                  last_modified.has_value() ? last_modified->to_string() : "nullopt");
+
+    RuntimeStatus rs;
+    rs.status = TS_CLOSED;
+
+    Timestamp now = Timestamp::now();
+    Timestamp ts = last_modified.value_or(now);
+
+    spdlog::debug("check_trading_timestamp: {}", ts.to_string());
+
+    Timestamp last_day = last_trading_day(now);
+
+    // 1. timestamp before last trading day
+    if (ts < last_day) {
+        rs.before_last_trade_day = true;
+        return rs;
+    }
+
+    // 2. if today != last_day => holiday
+    if (!now.is_same_date(last_day)) {
+        rs.is_holiday = true;
+        return rs;
+    }
+
+    // 3. before init
+    Timestamp ts_today = get_today();
+    if (ts < ts_today) {
+        rs.before_init_time = true;
+        return rs;
+    }
+
+    rs.status = TS_PRE_MARKET;
+    rs.cache_after_init_time = true;
+
+    // 5. trading not started
+    TradingSession session = latest_session_by_exchange(exchange);
+    if (session.is_trading_not_started(ts)) {
+        return rs;
+    }
+
+    rs.update_in_real_time = true;
+
+    rs.status = session.check_status(ts);
+    if (ts_is_trading_disabled(rs.status)) {
+        rs.update_in_real_time = false;
+    }
+
+    return rs;
+}
+
+bool can_initialize(
+    Exchange exchange,
+    std::optional<Timestamp> last_modified)
+{
+    RuntimeStatus rs = check_trading_timestamp(exchange, last_modified);
+    if (rs.before_last_trade_day) {
+        return true;
+    }
+    if (rs.is_holiday) {
+        return false;
+    }
+    if (rs.before_init_time) {
+        return false;
+    }
+    return !rs.cache_after_init_time;
 }
 
 } // namespace meta

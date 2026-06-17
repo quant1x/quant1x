@@ -1,7 +1,7 @@
 // Copyright (c) Quant1X <wangfengxy@sina.cn>.
 // Licensed under the MIT License.
 //
-// market — 市场/证券代码识别与纠正，与 Python data/market.py 对齐
+// market — 市场/证券代码识别与纠正, 与 Python data/market.py 对齐
 
 use crate::data::meta::exchange::Exchange;
 use crate::data::meta::instrument::{Instrument, InstrumentType};
@@ -38,7 +38,7 @@ static ALL_EXCHANGE_IDENTIFIERS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
 // detect_instrument_type_by_rule — 根据交易所和代码检测证券类型
 // ============================================================
 
-/// 根据交易所和代码，使用对应规则检测证券类型
+/// 根据交易所和代码, 使用对应规则检测证券类型
 /// 对应 Python 的 detect_instrument_type_by_rule
 pub fn detect_instrument_type_by_rule(exchange: Exchange, code: &str) -> InstrumentType {
     let rules = match exchange {
@@ -100,7 +100,7 @@ pub fn detect_symbol(input_str: &str) -> Instrument {
         }
     }
 
-    // 3. 纯数字或者字母（无显式前缀/后缀）
+    // 3. 纯数字或者字母(无显式前缀/后缀)
     if exchange == Exchange::UNKNOWN {
         let code_len = pure_code.len();
         match code_len {
@@ -141,7 +141,7 @@ pub fn detect_symbol(input_str: &str) -> Instrument {
                 }
 
                 // 3.2 按市场匹配规则
-                // 3.2.1 0、159和3开头，优先匹配深交所
+                // 3.2.1 0, 159和3开头, 优先匹配深交所
                 if pure_code.starts_with('0') || pure_code.starts_with("159") || pure_code.starts_with('3') {
                     let cr = match_rule(&pure_code, &ticker_rules::szse_rules());
                     if cr.exchange != Exchange::UNKNOWN {
@@ -153,7 +153,7 @@ pub fn detect_symbol(input_str: &str) -> Instrument {
                         };
                     }
                 }
-                // 3.2.2 6和5开头，优先匹配上交所
+                // 3.2.2 6和5开头, 优先匹配上交所
                 if pure_code.starts_with('6') || pure_code.starts_with('5') {
                     let cr = match_rule(&pure_code, &ticker_rules::sse_rules());
                     if cr.exchange != Exchange::UNKNOWN {
@@ -202,12 +202,12 @@ pub fn detect_symbol(input_str: &str) -> Instrument {
         }
     }
 
-    // 4. 如果exchange是UNKNOWN，则返回未知
+    // 4. 如果exchange是UNKNOWN, 则返回未知
     if exchange == Exchange::UNKNOWN {
         return Instrument::unknown();
     }
 
-    // 5. 如果typ是Unknown，按市场规则匹配
+    // 5. 如果typ是Unknown, 按市场规则匹配
     if typ == InstrumentType::UNKNOWN {
         let rules = match exchange {
             Exchange::SSE => ticker_rules::sse_rules(),
@@ -243,7 +243,7 @@ pub fn detect_symbol(input_str: &str) -> Instrument {
 // correct_security_code — 纠正证券代码格式
 // ============================================================
 
-/// 纠正证券代码格式，补全前缀或后缀
+/// 纠正证券代码格式, 补全前缀或后缀
 /// 对应 Python 的 correct_security_code
 ///
 /// 支持多种格式:
@@ -262,7 +262,7 @@ pub fn correct_security_code(code: &str) -> String {
     if inst.can_construct_symbol() {
         inst.symbol()
     } else {
-        // 如果无法构造，回退到简单的 strip + detect 逻辑
+        // 如果无法构造, 回退到简单的 strip + detect 逻辑
         // 保持与旧 detect_market 的兼容性
         let s = code.trim().to_lowercase();
         let market_flags: [&str; 5] = ["sh", "sz", "bj", "hk", "us"];

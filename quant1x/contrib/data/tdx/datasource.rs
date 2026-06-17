@@ -1,8 +1,8 @@
 // Copyright (c) Quant1X <wangfengxy@sina.cn>.
 // Licensed under the MIT License.
 //
-// datasource — 通达信数据源实现，与 Python contrib/data/tdx/datasource.py 对齐
-// 实现 DataHandler trait，作为通达信行情数据的统一入口
+// datasource — 通达信数据源实现, 与 Python contrib/data/tdx/datasource.py 对齐
+// 实现 DataHandler trait, 作为通达信行情数据的统一入口
 
 use crate::data::datasource::{DataHandler, PlateCategory};
 use crate::data::meta::exchange::Exchange;
@@ -44,7 +44,7 @@ const ALL_INDEX_LIST: &[&str] = &[
     "sh562500", // 机器人ETF
 ];
 
-/// 需要忽略的关键字（退市/摘牌）
+/// 需要忽略的关键字(退市/摘牌)
 /// 与 Python is_need_ignore() 对齐
 const IGNORED_KEYWORDS: &[&str] = &["退", "摘牌"];
 
@@ -65,8 +65,8 @@ fn is_need_ignore(code: &str) -> bool {
 
 /// 通达信数据源
 ///
-/// 实现 DataHandler trait，作为 A 股（SSE/SZSE/BSE）行情的统一入口。
-/// 数据来源：本地 CSV 缓存文件。
+/// 实现 DataHandler trait, 作为 A 股(SSE/SZSE/BSE)行情的统一入口. 
+/// 数据来源: 本地 CSV 缓存文件. 
 #[derive(Debug, Default)]
 pub struct TdxDataSource;
 
@@ -103,11 +103,11 @@ impl DataHandler for TdxDataSource {
         get_tdx_sector_list()
     }
 
-    /// 加载全部指数、板块和个股的代码
+    /// 加载全部指数, 板块和个股的代码
     /// 与 Python list_instruments(market="all") 对齐:
-    ///   1. 指数（含重要板块及 ETF）
-    ///   2. 板块（排除已在指数列表中的）
-    ///   3. 个股（仅上市公司股票）
+    ///   1. 指数(含重要板块及 ETF)
+    ///   2. 板块(排除已在指数列表中的)
+    ///   3. 个股(仅上市公司股票)
     fn list_instruments(&self, _market: Option<&[String]>) -> Vec<Instrument> {
         let mut code_list: Vec<Instrument> = Vec::new();
 
@@ -119,7 +119,7 @@ impl DataHandler for TdxDataSource {
         );
         code_list.extend(index_list);
 
-        // 2. 板块（排除已在 ALL_INDEX_LIST 中的）
+        // 2. 板块(排除已在 ALL_INDEX_LIST 中的)
         let sectors = self.get_sector_list(PlateCategory::Unknown);
         for s in &sectors {
             if ALL_INDEX_LIST.contains(&s.code.as_str()) {
@@ -143,7 +143,7 @@ impl DataHandler for TdxDataSource {
 
     /// 获取指定证券代码对应的证券信息
     /// 与 Python get_instrument(symbol) 对齐:
-    ///   - 查不到时返回 None（Python 抛 ValueError）
+    ///   - 查不到时返回 None(Python 抛 ValueError)
     fn get_instrument(&self, symbol: &str) -> Option<Instrument> {
         get_instrument_info(symbol)
     }
@@ -189,7 +189,7 @@ impl DataHandler for TdxDataSource {
     }
 }
 
-/// 获取所有A股股票列表（遍历代码范围 + is_need_ignore 过滤）
+/// 获取所有A股股票列表(遍历代码范围 + is_need_ignore 过滤)
 /// 与 Python get_stock_list(market="all") 对齐
 fn get_stock_list() -> Vec<Instrument> {
     let mut stock_list: Vec<Instrument> = Vec::new();
@@ -283,23 +283,23 @@ mod tests {
         assert!(IGNORED_KEYWORDS.contains(&"摘牌"));
     }
 
-    /// 集成测试：严格对齐 Python datasource.py __main__ 的测试逻辑
+    /// 集成测试: 严格对齐 Python datasource.py __main__ 的测试逻辑
     ///
-    /// Python __main__ 实际执行的代码（未注释部分）:
+    /// Python __main__ 实际执行的代码(未注释部分):
     ///   1. code = '00077.hk'
     ///   2. inst = D.get_instrument(code); print(inst)
     ///   3. df = D.klines(code); print(df)
     ///
-    /// 已注释掉的部分（get_sector_list / get_index_list / get_stock_list / list_instruments / transactions）
-    /// Rust 测试同样注释掉，只保留 Python 实际执行的部分。
+    /// 已注释掉的部分(get_sector_list / get_index_list / get_stock_list / list_instruments / transactions)
+    /// Rust 测试同样注释掉, 只保留 Python 实际执行的部分. 
     ///
-    /// 注意: 此测试依赖本地缓存数据, 在没有缓存的环境下可能部分断言失败。
+    /// 注意: 此测试依赖本地缓存数据, 在没有缓存的环境下可能部分断言失败. 
     /// 标记为 #[ignore] 避免 CI 环境因缺少缓存文件而失败, 开发时手动运行:
     ///   cargo test --package quant1x -- test_tdx_datasource_main --ignored --nocapture
     #[test]
     #[ignore]
     fn test_tdx_datasource_main() {
-        // 启用调试日志（对齐 Python config.debug = True）
+        // 启用调试日志(对齐 Python config.debug = True)
         let _ = env_logger::try_init();
 
         let ds = TdxDataSource::new();

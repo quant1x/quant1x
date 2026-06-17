@@ -8,7 +8,7 @@ use std::sync::Arc;
 pub async fn start_scheduler() -> anyhow::Result<()> {
     let sched = JobScheduler::new().await?;
 
-    // 获取适配器类型ID列表（避免长期持有锁）
+    // 获取适配器类型ID列表(避免长期持有锁)
     let adapter_ids = {
         let registry = adapter::ADAPTER_REGISTRY.read().unwrap();
         registry.keys().cloned().collect::<Vec<TypeId>>()

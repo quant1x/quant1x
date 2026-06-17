@@ -1,5 +1,6 @@
 #include <quant1x/trader/order_state.h>
 #include <spdlog/spdlog.h>
+#include <quant1x/std/filesystem.h>
 #include <quant1x/trader/fee.h>
 #include <quant1x/data/meta/timestamp.h>
 #include <quant1x/engine/strategy.h>
@@ -75,7 +76,7 @@ namespace trader {
                         const std::string& code,
                         trader::Direction direction) {
         std::string filename = order_state_filename(date, model, direction, code);
-        return io::write_file(filename);
+        return filesystem::write_file(filename);
     }
 
     // 捡出策略订单状态文件列表
@@ -156,9 +157,9 @@ namespace trader {
             for (const auto& entry : fs::directory_iterator(orderFlagPath)) {
                 std::string filename = entry.path().string();
 
-                // 4. 严格按pattern的三个部分进行匹配：
+                // 4. 严格按pattern的三个部分进行匹配: 
                 //    a) 前缀路径 + 策略名前缀 + "-"
-                //    b) 中间任意字符（*通配符）
+                //    b) 中间任意字符(*通配符)
                 //    c) 固定扩展名
                 if (filename.rfind(prefixPath.string(), 0) == 0 && // 匹配前缀部分
                     filename.size() > prefixPath.string().size() && // 确保有中间部分

@@ -168,13 +168,13 @@ fn get_finance_info(security_code: &str, feature_date: &str) -> (f64, f64, Strin
                 }
 
                 if info.ipo_date >= base_date {
-                    ipo_date = Timestamp::from_yyyymmdd_int(info.ipo_date).to_string();
+                    ipo_date = Timestamp::from_yyymmdd_u32(info.ipo_date).to_string();
                 } else {
                     ipo_date = get_ipo_date(security_code, feature_date);
                 }
 
                 if info.updated_date >= base_date {
-                    update_date = Timestamp::from_yyyymmdd_int(info.updated_date).to_string();
+                    update_date = Timestamp::from_yyymmdd_u32(info.updated_date).to_string();
                 }
             }
             Err(e) => {
