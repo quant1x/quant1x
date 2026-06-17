@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.29] - 2026-06-17
+### Changed
+- 调整全角符号为半角, 调整io部分文件类功能归于std模块
+
 ## [0.7.28] - 2026-06-17
 ### Changed
 - refactor(cpp): align cache paths with Rust/Python, add network fetch for stub adapters
@@ -47,6 +51,7 @@ factors/base.h/cpp:
 - tests: update tdd-* tests, user: update no0/strategy-no0
 - gitignore: add build_output.txt
 - 删除cmake构建临时文件
+- release v0.7.28
 
 ## [0.7.27] - 2026-06-16
 ### Changed
@@ -1720,7 +1725,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.28...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.29...HEAD
+[0.7.29]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.28...v0.7.29
 [0.7.28]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.27...v0.7.28
 [0.7.27]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.26...v0.7.27
 [0.7.26]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.25...v0.7.26
