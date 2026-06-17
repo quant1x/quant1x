@@ -5,6 +5,8 @@
 #include <quant1x/runtime/cache1d.h>
 #include <quant1x/config/config.h>
 #include <quant1x/std/time.h>
+#include <quant1x/data/cache.h>
+#include <filesystem>
 #include "sina/decoder.h"
 #include "calendar.h"
 #include "timestamp.h"
@@ -19,6 +21,11 @@ namespace meta {
         // 获取交易日历的缓存文件名
         std::string get_calendar_filepath() {
             return config::get_meta_path() + "/calendar";
+        }
+
+        // 获取交易日历标记文件名 (对齐 Python _get_calendar_marker_filename)
+        std::string get_calendar_marker_filepath() {
+            return config::get_meta_path() + "/calendar.updated";
         }
 
         /// 预处理http接口返回的js文本, 去除赋值双引号等
@@ -89,23 +96,58 @@ namespace meta {
         }
     }
 
-    // 交易日历
+    // 交易日历 (对齐 Python lazy_load_calendar)
     void lazy_load_calendar() {
-        spdlog::info("初始化交易日历...");
-        update_calendar();
-        auto cache_path = detail::get_calendar_filepath();
-        auto ec         = filesystem::check_filepath(cache_path, true);
-        ec.clear();
-        io::CSVReader<1> in(cache_path);
-        in.read_header(io::ignore_extra_column, "date");
-        std::string date;
-        while (in.read_row(date)) {
-            global_calendars_string.emplace_back(date);
-            Timestamp ts = date;
-            ts           = ts.pre_market_time();
-            global_calendars_timestamp.emplace_back(ts);
+        spdlog::debug("加载交易日历...");
+
+        // 1. 检查标记文件是否过期, 决定是否需要更新
+        std::string marker      = detail::get_calendar_marker_filepath();
+        Timestamp   now_time    = Timestamp::now();
+        Timestamp   mod_time    = data::get_filename_modified_time(marker);
+        Timestamp   today_init  = now_time.pre_market_time();
+
+        if (now_time > today_init && mod_time < today_init) {
+            spdlog::debug("交易日历缓存文件过期, 执行更新");
+            try {
+                update_calendar();
+                // 更新标记文件的修改时间 (对齐 Python fs.update_file_mtime)
+                filesystem::write_file(marker);
+                filesystem::last_modified_time(marker, now_time.value());
+            } catch (const std::exception &e) {
+                spdlog::debug("交易日历更新失败: {}", e.what());
+            }
+        } else {
+            spdlog::debug("交易日历缓存文件未过期, 跳过更新");
         }
-        spdlog::info("初始化交易日历...OK");
+
+        // 2. 加载交易日历缓存文件到内存 (对齐 Python: 文件不存在则跳过)
+        spdlog::debug("加载交易日历缓存文件到内存");
+        auto cache_path = detail::get_calendar_filepath();
+        // 确保父目录存在
+        filesystem::check_filepath(cache_path, true);
+        if (!std::filesystem::exists(cache_path)) {
+            spdlog::debug("交易日历缓存文件不存在, 跳过加载");
+            return;
+        }
+
+        try {
+            // 清空旧数据
+            global_calendars_string.clear();
+            global_calendars_timestamp.clear();
+
+            io::CSVReader<1> in(cache_path);
+            in.read_header(io::ignore_extra_column, "date");
+            std::string date;
+            while (in.read_row(date)) {
+                global_calendars_string.emplace_back(date);
+                Timestamp ts = date;
+                ts           = ts.pre_market_time();
+                global_calendars_timestamp.emplace_back(ts);
+            }
+            spdlog::debug("交易日历加载完成, 共 {} 个交易日", global_calendars_string.size());
+        } catch (const std::exception &e) {
+            spdlog::error("加载交易日历缓存文件失败: {}", e.what());
+        }
     }
 
     // 这里简单的封装一层, 以后扩展动态更新加载
