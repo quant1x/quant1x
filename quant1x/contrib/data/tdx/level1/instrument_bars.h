@@ -8,7 +8,7 @@
 namespace level1 {
 
 /// 扩展行情K线请求 (对应 Python level1/ext.py InstrumentBars, 命令字 0x23FF)
-/// 协议格式: PacketType=0x01, ZipFlag=0x01 (FLAG_GENERIC)
+/// 协议格式: packet_ctrl=0x01, frame_type=0x01 (FLAG_GENERIC)
 struct InstrumentBars : public BaseMessage<InstrumentBars> {
     static constexpr int PRE_REQUEST_MAX = 700;
 
@@ -29,10 +29,10 @@ struct InstrumentBars : public BaseMessage<InstrumentBars> {
         , category(_category)
         , start(_start)
         , count(_count) {
-        request_header.ZipFlag    = 0x01; // FLAG_GENERIC
-        request_header.SeqID      = SequenceId();
-        request_header.PacketType = 0x01; // ext frame type
-        request_header.Method     = 0x23FF; // EXT_INSTRUMENT_BARS
+        request_header.frame_type    = 0x01; // FLAG_GENERIC
+        request_header.seq_id      = get_sequence_id();
+        request_header.packet_ctrl = 0x01; // ext frame type
+        request_header.cmd_id     = 0x23FF; // EXT_INSTRUMENT_BARS
     }
 
     /// 序列化请求体 — 对齐 Python: struct.pack('<B9sHHIH', market, ticker, category, frequency, start, count)

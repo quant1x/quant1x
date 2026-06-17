@@ -65,7 +65,7 @@ func TestReadResponseHeader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("readResponseHeader failed: %v", err)
 	}
-	if hdr.I1 != 0xAABBCCDD || hdr.ZipFlag != FlagUncompressed || hdr.SeqID != 42 || hdr.I2 != 0x01 || hdr.Method != 128 || hdr.ZipSize != 256 || hdr.UnZipSize != 512 {
+	if hdr.I1 != 0xAABBCCDD || hdr.FrameType != FlagUncompressed || hdr.SeqId != 42 || hdr.I2 != 0x01 || hdr.Method != 128 || hdr.BodyWireLen != 256 || hdr.BodyRawLen != 512 {
 		t.Fatalf("unexpected header %+v", hdr)
 	}
 }

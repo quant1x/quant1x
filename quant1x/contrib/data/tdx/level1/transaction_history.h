@@ -26,10 +26,10 @@ namespace level1 {
         const char *code_;
 
         HistoryTransaction(const std::string &securityCode, u32 date, u16 offset, u16 size) : BaseMessage<HistoryTransaction>() {
-            request_header.ZipFlag = ZlibFlag::Uncompressed;
-            request_header.SeqID = SequenceId();
-            request_header.PacketType = 0x00;
-            request_header.Method = StdCommand::HISTORY_TRANSACTION_DATA;
+            request_header.frame_type = ZlibFlag::Uncompressed;
+            request_header.seq_id = get_sequence_id();
+            request_header.packet_ctrl = 0x00;
+            request_header.cmd_id = StdCommand::HISTORY_TRANSACTION_DATA;
             {
                 auto [id, _, symbol] = detect_symbol(securityCode);
                 Market = static_cast<uint16_t>(id);

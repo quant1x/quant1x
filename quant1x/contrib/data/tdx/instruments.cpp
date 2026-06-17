@@ -7,14 +7,16 @@
 #include "instruments.h"
 #include <quant1x/config/base.h>
 #include <quant1x/data/market.h>
+#include <quant1x/data/meta/calendar.h>
 #include <quant1x/data/status.h>
 #include <quant1x/contrib/data/tdx/client.h>
 #include <quant1x/contrib/data/tdx/protocol.h>
 #include <quant1x/contrib/data/tdx/level1/security_list.h>
-#include <fstream>
-#include <sstream>
+#include <quant1x/io/csv-reader.h>
+#include <quant1x/io/csv-writer.h>
+#include <quant1x/runtime/once.h>
 #include <mutex>
-#include <unordered_map>
+#include <tsl/robin_map.h>
 #include <algorithm>
 #include <filesystem>
 
@@ -44,81 +46,57 @@ inline int exchange_to_tdx_market(meta::Exchange ex) {
 
 // ============================================================
 // 内存缓存: symbol → Instrument
+// RollingOnce 保证每日首次调用时初始化, 长期运行每天自动重新加载
 // ============================================================
+static auto security_once = RollingOnce::create("tdx-instruments", meta::cron_expr_daily_9am);
 static std::mutex g_security_mutex;
-static std::unordered_map<std::string, meta::Instrument> g_security_map;
-static bool g_security_loaded = false;
+static tsl::robin_map<std::string, meta::Instrument> g_security_map;
 
 // ============================================================
-// load_securities() — 从 CSV 加载到内存
+// load_securities() — 从 CSV 加载到内存 (调用方负责通过 RollingOnce 控制时机)
 // ============================================================
 bool load_securities() {
     std::lock_guard<std::mutex> lock(g_security_mutex);
-    if (g_security_loaded) {
-        return !g_security_map.empty();
-    }
 
     std::string fname = config::get_meta_path() + "/securities.csv";
     spdlog::debug("[tdx/instruments] Loading securities from {}", fname);
 
     g_security_map.clear();
 
-    std::ifstream file(fname);
-    if (!file.is_open()) {
-        spdlog::warn("[tdx/instruments] cannot open {}", fname);
-        g_security_loaded = true;
-        return false;
-    }
-
-    std::string line;
-    // Skip header: exchange,type,code,name,lot_size,price_precision,ext_market,ext_category,alias_ticker
-    if (!std::getline(file, line)) {
-        g_security_loaded = true;
-        return false;
-    }
-
-    int count = 0;
-    while (std::getline(file, line)) {
-        if (line.empty()) continue;
-
-        std::stringstream ss(line);
+    try {
+        io::CSVReader<9> in(fname);
+        in.read_header(io::ignore_extra_column, "exchange", "type", "code", "name",
+                       "lot_size", "price_precision", "ext_market", "ext_category", "alias_ticker");
         std::string exchange_str, type_str, ticker, name;
         std::string lot_str, prec_str, extm_str, extc_str, alias;
+        int count = 0;
+        while (in.read_row(exchange_str, type_str, ticker, name, lot_str, prec_str, extm_str, extc_str, alias)) {
+            try {
+                meta::Instrument inst;
+                inst.exchange = meta::exchange_from_abbr(exchange_str);
+                inst.type = meta::instype_from_string(type_str);
+                for (auto& c : ticker) { c = static_cast<char>(::tolower(static_cast<unsigned char>(c))); }
+                inst.ticker = ticker;
+                inst.name = name;
+                inst.lot_size = lot_str.empty() ? 100 : std::stoi(lot_str);
+                inst.price_precision = prec_str.empty() ? 2 : std::stoi(prec_str);
+                inst.ext_market = extm_str.empty() ? 0 : std::stoi(extm_str);
+                inst.ext_category = extc_str.empty() ? 0 : std::stoi(extc_str);
+                inst.alias_ticker = alias;
 
-        std::getline(ss, exchange_str, ',');
-        std::getline(ss, type_str, ',');
-        std::getline(ss, ticker, ',');
-        std::getline(ss, name, ',');
-        std::getline(ss, lot_str, ',');
-        std::getline(ss, prec_str, ',');
-        std::getline(ss, extm_str, ',');
-        std::getline(ss, extc_str, ',');
-        std::getline(ss, alias, ',');
-
-        try {
-            meta::Instrument inst;
-            inst.exchange = meta::exchange_from_abbr(exchange_str);
-            inst.type = meta::instype_from_string(type_str);
-            for (auto& c : ticker) { c = static_cast<char>(::tolower(static_cast<unsigned char>(c))); }
-            inst.ticker = ticker;
-            inst.name = name;
-            inst.lot_size = lot_str.empty() ? 100 : std::stoi(lot_str);
-            inst.price_precision = prec_str.empty() ? 2 : std::stoi(prec_str);
-            inst.ext_market = extm_str.empty() ? 0 : std::stoi(extm_str);
-            inst.ext_category = extc_str.empty() ? 0 : std::stoi(extc_str);
-            inst.alias_ticker = alias;
-
-            std::string symbol = inst.symbol();
-            g_security_map[symbol] = inst;
-            count++;
-        } catch (const std::exception& e) {
-            spdlog::debug("[tdx/instruments] skip row: {} — {}", line, e.what());
+                std::string symbol = inst.symbol();
+                g_security_map[symbol] = inst;
+                count++;
+            } catch (const std::exception& e) {
+                spdlog::debug("[tdx/instruments] skip row: {} {} {} — {}", exchange_str, type_str, ticker, e.what());
+            }
         }
+        spdlog::info("[tdx/instruments] loaded {} instruments from {}", count, fname);
+        return count > 0;
+    } catch (const std::exception& e) {
+        spdlog::warn("[tdx/instruments] cannot open or parse {}: {}", fname, e.what());
+        return false;
     }
-
-    g_security_loaded = true;
-    spdlog::info("[tdx/instruments] loaded {} instruments from {}", count, fname);
-    return count > 0;
 }
 
 // ============================================================
@@ -184,56 +162,45 @@ static void write_securities_csv(const std::string& fname, const std::vector<met
         std::filesystem::create_directories(p.parent_path());
     }
 
-    std::ofstream file(fname, std::ios::out | std::ios::trunc);
-    if (!file.is_open()) {
-        spdlog::error("[tdx/instruments] cannot create {}", fname);
-        return;
+    try {
+        io::CSVWriter writer(fname);
+        writer.write_row("exchange", "type", "code", "name", "lot_size", "price_precision",
+                         "ext_market", "ext_category", "alias_ticker");
+
+        for (const auto& inst : instruments) {
+            writer.write_row(
+                meta::exchange_identifier(inst.exchange),
+                meta::instype_to_string(inst.type),
+                inst.ticker,
+                inst.name,
+                inst.lot_size,
+                inst.price_precision,
+                inst.ext_market,
+                inst.ext_category,
+                inst.alias_ticker
+            );
+        }
+        spdlog::info("[tdx/instruments] wrote {} instruments to {}", instruments.size(), fname);
+    } catch (const std::exception& e) {
+        spdlog::error("[tdx/instruments] cannot create {}: {}", fname, e.what());
     }
-
-    // Header: exchange,type,code,name,lot_size,price_precision,ext_market,ext_category,alias_ticker
-    file << "exchange,type,code,name,lot_size,price_precision,ext_market,ext_category,alias_ticker\n";
-
-    for (const auto& inst : instruments) {
-        file << meta::exchange_identifier(inst.exchange) << ","
-             << meta::instype_to_string(inst.type) << ","
-             << inst.ticker << ","
-             << inst.name << ","
-             << inst.lot_size << ","
-             << inst.price_precision << ","
-             << inst.ext_market << ","
-             << inst.ext_category << ","
-             << inst.alias_ticker << "\n";
-    }
-
-    file.close();
-    spdlog::info("[tdx/instruments] wrote {} instruments to {}", instruments.size(), fname);
 }
 
 // ============================================================
-// init_securities() — 初始化证券列表
-// 对齐 Python init_securities() / Rust init_securities()
-//
-// 流程:
-//   1. 检查 CSV 是否过期 (data::should_initialize_file)
-//   2. 若文件未过期, 尝试从 CSV 加载
-//   3. 若需要更新:
-//      a. 从标准行情获取 A 股列表 (SSE/SZSE/BSE)
-//      b. TODO: 从扩展行情获取港股等 (HKEX) — 需要 ext 协议基础设施
-//      c. 写入 CSV
-//      d. 加载到内存
+// do_init_securities() — 实际初始化逻辑, 由 RollingOnce::Do 调用
 // ============================================================
-void init_securities() {
+static void do_init_securities() {
     std::string fname = config::get_meta_path() + "/securities.csv";
 
     // Step 1: 检查是否需要更新
-    bool ensure_updated = data::should_initialize_file(fname);
-    if (!ensure_updated) {
+    bool create_or_update = data::should_initialize_file(fname);
+    if (!create_or_update) {
         // CSV 存在且是今天的, 尝试加载
-        ensure_updated = !load_securities();
+        create_or_update = !load_securities();
     }
-    spdlog::debug("[tdx/instruments] init_securities ensure_updated={}", ensure_updated);
+    spdlog::debug("[tdx/instruments] init_securities create_or_update={}", create_or_update);
 
-    if (!ensure_updated) {
+    if (!create_or_update) {
         return; // 已加载, 无需更新
     }
 
@@ -293,9 +260,7 @@ void init_securities() {
         spdlog::warn("[tdx/instruments] no instruments fetched — CSV not written");
     }
 
-    // Step 4: 加载到内存
-    g_security_loaded = false; // 强制重新加载
-    g_security_map.clear();
+    // Step 4: 加载到内存 (load_securities 内部会加锁并覆盖 g_security_map)
     bool ok = load_securities();
     if (!ok) {
         spdlog::error("[tdx/instruments] failed to load securities after initialization");
@@ -303,17 +268,18 @@ void init_securities() {
 }
 
 // ============================================================
+// init_securities() — 通过 RollingOnce 保证每日首次调用时初始化
+// 对齐 Python init_securities() / Rust init_securities()
+// ============================================================
+void init_securities() {
+    security_once->Do(do_init_securities);
+}
+
+// ============================================================
 // get_code_list() — 返回所有 symbol 字符串
-// 首次调用时若缓存为空, 自动触发 init_securities()
 // ============================================================
 std::vector<std::string> get_code_list() {
-    if (!load_securities()) {
-        // 缓存为空或文件不存在, 尝试初始化
-        spdlog::info("[tdx/instruments] cache empty, triggering init_securities()...");
-        init_securities();
-        // 重新加载
-        load_securities();
-    }
+    init_securities(); // RollingOnce 保证每天只执行一次
 
     std::lock_guard<std::mutex> lock(g_security_mutex);
     std::vector<std::string> codes;
@@ -331,7 +297,7 @@ std::optional<meta::Instrument> get_instrument_info(const std::string& symbol) {
     std::string security_code = data::correct_security_code(symbol);
     spdlog::debug("[tdx/instruments] get_instrument_info: symbol={}, security_code={}", symbol, security_code);
 
-    load_securities();
+    init_securities(); // RollingOnce 保证每天只执行一次
 
     std::lock_guard<std::mutex> lock(g_security_mutex);
     auto it = g_security_map.find(security_code);

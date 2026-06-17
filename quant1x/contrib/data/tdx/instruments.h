@@ -14,21 +14,18 @@
 namespace tdx {
 namespace instruments {
 
-    /// 从 securities.csv 加载证券列表到内存 (惰性, 仅首次调用时加载)
+    /// 从 securities.csv 加载证券列表到内存
     /// 对齐 Python _load_securities() / Rust load_securities()
     /// @return true 加载成功, false 文件不存在或解析失败
     bool load_securities();
 
-    /// 初始化证券列表 — 从 TDX 服务器拉取并缓存到本地 CSV
+    /// 初始化证券列表 — 通过 RollingOnce 保证每日首次调用时执行
+    /// 长期运行的应用每天自动触发重新下载/加载
     /// 对齐 Python init_securities() / Rust init_securities()
-    /// 流程: 检查 CSV 是否过期 → 从标准行情获取 A 股列表 (SSE/SZSE/BSE)
-    ///     → TODO: 扩展行情 (HKEX) 待 ext 协议基础设施完成后接入
-    ///     → 写入 CSV → 加载到内存
     void init_securities();
 
     /// 获取所有证券代码列表 (symbol 格式, 如 sh600000)
     /// 对齐 Python instruments.py 中遍历 _SECURITY_MAP 获取 keys 的行为
-    /// 首次调用时若缓存为空, 自动触发 init_securities()
     std::vector<std::string> get_code_list();
 
     /// 根据证券代码获取证券信息

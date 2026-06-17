@@ -13,11 +13,11 @@ namespace cache {
     constexpr const char *const trains_begin_date = "2024-10-01";
 
     /// 检查状态文件是否存在, 存在返回false, 不存在返回true
-    bool checkUpdateState(const std::string &date, const meta::Timestamp &timestamp);
+    bool check_update_state(const std::string &date, const meta::Timestamp &timestamp);
     /// 设置一个时间段为已更新状态
-    void doneUpdate(const std::string &date, const meta::Timestamp &timestamp);
+    void done_ipdate(const std::string &date, const meta::Timestamp &timestamp);
     /// 清除所有的过期状态文件
-    bool cleanExpiredStateFiles();
+    bool clean_expired_state_files();
     /// 更新所有数据
     void update_all();
     /// 完成数据处理的适配器数

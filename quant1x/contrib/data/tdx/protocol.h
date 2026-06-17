@@ -38,7 +38,7 @@ namespace level1 {
     };
 
     // 标准行情命令字转字符串
-    inline const char *commandToString(const StdCommand &cmd) noexcept {
+    inline const char *command_to_string(const StdCommand &cmd) noexcept {
         switch (cmd) {
             case StdCommand::HEARTBEAT:
                 return "L1:HEARTBEAT";
@@ -85,12 +85,12 @@ namespace level1 {
         }
     }
 
-    inline const char *commandToString(u16 cmd) noexcept {
-        return commandToString(StdCommand(cmd));
+    inline const char *command_to_string(u16 cmd) noexcept {
+        return command_to_string(StdCommand(cmd));
     }
 
     // 生成序列号
-    inline uint32_t SequenceId() noexcept {
+    inline uint32_t get_sequence_id() noexcept {
         static std::atomic<uint32_t> _seqId{0};
         return ++_seqId;  // 前置递增保证原子性
     }
@@ -121,16 +121,16 @@ namespace level1 {
 
     template <typename Derived>
     struct RequestHeader : public header<Derived> {
-        u8  ZipFlag;     // 压缩标志
-        u32 SeqID;       // 请求编号
-        u8  PacketType;  // 包类型
-        u16 PkgLen1;     // 消息体长度1
-        u16 PkgLen2;     // 消息体长度2
-        u16 Method;      // 请求方法
+        u8  frame_type;    // 帧类型标志
+        u32 seq_id;        // 请求编号
+        u8  packet_ctrl;   // 数据包控制位
+        u16 body_wire_len; // 消息体长度1
+        u16 body_raw_len;  // 消息体长度2
+        u16 cmd_id;        // 命令字
 
-        RequestHeader() : ZipFlag(0), SeqID(0), PacketType(0), PkgLen1(0), PkgLen2(0), Method(0) {}
+        RequestHeader() : frame_type(0), seq_id(0), packet_ctrl(0), body_wire_len(0), body_raw_len(0), cmd_id(0) {}
 
-        std::string commandImpl() { return commandToString(Method); }
+        std::string commandImpl() { return command_to_string(cmd_id); }
 
         std::vector<u8> serialize() { return static_cast<Derived *>(this)->serializeImpl(); }
 
@@ -139,48 +139,48 @@ namespace level1 {
         std::vector<u8> headerSerialize() {
             spdlog::debug("RequestHeader");
             BinaryStream stream;
-            stream.push_arithmetic(ZipFlag);
-            stream.push_arithmetic(SeqID);
-            stream.push_arithmetic(PacketType);
-            stream.push_arithmetic(PkgLen1);
-            stream.push_arithmetic(PkgLen2);
-            stream.push_arithmetic(Method);
+            stream.push_arithmetic(frame_type);
+            stream.push_arithmetic(seq_id);
+            stream.push_arithmetic(packet_ctrl);
+            stream.push_arithmetic(body_wire_len);
+            stream.push_arithmetic(body_raw_len);
+            stream.push_arithmetic(cmd_id);
             return stream.data();
         }
 
         [[nodiscard]] std::string headerStringImpl() const {
             return fmt::format(
-                "RequestHeader{{ZipFlag:{}, SeqID:{}, PacketType:{}, PkgLen1:{}, PkgLen2:{}, Method:{:#06x}}}",
-                ZipFlag,
-                SeqID,
-                PacketType,
-                PkgLen1,
-                PkgLen2,
-                Method);
+                "RequestHeader{{frame_type:{}, seq_id:{}, packet_ctrl:{}, body_wire_len:{}, body_raw_len:{}, cmd_id:{:#06x}}}",
+                frame_type,
+                seq_id,
+                packet_ctrl,
+                body_wire_len,
+                body_raw_len,
+                cmd_id);
         }
     };
 
     template <typename Derived>
     struct ResponseHeader : public header<Derived> {
-        u32 I1;         // 对应Go的uint32
-        u8  ZipFlag;    // ZipFlag
-        u32 SeqID;      // 请求编号
-        u8  I2;         // 对应Go的uint8
-        u16 Method;     // 命令字
-        u16 ZipSize;    // 长度
-        u16 UnZipSize;  // 未压缩长度
+        u32 magic_number;            // 对应Go的uint32
+        u8  frame_type;    // frame_type
+        u32 seq_id;        // 请求编号
+        u8  packet_ctrl;   // 数据包控制位
+        u16 cmd_id;        // 命令字
+        u16 body_wire_len; // 长度
+        u16 body_raw_len;  // 未压缩长度
 
         ResponseHeader() {
-            I1        = 0;
-            ZipFlag   = 0;
-            SeqID     = 0;
-            I2        = 0;
-            Method    = 0;
-            ZipSize   = 0;
-            UnZipSize = 0;
+            magic_number  = 0;
+            frame_type    = 0;
+            seq_id        = 0;
+            packet_ctrl   = 0;
+            cmd_id        = 0;
+            body_wire_len = 0;
+            body_raw_len  = 0;
         }
 
-        std::string commandImpl() { return commandToString(Method); }
+        std::string commandImpl() { return command_to_string(cmd_id); }
 
         void deserialize(const std::vector<u8> &data) { static_cast<Derived *>(this)->deserializeImpl(data); }
 
@@ -188,25 +188,25 @@ namespace level1 {
 
         void headerDeserialize(const std::vector<u8> &data) {
             BinaryStream stream(data);
-            I1        = stream.get_u32();
-            ZipFlag   = stream.get_u8();
-            SeqID     = stream.get_u32();
-            I2        = stream.get_u8();
-            Method    = stream.get_u16();
-            ZipSize   = stream.get_u16();
-            UnZipSize = stream.get_u16();
+            magic_number  = stream.get_u32();
+            frame_type    = stream.get_u8();
+            seq_id        = stream.get_u32();
+            packet_ctrl   = stream.get_u8();
+            cmd_id        = stream.get_u16();
+            body_wire_len = stream.get_u16();
+            body_raw_len  = stream.get_u16();
         }
 
         [[nodiscard]] std::string headerStringImpl() const {
             return fmt::format(
-                "ResponseHeader{{I1:{}, ZipFlag:{} SeqID:{}, I2:{}, Method:{}, ZipSize:{}, UnZipSize:{}}}",
-                I1,
-                ZipFlag,
-                SeqID,
-                I2,
-                commandToString(Method),
-                ZipSize,
-                UnZipSize);
+                "ResponseHeader{{magic_number:{}, frame_type:{} seq_id:{}, packet_ctrl:{}, cmd_id:{}, body_wire_len:{}, body_raw_len:{}}}",
+                magic_number,
+                frame_type,
+                seq_id,
+                packet_ctrl,
+                command_to_string(cmd_id),
+                body_wire_len,
+                body_raw_len);
         }
     };
 #pragma pack(pop)  // 恢复默认对齐方式
@@ -233,8 +233,8 @@ namespace level1 {
         /// 序列化整个请求 = 消息头 + 消息体
         std::vector<u8> serialize_request() {
             auto body = serialize_request_body();
-            request_header.PkgLen1 = u16(2 + body.size());
-            request_header.PkgLen2 = u16(2 + body.size());
+            request_header.body_wire_len = u16(2 + body.size());
+            request_header.body_raw_len = u16(2 + body.size());
             auto buf = request_header.headerSerialize();
             buf.insert(buf.end(), body.begin(), body.end());
             return buf;
@@ -263,58 +263,58 @@ namespace level1 {
         std::string toString() { return static_cast<Derived *>(this)->toStringImpl(); }
     };
 
-    // 模板化的 process 函数 (兼容旧接口)
-    template <typename RequestType, typename ResponseType>
-    quant1x::error process(asio::ip::tcp::socket &socket, RequestType &request, ResponseType &response) {
-        std::string cmd     = request.command();
-        auto        req_buf = request.serialize();
-        spdlog::debug("[{}]Send buffer: {}", cmd, strings::bytesToHex(req_buf));
-        spdlog::debug("[{}]Send request: {}", cmd, request.toString());
-        asio::error_code ec;
-        size_t n = asio::write(socket, asio::buffer(req_buf.data(), req_buf.size()), ec);
-        spdlog::debug("[{}]Send request: {} bytes.", cmd, n);
-        if (ec) {
-            return quant1x::make_error_code(ec.value(), ec.message());
-        }
-        spdlog::debug("[{}]Recv -1", cmd);
-        // 读取响应的消息头
-        std::vector<u8> hdr_response_buf(response_header_length);
-        spdlog::debug("[{}]Recv -2", cmd);
-        size_t hdr_response_length = asio::read(socket, asio::buffer(hdr_response_buf), ec);
-        spdlog::debug("[{}]Recv -3", cmd);
-        if (ec) {
-            return quant1x::make_error_code(ec.value(), ec.message());
-        }
-        hdr_response_buf.resize(hdr_response_length);
-        spdlog::debug("[{}]Recv -4", cmd);
-        spdlog::debug("[{}]Recv buffer: {}", cmd, strings::bytesToHex(hdr_response_buf));
-        // auto pkg_response_hdr = cista::unchecked_deserialize<tdx::StdResponseHeader>(hdr_response_buf);
-        // StdResponseHeader pkg_response_hdr;
-        // ResponseHeader<ResponseType> &pkg_response_hdr = dynamic_cast<ResponseHeader<ResponseType>&>(response);
-        // pkg_response_hdr.ResponseHeader<ResponseType>::headerDeserialize(hdr_response_buf);
-        // response.ResponseHeader<ResponseType>::headerDeserialize(hdr_response_buf);
-        response.headerDeserialize(hdr_response_buf);
-        // 处理接收到的数据
-        spdlog::debug("[{}]Recv response head: {}", cmd, response.headerStringImpl());
-        if (response.ZipSize == 0) {
-            return quant1x::make_error_code(0, "success");
-        }
-        std::vector<u8> body_buffer(response.ZipSize);
-        spdlog::debug("[{}]Recv response body_buffer.size() = {}", cmd, body_buffer.size());
-        size_t body_received = asio::read(socket, asio::buffer(body_buffer, body_buffer.size()), ec);
-        if (ec) {
-            return quant1x::make_error_code(ec.value(), ec.message());
-        }
-        body_buffer.resize(body_received);
-        if (response.ZipSize != response.UnZipSize) {
-            std::vector<u8> un = unzip(body_buffer, response.UnZipSize);
-            body_buffer        = un;
-        }
-        spdlog::debug("[{}]Recv response buff: {}", cmd, strings::bytesToHex(body_buffer));
-        response.deserialize(body_buffer);
-        spdlog::debug("[{}]Recv response body: {}", cmd, response.toString());
-        return quant1x::make_error_code(0, "success");
-    }
+    // // 模板化的 process 函数 (兼容旧接口)
+    // template <typename RequestType, typename ResponseType>
+    // quant1x::error process(asio::ip::tcp::socket &socket, RequestType &request, ResponseType &response) {
+    //     std::string cmd     = request.command();
+    //     auto        req_buf = request.serialize();
+    //     spdlog::debug("[{}]Send buffer: {}", cmd, strings::bytesToHex(req_buf));
+    //     spdlog::debug("[{}]Send request: {}", cmd, request.toString());
+    //     asio::error_code ec;
+    //     size_t n = asio::write(socket, asio::buffer(req_buf.data(), req_buf.size()), ec);
+    //     spdlog::debug("[{}]Send request: {} bytes.", cmd, n);
+    //     if (ec) {
+    //         return quant1x::make_error_code(ec.value(), ec.message());
+    //     }
+    //     spdlog::debug("[{}]Recv -1", cmd);
+    //     // 读取响应的消息头
+    //     std::vector<u8> hdr_response_buf(response_header_length);
+    //     spdlog::debug("[{}]Recv -2", cmd);
+    //     size_t hdr_response_length = asio::read(socket, asio::buffer(hdr_response_buf), ec);
+    //     spdlog::debug("[{}]Recv -3", cmd);
+    //     if (ec) {
+    //         return quant1x::make_error_code(ec.value(), ec.message());
+    //     }
+    //     hdr_response_buf.resize(hdr_response_length);
+    //     spdlog::debug("[{}]Recv -4", cmd);
+    //     spdlog::debug("[{}]Recv buffer: {}", cmd, strings::bytesToHex(hdr_response_buf));
+    //     // auto pkg_response_hdr = cista::unchecked_deserialize<tdx::StdResponseHeader>(hdr_response_buf);
+    //     // StdResponseHeader pkg_response_hdr;
+    //     // ResponseHeader<ResponseType> &pkg_response_hdr = dynamic_cast<ResponseHeader<ResponseType>&>(response);
+    //     // pkg_response_hdr.ResponseHeader<ResponseType>::headerDeserialize(hdr_response_buf);
+    //     // response.ResponseHeader<ResponseType>::headerDeserialize(hdr_response_buf);
+    //     response.headerDeserialize(hdr_response_buf);
+    //     // 处理接收到的数据
+    //     spdlog::debug("[{}]Recv response head: {}", cmd, response.headerStringImpl());
+    //     if (response.body_wire_len == 0) {
+    //         return quant1x::make_error_code(0, "success");
+    //     }
+    //     std::vector<u8> body_buffer(response.body_wire_len);
+    //     spdlog::debug("[{}]Recv response body_buffer.size() = {}", cmd, body_buffer.size());
+    //     size_t body_received = asio::read(socket, asio::buffer(body_buffer, body_buffer.size()), ec);
+    //     if (ec) {
+    //         return quant1x::make_error_code(ec.value(), ec.message());
+    //     }
+    //     body_buffer.resize(body_received);
+    //     if (response.body_wire_len != response.body_raw_len) {
+    //         std::vector<u8> un = unzip(body_buffer, response.body_raw_len);
+    //         body_buffer        = un;
+    //     }
+    //     spdlog::debug("[{}]Recv response buff: {}", cmd, strings::bytesToHex(body_buffer));
+    //     response.deserialize(body_buffer);
+    //     spdlog::debug("[{}]Recv response body: {}", cmd, response.toString());
+    //     return quant1x::make_error_code(0, "success");
+    // }
 
     // 基于 BaseMessage 的 process 函数 (对齐 Python process_level1_new)
     template <typename MessageType>
@@ -337,18 +337,18 @@ namespace level1 {
         }
         hdr_response_buf.resize(hdr_response_length);
         msg.deserialize_response_header(hdr_response_buf);
-        if (msg.response_header.ZipSize == 0) {
+        if (msg.response_header.body_wire_len == 0) {
             return quant1x::make_error_code(0, "success");
         }
         spdlog::debug("[{}]Recv response head: {}", cmd, msg.response_header.headerStringImpl());
-        std::vector<u8> body_buffer(msg.response_header.ZipSize);
+        std::vector<u8> body_buffer(msg.response_header.body_wire_len);
         size_t body_received = asio::read(socket, asio::buffer(body_buffer, body_buffer.size()), ec);
         if (ec) {
             return quant1x::make_error_code(ec.value(), ec.message());
         }
         body_buffer.resize(body_received);
-        if (msg.response_header.ZipSize != msg.response_header.UnZipSize) {
-            std::vector<u8> un = unzip(body_buffer, msg.response_header.UnZipSize);
+        if (msg.response_header.body_wire_len != msg.response_header.body_raw_len) {
+            std::vector<u8> un = unzip(body_buffer, msg.response_header.body_raw_len);
             body_buffer        = un;
         }
         msg.deserialize_response_body(body_buffer);

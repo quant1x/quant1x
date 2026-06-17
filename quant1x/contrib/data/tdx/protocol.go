@@ -46,7 +46,7 @@ const (
 )
 
 const (
-	FlagZip          uint8 = 0x10                       // zip压缩标志位
+	FlagZip          uint8 = 0x10                       // zip帧类型标志位
 	FlagUncompressed uint8 = 0x0C                       // 未压缩
 	FlagZipped             = FlagZip | FlagUncompressed // zip压缩
 )
@@ -57,7 +57,7 @@ func nextSequenceId() uint32 {
 	return atomic.AddUint32(&seqId, 1)
 }
 
-func commandToString(cmd StdCommand) string {
+func command_to_string(cmd StdCommand) string {
 	switch cmd {
 	case StdCommandHeartbeat:
 		return "L1:HEARTBEAT"
@@ -104,28 +104,28 @@ func commandToString(cmd StdCommand) string {
 
 // RequestHeader 请求-消息头
 type RequestHeader struct {
-	ZipFlag    uint8  // ZipFlag
-	SeqID      uint32 // 请求编号
-	PacketType uint8  // 包类型
-	PkgLen1    uint16 // 消息体长度1
-	PkgLen2    uint16 // 消息体长度2
-	Method     uint16 // 命令字
+	FrameType   uint8  // FrameType
+	SeqId       uint32 // 请求编号
+	PacketCtrl  uint8  // 包类型
+	BodyWireLen uint16 // 消息体长度1
+	BodyRawLen  uint16 // 消息体长度2
+	Method      uint16 // 命令字
 }
 
 func (h RequestHeader) String() string {
-	return fmt.Sprintf("{ZipFlag: %d, SeqID: %d, PacketType: %d, PkgLen1: %d, PkgLen2: %d, Method: %d}",
-		h.ZipFlag, h.SeqID, h.PacketType, h.PkgLen1, h.PkgLen2, h.Method)
+	return fmt.Sprintf("{FrameType: %d, SeqId: %d, PacketCtrl: %d, BodyWireLen: %d, BodyRawLen: %d, Method: %d}",
+		h.FrameType, h.SeqId, h.PacketCtrl, h.BodyWireLen, h.BodyRawLen, h.Method)
 }
 
 // ResponseHeader 响应-消息头
 type ResponseHeader struct {
-	I1        uint32 // reserved
-	ZipFlag   uint8  // 压缩标志
-	SeqID     uint32 // 序列号
-	I2        uint8  // reserved
-	Method    uint16 // 命令字
-	ZipSize   uint16 // 压缩后大小
-	UnZipSize uint16 // 解压后大小
+	MagicNumber uint32 // reserved
+	FrameType   uint8  // 帧类型标志
+	SeqId       uint32 // 序列号
+	PacketCtrl  uint8  // 包控制
+	Method      uint16 // 命令字
+	BodyWireLen uint16 // 压缩后大小
+	BodyRawLen  uint16 // 解压后大小
 }
 
 func readResponseHeader(r stdio.Reader) (*ResponseHeader, error) {
@@ -134,13 +134,13 @@ func readResponseHeader(r stdio.Reader) (*ResponseHeader, error) {
 		return nil, err
 	}
 	hdr := &ResponseHeader{}
-	hdr.I1 = binary.LittleEndian.Uint32(buf[0:4])
-	hdr.ZipFlag = buf[4]
-	hdr.SeqID = binary.LittleEndian.Uint32(buf[5:9])
-	hdr.I2 = buf[9]
+	hdr.MagicNumber = binary.LittleEndian.Uint32(buf[0:4])
+	hdr.FrameType = buf[4]
+	hdr.SeqId = binary.LittleEndian.Uint32(buf[5:9])
+	hdr.PacketCtrl = buf[9]
 	hdr.Method = binary.LittleEndian.Uint16(buf[10:12])
-	hdr.ZipSize = binary.LittleEndian.Uint16(buf[12:14])
-	hdr.UnZipSize = binary.LittleEndian.Uint16(buf[14:16])
+	hdr.BodyWireLen = binary.LittleEndian.Uint16(buf[12:14])
+	hdr.BodyRawLen = binary.LittleEndian.Uint16(buf[14:16])
 	return hdr, nil
 }
 
@@ -191,12 +191,12 @@ func buildRequest(method StdCommand, packetType uint8, payload []byte) []byte {
 		pkgLen = uint16(2 + len(payload))
 	}
 	req := RequestHeader{
-		ZipFlag:    FlagUncompressed,
-		SeqID:      seqId,
-		PacketType: packetType,
-		PkgLen1:    pkgLen,
-		PkgLen2:    pkgLen,
-		Method:     uint16(method),
+		FrameType:   FlagUncompressed,
+		SeqId:       seqId,
+		PacketCtrl:  packetType,
+		BodyWireLen: pkgLen,
+		BodyRawLen:  pkgLen,
+		Method:      uint16(method),
 	}
 	buf := &bytes.Buffer{}
 	_ = binary.Write(buf, binary.LittleEndian, req)
@@ -246,7 +246,7 @@ func Process[T ProtocolRequest, R ProtocolResponse](conn_ *qio.Connection, req T
 		return errors.New("nil connection")
 	}
 
-	cmd := commandToString(req.Command())
+	cmd := command_to_string(req.Command())
 	payload := req.Serialize()
 	logger.Debugf("[%s] send request bytes: %d", cmd, len(payload))
 	logger.Debugf("[%s] request: %s", cmd, req.String())
@@ -262,16 +262,16 @@ func Process[T ProtocolRequest, R ProtocolResponse](conn_ *qio.Connection, req T
 	resp.SetHeader(hdr)
 	logger.Debugf("[%s] response header: %+v", cmd, *hdr)
 
-	if hdr.ZipSize == 0 {
+	if hdr.BodyWireLen == 0 {
 		return nil
 	}
 
-	body := make([]byte, hdr.ZipSize)
+	body := make([]byte, hdr.BodyWireLen)
 	if _, err := stdio.ReadFull(conn, body); err != nil {
 		return err
 	}
 
-	if hdr.ZipSize != hdr.UnZipSize {
+	if hdr.BodyWireLen != hdr.BodyRawLen {
 		body, err = unzipZlib(body)
 		if err != nil {
 			return err

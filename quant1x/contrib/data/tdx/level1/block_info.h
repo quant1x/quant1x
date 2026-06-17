@@ -35,10 +35,10 @@ namespace level1 {
         std::vector<u8> Data;            // 响应: 板块数据
 
         BlockInfoMsg(const std::string &filename, u32 offset) : BaseMessage<BlockInfoMsg>(), BlockFilename() {
-            request_header.ZipFlag = ZlibFlag::Uncompressed;
-            request_header.SeqID = SequenceId();
-            request_header.PacketType = 0x01;
-            request_header.Method = StdCommand::BLOCK_DATA;
+            request_header.frame_type = ZlibFlag::Uncompressed;
+            request_header.seq_id = get_sequence_id();
+            request_header.packet_ctrl = 0x01;
+            request_header.cmd_id = StdCommand::BLOCK_DATA;
 
             Start = offset;
             Size = BLOCK_CHUNKS_SIZE;

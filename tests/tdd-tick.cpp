@@ -8,7 +8,7 @@
 //#include <iostream>
 //#include <cmath>
 //
-//// 一, 百分位法(Percentile Method)
+//// 一, 百分位法(Percentile cmd_id)
 //// 对历史成交量或成交金额进行排序, 取其高分位数作为大单阈值. 
 //
 //// 计算百分位数(线性插值)
@@ -37,7 +37,7 @@
 //    std::cout << "95% Percentile Threshold: " << threshold_95 << " 股" << std::endl;
 //}
 //
-//// 二, 固定比例法(Fixed Ratio Method)
+//// 二, 固定比例法(Fixed Ratio cmd_id)
 //// 根据流通市值或日均成交额设定固定比例, 如万分之一或5%. 
 //#include <iostream>
 //
@@ -63,7 +63,7 @@
 //    std::cout << "建议的大单金额阈值为: " << threshold << " 元" << std::endl;
 //}
 //
-//// 三, 经验法(Empirical Method)
+//// 三, 经验法(Empirical cmd_id)
 //// 基于股票类型设定固定的成交量或金额门槛. 
 //
 //#include <iostream>

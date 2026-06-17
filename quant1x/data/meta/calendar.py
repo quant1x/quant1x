@@ -158,7 +158,7 @@ def lazy_load_calendar():
     else:
         logger.debug("交易日历缓存文件未过期, 跳过更新")
     logger.debug("加载交易日历缓存文件到内存")
-    #ensure_updated = False
+    
     fn = _get_calendar_filename()
     if not os.path.exists(fn):
         logger.debug("交易日历缓存文件不存在, 跳过加载")

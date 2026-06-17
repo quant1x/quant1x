@@ -1,6 +1,6 @@
 #include <quant1x/cache.h>
 #include <quant1x/std/filesystem.h>
-#include <quant1x/contrib/data/tdx/instruments.h>
+#include <quant1x/contrib/data/tdx/datasource.h>
 #include <indicators/dynamic_progress.hpp>
 #include <indicators/progress_bar.hpp>
 #include <boost/pfr/core.hpp>
@@ -69,12 +69,12 @@ namespace cache {
     }
 
 
-    bool checkUpdateState(const std::string& date, const meta::Timestamp& timestamp) {
+    bool check_update_state(const std::string& date, const meta::Timestamp& timestamp) {
         std::string filename = stateFilename(date, timestamp);
         return !fs::exists(filename);
     }
 
-    void doneUpdate(const std::string& date, const meta::Timestamp& timestamp) {
+    void done_ipdate(const std::string& date, const meta::Timestamp& timestamp) {
         std::string filename = stateFilename(date, timestamp);
         auto err = filesystem::check_filepath(filename, true);
         err.clear();
@@ -83,7 +83,7 @@ namespace cache {
         f.close();
     }
 
-    bool cleanExpiredStateFiles() {
+    bool clean_expired_state_files() {
         std::string statePath = getVariablePath();
         std::string pattern = statePath + "/update.*";
 
@@ -137,7 +137,7 @@ namespace cache {
         bars[0].set_progress(0);
 
         auto first = adapters[0]->Key();
-        const auto allCodes = tdx::instruments::get_code_list();
+        auto allCodes = tdx::list_instruments();
         mpb::ProgressBar barCodes(
             mpb::option::BarWidth{50},
             mpb::option::ForegroundColor{mpb::Color::yellow},
@@ -240,7 +240,7 @@ namespace cache {
                 auto& result = thread_results[thread_idx];
 
                 for (size_t i = start; i < end /*&& !stoken.stop_requested()*/; ++i) {
-                    const auto& code = allCodes[i];
+                    const auto& inst = allCodes[i];
                     std::vector<std::string> values;
 
                     try {
@@ -248,33 +248,31 @@ namespace cache {
                         if(is_feature_adapter && featureAdapter) {
                             // 特征数据, 需要先clone一个实例, 然后用这个实例进行更新操作
                             auto feature = featureAdapter->clone();
-                            auto inst = data::detect_symbol(code);
                             feature->Update(inst, feature_date);
                             values = feature->values();
                         } else {
                             // 基础数据是适配器自己内部聚合文件, 不需要外部干预
-                            auto inst = data::detect_symbol(code);
                             adapter->Update(inst, feature_date);
                         }
 
                         // 线程安全地保存结果
                         if(is_feature_adapter && !values.empty()) {
                             std::lock_guard<std::mutex> lock(result.mutex);
-                            result.data.emplace_back(code, std::move(values));
+                            result.data.emplace_back(inst.symbol(), std::move(values));
                         }
 
                         // 更新进度
                         size_t current = ++processed_codes;
                         {
                             //std::lock_guard<std::mutex> lock(progress_mutex);
-                            std::string codePrefix = std::format("{}({}/{})", code, current, codeCount);
+                            std::string codePrefix = std::format("{}({}/{})", inst.symbol(), current, codeCount);
                             bars[1].set_option(mpb::option::PrefixText{codePrefix + ""});
                             bars[1].tick();
                         }
                     } catch (const std::exception &e) {
-                        spdlog::error("处理代码 {} 时出错: {}", code, e.what());
+                        spdlog::error("处理代码 {} 时出错: {}", inst.symbol(), e.what());
                     } catch (...) {
-                        spdlog::error("处理代码 {} 时发生未知错误", code);
+                        spdlog::error("处理代码 {} 时发生未知错误", inst.symbol());
                     }
                 }
             };
@@ -358,7 +356,7 @@ namespace cache {
                     // 2. 按原始代码顺序排序(缺失键视为末尾)
                     std::unordered_map<std::string, size_t> code_order;
                     for (size_t i = 0; i < allCodes.size(); ++i) {
-                        code_order[allCodes[i]] = i;
+                        code_order[allCodes[i].symbol()] = i;
                     }
 
                     auto get_idx = [&code_order](const std::string &k) -> size_t {
@@ -446,14 +444,14 @@ namespace cache {
             for (const auto& trigger_time : allDateUpdateTimes) {
                 if (current_time >= trigger_time) {
                     update_phase = meta::Timestamp::parse_time(trigger_time);
-                    should_update = checkUpdateState(today, update_phase);
+                    should_update = check_update_state(today, update_phase);
                     if (should_update) break;
                 }
             }
         } else { // 非交易日
             if (current_time >= lastUpdateTime) {
                 update_phase = meta::Timestamp::parse_time(lastUpdateTime);
-                should_update = checkUpdateState(today, update_phase);
+                should_update = check_update_state(today, update_phase);
             }
         }
 
@@ -462,7 +460,7 @@ namespace cache {
             //factors::SwitchDate(data::DefaultCanReadDate());
             auto all_action = data::Plugins();
             update_with_adapters(all_action);
-            doneUpdate(today, update_phase);
+            done_ipdate(today, update_phase);
         }
     }
 }

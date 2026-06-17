@@ -15,10 +15,10 @@ namespace level1 {
         std::string info;// 10个字节的消息, 未解
 
         Heartbeat() : BaseMessage<Heartbeat>() {
-            request_header.ZipFlag = ZlibFlag::Uncompressed;
-            request_header.SeqID = SequenceId();
-            request_header.PacketType = 0x02;
-            request_header.Method = StdCommand::HEARTBEAT;
+            request_header.frame_type = ZlibFlag::Uncompressed;
+            request_header.seq_id = get_sequence_id();
+            request_header.packet_ctrl = 0x02;
+            request_header.cmd_id = StdCommand::HEARTBEAT;
         }
 
         std::vector<u8> serialize_request_body_impl() {

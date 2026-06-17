@@ -49,10 +49,10 @@ namespace level1 {
         std::vector<Security> List;      // 响应: 证券列表
 
         SecurityList(int market, int start, int count) : BaseMessage<SecurityList>() {
-            request_header.ZipFlag       = ZlibFlag::Uncompressed;
-            request_header.SeqID         = SequenceId();
-            request_header.PacketType    = 0x01;
-            request_header.Method        = StdCommand::SECURITY_LIST;
+            request_header.frame_type       = ZlibFlag::Uncompressed;
+            request_header.seq_id         = get_sequence_id();
+            request_header.packet_ctrl    = 0x01;
+            request_header.cmd_id        = StdCommand::SECURITY_LIST;
             this->market  = market;
             this->start   = start;
             this->count   = count;

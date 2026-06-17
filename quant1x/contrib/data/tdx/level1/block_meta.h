@@ -36,10 +36,10 @@ namespace level1 {
         BlockMeta Meta{};             // 响应: 板块元数据
 
         BlockMetaMsg(const std::string &filename) : BaseMessage<BlockMetaMsg>() {
-            request_header.ZipFlag    = ZlibFlag::Uncompressed;
-            request_header.SeqID      = SequenceId();
-            request_header.PacketType = 0x01;
-            request_header.Method     = StdCommand::BLOCK_META;
+            request_header.frame_type    = ZlibFlag::Uncompressed;
+            request_header.seq_id      = get_sequence_id();
+            request_header.packet_ctrl = 0x01;
+            request_header.cmd_id     = StdCommand::BLOCK_META;
 
             memset(BlockFilename, 0x00, sizeof(BlockFilename));
             std::strncpy(BlockFilename, filename.c_str(), sizeof(BlockFilename) - 1);

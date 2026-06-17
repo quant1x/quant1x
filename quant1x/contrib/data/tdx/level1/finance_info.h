@@ -241,10 +241,10 @@ namespace level1 {
         FinanceInfo Info;
 
         FinanceInfoMsg(const std::string &securityCode) : BaseMessage<FinanceInfoMsg>() {
-            request_header.ZipFlag = ZlibFlag::Uncompressed;
-            request_header.SeqID = SequenceId();
-            request_header.PacketType = 0x01;
-            request_header.Method = StdCommand::FINANCE_INFO;
+            request_header.frame_type = ZlibFlag::Uncompressed;
+            request_header.seq_id = get_sequence_id();
+            request_header.packet_ctrl = 0x01;
+            request_header.cmd_id = StdCommand::FINANCE_INFO;
             auto [id, _, symbol] = detect_symbol(securityCode);
             ReqCount = 1;
             Market = static_cast<u8>(id);

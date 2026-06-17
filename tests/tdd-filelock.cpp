@@ -15,19 +15,19 @@ TEST_CASE("today", "[exchange]") {
 
 TEST_CASE("check-filelock", "[exchange]") {
     meta::Timestamp now = meta::Timestamp::now().since(15,10,0,0);
-    auto check = cache::checkUpdateState("2025-05-29", now);
+    auto check = cache::check_update_state("2025-05-29", now);
     std::cout << check << std::endl;
 }
 
 TEST_CASE("create-filelock", "[exchange]") {
     meta::Timestamp now = meta::Timestamp::now().since(15,10,0,0);
-    cache::doneUpdate("2025-05-29", now);
+    cache::done_ipdate("2025-05-29", now);
 }
 
 TEST_CASE("update-all", "[exchange]") {
     cache::update_all();
 }
 
-TEST_CASE("cleanExpiredStateFiles", "[exchange]") {
-    cache::cleanExpiredStateFiles();
+TEST_CASE("clean_expired_state_files", "[exchange]") {
+    cache::clean_expired_state_files();
 }

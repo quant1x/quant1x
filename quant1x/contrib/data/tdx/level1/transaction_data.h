@@ -56,10 +56,10 @@ namespace level1 {
         const char *code_;                  // 响应解析用
 
         Transaction(const std::string &securityCode, u16 offset, u16 size) : BaseMessage<Transaction>() {
-            request_header.ZipFlag = ZlibFlag::Uncompressed;
-            request_header.SeqID = SequenceId();
-            request_header.PacketType = 0x00;
-            request_header.Method = StdCommand::TRANSACTION_DATA;
+            request_header.frame_type = ZlibFlag::Uncompressed;
+            request_header.seq_id = get_sequence_id();
+            request_header.packet_ctrl = 0x00;
+            request_header.cmd_id = StdCommand::TRANSACTION_DATA;
             {
                 auto [id, _, symbol] = detect_symbol(securityCode);
                 Market = static_cast<uint16_t>(id);

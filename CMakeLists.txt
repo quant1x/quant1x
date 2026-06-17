@@ -513,6 +513,8 @@ set(quant1x-headers
     quant1x/contrib/data/tdx/chips.h
     quant1x/contrib/data/tdx/kline_minute.h
     quant1x/contrib/data/tdx/instruments.h
+    quant1x/contrib/data/tdx/datasource.h
+    quant1x/contrib/data/tdx/sector.h
     # quant1x/contrib/data/tdx/f10.h
     # quant1x/contrib/data/tdx/history.h
 
@@ -648,6 +650,8 @@ set(quant1x-sources
     # quant1x/contrib/data/tdx/chips.cpp
     quant1x/contrib/data/tdx/kline_minute.cpp
     quant1x/contrib/data/tdx/instruments.cpp
+    quant1x/contrib/data/tdx/datasource.cpp
+    quant1x/contrib/data/tdx/sector.cpp
     # quant1x/contrib/data/tdx/f10.cpp
     # quant1x/contrib/data/tdx/history.cpp
 

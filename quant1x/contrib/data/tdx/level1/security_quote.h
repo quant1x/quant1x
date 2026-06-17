@@ -231,10 +231,10 @@ namespace level1 {
         }
 
         SecurityQuoteMsg(const std::vector<std::string> &codes) : BaseMessage<SecurityQuoteMsg>() {
-            request_header.ZipFlag = ZlibFlag::Uncompressed;
-            request_header.SeqID = SequenceId();
-            request_header.PacketType = 0x01;
-            request_header.Method = StdCommand::SECURITY_QUOTES_OLD;
+            request_header.frame_type = ZlibFlag::Uncompressed;
+            request_header.seq_id = get_sequence_id();
+            request_header.packet_ctrl = 0x01;
+            request_header.cmd_id = StdCommand::SECURITY_QUOTES_OLD;
             padding = strings::hexToBytes("0500000000000000");
             list.resize(0);
             for (auto const &securityCode: codes) {

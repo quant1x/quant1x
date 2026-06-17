@@ -105,10 +105,10 @@ namespace level1 {
         u16 category_;
 
         SecurityBars(const std::string &securityCode, u16 category, u16 start, u16 count) : BaseMessage<SecurityBars>() {
-            request_header.ZipFlag = ZlibFlag::Uncompressed;
-            request_header.SeqID = SequenceId();
-            request_header.PacketType = 0x00;
-            request_header.Method = StdCommand::SECURITY_BARS;
+            request_header.frame_type = ZlibFlag::Uncompressed;
+            request_header.seq_id = get_sequence_id();
+            request_header.packet_ctrl = 0x00;
+            request_header.cmd_id = StdCommand::SECURITY_BARS;
 
             category_ = category;
             param.Category = category;

@@ -155,17 +155,17 @@ fn fetch_security_list(exchange: Exchange, start: u32, count: u32) -> Vec<Instru
 /// 拉取完成后写入 CSV 缓存文件, 并将证券列表加载到内存中的 `SECURITY_MAP`. 
 pub fn init_securities() {
     let fname = get_security_filename();
-    let mut ensure_updated = status::should_initialize_file(fname.as_str(), Exchange::SSE);
-    if !ensure_updated {
+    let mut create_or_update = status::should_initialize_file(fname.as_str(), Exchange::SSE);
+    if !create_or_update {
         let map = SECURITY_MAP.lock().unwrap();
         if map.is_empty() {
             drop(map); // drop 后会触发 poison 
-            ensure_updated = !load_securities(); // CSV 加载失败 → need fetch
+            create_or_update = !load_securities(); // CSV 加载失败 → need fetch
         }
     }
-    log::debug!("init_securities ensure_updated={}", ensure_updated);
+    log::debug!("init_securities create_or_update={}", create_or_update);
 
-    if ensure_updated {
+    if create_or_update {
         let mut instruments: Vec<Instrument> = Vec::new();
 
         // 1. 标准行情: A股

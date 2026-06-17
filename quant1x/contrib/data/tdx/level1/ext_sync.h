@@ -8,15 +8,15 @@
 namespace level1 {
 
 /// 扩展行情握手请求 (对应 Python level1/ext.py Synchronize, 命令字 0x2454)
-/// 协议格式与标准行情不同: PacketType=0x01, ZipFlag=0x01 (FLAG_GENERIC)
+/// 协议格式与标准行情不同: packet_ctrl=0x01, frame_type=0x01 (FLAG_GENERIC)
 struct ExtSync : public BaseMessage<ExtSync> {
     bool success = false;
 
     ExtSync() : BaseMessage<ExtSync>() {
-        request_header.ZipFlag    = 0x01; // FLAG_GENERIC
-        request_header.SeqID      = SequenceId();
-        request_header.PacketType = 0x01; // ext frame type
-        request_header.Method     = 0x2454;
+        request_header.frame_type    = 0x01; // FLAG_GENERIC
+        request_header.seq_id      = get_sequence_id();
+        request_header.packet_ctrl = 0x01; // ext frame type
+        request_header.cmd_id     = 0x2454;
     }
 
     std::vector<u8> serialize_request_body_impl() {

@@ -120,9 +120,9 @@ class Command(enum.Enum):
         cls._value2member_map_[val] = obj
         return obj
         
-FLAG_ZIP          = 0x10                         # 压缩标志
-FLAG_UNCOMPRESSED = 0x0C                         # 未压缩标志
-FLAG_ZIPPED       = FLAG_ZIP | FLAG_UNCOMPRESSED # 压缩标志
+FLAG_ZIP          = 0x10                         # 帧类型标志
+FLAG_UNCOMPRESSED = 0x0C                         # 未帧类型标志
+FLAG_ZIPPED       = FLAG_ZIP | FLAG_UNCOMPRESSED # 帧类型标志
 FLAG_GENERIC      = 0x01                         # 一般性标志
 
 

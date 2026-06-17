@@ -80,14 +80,14 @@ func (h *StandardProtocolHandler) processRequest(conn *net.TCPConn, req []byte) 
 	if err != nil {
 		return nil, nil, err
 	}
-	if hdr.ZipSize == 0 {
+	if hdr.BodyWireLen == 0 {
 		return nil, hdr, nil
 	}
-	body := make([]byte, hdr.ZipSize)
+	body := make([]byte, hdr.BodyWireLen)
 	if _, err := stdio.ReadFull(conn, body); err != nil {
 		return nil, hdr, err
 	}
-	if hdr.ZipSize != hdr.UnZipSize {
+	if hdr.BodyWireLen != hdr.BodyRawLen {
 		un, err := unzipZlib(body)
 		if err != nil {
 			return nil, hdr, err

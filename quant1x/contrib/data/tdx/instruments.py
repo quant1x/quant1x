@@ -93,11 +93,11 @@ def fetch_security_list(exchange: Exchange, start: int, count: int) -> List[Inst
 def init_securities():
     global _SECURITY_MAP
     fname = _get_security_filename()
-    ensure_updated = status.should_initialize_file(fname)
-    if not ensure_updated:
-        ensure_updated = _load_securities() is False
-    logger.debug(f"init_securities ensure_updated={ensure_updated}")
-    if ensure_updated:
+    create_or_update = status.should_initialize_file(fname)
+    if not create_or_update:
+        create_or_update = _load_securities() is False
+    logger.debug(f"init_securities create_or_update={create_or_update}")
+    if create_or_update:
         instruments: List[Instrument] = []
         # 1. 标准行情: A股
         markets = [Exchange.SSE, Exchange.SZSE, Exchange.BSE]

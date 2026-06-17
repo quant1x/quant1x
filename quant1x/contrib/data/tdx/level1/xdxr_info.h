@@ -175,10 +175,10 @@ namespace level1 {
         std::vector<XdxrInfo> List;        // 响应: 解析后的除权除息列表
 
         Xdxr(const std::string &securityCode) : BaseMessage<Xdxr>() {
-            request_header.ZipFlag               = ZlibFlag::Uncompressed;
-            request_header.SeqID                 = SequenceId();
-            request_header.PacketType            = 0x01;
-            request_header.Method                = StdCommand::XDXR_INFO;
+            request_header.frame_type               = ZlibFlag::Uncompressed;
+            request_header.seq_id                 = get_sequence_id();
+            request_header.packet_ctrl            = 0x01;
+            request_header.cmd_id                = StdCommand::XDXR_INFO;
             auto [id, _, symbol]  = detect_symbol(securityCode);
             Market                = static_cast<u8>(id);
             const char *const tmp = symbol.c_str();
@@ -319,10 +319,10 @@ namespace level1 {
         std::vector<BatchEntry> entries;
 
         XdxrBatch(const std::vector<std::string> &securityCodes) : BaseMessage<XdxrBatch>() {
-            request_header.ZipFlag = ZlibFlag::Uncompressed;
-            request_header.SeqID = SequenceId();
-            request_header.PacketType = 0x01;
-            request_header.Method = StdCommand::XDXR_INFO;
+            request_header.frame_type = ZlibFlag::Uncompressed;
+            request_header.seq_id = get_sequence_id();
+            request_header.packet_ctrl = 0x01;
+            request_header.cmd_id = StdCommand::XDXR_INFO;
             for (auto const &sc : securityCodes) {
                 auto [id, _, symbol] = detect_symbol(sc);
                 StockEntry entry{};

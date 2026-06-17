@@ -188,11 +188,11 @@ static ALL_COMMANDS: &[&Command] = &[
 // 协议标志位
 // ============================================================
 
-/// 压缩标志
+/// 帧类型标志
 pub const FLAG_ZIP: u8           = 0x10;
-/// 未压缩标志
+/// 未帧类型标志
 pub const FLAG_UNCOMPRESSED: u8  = 0x0C;
-/// 压缩标志(ZIP | UNCOMPRESSED)
+/// 帧类型标志(ZIP | UNCOMPRESSED)
 pub const FLAG_ZIPPED: u8        = FLAG_ZIP | FLAG_UNCOMPRESSED;
 /// 一般性标志
 pub const FLAG_GENERIC: u8       = 0x01;

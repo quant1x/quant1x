@@ -33,10 +33,10 @@ namespace level1 {
         const char *code_;
 
         HistoryMinuteTime(const std::string &securityCode, u32 date) : BaseMessage<HistoryMinuteTime>() {
-            request_header.ZipFlag = ZlibFlag::Uncompressed;
-            request_header.SeqID = SequenceId();
-            request_header.PacketType = 0x00;
-            request_header.Method = StdCommand::HISTORY_MINUTE_DATA;
+            request_header.frame_type = ZlibFlag::Uncompressed;
+            request_header.seq_id = get_sequence_id();
+            request_header.packet_ctrl = 0x00;
+            request_header.cmd_id = StdCommand::HISTORY_MINUTE_DATA;
             {
                 auto [id, _, symbol] = detect_symbol(securityCode);
                 Market = static_cast<uint8_t>(id);

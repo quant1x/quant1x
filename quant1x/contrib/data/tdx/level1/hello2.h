@@ -17,10 +17,10 @@ namespace level1 {
         std::string Info;         // 响应信息
 
         Hello2() : BaseMessage<Hello2>() {
-            request_header.ZipFlag = ZlibFlag::Uncompressed;
-            request_header.SeqID = SequenceId();
-            request_header.PacketType = 0x01;
-            request_header.Method = StdCommand::LOGIN2;
+            request_header.frame_type = ZlibFlag::Uncompressed;
+            request_header.seq_id = get_sequence_id();
+            request_header.packet_ctrl = 0x01;
+            request_header.cmd_id = StdCommand::LOGIN2;
             padding = strings::hexToBytes("d5d0c9ccd6a4a8af0000008fc22540130000d500c9ccbdf0d7ea00000002");
         }
 

@@ -422,8 +422,8 @@ def load_cache_block_infos() -> None:
     global _onceBlockFiles, _global_block_list, _map_block
     
     bk_filename = get_sector_filename()
-    ensure_updated = market_status.should_initialize_file(bk_filename)
-    if ensure_updated:
+    create_or_update = market_status.should_initialize_file(bk_filename)
+    if create_or_update:
         try:
             sync_block_files()
         except Exception:
