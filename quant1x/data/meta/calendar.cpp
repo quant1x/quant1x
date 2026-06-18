@@ -23,12 +23,12 @@ namespace quant1x::data::meta {
             return quant1x::config::get_meta_path() + "/calendar";
         }
 
-        // 获取交易日历标记文件名 (对齐 Python _get_calendar_marker_filename)
+        // 获取交易日历标记文件名
         std::string get_calendar_marker_filepath() {
             return quant1x::config::get_meta_path() + "/calendar.updated";
         }
 
-        /// 预处理http接口返回的js文本, 去除赋值双引号等
+        // 预处理http接口返回的js文本, 去除赋值双引号等
         static std::string _preprocess_sina_text(const std::string &text) {
             std::string processed = text;
             size_t      eqPos     = processed.find('=');
@@ -43,7 +43,7 @@ namespace quant1x::data::meta {
             return processed;
         }
 
-        /// js解码
+        // js解码
         static std::vector<std::string> _decode_sina_text(const std::string &text) {
             std::string input = _preprocess_sina_text(text);
             sina::finance_decoder decoder(input);
@@ -64,7 +64,7 @@ namespace quant1x::data::meta {
         }
     }  // namespace detail
 
-    inline auto global_calendar_once = RollingOnce::create("exchange-calendar", cron_expr_daily_9am);
+    inline auto global_calendar_once = RollingOnce::create("meta-calendar", cron_expr_daily_9am);
     inline std::vector<std::string> global_calendars_string    = {};
     inline std::vector<Timestamp>   global_calendars_timestamp = {};
 
@@ -72,7 +72,7 @@ namespace quant1x::data::meta {
     // static const char * const urlSinaRealstockCompanyKlcTdSz = "https://finance.sina.com.cn/realstock/company/klc_td_sz.txt";
     static const char *const calendarMissingDate = "1992-05-04";  // TODO:已知缺失的交易日期, 现在已经能自动甄别缺失的交易日期
 
-    /// 同步交易日历
+    // 同步交易日历
     void update_calendar() {
         const auto cache_path = detail::get_calendar_filepath();
         const auto modified   = filesystem::last_modified_time(cache_path);
@@ -96,7 +96,7 @@ namespace quant1x::data::meta {
         }
     }
 
-    // 交易日历 (对齐 Python lazy_load_calendar)
+    // 交易日历
     void lazy_load_calendar() {
         spdlog::debug("加载交易日历...");
 
