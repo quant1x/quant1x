@@ -3,11 +3,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.31] - 2026-06-18
+### Changed
+- refactor: rename namespace config to quant1x::config
+
+- 将所有 quant1x/config/ 目录下的 namespace config 改为 namespace quant1x::config
+- 更新所有外部文件的 namespace 别名: namespace config = ::config; -> namespace config = quant1x::config;
+- 更新 YAML convert 模板特化中的 config:: 引用
+- 涉及 33 个文件，编译通过
+
 ## [0.7.30] - 2026-06-18
 ### Changed
 - refactor(calendar): align lazy_load_calendar with Python impl - check marker file expiry before update
 - 调整消息头字段名
 - fix: namespace resolution and compilation errors across tdx modules
+- release v0.7.30
 
 ## [0.7.29] - 2026-06-17
 ### Changed
@@ -1878,7 +1888,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.30...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.31...HEAD
+[0.7.31]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.30...v0.7.31
 [0.7.30]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.29...v0.7.30
 [0.7.29]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.28...v0.7.29
 [0.7.28]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.27...v0.7.28
