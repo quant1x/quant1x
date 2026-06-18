@@ -2,7 +2,7 @@
 #include <quant1x/data/meta/timestamp.h>
 #include <quant1x/data/market.h>
 
-namespace config {
+namespace quant1x::config {
 
     // 初始化排除列表
     void StrategyParameter::initExclude() {
@@ -109,4 +109,4 @@ namespace config {
            << "}";
         return os;
     }
-}
+} // namespace quant1x::config

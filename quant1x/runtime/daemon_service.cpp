@@ -511,7 +511,7 @@ namespace service {
 
     void run_daemon() {
         spdlog::info("[*] 守护进程已启动");
-        runtime::logger_set(false, config::is_debug());
+        runtime::logger_set(false, quant1x::config::is_debug());
         // std::wstring serviceNameW = utf8_to_utf16(g_api_service_config.service_name);
         // SetThreadName(GetCurrentThreadId(), g_api_service_config.service_name.c_str());;
         //  服务分派表

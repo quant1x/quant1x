@@ -56,7 +56,7 @@ namespace cache {
     };
 
     std::string getVariablePath() {
-        return config::default_cache_path() + "/var";
+        return quant1x::config::default_cache_path() + "/var";
     }
 
     std::string stateFilename(const std::string& date, const meta::Timestamp& timestamp) {
@@ -101,7 +101,7 @@ namespace cache {
     }
 
     int update_with_adapters(const std::vector<data::DataAdapter*> &adapters, const meta::Timestamp& feature_date) {
-        auto const & config = config::global_config();
+        auto const & config = quant1x::config::global_config();
         auto const & cfg_concurrency = config.data.concurrency;
         // 隐藏终端光标以获得更流畅的显示效果, 使用 RAII 确保恢复
         ConsoleCursorGuard cursor_guard;

@@ -8,7 +8,7 @@
 #include "no0.h"
 #include <iostream>
 
-quant1x::error No0Strategy::Filter(const config::StrategyParameter& parameter, const Snapshot::Reader& snapshot) const {
+quant1x::error No0Strategy::Filter(const quant1x::config::StrategyParameter& parameter, const Snapshot::Reader& snapshot) const {
     // 判断价格
     auto price = snapshot.getPrice();
     auto rule_price = parameter.Rules.Price;
@@ -26,7 +26,7 @@ quant1x::error No0Strategy::Filter(const config::StrategyParameter& parameter, c
     return quant1x::make_error_code(0, "no problem");
 }
 
-quant1x::error No0Strategy::Filter(const config::StrategyParameter &parameter, const tdx::SecurityQuote &snapshot) const {
+quant1x::error No0Strategy::Filter(const quant1x::config::StrategyParameter &parameter, const tdx::SecurityQuote &snapshot) const {
     // 判断价格
     auto price = snapshot.price;
     auto rule_price = parameter.Rules.Price;

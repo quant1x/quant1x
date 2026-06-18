@@ -20,12 +20,12 @@ namespace quant1x::data::meta {
 
         // 获取交易日历的缓存文件名
         std::string get_calendar_filepath() {
-            return config::get_meta_path() + "/calendar";
+            return quant1x::config::get_meta_path() + "/calendar";
         }
 
         // 获取交易日历标记文件名 (对齐 Python _get_calendar_marker_filename)
         std::string get_calendar_marker_filepath() {
-            return config::get_meta_path() + "/calendar.updated";
+            return quant1x::config::get_meta_path() + "/calendar.updated";
         }
 
         /// 预处理http接口返回的js文本, 去除赋值双引号等

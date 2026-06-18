@@ -7,7 +7,7 @@
 #include <spdlog/spdlog.h>
 #include <tsl/robin_map.h>
 
-namespace config = ::config;
+namespace config = quant1x::config;
 namespace io = ::io;
 
 namespace quant1x::contrib::data::tdx {

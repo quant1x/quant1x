@@ -28,9 +28,9 @@ public:
         return OrderFlagTail;
     }
 
-    quant1x::error Filter(const config::StrategyParameter& parameter, const Snapshot::Reader& snapshot) const override;
+    quant1x::error Filter(const quant1x::config::StrategyParameter& parameter, const Snapshot::Reader& snapshot) const override;
 
-    quant1x::error Filter(const config::StrategyParameter &parameter, const tdx::SecurityQuote &snapshot) const override;
+    quant1x::error Filter(const quant1x::config::StrategyParameter &parameter, const tdx::SecurityQuote &snapshot) const override;
 
     SortedStatus Sort(std::vector<Snapshot> &snapshots) const override {
         (void)snapshots;

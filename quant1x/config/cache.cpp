@@ -3,7 +3,7 @@
 #include <quant1x/data/meta/timestamp.h>
 #include <quant1x/std/filesystem.h>
 
-namespace config {
+namespace quant1x::config {
     namespace fs = std::filesystem;
 
     // 获取交易日历的缓存文件名
@@ -189,4 +189,4 @@ namespace config {
         }
         return qmtOrderPath;
     }
-}
+} // namespace quant1x::config

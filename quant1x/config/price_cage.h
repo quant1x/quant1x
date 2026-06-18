@@ -4,7 +4,7 @@
 
 #include <quant1x/std/api.h>
 
-namespace config {
+namespace quant1x::config {
 
     // 价格笼子
     //
@@ -38,6 +38,6 @@ namespace config {
             }
         }
     };
-}  // namespace config
+}  // namespace quant1x::config
 
 #endif  // QUANT1X_CONFIG_DETAIL_PRICE_CAGE_H

@@ -13,8 +13,8 @@
 
 namespace data {
 
-    config::MinuteKLineConfig get_minute_kline_config() {
-        config::MinuteKLineConfig config{};
+    quant1x::config::MinuteKLineConfig get_minute_kline_config() {
+        quant1x::config::MinuteKLineConfig config{};
         auto const &local_cfg = config::global_config().data.cache.kline;
         if (local_cfg.size() > 1) {
             throw std::runtime_error("kline config size must be exactly one");

@@ -5,7 +5,7 @@
 #include <spdlog/spdlog.h>
 #include <fstream>
 
-namespace config = ::config;
+namespace config = quant1x::config;
 namespace meta = quant1x::data::meta;
 using quant1x::contrib::data::tdx::HistoryMinuteTime;
 

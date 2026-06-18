@@ -11,7 +11,7 @@
 #include "strategy_parameter.h"
 #include "price_cage.h"
 
-namespace config {
+namespace quant1x::config {
 
     // TraderRole 交易员角色
     enum class TraderRole {
@@ -36,13 +36,13 @@ namespace config {
         bool HaveETF = false;
 
         // 价格笼子比例, 默认0%
-        double PriceCageRatio = config::ValidDeclarationPriceRange;
+        double PriceCageRatio = quant1x::config::ValidDeclarationPriceRange;
 
         // 价格最小变动单位, 默认0.00
-        double MinimumPriceFluctuationUnit = config::MinimumPriceFluctuationUnit;
+        double MinimumPriceFluctuationUnit = quant1x::config::MinimumPriceFluctuationUnit;
 
         // 卖出滑点比例, 默认0.01
-        double FixedSlippageForSell = config::FixedSlippageForSell;
+        double FixedSlippageForSell = quant1x::config::FixedSlippageForSell;
 
         // 2024年2月18日建设银行1年期存款利率1.65%
         double AnnualInterestRate = 1.65;
@@ -139,28 +139,28 @@ namespace config {
         std::optional<StrategyParameter> GetStrategyParameterByCode(uint64_t strategyCode) const;
     };
 
-} // namespace config
+} // namespace quant1x::config
 
 namespace YAML {
     // TraderRole枚举转换
     template<>
-    struct convert<config::TraderRole> {
-        static Node encode(const config::TraderRole& role) {
-            static const std::map<config::TraderRole, std::string> names = {
-                {config::TraderRole::RoleDisable, "disable"},
-                {config::TraderRole::RolePython, "python"},
-                {config::TraderRole::RoleProxy, "proxy"},
-                {config::TraderRole::RoleManual, "manual"}
+    struct convert<quant1x::config::TraderRole> {
+        static Node encode(const quant1x::config::TraderRole& role) {
+            static const std::map<quant1x::config::TraderRole, std::string> names = {
+                {quant1x::config::TraderRole::RoleDisable, "disable"},
+                {quant1x::config::TraderRole::RolePython, "python"},
+                {quant1x::config::TraderRole::RoleProxy, "proxy"},
+                {quant1x::config::TraderRole::RoleManual, "manual"}
             };
             return Node(names.at(role));
         }
 
-        static bool decode(const Node& node, config::TraderRole& role) {
-            static const std::map<std::string, config::TraderRole> roles = {
-                {"disable", config::TraderRole::RoleDisable},
-                {"python", config::TraderRole::RolePython},
-                {"proxy", config::TraderRole::RoleProxy},
-                {"manual", config::TraderRole::RoleManual}
+        static bool decode(const Node& node, quant1x::config::TraderRole& role) {
+            static const std::map<std::string, quant1x::config::TraderRole> roles = {
+                {"disable", quant1x::config::TraderRole::RoleDisable},
+                {"python", quant1x::config::TraderRole::RolePython},
+                {"proxy", quant1x::config::TraderRole::RoleProxy},
+                {"manual", quant1x::config::TraderRole::RoleManual}
             };
 
             std::string roleStr = node.as<std::string>();
@@ -177,8 +177,8 @@ namespace YAML {
 
     // 主配置转换
     template<>
-    struct convert<config::TraderParameter> {
-        static bool decode(const Node& node, config::TraderParameter& param) {
+    struct convert<quant1x::config::TraderParameter> {
+        static bool decode(const Node& node, quant1x::config::TraderParameter& param) {
             // 基本参数
             encoding::safe_yaml::try_parse_field(node, "account_id", param.AccountId);
             encoding::safe_yaml::try_parse_field(node, "order_path", param.OrderPath);
@@ -188,7 +188,7 @@ namespace YAML {
             // 价格相关
             encoding::safe_yaml::try_parse_field(node, "price_cage_ratio", param.PriceCageRatio);
             encoding::safe_yaml::try_parse_field(node, "minimum_price_fluctuation_unit", param.MinimumPriceFluctuationUnit);
-            encoding::safe_yaml::parse_field(node, "fixed_slippage_for_sell", param.FixedSlippageForSell, config::FixedSlippageForSell);
+            encoding::safe_yaml::parse_field(node, "fixed_slippage_for_sell", param.FixedSlippageForSell, quant1x::config::FixedSlippageForSell);
 
             // 费率相关
             encoding::safe_yaml::try_parse_field(node, "annual_interest_rate", param.AnnualInterestRate);
@@ -206,8 +206,8 @@ namespace YAML {
 
             // 交易模式
             if (node["role"]) {
-                config::TraderRole role = param.Role; // 保持原默认值
-                if (convert<config::TraderRole>::decode(node["role"], role)) {
+                quant1x::config::TraderRole role = param.Role; // 保持原默认值
+                if (convert<quant1x::config::TraderRole>::decode(node["role"], role)) {
                     param.Role = role;
                 }
             }
@@ -217,8 +217,8 @@ namespace YAML {
             if (node["strategies"] && node["strategies"].IsSequence()) {
                 param.Strategies.clear();
                 for (const auto& item : node["strategies"]) {
-                    config::StrategyParameter sp;
-                    if (item.IsMap() && convert<config::StrategyParameter>::decode(item, sp)) {
+                    quant1x::config::StrategyParameter sp;
+                    if (item.IsMap() && convert<quant1x::config::StrategyParameter>::decode(item, sp)) {
                         param.Strategies.push_back(std::move(sp));
                     }
                 }
@@ -226,8 +226,8 @@ namespace YAML {
 
             // 交易时段
             if (node["cancel"] && node["cancel"].IsMap()) {
-                config::TradingSession session;
-                if (convert<config::TradingSession>::decode(node["cancel"], session)) {
+                quant1x::config::TradingSession session;
+                if (convert<quant1x::config::TradingSession>::decode(node["cancel"], session)) {
                     param.CancelSession = session;
                 }
             }

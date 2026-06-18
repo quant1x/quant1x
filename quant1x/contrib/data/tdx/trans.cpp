@@ -6,7 +6,7 @@
 #include <fstream>
 #include <algorithm>
 
-namespace config = ::config;
+namespace config = quant1x::config;
 namespace meta = quant1x::data::meta;
 using quant1x::contrib::data::tdx::HistoryTransaction;
 

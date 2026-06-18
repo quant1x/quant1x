@@ -4,7 +4,7 @@
 
 #include <quant1x/std/api.h>
 
-namespace config {
+namespace quant1x::config {
 
     // 获取交易日历的缓存文件名
     std::string get_calendar_filename();
@@ -12,15 +12,15 @@ namespace config {
     // 获取证券列表的缓存文件名
     std::string get_security_filename();
 
-    // 获取板块列表的缓存文件名${~/.quant1x/meta/blocks.${YYYY-mm-dd}}
+    // 获取板块列表的缓存文件名${~/.quant1x/meta/blocks.${YYYY-mm-dd} // namespace quant1x::config} // namespace quant1x::config
     std::string get_sector_filename(const std::string &date);
 
     // 历史成交记录
-    // 目录结构${trans}/${YYYY}/${YYYYMMDD}/${SecurityCode}.csv
+    // 目录结构${trans} // namespace quant1x::config/${YYYY} // namespace quant1x::config/${YYYYMMDD} // namespace quant1x::config/${SecurityCode} // namespace quant1x::config.csv
     std::string get_historical_trade_filename(const std::string &code, const std::string &cache_date);
 
     // 筹码分布
-    // 目录结构${trans}/${YYYY}/${YYYYMMDD}/${SecurityCode}.cd
+    // 目录结构${trans} // namespace quant1x::config/${YYYY} // namespace quant1x::config/${YYYYMMDD} // namespace quant1x::config/${SecurityCode} // namespace quant1x::config.cd
     std::string get_chip_distribution_filename(const std::string &code, const std::string &cache_date);
 
     // 板块数据文件路径
@@ -60,5 +60,5 @@ namespace config {
 
     // 获取qmt缓存路径
     std::string get_qmt_cache_path();
-}
+} // namespace quant1x::config
 #endif // QUANT1X_CONIFG_CACHE_H

@@ -3,7 +3,7 @@
 #include <quant1x/data/meta/timestamp.h>
 #include <magic_enum/magic_enum.hpp>
 
-namespace config {
+namespace quant1x::config {
 
     // 统计标的总数
     int TraderParameter::TotalNumberOfTargets() const {
@@ -106,4 +106,4 @@ namespace config {
         os << " UndertakeRatio: " << parameter.UndertakeRatio << "\n";
         return os;
     }
-}
+} // namespace quant1x::config

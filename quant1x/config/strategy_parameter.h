@@ -14,7 +14,7 @@
 #include <unordered_set>
 #include <ostream>
 
-namespace config {
+namespace quant1x::config {
 
     // QmtStrategyNameFromId 通过策略ID返回用于在QMT系统中表示的string类型的策略名称
     inline std::string QmtStrategyNameFromId(uint64_t strategyCode) {
@@ -46,7 +46,7 @@ namespace config {
         double MinimumPriceFluctuationUnit = 0.00;
 
         // 卖出滑点比例, 默认0.01
-        double FixedSlippageForSell = config::FixedSlippageForSell;
+        double FixedSlippageForSell = quant1x::config::FixedSlippageForSell;
 
         // 可投入资金-最大
         double FeeMax = 20000.00;
@@ -132,13 +132,13 @@ namespace config {
         void initExclude();
     };
 
-} // namespace config
+} // namespace quant1x::config
 
 namespace YAML {
     // StrategyParameter转换
     template<>
-    struct convert<config::StrategyParameter> {
-        static bool decode(const Node& node, config::StrategyParameter& param) {
+    struct convert<quant1x::config::StrategyParameter> {
+        static bool decode(const Node& node, quant1x::config::StrategyParameter& param) {
             if (!node.IsMap()) return false;
 
             // 基本参数
@@ -149,8 +149,8 @@ namespace YAML {
 
             // 交易时段
             if (node["time"]) {
-                config::TradingSession session;
-                if (convert<config::TradingSession>::decode(node["time"], session)) {
+                quant1x::config::TradingSession session;
+                if (convert<quant1x::config::TradingSession>::decode(node["time"], session)) {
                     param.Session = session;
                 }
             }
@@ -162,7 +162,7 @@ namespace YAML {
             // 价格参数
             encoding::safe_yaml::try_parse_field(node, "price_cage_ratio", param.PriceCageRatio);
             encoding::safe_yaml::try_parse_field(node, "minimum_price_fluctuation_unit", param.MinimumPriceFluctuationUnit);
-            encoding::safe_yaml::parse_field(node, "fixed_slippage_for_sell", param.FixedSlippageForSell, config::FixedSlippageForSell);
+            encoding::safe_yaml::parse_field(node, "fixed_slippage_for_sell", param.FixedSlippageForSell, quant1x::config::FixedSlippageForSell);
 
             // 资金参数
             encoding::safe_yaml::try_parse_field(node, "fee_max", param.FeeMax);
@@ -196,8 +196,8 @@ namespace YAML {
 
             // 规则配置
             if (node["rules"] && node["rules"].IsMap()) {
-                config::RuleParameter rules;
-                if (convert<config::RuleParameter>::decode(node["rules"], rules)) {
+                quant1x::config::RuleParameter rules;
+                if (convert<quant1x::config::RuleParameter>::decode(node["rules"], rules)) {
                     param.Rules = rules;
                 }
             }

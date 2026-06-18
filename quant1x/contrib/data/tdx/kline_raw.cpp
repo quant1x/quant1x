@@ -13,7 +13,7 @@
 #include <algorithm>
 #include <cctype>
 
-namespace config = ::config;
+namespace config = quant1x::config;
 namespace data = quant1x::data;
 namespace io = ::io;
 namespace meta = quant1x::data::meta;

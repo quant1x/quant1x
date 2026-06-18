@@ -21,7 +21,7 @@
 #include <quant1x/contrib/data/tdx/level1/std/block_info.h>
 #include <quant1x/contrib/data/tdx/level1/std/block_meta.h>
 
-namespace config = ::config;
+namespace config = quant1x::config;
 using quant1x::contrib::data::tdx::BLOCK_CHUNKS_SIZE;
 using quant1x::contrib::data::tdx::BLOCK_DEFAULT;
 using quant1x::contrib::data::tdx::BLOCK_FENGGE;
@@ -31,7 +31,7 @@ using quant1x::contrib::data::tdx::BlockInfoMsg;
 
 namespace quant1x::contrib::data::tdx::sector {
 
-    namespace config = ::config;
+    namespace config = quant1x::config;
     namespace data = quant1x::data;
     namespace meta = quant1x::data::meta;
 

@@ -23,7 +23,7 @@
 
 namespace quant1x::contrib::data::tdx {
 
-namespace config = ::config;
+namespace config = quant1x::config;
 namespace io = ::io;
 
 namespace instruments {
@@ -31,9 +31,9 @@ namespace instruments {
 // ============================================================
 // 常量
 // ============================================================
-constexpr int SECURITY_LIST_PRE_REQUEST_MAX = 1600;  ///< 单次请求最大证券数�?
+constexpr int SECURITY_LIST_PRE_REQUEST_MAX = 1600;  ///< 单次请求最大证券数量
 // ============================================================
-// 内存缓存: symbol �?Instrument
+// 内存缓存: symbol -> Instrument
 // RollingOnce 保证每日首次调用时初始化, 长期运行每天自动重新加载
 // ============================================================
 static auto security_once = RollingOnce::create("tdx-instruments", quant1x::data::meta::cron_expr_daily_9am);
@@ -41,7 +41,7 @@ static std::mutex g_security_mutex;
 static tsl::robin_map<std::string, quant1x::data::meta::Instrument> g_security_map;
 
 // ============================================================
-// load_securities() �?�?CSV 加载到内�?(调用方负责通过 RollingOnce 控制时机)
+// load_securities() - 从 CSV 加载到内存 (调用方负责通过 RollingOnce 控制时机)
 // ============================================================
 bool load_securities() {
     std::lock_guard<std::mutex> lock(g_security_mutex);
@@ -76,7 +76,7 @@ bool load_securities() {
                 g_security_map[symbol] = inst;
                 count++;
             } catch (const std::exception& e) {
-                spdlog::debug("[tdx/instruments] skip row: {} {} {} �?{}", exchange_str, type_str, ticker, e.what());
+                spdlog::debug("[tdx/instruments] skip row: {} {} {} : {}", exchange_str, type_str, ticker, e.what());
             }
         }
         spdlog::info("[tdx/instruments] loaded {} instruments from {}", count, fname);
@@ -88,7 +88,8 @@ bool load_securities() {
 }
 
 // ============================================================
-// fetch_security_list() �?�?TDX 标准行情服务器获取一页证�?// 对齐 Python instruments.fetch_security_list() (标准行情部分)
+// fetch_security_list() - 从 TDX 标准行情服务器获取一页证券
+// 对齐 Python instruments.fetch_security_list() (标准行情部分)
 // ============================================================
 static std::vector<quant1x::data::meta::Instrument> fetch_security_list(quant1x::data::meta::Exchange exchange, int start, int count) {
     std::vector<quant1x::data::meta::Instrument> result;
@@ -124,7 +125,7 @@ static std::vector<quant1x::data::meta::Instrument> fetch_security_list(quant1x:
             inst.name = sec.Name;
             inst.lot_size = static_cast<int>(sec.VolUnit);
             inst.price_precision = static_cast<int>(sec.DecimalPoint);
-            inst.ext_market = market_id;      // �?Python 对齐: ext_market = helpers.exchange_to_market(exchange)
+            inst.ext_market = market_id;      // 与 Python 对齐: ext_market = helpers.exchange_to_market(exchange)
             inst.type = quant1x::data::detect_instrument_type_by_rule(exchange, inst.ticker);
             inst.ext_category = static_cast<int>(inst.type);
 
@@ -139,7 +140,7 @@ static std::vector<quant1x::data::meta::Instrument> fetch_security_list(quant1x:
 }
 
 // ============================================================
-// write_securities_csv() �?将证券列表写�?CSV
+// write_securities_csv() - 将证券列表写入 CSV
 // 对齐 Rust write_securities_csv()
 // ============================================================
 static void write_securities_csv(const std::string& fname, const std::vector<quant1x::data::meta::Instrument>& instruments) {
@@ -182,19 +183,19 @@ static void do_init_securities() {
     // Step 1: 检查是否需要更新
     bool create_or_update = quant1x::data::should_initialize_file(fname);
     if (!create_or_update) {
-        // CSV 存在且是今天�? 尝试加载
+        // CSV 存在且是今天的, 尝试加载
         create_or_update = !load_securities();
     }
     spdlog::debug("[tdx/instruments] init_securities create_or_update={}", create_or_update);
 
     if (!create_or_update) {
-        return; // 已加�? 无需更新
+        return; // 已加载, 无需更新
     }
 
     // Step 2: 从 TDX 服务器拉取
     std::vector<quant1x::data::meta::Instrument> instruments;
 
-    // 2a. 标准行情: A �?(SSE/SZSE/BSE)
+    // 2a. 标准行情: A 股 (SSE/SZSE/BSE)
     // 对齐 Python: markets = [Exchange.SSE, Exchange.SZSE, Exchange.BSE]
     std::vector<quant1x::data::meta::Exchange> std_markets = {
         quant1x::data::meta::Exchange::SSE,
@@ -218,7 +219,7 @@ static void do_init_securities() {
             start += SECURITY_LIST_PRE_REQUEST_MAX;
         }
 
-        // 相同市场按代码排�?(对齐 Python: rows.sort(key=lambda x: x.ticker))
+        // 相同市场按代码排序 (对齐 Python: rows.sort(key=lambda x: x.ticker))
         std::sort(rows.begin(), rows.end(),
                   [](const quant1x::data::meta::Instrument& a, const quant1x::data::meta::Instrument& b) {
                       return a.ticker < b.ticker;
@@ -229,25 +230,25 @@ static void do_init_securities() {
         instruments.insert(instruments.end(), rows.begin(), rows.end());
     }
 
-    // 2b. TODO: 扩展行情 (HKEX �?
+    // 2b. TODO: 扩展行情 (HKEX 等)
     // 需要 ExtensionProtocolHandler + ExtensionConnectionPool + InstrumentInfo 消息
     // 等 ext 协议基础设施完成后接入
     // 对齐 Python instruments.py init_securities() L127-158
     if (true) {
-        // 以下为预留框�? �?ext 协议层完成后实现:
+        // 以下为预留框架, 等 ext 协议层完成后实现:
         // std::vector<quant1x::data::meta::Exchange> ext_markets = { quant1x::data::meta::Exchange::HKEX };
         // for (auto m : ext_markets) { ... }
-        spdlog::info("[tdx/instruments] ext market (HKEX) not yet implemented �?requires ext protocol handler");
+        spdlog::info("[tdx/instruments] ext market (HKEX) not yet implemented - requires ext protocol handler");
     }
 
     // Step 3: 写入 CSV
     if (!instruments.empty()) {
         write_securities_csv(fname, instruments);
     } else {
-        spdlog::warn("[tdx/instruments] no instruments fetched �?CSV not written");
+        spdlog::warn("[tdx/instruments] no instruments fetched, CSV not written");
     }
 
-    // Step 4: 加载到内�?(load_securities 内部会加锁并覆盖 g_security_map)
+    // Step 4: 加载到内存 (load_securities 内部会加锁并覆盖 g_security_map)
     bool ok = load_securities();
     if (!ok) {
         spdlog::error("[tdx/instruments] failed to load securities after initialization");
@@ -255,7 +256,7 @@ static void do_init_securities() {
 }
 
 // ============================================================
-// init_securities() �?通过 RollingOnce 保证每日首次调用时初始化
+// init_securities() - 通过 RollingOnce 保证每日首次调用时初始化
 // 对齐 Python init_securities() / Rust init_securities()
 // ============================================================
 void init_securities() {
@@ -263,9 +264,9 @@ void init_securities() {
 }
 
 // ============================================================
-// get_code_list() �?返回所�?symbol 字符�?// ============================================================
+// get_code_list() - 返回所有 symbol 字符串// ============================================================
 std::vector<std::string> get_code_list() {
-    init_securities(); // RollingOnce 保证每天只执行一�?
+    init_securities(); // RollingOnce 保证每天只执行一次
     std::lock_guard<std::mutex> lock(g_security_mutex);
     std::vector<std::string> codes;
     codes.reserve(g_security_map.size());
@@ -276,13 +277,13 @@ std::vector<std::string> get_code_list() {
 }
 
 // ============================================================
-// get_instrument_info() �?查找单个证券
+// get_instrument_info() - 查找单个证券
 // ============================================================
 std::optional<quant1x::data::meta::Instrument> get_instrument_info(const std::string& symbol) {
     std::string security_code = quant1x::data::correct_security_code(symbol);
     spdlog::debug("[tdx/instruments] get_instrument_info: symbol={}, security_code={}", symbol, security_code);
 
-    init_securities(); // RollingOnce 保证每天只执行一�?
+    init_securities(); // RollingOnce 保证每天只执行一次
     std::lock_guard<std::mutex> lock(g_security_mutex);
     auto it = g_security_map.find(security_code);
     if (it != g_security_map.end()) {
@@ -292,7 +293,8 @@ std::optional<quant1x::data::meta::Instrument> get_instrument_info(const std::st
 }
 
 // ============================================================
-// ensure_securities_initialized() �?供外部在策略启动时调�?// ============================================================
+// ensure_securities_initialized() - 供外部在策略启动时调用
+// ============================================================
 void ensure_securities_initialized() {
     init_securities();
 }

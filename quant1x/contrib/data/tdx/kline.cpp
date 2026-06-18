@@ -19,10 +19,10 @@ namespace quant1x::contrib::data::tdx {
 // 常量 (对齐 Python)
 // =============================
 
-/// 增量更新缓存清理的最大天�?(对齐 Python MaxCachedDaysToDropOnIncrementalUpdate)
+/// 增量更新缓存清理的最大天数 (对齐 Python MaxCachedDaysToDropOnIncrementalUpdate)
 constexpr int kMaxCachedDaysToDropOnIncrementalUpdate = 1;
 
-/// 中国资本市场首个交易�?(对齐 Python MarketCnFirstListTime)
+/// 中国资本市场首个交易日 (对齐 Python MarketCnFirstListTime)
 constexpr const char* kMarketCnFirstListTime = "1990-12-19";
 
 // =============================
@@ -126,7 +126,7 @@ std::vector<XdxrInfo> get_xdxr_list(const std::string& security_code) {
 }
 
 std::vector<XdxrInfo> get_xdxr_list(const quant1x::data::meta::Instrument& inst) {
-    // �?xdxr 缓存文件读取
+    // 从 xdxr 缓存文件读取
     std::string filename = config::default_cache_path() + "/xdxr/" + inst.cache_dir() + "/" + inst.symbol() + ".csv";
     std::vector<XdxrInfo> result;
 
@@ -210,7 +210,7 @@ std::vector<quant1x::data::meta::schema::CumulativeAdjustment> combine_adjustmen
     std::vector<quant1x::data::meta::schema::CumulativeAdjustment> result;
 
     for (const auto& info : xdxrs) {
-        // 只处理除权除�?(Category == 1)
+        // 只处理除权除息 (Category == 1)
         if (info.Category != 1) continue;
 
         // 转换为盘前时间
@@ -313,7 +313,7 @@ void apply_forward_adjustments_once(
 }
 
 // =============================
-// 前复权计�?(对应 Python calculate_pre_adjust)
+// 前复权计算 (对应 Python calculate_pre_adjust)
 // =============================
 
 void calculate_pre_adjust(
@@ -352,7 +352,8 @@ void apply_forward_adjustment_for_event(
         if (info.Date > last_day_next.only_date()) continue;
 
         if (info.Date <= start_date_str) {
-            // IPO之前的事件跳�?            continue;
+            // IPO之前的事件跳过
+            continue;
         }
 
         auto [m, a] = info.adjustFactor();
@@ -415,10 +416,10 @@ std::vector<quant1x::data::meta::schema::Bar> get_cross_section_forward_adjusted
 
 // =============================
 // checkout_klines / klines_forward_adjusted_to_date
-//   两者等�?�?DataKLine::Update 写入的缓存已是前复权数据
+//   两者等效: DataKLine::Update 写入的缓存已是前复权数据
 // =============================
 
-/// 内部 helper: Bar �?quant1x::data::KLine
+/// 内部 helper: Bar -> quant1x::data::KLine
 static quant1x::data::KLine bar_to_kline(const quant1x::data::meta::schema::Bar& bar, const std::string& code) {
     quant1x::data::KLine kline;
     kline.date   = bar.date;
@@ -451,12 +452,13 @@ std::vector<quant1x::data::KLine> checkout_klines(const std::string& code, const
 }
 
 std::vector<quant1x::data::KLine> klines_forward_adjusted_to_date(const std::string& code, const std::string& date) {
-    // �?checkout_klines 等效 �?缓存中已是前复权数据
+    // 与 checkout_klines 等效, 缓存中已是前复权数据
     return checkout_klines(code, date);
 }
 
 // =============================
-// DataKLine 适配器实�?// =============================
+// DataKLine 适配器实现
+// =============================
 
 void DataKLine::Print(const quant1x::data::meta::Instrument& inst, const std::vector<quant1x::data::meta::Timestamp>& dates) {
     (void)inst;
@@ -491,7 +493,7 @@ void DataKLine::Update(const quant1x::data::meta::Instrument& inst, const quant1
     spdlog::debug("[DataKLine] [{}]: from {} to {}",
                   code, current_start_date.only_date(), current_end_date.only_date());
 
-    // 3. 分页拉取原始日线数据 �?fetch_kline_raw 返回 domain Bar (对齐 Python: reply = fetch_kline_raw(inst, start, count, freq))
+    // 3. 分页拉取原始日线数据 -> fetch_kline_raw 返回 domain Bar (对齐 Python: reply = fetch_kline_raw(inst, start, count, freq))
     int32_t step = security_bars_max;
     int32_t start = 0;
     std::vector<std::vector<quant1x::data::meta::schema::Bar>> batches;
@@ -505,7 +507,7 @@ void DataKLine::Update(const quant1x::data::meta::Instrument& inst, const quant1
         auto reply_size = reply.size();
         element_count += reply_size;
 
-        // 记录最后一根bar的日期用于判断循环终�?(对齐 Python: last_bar = reply[-1]; last_bar_date = Timestamp.parse(last_bar.date).get_pre_market_time())
+        // 记录最后一根bar的日期用于判断循环终止 (对齐 Python: last_bar = reply[-1]; last_bar_date = Timestamp.parse(last_bar.date).get_pre_market_time())
         auto& last_bar = reply.back();
         auto last_bar_date = quant1x::data::meta::Timestamp::parse(last_bar.date).pre_market_time();
 
@@ -517,7 +519,7 @@ void DataKLine::Update(const quant1x::data::meta::Instrument& inst, const quant1
         start += count;
     }
 
-    // 对齐 Python: 如果首次请求就失�? 直接返回
+    // 对齐 Python: 如果首次请求就失败, 直接返回
     if (batches.empty()) {
         spdlog::debug("[DataKLine] no data from server for {}", code);
         return;

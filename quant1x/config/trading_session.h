@@ -14,7 +14,7 @@
 #include <vector>
 #include <yaml-cpp/yaml.h>
 
-namespace config {
+namespace quant1x::config {
 
     namespace detail {
         constexpr const char *const TransactionStartTime = "09:30:00"; // 交易开始时间
@@ -238,17 +238,17 @@ namespace config {
         }
     };
 
-}  // namespace config
+}  // namespace quant1x::config
 
 namespace YAML {
     // TimeRange的YAML转换
     template<>
-    struct convert<config::TimeRange> {
-        static Node encode(const config::TimeRange& range) {
+    struct convert<quant1x::config::TimeRange> {
+        static Node encode(const quant1x::config::TimeRange& range) {
             return Node(range.Begin() + "~" + range.End());
         }
 
-        static bool decode(const Node& node, config::TimeRange& range) {
+        static bool decode(const Node& node, quant1x::config::TimeRange& range) {
             try {
                 if (node.IsScalar()) {
                     range.Parse(node.as<std::string>());
@@ -258,7 +258,7 @@ namespace YAML {
                     return false;
                 }
                 return true;
-            } catch (const config::TimeFormatError&) {
+            } catch (const quant1x::config::TimeFormatError&) {
                 return false;
             }
         }
@@ -266,8 +266,8 @@ namespace YAML {
 
     // TradingSession的YAML转换
     template<>
-    struct convert<config::TradingSession> {
-        static Node encode(const config::TradingSession& session) {
+    struct convert<quant1x::config::TradingSession> {
+        static Node encode(const quant1x::config::TradingSession& session) {
             Node node;
             for (const auto& range : session.GetSessions()) {
                 node.push_back(range.Begin() + "~" + range.End());
@@ -275,15 +275,15 @@ namespace YAML {
             return node;
         }
 
-        static bool decode(const Node& node, config::TradingSession& session) {
+        static bool decode(const Node& node, quant1x::config::TradingSession& session) {
             try {
                 if (node.IsScalar()) {
                     session.Parse(node.as<std::string>());
                 } else if (node.IsSequence()) {
-                    std::vector<config::TimeRange> ranges;
+                    std::vector<quant1x::config::TimeRange> ranges;
                     for (const auto& item : node) {
-                        config::TimeRange range;
-                        if (convert<config::TimeRange>::decode(item, range)) {
+                        quant1x::config::TimeRange range;
+                        if (convert<quant1x::config::TimeRange>::decode(item, range)) {
                             ranges.push_back(range);
                         }
                     }

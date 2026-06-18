@@ -6,7 +6,7 @@
 #include <quant1x/std/strings.h>
 #include <quant1x/std/numeric.h>
 
-namespace config {
+namespace quant1x::config {
 
     // RuleParameter 规则参数
     struct RuleParameter {
@@ -137,7 +137,7 @@ namespace config {
         }
     };
 
-} // namespace config
+} // namespace quant1x::config
 
 namespace YAML {
 
@@ -186,8 +186,8 @@ namespace YAML {
 
     // RuleParameter转换
     template<>
-    struct convert<config::RuleParameter> {
-        static bool decode(const Node& node, config::RuleParameter& rule) {
+    struct convert<quant1x::config::RuleParameter> {
+        static bool decode(const Node& node, quant1x::config::RuleParameter& rule) {
             if (!node.IsMap()) return false;
 
             // 基础配置

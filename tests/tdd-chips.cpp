@@ -9,7 +9,7 @@ TEST_CASE("load-trans", "[chips]") {
 TEST_CASE("load-chips", "[chips]") {
     std::string securityCode = "sh510050";
     std::string factor_date  = "2025-07-17";
-    auto        ofn          = config::get_chip_distribution_filename(securityCode, factor_date);
+    auto        ofn          = quant1x::config::get_chip_distribution_filename(securityCode, factor_date);
     std::cout << ofn << std::endl;
     datasets::Chips chips{};
     std::ifstream   is(ofn, std::ios::binary);

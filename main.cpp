@@ -132,7 +132,7 @@ int main(const int argc, const char *const argv[]) {
     runtime::global_init();
     data::init();
     {
-        auto const &config = config::TraderConfig();
+        auto const &config = quant1x::config::TraderConfig();
         (void)config;
     }
     // 动态注册子命令

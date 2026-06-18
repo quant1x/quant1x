@@ -205,7 +205,7 @@ namespace runtime {
         void init_all_components() {
             // make sure logs directory exists
             try {
-                std::filesystem::create_directories(config::get_logs_path());
+                std::filesystem::create_directories(quant1x::config::get_logs_path());
             } catch (...) {
                 // best-effort; fall back to letting spdlog fail if path unusable
             }
@@ -215,12 +215,12 @@ namespace runtime {
 
             // use lazy daily files (rotate every day) — keep false for truncate=false
             using quant1x::log::make_lazy_daily_sink;
-            auto info_sink = make_lazy_daily_sink(config::get_logs_path() + "/info.log", 0, 0, false);
-            auto debug_sink = make_lazy_daily_sink(config::get_logs_path() + "/debug.log", 0, 0, false);
-            auto warn_sink = make_lazy_daily_sink(config::get_logs_path() + "/warn.log", 0, 0, false);
-            auto err_sink = make_lazy_daily_sink(config::get_logs_path() + "/error.log", 0, 0, false);
-            auto critical_sink = make_lazy_daily_sink(config::get_logs_path() + "/critical.log", 0, 0, false);
-            auto trace_sink = make_lazy_daily_sink(config::get_logs_path() + "/trace.log", 0, 0, false);
+            auto info_sink = make_lazy_daily_sink(quant1x::config::get_logs_path() + "/info.log", 0, 0, false);
+            auto debug_sink = make_lazy_daily_sink(quant1x::config::get_logs_path() + "/debug.log", 0, 0, false);
+            auto warn_sink = make_lazy_daily_sink(quant1x::config::get_logs_path() + "/warn.log", 0, 0, false);
+            auto err_sink = make_lazy_daily_sink(quant1x::config::get_logs_path() + "/error.log", 0, 0, false);
+            auto critical_sink = make_lazy_daily_sink(quant1x::config::get_logs_path() + "/critical.log", 0, 0, false);
+            auto trace_sink = make_lazy_daily_sink(quant1x::config::get_logs_path() + "/trace.log", 0, 0, false);
 
             router->add_exact_route(spdlog::level::info, info_sink);
             router->add_exact_route(spdlog::level::debug, debug_sink);

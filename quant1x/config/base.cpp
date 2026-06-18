@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace config {
+namespace quant1x::config {
     namespace fs = std::filesystem;
 
     // 默认的数据路径
@@ -95,12 +95,12 @@ namespace config {
     static inline std::once_flag global_config_once;
     static inline std::shared_ptr<TraderParameter> global_trader_parameter; // 交易配置
 
-    config::TraderParameter load_config_from_yaml(const std::string &filename) {
+    TraderParameter load_config_from_yaml(const std::string &filename) {
         spdlog::info("config file: {}", filename);
-        config::TraderParameter config{};
+        TraderParameter config{};
         try {
             YAML::Node yaml = YAML::LoadFile(filename);
-            config = yaml["trader"].as<config::TraderParameter>();
+            config = yaml["trader"].as<TraderParameter>();
         } catch (const YAML::Exception &e) {
             std::cerr << "YAML解析错误: " << e.what() << std::endl;
             spdlog::error("YAML解析错误: {}", e.what());
@@ -118,7 +118,7 @@ namespace config {
         // 先检查内存
         //check_memory_guard();
         std::cerr << "lazy_load_trader_config config_filename = " << &global_config().filename << ",[" << global_config().filename << "]\n";
-        auto tmp_config_filename = config::config_filename();
+        auto tmp_config_filename = quant1x::config::config_filename();
         auto config = load_config_from_yaml(tmp_config_filename);
         global_trader_parameter = std::make_shared<TraderParameter>(config);
     }
@@ -163,4 +163,4 @@ namespace config {
         p /= "logs";
         return p.string();
     }
-} // namespace config
+} // namespace quant1x::config
