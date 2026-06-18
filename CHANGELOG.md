@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.33] - 2026-06-18
+### Changed
+- 修复autochangelog不能通过不更新cargo.lock的问题
+
 ## [0.7.32] - 2026-06-18
 ### Changed
 - fix: align publish.sh with publish.ps1 and fix bash regex version extraction
@@ -13,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - 版本重复检查改为阻断型 (exit 2)，--allow-existing 可强制继续
 - 新增 PYTHONIOENCODING/TWINE_NON_INTERACTIVE 环境变量
 - 新增 build 模块预检
+- release v0.7.32
 
 ## [0.7.31] - 2026-06-18
 ### Changed
@@ -1900,7 +1905,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.32...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.33...HEAD
+[0.7.33]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.32...v0.7.33
 [0.7.32]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.31...v0.7.32
 [0.7.31]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.30...v0.7.31
 [0.7.30]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.29...v0.7.30
