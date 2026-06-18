@@ -1,19 +1,26 @@
-#include "kline_raw.h"
-#include "client.h"
-#include "instruments.h"
-#include "level1/security_bars.h"
-#include "level1/instrument_bars.h"
+#include <quant1x/contrib/data/tdx/kline_raw.h>
+#include <quant1x/contrib/data/tdx/client.h>
+#include <quant1x/contrib/data/tdx/instruments.h>
+#include <quant1x/contrib/data/tdx/level1/std/security_bars.h>
+#include <quant1x/contrib/data/tdx/level1/ext/instrument_bars.h>
 #include <quant1x/config/base.h>
 #include <quant1x/data/base.h>
 #include <quant1x/data/meta/exchange.h>
+#include <quant1x/io/csv-reader.h>
 #include <spdlog/spdlog.h>
+#include <quant1x/io/csv-writer.h>
 #include <filesystem>
-#include <fstream>
 #include <algorithm>
-#include <sstream>
 #include <cctype>
 
-namespace tdx {
+namespace config = ::config;
+namespace data = quant1x::data;
+namespace io = ::io;
+namespace meta = quant1x::data::meta;
+using quant1x::contrib::data::tdx::KLineType;
+using quant1x::contrib::data::tdx::SecurityBars;
+
+namespace quant1x::contrib::data::tdx {
 
 // =============================
 // 常量 (对齐 Python kline_raw.py)
@@ -44,10 +51,6 @@ struct BarRaw {
     int         down = 0;
     std::string timestamp;
 
-    static std::vector<std::string> headers() {
-        return {"date", "open", "close", "high", "low", "volume", "amount", "up", "down", "timestamp"};
-    }
-
     /// 从 domain Bar 构造 (对齐 Python: for row in vec: BarRaw(date=..., open=row.open, ...))
     static BarRaw from_bar(const meta::schema::Bar& bar) {
         return BarRaw{
@@ -77,50 +80,28 @@ static void save_kline_raw(const std::string& filename, const std::vector<BarRaw
     if (values.empty()) return;
     auto dir = std::filesystem::path(filename).parent_path().string();
     std::filesystem::create_directories(dir);
-    std::ofstream out(filename);
-    if (!out) return;
-    out << "date,open,close,high,low,volume,amount,up,down,timestamp\n";
-    for (auto const& v : values) {
-        out << v.date << ","
-            << v.open << "," << v.close << "," << v.high << "," << v.low << ","
-            << v.volume << "," << v.amount << ","
-            << v.up << "," << v.down << "," << v.timestamp << "\n";
+
+    io::CSVWriter writer(filename);
+    writer.write_row("date", "open", "close", "high", "low", "volume", "amount", "up", "down", "timestamp");
+    for (const auto& v : values) {
+        writer.write_row(v.date, v.open, v.close, v.high, v.low,
+                         v.volume, v.amount, v.up, v.down, v.timestamp);
     }
-    out.close();
 }
 
 static std::vector<BarRaw> read_kline_raw_from_csv(const std::string& filename) {
     std::vector<BarRaw> klines;
-    std::ifstream in(filename);
-    if (!in) return klines;
-
-    std::string line;
-    // 跳过 header
-    if (!std::getline(in, line)) return klines;
-
-    while (std::getline(in, line)) {
-        if (line.empty()) continue;
-        std::istringstream ss(line);
-        std::string token;
-        auto next = [&]() -> std::string {
-            std::string t;
-            std::getline(ss, t, ',');
-            t.erase(0, t.find_first_not_of(" \t\r\n"));
-            t.erase(t.find_last_not_of(" \t\r\n") + 1);
-            return t;
-        };
-        BarRaw bar{};
-        bar.date      = next();
-        bar.open      = std::stod(next());
-        bar.close     = std::stod(next());
-        bar.high      = std::stod(next());
-        bar.low       = std::stod(next());
-        bar.volume    = std::stod(next());
-        bar.amount    = std::stod(next());
-        bar.up        = std::stoi(next());
-        bar.down      = std::stoi(next());
-        bar.timestamp = next();
-        klines.push_back(bar);
+    try {
+        io::CSVReader<10> in(filename);
+        in.read_header(io::ignore_extra_column, "date", "open", "close", "high", "low",
+                       "volume", "amount", "up", "down", "timestamp");
+        BarRaw row = {};
+        while (in.read_row(row.date, row.open, row.close, row.high, row.low,
+                           row.volume, row.amount, row.up, row.down, row.timestamp)) {
+            klines.emplace_back(std::move(row));
+        }
+    } catch (const std::exception& e) {
+        spdlog::warn("[kline_raw] read_kline_raw_from_csv error: {}", e.what());
     }
     return klines;
 }
@@ -137,10 +118,10 @@ static std::vector<BarRaw> read_kline_raw_from_csv(const std::string& filename) 
 static std::vector<meta::schema::Bar> fetch_kline_raw_from_std(
         const meta::Instrument& inst, int start, int count, u16 category) {
     try {
-        auto conn = level1::get_std_conn();
-        level1::SecurityBars bars(inst.symbol(), category,
+        auto conn = get_std_conn();
+        SecurityBars bars(inst, category,
                                   static_cast<u16>(start), static_cast<u16>(count));
-        level1::process(conn->socket(), bars);
+        process_message(conn->socket(), bars);
 
         std::vector<meta::schema::Bar> result;
         result.reserve(bars.List.size());
@@ -179,7 +160,7 @@ static std::vector<meta::schema::Bar> fetch_kline_raw_from_std(
 static std::vector<meta::schema::Bar> fetch_kline_raw_from_ext(
         const meta::Instrument& inst, int start, int count, u16 category) {
     try {
-        auto conn = level1::get_ext_conn();
+        auto conn = get_ext_conn();
         if (!conn) {
             spdlog::warn("[kline_raw] fetch_kline_raw_from_ext: no ext connection for {}", inst.symbol());
             return {};
@@ -194,7 +175,7 @@ static std::vector<meta::schema::Bar> fetch_kline_raw_from_ext(
         // 对齐 Python: ticker=code.upper()
         for (auto& c : ticker) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
 
-        level1::InstrumentBars bars(
+        InstrumentBars bars(
             static_cast<u8>(inst.ext_market),
             ticker,
             category,
@@ -202,7 +183,7 @@ static std::vector<meta::schema::Bar> fetch_kline_raw_from_ext(
             static_cast<u16>(count)
         );
 
-        level1::process(conn->socket(), bars);
+        process_message(conn->socket(), bars);
 
         spdlog::debug("[kline_raw] fetch_kline_raw_from_ext: {} bars for {}",
                       bars.reply.size(), inst.symbol());
@@ -271,7 +252,7 @@ void DataKLineRaw::Update(const meta::Instrument& inst, const meta::Timestamp& d
 
     while (true) {
         int count = step;
-        auto reply = fetch_kline_raw(inst, start, count, static_cast<u16>(level1::KLineType::DAILY));
+        auto reply = fetch_kline_raw(inst, start, count, static_cast<u16>(KLineType::DAILY));
         if (reply.empty()) break;
 
         auto reply_size = reply.size();
@@ -338,4 +319,4 @@ void DataKLineRaw::Update(const meta::Instrument& inst, const meta::Timestamp& d
                  symbol, klines.size(), cache_filename);
 }
 
-} // namespace tdx
+} // namespace quant1x::contrib::data::tdx

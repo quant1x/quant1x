@@ -3,13 +3,13 @@
 #define QUANT1X_LEVEL_BLOCK_INFO_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
-#include <quant1x/contrib/data/tdx/level1//block_meta.h>
+#include <quant1x/contrib/data/tdx/level1/std/block_meta.h>
 
 // ==============================
 // 板块数据
 // ==============================
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
 
     /// 板块数据结构
     struct BlockEntry {
@@ -64,9 +64,9 @@ namespace level1 {
             }
         }
 
-        std::string toStringImpl() const {
+        std::string to_string_impl() const {
             std::ostringstream oss;
-            oss << request_header.headerStringImpl()
+            oss << request_header.header_string_impl()
                 << "{Start:" << Start
                 << ", Size:" << Size
                 << ", BlockFilename:" << strings::from(BlockFilename)

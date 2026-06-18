@@ -26,7 +26,7 @@ class HistoryMinuteTime(protocol.BaseMessage):
         self._date = date
         inst = detect_symbol(security_code)
         market_id = helpers.exchange_to_market(inst.exchange)
-        symbol = inst.code()
+        symbol = inst.marker_ticker()
         self._market = market_id
         self._code = symbol
 

@@ -1,7 +1,7 @@
 #pragma once
 #include <quant1x/std/base.h>
-#ifndef QUANT1X_LEVEL1_SECURITY_LIST_H
-#define QUANT1X_LEVEL1_SECURITY_LIST_H 1
+#ifndef QUANT1X_CONTRB_DATA_TDX_SECURITY_LIST_H
+#define QUANT1X_CONTRB_DATA_TDX_SECURITY_LIST_H 1
 
 #include <quant1x/contrib/data/tdx/helpers.h>
 #include <quant1x/contrib/data/tdx/protocol.h>
@@ -12,7 +12,7 @@
 // 证券列表
 // ==============================
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
     constexpr int security_list_pre_request_max = 1600;  ///< 单次最大获取多少条股票数据
     // 证券列表
     struct Security {
@@ -87,12 +87,12 @@ namespace level1 {
             }
         }
 
-        [[nodiscard]] std::string toStringImpl() const {
+        [[nodiscard]] std::string to_string_impl() const {
             std::ostringstream oss;
             oss << "Count:" << Count;
             return oss.str();
         }
     };
-}  // namespace level1
+}  // namespace quant1x::contrib::data::tdx
 
-#endif  // QUANT1X_LEVEL1_SECURITY_LIST_H
+#endif  // QUANT1X_CONTRB_DATA_TDX_SECURITY_LIST_H

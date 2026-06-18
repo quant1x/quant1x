@@ -37,7 +37,7 @@ impl HistoryMinuteTimeRequest {
     pub fn new(security_code: &str, date: u32) -> Self {
         let inst = crate::data::market::detect_symbol(security_code);
         let market = helpers::exchange_to_market(inst.exchange.code()).unwrap_or(0) as u8;
-        let pure = inst.code().to_string();
+        let pure = inst.marker_ticker().to_string();
         let mut code = [0u8; 6];
         let sym = pure.as_bytes();
         let copy_len = std::cmp::min(sym.len(), 6);

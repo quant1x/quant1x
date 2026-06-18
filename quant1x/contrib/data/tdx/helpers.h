@@ -1,7 +1,7 @@
 #pragma once
 #include <cmath>
-#ifndef QUANT1X_LEVEL1_HELPERS_H
-#define QUANT1X_LEVEL1_HELPERS_H 1
+#ifndef QUANT1X_CONTRB_DATA_TDX_HELPERS_H
+#define QUANT1X_CONTRB_DATA_TDX_HELPERS_H 1
 
 #include <quant1x/std/api.h>
 #include <quant1x/std/feature_detection.h>
@@ -10,9 +10,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <zlib.h>
+#include <atomic>
+#include <mutex>
+#include <quant1x/data/market.h>
 #include <quant1x/data/meta/exchange.h>
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
+
+    namespace meta = quant1x::data::meta;
 
     /// 编解码
     namespace helpers {
@@ -292,49 +297,96 @@ namespace level1 {
 
             return 100.0;
         }
+        // ============================================================
+        // 交易所 ↔ TDX 市场 ID 映射 (Python helpers.py 211-230 / Rust 213-251)
+        // ============================================================
+
+        /// 将交易所转换为 TDX 市场编号
+        /// 对齐 Python exchange_to_market() + Rust exchange_to_market()
+        /// @param ex 交易所枚举值
+        /// @return TDX 市场编号 (0=深圳, 1=上海, 2=北京, 31=香港, 27=香港期货, 74=美国); 未知返回 -1
+        inline int exchange_to_market(meta::Exchange ex) {
+            switch (ex) {
+                case meta::Exchange::SZSE: return 0;
+                case meta::Exchange::SSE:  return 1;
+                case meta::Exchange::BSE:  return 2;
+                case meta::Exchange::HKEX: return 31;
+                case meta::Exchange::HKFE: return 27;
+                case meta::Exchange::USA:  return 74;
+                default:                   return -1;
+            }
+        }
+
+        /// 将 TDX 市场编号转换为交易所
+        /// 对齐 Python market_to_exchange() + Rust market_to_exchange()
+        /// @param market_id TDX 市场编号
+        /// @return 交易所枚举值; 未知返回 meta::Exchange::UNKNOWN
+        inline meta::Exchange market_to_exchange(int market_id) {
+            switch (market_id) {
+                case 0:  return meta::Exchange::SZSE;
+                case 1:  return meta::Exchange::SSE;
+                case 2:  return meta::Exchange::BSE;
+                case 31: return meta::Exchange::HKEX;
+                case 27: return meta::Exchange::HKFE;
+                case 74: return meta::Exchange::USA;
+                default: return meta::Exchange::UNKNOWN;
+            }
+        }
+
+        // ============================================================
+        // 全局唯一序列号 (Python helpers.py 14-26 / Rust 15-22)
+        // ============================================================
+
+        /// 生成并返回一个全局唯一的序列ID
+        /// 每次调用时, 序列ID会递增1, 并保证在32位无符号整数范围内循环(0xFFFFFFFF)
+        inline uint32_t msg_sequence_id() {
+            static std::atomic<uint32_t> seq_id{0};
+            return seq_id.fetch_add(1, std::memory_order_relaxed) + 1;
+        }
+
     }  // namespace helpers
 
-    // 根据证券代码字符串检测交易所和代码
-    // 支持格式: "sh600000", "sz000001", "600000", "000001", "bj831000" 等
-    // 返回: (exchange_id_int, _, ticker_string)
-    inline std::tuple<int, int, std::string> detect_symbol(const std::string& security_code) {
-        std::string code = security_code;
-        meta::Exchange ex = meta::Exchange::UNKNOWN;
-        std::string ticker;
-        // 检查前缀格式: sh/sz/bj
-        if (code.size() >= 2) {
-            std::string prefix = code.substr(0, 2);
-            std::string lower;
-            for (char c : prefix) lower += static_cast<char>(::tolower(static_cast<unsigned char>(c)));
-            if (lower == "sh")      { ex = meta::Exchange::SSE;  ticker = code.substr(2); }
-            else if (lower == "sz") { ex = meta::Exchange::SZSE; ticker = code.substr(2); }
-            else if (lower == "bj") { ex = meta::Exchange::BSE;  ticker = code.substr(2); }
-        }
-        if (ex == meta::Exchange::UNKNOWN && !code.empty() && code[0] >= '0' && code[0] <= '9') {
-            ticker = code;
-            if      (code[0] == '6')                  ex = meta::Exchange::SSE;
-            else if (code[0] == '0' || code[0] == '3') ex = meta::Exchange::SZSE;
-            else if (code[0] == '8' || code[0] == '4') ex = meta::Exchange::BSE;
-        }
-        return {static_cast<int>(ex), 0, ticker};
-    }
+    // // 根据证券代码字符串检测交易所和代码
+    // // 支持格式: "sh600000", "sz000001", "600000", "000001", "bj831000" 等
+    // // 返回: (exchange_id_int, _, ticker_string)
+    // inline std::tuple<int, int, std::string> detect_symbol(const std::string& security_code) {
+    //     std::string code = security_code;
+    //     meta::Exchange ex = meta::Exchange::UNKNOWN;
+    //     std::string ticker;
+    //     // 检查前缀格式: sh/sz/bj
+    //     if (code.size() >= 2) {
+    //         std::string prefix = code.substr(0, 2);
+    //         std::string lower;
+    //         for (char c : prefix) lower += static_cast<char>(::tolower(static_cast<unsigned char>(c)));
+    //         if (lower == "sh")      { ex = meta::Exchange::SSE;  ticker = code.substr(2); }
+    //         else if (lower == "sz") { ex = meta::Exchange::SZSE; ticker = code.substr(2); }
+    //         else if (lower == "bj") { ex = meta::Exchange::BSE;  ticker = code.substr(2); }
+    //     }
+    //     if (ex == meta::Exchange::UNKNOWN && !code.empty() && code[0] >= '0' && code[0] <= '9') {
+    //         ticker = code;
+    //         if      (code[0] == '6')                  ex = meta::Exchange::SSE;
+    //         else if (code[0] == '0' || code[0] == '3') ex = meta::Exchange::SZSE;
+    //         else if (code[0] == '8' || code[0] == '4') ex = meta::Exchange::BSE;
+    //     }
+    //     return {static_cast<int>(ex), 0, ticker};
+    // }
 
-    // 判断证券代码是否为指数
-    inline bool assert_index_by_security_code(meta::Exchange ex, const std::string& code) {
-        if (code.empty()) return false;
-        if (ex == meta::Exchange::SSE  && code.size() >= 3 && code.substr(0, 3) == "000") return true;
-        if (ex == meta::Exchange::SZSE && code.size() >= 3 && code.substr(0, 3) == "399") return true;
-        if (ex == meta::Exchange::BSE  && code.size() >= 3 && code.substr(0, 3) == "899") return true;
-        return false;
-    }
+    // // 判断证券代码是否为指数
+    // inline bool assert_index_by_security_code(meta::Exchange ex, const std::string& code) {
+    //     if (code.empty()) return false;
+    //     if (ex == meta::Exchange::SSE  && code.size() >= 3 && code.substr(0, 3) == "000") return true;
+    //     if (ex == meta::Exchange::SZSE && code.size() >= 3 && code.substr(0, 3) == "399") return true;
+    //     if (ex == meta::Exchange::BSE  && code.size() >= 3 && code.substr(0, 3) == "899") return true;
+    //     return false;
+    // }
 
-    // 根据交易所和原始代码生成标准证券代码
-    inline std::string correct_security_code(meta::Exchange ex, const std::string& raw_code) {
-        auto code = strings::trim(raw_code);
-        std::string ident = exchange_identifier(ex);
-        return ident + code;
-    }
+    // // 根据交易所和原始代码生成标准证券代码
+    // inline std::string correct_security_code(meta::Exchange ex, const std::string& raw_code) {
+    //     auto code = strings::trim(raw_code);
+    //     std::string ident = exchange_identifier(ex);
+    //     return ident + code;
+    // }
 
-}  // namespace level1
+}  // namespace quant1x::contrib::data::tdx
 
-#endif  // QUANT1X_LEVEL1_HELPERS_H
+#endif  // QUANT1X_CONTRB_DATA_TDX_HELPERS_H

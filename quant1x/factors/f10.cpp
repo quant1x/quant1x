@@ -25,10 +25,10 @@ static std::tuple<f64, f64, std::string, std::string> get_finance_info(const std
     std::string ipo_date, update_date;
     u32 base_date = data::market_first_date.yyyymmdd();
     try {
-        level1::FinanceRequest request(security_code);
-        level1::FinanceResponse response{};
-        auto conn = level1::get_std_conn();
-        level1::process(conn->socket(), request, response);
+        tdx::FinanceRequest request(security_code);
+        tdx::FinanceResponse response{};
+        auto conn = tdx::get_std_conn();
+        tdx::process_message(conn->socket(), request, response);
         if(response.Count>0) {
             auto const &info = response.Info;
             if(info.LiuTongGuBen>0 && info.ZongGuBen > 0) {
@@ -52,7 +52,7 @@ static std::tuple<f64, f64, std::string, std::string> get_finance_info(const std
     return {capital, totalCapital, ipo_date, update_date};
 }
 
-static const level1::XdxrInfo *checkoutCapital(const std::vector<level1::XdxrInfo> &list,
+static const tdx::XdxrInfo *checkoutCapital(const std::vector<tdx::XdxrInfo> &list,
                                         const std::string& date) {
     for (const auto& v : list) {  // 直接遍历已排序的vector
         if (v.IsCapitalChange() && date >= v.Date) {
@@ -76,7 +76,7 @@ struct f10SecurityInfo {
 static f10SecurityInfo checkoutSecurityBasicInfo(const std::string &security_code, const std::string &feature_date) {
     f10SecurityInfo info{};
     auto list = data::load_xdxr(security_code);
-    std::sort(list.begin(), list.end(), [](const level1::XdxrInfo &a, const level1::XdxrInfo& b){
+    std::sort(list.begin(), list.end(), [](const tdx::XdxrInfo &a, const tdx::XdxrInfo& b){
         return a.Date > b.Date;
     });
 
@@ -176,7 +176,7 @@ static std::unique_ptr<Top10ShareHolder> checkoutShareHolder(const std::string &
                                                              const std::string &featureDate) {
     // 获取除权除息列表并排序
     auto xdxrs = data::load_xdxr(securityCode);
-    std::sort(xdxrs.begin(), xdxrs.end(), [](const level1::XdxrInfo& a, const level1::XdxrInfo& b) {
+    std::sort(xdxrs.begin(), xdxrs.end(), [](const tdx::XdxrInfo& a, const tdx::XdxrInfo& b) {
         return a.Date > b.Date;
     });
 

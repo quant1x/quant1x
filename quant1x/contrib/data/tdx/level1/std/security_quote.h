@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_LEVEL1_SECURITY_QUOTE_H
-#define QUANT1X_LEVEL1_SECURITY_QUOTE_H 1
+#ifndef QUANT1X_CONTRB_DATA_TDX_SECURITY_QUOTE_H
+#define QUANT1X_CONTRB_DATA_TDX_SECURITY_QUOTE_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
 #include <quant1x/contrib/data/tdx/helpers.h>
@@ -11,7 +11,7 @@
 // 即时行情
 // ==============================
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
     constexpr int security_quotes_max = 80;
     enum TradeState : u8 {
         DELISTING, ///< 终止上市
@@ -230,22 +230,17 @@ namespace level1 {
             return f64(price + diff) / baseUnit;
         }
 
-        SecurityQuoteMsg(const std::vector<std::string> &codes) : BaseMessage<SecurityQuoteMsg>() {
+        SecurityQuoteMsg(const std::vector<meta::Instrument> &insts) : BaseMessage<SecurityQuoteMsg>() {
             request_header.frame_type = ZlibFlag::Uncompressed;
             request_header.seq_id = get_sequence_id();
             request_header.packet_ctrl = 0x01;
             request_header.cmd_id = StdCommand::SECURITY_QUOTES_OLD;
             padding = strings::hexToBytes("0500000000000000");
             list.resize(0);
-            for (auto const &securityCode: codes) {
-                auto sc = strings::trim(securityCode);
-                if (sc.empty()) {
-                    continue;
-                }
-                auto [id, _, symbol] = detect_symbol(securityCode);
+            for (auto const &inst : insts) {
                 StockInfo stockInfo{};
-                stockInfo.market = u8(id);
-                stockInfo.code   = symbol;
+                stockInfo.market = static_cast<u8>(helpers::exchange_to_market(inst.exchange));
+                stockInfo.code   = inst.marker_ticker();
                 list.emplace_back(stockInfo);
             }
         }
@@ -315,7 +310,7 @@ namespace level1 {
                 ele.stockOpenAmount = stream.varint_decode() * 100;
 
                 // 确定当前数据是指数或者板块
-                bool isIndexOrBlock = assert_index_by_security_code(static_cast<meta::Exchange>(ele.market), ele.code);
+                bool isIndexOrBlock = quant1x::data::assert_index_by_security_code(ele.code);
                 f64 tmpOpenVolume = 0.00f;
                 if (isIndexOrBlock) {
                     // 指数或者板块, 单位是"股"
@@ -464,7 +459,7 @@ namespace level1 {
             assert(remains.empty());
         }
 
-        std::string toStringImpl() const {
+        std::string to_string_impl() const {
             std::ostringstream out;
             out << "{count:" << count << " quotes: [";
             for (int i = 0; i < count; i++) {
@@ -475,11 +470,11 @@ namespace level1 {
         }
 
         friend std::ostream &operator<<(std::ostream &os, const SecurityQuoteMsg &response) {
-            os << response.toStringImpl();
+            os << response.to_string_impl();
             return os;
         }
     };
 
 }
 
-#endif //QUANT1X_LEVEL1_SECURITY_QUOTE_H
+#endif //QUANT1X_CONTRB_DATA_TDX_SECURITY_QUOTE_H

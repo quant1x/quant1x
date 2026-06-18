@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace meta::schema {
+namespace quant1x::data::meta::schema {
 
 /// 板块信息结构体
 struct Sector {
@@ -17,6 +17,6 @@ struct Sector {
     std::vector<std::string> constituent_stocks;  ///< 成分股列表
 };
 
-} // namespace meta::schema
+} // namespace quant1x::data::meta::schema
 
 #endif // QUANT1X_DATA_SCHEMA_SECTOR_H

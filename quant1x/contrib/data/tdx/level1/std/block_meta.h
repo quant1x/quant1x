@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_LEVEL1_BLOCK_META_H
-#define QUANT1X_LEVEL1_BLOCK_META_H 1
+#ifndef QUANT1X_CONTRB_DATA_TDX_BLOCK_META_H
+#define QUANT1X_CONTRB_DATA_TDX_BLOCK_META_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
 
@@ -8,7 +8,7 @@
 // 板块元数据
 // ==============================
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
 
     constexpr const char* const BLOCK_ZHISHU      = "block_zs.dat";  // 指数
     constexpr const char* const BLOCK_FENGGE      = "block_fg.dat";  // 风格
@@ -59,15 +59,15 @@ namespace level1 {
             Meta.C2 = bs.get_u8();
         }
 
-        std::string toStringImpl() const {
+        std::string to_string_impl() const {
             std::ostringstream oss;
-            oss << request_header.headerStringImpl();
+            oss << request_header.header_string_impl();
             oss << "{BlockFilename:" << strings::from(BlockFilename) << "}"
                 << "{" << Meta << "}";
             return oss.str();
         }
     };
 
-}  // namespace level1
+}  // namespace quant1x::contrib::data::tdx
 
-#endif  // QUANT1X_LEVEL1_BLOCK_META_H
+#endif  // QUANT1X_CONTRB_DATA_TDX_BLOCK_META_H

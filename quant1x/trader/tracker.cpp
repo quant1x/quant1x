@@ -80,11 +80,11 @@ namespace trader {
                     auto snapshot = realtime::get_snapshot(securityCode);
                     if(snapshot.has_value()) {
                         auto stock_state = snapshot->state;
-                        if(stock_state == level1::TradeState::SUSPEND) {
+                        if(stock_state == tdx::TradeState::SUSPEND) {
                             spdlog::warn("[tracker] code={}, 停牌", securityCode);
-                        } else if(stock_state == level1::TradeState::DELISTING) {
+                        } else if(stock_state == tdx::TradeState::DELISTING) {
                             spdlog::warn("[tracker] code={}, 已退市", securityCode);
-                        } else if(stock_state == level1::TradeState::IPO) {
+                        } else if(stock_state == tdx::TradeState::IPO) {
                             spdlog::warn("[tracker] code={}, IPO排队上市, 不能在二级市场交易", securityCode);
                         } else {
                             auto ec = strategy->Filter(strategyParameter, *snapshot);

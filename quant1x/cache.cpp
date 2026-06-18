@@ -137,7 +137,7 @@ namespace cache {
         bars[0].set_progress(0);
 
         auto first = adapters[0]->Key();
-        auto allCodes = tdx::list_instruments();
+        auto allCodes = quant1x::contrib::data::tdx::list_instruments();
         mpb::ProgressBar barCodes(
             mpb::option::BarWidth{50},
             mpb::option::ForegroundColor{mpb::Color::yellow},
@@ -147,7 +147,7 @@ namespace cache {
             mpb::option::FontStyles{std::vector<mpb::FontStyle>{mpb::FontStyle::bold}},
             mpb::option::ShowPercentage{true},
             mpb::option::ShowSpeed{true},
-            mpb::option::MaxProgress{allCodes.size()});
+            mpb::option::MaxProgress(static_cast<size_t>(allCodes.size())));
         bars.push_back(barCodes);
 
         // 缓存日期
@@ -167,7 +167,7 @@ namespace cache {
         spdlog::info("[{}] concurrency={}", default_concurrency_key, default_concurrency);
         for (size_t idx = 0; idx < count; ++idx) {
             // 默认物理CPU数量的2倍与最大连接数一半, 取最小值
-            //size_t concurrency = std::min(num_cpus*2, size_t(level1::_max_connections) / 2);
+            //size_t concurrency = std::min(num_cpus*2, size_t(tdx::_max_connections) / 2);
 
             auto* adapter = adapters[idx];
             if (!adapter) {
@@ -191,7 +191,7 @@ namespace cache {
             bars[1].mark_as_started();
             bars[1].set_option(mpb::option::Completed {false});
             auto codeCount = allCodes.size();
-            bars[1].set_option(mpb::option::MaxProgress{codeCount+0});
+            bars[1].set_option(mpb::option::MaxProgress(static_cast<size_t>(codeCount + 0)));
             size_t num_threads = default_concurrency;
             auto const & cfg_adapter = cfg_concurrency.find(adapter->Key());
             if (cfg_adapter != cfg_concurrency.end() && cfg_adapter->second > 0) {

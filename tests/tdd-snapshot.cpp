@@ -13,26 +13,26 @@ TEST_CASE("base-snapshot", "[runtime]") {
     auto tp_start = std::chrono::high_resolution_clock::now();
     try {
         spdlog::warn("start = {}", meta::Timestamp::now().toString());
-        for (; start < count; start += level1::security_quotes_max) {
+        for (; start < count; start += tdx::security_quotes_max) {
             auto length = count - start;
-            if (length > level1::security_quotes_max) {
-                length = level1::security_quotes_max;
+            if (length > tdx::security_quotes_max) {
+                length = tdx::security_quotes_max;
             }
             //auto sub_codes = all_codes.subspan(start, length);
             spdlog::warn("code range: {}=>{}, begin", start, start+length);
             std::vector<std::string> sub_codes(all_codes.begin() + start, all_codes.begin() + start + length);
-            tsl::robin_map<std::string, level1::StockInfo> maps;
+            tsl::robin_map<std::string, tdx::StockInfo> maps;
             maps.clear();
             size_t i = 0;
             for (; i < length; i++) {
                 const auto& code = sub_codes[i];
                 auto [mid, mflag, symbol] = data::detect_symbol(code);
-                maps[code] = level1::StockInfo{mid, symbol};
+                maps[code] = tdx::StockInfo{mid, symbol};
             }
-            level1::SecurityQuoteRequest request(sub_codes);
-            level1::SecurityQuoteResponse response;
-            auto conn = level1::get_std_conn();
-            auto err = level1::process(conn->socket(), request, response);
+            tdx::SecurityQuoteRequest request(sub_codes);
+            tdx::SecurityQuoteResponse response;
+            auto conn = tdx::get_std_conn();
+            auto err = tdx::process_message(conn->socket(), request, response);
             REQUIRE(!err);
             response.verify_delisted_securities(maps);
             spdlog::warn("code range: {}=>{}, end", start, start+length);
@@ -231,26 +231,26 @@ TEST_CASE("tick-snapshot", "[runtime]") {
     auto [update_in_realTime, status] = false(meta::Timestamp::now());
     try {
         spdlog::warn("start = {}", meta::Timestamp::now().toString());
-        for (; start < count; start += level1::security_quotes_max) {
+        for (; start < count; start += tdx::security_quotes_max) {
             auto length = count - start;
-            if (length > level1::security_quotes_max) {
-                length = level1::security_quotes_max;
+            if (length > tdx::security_quotes_max) {
+                length = tdx::security_quotes_max;
             }
             //auto sub_codes = all_codes.subspan(start, length);
             //spdlog::warn("code range: {}=>{}, begin", start, start+length);
             std::vector<std::string> sub_codes(all_codes.begin() + start, all_codes.begin() + start + length);
-            tsl::robin_map<std::string, level1::StockInfo> maps;
+            tsl::robin_map<std::string, tdx::StockInfo> maps;
             maps.clear();
             size_t i = 0;
             for (; i < length; i++) {
                 const auto& code = sub_codes[i];
                 auto [mid, mflag, symbol] = data::detect_symbol(code);
-                maps[code] = level1::StockInfo{mid, symbol};
+                maps[code] = tdx::StockInfo{mid, symbol};
             }
-            level1::SecurityQuoteRequest request(sub_codes);
-            level1::SecurityQuoteResponse response;
-            auto conn = level1::get_std_conn();
-            auto err = level1::process(conn->socket(), request, response);
+            tdx::SecurityQuoteRequest request(sub_codes);
+            tdx::SecurityQuoteResponse response;
+            auto conn = tdx::get_std_conn();
+            auto err = tdx::process_message(conn->socket(), request, response);
             REQUIRE(!err);
             response.verify_delisted_securities(maps);
             for (int j = 0; j < response.count; ++j) {
@@ -259,9 +259,9 @@ TEST_CASE("tick-snapshot", "[runtime]") {
                 snap.setDate(current_day);
                 snap.setSecurityCode(data::correct_security_code(static_cast<meta::InstrumentType>(raw.market), raw.code));
                 auto exchangeState = ExchangeState::CLOSING;
-                if(raw.state == level1::TradeState::DELISTING) {
+                if(raw.state == tdx::TradeState::DELISTING) {
                     exchangeState = ExchangeState::DELISTING;
-                } else if (raw.state == level1::TradeState::SUSPEND) {
+                } else if (raw.state == tdx::TradeState::SUSPEND) {
                     exchangeState= ExchangeState::PAUSE;
                 }
                 if (update_in_realTime) {
@@ -271,7 +271,7 @@ TEST_CASE("tick-snapshot", "[runtime]") {
                     exchangeState = ExchangeState::NORMAL;
                 }
                 snap.setExchangeState(exchangeState);
-                snap.setState(raw.state == level1::TradeState::DELISTING ? TradeState::DELISTING : TradeState::NORMAL);
+                snap.setState(raw.state == tdx::TradeState::DELISTING ? TradeState::DELISTING : TradeState::NORMAL);
                 snap.setMarket(raw.market); // market: 0 or 1
                 snap.setCode(raw.code);
                 snap.setActive(raw.active1);

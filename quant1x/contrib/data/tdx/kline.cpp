@@ -1,10 +1,10 @@
-#include "kline.h"
-#include "client.h"
-#include "instruments.h"
-#include "kline_raw.h"
-#include "xdxr.h"
-#include <quant1x/contrib/data/tdx/level1/security_bars.h>
-#include <quant1x/contrib/data/tdx/level1/xdxr_info.h>
+#include <quant1x/contrib/data/tdx/kline.h>
+#include <quant1x/contrib/data/tdx/client.h>
+#include <quant1x/contrib/data/tdx/instruments.h>
+#include <quant1x/contrib/data/tdx/kline_raw.h>
+#include <quant1x/contrib/data/tdx/xdxr.h>
+#include <quant1x/contrib/data/tdx/level1/std/security_bars.h>
+#include <quant1x/contrib/data/tdx/level1/std/xdxr_info.h>
 #include <quant1x/config/base.h>
 #include <quant1x/data/base.h>
 #include <spdlog/spdlog.h>
@@ -13,28 +13,28 @@
 #include <algorithm>
 #include <filesystem>
 
-namespace tdx {
+namespace quant1x::contrib::data::tdx {
 
 // =============================
 // 常量 (对齐 Python)
 // =============================
 
-/// 增量更新缓存清理的最大天数 (对齐 Python MaxCachedDaysToDropOnIncrementalUpdate)
+/// 增量更新缓存清理的最大天�?(对齐 Python MaxCachedDaysToDropOnIncrementalUpdate)
 constexpr int kMaxCachedDaysToDropOnIncrementalUpdate = 1;
 
-/// 中国资本市场首个交易日 (对齐 Python MarketCnFirstListTime)
+/// 中国资本市场首个交易�?(对齐 Python MarketCnFirstListTime)
 constexpr const char* kMarketCnFirstListTime = "1990-12-19";
 
 // =============================
-// K线缓存 I/O
+// K-line cache I/O
 // =============================
 
-std::string get_kline_filename(const meta::Instrument& inst) {
+std::string get_kline_filename(const quant1x::data::meta::Instrument& inst) {
     return config::default_cache_path() + "/day/" + inst.cache_dir() + "/" + inst.symbol() + ".csv";
 }
 
-std::vector<meta::schema::Bar> read_kline_from_csv(const std::string& filename) {
-    std::vector<meta::schema::Bar> klines;
+std::vector<quant1x::data::meta::schema::Bar> read_kline_from_csv(const std::string& filename) {
+    std::vector<quant1x::data::meta::schema::Bar> klines;
     if (!std::filesystem::exists(filename)) {
         return klines;
     }
@@ -55,7 +55,7 @@ std::vector<meta::schema::Bar> read_kline_from_csv(const std::string& filename) 
         if (line.empty()) continue;
 
         std::istringstream ss(line);
-        meta::schema::Bar bar;
+        quant1x::data::meta::schema::Bar bar;
         std::string token;
 
         auto next_token = [&]() -> std::string {
@@ -85,7 +85,7 @@ std::vector<meta::schema::Bar> read_kline_from_csv(const std::string& filename) 
     return klines;
 }
 
-void save_kline(const std::string& filename, const std::vector<meta::schema::Bar>& klines) {
+void save_kline(const std::string& filename, const std::vector<quant1x::data::meta::schema::Bar>& klines) {
     if (klines.empty()) return;
 
     auto dir = std::filesystem::path(filename).parent_path().string();
@@ -109,7 +109,7 @@ void save_kline(const std::string& filename, const std::vector<meta::schema::Bar
     out.close();
 }
 
-std::vector<meta::schema::Bar> load_kline(const meta::Instrument& inst) {
+std::vector<quant1x::data::meta::schema::Bar> load_kline(const quant1x::data::meta::Instrument& inst) {
     auto filename = get_kline_filename(inst);
     spdlog::debug("[load_kline] file: {}", filename);
     return read_kline_from_csv(filename);
@@ -119,16 +119,16 @@ std::vector<meta::schema::Bar> load_kline(const meta::Instrument& inst) {
 // 获取XDXR数据
 // =============================
 
-std::vector<level1::XdxrInfo> get_xdxr_list(const std::string& security_code) {
+std::vector<XdxrInfo> get_xdxr_list(const std::string& security_code) {
     auto inst_opt = instruments::get_instrument_info(security_code);
     if (!inst_opt) return {};
     return get_xdxr_list(*inst_opt);
 }
 
-std::vector<level1::XdxrInfo> get_xdxr_list(const meta::Instrument& inst) {
-    // 从 xdxr 缓存文件读取
+std::vector<XdxrInfo> get_xdxr_list(const quant1x::data::meta::Instrument& inst) {
+    // �?xdxr 缓存文件读取
     std::string filename = config::default_cache_path() + "/xdxr/" + inst.cache_dir() + "/" + inst.symbol() + ".csv";
-    std::vector<level1::XdxrInfo> result;
+    std::vector<XdxrInfo> result;
 
     std::ifstream in(filename);
     if (!in) {
@@ -162,7 +162,7 @@ std::vector<level1::XdxrInfo> get_xdxr_list(const meta::Instrument& inst) {
             return t;
         };
 
-        level1::XdxrInfo info;
+        XdxrInfo info;
         info.Date         = next();
         info.Category     = static_cast<u16>(parse_int(next()));
         info.Name         = next();
@@ -183,12 +183,12 @@ std::vector<level1::XdxrInfo> get_xdxr_list(const meta::Instrument& inst) {
 
     // 按日期排序
     std::sort(result.begin(), result.end(),
-              [](const level1::XdxrInfo& a, const level1::XdxrInfo& b) { return a.Date < b.Date; });
+              [](const XdxrInfo& a, const XdxrInfo& b) { return a.Date < b.Date; });
 
     return result;
 }
 
-std::optional<std::string> ipo_date_from_xdxrs(std::span<const level1::XdxrInfo> xdxrs) {
+std::optional<std::string> ipo_date_from_xdxrs(std::span<const XdxrInfo> xdxrs) {
     for (auto const& v : xdxrs) {
         if (v.Category != 5) continue;
         if (v.QianLiuTong == 0 && v.QianZongGuBen == 0 && v.HouLiuTong > 0 && v.HouZongGuBen > 0) {
@@ -199,22 +199,22 @@ std::optional<std::string> ipo_date_from_xdxrs(std::span<const level1::XdxrInfo>
 }
 
 // =============================
-// 复权因子聚合 (对应 Python combine_adjustments_in_period)
+// Adjustment aggregation (Python combine_adjustments_in_period)
 // =============================
 
-std::vector<meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
-        std::span<const level1::XdxrInfo> xdxrs,
-        const meta::Timestamp& start_date,
-        const meta::Timestamp& end_date) {
+std::vector<quant1x::data::meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
+        std::span<const XdxrInfo> xdxrs,
+        const quant1x::data::meta::Timestamp& start_date,
+        const quant1x::data::meta::Timestamp& end_date) {
 
-    std::vector<meta::schema::CumulativeAdjustment> result;
+    std::vector<quant1x::data::meta::schema::CumulativeAdjustment> result;
 
     for (const auto& info : xdxrs) {
-        // 只处理除权除息 (Category == 1)
+        // 只处理除权除�?(Category == 1)
         if (info.Category != 1) continue;
 
         // 转换为盘前时间
-        meta::Timestamp event_ts = meta::Timestamp::parse(info.Date).pre_market_time();
+        quant1x::data::meta::Timestamp event_ts = quant1x::data::meta::Timestamp::parse(info.Date).pre_market_time();
         if (event_ts < start_date || event_ts > end_date) continue;
 
         auto [m, a] = info.adjustFactor();
@@ -237,7 +237,7 @@ std::vector<meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
             factor.share_adjustment_ratio = new_share;
         }
 
-        meta::schema::CumulativeAdjustment entry{};
+        quant1x::data::meta::schema::CumulativeAdjustment entry{};
         entry.timestamp             = event_ts;
         entry.m                     = m;
         entry.a                     = a;
@@ -251,24 +251,24 @@ std::vector<meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
 }
 
 // 日期字符串便捷重载
-std::vector<meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
-        const std::vector<level1::XdxrInfo>& xdxrs,
+std::vector<quant1x::data::meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
+        const std::vector<XdxrInfo>& xdxrs,
         const std::string& start_date,
         const std::string& end_date) {
-    auto ts_start = meta::Timestamp::parse(start_date).pre_market_time();
-    auto ts_end   = meta::Timestamp::parse(end_date).pre_market_time();
+    auto ts_start = quant1x::data::meta::Timestamp::parse(start_date).pre_market_time();
+    auto ts_end   = quant1x::data::meta::Timestamp::parse(end_date).pre_market_time();
     return combine_adjustments_in_period(std::span(xdxrs), ts_start, ts_end);
 }
 
 // =============================
-// 一次性前复权 (对应 Python apply_forward_adjustment_incrementally)
+// One-shot forward adjustment (Python apply_forward_adjustment_incrementally)
 // =============================
 
 void apply_forward_adjustments_once(
-        std::vector<meta::schema::Bar>& klines,
-        std::span<const level1::XdxrInfo> xdxrs,
-        const meta::Timestamp& start_date,
-        const meta::Timestamp& end_date,
+        std::vector<quant1x::data::meta::schema::Bar>& klines,
+        std::span<const XdxrInfo> xdxrs,
+        const quant1x::data::meta::Timestamp& start_date,
+        const quant1x::data::meta::Timestamp& end_date,
         bool should_truncate) {
 
     if (klines.empty()) return;
@@ -286,7 +286,7 @@ void apply_forward_adjustments_once(
 
     for (size_t idx = 0; idx < klines_count; ++idx) {
         auto& kline = klines[idx];
-        auto current_date = meta::Timestamp(kline.date).pre_market_time();
+        auto current_date = quant1x::data::meta::Timestamp(kline.date).pre_market_time();
         auto factor = factors[i];
 
         if (current_date > ts_end) {
@@ -313,34 +313,34 @@ void apply_forward_adjustments_once(
 }
 
 // =============================
-// 前复权计算 (对应 Python calculate_pre_adjust)
+// 前复权计�?(对应 Python calculate_pre_adjust)
 // =============================
 
 void calculate_pre_adjust(
-        std::vector<meta::schema::Bar>& klines,
-        const std::vector<level1::XdxrInfo>& dividends) {
+        std::vector<quant1x::data::meta::schema::Bar>& klines,
+        const std::vector<XdxrInfo>& dividends) {
 
     if (klines.empty()) return;
 
-    auto start_ts = meta::Timestamp(klines[0].date).pre_market_time();
-    auto end_ts   = meta::Timestamp(klines.back().date).pre_market_time();
+    auto start_ts = quant1x::data::meta::Timestamp(klines[0].date).pre_market_time();
+    auto end_ts   = quant1x::data::meta::Timestamp(klines.back().date).pre_market_time();
     apply_forward_adjustments_once(klines, dividends, start_ts, end_ts, true);
 }
 
 // =============================
-// 增量前复权 (对应 Python apply_forward_adjustment_for_event)
+// Incremental forward adjustment (Python apply_forward_adjustment_for_event)
 // =============================
 
 void apply_forward_adjustment_for_event(
-        std::vector<meta::schema::Bar>& klines,
-        const meta::Timestamp& current_start_date,
-        const std::vector<level1::XdxrInfo>& dividends) {
+        std::vector<quant1x::data::meta::schema::Bar>& klines,
+        const quant1x::data::meta::Timestamp& current_start_date,
+        const std::vector<XdxrInfo>& dividends) {
 
     if (klines.empty()) return;
 
     // 最后一根K线的日期
     auto& last = klines.back();
-    auto ts_last_day = meta::Timestamp(last.date).pre_market_time();
+    auto ts_last_day = quant1x::data::meta::Timestamp(last.date).pre_market_time();
 
     // 使用 next_trading_day 的逻辑: 这里简化为 last_date_next = ts_last_day + 1day
     // 对齐 Python: last_day_next = next_trading_day(ts_last_day).only_date()
@@ -352,8 +352,7 @@ void apply_forward_adjustment_for_event(
         if (info.Date > last_day_next.only_date()) continue;
 
         if (info.Date <= start_date_str) {
-            // IPO之前的事件跳过
-            continue;
+            // IPO之前的事件跳�?            continue;
         }
 
         auto [m, a] = info.adjustFactor();
@@ -384,19 +383,19 @@ void apply_forward_adjustment_for_event(
 // get_cross_section_forward_adjusted_klines (对应 Python/Rust)
 // =============================
 
-std::vector<meta::schema::Bar> get_cross_section_forward_adjusted_klines(
-        const meta::Instrument& inst, const std::string& as_of_date) {
+std::vector<quant1x::data::meta::schema::Bar> get_cross_section_forward_adjusted_klines(
+        const quant1x::data::meta::Instrument& inst, const std::string& as_of_date) {
 
     auto filename = get_kline_filename(inst);
     spdlog::debug("[get_cross_section_forward_adjusted_klines] loading for {} from {}",
                   inst.symbol(), filename);
 
-    // 如果缓存文件不存在, 先通过 DataKLine adapter 拉取并生成缓存
+    // 如果缓存文件不存在，先通过 DataKLine adapter 拉取并生成缓存
     if (!std::filesystem::exists(filename)) {
         spdlog::info("[get_cross_section_forward_adjusted_klines] cache not found for {}, triggering DataKLine update",
                      inst.symbol());
         DataKLine adapter;
-        adapter.Update(inst, meta::Timestamp());
+        adapter.Update(inst, quant1x::data::meta::Timestamp());
     }
 
     auto all_klines = read_kline_from_csv(filename);
@@ -404,8 +403,8 @@ std::vector<meta::schema::Bar> get_cross_section_forward_adjusted_klines(
         return {};
     }
 
-    // 过滤出 as_of_date 及之前的K线
-    std::vector<meta::schema::Bar> result;
+    // 过滤 as_of_date 及之前的K线
+    std::vector<quant1x::data::meta::schema::Bar> result;
     for (auto& kline : all_klines) {
         if (kline.date <= as_of_date) {
             result.push_back(std::move(kline));
@@ -416,12 +415,12 @@ std::vector<meta::schema::Bar> get_cross_section_forward_adjusted_klines(
 
 // =============================
 // checkout_klines / klines_forward_adjusted_to_date
-//   两者等效 — DataKLine::Update 写入的缓存已是前复权数据
+//   两者等�?�?DataKLine::Update 写入的缓存已是前复权数据
 // =============================
 
-/// 内部 helper: Bar → data::KLine
-static data::KLine bar_to_kline(const meta::schema::Bar& bar, const std::string& code) {
-    data::KLine kline;
+/// 内部 helper: Bar �?quant1x::data::KLine
+static quant1x::data::KLine bar_to_kline(const quant1x::data::meta::schema::Bar& bar, const std::string& code) {
+    quant1x::data::KLine kline;
     kline.date   = bar.date;
     kline.code   = code;
     kline.open   = bar.open;
@@ -433,9 +432,9 @@ static data::KLine bar_to_kline(const meta::schema::Bar& bar, const std::string&
     return kline;
 }
 
-static std::vector<data::KLine> bars_to_klines(
-        std::vector<meta::schema::Bar>&& bars, const std::string& code) {
-    std::vector<data::KLine> result;
+static std::vector<quant1x::data::KLine> bars_to_klines(
+        std::vector<quant1x::data::meta::schema::Bar>&& bars, const std::string& code) {
+    std::vector<quant1x::data::KLine> result;
     result.reserve(bars.size());
     for (auto& bar : bars) {
         result.push_back(bar_to_kline(bar, code));
@@ -443,34 +442,33 @@ static std::vector<data::KLine> bars_to_klines(
     return result;
 }
 
-std::vector<data::KLine> checkout_klines(const std::string& code, const std::string& date) {
-    std::string sec_code = data::correct_security_code(code);
+std::vector<quant1x::data::KLine> checkout_klines(const std::string& code, const std::string& date) {
+    std::string sec_code = quant1x::data::correct_security_code(code);
     auto inst_opt = instruments::get_instrument_info(sec_code);
     if (!inst_opt) return {};
     auto bars = get_cross_section_forward_adjusted_klines(*inst_opt, date);
     return bars_to_klines(std::move(bars), sec_code);
 }
 
-std::vector<data::KLine> klines_forward_adjusted_to_date(const std::string& code, const std::string& date) {
-    // 与 checkout_klines 等效 — 缓存中已是前复权数据
+std::vector<quant1x::data::KLine> klines_forward_adjusted_to_date(const std::string& code, const std::string& date) {
+    // �?checkout_klines 等效 �?缓存中已是前复权数据
     return checkout_klines(code, date);
 }
 
 // =============================
-// DataKLine 适配器实现
-// =============================
+// DataKLine 适配器实�?// =============================
 
-void DataKLine::Print(const meta::Instrument& inst, const std::vector<meta::Timestamp>& dates) {
+void DataKLine::Print(const quant1x::data::meta::Instrument& inst, const std::vector<quant1x::data::meta::Timestamp>& dates) {
     (void)inst;
     (void)dates;
 }
 
-void DataKLine::Update(const meta::Instrument& inst, const meta::Timestamp& date) {
+void DataKLine::Update(const quant1x::data::meta::Instrument& inst, const quant1x::data::meta::Timestamp& date) {
     (void)date;
     auto code = inst.symbol();
 
-    // 1. 确定起始日期 — 从本地缓存读取
-    meta::Timestamp current_start_date = meta::Timestamp::parse(kMarketCnFirstListTime);
+    // 1. 确定起始日期 - 从本地缓存读取
+    quant1x::data::meta::Timestamp current_start_date = quant1x::data::meta::Timestamp::parse(kMarketCnFirstListTime);
     auto cache_filename = get_kline_filename(inst);
     auto cache_klines = read_kline_from_csv(cache_filename);
 
@@ -483,33 +481,33 @@ void DataKLine::Update(const meta::Instrument& inst, const meta::Timestamp& date
             klines_offset_days = klines_length;
         }
         auto& kline = cache_klines[klines_length - klines_offset_days];
-        current_start_date = meta::Timestamp(kline.date);
+        current_start_date = quant1x::data::meta::Timestamp(kline.date);
         adjust_times = kline.adjustment_count;
     }
 
     // 2. 确定结束日期 = 当前盘前时间
-    auto current_end_date = meta::Timestamp::now().pre_market_time();
+    auto current_end_date = quant1x::data::meta::Timestamp::now().pre_market_time();
 
     spdlog::debug("[DataKLine] [{}]: from {} to {}",
                   code, current_start_date.only_date(), current_end_date.only_date());
 
-    // 3. 分页拉取原始日线数据 — fetch_kline_raw 返回 domain Bar (对齐 Python: reply = fetch_kline_raw(inst, start, count, freq))
-    int32_t step = level1::security_bars_max;
+    // 3. 分页拉取原始日线数据 �?fetch_kline_raw 返回 domain Bar (对齐 Python: reply = fetch_kline_raw(inst, start, count, freq))
+    int32_t step = security_bars_max;
     int32_t start = 0;
-    std::vector<std::vector<meta::schema::Bar>> batches;
+    std::vector<std::vector<quant1x::data::meta::schema::Bar>> batches;
     size_t element_count = 0;
 
     while (true) {
         int32_t count = step;
-        auto reply = fetch_kline_raw(inst, start, count, static_cast<u16>(level1::KLineType::DAILY));
+        auto reply = fetch_kline_raw(inst, start, count, static_cast<u16>(KLineType::DAILY));
         if (reply.empty()) break;
 
         auto reply_size = reply.size();
         element_count += reply_size;
 
-        // 记录最后一根bar的日期用于判断循环终止 (对齐 Python: last_bar = reply[-1]; last_bar_date = Timestamp.parse(last_bar.date).get_pre_market_time())
+        // 记录最后一根bar的日期用于判断循环终�?(对齐 Python: last_bar = reply[-1]; last_bar_date = Timestamp.parse(last_bar.date).get_pre_market_time())
         auto& last_bar = reply.back();
-        auto last_bar_date = meta::Timestamp::parse(last_bar.date).pre_market_time();
+        auto last_bar_date = quant1x::data::meta::Timestamp::parse(last_bar.date).pre_market_time();
 
         batches.push_back(std::move(reply));
 
@@ -519,7 +517,7 @@ void DataKLine::Update(const meta::Instrument& inst, const meta::Timestamp& date
         start += count;
     }
 
-    // 对齐 Python: 如果首次请求就失败, 直接返回
+    // 对齐 Python: 如果首次请求就失�? 直接返回
     if (batches.empty()) {
         spdlog::debug("[DataKLine] no data from server for {}", code);
         return;
@@ -528,10 +526,10 @@ void DataKLine::Update(const meta::Instrument& inst, const meta::Timestamp& date
     // 4. 反转批次并过滤日期范围
     std::reverse(batches.begin(), batches.end());
 
-    std::vector<meta::schema::Bar> incremental_klines;
+    std::vector<quant1x::data::meta::schema::Bar> incremental_klines;
     for (auto& batch : batches) {
         for (auto& bar : batch) {
-            auto date_time = meta::Timestamp(bar.date).pre_market_time();
+            auto date_time = quant1x::data::meta::Timestamp(bar.date).pre_market_time();
             if (date_time < current_start_date || date_time > current_end_date) continue;
             incremental_klines.push_back(std::move(bar));
         }
@@ -544,7 +542,7 @@ void DataKLine::Update(const meta::Instrument& inst, const meta::Timestamp& date
     }
 
     // 5. 获取除权除息数据
-    auto dividends = tdx::get_xdxr_list(inst);
+    auto dividends = get_xdxr_list(inst);
 
     // 6. 增量复权判断
     bool is_fresh_fetch_require_adjustment = (adjust_times == 1);
@@ -554,7 +552,7 @@ void DataKLine::Update(const meta::Instrument& inst, const meta::Timestamp& date
     }
 
     // 7. 合并旧缓存和新数据
-    std::vector<meta::schema::Bar> klines;
+    std::vector<quant1x::data::meta::schema::Bar> klines;
     if (klines_length > klines_offset_days) {
         klines.insert(klines.end(),
                       cache_klines.begin(),
@@ -568,9 +566,9 @@ void DataKLine::Update(const meta::Instrument& inst, const meta::Timestamp& date
     }
 
     // 9. 保存到缓存
-    tdx::save_kline(cache_filename, klines);
+    save_kline(cache_filename, klines);
     spdlog::info("[DataKLine] updated {} ({} bars) -> {}",
                  code, klines.size(), cache_filename);
 }
 
-} // namespace tdx
+} // namespace quant1x::contrib::data::tdx

@@ -20,7 +20,7 @@ impl FinanceInfoRequest {
         let mut code = [0u8; 6];
         let inst = crate::data::market::detect_symbol(security_code);
         let market = inst.ext_market as u8;
-        let pure = inst.code().to_string();
+        let pure = inst.marker_ticker().to_string();
         let bytes = pure.as_bytes();
         for i in 0..bytes.len().min(6) {
             code[i] = bytes[i];

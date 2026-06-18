@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_LEVEL1_HELLO1_H
-#define QUANT1X_LEVEL1_HELLO1_H 1
+#ifndef QUANT1X_CONTRB_DATA_TDX_HELLO1_H
+#define QUANT1X_CONTRB_DATA_TDX_HELLO1_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
 #include <quant1x/std/util.h>
@@ -9,7 +9,7 @@
 // 第一次协议握手
 // ==============================
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
 
     // login1 - 第一次协议握手 (对齐 Python StdLogin)
     struct Hello1 : public BaseMessage<Hello1> {
@@ -40,19 +40,19 @@ namespace level1 {
             }
         }
 
-        std::string toStringImpl() const {
+        std::string to_string_impl() const {
             std::ostringstream oss;
-            oss << request_header.headerStringImpl();
+            oss << request_header.header_string_impl();
             oss << ' ' << " padding:" << strings::bytesToHex(padding);
             oss << " Info:" << Info;
             return oss.str();
         }
     };
 
-} // namespace level1
+} // namespace quant1x::contrib::data::tdx
 
 template <>
-struct fmt::formatter<level1::Hello1> {
+struct fmt::formatter<quant1x::contrib::data::tdx::Hello1> {
     // 解析格式化规则(这里不需要特殊处理, 直接返回)
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
         return ctx.begin();
@@ -60,9 +60,9 @@ struct fmt::formatter<level1::Hello1> {
 
     // 格式化逻辑
     template <typename FormatContext>
-    auto format(const level1::Hello1& pkg, FormatContext& ctx) const -> decltype(ctx.out()) {
-        return fmt::format_to(ctx.out(), pkg.toStringImpl());
+    auto format(const quant1x::contrib::data::tdx::Hello1& pkg, FormatContext& ctx) const -> decltype(ctx.out()) {
+        return fmt::format_to(ctx.out(), pkg.to_string_impl());
     }
 };
 
-#endif //QUANT1X_LEVEL1_HELLO1_H
+#endif //QUANT1X_CONTRB_DATA_TDX_HELLO1_H

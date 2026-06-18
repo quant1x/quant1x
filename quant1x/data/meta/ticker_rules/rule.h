@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <cctype>
 
-namespace meta {
+namespace quant1x::data::meta {
 namespace ticker_rules {
 
 /// 规则前缀: 可以是字符串前缀或数字范围

@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_LEVEL1_SECURITY_COUNT_H
-#define QUANT1X_LEVEL1_SECURITY_COUNT_H 1
+#ifndef QUANT1X_CONTRB_DATA_TDX_SECURITY_COUNT_H
+#define QUANT1X_CONTRB_DATA_TDX_SECURITY_COUNT_H 1
 
 // ==============================
 // 证券统计
@@ -8,7 +8,7 @@
 
 #include <quant1x/contrib/data/tdx/protocol.h>
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
 
     // 证券统计 (对齐 Python SecurityCount)
     struct SecurityCount : public BaseMessage<SecurityCount> {
@@ -39,9 +39,9 @@ namespace level1 {
             Count = bs.get_u16();
         }
 
-        std::string toStringImpl() const {
+        std::string to_string_impl() const {
             std::ostringstream oss;
-            oss << request_header.headerStringImpl()
+            oss << request_header.header_string_impl()
                 << '{'
                 << "Market:"<< int(Market)
                 << ", padding:" << strings::bytesToHex(padding)
@@ -51,4 +51,4 @@ namespace level1 {
     };
 
 }
-#endif //QUANT1X_LEVEL1_SECURITY_COUNT_H
+#endif //QUANT1X_CONTRB_DATA_TDX_SECURITY_COUNT_H

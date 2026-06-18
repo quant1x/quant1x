@@ -3,20 +3,20 @@
 #include <boost/pfr.hpp>
 #include <quant1x/encoding/csv.h>
 
-namespace tdx {
+namespace quant1x::contrib::data::tdx {
 
-    data::Kind DataF10::Kind() const { return factors::FeatureF10; }
-    std::string DataF10::Owner() { return data::DefaultDataProvider; }
+    quant1x::data::Kind DataF10::Kind() const { return factors::FeatureF10; }
+    std::string DataF10::Owner() { return quant1x::data::DefaultDataProvider; }
     std::string DataF10::Key() const { return "f10"; }
     std::string DataF10::Name() const { return "F10因子"; }
     std::string DataF10::Usage() const { return "F10"; }
 
-    void DataF10::Print(const meta::Instrument& inst, const std::vector<meta::Timestamp>& dates) {
+    void DataF10::Print(const quant1x::data::meta::Instrument& inst, const std::vector<quant1x::data::meta::Timestamp>& dates) {
         (void)inst;
         (void)dates;
     }
 
-    void DataF10::Update(const meta::Instrument& inst, const meta::Timestamp& date) {
+    void DataF10::Update(const quant1x::data::meta::Instrument& inst, const quant1x::data::meta::Timestamp& date) {
         // 委托给旧 F10Feature 的实现
         factors::F10Feature oldAdapter;
         oldAdapter.Update(inst, date);
@@ -25,7 +25,7 @@ namespace tdx {
         // 这里仅做兼容占位
     }
 
-    std::unique_ptr<data::FeatureAdapter> DataF10::clone() const {
+    std::unique_ptr<quant1x::data::FeatureAdapter> DataF10::clone() const {
         return std::make_unique<DataF10>(*this);
     }
 
@@ -47,9 +47,9 @@ namespace tdx {
         return row;
     }
 
-    void DataF10::init(const meta::Timestamp& timestamp) {
+    void DataF10::init(const quant1x::data::meta::Timestamp& timestamp) {
         factors::F10Feature oldAdapter;
         oldAdapter.init(timestamp);
     }
 
-} // namespace tdx
+} // namespace quant1x::contrib::data::tdx

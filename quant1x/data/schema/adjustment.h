@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace meta::schema {
+namespace quant1x::data::meta::schema {
 
 /// 除权除息类别
 enum class XdxrCategory : uint8_t {
@@ -128,6 +128,6 @@ struct CumulativeAdjustment {
     }
 };
 
-} // namespace meta::schema
+} // namespace quant1x::data::meta::schema
 
 #endif // QUANT1X_DATA_SCHEMA_ADJUSTMENT_H

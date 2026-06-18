@@ -21,7 +21,7 @@ TEST_CASE("encoding-format_time", "[level1]") {
 
     for (int i = 0; ; ++i) {
         if (test_cases[i] == -1) break;
-        printf("Input: %d, Output: %s\n", test_cases[i], level1::helpers::format_time(test_cases[i]).c_str());
+        printf("Input: %d, Output: %s\n", test_cases[i], tdx::helpers::format_time(test_cases[i]).c_str());
     }
 }
 
@@ -31,7 +31,7 @@ TEST_CASE("Test Varint for quant1x", "[math]") {
     char buffer[10] = {};
     // ================= 编码部分 =================
     int pos = 0;
-    int writen = level1::helpers::varint_encode(origin, reinterpret_cast<uint8_t *>(buffer), &pos);
+    int writen = tdx::helpers::varint_encode(origin, reinterpret_cast<uint8_t *>(buffer), &pos);
     std::cout << writen << std::endl;
     std::cout << std::dec;
     for (unsigned char c : buffer) {
@@ -40,7 +40,7 @@ TEST_CASE("Test Varint for quant1x", "[math]") {
     // ================= 解码部分 =================
     pos = 0;
     std::cout << std::dec;
-    auto decoded_value = level1::helpers::varint_decode(reinterpret_cast<const uint8_t *>(buffer), &pos);
+    auto decoded_value = tdx::helpers::varint_decode(reinterpret_cast<const uint8_t *>(buffer), &pos);
     std::cout << "Decoded value: " << decoded_value << std::endl; // 输出解码后的值
 }
 

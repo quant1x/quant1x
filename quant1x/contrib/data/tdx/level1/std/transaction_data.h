@@ -4,7 +4,7 @@
 
 #include <quant1x/contrib/data/tdx/protocol.h>
 #include <quant1x/contrib/data/tdx/helpers.h>
-#include <quant1x/contrib/data/tdx/level1/security_quote.h>
+#include <quant1x/contrib/data/tdx/level1/std/security_quote.h>
 #include <quant1x/data/meta/instrument.h>
 #include <ostream>
 #include <stdexcept>
@@ -87,7 +87,7 @@ namespace quant1x::contrib::data::tdx {
             Count = bs.get_u16();
             List.reserve(Count);
             auto baseUnit = helpers::defaultBaseUnit(market_, code_);
-            auto isIndex = data::assert_index_by_security_code(std::string(code_));
+            auto isIndex = quant1x::data::assert_index_by_security_code(std::string(code_));
             i64 lastPrice = 0;
             try {
                 for(int i = 0; i < Count; ++i) {

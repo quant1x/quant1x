@@ -1,9 +1,9 @@
-#include <quant1x/contrib/data/tdx/level1/config.h>
-#include <quant1x/contrib/data/tdx/level1/hello1.h>
-#include <quant1x/contrib/data/tdx/level1/hello2.h>
+#include <quant1x/contrib/data/tdx/config.h>
+#include <quant1x/contrib/data/tdx/level1/std/hello1.h>
+#include <quant1x/contrib/data/tdx/level1/std/hello2.h>
 #include <quant1x/io/base.h>
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
     // 标准行情服务器列表
     const std::vector<ServerInfo> StandardServerList = {
         {"通达信", "深圳双线主站1", "110.41.147.114", 7709, 0},
@@ -248,15 +248,15 @@ namespace level1 {
                     auto start_time = std::chrono::high_resolution_clock::now();
 
                     // 协议握手
-                    level1::Hello1 hello1;
-                    auto err1 = level1::process(socket_guard.socket(), hello1);
+                    Hello1 hello1;
+                    auto err1 = process_message(socket_guard.socket(), hello1);
                     if (err1) {
                         spdlog::error("[Server Detection] Level1 protocol handshake phase 1 failed with {} - skipping server", err1.message());
                         continue; // 跳过这个服务器
                     }
 
-                    level1::Hello2 hello2;
-                    auto err2 = level1::process(socket_guard.socket(), hello2);
+                    Hello2 hello2;
+                    auto err2 = process_message(socket_guard.socket(), hello2);
                     if (err2) {
                         spdlog::error("[Server Detection] Level1 protocol handshake phase 2 failed with {} - skipping server", err2.message());
                         continue; // 跳过这个服务器

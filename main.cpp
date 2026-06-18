@@ -167,6 +167,9 @@ int main(const int argc, const char *const argv[]) {
     // 设置日志信息
     runtime::logger_set(verbose, debug);
     quant1x::engine::init([] {
+        namespace data = quant1x::data;
+        namespace tdx = quant1x::contrib::data::tdx;
+
         std::cout << "这里执行定制的初始化工作" << std::endl;
         // TODO: API migration — user strategy files masked
         // // 注册1号特征

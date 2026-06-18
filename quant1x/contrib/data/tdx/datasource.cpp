@@ -1,12 +1,12 @@
-#include "datasource.h"
+#include <quant1x/contrib/data/tdx/datasource.h>
 
 #include <algorithm>
 #include <cstdio>
-#include "instruments.h"
-#include "sector.h"
+#include <quant1x/contrib/data/tdx/instruments.h>
+#include <quant1x/contrib/data/tdx/sector.h>
 #include <quant1x/std/strings.h>
 
-namespace tdx {
+namespace quant1x::contrib::data::tdx {
 
     bool is_need_ignore(const std::string &code) {
         auto opt = instruments::get_instrument_info(code);
@@ -25,10 +25,10 @@ namespace tdx {
                            });
     }
 
-    std::vector<meta::Instrument> list_instruments() {
-        std::vector<meta::Instrument> code_list;
+    std::vector<quant1x::data::meta::Instrument> list_instruments() {
+        std::vector<quant1x::data::meta::Instrument> code_list;
 
-        // 对齐 Python _constants.ALL_INDEX_LIST
+        // Aligned with Python _constants.ALL_INDEX_LIST
         static const std::vector<std::string> ALL_INDEX_LIST = {
             "sh000001", // 上证综合指数
             "sz399001", // 深证成份指数
@@ -39,7 +39,7 @@ namespace tdx {
             "sh000688", // 科创50指数
             "sh000905", // 中证500指数
             "sh000852", // 中证1000指数
-            "sh880005", // 通达信板块-涨跌家数
+            "sh880005", // 通达信板�?涨跌家数
             "sh510050", // 上证50ETF
             "sh510300", // 沪深300ETF
             "sh588000", // 科创50ETF
@@ -60,7 +60,7 @@ namespace tdx {
         }
 
         // 2. 板块 (对齐 Python sector.get_sector_list)
-        for (const auto& s : tdx::sector::get_sector_list()) {
+        for (const auto& s : sector::get_sector_list()) {
             if (std::find(ALL_INDEX_LIST.begin(), ALL_INDEX_LIST.end(), s.code) != ALL_INDEX_LIST.end()) {
                 continue;
             }
@@ -70,7 +70,7 @@ namespace tdx {
             }
         }
 
-        // 3. 个股, 包括只包含上市公司股票 (对齐 Python get_stock_list)
+        // 3. 个股, 包括只包含上市公司股�?(对齐 Python get_stock_list)
         std::vector<std::string> all_codes;
 
         // 上海证券交易所 (sh600000-sh609999)
@@ -82,7 +82,7 @@ namespace tdx {
             }
         }
 
-        // 科创板 (sh688000-sh689999)
+        // 科创�?(sh688000-sh689999)
         for (int i = 688000; i < 690000; ++i) {
             char buf[16];
             snprintf(buf, sizeof(buf), "sh%06d", i);
@@ -100,7 +100,7 @@ namespace tdx {
             }
         }
 
-        // 中小板 (sz001000-sz009999)
+        // 中小�?(sz001000-sz009999)
         for (int i = 1000; i < 10000; ++i) {
             char buf[16];
             snprintf(buf, sizeof(buf), "sz%06d", i);
@@ -109,7 +109,7 @@ namespace tdx {
             }
         }
 
-        // 创业板 (sz300000-sz300999)
+        // 创业�?(sz300000-sz300999)
         for (int i = 300000; i < 310000; ++i) {
             char buf[16];
             snprintf(buf, sizeof(buf), "sz%06d", i);
@@ -137,4 +137,4 @@ namespace tdx {
         return code_list;
     }
 
-} // namespace tdx
+} // namespace quant1x::contrib::data::tdx

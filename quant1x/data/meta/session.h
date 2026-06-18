@@ -10,7 +10,7 @@
 #include <vector>
 #include <optional>
 
-namespace meta {
+namespace quant1x::data::meta {
 
 // =====================================================================
 // 1. Permission - 全球统一交易状态位掩码

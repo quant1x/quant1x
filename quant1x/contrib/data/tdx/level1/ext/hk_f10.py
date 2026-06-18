@@ -17,7 +17,7 @@ from quant1x.data.schema.adjustment import XdxrInfo
 from quant1x.data.meta.forex import ExchangeRateCache
 from quant1x.log import logger
 from quant1x.data.meta.region import Region
-from ..money import parse_scheme_info
+from quant1x.contrib.data.tdx.money import parse_scheme_info
 
 TDX_URL_HK_F10 = 'http://page1.tdx.com.cn:7615/TQLEX?Entry=CWServ.skef10_hk_gsds'
 TDX_URL_TQLEX = 'http://page1.tdx.com.cn:7615/TQLEX'
@@ -444,7 +444,7 @@ def get_f10_hk_stock_split(symbol: str) -> List[StockSplit]:
 def get_ext_xdxr_info(inst: Instrument) -> List[XdxrInfo]:
     if inst.exchange.region != Region.HK:
         return []
-    code = inst.code()
+    code = inst.marker_ticker()
     dividends = get_f10_hk_dividend(code)
     rights = get_f10_hk_rights_issue(code)
     splits = get_f10_hk_stock_split(code)
@@ -534,7 +534,7 @@ def get_ext_xdxr_info(inst: Instrument) -> List[XdxrInfo]:
 
 if __name__ == "__main__":
     import pandas as pd
-    from ..instruments import get_instrument_info
+    from ...instruments import get_instrument_info
     # code = '00700'
     # #code = '01027' # 合并案例, 亚洲策略科技, 01027.hk
     # data = get_f10_hk_dividend(code)

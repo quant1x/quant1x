@@ -2,7 +2,7 @@
 #include <quant1x/config/config.h>
 #include <quant1x/std/time.h>
 
-namespace meta {
+namespace quant1x::data::meta {
 
     constexpr auto only_date_layout = "{:%Y-%m-%d}";
     constexpr auto cache_date_layout = "{:%Y%m%d}";
@@ -265,4 +265,4 @@ namespace meta {
     bool Timestamp::operator>=(const Timestamp &rhs) const {
         return ms_ >= rhs.ms_;
     }
-}  // namespace meta
+}  // namespace quant1x::data::meta

@@ -1,9 +1,10 @@
 #pragma once
-#ifndef QUANT1X_LEVEL1_XDXR_INFO_H
-#define QUANT1X_LEVEL1_XDXR_INFO_H 1
+#ifndef QUANT1X_CONTRB_DATA_TDX_XDXR_INFO_H
+#define QUANT1X_CONTRB_DATA_TDX_XDXR_INFO_H 1
 
 #include <quant1x/data/meta/exchange.h>
 #include <quant1x/contrib/data/tdx/protocol.h>
+#include <quant1x/data/meta/instrument.h>
 
 #include <ostream>
 
@@ -11,7 +12,7 @@
 // 除权除息
 // ==============================
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
 
     // XDXR类型映射表
     enum XdxrCategory : int {
@@ -174,14 +175,14 @@ namespace level1 {
         u16                   Count;       // 响应: 数据条数
         std::vector<XdxrInfo> List;        // 响应: 解析后的除权除息列表
 
-        Xdxr(const std::string &securityCode) : BaseMessage<Xdxr>() {
-            request_header.frame_type               = ZlibFlag::Uncompressed;
-            request_header.seq_id                 = get_sequence_id();
-            request_header.packet_ctrl            = 0x01;
-            request_header.cmd_id                = StdCommand::XDXR_INFO;
-            auto [id, _, symbol]  = detect_symbol(securityCode);
-            Market                = static_cast<u8>(id);
-            const char *const tmp = symbol.c_str();
+        Xdxr(const meta::Instrument &inst) : BaseMessage<Xdxr>() {
+            request_header.frame_type  = ZlibFlag::Uncompressed;
+            request_header.seq_id      = get_sequence_id();
+            request_header.packet_ctrl = 0x01;
+            request_header.cmd_id      = StdCommand::XDXR_INFO;
+            
+            Market                = static_cast<u8>(helpers::exchange_to_market(inst.exchange));
+            const char *const tmp = inst.marker_ticker().c_str();
             std::memcpy(Code, tmp, sizeof(Code));
             padding = strings::hexToBytes("0100");
         }
@@ -212,7 +213,7 @@ namespace level1 {
                 auto [year, month, day, hour, minute] = helpers::getDatetimeFromUint32(9, date, 0);
                 info.Category                            = category;
                 info.Date                                = fmt::format("{:04d}-{:02d}-{:02d}", year, month, day);
-                info.Name                                = to_string(static_cast<XdxrCategory>(info.Category));
+                info.Name                                = quant1x::contrib::data::tdx::to_string(static_cast<XdxrCategory>(info.Category));
                 BinaryStream tmp(data);
                 switch (info.Category) {
                     case 1:  // 除权除息
@@ -263,9 +264,9 @@ namespace level1 {
             }
         }
 
-        std::string toStringImpl() const {
+        std::string to_string_impl() const {
             std::ostringstream out;
-            out << request_header.headerStringImpl();
+            out << request_header.header_string_impl();
             out << '{';
             out << "Market:" << (int)Market;
             out << ", Code:" << std::string(Code, sizeof(Code));
@@ -318,16 +319,15 @@ namespace level1 {
         };
         std::vector<BatchEntry> entries;
 
-        XdxrBatch(const std::vector<std::string> &securityCodes) : BaseMessage<XdxrBatch>() {
+        XdxrBatch(const std::vector<meta::Instrument> &insts) : BaseMessage<XdxrBatch>() {
             request_header.frame_type = ZlibFlag::Uncompressed;
             request_header.seq_id = get_sequence_id();
             request_header.packet_ctrl = 0x01;
             request_header.cmd_id = StdCommand::XDXR_INFO;
-            for (auto const &sc : securityCodes) {
-                auto [id, _, symbol] = detect_symbol(sc);
+            for (auto const &inst : insts) {
                 StockEntry entry{};
-                entry.market = static_cast<u8>(id);
-                const char *tmp = symbol.c_str();
+                entry.market = helpers::exchange_to_market(inst.exchange);
+                const char *tmp = inst.marker_ticker().c_str();
                 std::memcpy(entry.code, tmp, sizeof(entry.code));
                 stocks.push_back(entry);
             }
@@ -366,7 +366,7 @@ namespace level1 {
                     XdxrInfo info{};
                     info.Category = cat;
                     info.Date = fmt::format("{:04d}-{:02d}-{:02d}", year, month, day);
-                    info.Name = to_string(static_cast<XdxrCategory>(info.Category));
+                    info.Name = quant1x::contrib::data::tdx::to_string(static_cast<XdxrCategory>(info.Category));
                     BinaryStream tmp(d);
                     switch (info.Category) {
                         case 1:
@@ -397,7 +397,7 @@ namespace level1 {
             }
         }
 
-        std::string toStringImpl() const {
+        std::string to_string_impl() const {
             return fmt::format("XdxrBatch{{Count:{}}}", Count);
         }
 
@@ -408,6 +408,6 @@ namespace level1 {
         }
     };
 
-}  // namespace level1
+}  // namespace quant1x::contrib::data::tdx
 
-#endif  // QUANT1X_LEVEL1_XDXR_INFO_H
+#endif  // QUANT1X_CONTRB_DATA_TDX_XDXR_INFO_H

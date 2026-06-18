@@ -4,14 +4,14 @@
 #include "quant1x/contrib/data/tdx/client.h"
 
 TEST_CASE("detect", "[level1]") {
-    auto list = level1::detect();
+    auto list = tdx::detect();
     for (auto const &v : list) {
         std::cout << v.Host << "," << v.latency_ms << std::endl;
     }
 }
 
 TEST_CASE("client", "[level1]") {
-    auto client = level1::get_std_conn();
+    auto client = tdx::get_std_conn();
 
 }
 

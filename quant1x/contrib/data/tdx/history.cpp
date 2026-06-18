@@ -3,30 +3,30 @@
 #include <boost/pfr.hpp>
 #include <quant1x/encoding/csv.h>
 
-namespace tdx {
+namespace quant1x::contrib::data::tdx {
 
-    data::Kind HistoryFeature::Kind() const { return factors::FeatureHistory; }
-    std::string HistoryFeature::Owner() { return data::DefaultDataProvider; }
+    quant1x::data::Kind HistoryFeature::Kind() const { return factors::FeatureHistory; }
+    std::string HistoryFeature::Owner() { return quant1x::data::DefaultDataProvider; }
     std::string HistoryFeature::Key() const { return "history"; }
     std::string HistoryFeature::Name() const { return "历史数据"; }
     std::string HistoryFeature::Usage() const { return "历史数据"; }
 
-    void HistoryFeature::Print(const meta::Instrument& inst, const std::vector<meta::Timestamp>& dates) {
+    void HistoryFeature::Print(const quant1x::data::meta::Instrument& inst, const std::vector<quant1x::data::meta::Timestamp>& dates) {
         (void)inst;
         (void)dates;
     }
 
-    void HistoryFeature::Update(const meta::Instrument& inst, const meta::Timestamp& date) {
+    void HistoryFeature::Update(const quant1x::data::meta::Instrument& inst, const quant1x::data::meta::Timestamp& date) {
         // 委托给旧 factors::HistoryFeature 的实现
         factors::HistoryFeature oldAdapter;
         oldAdapter.Update(inst, date);
     }
 
-    void HistoryFeature::init(const meta::Timestamp& timestamp) {
+    void HistoryFeature::init(const quant1x::data::meta::Timestamp& timestamp) {
         (void)timestamp;
     }
 
-    std::unique_ptr<data::FeatureAdapter> HistoryFeature::clone() const {
+    std::unique_ptr<quant1x::data::FeatureAdapter> HistoryFeature::clone() const {
         return std::make_unique<HistoryFeature>(*this);
     }
 
@@ -48,4 +48,4 @@ namespace tdx {
         return row;
     }
 
-} // namespace tdx
+} // namespace quant1x::contrib::data::tdx

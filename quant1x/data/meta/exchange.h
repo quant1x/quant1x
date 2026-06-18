@@ -7,7 +7,7 @@
 #include <string>
 #include <stdexcept>
 
-namespace meta {
+namespace quant1x::data::meta {
 
 /// 交易所枚举, 与 Python/Go/Rust 的 Exchange 对齐
 /// 每个变体持有 (mic, identifier, region, label) 四元组
@@ -337,6 +337,6 @@ inline bool exchange_is_ext_quote(Exchange ex) {
     return !exchange_is_std_quote(ex) && ex != Exchange::UNKNOWN;
 }
 
-} // namespace meta
+} // namespace quant1x::data::meta
 
 #endif // QUANT1X_DATA_META_EXCHANGE_H

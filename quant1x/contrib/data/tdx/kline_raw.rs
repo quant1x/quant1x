@@ -394,7 +394,7 @@ fn fetch_kline_raw_from_std(
     start: u32,
     count: u16,
 ) -> Option<SecurityBarsResponse> {
-    let code = inst.code();
+    let code = inst.marker_ticker();
     let ticker = code.to_uppercase();
     let category = kline_type_to_value(KLineType::Daily);
 
@@ -455,7 +455,7 @@ fn fetch_kline_raw_from_ext(
     start: u32,
     count: u16,
 ) -> Option<SecurityBarsResponse> {
-    let code = inst.code();
+    let code = inst.marker_ticker();
     let ticker = code.to_uppercase();
     let category = kline_type_to_value(KLineType::Daily);
 

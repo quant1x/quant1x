@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace data {
+namespace quant1x::data {
 
 /// K线数据 (对齐 Python contrib/data/tdx/kline.py 和 Rust q1x/src/data/tdx.rs)
 struct KLine {
@@ -18,6 +18,6 @@ struct KLine {
     double      amount = 0.0; ///< 成交金额
 };
 
-} // namespace data
+} // namespace quant1x::data
 
 #endif // QUANT1X_DATA_KLINE_H

@@ -15,7 +15,7 @@
 // exchange 交易日历相关                                      //
 //============================================================
 
-namespace meta {
+namespace quant1x::data::meta {
     namespace detail {
 
         // 获取交易日历的缓存文件名
@@ -80,7 +80,7 @@ namespace meta {
         if (!text.empty()) {
             auto list = detail::_decode_sina_text(text);
             auto it   = std::lower_bound(list.begin(), list.end(), calendarMissingDate);
-            if (it != list.end() || *it != calendarMissingDate) {
+            if (it == list.end() || *it != calendarMissingDate) {
                 list.insert(it, calendarMissingDate);
             }
             {
@@ -100,10 +100,34 @@ namespace meta {
     void lazy_load_calendar() {
         spdlog::debug("加载交易日历...");
 
+        auto load_from_file = [](const std::string &cache_path) -> bool {
+            if (!std::filesystem::exists(cache_path)) {
+                return false;
+            }
+            try {
+                global_calendars_string.clear();
+                global_calendars_timestamp.clear();
+
+                io::CSVReader<1> in(cache_path);
+                in.read_header(io::ignore_extra_column, "date");
+                std::string date;
+                while (in.read_row(date)) {
+                    global_calendars_string.emplace_back(date);
+                    Timestamp ts = date;
+                    ts           = ts.pre_market_time();
+                    global_calendars_timestamp.emplace_back(ts);
+                }
+                return !global_calendars_timestamp.empty();
+            } catch (const std::exception &e) {
+                spdlog::error("加载交易日历缓存文件失败: {}", e.what());
+                return false;
+            }
+        };
+
         // 1. 检查标记文件是否过期, 决定是否需要更新
         std::string marker      = detail::get_calendar_marker_filepath();
         Timestamp   now_time    = Timestamp::now();
-        Timestamp   mod_time    = data::get_filename_modified_time(marker);
+        Timestamp   mod_time    = quant1x::data::get_filename_modified_time(marker);
         Timestamp   today_init  = now_time.pre_market_time();
 
         if (now_time > today_init && mod_time < today_init) {
@@ -111,7 +135,9 @@ namespace meta {
             try {
                 update_calendar();
                 // 更新标记文件的修改时间 (对齐 Python fs.update_file_mtime)
-                filesystem::write_file(marker);
+                if (!filesystem::write_file(marker, "", 0)) {
+                    spdlog::warn("写入交易日历标记文件失败: {}", marker);
+                }
                 filesystem::last_modified_time(marker, now_time.value());
             } catch (const std::exception &e) {
                 spdlog::debug("交易日历更新失败: {}", e.what());
@@ -125,28 +151,31 @@ namespace meta {
         auto cache_path = detail::get_calendar_filepath();
         // 确保父目录存在
         filesystem::check_filepath(cache_path, true);
-        if (!std::filesystem::exists(cache_path)) {
-            spdlog::debug("交易日历缓存文件不存在, 跳过加载");
-            return;
+        bool loaded = load_from_file(cache_path);
+        if (!loaded) {
+            spdlog::warn("交易日历缓存为空或缺失, 触发一次强制更新");
+            try {
+                update_calendar();
+                if (!filesystem::write_file(marker, "", 0)) {
+                    spdlog::warn("写入交易日历标记文件失败: {}", marker);
+                }
+                filesystem::last_modified_time(marker, now_time.value());
+            } catch (const std::exception &e) {
+                spdlog::error("交易日历强制更新失败: {}", e.what());
+            }
+            loaded = load_from_file(cache_path);
         }
-
-        try {
-            // 清空旧数据
-            global_calendars_string.clear();
-            global_calendars_timestamp.clear();
-
-            io::CSVReader<1> in(cache_path);
-            in.read_header(io::ignore_extra_column, "date");
-            std::string date;
-            while (in.read_row(date)) {
-                global_calendars_string.emplace_back(date);
-                Timestamp ts = date;
-                ts           = ts.pre_market_time();
-                global_calendars_timestamp.emplace_back(ts);
+        if (loaded) {
+            if (!std::filesystem::exists(marker)) {
+                // 日历加载成功但标记缺失时补建, 保证后续过期判断稳定。
+                if (!filesystem::write_file(marker, "", 0)) {
+                    spdlog::warn("写入交易日历标记文件失败: {}", marker);
+                }
+                filesystem::last_modified_time(marker, now_time.value());
             }
             spdlog::debug("交易日历加载完成, 共 {} 个交易日", global_calendars_string.size());
-        } catch (const std::exception &e) {
-            spdlog::error("加载交易日历缓存文件失败: {}", e.what());
+        } else {
+            spdlog::warn("交易日历最终仍为空");
         }
     }
 
@@ -183,6 +212,11 @@ namespace meta {
         global_calendar_once->Do(lazy_load_calendar);
         spdlog::debug("[exchange::calendar] date={}, debug_timestamp={}", date.to_string(), debug_timestamp.to_string());
         const std::vector<Timestamp> &trade_dates = global_calendars_timestamp;
+        if (trade_dates.empty()) {
+            spdlog::warn("[exchange::calendar] trade calendar is empty, fallback to input date");
+            const Timestamp fallback = date.empty() ? Timestamp::now().pre_market_time() : date;
+            return fallback;
+        }
         auto                          it          = std::upper_bound(trade_dates.begin(), trade_dates.end(), date);
         if (it != trade_dates.begin()) {
             --it;
@@ -203,6 +237,11 @@ namespace meta {
         global_calendar_once->Do(lazy_load_calendar);
         spdlog::debug("[exchange::calendar] date={}, debug_timestamp={}", date.to_string(), debug_timestamp.to_string());
         const std::vector<Timestamp> &trade_dates = global_calendars_timestamp;
+        if (trade_dates.empty()) {
+            spdlog::warn("[exchange::calendar] trade calendar is empty, fallback to input date");
+            const Timestamp fallback = date.empty() ? Timestamp::now().pre_market_time() : date;
+            return fallback;
+        }
         auto                          it          = std::lower_bound(trade_dates.begin(), trade_dates.end(), date);
         if (it != trade_dates.begin()) {
             --it;

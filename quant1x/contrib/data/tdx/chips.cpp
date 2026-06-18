@@ -1,4 +1,4 @@
-#include "chips.h"
+#include <quant1x/contrib/data/tdx/chips.h>
 #include <quant1x/proto/data.h>
 #include <quant1x/config/base.h>
 #include <quant1x/config/cache.h>
@@ -7,17 +7,20 @@
 #include <spdlog/spdlog.h>
 #include <tsl/robin_map.h>
 
-namespace tdx {
+namespace config = ::config;
+namespace io = ::io;
+
+namespace quant1x::contrib::data::tdx {
     namespace fs = std::filesystem;
 
-    void DataChips::Print(const meta::Instrument& inst, const std::vector<meta::Timestamp>& dates) {
+    void DataChips::Print(const quant1x::data::meta::Instrument& inst, const std::vector<quant1x::data::meta::Timestamp>& dates) {
         (void)inst;
         (void)dates;
     }
 
-    void DataChips::Update(const meta::Instrument& inst, const meta::Timestamp& date) {
+    void DataChips::Update(const quant1x::data::meta::Instrument& inst, const quant1x::data::meta::Timestamp& date) {
         auto code = inst.symbol();
-        std::string securityCode = data::correct_security_code(code);
+        std::string securityCode = quant1x::data::correct_security_code(code);
         std::string factor_date = date.only_date();
         auto cache_filename = config::get_historical_trade_filename(securityCode, factor_date);
         if (!fs::exists(cache_filename)) {
@@ -31,7 +34,7 @@ namespace tdx {
         f64 Vol = 0;
         i64 Num = 0;
         f64 Amount = 0;
-        int BuyOrSell = level1::tick_neutral;
+        int BuyOrSell = tick_neutral;
         tsl::robin_map<int32_t, PriceLine> chipDistributionMap;
         int32_t front = 0;
         bool is_first = true;
@@ -41,18 +44,18 @@ namespace tdx {
             pl.price = price;
             if (is_first) {
                 switch (BuyOrSell) {
-                    case level1::tick_buy:  pl.buy = Vol; break;
-                    case level1::tick_sell: pl.sell = Vol; break;
+                    case tick_buy:  pl.buy = Vol; break;
+                    case tick_sell: pl.sell = Vol; break;
                     default: pl.buy = Vol / 2; pl.sell = Vol - pl.buy; break;
                 }
                 is_first = false;
             } else {
                 if (price > front) {
-                    BuyOrSell = level1::tick_buy; pl.buy = Vol;
+                    BuyOrSell = tick_buy; pl.buy = Vol;
                 } else if (price < front) {
-                    BuyOrSell = level1::tick_sell; pl.sell = Vol;
+                    BuyOrSell = tick_sell; pl.sell = Vol;
                 } else {
-                    BuyOrSell = level1::tick_neutral; pl.buy = Vol / 2; pl.sell = Vol - pl.buy;
+                    BuyOrSell = tick_neutral; pl.buy = Vol / 2; pl.sell = Vol - pl.buy;
                 }
             }
             auto it = chipDistributionMap.find(pl.price);
@@ -84,4 +87,4 @@ namespace tdx {
         (void)result;
     }
 
-} // namespace tdx
+} // namespace quant1x::contrib::data::tdx

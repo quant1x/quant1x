@@ -5,7 +5,7 @@
 #include "rule.h"
 #include <unordered_map>
 
-namespace meta {
+namespace quant1x::data::meta {
 namespace ticker_rules {
 
 /// USA 美国证券交易所规则

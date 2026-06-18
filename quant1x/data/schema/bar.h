@@ -7,7 +7,7 @@
 #include <vector>
 #include <algorithm>
 
-namespace meta::schema {
+namespace quant1x::data::meta::schema {
 
 /// K线数据结构体
 struct Bar {
@@ -79,6 +79,6 @@ struct Bar {
     }
 };
 
-} // namespace meta::schema
+} // namespace quant1x::data::meta::schema
 
 #endif // QUANT1X_DATA_SCHEMA_BAR_H

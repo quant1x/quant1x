@@ -15,7 +15,7 @@
 // exchange 最基础的部分功能                                   //
 //============================================================
 
-namespace meta {
+namespace quant1x::data::meta {
 
     // 获取当前日期, 这里再封装一层, 尽量不暴露内部函数
     inline std::string init_current_day() {
@@ -37,7 +37,7 @@ namespace meta {
 // exchange 交易时段相关                                      //
 //============================================================
 
-namespace meta {
+namespace quant1x::data::meta {
     // 每天9点整
     inline std::string cron_expr_daily_9am = std::format("0 {} {} * * *", config::cn_pre_market_minute, config::cn_pre_market_hour);
 
@@ -57,7 +57,7 @@ namespace meta {
 // exchange 交易日历相关                                      //
 //============================================================
 
-namespace meta {
+namespace quant1x::data::meta {
 
     /// 同步交易日历
     void update_calendar();

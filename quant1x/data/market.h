@@ -12,7 +12,7 @@
 #include <unordered_set>
 #include <optional>
 
-namespace data {
+namespace quant1x::data {
 
 /// 根据交易所和代码, 使用对应规则检测证券类型
 /// 对应 Python 的 detect_instrument_type_by_rule
@@ -81,6 +81,6 @@ inline void download_block_raw_data(const std::string& filename) {
     (void)filename;
 }
 
-} // namespace data
+} // namespace quant1x::data
 
 #endif // QUANT1X_DATA_MARKET_H

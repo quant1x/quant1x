@@ -30,7 +30,7 @@ class SecurityQuote(protocol.BaseMessage):
                 continue
             inst = detect_symbol(sc)
             market_id = helpers.exchange_to_market(inst.exchange)
-            symbol = inst.code()
+            symbol = inst.marker_ticker()
             self.list.append(StockInfo(market=market_id, code=symbol))
 
         self.count = 0

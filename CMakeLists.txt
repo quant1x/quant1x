@@ -496,13 +496,13 @@ set(quant1x-headers
     # 数据客户端
     quant1x/contrib/data/tdx/client.h
     
-    # level1
-    quant1x/contrib/data/tdx/level1/config.h
-    quant1x/contrib/data/tdx/level1/minute_time.h
-
     # tdx (moved from level1 to align with Rust/Python)
     quant1x/contrib/data/tdx/protocol.h
     quant1x/contrib/data/tdx/helpers.h
+    quant1x/contrib/data/tdx/config.h
+    
+    # level1
+    quant1x/contrib/data/tdx/level1/std/minute_time.h
 
     # tdx adapters (TODO: xdxr, chips, kline_raw, f10 API migration pending)
     quant1x/contrib/data/tdx/xdxr.h
@@ -613,10 +613,10 @@ set(quant1x-sources
     # 数据客户端
     quant1x/contrib/data/tdx/client.cpp
     
-    # level1
-    quant1x/contrib/data/tdx/level1/config.cpp
+    quant1x/contrib/data/tdx/config.cpp
     quant1x/contrib/data/tdx/protocol.cpp
 
+    # level1
 
     # 配置信息
     quant1x/config/base.cpp

@@ -345,7 +345,7 @@ def _compute_f10_from_tdx(inst: Instrument, date: str) -> Optional[F10]:
     暂不依赖的字段:
     - margin_trading_target: 依赖 exchange 层东方财富API
     """
-    security_code = inst.code()
+    security_code = inst.marker_ticker()
 
     f10 = F10()
     f10.date = date

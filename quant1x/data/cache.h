@@ -5,7 +5,7 @@
 #include <quant1x/data/meta/timestamp.h>
 #include <string>
 
-namespace data {
+namespace quant1x::data {
 
     /**
      * @brief 获取今天初始化时间, 即当前时间的盘前时间戳
@@ -62,6 +62,6 @@ namespace data {
      */
     std::string date_format(const std::string &date, const std::string &layout = "%Y-%m-%d");
 
-}  // namespace data
+}  // namespace quant1x::data
 
 #endif  // QUANT1X_DATA_CACHE_H

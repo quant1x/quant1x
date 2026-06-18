@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <ctime>
 
-namespace meta {
+namespace quant1x::data::meta {
 
 // =====================================================================
 // 辅助: Region → UTC 偏移小时数
@@ -312,7 +312,7 @@ static auto ts_today_once = RollingOnce::create("session-today-init", cron_expr_
 
 Timestamp get_today() {
     ts_today_once->Do([]() {
-        ts_today_init_cache = data::get_today_initialized_time();
+        ts_today_init_cache = quant1x::data::get_today_initialized_time();
     });
     return ts_today_init_cache;
 }

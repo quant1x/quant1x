@@ -143,7 +143,7 @@ pub struct Instrument {
     pub exchange: Exchange,
     /// 证券类型
     pub instrument_type: InstrumentType,
-    /// 交易所分配的证券代码(ticker)
+    /// 交易所原始分配代码(ticker)
     pub ticker: String,
     /// 证券名称
     pub name: String,
@@ -155,7 +155,7 @@ pub struct Instrument {
     pub ext_market: i32,
     /// 扩展类别代码
     pub ext_category: i32,
-    /// 证券代码别名
+    /// 市场惯例别名代码(可覆盖 ticker)
     pub alias_ticker: String,
 }
 
@@ -205,8 +205,8 @@ impl Instrument {
             && self.price_precision > 0
     }
 
-    /// 获取证券代码(优先返回 alias_ticker)
-    pub fn code(&self) -> &str {
+    /// 获取市场惯例代码(优先返回 alias_ticker, 否则返回 ticker)
+    pub fn marker_ticker(&self) -> &str {
         if self.alias_ticker.is_empty() {
             &self.ticker
         } else {

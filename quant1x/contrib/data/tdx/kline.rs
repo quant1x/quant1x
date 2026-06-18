@@ -221,7 +221,7 @@ fn fetch_kline_raw_as_bars(inst: &Instrument, start: u32, count: u16) -> Vec<Bar
 fn get_xdxr_list(inst: &Instrument) -> Vec<XdxrInfo> {
     use super::level1::std::xdxr;
     let exchange = inst.exchange;
-    let ticker = inst.code();
+    let ticker = inst.marker_ticker();
     match xdxr::fetch_xdxr(exchange, ticker) {
         Some(msg) => msg.list,
         None => Vec::new(),

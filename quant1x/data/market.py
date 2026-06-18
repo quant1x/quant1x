@@ -137,7 +137,6 @@ def detect_symbol(input_str: str) -> Instrument:
             - 美国市场(USA)
         自动根据代码规则推断证券类型(股票, 债券等)
     """
-    #print(f"detect_symbol: {input_str}")
     s = (input_str or "").strip()
     if not s:
         return Instrument(Exchange.SSE, InstrumentType.Unknown, "", "", 0, 0)

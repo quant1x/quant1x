@@ -93,7 +93,7 @@ def update_xdxr_from_std(inst: Instrument):
         logger.exception(f"[dataset::xdxr] update failed")
 
 from .level1.ext import CompanyInfoCategories, CompanyInfoContent
-from .level1.xdxr_hkex import parse_text_to_list
+from .level1.ext.xdxr_hkex import parse_text_to_list
 
 
 def update_xdxr_from_ext_0x24b9(inst: Instrument):
@@ -103,7 +103,7 @@ def update_xdxr_from_ext_0x24b9(inst: Instrument):
     try:
         conn = get_ext_conn()
         from .level1.ext import CompanyInfoCategories, CompanyInfoContent
-        categories = CompanyInfoCategories(market=inst.ext_market, ticker=inst.code())
+        categories = CompanyInfoCategories(market=inst.ext_market, ticker=inst.marker_ticker())
         protocol.process_level1_new(conn, categories)
         if categories.reply:
             # 捡出 分红送股
@@ -161,7 +161,7 @@ def update_xdxr_from_ext_0x24b9(inst: Instrument):
         logger.exception(f"[dataset::xdxr] update failed")
 
 def update_xdxr_from_ext_7615(inst: Instrument):
-    from .level1.hk_f10 import get_ext_xdxr_info
+    from .level1.ext.hk_f10 import get_ext_xdxr_info
     try:
         rows = get_ext_xdxr_info(inst=inst)
         save_xdxr(inst, rows)

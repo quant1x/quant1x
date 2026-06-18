@@ -1,11 +1,11 @@
 #pragma once
-#ifndef QUANT1X_LEVEL1_INSTRUMENT_BARS_H
-#define QUANT1X_LEVEL1_INSTRUMENT_BARS_H 1
+#ifndef QUANT1X_CONTRB_DATA_TDX_INSTRUMENT_BARS_H
+#define QUANT1X_CONTRB_DATA_TDX_INSTRUMENT_BARS_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
 #include <quant1x/data/schema/bar.h>
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
 
 /// 扩展行情K线请求 (对应 Python level1/ext.py InstrumentBars, 命令字 0x23FF)
 /// 协议格式: packet_ctrl=0x01, frame_type=0x01 (FLAG_GENERIC)
@@ -102,13 +102,13 @@ struct InstrumentBars : public BaseMessage<InstrumentBars> {
         }
     }
 
-    std::string toStringImpl() const {
+    std::string to_string_impl() const {
         return fmt::format(
             "InstrumentBars{{market:{}, ticker:{}, category:{}, frequency:{}, start:{}, count:{}, reply_count:{}}}",
             market, ticker, category, frequency, start, count, reply.size());
     }
 };
 
-} // namespace level1
+} // namespace quant1x::contrib::data::tdx
 
-#endif // QUANT1X_LEVEL1_INSTRUMENT_BARS_H
+#endif // QUANT1X_CONTRB_DATA_TDX_INSTRUMENT_BARS_H

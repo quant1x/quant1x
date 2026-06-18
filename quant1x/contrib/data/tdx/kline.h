@@ -9,73 +9,73 @@
 #include <quant1x/data/schema/adjustment.h>
 #include <quant1x/data/meta/instrument.h>
 #include <quant1x/data/meta/timestamp.h>
-#include <quant1x/contrib/data/tdx/level1/xdxr_info.h>
+#include <quant1x/contrib/data/tdx/level1/std/xdxr_info.h>
 #include <optional>
 #include <span>
 #include <string>
 #include <vector>
 
-namespace tdx {
+namespace quant1x::contrib::data::tdx {
 
 // =============================
 // K线缓存 I/O
 // =============================
 
 /// 获取K线缓存文件名 (对应 Python get_kline_filename)
-std::string get_kline_filename(const meta::Instrument& inst);
+std::string get_kline_filename(const quant1x::data::meta::Instrument& inst);
 
 /// 从CSV文件读取K线数据 (对应 Python read_kline_from_csv)
-std::vector<meta::schema::Bar> read_kline_from_csv(const std::string& filename);
+std::vector<quant1x::data::meta::schema::Bar> read_kline_from_csv(const std::string& filename);
 
 /// 保存K线数据到CSV文件 (对应 Python save_kline)
-void save_kline(const std::string& filename, const std::vector<meta::schema::Bar>& klines);
+void save_kline(const std::string& filename, const std::vector<quant1x::data::meta::schema::Bar>& klines);
 
 /// 加载某只证券的K线缓存 (对应 Python load_kline)
-std::vector<meta::schema::Bar> load_kline(const meta::Instrument& inst);
+std::vector<quant1x::data::meta::schema::Bar> load_kline(const quant1x::data::meta::Instrument& inst);
 
 // =============================
 // 复权因子
 // =============================
 
 /// 通过证券代码获取最新的除权除息列表 (对应 Python get_xdxr_list)
-std::vector<level1::XdxrInfo> get_xdxr_list(const meta::Instrument& inst);
+std::vector<XdxrInfo> get_xdxr_list(const quant1x::data::meta::Instrument& inst);
 
 /// 通过证券代码字符串获取除权除息列表 (便捷重载)
-std::vector<level1::XdxrInfo> get_xdxr_list(const std::string& security_code);
+std::vector<XdxrInfo> get_xdxr_list(const std::string& security_code);
 
 /// 从除权除息的列表提取IPO日期 (对应 Python ipo_date_from_xdxrs)
-std::optional<std::string> ipo_date_from_xdxrs(std::span<const level1::XdxrInfo> xdxrs);
+std::optional<std::string> ipo_date_from_xdxrs(std::span<const XdxrInfo> xdxrs);
 
 /// 聚合给定一个时间范围内的复权因子 (对应 Python combine_adjustments_in_period)
-std::vector<meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
-        std::span<const level1::XdxrInfo> xdxrs,
-        const meta::Timestamp& start_date,
-        const meta::Timestamp& end_date);
+std::vector<quant1x::data::meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
+    std::span<const XdxrInfo> xdxrs,
+    const quant1x::data::meta::Timestamp& start_date,
+    const quant1x::data::meta::Timestamp& end_date);
 
 /// 聚合给定一个时间范围内的复权因子 — 日期字符串便捷重载
-std::vector<meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
-        const std::vector<level1::XdxrInfo>& xdxrs,
+std::vector<quant1x::data::meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
+    const std::vector<XdxrInfo>& xdxrs,
         const std::string& start_date,
         const std::string& end_date);
 
 /// 对K线数据进行一次性前复权 (对应 Python apply_forward_adjustment_incrementally)
 void apply_forward_adjustments_once(
-        std::vector<meta::schema::Bar>& klines,
-        std::span<const level1::XdxrInfo> xdxrs,
-        const meta::Timestamp& start_date,
-        const meta::Timestamp& end_date,
+        std::vector<quant1x::data::meta::schema::Bar>& klines,
+        std::span<const XdxrInfo> xdxrs,
+        const quant1x::data::meta::Timestamp& start_date,
+        const quant1x::data::meta::Timestamp& end_date,
         bool should_truncate = true);
 
 /// 对K线数据进行前复权计算 (对应 Python calculate_pre_adjust)
 void calculate_pre_adjust(
-        std::vector<meta::schema::Bar>& klines,
-        const std::vector<level1::XdxrInfo>& dividends);
+        std::vector<quant1x::data::meta::schema::Bar>& klines,
+        const std::vector<XdxrInfo>& dividends);
 
 /// 对增量K线应用前复权 (对应 Python apply_forward_adjustment_for_event)
 void apply_forward_adjustment_for_event(
-        std::vector<meta::schema::Bar>& klines,
-        const meta::Timestamp& start_date,
-        const std::vector<level1::XdxrInfo>& dividends);
+        std::vector<quant1x::data::meta::schema::Bar>& klines,
+        const quant1x::data::meta::Timestamp& start_date,
+        const std::vector<XdxrInfo>& dividends);
 
 /// 检查给定日期在K线数据中的偏移位置 (对应 Python check_kline_offset)
 template <typename T>
@@ -105,30 +105,30 @@ int check_kline_offset(const std::vector<T>& klines, const std::string& date) {
 /// 获取指定证券代码截至指定日期的前复权K线数据 (对应 Python/Rust get_cross_section_forward_adjusted_klines)
 ///   - 如果缓存文件不存在, 先通过 DataKLine 从服务器拉取并生成缓存
 ///   - 从已复权的 K 线缓存 CSV 读取, 按 as_of_date 过滤
-std::vector<meta::schema::Bar> get_cross_section_forward_adjusted_klines(
-        const meta::Instrument& inst, const std::string& as_of_date);
+std::vector<quant1x::data::meta::schema::Bar> get_cross_section_forward_adjusted_klines(
+    const quant1x::data::meta::Instrument& inst, const std::string& as_of_date);
 
 /// 捡出截至指定日期的K线记录 (原 factors::checkout_klines, 对齐 Python)
 ///   从已复权的 K 线缓存读取, 按日期过滤, 返回 data::KLine
-std::vector<data::KLine> checkout_klines(const std::string& code, const std::string& date);
+std::vector<quant1x::data::KLine> checkout_klines(const std::string& code, const std::string& date);
 
 /// 捡出截至指定日期的前复权K线记录 (原 factors::klines_forward_adjusted_to_date, 对齐 Python)
 ///   与 checkout_klines 等效 — DataKLine::Update 写入的缓存已是前复权数据
-std::vector<data::KLine> klines_forward_adjusted_to_date(const std::string& code, const std::string& date);
+std::vector<quant1x::data::KLine> klines_forward_adjusted_to_date(const std::string& code, const std::string& date);
 
 /// 前复权K线适配器 (对应 Python DataKLine)
-class DataKLine : public data::DataAdapter {
+class DataKLine : public quant1x::data::DataAdapter {
 public:
-    data::Kind Kind() const override { return data::BaseKLine; }
-    std::string Owner() override { return data::DefaultDataProvider; }
+    quant1x::data::Kind Kind() const override { return quant1x::data::BaseKLine; }
+    std::string Owner() override { return quant1x::data::DefaultDataProvider; }
     std::string Key() const override { return "day"; }
     std::string Name() const override { return "前复权K线"; }
     std::string Usage() const override { return "前复权K线数据"; }
 
-    void Print(const meta::Instrument& inst, const std::vector<meta::Timestamp>& dates = {}) override;
-    void Update(const meta::Instrument& inst, const meta::Timestamp& date = meta::Timestamp()) override;
+    void Print(const quant1x::data::meta::Instrument& inst, const std::vector<quant1x::data::meta::Timestamp>& dates = {}) override;
+    void Update(const quant1x::data::meta::Instrument& inst, const quant1x::data::meta::Timestamp& date = quant1x::data::meta::Timestamp()) override;
 };
 
-} // namespace tdx
+} // namespace quant1x::contrib::data::tdx
 
 #endif // QUANT1X_TDX_KLINE_H

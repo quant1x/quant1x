@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <memory>
 
-namespace data {
+namespace quant1x::data {
 
     using Kind = uint64_t;
 
@@ -24,7 +24,7 @@ namespace data {
     class Schema {
     public:
         virtual ~Schema() = default;
-        virtual data::Kind Kind() const = 0; // Kind 数据类型
+        virtual Kind Kind() const = 0; // Kind 数据类型
         virtual std::string Owner() = 0; // Owner 提供者
         virtual std::string Key() const = 0; // Key 数据关键词, key与cache落地强关联
         virtual std::string Name() const = 0; // Name 特性名称
@@ -71,13 +71,13 @@ namespace data {
 
     #define REGISTER_PLUGIN(cls)            \
         namespace {                         \
-            data::PluginRegistrar<cls> cls##Registrar; \
+            quant1x::data::PluginRegistrar<cls> cls##Registrar; \
         }
 
     DataAdapter* GetDataAdapter(Kind kind);
     std::vector<DataAdapter*> PluginsWithName(Kind pluginType, const std::vector<std::string>& keywords);
     std::vector<DataAdapter*> Plugins(Kind mask = 0);
 
-} // namespace data
+} // namespace quant1x::data
 
 #endif // QUANT1X_DATA_ADAPTER_H

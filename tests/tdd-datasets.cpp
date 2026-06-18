@@ -382,13 +382,13 @@ void write_file_binary(const std::string& filename, const std::vector<u8> &data)
 }
 
 // 拉取数据
-std::vector<level1::SecurityBar> fetch(const std::string &code, u16 start, u16 count) {
+std::vector<tdx::SecurityBar> fetch(const std::string &code, u16 start, u16 count) {
     try {
-        auto conn = level1::get_std_conn();
-        auto category = level1::KLineType::RI_K;
-        level1::SecurityBarsRequest request(code, category, start, count);
-        level1::SecurityBarsResponse response(request.isIndex, category);
-        auto err = level1::process(conn->socket(), request, response);
+        auto conn = tdx::get_std_conn();
+        auto category = tdx::KLineType::RI_K;
+        tdx::SecurityBarsRequest request(code, category, start, count);
+        tdx::SecurityBarsResponse response(request.isIndex, category);
+        auto err = tdx::process_message(conn->socket(), request, response);
         if (err) {
             spdlog::error("Process error: {}", err.message());
             return {};
@@ -434,12 +434,12 @@ std::vector<level1::SecurityBar> fetch(const std::string &code, u16 start, u16 c
 //         startDate = ts[0];
 //         endDate = ts[total-1];
 //         spdlog::debug("[{}]: from {} to {}", code, startDate.only_date(), endDate.only_date());
-//         size_t step = level1::security_bars_max;
+//         size_t step = tdx::security_bars_max;
 //         u16 start = 0;
-//         //u16 category = level1::RI_K;
+//         //u16 category = tdx::RI_K;
 //         // 3. 拉取数据
-//         std::vector<std::vector<level1::SecurityBar>> hs;
-//         //std::vector<level1::SecurityBar> history;
+//         std::vector<std::vector<tdx::SecurityBar>> hs;
+//         //std::vector<tdx::SecurityBar> history;
 //         size_t elementCount = 0;
 //         do {
 //             u16 count = u16(step);

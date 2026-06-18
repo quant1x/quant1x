@@ -10,7 +10,7 @@
 #include <sstream>
 #include <tuple>
 
-namespace meta {
+namespace quant1x::data::meta {
 
     constexpr const int64_t seconds_per_minute      = 60;
     constexpr const int64_t seconds_per_hour        = 60 * seconds_per_minute;
@@ -143,6 +143,6 @@ namespace meta {
         bool operator<=(const Timestamp &rhs) const;
         bool operator>=(const Timestamp &rhs) const;
     };
-}  // namespace meta
+}  // namespace quant1x::data::meta
 
 #endif  // QUANT1X_DATA_META_TIMESTAMP_H

@@ -1,4 +1,4 @@
-#include "sector.h"
+#include <quant1x/contrib/data/tdx/sector.h>
 
 #include <algorithm>
 #include <cstring>
@@ -18,10 +18,22 @@
 #include <quant1x/runtime/once.h>
 #include <quant1x/contrib/data/tdx/client.h>
 #include <quant1x/contrib/data/tdx/protocol.h>
-#include <quant1x/contrib/data/tdx/level1/block_info.h>
-#include <quant1x/contrib/data/tdx/level1/block_meta.h>
+#include <quant1x/contrib/data/tdx/level1/std/block_info.h>
+#include <quant1x/contrib/data/tdx/level1/std/block_meta.h>
 
-namespace tdx::sector {
+namespace config = ::config;
+using quant1x::contrib::data::tdx::BLOCK_CHUNKS_SIZE;
+using quant1x::contrib::data::tdx::BLOCK_DEFAULT;
+using quant1x::contrib::data::tdx::BLOCK_FENGGE;
+using quant1x::contrib::data::tdx::BLOCK_GAINIAN;
+using quant1x::contrib::data::tdx::BLOCK_ZHISHU;
+using quant1x::contrib::data::tdx::BlockInfoMsg;
+
+namespace quant1x::contrib::data::tdx::sector {
+
+    namespace config = ::config;
+    namespace data = quant1x::data;
+    namespace meta = quant1x::data::meta;
 
     // ============================================================
     // 内部类型
@@ -173,7 +185,7 @@ namespace tdx::sector {
     // ============================================================
 
     static std::optional<std::vector<uint8_t>> get_block_info_from_level1(const std::string &filename) {
-        auto conn_ptr = level1::get_std_conn();
+        auto conn_ptr = get_std_conn();
         if (!conn_ptr) {
             spdlog::error("sector: get_std_conn failed");
             return std::nullopt;
@@ -183,8 +195,8 @@ namespace tdx::sector {
         uint32_t start = 0;
         std::vector<uint8_t> result;
         while (true) {
-            level1::BlockInfoMsg msg(filename, start);
-            auto err = level1::process(socket, msg);
+            BlockInfoMsg msg(filename, start);
+            auto err = process_message(socket, msg);
             if (err.value() != 0) {
                 spdlog::error("sector: process BlockInfoMsg for {} at offset {} failed: {}", filename, start, err.message());
                 return std::nullopt;
@@ -195,7 +207,7 @@ namespace tdx::sector {
             if (msg.DataSize > 0) {
                 result.insert(result.end(), msg.Data.begin(), msg.Data.end());
             }
-            if (msg.DataSize < level1::BLOCK_CHUNKS_SIZE) {
+            if (msg.DataSize < BLOCK_CHUNKS_SIZE) {
                 break;
             }
             start += msg.DataSize;
@@ -505,7 +517,7 @@ namespace tdx::sector {
 
         // 2) 解析原始板块文件
         std::vector<const char *> raw_files = {
-            level1::BLOCK_DEFAULT, level1::BLOCK_GAINIAN, level1::BLOCK_FENGGE, level1::BLOCK_ZHISHU
+            BLOCK_DEFAULT, BLOCK_GAINIAN, BLOCK_FENGGE, BLOCK_ZHISHU
         };
         tsl::robin_map<std::string, RawBlockRecord> name2block;
         for (const auto *f : raw_files) {
@@ -636,7 +648,7 @@ namespace tdx::sector {
         // if (zhb) { extract tdxzs.cfg and tdxzs3.cfg from zip }
 
         // 下载标准板块文件
-        for (const auto *fname : {level1::BLOCK_DEFAULT, level1::BLOCK_GAINIAN, level1::BLOCK_FENGGE, level1::BLOCK_ZHISHU}) {
+        for (const auto *fname : {BLOCK_DEFAULT, BLOCK_GAINIAN, BLOCK_FENGGE, BLOCK_ZHISHU}) {
             download_block_raw_data(fname);
         }
 
@@ -737,4 +749,4 @@ namespace tdx::sector {
         return std::nullopt;
     }
 
-} // namespace tdx::sector
+} // namespace quant1x::contrib::data::tdx::sector

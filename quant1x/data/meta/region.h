@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <string>
 
-namespace meta {
+namespace quant1x::data::meta {
 
 /// 市场区域, 用于收敛货币和时区
 enum class Region : uint8_t {
@@ -86,6 +86,6 @@ inline std::string region_to_string(Region r) {
     }
 }
 
-} // namespace meta
+} // namespace quant1x::data::meta
 
 #endif // QUANT1X_DATA_META_REGION_H

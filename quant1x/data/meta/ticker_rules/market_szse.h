@@ -4,7 +4,7 @@
 
 #include "rule.h"
 
-namespace meta {
+namespace quant1x::data::meta {
 namespace ticker_rules {
 
 /// SZSE 深圳证券交易所规则

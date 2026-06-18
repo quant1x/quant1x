@@ -10,6 +10,10 @@
 #include "data/meta/calendar.h"
 
 namespace cache {
+
+    namespace meta = quant1x::data::meta;
+    namespace data = quant1x::data;
+
     constexpr const char *const trains_begin_date = "2024-10-01";
 
     /// 检查状态文件是否存在, 存在返回false, 不存在返回true

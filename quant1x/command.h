@@ -18,6 +18,8 @@
 
 namespace quant1x {
 
+    namespace meta = quant1x::data::meta;
+
     constexpr const char *const default_all       = "all";         ///< 默认值, 表示全部数据
     constexpr const char *const cmd_flag_all      = "--all";       ///< 命令行标志, 用于表示全部数据
     constexpr const char *const cmd_flag_base     = "--base";      ///< 命令行标志, 用于表示基础数据

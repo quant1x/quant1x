@@ -26,7 +26,7 @@ quant1x::error No0Strategy::Filter(const config::StrategyParameter& parameter, c
     return quant1x::make_error_code(0, "no problem");
 }
 
-quant1x::error No0Strategy::Filter(const config::StrategyParameter &parameter, const level1::SecurityQuote &snapshot) const {
+quant1x::error No0Strategy::Filter(const config::StrategyParameter &parameter, const tdx::SecurityQuote &snapshot) const {
     // 判断价格
     auto price = snapshot.price;
     auto rule_price = parameter.Rules.Price;
@@ -196,7 +196,7 @@ void No0Strategy::Evaluate(const SecurityCode &code, ResultInfo &result, const S
     result.fee_sell.Price = snapshot.getPrice();
 }
 
-void No0Strategy::Evaluate(const SecurityCode &code, ResultInfo &result, const level1::SecurityQuote &snapshot) const {
+void No0Strategy::Evaluate(const SecurityCode &code, ResultInfo &result, const tdx::SecurityQuote &snapshot) const {
     result.strategy_id = this->Code();
     std::string securityCode = data::correct_security_code(code);
     result.code = securityCode;

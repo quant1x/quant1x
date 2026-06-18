@@ -1,11 +1,11 @@
-#include "client.h"
+#include <quant1x/contrib/data/tdx/client.h>
 #include <quant1x/data/meta/session.h>
 #include <quant1x/std/except.h>
 #include <quant1x/encoding/yaml.h>
 #include <quant1x/std/filesystem.h>
 #include <filesystem>
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
     struct ServerList {
         std::vector<ServerInfo> standard; // 标准服务器列表
         std::vector<ServerInfo> extension; // 扩展服务器列表
@@ -33,7 +33,7 @@ namespace level1 {
             }
             size_t concurrency = 10;
             if (need_update) {
-                std::vector<level1::ServerInfo> servers = level1::detect();
+                std::vector<ServerInfo> servers = detect();
                 ServerList server_list{};
                 server_list.standard = servers;
                 ::encoding::save_yaml(server_list, cache_server_filename);
@@ -107,4 +107,4 @@ namespace level1 {
         return _extension_connection_pool_ptr->acquire();
     }
 
-} // namespace level1
+} // namespace quant1x::contrib::data::tdx

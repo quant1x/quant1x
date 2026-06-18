@@ -148,13 +148,13 @@ class Instrument:
     """证券信息结构体"""
     exchange: Exchange       # 交易所代码(如 SH, SZ, NASDAQ)
     type: InstrumentType     # 证券类型(股票, 债券, 期货等)
-    ticker: str              # 交易所分配的证券代码(ticker), 通常为市场普遍使用的代码
+    ticker: str              # 交易所原始分配代码(ticker)
     name: str = ''               # 证券名称
     lot_size: int = 100      # 每手股数
     price_precision: int = 2 # 价格小数位数
     ext_market: int = 0      # 扩展市场代码(如 US, HK)
     ext_category: int = 0    # 扩展类别代码(如 STK, FUT, OPT, ...)
-    alias_ticker: str = ""   # 证券代码别名(如美股纳斯达克指数IXIC的别名A_IXIC)
+    alias_ticker: str = ""   # 市场惯例别名代码(如美股纳斯达克指数IXIC使用 A_IXIC)
     
     def __str__(self) -> str:
         """
@@ -189,6 +189,7 @@ class Instrument:
     
     @classmethod
     def headers(cls) -> List[str]:
+        # 历史 CSV 列名保持为 code, 其值存储 ticker(交易所原始代码)
         return ['exchange', 'type', 'code', 'name', 'lot_size', 'price_precision', 'ext_market', 'ext_category', 'alias_ticker']
     
     def to_dict(self) -> dict:
@@ -199,13 +200,13 @@ class Instrument:
             dict: 包含证券基本信息的字典, 键包括:
                 - exchange: 交易所枚举值
                 - type: 证券类型枚举值  
-                - code: 证券代码
+                - code: 交易所原始代码(ticker), 用于兼容历史CSV列名
                 - name: 证券名称
                 - lot_size: 每手股数
                 - price_precision: 价格精度
                 - ext_market: 扩展市场代码
                 - ext_category: 扩展类别代码
-                - alias_ticker: 证券代码别名
+                - alias_ticker: 市场惯例别名代码
         """
         return {
                 'exchange': self.exchange.identifier,
@@ -229,13 +230,13 @@ class Instrument:
             Iterable: 包含证券基本信息的可迭代对象, 顺序为:
                 - exchange: 交易所枚举值
                 - type: 证券类型枚举值  
-                - code: 证券代码
+                - code: 交易所原始代码(ticker), 用于兼容历史CSV列名
                 - name: 证券名称
                 - lot_size: 每手股数
                 - price_precision: 价格精度
                 - ext_market: 扩展市场代码
                 - ext_category: 扩展类别代码
-                - alias_ticker: 证券代码别名
+                - alias_ticker: 市场惯例别名代码
         """
 
         return [
@@ -276,11 +277,12 @@ class Instrument:
         """
         return self.exchange != Exchange.UNKNOWN and self.type != InstrumentType.Unknown and self.lot_size > 0 and self.price_precision > 0
     
-    def code(self) -> str:
+    def marker_ticker(self) -> str:
         """
-        获取证券代码
+        获取市场惯例代码(优先 alias_ticker, 否则 ticker)
+        语义: alias_ticker 表示市场惯例写法/别名映射, 并不改变 ticker 的原始含义
         
         Returns:
-            str: 证券代码
+            str: 市场惯例代码
         """
         return self.ticker if len(self.alias_ticker)==0 else self.alias_ticker

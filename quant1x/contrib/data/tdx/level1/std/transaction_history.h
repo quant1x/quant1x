@@ -1,16 +1,18 @@
 #pragma once
-#ifndef QUANT1X_LEVEL1_TRANSACTION_HISTORY_H
-#define QUANT1X_LEVEL1_TRANSACTION_HISTORY_H 1
+#ifndef QUANT1X_CONTRB_DATA_TDX_TRANSACTION_HISTORY_H
+#define QUANT1X_CONTRB_DATA_TDX_TRANSACTION_HISTORY_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
-#include <quant1x/contrib/data/tdx/level1/transaction_data.h>
+#include <quant1x/contrib/data/tdx/helpers.h>
+#include <quant1x/contrib/data/tdx/level1/std/transaction_data.h>
+#include <quant1x/data/meta/instrument.h>
 #include <stdexcept>
 
 // ==============================
 // 历史分笔成交记录
 // ==============================
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
 
     // 历史分笔成交请求/响应 (对齐 Python HistoricalTransaction)
     struct HistoryTransaction : public BaseMessage<HistoryTransaction> {
@@ -25,15 +27,14 @@ namespace level1 {
         int market_;
         const char *code_;
 
-        HistoryTransaction(const std::string &securityCode, u32 date, u16 offset, u16 size) : BaseMessage<HistoryTransaction>() {
+        HistoryTransaction(const meta::Instrument &inst, u32 date, u16 offset, u16 size) : BaseMessage<HistoryTransaction>() {
             request_header.frame_type = ZlibFlag::Uncompressed;
             request_header.seq_id = get_sequence_id();
             request_header.packet_ctrl = 0x00;
             request_header.cmd_id = StdCommand::HISTORY_TRANSACTION_DATA;
             {
-                auto [id, _, symbol] = detect_symbol(securityCode);
-                Market = static_cast<uint16_t>(id);
-                const char * const tmp = symbol.c_str();
+                Market = static_cast<u8>(helpers::exchange_to_market(inst.exchange));
+                const char *const tmp = inst.marker_ticker().c_str();
                 std::memcpy(Code, tmp, sizeof(Code));
             }
             Date = date;
@@ -59,7 +60,7 @@ namespace level1 {
             Count = bs.get_u16();
             List.reserve(Count);
             auto baseUnit = helpers::defaultBaseUnit(market_, code_);
-            auto isIndex = assert_index_by_security_code(static_cast<meta::Exchange>(market_), std::string(code_));
+            auto isIndex = quant1x::data::assert_index_by_security_code(std::string(code_));
             i64 lastPrice = 0;
             bs.skip(4); // 历史分笔成交记录, 跳过4个字节
             try {
@@ -92,9 +93,9 @@ namespace level1 {
             }
         }
 
-        std::string toStringImpl() const {
+        std::string to_string_impl() const {
             std::ostringstream oss;
-            oss << request_header.headerStringImpl()
+            oss << request_header.header_string_impl()
                 << "{"
                 << "Date:" << Date
                 << ", Market:" << int(Market)
@@ -113,4 +114,4 @@ namespace level1 {
 
 }
 
-#endif //QUANT1X_LEVEL1_TRANSACTION_HISTORY_H
+#endif //QUANT1X_CONTRB_DATA_TDX_TRANSACTION_HISTORY_H

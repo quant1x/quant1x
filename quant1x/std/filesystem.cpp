@@ -407,14 +407,28 @@ namespace filesystem {
 
     bool write_file(const std::string& filename, const char *data, size_t size) {
         try {
-            check_filepath(filename, true);
+            auto ec = check_filepath(filename, true);
+            if (ec) {
+                return false;
+            }
             std::ofstream file(filename, std::ios::binary | std::ios::out | std::ios::trunc);
             if(!file.is_open()) {
                 return false;
             }
-            file.write(data, size);
+
+            // 默认参数(data=nullptr,size=0)语义为 touch: 仅创建/截断文件, 不写入内容。
+            if (size > 0) {
+                if (data == nullptr) {
+                    return false;
+                }
+                file.write(data, static_cast<std::streamsize>(size));
+                if (!file.good()) {
+                    return false;
+                }
+            }
+
             file.close();
-            return true;
+            return file.good();
         } catch(...) {
             return false;
         }

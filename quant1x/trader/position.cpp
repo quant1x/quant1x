@@ -136,13 +136,13 @@ namespace trader {
             double price = 0.00;
             try {
                 auto [mid, mflag, symbol] = data::detect_symbol(code);
-                tsl::robin_map<std::string, level1::StockInfo> maps;
-                maps[code] = level1::StockInfo{static_cast<u8>(mid), symbol};
+                tsl::robin_map<std::string, tdx::StockInfo> maps;
+                maps[code] = tdx::StockInfo{static_cast<u8>(mid), symbol};
                 std::vector<std::string> codes={code};
-                level1::SecurityQuoteRequest request(codes);
-                level1::SecurityQuoteResponse response;
-                auto conn = level1::get_std_conn();
-                auto err = level1::process(conn->socket(), request, response);
+                tdx::SecurityQuoteRequest request(codes);
+                tdx::SecurityQuoteResponse response;
+                auto conn = tdx::get_std_conn();
+                auto err = tdx::process_message(conn->socket(), request, response);
                 if (err) {
                     spdlog::error("Process error: {}", err.message());
                     err.clear();

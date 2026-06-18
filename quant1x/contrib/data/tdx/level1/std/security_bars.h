@@ -1,15 +1,17 @@
 #pragma once
-#ifndef QUANT1X_LEVEL1_SECURITY_BARS_H
-#define QUANT1X_LEVEL1_SECURITY_BARS_H 1
+#ifndef QUANT1X_CONTRB_DATA_TDX_SECURITY_BARS_H
+#define QUANT1X_CONTRB_DATA_TDX_SECURITY_BARS_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
+#include <quant1x/data/meta/instrument.h>
 #include <stdexcept>
+#include <quant1x/contrib/data/tdx/helpers.h>
 
 // ==============================
 // K线
 // ==============================
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
 
     constexpr int32_t security_bars_max = 800; // 单次最大获取800条K线数据
     // K线类型 (使用带底层类型的枚举)
@@ -104,7 +106,7 @@ namespace level1 {
 
         u16 category_;
 
-        SecurityBars(const std::string &securityCode, u16 category, u16 start, u16 count) : BaseMessage<SecurityBars>() {
+        SecurityBars(const meta::Instrument &inst, u16 category, u16 start, u16 count) : BaseMessage<SecurityBars>() {
             request_header.frame_type = ZlibFlag::Uncompressed;
             request_header.seq_id = get_sequence_id();
             request_header.packet_ctrl = 0x00;
@@ -116,11 +118,10 @@ namespace level1 {
             param.Start = start;
             param.Count = count;
             {
-                auto [id, _, symbol] = detect_symbol(securityCode);
-                param.Market = static_cast<u16>(id);
-                const char * const tmp = symbol.c_str();
+                param.Market = static_cast<u16>(helpers::exchange_to_market(inst.exchange));
+                const char *const tmp = inst.marker_ticker().c_str();
                 std::memcpy(param.Code, tmp, sizeof(param.Code));
-                if(assert_index_by_security_code(static_cast<meta::Exchange>(id), symbol)) {
+                if (meta::instype_is_index(inst.type)) {
                     isIndex = true;
                 }
             }
@@ -200,9 +201,9 @@ namespace level1 {
             }
         }
 
-        std::string toStringImpl() const {
+        std::string to_string_impl() const {
             std::ostringstream oss;
-            oss << request_header.headerStringImpl();
+            oss << request_header.header_string_impl();
             oss << "{Market:" << int(param.Market)
                 << ", Code:" << strings::from(param.Code)
                 << ", Category:" << klineTypeToString(static_cast<KLineType>(param.Category))
@@ -221,4 +222,4 @@ namespace level1 {
     };
 
 }
-#endif //QUANT1X_LEVEL1_SECURITY_BARS_H
+#endif //QUANT1X_CONTRB_DATA_TDX_SECURITY_BARS_H

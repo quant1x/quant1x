@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_LEVEL1_HELLO2_H
-#define QUANT1X_LEVEL1_HELLO2_H 1
+#ifndef QUANT1X_CONTRB_DATA_TDX_HELLO2_H
+#define QUANT1X_CONTRB_DATA_TDX_HELLO2_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
 #include <quant1x/std/util.h>
@@ -9,7 +9,7 @@
 // 第二次协议握手
 // ==============================
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
 
     // login2 - 第二次协议握手 (对齐 Python UpgradeTip)
     struct Hello2 : public BaseMessage<Hello2> {
@@ -40,9 +40,9 @@ namespace level1 {
             }
         }
 
-        std::string toStringImpl() const {
+        std::string to_string_impl() const {
             std::ostringstream oss;
-            oss << request_header.headerStringImpl();
+            oss << request_header.header_string_impl();
             oss << ' ' << " padding:" << strings::bytesToHex(padding);
             oss << " Info:" << Info;
             return oss.str();
@@ -51,4 +51,4 @@ namespace level1 {
 
 }
 
-#endif //QUANT1X_LEVEL1_HELLO2_H
+#endif //QUANT1X_CONTRB_DATA_TDX_HELLO2_H

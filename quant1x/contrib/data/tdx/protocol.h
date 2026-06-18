@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_LEVEL1_PROTOCOL_H
-#define QUANT1X_LEVEL1_PROTOCOL_H 1
+#ifndef QUANT1X_CONTRIB_DATA_TDX_PROTOCOL_H
+#define QUANT1X_CONTRIB_DATA_TDX_PROTOCOL_H 1
 
 #include <quant1x/encoding/charsets.h>
 #include <quant1x/contrib/data/tdx/helpers.h>
@@ -10,7 +10,7 @@
 #include <quant1x/std/except.h>
 #include <quant1x/std/util.h>
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
 
     // 标准行情命令字 (使用强类型枚举)
     enum StdCommand : u16 {
@@ -106,9 +106,9 @@ namespace level1 {
 
     template <typename Derived>
     struct header {
-        std::string command() { return static_cast<Derived *>(this)->commandImpl(); }
+        std::string command() { return static_cast<Derived *>(this)->command_impl(); }
 
-        [[nodiscard]] std::string headerString() const { return static_cast<Derived *>(this)->headerStringImpl(); }
+        [[nodiscard]] std::string headerString() const { return static_cast<Derived *>(this)->header_string_impl(); }
 
         friend std::ostream &operator<<(std::ostream &os, const header &obj) {
             os << obj.headerString();
@@ -130,13 +130,13 @@ namespace level1 {
 
         RequestHeader() : frame_type(0), seq_id(0), packet_ctrl(0), body_wire_len(0), body_raw_len(0), cmd_id(0) {}
 
-        std::string commandImpl() { return command_to_string(cmd_id); }
+        std::string command_impl() { return command_to_string(cmd_id); }
 
-        std::vector<u8> serialize() { return static_cast<Derived *>(this)->serializeImpl(); }
+        std::vector<u8> serialize() { return static_cast<Derived *>(this)->serialize_impl(); }
 
-        std::string toString() { return static_cast<Derived *>(this)->toStringImpl(); }
+        std::string to_string() { return static_cast<Derived *>(this)->to_string_impl(); }
 
-        std::vector<u8> headerSerialize() {
+        std::vector<u8> header_serialize() {
             spdlog::debug("RequestHeader");
             BinaryStream stream;
             stream.push_arithmetic(frame_type);
@@ -148,7 +148,7 @@ namespace level1 {
             return stream.data();
         }
 
-        [[nodiscard]] std::string headerStringImpl() const {
+        [[nodiscard]] std::string header_string_impl() const {
             return fmt::format(
                 "RequestHeader{{frame_type:{}, seq_id:{}, packet_ctrl:{}, body_wire_len:{}, body_raw_len:{}, cmd_id:{:#06x}}}",
                 frame_type,
@@ -180,13 +180,13 @@ namespace level1 {
             body_raw_len  = 0;
         }
 
-        std::string commandImpl() { return command_to_string(cmd_id); }
+        std::string command_impl() { return command_to_string(cmd_id); }
 
-        void deserialize(const std::vector<u8> &data) { static_cast<Derived *>(this)->deserializeImpl(data); }
+        void deserialize(const std::vector<u8> &data) { static_cast<Derived *>(this)->deserialize_impl(data); }
 
-        std::string toString() { return static_cast<Derived *>(this)->toStringImpl(); }
+        std::string to_string() { return static_cast<Derived *>(this)->to_string_impl(); }
 
-        void headerDeserialize(const std::vector<u8> &data) {
+        void header_deserialize(const std::vector<u8> &data) {
             BinaryStream stream(data);
             magic_number  = stream.get_u32();
             frame_type    = stream.get_u8();
@@ -197,7 +197,7 @@ namespace level1 {
             body_raw_len  = stream.get_u16();
         }
 
-        [[nodiscard]] std::string headerStringImpl() const {
+        [[nodiscard]] std::string header_string_impl() const {
             return fmt::format(
                 "ResponseHeader{{magic_number:{}, frame_type:{} seq_id:{}, packet_ctrl:{}, cmd_id:{}, body_wire_len:{}, body_raw_len:{}}}",
                 magic_number,
@@ -235,14 +235,14 @@ namespace level1 {
             auto body = serialize_request_body();
             request_header.body_wire_len = u16(2 + body.size());
             request_header.body_raw_len = u16(2 + body.size());
-            auto buf = request_header.headerSerialize();
+            auto buf = request_header.header_serialize();
             buf.insert(buf.end(), body.begin(), body.end());
             return buf;
         }
 
         /// 反序列化响应头
         void deserialize_response_header(const std::vector<u8> &data) {
-            response_header.headerDeserialize(data);
+            response_header.header_deserialize(data);
         }
 
         /// 反序列化响应体 (子类实现)
@@ -251,78 +251,25 @@ namespace level1 {
         }
 
         /// 获取命令字符串
-        std::string command() { return request_header.commandImpl(); }
+        std::string command() { return request_header.command_impl(); }
 
         /// 获取请求字符串表示
-        std::string request_string() { return request_header.headerStringImpl(); }
+        std::string request_string() { return request_header.header_string_impl(); }
 
         /// 获取响应字符串表示
-        std::string response_string() { return response_header.headerStringImpl(); }
+        std::string response_string() { return response_header.header_string_impl(); }
 
-        /// 完整 toString
-        std::string toString() { return static_cast<Derived *>(this)->toStringImpl(); }
+        /// 完整 to_string
+        std::string to_string() { return static_cast<Derived *>(this)->to_string_impl(); }
     };
-
-    // // 模板化的 process 函数 (兼容旧接口)
-    // template <typename RequestType, typename ResponseType>
-    // quant1x::error process(asio::ip::tcp::socket &socket, RequestType &request, ResponseType &response) {
-    //     std::string cmd     = request.command();
-    //     auto        req_buf = request.serialize();
-    //     spdlog::debug("[{}]Send buffer: {}", cmd, strings::bytesToHex(req_buf));
-    //     spdlog::debug("[{}]Send request: {}", cmd, request.toString());
-    //     asio::error_code ec;
-    //     size_t n = asio::write(socket, asio::buffer(req_buf.data(), req_buf.size()), ec);
-    //     spdlog::debug("[{}]Send request: {} bytes.", cmd, n);
-    //     if (ec) {
-    //         return quant1x::make_error_code(ec.value(), ec.message());
-    //     }
-    //     spdlog::debug("[{}]Recv -1", cmd);
-    //     // 读取响应的消息头
-    //     std::vector<u8> hdr_response_buf(response_header_length);
-    //     spdlog::debug("[{}]Recv -2", cmd);
-    //     size_t hdr_response_length = asio::read(socket, asio::buffer(hdr_response_buf), ec);
-    //     spdlog::debug("[{}]Recv -3", cmd);
-    //     if (ec) {
-    //         return quant1x::make_error_code(ec.value(), ec.message());
-    //     }
-    //     hdr_response_buf.resize(hdr_response_length);
-    //     spdlog::debug("[{}]Recv -4", cmd);
-    //     spdlog::debug("[{}]Recv buffer: {}", cmd, strings::bytesToHex(hdr_response_buf));
-    //     // auto pkg_response_hdr = cista::unchecked_deserialize<tdx::StdResponseHeader>(hdr_response_buf);
-    //     // StdResponseHeader pkg_response_hdr;
-    //     // ResponseHeader<ResponseType> &pkg_response_hdr = dynamic_cast<ResponseHeader<ResponseType>&>(response);
-    //     // pkg_response_hdr.ResponseHeader<ResponseType>::headerDeserialize(hdr_response_buf);
-    //     // response.ResponseHeader<ResponseType>::headerDeserialize(hdr_response_buf);
-    //     response.headerDeserialize(hdr_response_buf);
-    //     // 处理接收到的数据
-    //     spdlog::debug("[{}]Recv response head: {}", cmd, response.headerStringImpl());
-    //     if (response.body_wire_len == 0) {
-    //         return quant1x::make_error_code(0, "success");
-    //     }
-    //     std::vector<u8> body_buffer(response.body_wire_len);
-    //     spdlog::debug("[{}]Recv response body_buffer.size() = {}", cmd, body_buffer.size());
-    //     size_t body_received = asio::read(socket, asio::buffer(body_buffer, body_buffer.size()), ec);
-    //     if (ec) {
-    //         return quant1x::make_error_code(ec.value(), ec.message());
-    //     }
-    //     body_buffer.resize(body_received);
-    //     if (response.body_wire_len != response.body_raw_len) {
-    //         std::vector<u8> un = unzip(body_buffer, response.body_raw_len);
-    //         body_buffer        = un;
-    //     }
-    //     spdlog::debug("[{}]Recv response buff: {}", cmd, strings::bytesToHex(body_buffer));
-    //     response.deserialize(body_buffer);
-    //     spdlog::debug("[{}]Recv response body: {}", cmd, response.toString());
-    //     return quant1x::make_error_code(0, "success");
-    // }
 
     // 基于 BaseMessage 的 process 函数 (对齐 Python process_level1_new)
     template <typename MessageType>
-    quant1x::error process(asio::ip::tcp::socket &socket, BaseMessage<MessageType> &msg) {
+    quant1x::error process_message(asio::ip::tcp::socket &socket, BaseMessage<MessageType> &msg) {
         std::string cmd     = msg.command();
         auto        req_buf = msg.serialize_request();
         spdlog::debug("[{}]Send buffer: {}", cmd, strings::bytesToHex(req_buf));
-        spdlog::debug("[{}]Send request: {}", cmd, msg.request_header.headerStringImpl());
+        spdlog::debug("[{}]Send request: {}", cmd, msg.request_header.header_string_impl());
         asio::error_code ec;
         size_t n = asio::write(socket, asio::buffer(req_buf.data(), req_buf.size()), ec);
         spdlog::debug("[{}]Send request: {} bytes.", cmd, n);
@@ -340,7 +287,7 @@ namespace level1 {
         if (msg.response_header.body_wire_len == 0) {
             return quant1x::make_error_code(0, "success");
         }
-        spdlog::debug("[{}]Recv response head: {}", cmd, msg.response_header.headerStringImpl());
+        spdlog::debug("[{}]Recv response head: {}", cmd, msg.response_header.header_string_impl());
         std::vector<u8> body_buffer(msg.response_header.body_wire_len);
         size_t body_received = asio::read(socket, asio::buffer(body_buffer, body_buffer.size()), ec);
         if (ec) {
@@ -352,8 +299,9 @@ namespace level1 {
             body_buffer        = un;
         }
         msg.deserialize_response_body(body_buffer);
-        spdlog::debug("[{}]Recv response body: {}", cmd, msg.toString());
+        spdlog::debug("[{}]Recv response body: {}", cmd, msg.to_string());
         return quant1x::make_error_code(0, "success");
     }
-}  // namespace level1
-#endif  // QUANT1X_LEVEL1_PROTOCOL_H
+}  // namespace quant1x::contrib::data::tdx
+
+#endif  // QUANT1X_CONTRIB_DATA_TDX_PROTOCOL_H

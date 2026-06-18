@@ -11,7 +11,7 @@
 #include <vector>
 #include <optional>
 
-namespace tdx {
+namespace quant1x::contrib::data::tdx {
 namespace instruments {
 
     /// 从 securities.csv 加载证券列表到内存
@@ -32,13 +32,13 @@ namespace instruments {
     /// 对齐 Python get_instrument_info() / Rust get_instrument_info()
     /// @param symbol 证券代码 (支持 sh600000 / 600000.sh / 600000 等格式)
     /// @return 找到返回 Instrument, 否则 std::nullopt
-    std::optional<meta::Instrument> get_instrument_info(const std::string& symbol);
+    std::optional<quant1x::data::meta::Instrument> get_instrument_info(const std::string& symbol);
 
     /// 确保证券缓存已初始化 (供外部在策略启动时调用)
     /// 对齐 Rust ensure_securities_initialized()
-    void EnsureSecuritiesInitialized();
+    void ensure_securities_initialized();
 
 } // namespace instruments
-} // namespace tdx
+} // namespace quant1x::contrib::data::tdx
 
 #endif // QUANT1X_TDX_INSTRUMENTS_H

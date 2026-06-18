@@ -5,20 +5,20 @@
 #include <quant1x/data/adapter.h>
 #include <quant1x/data/base.h>
 
-namespace tdx {
+namespace quant1x::contrib::data::tdx {
 
-    class DataTrans : public data::DataAdapter {
+    class DataTrans : public quant1x::data::DataAdapter {
     public:
-        data::Kind Kind() const override { return data::BaseTransaction; }
-        std::string Owner() override { return data::DefaultDataProvider; }
+        quant1x::data::Kind Kind() const override { return quant1x::data::BaseTransaction; }
+        std::string Owner() override { return quant1x::data::DefaultDataProvider; }
         std::string Key() const override { return "trans"; }
         std::string Name() const override { return "历史成交"; }
         std::string Usage() const override { return "历史成交"; }
 
-        void Print(const meta::Instrument& inst, const std::vector<meta::Timestamp>& dates = {}) override;
-        void Update(const meta::Instrument& inst, const meta::Timestamp& date = meta::Timestamp()) override;
+        void Print(const quant1x::data::meta::Instrument& inst, const std::vector<quant1x::data::meta::Timestamp>& dates = {}) override;
+        void Update(const quant1x::data::meta::Instrument& inst, const quant1x::data::meta::Timestamp& date = quant1x::data::meta::Timestamp()) override;
     };
 
-} // namespace tdx
+} // namespace quant1x::contrib::data::tdx
 
 #endif // QUANT1X_TDX_TRANS_ADAPTER_H

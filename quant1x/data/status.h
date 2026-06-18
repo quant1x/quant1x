@@ -6,12 +6,12 @@
 /// 与 Python data/status.py 和 Rust data/status.rs 对齐
 ///
 /// Python status.py 调用 cache.get_filename_modified_time() + session.can_initialize()/check_trading_timestamp()
-/// C++ 同样调用 data::get_filename_modified_time() + meta::can_initialize()/meta::check_trading_timestamp()
+/// C++ 同样调用 quant1x::data::get_filename_modified_time() + quant1x::data::meta::can_initialize()/quant1x::data::meta::check_trading_timestamp()
 
 #include <quant1x/data/cache.h>
 #include <quant1x/data/meta/session.h>
 
-namespace data {
+namespace quant1x::data {
 
 /// 检查是否应该初始化文件, 基于文件修改时间和交易所交易时段
 ///
@@ -48,6 +48,6 @@ inline bool should_update_file(const std::string& fname, meta::Exchange exchange
     return rs.update_in_real_time;
 }
 
-} // namespace data
+} // namespace quant1x::data
 
 #endif // QUANT1X_DATA_STATUS_H

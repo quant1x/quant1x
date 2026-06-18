@@ -1,11 +1,11 @@
 #pragma once
-#ifndef QUANT1X_LEVEL1_EXT_SYNC_H
-#define QUANT1X_LEVEL1_EXT_SYNC_H 1
+#ifndef QUANT1X_CONTRB_DATA_TDX_EXT_SYNC_H
+#define QUANT1X_CONTRB_DATA_TDX_EXT_SYNC_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
 #include <quant1x/std/util.h>
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
 
 /// 扩展行情握手请求 (对应 Python level1/ext.py Synchronize, 命令字 0x2454)
 /// 协议格式与标准行情不同: packet_ctrl=0x01, frame_type=0x01 (FLAG_GENERIC)
@@ -38,11 +38,11 @@ struct ExtSync : public BaseMessage<ExtSync> {
         success = !data.empty() && data[0] > 0;
     }
 
-    std::string toStringImpl() const {
+    std::string to_string_impl() const {
         return fmt::format("ExtSync{{success={}}}", success);
     }
 };
 
-} // namespace level1
+} // namespace quant1x::contrib::data::tdx
 
-#endif // QUANT1X_LEVEL1_EXT_SYNC_H
+#endif // QUANT1X_CONTRB_DATA_TDX_EXT_SYNC_H

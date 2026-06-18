@@ -12,7 +12,7 @@
 #include <cctype>
 #include <algorithm>
 
-namespace data {
+namespace quant1x::data {
 
 using meta::Exchange;
 using meta::Instrument;
@@ -284,4 +284,4 @@ std::string correct_security_code(const std::string& code) {
     return code;
 }
 
-} // namespace data
+} // namespace quant1x::data

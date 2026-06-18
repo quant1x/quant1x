@@ -1,12 +1,16 @@
-#include "trans.h"
-#include "client.h"
-#include <quant1x/contrib/data/tdx/level1/transaction_history.h>
+#include <quant1x/contrib/data/tdx/trans.h>
+#include <quant1x/contrib/data/tdx/client.h>
+#include <quant1x/contrib/data/tdx/level1/std/transaction_history.h>
 #include <quant1x/config/base.h>
 #include <spdlog/spdlog.h>
 #include <fstream>
 #include <algorithm>
 
-namespace tdx {
+namespace config = ::config;
+namespace meta = quant1x::data::meta;
+using quant1x::contrib::data::tdx::HistoryTransaction;
+
+namespace quant1x::contrib::data::tdx {
 
     static std::string trans_cache_filename(const meta::Instrument& inst, const std::string& date_str) {
         auto clean_date = date_str;
@@ -26,11 +30,11 @@ namespace tdx {
         auto code = inst.symbol();
         auto date_str = date.only_date();
         try {
-            auto conn = level1::get_std_conn();
+            auto conn = get_std_conn();
             // 使用标准行情连接获取历史分笔成交
             auto date_int = static_cast<uint32_t>(date.yyyymmdd_u32());
-            level1::HistoryTransaction trans(code, date_int, 0, 1000);
-            level1::process(conn->socket(), trans);
+            HistoryTransaction trans(inst, date_int, 0, 1000);
+            process_message(conn->socket(), trans);
             // 保存到 {cache}/trans/{cache_dir}/{year}/{YYYYMMDD}/{symbol}.csv (对齐 Rust/Python)
             auto filename = trans_cache_filename(inst, date_str);
             auto parent = std::filesystem::path(filename).parent_path().string();
@@ -51,4 +55,4 @@ namespace tdx {
         }
     }
 
-} // namespace tdx
+} // namespace quant1x::contrib::data::tdx

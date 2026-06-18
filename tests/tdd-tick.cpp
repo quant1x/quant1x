@@ -220,20 +220,20 @@
 //            lastPrice = tick.price;
 //        }
 //        auto direction = tick.buyOrSell;
-////        if(direction != level1::tick_buy && direction != level1::tick_sell) {
+////        if(direction != tdx::tick_buy && direction != tdx::tick_sell) {
 ////            if (tick.price > lastPrice) {
-////                direction = level1::tick_buy;
+////                direction = tdx::tick_buy;
 ////            } else if (tick.price < lastPrice) {
-////                direction = level1::tick_sell;
+////                direction = tdx::tick_sell;
 ////            } else {
-////                direction = level1::tick_neutral;
+////                direction = tdx::tick_neutral;
 ////            }
 ////        }
 //
-//        if (direction == level1::tick_buy) {
+//        if (direction == tdx::tick_buy) {
 //            stats[cat].buyCount++;
 //            stats[cat].buyAmount += tick.amount;
-//        } else if (direction == level1::tick_sell) {
+//        } else if (direction == tdx::tick_sell) {
 //            stats[cat].sellCount++;
 //            stats[cat].sellAmount += tick.amount;
 //        } else {
@@ -336,19 +336,19 @@
 //        double amount = tick.amount;
 //
 //        auto direction = tick.buyOrSell;
-//        if(direction != level1::tick_buy && direction != level1::tick_sell) {
+//        if(direction != tdx::tick_buy && direction != tdx::tick_sell) {
 //            if (tick.price > lastPrice) {
-//                direction = level1::tick_buy;
+//                direction = tdx::tick_buy;
 //            } else if (tick.price < lastPrice) {
-//                direction = level1::tick_sell;
+//                direction = tdx::tick_sell;
 //            } else {
-//                direction = level1::tick_neutral;
+//                direction = tdx::tick_neutral;
 //            }
 //        }
 //
-//        if (direction == level1::tick_buy) {
+//        if (direction == tdx::tick_buy) {
 //            netInflowByWindow[windowRange] += amount;
-//        } else if (direction == level1::tick_sell) {
+//        } else if (direction == tdx::tick_sell) {
 //            netInflowByWindow[windowRange] -= amount;
 //        }
 //    }

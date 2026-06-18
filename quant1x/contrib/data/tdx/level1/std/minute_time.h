@@ -1,15 +1,17 @@
 #pragma once
-#ifndef QUANT1X_LEVEL1_MINUTE_TIME_H
-#define QUANT1X_LEVEL1_MINUTE_TIME_H 1
+#ifndef QUANT1X_CONTRB_DATA_TDX_MINUTE_TIME_H
+#define QUANT1X_CONTRB_DATA_TDX_MINUTE_TIME_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
+#include <quant1x/contrib/data/tdx/helpers.h>
+#include <quant1x/data/meta/instrument.h>
 #include <stdexcept>
 
 // ==============================
 // 分时数据(历史), 当日分时数据和历史分时数据没区别, 只是命令字不同, 且ETF数据不准确
 // ==============================
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
 
     struct MinuteTime {
         f32 Price;
@@ -32,15 +34,14 @@ namespace level1 {
         int market_;
         const char *code_;
 
-        HistoryMinuteTime(const std::string &securityCode, u32 date) : BaseMessage<HistoryMinuteTime>() {
+        HistoryMinuteTime(const meta::Instrument &inst, u32 date) : BaseMessage<HistoryMinuteTime>() {
             request_header.frame_type = ZlibFlag::Uncompressed;
             request_header.seq_id = get_sequence_id();
             request_header.packet_ctrl = 0x00;
             request_header.cmd_id = StdCommand::HISTORY_MINUTE_DATA;
             {
-                auto [id, _, symbol] = detect_symbol(securityCode);
-                Market = static_cast<uint8_t>(id);
-                const char * const tmp = symbol.c_str();
+                Market = static_cast<u8>(helpers::exchange_to_market(inst.exchange));
+                const char *const tmp = inst.marker_ticker().c_str();
                 std::memcpy(Code, tmp, sizeof(Code));
             }
             Date = date;
@@ -85,9 +86,9 @@ namespace level1 {
             }
         }
 
-        std::string toStringImpl() const {
+        std::string to_string_impl() const {
             std::ostringstream oss;
-            oss << request_header.headerStringImpl()
+            oss << request_header.header_string_impl()
                 << "{"
                 << "Date:" << Date
                 << ", Market:" << int(Market)
@@ -105,4 +106,4 @@ namespace level1 {
 }
 
 
-#endif //QUANT1X_LEVEL1_MINUTE_TIME_H
+#endif //QUANT1X_CONTRB_DATA_TDX_MINUTE_TIME_H

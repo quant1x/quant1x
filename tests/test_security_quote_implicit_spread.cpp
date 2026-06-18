@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 #include <quant1x/contrib/data/tdx/level1/security_quote.h>
 
-using namespace level1;
+using namespace tdx;
 
 TEST(SecurityQuoteImplicitSpread, TradePriceAndBidAskPresent) {
     SecurityQuote q{};

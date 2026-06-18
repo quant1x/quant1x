@@ -96,7 +96,7 @@ impl SecurityQuoteRequest {
             }
             let inst = crate::data::market::detect_symbol(sc);
             let market = helpers::exchange_to_market(inst.exchange.code()).unwrap_or(0) as u8;
-            let mut code = inst.code().to_string();
+            let mut code = inst.marker_ticker().to_string();
             if code.len() > 6 {
                 code.truncate(6);
             }

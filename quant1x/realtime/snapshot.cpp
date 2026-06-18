@@ -14,7 +14,7 @@ namespace realtime {
      * @param quote 当前行情快照
      * @return ImbalanceResult 包含 imbalance 指标
      */
-    ImbalanceResult calculateImbalance(const level1::SecurityQuote& quote) {
+    ImbalanceResult calculateImbalance(const tdx::SecurityQuote& quote) {
         // 买盘挂单量
         std::vector<int64_t> bidVolumes = {
             quote.bidVol1, quote.bidVol2, quote.bidVol3,
@@ -116,7 +116,7 @@ namespace realtime {
     }
 
     namespace {
-        inline tsl::robin_map<std::string, level1::SecurityQuote> mem_snapshots;
+        inline tsl::robin_map<std::string, tdx::SecurityQuote> mem_snapshots;
         inline std::shared_mutex                                  mem_mutex;
     }
 
@@ -154,29 +154,29 @@ namespace realtime {
         auto [update_in_realTime, status] = false(meta::Timestamp::now());
         try {
             spdlog::warn("[snapshot] start = {}", meta::Timestamp::now().toString());
-            for (; start < count; start += level1::security_quotes_max) {
+            for (; start < count; start += tdx::security_quotes_max) {
                 std::unique_lock lock(mem_mutex);
                 auto length = count - start;
-                if (length > level1::security_quotes_max) {
-                    length = level1::security_quotes_max;
+                if (length > tdx::security_quotes_max) {
+                    length = tdx::security_quotes_max;
                 }
                 std::vector<std::string> sub_codes(all_codes.begin() + start, all_codes.begin() + start + length);
-                tsl::robin_map<std::string, level1::StockInfo> maps;
+                tsl::robin_map<std::string, tdx::StockInfo> maps;
                 maps.clear();
                 size_t i = 0;
                 for (; i < length; i++) {
                     const auto &code = sub_codes[i];
                     auto [mid, mflag, symbol] = data::detect_symbol(code);
-                    maps[code] = level1::StockInfo{static_cast<u8>(mid), symbol};
+                    maps[code] = tdx::StockInfo{static_cast<u8>(mid), symbol};
                 }
-                level1::SecurityQuoteRequest request(sub_codes);
-                level1::SecurityQuoteResponse response;
-                auto conn = level1::get_std_conn();
+                tdx::SecurityQuoteRequest request(sub_codes);
+                tdx::SecurityQuoteResponse response;
+                auto conn = tdx::get_std_conn();
                 if(conn == nullptr) {
                     spdlog::error("服务器网络不稳定, 稍后重试");
                     return;
                 }
-                auto err = level1::process(conn->socket(), request, response);
+                auto err = tdx::process_message(conn->socket(), request, response);
                 if (err) {
                     spdlog::error("Process error: {}", err.message());
                     return;
@@ -190,9 +190,9 @@ namespace realtime {
                     snap.setDate(current_day);
                     snap.setSecurityCode(security_code);
                     auto exchangeState = ExchangeState::CLOSING;
-                    if (raw.state == level1::TradeState::DELISTING) {
+                    if (raw.state == tdx::TradeState::DELISTING) {
                         exchangeState = ExchangeState::DELISTING;
-                    } else if (raw.state == level1::TradeState::SUSPEND) {
+                    } else if (raw.state == tdx::TradeState::SUSPEND) {
                         exchangeState = ExchangeState::PAUSE;
                     }
                     if (update_in_realTime) {
@@ -203,11 +203,11 @@ namespace realtime {
                     }
                     snap.setExchangeState(exchangeState);
                     auto stockState = TradeState::DELISTING;
-                    if(raw.state == level1::TradeState::SUSPEND) {
+                    if(raw.state == tdx::TradeState::SUSPEND) {
                         stockState = TradeState::SUSPEND;
-                    } else if(raw.state == level1::TradeState::NORMAL) {
+                    } else if(raw.state == tdx::TradeState::NORMAL) {
                         stockState = TradeState::NORMAL;
-                    } else if(raw.state == level1::TradeState::IPO) {
+                    } else if(raw.state == tdx::TradeState::IPO) {
                         stockState = TradeState::IPO;
                     }
                     snap.setState(stockState);
@@ -287,7 +287,7 @@ namespace realtime {
         }
     }
 
-    std::optional<level1::SecurityQuote> get_snapshot(const std::string &code) {
+    std::optional<tdx::SecurityQuote> get_snapshot(const std::string &code) {
         std::shared_lock lock(mem_mutex);
         auto it = mem_snapshots.find(code);
         if (it != mem_snapshots.end()) {

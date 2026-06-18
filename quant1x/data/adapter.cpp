@@ -8,7 +8,7 @@
 #include <quant1x/config/config.h>
 #include <filesystem>
 
-namespace data {
+namespace quant1x::data {
 
     namespace {
         std::mutex &getPluginMutex() {

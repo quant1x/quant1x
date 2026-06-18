@@ -3,7 +3,7 @@
 #define QUANT1X_REALTIME_SNAPSHOT_H 1
 
 #include <quant1x/runtime/core.h>
-#include <quant1x/contrib/data/tdx/level1/security_quote.h>
+#include <quant1x/contrib/data/tdx/level1/std/security_quote.h>
 #include <quant1x/proto/data.h>
 
 namespace realtime {
@@ -19,12 +19,12 @@ namespace realtime {
      * @param quote 当前行情快照
      * @return ImbalanceResult 包含 imbalance 指标
      */
-    ImbalanceResult calculateImbalance(const level1::SecurityQuote& quote);
+    ImbalanceResult calculateImbalance(const tdx::SecurityQuote& quote);
 
     // 同步快照
     void sync_snapshots();
 
-    std::optional<level1::SecurityQuote> get_snapshot(const std::string &code);
+    std::optional<tdx::SecurityQuote> get_snapshot(const std::string &code);
 
     // 加载快照
     void load_snapshots(void);

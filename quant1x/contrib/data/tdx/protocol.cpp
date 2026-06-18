@@ -1,6 +1,6 @@
 #include <quant1x/contrib/data/tdx/protocol.h>
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
 
     std::vector<uint8_t> unzip(const std::vector<uint8_t>& buf, uint32_t unzip_size) {
         if (buf.empty()) {
@@ -38,4 +38,4 @@ namespace level1 {
         }
     }
 
-} // namespace level1
+} // namespace quant1x::contrib::data::tdx

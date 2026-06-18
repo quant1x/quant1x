@@ -4,7 +4,7 @@
 
 #include "rule.h"
 
-namespace meta {
+namespace quant1x::data::meta {
 namespace ticker_rules {
 
 /// HKEX 香港交易所规则

@@ -106,7 +106,7 @@ impl SecurityBarsRequest {
         let inst = crate::data::market::detect_symbol(security_code);
         //let market_id = inst.ext_market;
         let market_id = helpers::exchange_to_market(inst.exchange.code()).unwrap_or(0);
-        let pure = inst.code().to_string();
+        let pure = inst.marker_ticker().to_string();
         let mut code_bytes = [0u8; 6];
         let sym = pure.as_bytes();
         let copy_len = std::cmp::min(sym.len(), code_bytes.len());

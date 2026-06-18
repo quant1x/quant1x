@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_LEVEL1_HEARTBEAT_H
-#define QUANT1X_LEVEL1_HEARTBEAT_H 1
+#ifndef QUANT1X_CONTRB_DATA_TDX_HEARTBEAT_H
+#define QUANT1X_CONTRB_DATA_TDX_HEARTBEAT_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
 
@@ -8,7 +8,7 @@
 // 心跳
 // ==============================
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
 
     // 心跳 (对齐 Python Heartbeat)
     struct Heartbeat : public BaseMessage<Heartbeat> {
@@ -30,11 +30,11 @@ namespace level1 {
             info = stream.get_string(10);
         }
 
-        std::string toStringImpl() {
+        std::string to_string_impl() {
             return fmt::format("Info: {}", info);
         }
     };
 
 }
 
-#endif //QUANT1X_LEVEL1_HEARTBEAT_H
+#endif //QUANT1X_CONTRB_DATA_TDX_HEARTBEAT_H

@@ -7,7 +7,7 @@
 #include <string>
 #include <format>
 
-namespace meta {
+namespace quant1x::data::meta {
 
 /// 资产子类型(高4位), 语义由主类型(InstrumentType)决定
 enum Subtype : uint8_t {
@@ -150,13 +150,13 @@ inline InstrumentType instype_from_string(const std::string& s) {
 struct Instrument {
     Exchange       exchange = Exchange::UNKNOWN;  ///< 交易所
     InstrumentType type = InstrumentType::Unknown; ///< 证券类型
-    std::string    ticker;                        ///< 交易所分配的证券代码
+    std::string    ticker;                        ///< 交易所原始分配代码
     std::string    name;                          ///< 证券名称
     int            lot_size = 100;                ///< 每手股数
     int            price_precision = 2;           ///< 价格小数位数
     int            ext_market = 0;                ///< 扩展市场代码
     int            ext_category = 0;              ///< 扩展类别代码
-    std::string    alias_ticker;                  ///< 证券代码别名
+    std::string    alias_ticker;                  ///< 市场惯例别名代码(可覆盖 ticker)
     std::string    desc;                          ///< 证券描述
 
     /// 构建交易符号字符串
@@ -183,8 +183,9 @@ struct Instrument {
                lot_size > 0 && price_precision > 0;
     }
 
-    /// 获取证券代码(优先返回 alias_ticker)
-    std::string code() const {
+    /// 获取市场惯例代码(优先返回 alias_ticker, 否则返回交易所原始 ticker)
+    /// 语义: alias_ticker 表示市场惯例写法/别名映射, 而非交易所原始代码
+    std::string marker_ticker() const {
         return alias_ticker.empty() ? ticker : alias_ticker;
     }
 
@@ -196,6 +197,6 @@ struct Instrument {
     }
 };
 
-} // namespace meta
+} // namespace quant1x::data::meta
 
 #endif // QUANT1X_DATA_META_INSTRUMENT_H

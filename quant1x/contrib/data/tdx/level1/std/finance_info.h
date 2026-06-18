@@ -1,15 +1,17 @@
 #pragma once
-#ifndef QUANT1X_LEVEL1_FINANCE_INFO_H
-#define QUANT1X_LEVEL1_FINANCE_INFO_H 1
+#ifndef QUANT1X_CONTRB_DATA_TDX_FINANCE_INFO_H
+#define QUANT1X_CONTRB_DATA_TDX_FINANCE_INFO_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
+#include <quant1x/contrib/data/tdx/helpers.h>
+#include <quant1x/data/meta/instrument.h>
 #include <ostream>
 
 // ==============================
 // 企业财务信息
 // ==============================
 
-namespace level1 {
+namespace quant1x::contrib::data::tdx {
 
     struct RawFinanceInfo {
         uint8_t Market;           // 市场
@@ -240,15 +242,14 @@ namespace level1 {
         u16 Count; //  总数
         FinanceInfo Info;
 
-        FinanceInfoMsg(const std::string &securityCode) : BaseMessage<FinanceInfoMsg>() {
+        FinanceInfoMsg(const meta::Instrument &inst) : BaseMessage<FinanceInfoMsg>() {
             request_header.frame_type = ZlibFlag::Uncompressed;
             request_header.seq_id = get_sequence_id();
             request_header.packet_ctrl = 0x01;
             request_header.cmd_id = StdCommand::FINANCE_INFO;
-            auto [id, _, symbol] = detect_symbol(securityCode);
             ReqCount = 1;
-            Market = static_cast<u8>(id);
-            const char * const tmp = symbol.c_str();
+            Market = static_cast<u8>(helpers::exchange_to_market(inst.exchange));
+            const char *const tmp = inst.marker_ticker().c_str();
             std::memcpy(Code, tmp, sizeof(Code));
         }
 
@@ -271,7 +272,7 @@ namespace level1 {
             raw.decode(bs);
             const static int baseUnit = 10000;
             auto symbol = strings::from(raw.Code);
-            Info.Code = correct_security_code(static_cast<meta::Exchange>(raw.Market), std::string(raw.Code, sizeof(raw.Code)));
+            Info.Code = quant1x::data::correct_security_code(std::string(raw.Code, sizeof(raw.Code)));
             Info.LiuTongGuBen = helpers::numberToFloat64(raw.LiuTongGuBen) * baseUnit;
             Info.Province = raw.Province;
             Info.Industry = raw.Industry;
@@ -309,9 +310,9 @@ namespace level1 {
             Info.BaoLiu2 = helpers::numberToFloat64(raw.BaoLiu2);
         }
 
-        std::string toStringImpl() const {
+        std::string to_string_impl() const {
             std::ostringstream out;
-            out << request_header.headerStringImpl();
+            out << request_header.header_string_impl();
             out << "{ReqCount:" << ReqCount
                 << ", Market:" << (int)Market
                 << ", Code:" << std::string(Code, sizeof(Code))
@@ -325,4 +326,4 @@ namespace level1 {
 
 }
 
-#endif //QUANT1X_LEVEL1_FINANCE_INFO_H
+#endif //QUANT1X_CONTRB_DATA_TDX_FINANCE_INFO_H

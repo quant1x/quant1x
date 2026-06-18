@@ -44,7 +44,7 @@ def fetch_share_holder(security_code: str, date_str: str, diff: int = 0) -> pd.D
         "columns": "ALL",
         "source": "WEB",
         "client": "WEB",
-        "filter": f'(SECURITY_CODE="{inst.code()}")(END_DATE=\'{q_end}\')'
+        "filter": f'(SECURITY_CODE="{inst.marker_ticker()}")(END_DATE=\'{q_end}\')'
     }
     
     try:

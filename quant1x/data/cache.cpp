@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cctype>
 
-namespace data {
+namespace quant1x::data {
 
     meta::Timestamp get_today_initialized_time() {
         auto now = meta::Timestamp::now();
@@ -64,4 +64,4 @@ namespace data {
         return date;
     }
 
-}  // namespace data
+}  // namespace quant1x::data
