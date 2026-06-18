@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.35] - 2026-06-18
+### Changed
+- 修复漏掉的rust版本说明
+
 ## [0.7.34] - 2026-06-18
 ### Changed
 - 更新rust最低版本的说明, 确定1.96+
+- release v0.7.34
 
 ## [0.7.33] - 2026-06-18
 ### Changed
@@ -1910,7 +1915,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.34...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.35...HEAD
+[0.7.35]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.34...v0.7.35
 [0.7.34]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.33...v0.7.34
 [0.7.33]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.32...v0.7.33
 [0.7.32]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.31...v0.7.32
