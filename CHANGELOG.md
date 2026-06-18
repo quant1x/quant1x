@@ -3,6 +3,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.32] - 2026-06-18
+### Changed
+- fix: align publish.sh with publish.ps1 and fix bash regex version extraction
+
+- 统一构建工具: python setup.py → python -m build
+- 版本号从构建产物文件名解析，修正贪婪 (.+) → ([^-]+) 避免 PEP 427 wheel 文件名误匹配
+- 参数对齐: 移除 --dry-run/--repository，新增 --no-rich/--allow-existing
+- 版本重复检查改为阻断型 (exit 2)，--allow-existing 可强制继续
+- 新增 PYTHONIOENCODING/TWINE_NON_INTERACTIVE 环境变量
+- 新增 build 模块预检
+
 ## [0.7.31] - 2026-06-18
 ### Changed
 - refactor: rename namespace config to quant1x::config
@@ -11,6 +22,7 @@ All notable changes to this project will be documented in this file.
 - 更新所有外部文件的 namespace 别名: namespace config = ::config; -> namespace config = quant1x::config;
 - 更新 YAML convert 模板特化中的 config:: 引用
 - 涉及 33 个文件，编译通过
+- release v0.7.31
 
 ## [0.7.30] - 2026-06-18
 ### Changed
@@ -1888,7 +1900,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.31...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.32...HEAD
+[0.7.32]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.31...v0.7.32
 [0.7.31]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.30...v0.7.31
 [0.7.30]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.29...v0.7.30
 [0.7.29]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.28...v0.7.29
