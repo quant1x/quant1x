@@ -3,9 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.36] - 2026-06-19
+### Changed
+- c++修订注释
+- 统一消息名称签名格式
+
 ## [0.7.35] - 2026-06-18
 ### Changed
 - 修复漏掉的rust版本说明
+- release v0.7.35
 
 ## [0.7.34] - 2026-06-18
 ### Changed
@@ -1915,7 +1921,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.35...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.36...HEAD
+[0.7.36]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.35...v0.7.36
 [0.7.35]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.34...v0.7.35
 [0.7.34]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.33...v0.7.34
 [0.7.33]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.32...v0.7.33
