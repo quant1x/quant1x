@@ -248,5 +248,5 @@ sse_rules = [
     CodeRule(Exchange.SSE, "938", InstrumentType.OTHER, "网络投票", "对应 B 股(不再增用)"),
     CodeRule(Exchange.SSE, "939", InstrumentType.OTHER, "密码服务", "939988 用于 B 股网络投票密码服务"),
     
-    CodeRule(Exchange.SSE, "9", InstrumentType.BSTOCK, "B股", "首位 9: B 股"),
+    # CodeRule(Exchange.SSE, "9", InstrumentType.BSTOCK, "B股", "首位 9: B 股"),
 ]

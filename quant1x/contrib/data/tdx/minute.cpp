@@ -3,7 +3,10 @@
 #include <quant1x/contrib/data/tdx/level1/std/minute_time.h>
 #include <quant1x/config/base.h>
 #include <quant1x/io/csv-writer.h>
+#include <quant1x/io/csv-reader.h>
 #include <spdlog/spdlog.h>
+#include <fmt/format.h>
+#include <filesystem>
 
 namespace config = quant1x::config;
 namespace meta = quant1x::data::meta;
@@ -15,9 +18,43 @@ namespace quant1x::contrib::data::tdx {
         return config::default_cache_path() + "/minute/" + inst.cache_dir() + "/" + inst.symbol() + ".csv";
     }
 
-    void DataMinute::Print(const meta::Instrument& inst, const std::vector<meta::Timestamp>& dates) {
-        (void)inst;
-        (void)dates;
+    void DataMinute::Print(const meta::Instrument& inst, const meta::Timestamp& date) {
+        (void)date;
+        auto filename = minute_cache_filename(inst);
+        if (!std::filesystem::exists(filename)) {
+            fmt::print("\n=== {}: {} ===\n  (no cache file)\n", Name(), inst.symbol());
+            return;
+        }
+        io::CSVReader<2> reader(filename);
+        reader.read_header(io::ignore_extra_column, "price", "volume");
+        std::vector<std::pair<f64, i64>> rows;
+        f64 price;
+        i64 vol;
+        while (reader.read_row(price, vol)) {
+            rows.push_back({price, vol});
+        }
+        if (rows.empty()) {
+            fmt::print("\n=== {}: {} ===\n  (no data)\n", Name(), inst.symbol());
+            return;
+        }
+        fmt::print("\n=== {}: {} ({} rows) ===\n", Name(), inst.symbol(), rows.size());
+        fmt::print("{:>10} {:>14}\n", "price", "volume");
+        fmt::print("{:-<26}\n", "");
+        size_t head = std::min<size_t>(rows.size(), 20);
+        for (size_t i = 0; i < head; ++i) {
+            fmt::print("{:>10.2f} {:>14}\n", rows[i].first, rows[i].second);
+        }
+        if (rows.size() > 40) {
+            fmt::print("  ... {} rows omitted ...\n", rows.size() - 40);
+            head = std::min<size_t>(20, rows.size());
+            for (size_t i = rows.size() - head; i < rows.size(); ++i) {
+                fmt::print("{:>10.2f} {:>14}\n", rows[i].first, rows[i].second);
+            }
+        } else if (rows.size() > 20) {
+            for (size_t i = 20; i < rows.size(); ++i) {
+                fmt::print("{:>10.2f} {:>14}\n", rows[i].first, rows[i].second);
+            }
+        }
     }
 
     void DataMinute::Update(const meta::Instrument& inst, const meta::Timestamp& date) {

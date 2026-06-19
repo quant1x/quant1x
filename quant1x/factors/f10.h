@@ -137,7 +137,7 @@ public:
 
     void init(const meta::Timestamp &timestamp) override;
 
-    void Print(const meta::Instrument &inst, const std::vector<meta::Timestamp> &dates) override;
+    void Print(const meta::Instrument &inst, const meta::Timestamp &date) override;
 
     void Update(const meta::Instrument &inst, const meta::Timestamp &date) override;
 };

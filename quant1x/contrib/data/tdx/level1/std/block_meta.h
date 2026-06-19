@@ -9,11 +9,7 @@
 // ==============================
 
 namespace quant1x::contrib::data::tdx {
-
-    constexpr const char* const BLOCK_ZHISHU      = "block_zs.dat";  // 指数
-    constexpr const char* const BLOCK_FENGGE      = "block_fg.dat";  // 风格
-    constexpr const char* const BLOCK_GAINIAN     = "block_gn.dat";  // 概念
-    constexpr const char* const BLOCK_DEFAULT     = "block.dat";     // 早期的板块数据文件, 与block_zs.dat
+    
     constexpr u16         BLOCK_CHUNKS_SIZE = 0x7530;          // 板块文件默认一个请求包最大数据
 
     // BlockMeta 响应包结构

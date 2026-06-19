@@ -141,11 +141,12 @@ class TdxDataSource(DataHandler):
         code_list:List[Instrument] = []
         # 1. 指数, 包括指数, 重要板块以及ETF
         index_list = self.get_index_list()
-        logger.debug(f"list_instruments: index_list={index_list}")
+        logger.debug(f"list_instruments: index_list, count={len(index_list)}")
         code_list.extend(index_list)
 
         # 2. 板块
         sectors = self.get_sector_list()
+        logger.debug(f"list_instruments: sectors, count={len(sectors)}")
         for s in sectors:
             if s.code in ALL_INDEX_LIST:
                 continue
@@ -156,12 +157,11 @@ class TdxDataSource(DataHandler):
                 code_list.append(inst)
             except Exception:
                 continue
-
         # 3. 个股, 包括只包含上市公司股票
         stock_list = self.get_stock_list()
-        logger.debug(f"list_instruments: stock_list={stock_list}")
+        logger.debug(f"list_instruments: stock_list, count={len(stock_list)}")
         code_list.extend(stock_list)
-
+        logger.debug(f"list_instruments: total code_list count={len(code_list)}")
         return code_list
     
     def get_instrument(self, symbol: str) -> Instrument:
@@ -224,8 +224,8 @@ if __name__ == "__main__":
     # print("sector: ", len(sectors))
     # stocks = D.get_stock_list()
     # print("stock: ", len(stocks))
-    # codes = D.list_instruments()
-    # print("total: ", len(codes))
+    codes = D.list_instruments()
+    print("total: ", len(codes))
     code = 'sh562500'
     code = 'hsi.hk'
     code = 'ixic.us'

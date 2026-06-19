@@ -322,3 +322,6 @@ if __name__ == "__main__":
     
     symbol = detect_symbol("hk01880")
     print(symbol.to_string(), symbol.symbol())
+    
+    symbol = detect_symbol("920077")
+    print(symbol.to_string(), symbol.symbol())

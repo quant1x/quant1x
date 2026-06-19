@@ -5,10 +5,12 @@
 #include <filesystem>
 #include <fstream>
 #include <optional>
-#include <sstream>
+#include <unordered_map>
+#include <unordered_set>
 #include <tsl/robin_map.h>
 
 #include <spdlog/spdlog.h>
+#include <minizip/unzip.h>
 
 #include <quant1x/config/base.h>
 #include <quant1x/data/market.h>
@@ -22,724 +24,639 @@
 #include <quant1x/contrib/data/tdx/protocol.h>
 #include <quant1x/contrib/data/tdx/level1/std/block.h>
 
-namespace config = quant1x::config;
-using quant1x::contrib::data::tdx::BLOCK_CHUNKS_SIZE;
-using quant1x::contrib::data::tdx::BLOCK_DEFAULT;
-using quant1x::contrib::data::tdx::BLOCK_FENGGE;
-using quant1x::contrib::data::tdx::BLOCK_GAINIAN;
-using quant1x::contrib::data::tdx::BLOCK_ZHISHU;
-using quant1x::contrib::data::tdx::BlockFileContext;
 
 namespace quant1x::contrib::data::tdx::sector {
 
-    // namespace config = quant1x::config;
-    // namespace data = quant1x::data;
-    using namespace quant1x::data;
+    // =========================================================================
+    //  匿名命名空间: 内部辅助类型
+    // =========================================================================
+    namespace {
 
-    // ============================================================
-    // 内部类型
-    // ============================================================
+        class MiniZipExtractor {
+        public:
+            // allowedFiles: if empty, extract all files; otherwise only files present in this list
+            bool extract(const std::string& zipPath, const std::string& outputDir,
+                         const std::vector<std::string>& allowedFiles = {}) {
+                // 保存允许的文件名集合（支持完整条目名或仅文件名）
+                allowed_files_.clear();
+                for (auto const &f : allowedFiles) {
+                    allowed_files_.insert(f);
+                }
 
-    using BlockIndexEntry = std::tuple<std::string, std::string, int, std::string>; // name, code, type, block
+                // 打开ZIP文件
+                unzFile zipfile = unzOpen(zipPath.c_str());
+                if (!zipfile) {
+                    spdlog::error("[tdx::sector] 无法打开ZIP文件: {}", zipPath);
+                    return false;
+                }
 
-    struct RawBlockRecord {
-        std::string              block_name;
-        uint16_t                 num = 0;
-        uint16_t                 block_type = 0;
-        std::vector<std::string> codes;
-    };
+                // 创建输出目录（检查错误）
+                {
+                    auto ec = filesystem::mkdirs(outputDir, true);
+                    if (ec) {
+                        spdlog::error("[tdx::sector] 无法创建输出目录[{}]: {}", outputDir, ec.message());
+                        unzClose(zipfile);
+                        return false;
+                    }
+                }
 
-    struct IndustryInfo {
-        int         market_id = 0;
-        std::string code;
-        std::string block;
-        std::string block5;
-        std::string xblock;
-        std::string xblock5;
-    };
+                // 获取ZIP文件信息
+                unz_global_info global_info;
+                if (unzGetGlobalInfo(zipfile, &global_info) != UNZ_OK) {
+                    spdlog::error("[tdx::sector] 无法读取ZIP文件信息: {}", zipPath);
+                    unzClose(zipfile);
+                    return false;
+                }
 
-    // ============================================================
-    // 缓存: 通过 RollingOnce 保证每日首次调用时初始化一次
-    // ============================================================
+                // 遍历所有文件
+                if (unzGoToFirstFile(zipfile) == UNZ_OK) {
+                    do {
+                        extract_currentFile(zipfile, outputDir);
+                    } while (unzGoToNextFile(zipfile) == UNZ_OK);
+                }
 
-    static auto sector_once = RollingOnce::create("tdx-sector", quant1x::config::GLOBAL_CRON_EXPR_DAILY_INIT);
-    static std::vector<schema::Sector> g_cached_sectors;
-    static tsl::robin_map<std::string, schema::Sector> g_cached_sector_map;
+                unzClose(zipfile);
+                return true;
+            }
 
-    // ============================================================
-    // 工具函数
-    // ============================================================
+        private:
+            std::unordered_set<std::string> allowed_files_;
 
-    /// 从以 \0 结尾的 GBK 字节中提取字符串
-    static std::string extract_null_terminated_gbk(const uint8_t *data, size_t len) {
-        size_t end = 0;
-        while (end < len && data[end] != 0) ++end;
-        if (end == 0) return {};
-        return charsets::gbk_to_utf8(std::string(reinterpret_cast<const char *>(data), end));
-    }
+            void extract_currentFile(unzFile zipfile, const std::string& outputDir) {
+                char filename[256];
+                unz_file_info file_info;
 
-    /// 从以 \0 结尾的 ASCII 字节中提取字符串
-    static std::string extract_null_terminated_ascii(const uint8_t *data, size_t len) {
-        size_t end = 0;
-        while (end < len && data[end] != 0) ++end;
-        return std::string(reinterpret_cast<const char *>(data), end);
-    }
+                // 获取文件信息
+                if (unzGetCurrentFileInfo(zipfile, &file_info, filename, 
+                                        sizeof(filename), NULL, 0, NULL, 0) != UNZ_OK) {
+                    return;
+                }
 
-    /// 解析 JSON 字符串数组, 如 ["000001","600000"]
-    static std::vector<std::string> parse_json_string_array(const std::string &json_str) {
-        std::vector<std::string> result;
-        if (json_str.empty() || json_str == "[]") return result;
-        size_t pos = 0;
-        while ((pos = json_str.find('"', pos)) != std::string::npos) {
-            size_t end = json_str.find('"', pos + 1);
-            if (end == std::string::npos) break;
-            result.push_back(json_str.substr(pos + 1, end - pos - 1));
-            pos = end + 1;
-        }
-        return result;
-    }
+                std::string fname(filename);
+                std::string fullPath = outputDir + "/" + fname;
 
-    /// 生成 JSON 字符串数组
-    static std::string to_json_string_array(const std::vector<std::string> &items) {
-        if (items.empty()) return "[]";
-        std::ostringstream oss;
-        oss << "[";
-        for (size_t i = 0; i < items.size(); ++i) {
-            if (i > 0) oss << ",";
-            oss << "\"" << items[i] << "\"";
-        }
-        oss << "]";
-        return oss.str();
-    }
+                // 如果指定了允许的文件列表，则只有在该列表中的文件才会被解压
+                if (!allowed_files_.empty()) {
+                    // 支持匹配完整条目名以及仅文件名
+                    std::string baseName = std::filesystem::path(fname).filename().string();
+                    if (allowed_files_.find(fname) == allowed_files_.end() && allowed_files_.find(baseName) == allowed_files_.end()) {
+                        //std::cout << "跳过: " << filename << std::endl;
+                        return;
+                    }
+                }
 
-    /// 解析 CSV 行 (处理双引号包裹字段)
-    static std::vector<std::string> parse_csv_line(const std::string &line) {
-        std::vector<std::string> fields;
-        size_t pos = 0;
-        while (pos < line.length()) {
-            if (line[pos] == '"') {
-                // 引号包裹的字段
-                size_t end_quote = pos + 1;
-                while (end_quote < line.length()) {
-                    if (line[end_quote] == '"') {
-                        if (end_quote + 1 < line.length() && line[end_quote + 1] == '"') {
-                            end_quote += 2; // 转义引号
-                        } else {
-                            break;
+                // 检查是否是目录
+                if (fname.size() > 0 && fname[fname.size() - 1] == '/') {
+                    // 创建目录（检查错误）
+                    {
+                        auto ec = filesystem::mkdirs(fullPath, true);
+                        if (ec) {
+                            spdlog::error("[tdx::sector] 无法创建目录[{}]: {}", fullPath, ec.message());
+                            return; // 跳过该条目
                         }
-                    } else {
-                        ++end_quote;
                     }
-                }
-                std::string field = line.substr(pos + 1, end_quote - pos - 1);
-                // 还原转义引号
-                size_t dq = 0;
-                while ((dq = field.find("\"\"", dq)) != std::string::npos) {
-                    field.replace(dq, 2, "\"");
-                    ++dq;
-                }
-                fields.push_back(field);
-                pos = end_quote + 1;
-                if (pos < line.length() && line[pos] == ',') ++pos;
-            } else {
-                // 非引号字段
-                size_t comma = line.find(',', pos);
-                if (comma == std::string::npos) {
-                    fields.push_back(line.substr(pos));
-                    break;
-                }
-                fields.push_back(line.substr(pos, comma - pos));
-                pos = comma + 1;
-            }
-        }
-        return fields;
-    }
-
-    // ============================================================
-    // SectorType 名称映射
-    // ============================================================
-
-    std::string sector_type_name_by_code(int sector_code) {
-        switch (static_cast<SectorType>(sector_code)) {
-            case HANGYE:  return "行业";
-            case DIQU:    return "地区";
-            case GAINIAN: return "概念";
-            case FENGGE:  return "风格";
-            case ZHISHU:  return "指数";
-            case YJHY:    return "研究行业";
-            default:      return "未知";
-        }
-    }
-
-    // ============================================================
-    // 板块缓存文件路径
-    // ============================================================
-
-    std::string get_sector_filename() {
-        auto now = meta::Timestamp::now();
-        auto trade_day = meta::last_trading_day(now);
-        return config::get_meta_path() + "/blocks." + trade_day.only_date();
-    }
-
-    // ============================================================
-    // 从 level1 下载原始板块文件
-    // ============================================================
-
-    static std::optional<std::vector<uint8_t>> get_block_info_from_level1(const std::string &filename) {
-        auto conn_ptr = get_std_conn();
-        if (!conn_ptr) {
-            spdlog::error("sector: get_std_conn failed");
-            return std::nullopt;
-        }
-        auto &socket = conn_ptr->socket();
-
-        uint32_t start = 0;
-        std::vector<uint8_t> result;
-        while (true) {
-            BlockFileContext msg(filename, start);
-            auto err = transact_message_sync(socket, msg);
-            if (err.value() != 0) {
-                spdlog::error("sector: process BlockFileContext for {} at offset {} failed: {}", filename, start, err.message());
-                return std::nullopt;
-            }
-            if (msg.DataSize == 0) {
-                return std::nullopt;
-            }
-            if (msg.DataSize > 0) {
-                result.insert(result.end(), msg.Data.begin(), msg.Data.end());
-            }
-            if (msg.DataSize < BLOCK_CHUNKS_SIZE) {
-                break;
-            }
-            start += msg.DataSize;
-        }
-        return result;
-    }
-
-    static std::optional<std::string> download_block_raw_data(const std::string &filename) {
-        auto meta_path = config::get_meta_path();
-        std::string filepath = meta_path + "/" + filename;
-
-        // 文件已存在且不需要更新, 跳过
-        {
-            std::ifstream check(filepath);
-            if (check.good()) {
-                if (!quant1x::data::should_initialize_file(filepath)) {
-                    spdlog::debug("sector: {} exists and is up-to-date, skip download", filename);
-                    return filepath;
-                }
-            }
-        }
-
-        auto data = get_block_info_from_level1(filename);
-        if (!data.has_value() || data->empty()) {
-            spdlog::warn("sector: failed to download {}", filename);
-            return std::nullopt;
-        }
-
-        std::ofstream out(filepath, std::ios::binary);
-        if (!out) {
-            spdlog::error("sector: failed to open {} for writing", filepath);
-            return std::nullopt;
-        }
-        out.write(reinterpret_cast<const char *>(data->data()), data->size());
-        return filepath;
-    }
-
-    // ============================================================
-    // 解析原始板块二进制文件
-    // ============================================================
-
-    static std::vector<RawBlockRecord> parse_raw_block_file(const std::string &block_filename) {
-        auto meta_path = config::get_meta_path();
-        std::string filepath = meta_path + "/" + block_filename;
-
-        std::ifstream file(filepath, std::ios::binary);
-        if (!file) return {};
-
-        // 获取文件大小
-        file.seekg(0, std::ios::end);
-        size_t file_size = file.tellg();
-        file.seekg(0, std::ios::beg);
-
-        // skip 384 bytes header
-        if (file_size < 386) return {};
-        file.seekg(384);
-
-        // 读取 count (2 bytes little-endian)
-        uint8_t cnt_buf[2];
-        file.read(reinterpret_cast<char *>(cnt_buf), 2);
-        uint16_t count = cnt_buf[0] | (cnt_buf[1] << 8);
-
-        std::vector<RawBlockRecord> records;
-        records.reserve(count);
-
-        for (uint16_t i = 0; i < count; ++i) {
-            std::vector<uint8_t> rec(2813);
-            file.read(reinterpret_cast<char *>(rec.data()), 2813);
-            if (file.gcount() < 2813) break;
-
-            RawBlockRecord r;
-            r.block_name = extract_null_terminated_gbk(rec.data(), 9);
-            r.num        = rec[9] | (rec[10] << 8);
-            r.block_type = rec[11] | (rec[12] << 8);
-
-            // 400 个代码, 每个 7 字节, 从 offset 13 开始
-            for (int ci = 0; ci < 400; ++ci) {
-                size_t code_offset = 13 + ci * 7;
-                if (code_offset + 7 > rec.size()) break;
-                std::string code = extract_null_terminated_ascii(rec.data() + code_offset, 7);
-                if (!code.empty()) {
-                    r.codes.push_back(code);
-                }
-            }
-            records.push_back(std::move(r));
-        }
-        return records;
-    }
-
-    // ============================================================
-    // 解析配置文件 (tdxzs.cfg / tdxzs3.cfg)
-    // ============================================================
-
-    static std::vector<BlockIndexEntry> get_block_info_from_config(const std::string &cfg_name) {
-        auto meta_path = config::get_meta_path();
-        std::string filepath = meta_path + "/" + cfg_name;
-
-        std::ifstream file(filepath);
-        if (!file) {
-            // 尝试 GBK 编码
-            file.open(filepath, std::ios::binary);
-            if (!file) return {};
-            std::vector<char> bytes((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-            file.close();
-            auto content = charsets::gbk_to_utf8(std::string(bytes.data(), bytes.size()));
-            std::istringstream ss(content);
-
-            std::vector<BlockIndexEntry> entries;
-            std::string line;
-            while (std::getline(ss, line)) {
-                if (line.empty()) continue;
-                // 去掉 \r
-                if (!line.empty() && line.back() == '\r') line.pop_back();
-                if (line.empty()) continue;
-
-                auto parts = parse_csv_line(line); // 用 | 分隔, 不过 CSV 解析器用逗号, 需要特殊处理
-                // 手动按 | 分割
-                std::vector<std::string> arr;
-                size_t pos = 0;
-                while (pos <= line.length()) {
-                    size_t next = line.find('|', pos);
-                    if (next == std::string::npos) {
-                        arr.push_back(line.substr(pos));
-                        break;
+                } else {
+                    // 创建父目录（检查错误）
+                    if (!createParentDirectory(fullPath)) {
+                        spdlog::error("[tdx::sector] 无法创建父目录，跳过文件: {}", fullPath);
+                        return;
                     }
-                    arr.push_back(line.substr(pos, next - pos));
-                    pos = next + 1;
-                }
-
-                if (arr.size() < 4) continue;
-                std::string name  = arr[0];
-                std::string code  = arr[1];
-                int         btype = std::stoi(arr[2]);
-                std::string block = arr.size() > 5 ? arr[5] : "";
-                entries.emplace_back(name, code, btype, block);
-            }
-            return entries;
-        }
-
-        // UTF-8 读取
-        std::vector<BlockIndexEntry> entries;
-        std::string line;
-        while (std::getline(file, line)) {
-            if (line.empty()) continue;
-            if (!line.empty() && line.back() == '\r') line.pop_back();
-            if (line.empty()) continue;
-
-            // 按 | 分割
-            std::vector<std::string> arr;
-            size_t pos = 0;
-            while (pos <= line.length()) {
-                size_t next = line.find('|', pos);
-                if (next == std::string::npos) {
-                    arr.push_back(line.substr(pos));
-                    break;
-                }
-                arr.push_back(line.substr(pos, next - pos));
-                pos = next + 1;
-            }
-
-            if (arr.size() < 4) continue;
-            std::string name  = arr[0];
-            std::string code  = arr[1];
-            int         btype = std::stoi(arr[2]);
-            std::string block = arr.size() > 5 ? arr[5] : "";
-            entries.emplace_back(name, code, btype, block);
-        }
-        return entries;
-    }
-
-    // ============================================================
-    // 行业配置 (tdxhy.cfg)
-    // ============================================================
-
-    static std::vector<IndustryInfo> load_industry_blocks() {
-        auto meta_path = config::get_meta_path();
-        std::string filepath = meta_path + "/tdxhy.cfg";
-
-        std::vector<IndustryInfo> out;
-
-        // 尝试 UTF-8
-        {
-            std::ifstream file(filepath);
-            if (file) {
-                std::string line;
-                while (std::getline(file, line)) {
-                    if (line.empty()) continue;
-                    if (!line.empty() && line.back() == '\r') line.pop_back();
-                    if (line.empty()) continue;
-
-                    std::vector<std::string> arr;
-                    size_t pos = 0;
-                    while (pos <= line.length()) {
-                        size_t next = line.find('|', pos);
-                        if (next == std::string::npos) {
-                            arr.push_back(line.substr(pos));
-                            break;
+                    
+                    // 打开ZIP中的文件
+                    if (unzOpenCurrentFile(zipfile) == UNZ_OK) {
+                        // 创建输出文件（使用 C++ 标准库）
+                        std::ofstream outFile(fullPath, std::ios::binary);
+                        if (outFile.is_open()) {
+                            // 读取并写入文件
+                            char buffer[8192];
+                            int bytesRead;
+                            while ((bytesRead = unzReadCurrentFile(zipfile, buffer, sizeof(buffer))) > 0) {
+                                outFile.write(buffer, static_cast<std::streamsize>(bytesRead));
+                            }
+                            outFile.close();
                         }
-                        arr.push_back(line.substr(pos, next - pos));
-                        pos = next + 1;
+                        unzCloseCurrentFile(zipfile);
                     }
-
-                    if (arr.size() < 3) continue;
-                    IndustryInfo info;
-                    info.market_id = std::stoi(arr[0]);
-                    info.code      = arr[1];
-                    info.block     = arr[2];
-                    info.block5    = info.block.length() >= 5 ? info.block.substr(0, 5) : info.block;
-                    info.xblock5   = arr.size() > 5 ? arr[5] : "";
-                    info.xblock    = info.xblock5.length() >= 5 ? info.xblock5.substr(0, 5) : info.xblock5;
-                    out.push_back(std::move(info));
                 }
-                return out;
             }
-        }
 
-        // 尝试 GBK 编码
-        filepath = meta_path + "/tdxhy.cfg";
-        std::ifstream file(filepath, std::ios::binary);
-        if (!file) return out;
-        std::vector<char> bytes((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-        auto content = charsets::gbk_to_utf8(std::string(bytes.data(), bytes.size()));
-        std::istringstream ss(content);
-
-        std::string line;
-        while (std::getline(ss, line)) {
-            if (line.empty()) continue;
-            if (!line.empty() && line.back() == '\r') line.pop_back();
-            if (line.empty()) continue;
-
-            std::vector<std::string> arr;
-            size_t pos = 0;
-            while (pos <= line.length()) {
-                size_t next = line.find('|', pos);
-                if (next == std::string::npos) {
-                    arr.push_back(line.substr(pos));
-                    break;
+            static bool createParentDirectory(const std::string& filepath) {
+                size_t pos = filepath.find_last_of("/\\");
+                if (pos != std::string::npos) {
+                    std::string dir = filepath.substr(0, pos);
+                    auto ec = filesystem::mkdirs(dir, true);
+                    if (ec) {
+                        spdlog::error("[tdx::sector] createParentDirectory failed for {}: {}", dir, ec.message());
+                        return false;
+                    }
                 }
-                arr.push_back(line.substr(pos, next - pos));
-                pos = next + 1;
+                return true;
             }
-
-            if (arr.size() < 3) continue;
-            IndustryInfo info;
-            info.market_id = std::stoi(arr[0]);
-            info.code      = arr[1];
-            info.block     = arr[2];
-            info.block5    = info.block.length() >= 5 ? info.block.substr(0, 5) : info.block;
-            info.xblock5   = arr.size() > 5 ? arr[5] : "";
-            info.xblock    = info.xblock5.length() >= 5 ? info.xblock5.substr(0, 5) : info.xblock5;
-            out.push_back(std::move(info));
-        }
-        return out;
-    }
-
-    /// 行业成分股列表 (对齐 Python industry_constituent_stock_list)
-    static std::vector<std::string> industry_constituent_stock_list(const std::vector<IndustryInfo> &hys, const std::string &block) {
-        std::vector<std::string> lst;
-        for (const auto &v : hys) {
-            bool matched = v.block5.rfind(block, 0) == 0   // block5 starts_with block
-                        || v.xblock5.rfind(block, 0) == 0  // xblock5 starts_with block
-                        || v.block5 == block
-                        || v.block == block
-                        || v.xblock5 == block
-                        || v.xblock == block;
-            if (matched) {
-                lst.push_back(v.code);
-            }
-        }
-        std::sort(lst.begin(), lst.end());
-        lst.erase(std::unique(lst.begin(), lst.end()), lst.end());
-        return lst;
-    }
-
-    // ============================================================
-    // 解析并生成板块 CSV 缓存文件
-    // ============================================================
-
-    static std::optional<std::string> parse_and_generate_block_file() {
-        // 1) 加载 zs* 配置文件
-        std::vector<const char *> bks_cfg = {"tdxzs.cfg", "tdxzs3.cfg"};
-        std::vector<BlockIndexEntry> block_index;
-        tsl::robin_map<std::string, BlockIndexEntry> tmp_map;
-        for (const auto *cfg : bks_cfg) {
-            auto bi = get_block_info_from_config(cfg);
-            for (auto &v : bi) {
-                auto code = std::get<1>(v);
-                if (tmp_map.find(code) != tmp_map.end()) continue;
-                tmp_map[code] = v;
-                block_index.push_back(std::move(v));
-            }
-        }
-
-        if (block_index.empty()) {
-            spdlog::warn("sector: no block index entries found from config files");
-            return std::nullopt;
-        }
-
-        // block -> name mapping
-        tsl::robin_map<std::string, std::string> block2name;
-        for (const auto &v : block_index) {
-            const auto &block = std::get<3>(v);
-            if (!block.empty()) {
-                block2name[block] = std::get<0>(v);
-            }
-        }
-
-        // 2) 解析原始板块文件
-        std::vector<const char *> raw_files = {
-            BLOCK_DEFAULT, BLOCK_GAINIAN, BLOCK_FENGGE, BLOCK_ZHISHU
         };
-        tsl::robin_map<std::string, RawBlockRecord> name2block;
-        for (const auto *f : raw_files) {
-            auto recs = parse_raw_block_file(f);
-            for (auto &bk : recs) {
-                auto it = block2name.find(bk.block_name);
-                std::string resolved = it != block2name.end() ? it->second : bk.block_name;
-                name2block[resolved] = std::move(bk);
+
+        struct IndustryInfo {
+            int MarketId;     // 市场代码
+            std::string Code; // 股票代码
+            std::string Block; // 行业板块代码
+            std::string Block5; // 二级行业板块代码
+            std::string XBlock; // x行业代码
+            std::string XBlock5; // x二级行业代码
+
+            friend std::ostream &operator<<(std::ostream &os, const IndustryInfo &info) {
+                os << "MarketId: " << info.MarketId << " Code: " << info.Code << " Block: " << info.Block << " Block5: "
+                   << info.Block5 << " XBlock: " << info.XBlock << " XBlock5: " << info.XBlock5;
+                return os;
             }
-        }
+        };
 
-        // 3) code->hy mapping
-        tsl::robin_map<std::string, std::string> code2hy;
-        for (const auto &v : block_index) {
-            const auto &name  = std::get<0>(v);
-            const auto &block = std::get<3>(v);
-            if (name != block) {
-                code2hy[block] = name;
+        // =========================================================================
+        //  板块数据文件常量
+        // =========================================================================
+        // 原始板块数据文件 (二进制格式, 需要从服务器下载后解析)
+        constexpr const char* const BLOCK_DEFAULT = "block.dat";    // 默认板块 (早期)
+        constexpr const char* const BLOCK_GAINIAN = "block_gn.dat"; // 概念板块
+        constexpr const char* const BLOCK_FENGGE  = "block_fg.dat"; // 风格板块
+        constexpr const char* const BLOCK_ZHISHU  = "block_zs.dat"; // 指数板块
+
+        // 板块压缩包及行业配置文件
+        constexpr const char* const BLK_ZIP_FILENAME       = "zhb.zip";   // 板块数据压缩包
+        constexpr const char* const BLK_INDUSTRY_FILENAME  = "tdxhy.cfg"; // 行业板块配置
+
+        // 需要从压缩包中解压的配置文件列表
+        static const std::vector<std::string> NEED_BLK_FILES = {"tdxzs.cfg", "tdxzs3.cfg"};
+
+    }  // namespace
+
+    // =========================================================================
+    //  operator<<
+    // =========================================================================
+    std::ostream &operator<<(std::ostream &os, const quant1x::data::schema::Sector &info) {
+        os << "{code:" << info.code
+           << ", name:" << info.name
+           << ", type:" << info.type
+           << ", count:" << info.count
+           << ", constituent_stocks:[";
+        bool first = true;
+        for(auto const & v : info.constituent_stocks) {
+            if (!first) {
+                os << ",";
+            } else {
+                first = false;
             }
+            os << v;
         }
+        os << "]}";
+        return os;
+    }
 
-        // 4) industry blocks
-        auto hys = load_industry_blocks();
+    // =========================================================================
+    //  底层数据操作: 下载 & 解析原始板块文件
+    // =========================================================================
 
-        // 5) 组装最终板块条目
-        using Row = std::tuple<std::string, std::string, int, int, std::string, std::vector<std::string>>;
-        std::vector<Row> rows;
-
-        for (const auto &v : block_index) {
-            const auto &v_name = std::get<0>(v);
-            auto it = name2block.find(v_name);
-            if (it != name2block.end()) {
-                auto &info = it->second;
-                std::vector<std::string> entry_codes;
-                for (const auto &sc : info.codes) {
-                    if (sc.length() >= 5) {
-                        entry_codes.push_back(sc);
-                    }
+    /**
+     * @brief 下载区块原始数据到本地文件
+     *
+     * 该函数负责从远程服务器下载指定区块的原始数据，并保存到本地配置的区块路径下。
+     * 如果文件不存在、文件大小为0或需要更新时，会触发下载流程。
+     *
+     * @param filename 要下载的区块文件名（不包含路径）
+     *
+     * @note 下载过程采用分块传输方式，每次请求最大传输 BLOCK_CHUNKS_SIZE 大小的数据块
+     * @note 函数内部会检查文件路径有效性，并自动创建必要的目录结构
+     *
+     * @throws 无显式抛出异常，但可能因以下原因记录错误日志：
+     *         - 文件打开失败
+     *         - 网络通信错误（通过level1::process隐式处理）
+     *
+     * @warning 函数会清空已存在的目标文件内容（使用ios::trunc模式）
+     */
+    void download_block_raw_data(const std::string &filename) {
+        auto blkFilename = config::get_meta_path() + "/" + filename;
+        bool create_or_update  = quant1x::data::should_initialize_file(blkFilename);
+        if(create_or_update) {
+            auto ec = filesystem::check_filepath(blkFilename, true);
+            ec.clear();
+            std::ofstream file(blkFilename, std::ios::binary|std::ios::out|std::ios::trunc);
+            if(!file.is_open()) {
+                spdlog::error("[tdx::sector] Failed to open file: {}", filename);
+                return;
+            }
+            spdlog::debug("[tdx::sector] open file: {}", filename);
+            auto conn_ptr = get_std_conn();
+            if (!conn_ptr) {
+                spdlog::error("sector: get_std_conn failed");
+                return;
+            }
+            auto &socket = conn_ptr->socket();
+            for(u32 start = 0;;) {
+                BlockFileContext msg(filename, start);
+                auto             err = transact_message_sync(socket, msg);
+                if (err.value() != 0) {
+                    spdlog::error("sector: process BlockFileContext for {} at offset {} failed: {}", filename, start, err.message());
+                    return;
                 }
-                std::sort(entry_codes.begin(), entry_codes.end());
-                entry_codes.erase(std::unique(entry_codes.begin(), entry_codes.end()), entry_codes.end());
+                auto data = msg.Data;
+                if( msg.DataSize > 0) {
+                    file.write(reinterpret_cast<const char *>(data.data()), msg.DataSize);
+                }
+                if(msg.DataSize < quant1x::contrib::data::tdx::BLOCK_CHUNKS_SIZE) {
+                    break;
+                }
+                start+= msg.DataSize;
+            }
+            file.close();
+            spdlog::debug("[tdx::sector] close file: {}", filename);
+        }
+    }
 
-                rows.emplace_back(
-                    v_name,
-                    std::get<1>(v),
-                    std::get<2>(v),
-                    static_cast<int>(entry_codes.size()),
-                    std::get<3>(v),
-                    entry_codes
-                );
+    /**
+     * @brief 解析板块原始数据文件，提取板块信息及其成分股列表
+     *
+     * @param filename 板块数据文件名（不包含路径）
+     * @return std::vector<quant1x::data::schema::Sector> 解析得到的板块信息列表，包含板块名称、类型及成分股代码
+     * @throws 无显式抛出异常，但会通过spdlog记录文件打开失败错误
+     *
+     * @note 文件路径由config::get_meta_path()确定，文件格式为二进制
+     * @note 文件前384字节为头部信息，需要跳过
+     * @note 板块名称使用GBK编码，内部会转换为UTF-8
+     */
+    std::vector<quant1x::data::schema::Sector> parse_block_raw_data(const std::string &filename) {
+        auto          blkFilename = config::get_meta_path() + "/" + filename;
+        std::ifstream in(blkFilename, std::ios::binary);
+        if(!in.is_open()) {
+            spdlog::error("[tdx::sector] 板块文件[{}], 打开失败", blkFilename);
+            return {};
+        }
+        std::vector<uint8_t> buf((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        BinaryStream bs(buf);
+        bs.skip(384);
+        u16 Count = bs.get_u16();
+        std::vector<quant1x::data::schema::Sector> list;
+        for (int i = 0; i < Count; i++) {
+            quant1x::data::schema::Sector bi{};
+            u8 tmpBuf1[2813] = {0};
+            bs.get_array(tmpBuf1);
+            BinaryStream bs1(tmpBuf1);
+            std::string tmp = bs1.get_string(9);
+            bi.name = charsets::gbk_to_utf8(tmp);
+            bi.count = bs1.get_u16();
+            bi.type = bs1.get_u16();
+            u8 tmpBuf2[400*7];
+            bs1.get_array(tmpBuf2);
+            BinaryStream bs2(tmpBuf2);
+            bi.constituent_stocks.resize(bi.count); // 成分股
+            for (int j = 0; j < bi.count; j++) {
+                std::string symbol = bs2.get_string(7);
+                bi.constituent_stocks[j] = symbol;
+            }
+            list.emplace_back(bi);
+        }
+        in.close();
+        return list;
+    }
+
+    // =========================================================================
+    //  配置类板块数据加载
+    // =========================================================================
+
+    /**
+     * @brief 从配置文件读取板块信息
+     *
+     * 解析指定板块配置文件，将每行数据转换为BlockIndexEntry结构体
+     *
+     * @param filename 板块配置文件名（不含路径）
+     * @return std::vector<quant1x::data::schema::Sector> 解析成功的板块信息列表，失败返回空vector
+     * @throws 无显式抛出异常，但内部可能因编码转换或数字解析失败跳过错误行
+     * @note 文件路径通过config::get_meta_path()获取，编码格式为GBK需转UTF-8
+     */
+    static std::vector<quant1x::data::schema::Sector> get_block_info_from_config(const std::string &filename) {
+        auto          blkFilename = config::get_meta_path() + "/" + filename;
+        std::ifstream in(blkFilename, std::ios::binary);
+        if(!in.is_open()) {
+            spdlog::error("[tdx::sector] 板块文件[{}], 打开失败", blkFilename);
+            return {};
+        }
+        std::vector<quant1x::data::schema::Sector> list;
+        std::string tmp_line;
+        while (std::getline(in, tmp_line)) {
+            try {
+                std::string line = charsets::gbk_to_utf8(tmp_line);
+                auto arr = strings::split(line, '|');
+                if(arr.size()>=6) {
+                    quant1x::data::schema::Sector bi={};
+                    bi.name = arr[0];
+                    bi.code = arr[1];
+                    bi.type = std::stoi(arr[2]);
+                    bi.block = arr[5];
+                    list.emplace_back(bi);
+                }
+            } catch(...) {
+                continue;
+            }
+        }
+        in.close();
+        return list;
+    }
+
+    /**
+     * @brief 加载并合并所有需要的区块信息
+     *
+     * 从配置文件中读取所有需要的区块信息，并合并重复的区块代码，
+     * 确保返回的区块信息列表中每个区块代码唯一。
+     *
+     * @return std::vector<quant1x::data::schema::Sector> 合并后的区块信息列表，每个区块代码只出现一次
+     * @note 内部使用临时哈希表来检测和过滤重复的区块代码
+     */
+    std::vector<quant1x::data::schema::Sector> load_index_block_infos() {
+        std::vector<quant1x::data::schema::Sector>                     bis;
+        auto                                        bks = NEED_BLK_FILES;
+        std::unordered_map<std::string, quant1x::data::schema::Sector> tmp_map{};
+        for (auto const & name : bks) {
+            auto list = get_block_info_from_config(name);
+            if (list.empty()) {
+                continue;
+            }
+            
+            for(auto const &v : list) {
+                auto it = tmp_map.find(v.code);
+                if(it == tmp_map.end()) {
+                    bis.emplace_back(v);
+                    tmp_map[v.code] = v;
+                }
+            }
+        }
+        return bis;
+    }
+
+    // =========================================================================
+    //  行业板块数据加载与查询
+    // =========================================================================
+
+    /**
+     * @brief 加载行业板块信息
+     *
+     * 从配置的板块文件中读取行业板块数据，解析并转换为IndustryInfo结构体列表。
+     * 文件格式为GBK编码，每行以'|'分隔，包含市场ID、证券代码、板块名称等信息。
+     *
+     * @return std::vector<IndustryInfo> 解析后的行业板块信息列表，若文件打开失败则返回空列表
+     * @throws 无显式抛出异常，但可能因文件操作或字符串转换产生隐式异常
+     *
+     * @note 1. 自动跳过北京市场的板块数据
+     *       2. 板块名称超过5字符时截断为前5字符
+     *       3. 证券代码会经过CorrectSecurityCode校正
+     */
+    static std::vector<IndustryInfo> load_industry_blocks() {
+        std::string hyfile        = BLK_INDUSTRY_FILENAME;
+        std::string cacheFilename = config::get_meta_path() + "/" + hyfile;
+
+        std::ifstream file(cacheFilename, std::ios::binary);
+        if (!file.is_open()) {
+            spdlog::error("[tdx::sector] 板块文件[{}], 打开失败", cacheFilename);
+            return {};
+        }
+
+        std::vector<IndustryInfo> hys;
+        std::string line;
+
+        while (std::getline(file, line)) {
+            line = charsets::gbk_to_utf8(line); // GBK转UTF-8
+            std::vector<std::string> arr = strings::split(line, '|');
+
+            if (arr.size() < 3) {
                 continue;
             }
 
-            // fallback: industry mapping
-            const auto &bc = std::get<3>(v);
-            auto stock_list = industry_constituent_stock_list(hys, bc);
-            if (!stock_list.empty()) {
-                rows.emplace_back(
-                    v_name,
-                    std::get<1>(v),
-                    std::get<2>(v),
-                    static_cast<int>(stock_list.size()),
-                    bc,
-                    stock_list
-                );
+            const std::string& bc = arr[2];
+            std::string bc5 = bc;
+            if (bc5.length() >= 5) {
+                bc5 = bc5.substr(0, 5);
+            }
+
+            std::string xbc, xbc5;
+            if (arr.size() >= 6) {
+                xbc5 = arr[5];
+                if (xbc5.length() >= 6) {
+                    xbc = xbc5.substr(0, 5);
+                }
+            }
+            auto marketId = std::stoi(arr[0]);
+            // if (marketId == static_cast<int>(exchange::ExchangeId::BeiJing)) {
+            //     continue;
+            // }
+
+            IndustryInfo hy={};
+            hy.MarketId  = marketId;
+            hy.Code = arr[1];
+            hy.Block = bc;
+            hy.Block5 = bc5;
+            hy.XBlock = xbc;
+            hy.XBlock5 = xbc5;
+
+            hys.emplace_back(hy);
+        }
+
+        file.close();
+        return hys;
+    }
+
+    /**
+     * @brief 根据行业板块名称获取该板块下的所有股票代码列表
+     *
+     * @param hys 行业信息列表，包含各股票的板块分类信息
+     * @param block 要查询的板块名称
+     * @return std::vector<std::string> 该板块下的所有股票代码列表，按字母顺序排序
+     *
+     * @note 匹配规则：检查股票的Block5、XBlock5、Block和XBlock字段，
+     *       如果任一字段以指定板块名称开头或完全匹配，则包含该股票代码
+     */
+    std::vector<std::string> industry_constituent_stock_list(const std::vector<IndustryInfo> &hys,
+                                                             const std::string               &block) {
+        std::vector<std::string> list;
+        for (const auto &v : hys) {
+            if (v.Block5.starts_with(block) || v.XBlock5.starts_with(block) ||
+                v.Block5 == block || v.Block == block || v.XBlock5 == block || v.XBlock == block) {
+                list.emplace_back(v.Code);
+            }
+        }
+        if (!list.empty()) {
+            std::sort(list.begin(), list.end());
+        }
+        return list;
+    }
+
+    // =========================================================================
+    //  板块文件合并生成
+    // =========================================================================
+
+    /**
+     * @brief 解析并生成板块信息文件
+     *
+     * 该函数执行以下操作：
+     * 1. 加载基础板块信息
+     * 2. 解析预定义的板块数据文件(默认板块、概念板块、风格板块、指数板块)
+     * 3. 加载行业板块数据
+     * 4. 合并板块信息并修正证券代码
+     * 5. 过滤掉无成分股的板块
+     *
+     * @return std::vector<quant1x::data::schema::Sector> 返回处理后的板块信息列表，已过滤掉无成分股的板块
+     * @note 函数内部会跳过北京市场的证券代码
+     */
+    static std::vector<quant1x::data::schema::Sector> parse_and_generate_block_file() {
+        auto                                     blockInfos = load_index_block_infos();
+        tsl::robin_map<std::string, std::string> block2Name{};
+        for(auto const & v : blockInfos) {
+            block2Name[v.block] = v.name;
+            //spdlog::debug("{} -> {}", v.Block, v.name);
+        }
+        auto bks = {
+            BLOCK_DEFAULT,
+            BLOCK_GAINIAN,
+            BLOCK_FENGGE,
+            BLOCK_ZHISHU
+        };
+        tsl::robin_map<std::string, quant1x::data::schema::Sector> name2block{};
+        for(auto const &filename : bks) {
+            auto bi = parse_block_raw_data(filename);
+            if (bi.empty()) {
+                continue;
+            }
+            for(auto const &bk : bi) {
+                auto blockName = bk.name;
+                auto it = block2Name.find(blockName);
+                if (it != block2Name.end()) {
+                    blockName = it->second;
+                }
+                name2block[blockName] = bk;
             }
         }
 
-        // 过滤空条目
-        rows.erase(std::remove_if(rows.begin(), rows.end(), [](const Row &r) { return std::get<5>(r).empty(); }), rows.end());
+        // 行业板块数据
+        auto hys = load_industry_blocks();
+        for(auto & blockInfo : blockInfos) {
+            auto v = &blockInfo;
+            v->code = quant1x::data::correct_security_code(v->code);
+            auto bn = v->name;
+            auto it = name2block.find(bn);
+            if (it != name2block.end()) {
+                auto _info = it->second;
+                std::vector<std::string> list{};
+                for (auto const &symbol : _info.constituent_stocks) {
+                    if (symbol.length() < 5) {
+                        continue;
+                    }
+                    auto inst = quant1x::data::detect_symbol(symbol);
+                    // auto [marketId, prefix, x2] = exchange::DetectMarket(symbol);
+                    // if (marketId == exchange::ExchangeId::BeiJing) {
+                    //     continue;
+                    // }
+                    list.emplace_back(inst.symbol());
+                }
+                blockInfo.count = int(_info.count);
+                blockInfo.constituent_stocks = list;
+                continue;
+            }
+            auto &bc        = v->block;
+            auto rawList = industry_constituent_stock_list(hys, bc);
+            if (!rawList.empty()) {
+                std::vector<std::string> stockList;
+                for (auto const &s : rawList) {
+                    auto inst = quant1x::data::detect_symbol(s);
+                    stockList.emplace_back(inst.symbol());
+                }
+                blockInfo.count = u16(stockList.size());
+                blockInfo.constituent_stocks = stockList;
+            }
+        }
+        blockInfos.erase(std::remove_if(blockInfos.begin(),
+                                        blockInfos.end(),
+                                        [](const quant1x::data::schema::Sector &bi) {return bi.constituent_stocks.empty();}),
+                         blockInfos.end());
+        return blockInfos;
+    }
 
-        if (rows.empty()) {
-            spdlog::warn("sector: no valid block entries after assembly");
-            return std::nullopt;
+    // =========================================================================
+    //  全局状态
+    // =========================================================================
+    static auto                                                     global_sector_once = RollingOnce::create("exchange-sector", quant1x::config::GLOBAL_CRON_EXPR_DAILY_INIT);
+    static std::vector<quant1x::data::schema::Sector>               global_sector_list;
+    static tsl::robin_map<std::string, quant1x::data::schema::Sector> global_sector_map;
+
+    // =========================================================================
+    //  公开 API
+    // =========================================================================
+
+    // 同步板块数据
+    std::vector<quant1x::data::schema::Sector> sync_block_files() {
+        // 从服务器通过协议下载最新的板块文件
+        auto bks = {
+            BLK_INDUSTRY_FILENAME,
+            BLK_ZIP_FILENAME,
+            BLOCK_DEFAULT,
+            BLOCK_GAINIAN,
+            BLOCK_FENGGE,
+            BLOCK_ZHISHU
+        };
+        for(auto const &filename : bks) {
+            download_block_raw_data(filename);
+        }
+        MiniZipExtractor extractor;
+        extractor.extract(config::get_meta_path() + "/" + BLK_ZIP_FILENAME, config::get_meta_path(), NEED_BLK_FILES);
+        //updateCacheBlockFile();
+        global_sector_list = parse_and_generate_block_file();
+        if(!global_sector_list.empty()) {
+            global_sector_map.clear();
+            for(auto const &v : global_sector_list) {
+                global_sector_map.insert({v.code, v});
+            }
         }
 
-        // 写入 CSV
-        auto out_fn = get_sector_filename();
-        auto parent = std::filesystem::path(out_fn).parent_path().string();
-        if (!parent.empty()) {
-            std::filesystem::create_directories(parent);
-        }
-
+        // 将 global_sector_list 写入 CSV 文件，使用项目的 io::CSVWriter
+        // 成分股以逗号分隔的字符串形式写入单列
+        // 文件名使用最后一个交易日日期, 与 Python get_sector_filename() 对齐
         try {
-            io::CSVWriter writer(out_fn);
-            writer.write_row("name", "code", "type", "count", "block", "constituent_stocks");
-            for (const auto &row : rows) {
-                const auto &name    = std::get<0>(row);
-                const auto &code    = std::get<1>(row);
-                int         btype   = std::get<2>(row);
-                int         cnt     = std::get<3>(row);
-                const auto &block   = std::get<4>(row);
-                const auto &cs      = std::get<5>(row);
-                auto cs_json = to_json_string_array(cs);
-
-                writer.write_row(name, code, btype, cnt, block, cs_json);
+            auto cache_date = quant1x::data::meta::last_trading_day(
+                quant1x::data::meta::Timestamp::now()).only_date();
+            auto csvPath = config::get_meta_path() + "/blocks." + cache_date;
+            io::CSVWriter writer(csvPath);
+            // CSV 头 (列顺序与 Python sector.py 对齐)
+            writer.write_row("name", "code", "type", "count", "constituent_stocks");
+            for (auto const &s : global_sector_list) {
+                std::string stocks_str;
+                for (size_t i = 0; i < s.constituent_stocks.size(); ++i) {
+                    if (i > 0) stocks_str += ",";
+                    stocks_str += s.constituent_stocks[i];
+                }
+                writer.write_row(s.name, s.code, s.type, s.count, stocks_str);
             }
-            writer.close();
-        } catch (const std::exception& e) {
-            spdlog::error("sector: failed to write CSV: {}", e.what());
-            return std::nullopt;
+            spdlog::debug("[tdx::sector] wrote global sector csv: {}", csvPath);
+        } catch (const std::exception &e) {
+            spdlog::error("[tdx::sector] exception when writing sector csv: {}", e.what());
         }
 
-        spdlog::info("sector: generated sector CSV: {} entries → {}", rows.size(), out_fn);
-        return out_fn;
+        return global_sector_list;
     }
 
-    // ============================================================
-    // 同步板块文件
-    // ============================================================
-
-    static void sync_block_files() {
-        spdlog::info("sector: sync_block_files start");
-
-        // 行业配置
-        download_block_raw_data("tdxhy.cfg");
-
-        // 下载 zhb.zip 并解压 (TODO: 需要 zip 库支持, 当前依赖外部工具预先生成 tdxzs.cfg / tdxzs3.cfg)
-        // download_block_raw_data("zhb.zip");
-        // if (zhb) { extract tdxzs.cfg and tdxzs3.cfg from zip }
-
-        // 下载标准板块文件
-        for (const auto *fname : {BLOCK_DEFAULT, BLOCK_GAINIAN, BLOCK_FENGGE, BLOCK_ZHISHU}) {
-            download_block_raw_data(fname);
-        }
-
-        // 解析并生成 CSV
-        auto result = parse_and_generate_block_file();
-        if (result.has_value()) {
-            spdlog::info("sector: sync_block_files done, output: {}", result.value());
-        } else {
-            spdlog::warn("sector: sync_block_files failed to generate CSV");
-        }
+    // 如果调用频繁耗时是比较大
+    std::vector<quant1x::data::schema::Sector> get_sector_list() {
+        global_sector_once->Do(sync_block_files);
+        return global_sector_list;
     }
 
-    // ============================================================
-    // 加载缓存板块数据
-    // ============================================================
-
-    static void load_cache_block_infos() {
-        auto bk_filename = get_sector_filename();
-
-        // 如果 CSV 不存在或需要更新, 先同步
-        bool need_sync = false;
-        {
-            std::ifstream check(bk_filename);
-            if (!check.good()) {
-                need_sync = true;
-            }
-        }
-        if (!need_sync) {
-            need_sync = quant1x::data::should_initialize_file(bk_filename);
-        }
-
-        if (need_sync) {
-            spdlog::info("sector: cache missing or outdated, triggering sync_block_files");
-            sync_block_files();
-        }
-
-        // 从 CSV 加载
-        std::ifstream csv(bk_filename);
-        if (!csv) {
-            spdlog::warn("sector: cannot open CSV cache: {}", bk_filename);
-            return;
-        }
-
-        std::vector<schema::Sector> sectors;
-        tsl::robin_map<std::string, schema::Sector> sector_map;
-        std::string line;
-
-        // 跳过 header
-        std::getline(csv, line);
-
-        while (std::getline(csv, line)) {
-            if (line.empty()) continue;
-            if (!line.empty() && line.back() == '\r') line.pop_back();
-            if (line.empty()) continue;
-
-            auto fields = parse_csv_line(line);
-            if (fields.size() < 6) continue;
-
-            schema::Sector s;
-            s.name               = fields[0];
-            s.code               = fields[1];
-            s.type               = std::stoi(fields[2]);
-            s.count              = std::stoi(fields[3]);
-            s.block              = fields[4];
-            s.constituent_stocks = parse_json_string_array(fields[5]);
-
-            sectors.push_back(s);
-            sector_map[s.code] = s;
-        }
-
-        spdlog::info("sector: loaded {} sectors from cache", sectors.size());
-
-        g_cached_sectors = std::move(sectors);
-        g_cached_sector_map = std::move(sector_map);
+    // 如果调用频繁耗时是比较大
+    tsl::robin_map<std::string, quant1x::data::schema::Sector> get_sector_map() {
+        global_sector_once->Do(sync_block_files);
+        return global_sector_map;
     }
 
-    // ============================================================
-    // 公共 API
-    // ============================================================
-
-    std::vector<schema::Sector> get_sector_list() {
-        sector_once->Do([] {
-            load_cache_block_infos();
-        });
-        return g_cached_sectors;
-    }
-
-    std::optional<schema::Sector> get_sector_info(const std::string &symbol) {
-        sector_once->Do([] {
-            load_cache_block_infos();
-        });
-
+    std::optional<quant1x::data::schema::Sector> get_sector_info(const std::string &symbol) {
+        global_sector_once->Do(sync_block_files);
         auto inst = quant1x::data::detect_symbol(symbol);
-        auto it = g_cached_sector_map.find(inst.symbol());
-        if (it != g_cached_sector_map.end()) {
-            return it->second;
+        //auto map = get_sector_map();
+        auto it = global_sector_map.find(inst.symbol());
+        if (it != global_sector_map.end()) {
+            return it->second; // 返回指针
+        } else {
+            return std::nullopt;      // 未找到返回空指针
         }
-        return std::nullopt;
     }
-
-} // namespace quant1x::contrib::data::tdx::sector
+} // namespace exchange

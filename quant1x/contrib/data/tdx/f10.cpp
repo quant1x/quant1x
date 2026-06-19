@@ -2,6 +2,7 @@
 #include <quant1x/factors/f10.h>
 #include <boost/pfr.hpp>
 #include <quant1x/encoding/csv.h>
+#include <fmt/format.h>
 
 namespace quant1x::contrib::data::tdx {
 
@@ -11,9 +12,22 @@ namespace quant1x::contrib::data::tdx {
     std::string DataF10::Name() const { return "F10因子"; }
     std::string DataF10::Usage() const { return "F10"; }
 
-    void DataF10::Print(const quant1x::data::meta::Instrument& inst, const std::vector<quant1x::data::meta::Timestamp>& dates) {
-        (void)inst;
-        (void)dates;
+    void DataF10::Print(const quant1x::data::meta::Instrument& inst, const quant1x::data::meta::Timestamp& date) {
+        (void)date;
+        auto h = headers();
+        auto v = values();
+        fmt::print("\n=== {}: {} ===\n", Name(), inst.symbol());
+        if (h.empty()) {
+            fmt::print("  (no data)\n");
+            return;
+        }
+        size_t max_w = 0;
+        for (auto const& s : h) {
+            if (s.size() > max_w) max_w = s.size();
+        }
+        for (size_t i = 0; i < h.size() && i < v.size(); ++i) {
+            fmt::print("  {:<{}} : {}\n", h[i], max_w + 2, v[i]);
+        }
     }
 
     void DataF10::Update(const quant1x::data::meta::Instrument& inst, const quant1x::data::meta::Timestamp& date) {

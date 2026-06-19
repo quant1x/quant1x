@@ -29,8 +29,8 @@ namespace quant1x::contrib::data::tdx {
         std::string Name() const override { return "日K线RAW"; }
         std::string Usage() const override { return "日K线RAW数据适配器"; }
 
-        void Print(const meta::Instrument& inst, const std::vector<meta::Timestamp>& dates = {}) override;
-        void Update(const meta::Instrument& inst, const meta::Timestamp& date = meta::Timestamp()) override;
+        void Print(const meta::Instrument& inst, const meta::Timestamp& date) override;
+        void Update(const meta::Instrument& inst, const meta::Timestamp& date) override;
     };
 
 } // namespace quant1x::contrib::data::tdx

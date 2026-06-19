@@ -9,6 +9,7 @@
 #include <quant1x/factors/financial_report.h>
 #include <quant1x/factors/share_holder.h>
 #include <quant1x/factors/safety_score.h>
+#include <fmt/format.h>
 
 static std::string get_ipo_date(const std::string &security_code, const std::string &feature_date) {
     auto kls = tdx::checkout_klines(security_code, feature_date);
@@ -240,9 +241,22 @@ std::string F10Feature::Usage() const {
     return "F10";
 }
 
-void F10Feature::Print(const meta::Instrument &inst, const std::vector<meta::Timestamp> &dates) {
-    (void)inst;
-    (void)dates;
+void F10Feature::Print(const meta::Instrument &inst, const meta::Timestamp &date) {
+    (void)date;
+    auto h = headers();
+    auto v = values();
+    fmt::print("\n=== {}: {} ===\n", Name(), inst.symbol());
+    if (h.empty()) {
+        fmt::print("  (no data)\n");
+        return;
+    }
+    size_t max_w = 0;
+    for (auto const& s : h) {
+        if (s.size() > max_w) max_w = s.size();
+    }
+    for (size_t i = 0; i < h.size() && i < v.size(); ++i) {
+        fmt::print("  {:<{}} : {}\n", h[i], max_w + 2, v[i]);
+    }
 }
 
 void F10Feature::Update(const meta::Instrument &inst, const meta::Timestamp &date) {

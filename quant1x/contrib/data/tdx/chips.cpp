@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <fstream>
 #include <spdlog/spdlog.h>
+#include <fmt/format.h>
 #include <tsl/robin_map.h>
 
 namespace config = quant1x::config;
@@ -13,9 +14,49 @@ namespace io = ::io;
 namespace quant1x::contrib::data::tdx {
     namespace fs = std::filesystem;
 
-    void DataChips::Print(const quant1x::data::meta::Instrument& inst, const std::vector<quant1x::data::meta::Timestamp>& dates) {
-        (void)inst;
-        (void)dates;
+    void DataChips::Print(const quant1x::data::meta::Instrument& inst, const quant1x::data::meta::Timestamp& date) {
+        std::string date_str;
+        if (!date.empty()) {
+            date_str = date.only_date();
+        } else {
+            date_str = quant1x::data::meta::Timestamp::now().only_date();
+        }
+        auto code = inst.symbol();
+        std::string securityCode = quant1x::data::correct_security_code(code);
+        auto filename = config::get_chip_distribution_filename(securityCode, date_str);
+        if (!fs::exists(filename)) {
+            fmt::print("\n=== {}: {} @ {} ===\n  (no cache file)\n", Name(), inst.symbol(), date_str);
+            return;
+        }
+        datasets::Chips chips;
+        std::ifstream in(filename, std::ios::binary);
+        if (!chips.ParseFromIstream(&in)) {
+            fmt::print("\n=== {}: {} @ {} ===\n  parse error\n", Name(), inst.symbol(), date_str);
+            return;
+        }
+        auto count = chips.dist_size();
+        if (count == 0) {
+            fmt::print("\n=== {}: {} @ {} ===\n  (no data)\n", Name(), inst.symbol(), date_str);
+            return;
+        }
+        fmt::print("\n=== {}: {} @ {} ({} price levels) ===\n", Name(), inst.symbol(), date_str, count);
+        fmt::print("{:>10} {:>16} {:>16} {:>12} {:>12}\n",
+                   "price", "buy", "sell", "total", "ratio%");
+        fmt::print("{:-<72}\n", "");
+        f64 total_buy = 0, total_sell = 0;
+        for (int i = 0; i < count; ++i) {
+            auto const& d = chips.dist(i);
+            total_buy += d.buy();
+            total_sell += d.sell();
+        }
+        f64 total_vol = total_buy + total_sell;
+        for (int i = 0; i < count; ++i) {
+            auto const& d = chips.dist(i);
+            f64 total = d.buy() + d.sell();
+            f64 ratio = total_vol > 0 ? total / total_vol * 100.0 : 0.0;
+            fmt::print("{:>10.2f} {:>16.0f} {:>16.0f} {:>12.0f} {:>11.2f}%\n",
+                       d.price() / 1000.0, d.buy(), d.sell(), total, ratio);
+        }
     }
 
     void DataChips::Update(const quant1x::data::meta::Instrument& inst, const quant1x::data::meta::Timestamp& date) {

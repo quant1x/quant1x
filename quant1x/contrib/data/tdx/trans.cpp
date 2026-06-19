@@ -7,6 +7,7 @@
 #include <quant1x/io/csv-reader.h>
 #include <quant1x/io/csv-writer.h>
 #include <spdlog/spdlog.h>
+#include <fmt/format.h>
 #include <algorithm>
 #include <cstdio>
 #include <filesystem>
@@ -212,9 +213,65 @@ namespace quant1x::contrib::data::tdx {
     // DataTrans 公共接口
     // ============================================================
 
-    void DataTrans::Print(const meta::Instrument& inst, const std::vector<meta::Timestamp>& dates) {
-        (void)inst;
-        (void)dates;
+    void DataTrans::Print(const meta::Instrument& inst, const meta::Timestamp& date) {
+        std::string date_str;
+        if (!date.empty()) {
+            date_str = date.only_date();
+        } else {
+            date_str = meta::Timestamp::now().only_date();
+        }
+        auto filename = trans_cache_filename(inst, date_str);
+        if (!std::filesystem::exists(filename)) {
+            fmt::print("\n=== {}: {} @ {} ===\n  (no cache file)\n", Name(), inst.symbol(), date_str);
+            return;
+        }
+        try {
+            io::CSVReader<6, io::trim_chars<' ', '\t'>, io::double_quote_escape<',', '"'>> reader(filename);
+            reader.read_header(io::ignore_extra_column | io::ignore_missing_column,
+                               "time", "price", "volume", "num", "amount", "direction");
+            std::vector<schema::Transaction> rows;
+            std::string time;
+            double price;
+            int volume, num, direction;
+            double amount;
+            while (reader.read_row(time, price, volume, num, amount, direction)) {
+                rows.push_back({time, price, volume, num, amount, direction});
+            }
+            if (rows.empty()) {
+                fmt::print("\n=== {}: {} @ {} ===\n  (no data)\n", Name(), inst.symbol(), date_str);
+                return;
+            }
+            fmt::print("\n=== {}: {} @ {} ({} rows) ===\n", Name(), inst.symbol(), date_str, rows.size());
+            fmt::print("{:<10} {:>8} {:>10} {:>6} {:>14} {:>10}\n",
+                       "time", "price", "volume", "num", "amount", "dir");
+            fmt::print("{:-<64}\n", "");
+            size_t head = std::min<size_t>(rows.size(), 20);
+            for (size_t i = 0; i < head; ++i) {
+                auto const& t = rows[i];
+                const char* dir = t.direction == 0 ? "BUY" : (t.direction == 1 ? "SELL" : "MID");
+                fmt::print("{:<10} {:>8.2f} {:>10} {:>6} {:>14.0f} {:>10}\n",
+                           t.time, t.price, t.volume, t.num, t.amount, dir);
+            }
+            if (rows.size() > 40) {
+                fmt::print("  ... {} rows omitted ...\n", rows.size() - 40);
+                head = std::min<size_t>(20, rows.size());
+                for (size_t i = rows.size() - head; i < rows.size(); ++i) {
+                    auto const& t = rows[i];
+                    const char* dir = t.direction == 0 ? "BUY" : (t.direction == 1 ? "SELL" : "MID");
+                    fmt::print("{:<10} {:>8.2f} {:>10} {:>6} {:>14.0f} {:>10}\n",
+                               t.time, t.price, t.volume, t.num, t.amount, dir);
+                }
+            } else if (rows.size() > 20) {
+                for (size_t i = 20; i < rows.size(); ++i) {
+                    auto const& t = rows[i];
+                    const char* dir = t.direction == 0 ? "BUY" : (t.direction == 1 ? "SELL" : "MID");
+                    fmt::print("{:<10} {:>8.2f} {:>10} {:>6} {:>14.0f} {:>10}\n",
+                               t.time, t.price, t.volume, t.num, t.amount, dir);
+                }
+            }
+        } catch (const std::exception& e) {
+            fmt::print("\n=== {}: {} @ {} ===\n  read error: {}\n", Name(), inst.symbol(), date_str, e.what());
+        }
     }
 
     void DataTrans::Update(const meta::Instrument& inst, const meta::Timestamp& date) {

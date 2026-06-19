@@ -22,11 +22,13 @@ pub mod trans;
 pub use trans::*;
 pub mod sector;
 pub use sector::*;
+pub mod xdxr;
+pub use xdxr::*;
 
 pub fn init() {
     // register xdxr, day kline, minute kline, transaction adapters
     // ignore failures — each sub-init handles its own logging
-    //xdxr::init();
+    xdxr::init();
     kline::init();
     //kline_minute::init();
     //trans::init();

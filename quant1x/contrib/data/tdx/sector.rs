@@ -396,20 +396,27 @@ fn parse_and_generate_block_file() -> Option<String> {
     // 4) industry blocks
     let hys = load_industry_blocks();
 
+    // helper: 将证券代码转为 symbol 格式
+    let to_symbol = |code: &str| -> String {
+        let s = crate::data::correct_security_code(code);
+        if s.is_empty() { code.to_string() } else { s }
+    };
+
     // 5) 组装最终板块条目
     let mut rows: Vec<(String, String, i32, i32, String, Vec<String>)> = Vec::new();
     for v in &block_index {
+        let block_code = to_symbol(&v.code);
         if let Some(info) = name2block.get(&v.name) {
             let mut entry_codes: Vec<String> = info.codes.iter()
                 .filter(|s| s.len() >= 5)
-                .cloned()
+                .map(|s| to_symbol(s))
                 .collect();
             entry_codes.sort();
             entry_codes.dedup();
             let count = entry_codes.len() as i32;
             rows.push((
                 v.name.clone(),
-                v.code.clone(),
+                block_code,
                 v.block_type,
                 count,
                 v.block.clone(),
@@ -420,11 +427,12 @@ fn parse_and_generate_block_file() -> Option<String> {
 
         // fallback: industry mapping
         let bc = &v.block;
-        let stock_list = industry_constituent_stock_list(&hys, bc);
+        let mut stock_list = industry_constituent_stock_list(&hys, bc);
         if !stock_list.is_empty() {
+            stock_list = stock_list.iter().map(|s| to_symbol(s)).collect();
             rows.push((
                 v.name.clone(),
-                v.code.clone(),
+                block_code,
                 v.block_type,
                 stock_list.len() as i32,
                 v.block.clone(),
@@ -447,15 +455,16 @@ fn parse_and_generate_block_file() -> Option<String> {
     }
 
     let mut wtr = csv::Writer::from_path(&out_fn).ok()?;
-    for (name, code, btype, count, block, constituent_stocks) in &rows {
-        let cs_json = serde_json::to_string(constituent_stocks).unwrap_or_else(|_| "[]".to_string());
+    // 写入 header (字段名全部小写蛇形)
+    let _ = wtr.write_record(&["name", "code", "type", "count", "constituent_stocks"]);
+    for (name, code, btype, count, _block, constituent_stocks) in &rows {
+        let cs_str = constituent_stocks.join(",");
         let _ = wtr.write_record(&[
             name,
             code,
             &btype.to_string(),
             &count.to_string(),
-            block,
-            &cs_json,
+            &cs_str,
         ]);
     }
     let _ = wtr.flush();
@@ -557,17 +566,19 @@ fn load_sectors_from_csv(filename: &str) -> Option<Vec<Sector>> {
             let code = rec.get(1).unwrap_or("").to_string();
             let sector_type: i32 = rec.get(2).and_then(|s| s.parse().ok()).unwrap_or(0);
             let count: i32 = rec.get(3).and_then(|s| s.parse().ok()).unwrap_or(0);
-            let block = rec.get(4).unwrap_or("").to_string();
-            let constituent_stocks_str = rec.get(5).unwrap_or("[]");
-            let constituent_stocks: Vec<String> = serde_json::from_str(constituent_stocks_str)
-                .unwrap_or_default();
+            let constituent_stocks_str = rec.get(4).unwrap_or("");
+            let constituent_stocks: Vec<String> = if constituent_stocks_str.is_empty() {
+                Vec::new()
+            } else {
+                constituent_stocks_str.split(',').map(|s| s.to_string()).collect()
+            };
 
             sectors.push(Sector {
                 name,
                 code,
                 sector_type,
                 count,
-                block,
+                block: String::new(),
                 constituent_stocks,
             });
         }

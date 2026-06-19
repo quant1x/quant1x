@@ -8,6 +8,7 @@
 #include <quant1x/config/base.h>
 #include <quant1x/data/base.h>
 #include <spdlog/spdlog.h>
+#include <fmt/format.h>
 #include <fstream>
 #include <sstream>
 #include <algorithm>
@@ -460,9 +461,46 @@ std::vector<quant1x::data::KLine> klines_forward_adjusted_to_date(const std::str
 // DataKLine 适配器实现
 // =============================
 
-void DataKLine::Print(const quant1x::data::meta::Instrument& inst, const std::vector<quant1x::data::meta::Timestamp>& dates) {
-    (void)inst;
-    (void)dates;
+void DataKLine::Print(const quant1x::data::meta::Instrument& inst, const quant1x::data::meta::Timestamp& date) {
+    auto klines = load_kline(inst);
+    if (klines.empty()) {
+        fmt::print("\n=== {}: {} ===\n  (no data)\n", Name(), inst.symbol());
+        return;
+    }
+    // filter by date if specified
+    if (!date.empty()) {
+        std::string date_str = date.only_date();
+        klines.erase(std::remove_if(klines.begin(), klines.end(),
+            [&](auto const& b) { return b.date > date_str; }), klines.end());
+    }
+    fmt::print("\n=== {}: {} ({} rows) ===\n", Name(), inst.symbol(), klines.size());
+    fmt::print("{:<12} {:>8} {:>8} {:>8} {:>8} {:>12} {:>14} {:>4} {:>4} {:>3}\n",
+               "date", "open", "close", "high", "low", "volume", "amount", "up", "dn", "adj");
+    fmt::print("{:-<90}\n", "");
+    size_t head = std::min<size_t>(klines.size(), 10);
+    for (size_t i = 0; i < head; ++i) {
+        auto const& b = klines[i];
+        fmt::print("{:<12} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>12.0f} {:>14.0f} {:>4} {:>4} {:>3}\n",
+                   b.date, b.open, b.close, b.high, b.low,
+                   b.volume, b.amount, b.up, b.down, b.adjustment_count);
+    }
+    if (klines.size() > 20) {
+        fmt::print("  ... {} rows omitted ...\n", klines.size() - 20);
+        head = std::min<size_t>(10, klines.size());
+        for (size_t i = klines.size() - head; i < klines.size(); ++i) {
+            auto const& b = klines[i];
+            fmt::print("{:<12} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>12.0f} {:>14.0f} {:>4} {:>4} {:>3}\n",
+                       b.date, b.open, b.close, b.high, b.low,
+                       b.volume, b.amount, b.up, b.down, b.adjustment_count);
+        }
+    } else if (klines.size() > 10) {
+        for (size_t i = 10; i < klines.size(); ++i) {
+            auto const& b = klines[i];
+            fmt::print("{:<12} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>12.0f} {:>14.0f} {:>4} {:>4} {:>3}\n",
+                       b.date, b.open, b.close, b.high, b.low,
+                       b.volume, b.amount, b.up, b.down, b.adjustment_count);
+        }
+    }
 }
 
 void DataKLine::Update(const quant1x::data::meta::Instrument& inst, const quant1x::data::meta::Timestamp& date) {

@@ -202,6 +202,7 @@ if __name__ == '__main__':
     code = 'ixic.us'
     code = 'US0487.us'
     code = 'aapl.us'
+    code = '880005'
     info = get_instrument_info(code)
     print(f"Security info for {code}: {info}")
     if info is not None:

@@ -7,7 +7,6 @@ from __future__ import annotations
 from enum import IntEnum
 import os
 import struct
-import json
 from dataclasses import dataclass, field
 from typing import List, Optional
 import pandas as pd
@@ -92,26 +91,10 @@ def get_sector_filename(date: str = "") -> str:
     return os.path.join(config.meta_path, filename)
 
 
-def _parse_constituent_field(val: str) -> List[str]:
-    if not val:
-        return []
-    val = val.strip()
-    try:
-        lst = json.loads(val)
-        if isinstance(lst, List):
-            return [str(market.detect_symbol(s.strip())) for s in lst if s]
-    except Exception:
-        # fallback: comma or pipe separated list
-        sep = ","
-        if "|" in val:
-            sep = "|"
-        parts = [p.strip() for p in val.split(sep) if p.strip()]
-        return [str(market.detect_symbol(p)) for p in parts]
-    return []
-
 
 _global_block_list: List[Sector] = []
 _map_block: dict = {}
+_onceBlockFiles = RollingOnce(name='sector', cron=GLOBAL_CRON_EXPR_DAILY_INIT)
 
 def _get_block_info_from_level1(filename: str) -> Optional[bytes]:
     try:
@@ -165,6 +148,7 @@ def update_cache_block_file() -> None:
     block_file = get_sector_filename()
     logger.info(f"update_cache_block_file: block_file={block_file}")
     create_or_update = market_status.should_initialize_file(block_file)
+    print(f"update_cache_block_file: create_or_update={create_or_update}")
     if create_or_update:
         parse_and_generate_block_file()
 
@@ -334,6 +318,12 @@ def parse_and_generate_block_file():
     # 4) industry blocks
     hys = load_industry_blocks()
 
+    def _to_symbol(code):
+        try:
+            return market.correct_security_code(code)
+        except Exception:
+            return str(code)
+
     # assemble final block entries
     rows = []
     for v in block_index:
@@ -344,15 +334,14 @@ def parse_and_generate_block_file():
             for sc in info.get('codes', []):
                 if len(sc) < 5:
                     continue
-                entry_codes.append(sc)
+                entry_codes.append(_to_symbol(sc))
             count = int(info.get('num', 0))
             rows.append({
                 'name': v['name'],
-                'code': v['code'],
+                'code': _to_symbol(v['code']),
                 'type': v['type'],
                 'count': count,
-                'block': v['block'],
-                'constituent_stocks': json.dumps(entry_codes, ensure_ascii=False),
+                'constituent_stocks': ','.join(entry_codes),
             })
             continue
 
@@ -360,20 +349,20 @@ def parse_and_generate_block_file():
         bc = v['block']
         stock_list = industry_constituent_stock_list(hys, bc)
         if stock_list:
+            stock_list = [_to_symbol(s) for s in stock_list]
             rows.append({
                 'name': v['name'],
-                'code': v['code'],
+                'code': _to_symbol(v['code']),
                 'type': v['type'],
                 'count': len(stock_list),
-                'block': v['block'],
-                'constituent_stocks': json.dumps(stock_list, ensure_ascii=False),
+                'constituent_stocks': ','.join(stock_list),
             })
 
     # filter empty
-    rows = [r for r in rows if r.get('constituent_stocks') and r.get('constituent_stocks') != '[]']
+    rows = [r for r in rows if r.get('constituent_stocks')]
     if not rows:
         return None
-    df = pd.DataFrame(rows, columns=['name', 'code', 'type', 'count', 'block', 'constituent_stocks'])
+    df = pd.DataFrame(rows, columns=['name', 'code', 'type', 'count', 'constituent_stocks'])
     out_fn = get_sector_filename()
     os.makedirs(os.path.dirname(out_fn), exist_ok=True)
     df.to_csv(out_fn, index=False)
@@ -418,7 +407,7 @@ def sync_block_files():
     update_cache_block_file()
 
 def load_cache_block_infos() -> None:
-    global _onceBlockFiles, _global_block_list, _map_block
+    global _global_block_list, _map_block
     
     bk_filename = get_sector_filename()
     create_or_update = market_status.should_initialize_file(bk_filename)
@@ -432,8 +421,9 @@ def load_cache_block_infos() -> None:
     try:
         df = pd.read_csv(bk_filename)
     except Exception:
+        logger.exception(f"load_cache_block_infos: failed to read block file {bk_filename}")
         return
-
+    
     _global_block_list = []
     _map_block = {}
     for _, row in df.iterrows():
@@ -441,28 +431,25 @@ def load_cache_block_infos() -> None:
             name = str(row.get('name') or '')
             code = str(market.detect_symbol(str(row.get('code') or '')))
             btype = int(row.get('type') or 0)
-            block = str(row.get('block') or '')
-            cs_field = row.get('constituent_stocks') or '[]'
-            try:
-                constituents = json.loads(cs_field) if isinstance(cs_field, str) else list(cs_field)
-            except Exception:
-                constituents = _parse_constituent_field(str(cs_field))
+            cs_field = row.get('constituent_stocks') or ''
+            constituents = str(cs_field).split(',') if str(cs_field).strip() else []
             constituents = [str(market.detect_symbol(s)) for s in constituents]
-            bi = Sector(name=name, code=code, type=btype, count=len(constituents), block=block, constituent_stocks=constituents)
+            bi = Sector(name=name, code=code, type=btype, count=len(constituents), constituent_stocks=constituents)
             _global_block_list.append(bi)
             _map_block[bi.code] = bi
         except Exception:
+            logger.exception(f"load_cache_block_infos: failed to parse block entry: {row}")
             continue
 
 
-_onceBlockFiles = RollingOnce(name='sector', cron=GLOBAL_CRON_EXPR_DAILY_INIT)
-
 def get_sector_list() -> List[Sector]:
+    global _global_block_list, _map_block
     _onceBlockFiles.do(load_cache_block_infos)
     return list(_global_block_list)
 
 
 def get_sector_info(symbol: str) -> Optional[Sector]:
+    global _global_block_list, _map_block
     _onceBlockFiles.do(load_cache_block_infos)
     inst = market.detect_symbol(symbol)
     return _map_block.get(inst.symbol())

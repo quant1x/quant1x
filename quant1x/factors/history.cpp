@@ -4,6 +4,7 @@
 #include <quant1x/pandas/dataframe.h>
 #include <boost/pfr.hpp>
 #include <quant1x/encoding/csv.h>
+#include <fmt/format.h>
 
 void History::adjust(const factors::CumulativeAdjustment &adj) {
     (void)adj;
@@ -29,9 +30,22 @@ std::string HistoryFeature::Usage() const {
     return "历史数据";
 }
 
-void HistoryFeature::Print(const meta::Instrument &inst, const std::vector<meta::Timestamp> &dates) {
-    (void)inst;
-    (void)dates;
+void HistoryFeature::Print(const meta::Instrument &inst, const meta::Timestamp &date) {
+    (void)date;
+    auto h = headers();
+    auto v = values();
+    fmt::print("\n=== {}: {} ===\n", Name(), inst.symbol());
+    if (h.empty()) {
+        fmt::print("  (no data)\n");
+        return;
+    }
+    size_t max_w = 0;
+    for (auto const& s : h) {
+        if (s.size() > max_w) max_w = s.size();
+    }
+    for (size_t i = 0; i < h.size() && i < v.size(); ++i) {
+        fmt::print("  {:<{}} : {}\n", h[i], max_w + 2, v[i]);
+    }
 }
 
 void HistoryFeature::Update(const meta::Instrument &inst, const meta::Timestamp &date) {

@@ -236,7 +236,7 @@ inline std::vector<CodeRule> sse_rules() {
         {Exchange::SSE, RulePrefix("901"), InstrumentType::BStock, "B转H", "901000-901099 用于 B 转 H"},
         {Exchange::SSE, RulePrefix("938"), InstrumentType::Other, "网络投票", "对应 B 股(不再增用)"},
         {Exchange::SSE, RulePrefix("939"), InstrumentType::Other, "密码服务", "939988 用于 B 股网络投票密码服务"},
-        {Exchange::SSE, RulePrefix("9"), InstrumentType::BStock, "B股", "首位 9: B 股"},
+        //{Exchange::SSE, RulePrefix("9"), InstrumentType::BStock, "B股", "首位 9: B 股"},
     };
 }
 

@@ -35,9 +35,9 @@ namespace quant1x::data {
     class DataAdapter : public Schema {
     public:
         virtual ~DataAdapter() = default;
-        // 控制台打印, 对齐 Python: print(inst, date=None)
-        virtual void Print(const meta::Instrument& inst, const std::vector<meta::Timestamp>& dates = {}) = 0;
-        // 更新数据, 对齐 Python: update(inst, date=None)
+        // 控制台打印, 对齐 Go: Print(inst, dates ...Timestamp)
+        virtual void Print(const meta::Instrument& inst, const meta::Timestamp& date = meta::Timestamp()) = 0;
+        // 更新数据, 对齐 Go: Update(inst, date Timestamp)
         virtual void Update(const meta::Instrument& inst, const meta::Timestamp& date = meta::Timestamp()) = 0;
     };
 

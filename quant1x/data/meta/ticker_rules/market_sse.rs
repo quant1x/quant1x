@@ -235,6 +235,6 @@ pub fn sse_rules() -> Vec<CodeRule> {
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("901"), instrument_type: InstrumentType::BSTOCK, name: "B转H", desc: "901000-901099 用于 B 转 H" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("938"), instrument_type: InstrumentType::OTHER, name: "网络投票", desc: "对应 B 股(不再增用)" },
         CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("939"), instrument_type: InstrumentType::OTHER, name: "密码服务", desc: "939988 用于 B 股网络投票密码服务" },
-        CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("9"), instrument_type: InstrumentType::BSTOCK, name: "B股", desc: "首位 9: B 股" },
+        //CodeRule { exchange: Exchange::SSE, prefix: RulePrefix::Str("9"), instrument_type: InstrumentType::BSTOCK, name: "B股", desc: "首位 9: B 股" },
     ]
 }

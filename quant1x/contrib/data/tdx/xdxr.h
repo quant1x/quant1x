@@ -18,8 +18,8 @@ namespace quant1x::contrib::data::tdx {
         std::string Name() const override { return "除权除息"; }
         std::string Usage() const override { return ""; }
 
-        void Print(const quant1x::data::meta::Instrument& inst, const std::vector<quant1x::data::meta::Timestamp>& dates = {}) override;
-        void Update(const quant1x::data::meta::Instrument& inst, const quant1x::data::meta::Timestamp& date = quant1x::data::meta::Timestamp()) override;
+        void Print(const quant1x::data::meta::Instrument& inst, const quant1x::data::meta::Timestamp& date) override;
+        void Update(const quant1x::data::meta::Instrument& inst, const quant1x::data::meta::Timestamp& date) override;
     };
 
 } // namespace quant1x::contrib::data::tdx
