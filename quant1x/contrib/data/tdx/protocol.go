@@ -1,4 +1,4 @@
-package std
+package tdx
 
 import (
 	"bytes"
@@ -41,8 +41,8 @@ const (
 )
 
 const (
-	packetTypeRequest   uint8 = 0x01
-	packetTypeHeartbeat uint8 = 0x02
+	PacketTypeRequest   uint8 = 0x01
+	PacketCtrlHeartbeat uint8 = 0x02
 )
 
 const (
@@ -173,7 +173,7 @@ func (b *ResponseBase) SetHeader(h *ResponseHeader) {
 	b.header = *h
 }
 
-// buildRequest 构建请求数据包
+// BuildRequest 构建请求数据包
 //
 // 参数:
 //
@@ -184,7 +184,7 @@ func (b *ResponseBase) SetHeader(h *ResponseHeader) {
 // 返回值:
 //
 //	构建完成的请求字节数组
-func buildRequest(method StdCommand, packetType uint8, payload []byte) []byte {
+func BuildRequest(method StdCommand, packetType uint8, payload []byte) []byte {
 	seqId := nextSequenceId()
 	pkgLen := uint16(2)
 	if payload != nil {
@@ -229,7 +229,7 @@ func unzipZlib(data []byte) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-// Process 处理请求并获取响应
+// TransactMessageSync 处理请求并获取响应
 //
 // 参数:
 //
@@ -240,7 +240,7 @@ func unzipZlib(data []byte) ([]byte, error) {
 // 返回值:
 //
 //	error - 处理过程中遇到的错误
-func Process[T ProtocolRequest, R ProtocolResponse](conn_ *qio.Connection, req T, resp R) error {
+func TransactMessageSync[T ProtocolRequest, R ProtocolResponse](conn_ *qio.Connection, req T, resp R) error {
 	conn := conn_.Conn()
 	if conn == nil {
 		return errors.New("nil connection")

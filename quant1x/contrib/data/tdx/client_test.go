@@ -16,7 +16,7 @@ import (
 func TestBuildRequest(t *testing.T) {
 	atomic.StoreUint32(&seqId, 0)
 	payload := []byte{0xAA, 0xBB, 0xCC}
-	req := buildRequest(StdCommandSecurityList, packetTypeHeartbeat, payload)
+	req := BuildRequest(StdCommandSecurityList, PacketCtrlHeartbeat, payload)
 
 	wantLen := 1 + 4 + 1 + 2 + 2 + 2 + len(payload)
 	if len(req) != wantLen {
@@ -72,11 +72,11 @@ func TestReadResponseHeader(t *testing.T) {
 
 func TestHeartbeatRequestBytes(t *testing.T) {
 	atomic.StoreUint32(&seqId, 0)
-	req := HeartbeatRequest{}.Bytes()
+	req := HeartbeatContext{}.Bytes()
 	if len(req) != 12 {
 		t.Fatalf("unexpected heartbeat request length: %d", len(req))
 	}
-	if req[5] != packetTypeHeartbeat {
+	if req[5] != PacketCtrlHeartbeat {
 		t.Fatalf("unexpected packet type: 0x%02X", req[5])
 	}
 	method := binary.LittleEndian.Uint16(req[10:12])

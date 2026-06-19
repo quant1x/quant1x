@@ -1,11 +1,11 @@
-package std
+package tdx
 
 import (
 	"fmt"
 	"math"
 	"strings"
 
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/data/meta"
 )
 
 const (
@@ -13,8 +13,8 @@ const (
 	tmMWidth = 10000
 )
 
-// getDatetimeFromUint32 mirrors the C++ helper and returns year, month, day, hour, minute.
-func getDatetimeFromUint32(category int, zipday uint32, tminutes uint16) (int, int, int, int, int) {
+// GetDatetimeFromUint32 mirrors the C++ helper and returns year, month, day, hour, minute.
+func GetDatetimeFromUint32(category int, zipday uint32, tminutes uint16) (int, int, int, int, int) {
 	year, month, day := 0, 0, 0
 	hour, minute := 15, 0
 
@@ -33,8 +33,8 @@ func getDatetimeFromUint32(category int, zipday uint32, tminutes uint16) (int, i
 	return year, month, day, hour, minute
 }
 
-// varintEncode encodes a signed integer using the Level1 variable length scheme.
-func varintEncode(value int64, buffer []byte, pos *int) int {
+// VarintEncode encodes a signed integer using the Level1 variable length scheme.
+func VarintEncode(value int64, buffer []byte, pos *int) int {
 	sign := value < 0
 	absValue := uint64(value)
 	if sign {
@@ -70,8 +70,8 @@ func varintEncode(value int64, buffer []byte, pos *int) int {
 	return count
 }
 
-// varintDecode decodes a value produced by varintEncode.
-func varintDecode(b []byte, pos *int) int64 {
+// VarintDecode decodes a value produced by VarintEncode.
+func VarintDecode(b []byte, pos *int) int64 {
 	idx := *pos
 	if idx >= len(b) {
 		panic("varint decode out of range")
@@ -100,8 +100,8 @@ func varintDecode(b []byte, pos *int) int64 {
 	return data
 }
 
-// formatTimestamp converts the packed timestamp used in snapshots into HH:mm:ss.SSS.
-func formatTimestamp(stamp int64) string {
+// FormatTimestampFromI64 converts the packed timestamp used in snapshots into HH:mm:ss.SSS.
+func FormatTimestampFromI64(stamp int64) string {
 	h := stamp / tmHWidth
 	tmp1 := stamp % tmHWidth
 	m1 := tmp1 / tmMWidth
@@ -133,8 +133,8 @@ type intLike interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64
 }
 
-// integerToFloat64 reconstructs the floating point value encoded in a 32-bit integer.
-func integerToFloat64[T intLike](integer T) float64 {
+// IntegerToFloat64 reconstructs the floating point value encoded in a 32-bit integer.
+func IntegerToFloat64[T intLike](integer T) float64 {
 	uinteger := uint32(uint64(integer))
 
 	logPoint := int((uinteger >> 24) & 0xFF)
@@ -182,8 +182,8 @@ func integerToFloat64[T intLike](integer T) float64 {
 	return dblXmm6 + dblXmm4 + dblXmm3 + dblXmm1
 }
 
-// float64IsNaN reports whether f is NaN or Inf.
-func float64IsNaN(f float64) bool {
+// Float64IsNaN reports whether f is NaN or Inf.
+func Float64IsNaN(f float64) bool {
 	return math.IsNaN(f) || math.IsInf(f, 0)
 }
 
@@ -191,8 +191,8 @@ type numeric interface {
 	~uint16 | ~uint32 | ~float32
 }
 
-// numberToFloat64 converts supported numeric types to float64.
-func numberToFloat64[T numeric](v T) float64 {
+// NumberToFloat64 converts supported numeric types to float64.
+func NumberToFloat64[T numeric](v T) float64 {
 	return float64(v)
 }
 
@@ -202,7 +202,7 @@ const (
 	marketBeiJing  = 2
 )
 
-// exchangeToMarketId 根据交易所枚举返回对应的市场ID
+// ExchangeToMarketId 根据交易所枚举返回对应的市场ID
 // 参数:
 //
 //	exchange: 交易所枚举值
@@ -210,34 +210,34 @@ const (
 // 返回值:
 //
 //	对应市场的整型ID, 如果交易所不匹配则返回-1
-func exchangeToMarketId(ex exchange.Exchange) int {
+func ExchangeToMarketId(ex meta.Exchange) int {
 	switch ex {
-	case exchange.ExchangeSZSE:
+	case meta.ExchangeSZSE:
 		return marketShenZhen
-	case exchange.ExchangeSSE:
+	case meta.ExchangeSSE:
 		return marketShangHai
-	case exchange.ExchangeBSE:
+	case meta.ExchangeBSE:
 		return marketBeiJing
 	default:
 		return -1
 	}
 }
 
-func marketIdToExchange(marketID int) exchange.Exchange {
+func MarketIdToExchange(marketID int) meta.Exchange {
 	switch marketID {
 	case marketShenZhen:
-		return exchange.ExchangeSZSE
+		return meta.ExchangeSZSE
 	case marketShangHai:
-		return exchange.ExchangeSSE
+		return meta.ExchangeSSE
 	case marketBeiJing:
-		return exchange.ExchangeBSE
+		return meta.ExchangeBSE
 	default:
-		return exchange.ExchangeUnknown
+		return meta.ExchangeUnknown
 	}
 }
 
-// defaultBaseUnit returns the lot size heuristic used by Level1 helpers.
-func defaultBaseUnit(marketID int, code string) float64 {
+// DefaultBaseUnit returns the lot size heuristic used by Level1 helpers.
+func DefaultBaseUnit(marketID int, code string) float64 {
 	if len(code) == 0 {
 		return 100.0
 	}
@@ -251,10 +251,10 @@ func defaultBaseUnit(marketID int, code string) float64 {
 
 // instrumentsToString 将一组InstrumentInfo转换为逗号分隔的字符串, 格式为"ticker:exchangeId,ticker:exchangeId..."
 // 自动去除结果字符串开头的逗号
-func instrumentsToString(codes []exchange.InstrumentInfo) string {
+func instrumentsToString(codes []meta.InstrumentInfo) string {
 	var result strings.Builder
 	for _, code := range codes {
-		result.WriteString(fmt.Sprintf(",%s:%d", code.Ticker, exchangeToMarketId(code.Exchange)))
+		result.WriteString(fmt.Sprintf(",%s:%d", code.Ticker, ExchangeToMarketId(code.Exchange)))
 	}
 	return result.String()[1:]
 }

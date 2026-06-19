@@ -2,7 +2,7 @@
 #include <quant1x/contrib/data/tdx/helpers.h>
 
 // 测试快照时间戳
-TEST_CASE("encoding-format_time", "[level1]") {
+TEST_CASE("encoding-format_timestamp_from_i64", "[level1]") {
     int test_cases[] = {
         0,        // 00:00:00.000
         123,      // 00:01:23.000(解析逻辑: h=0, m1=1, tmp2=23)
@@ -21,7 +21,7 @@ TEST_CASE("encoding-format_time", "[level1]") {
 
     for (int i = 0; ; ++i) {
         if (test_cases[i] == -1) break;
-        printf("Input: %d, Output: %s\n", test_cases[i], tdx::helpers::format_time(test_cases[i]).c_str());
+        printf("Input: %d, Output: %s\n", test_cases[i], tdx::helpers::format_timestamp_from_i64(test_cases[i]).c_str());
     }
 }
 

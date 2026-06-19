@@ -277,7 +277,7 @@ class Instrument:
         """
         return self.exchange != Exchange.UNKNOWN and self.type != InstrumentType.Unknown and self.lot_size > 0 and self.price_precision > 0
     
-    def marker_ticker(self) -> str:
+    def market_ticker(self) -> str:
         """
         获取市场惯例代码(优先 alias_ticker, 否则 ticker)
         语义: alias_ticker 表示市场惯例写法/别名映射, 并不改变 ticker 的原始含义

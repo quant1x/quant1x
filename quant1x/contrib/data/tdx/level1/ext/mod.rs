@@ -9,13 +9,13 @@ use crate::std::BinaryStream;
 use encoding_rs::GBK;
 
 use super::super::command::{EXT_INSTRUMENT_COUNT, EXT_INSTRUMENT_INFO, EXT_SYNCHRONIZE, FLAG_GENERIC};
-use super::super::protocol::{BaseMessage, RequestHeader, ResponseHeader};
+use super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 use super::super::market::find_exchange_by_market_and_category;
 use super::super::helpers::msg_sequence_id;
 
 // ============================================================
-// Synchronize — 扩展行情握手请求
-// 对应 Python level1/ext.py Synchronize
+// SynchronizeContext — 扩展行情握手请求
+// 对应 Python level1/ext.py SynchronizeContext
 // 命令字: EXT_SYNCHRONIZE (0x2454)
 // ============================================================
 
@@ -26,7 +26,7 @@ pub struct ExtSynchronizeRequest {
     pub success: bool,
 }
 
-impl BaseMessage for ExtSynchronizeRequest {
+impl BaseFrame for ExtSynchronizeRequest {
     fn request_header(&self) -> &RequestHeader {
         &self.req_header
     }
@@ -41,7 +41,7 @@ impl BaseMessage for ExtSynchronizeRequest {
     }
 
     fn serialize_request_body(&mut self) -> Vec<u8> {
-        // Synchronize.serialize_request_body 的 80 字节 padding
+        // SynchronizeContext.serialize_request_body 的 80 字节 padding
         let padding = hex::decode(
             "e5bb1c2fafe52594\
              1f32c6e5d53dfb41\
@@ -59,7 +59,7 @@ impl BaseMessage for ExtSynchronizeRequest {
     }
 
     fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
-        // Synchronize.deserialize_response_body:
+        // SynchronizeContext.deserialize_response_body:
         //   第一个字节是 result_code
         if data.is_empty() {
             self.success = false;
@@ -81,8 +81,8 @@ impl ExtSynchronizeRequest {
 }
 
 // ============================================================
-// InstrumentCount — 扩展行情 InstrumentCount
-// 对应 Python level1/ext.py InstrumentCount
+// InstrumentCountContext — 扩展行情 InstrumentCountContext
+// 对应 Python level1/ext.py InstrumentCountContext
 // 命令字: EXT_INSTRUMENT_COUNT (0x23f4)
 // ============================================================
 
@@ -103,7 +103,7 @@ impl InstrumentCountRequest {
     }
 }
 
-impl BaseMessage for InstrumentCountRequest {
+impl BaseFrame for InstrumentCountRequest {
     fn request_header(&self) -> &RequestHeader {
         &self.req_header
     }
@@ -118,12 +118,12 @@ impl BaseMessage for InstrumentCountRequest {
     }
 
     fn serialize_request_body(&mut self) -> Vec<u8> {
-        // InstrumentCount.serialize_request_body: return b''
+        // InstrumentCountContext.serialize_request_body: return b''
         Vec::new()
     }
 
     fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
-        // InstrumentCount.deserialize_response_body:
+        // InstrumentCountContext.deserialize_response_body:
         //   (name, reversed1, reversed2, num, reversed3, reversed4) = struct.unpack("<11s5I", data[:31])
         //   self.reply = {"source": name, "count": num}
         if data.len() >= 31 {
@@ -167,7 +167,7 @@ impl InstrumentInfoRequest {
     }
 }
 
-impl BaseMessage for InstrumentInfoRequest {
+impl BaseFrame for InstrumentInfoRequest {
     fn request_header(&self) -> &RequestHeader {
         &self.req_header
     }

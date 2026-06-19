@@ -8,7 +8,7 @@
 namespace config = quant1x::config;
 namespace meta = quant1x::data::meta;
 using quant1x::contrib::data::tdx::KLineType;
-using quant1x::contrib::data::tdx::SecurityBars;
+using quant1x::contrib::data::tdx::SecurityBarsContext;
 
 namespace quant1x::contrib::data::tdx {
 
@@ -27,8 +27,8 @@ namespace quant1x::contrib::data::tdx {
         try {
             auto conn = get_std_conn();
             // 使用 1分钟K线类型拉取
-            SecurityBars bars(inst, static_cast<u16>(KLineType::_1MIN), 0, security_bars_max);
-            process_message(conn->socket(), bars);
+            SecurityBarsContext bars(inst, static_cast<u16>(KLineType::_1MIN), 0, security_bars_max);
+            transact_message_sync(conn->socket(), bars);
             // 保存到 {cache}/kline_minute/{cache_dir}/{symbol}.csv
             auto filename = kline_minute_cache_filename(inst);
             auto parent = std::filesystem::path(filename).parent_path().string();

@@ -104,15 +104,15 @@ static std::vector<quant1x::data::meta::Instrument> fetch_security_list(quant1x:
         auto conn = get_std_conn();
         auto& sock = conn->socket();
 
-        SecurityList msg(market_id, start, count);
-        auto err = process_message(sock, msg);
+        SecurityListContext msg(market_id, start, count);
+        auto err = transact_message_sync(sock, msg);
         if (err) {
-            spdlog::error("[tdx/instruments] SecurityList fetch failed: {} {}",
+            spdlog::error("[tdx/instruments] SecurityListContext fetch failed: {} {}",
                           quant1x::data::meta::exchange_code(exchange), err.message());
             return result;
         }
 
-        spdlog::debug("[tdx/instruments] SecurityList {} start={} count={} got {} records",
+        spdlog::debug("[tdx/instruments] SecurityListContext {} start={} count={} got {} records",
                       quant1x::data::meta::exchange_code(exchange), start, count, msg.Count);
 
         for (const auto& sec : msg.List) {

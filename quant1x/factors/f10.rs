@@ -155,10 +155,10 @@ fn get_finance_info(security_code: &str, feature_date: &str) -> (f64, f64, Strin
 
     // Try to fetch from level1
     if let Ok(mut conn) = crate::contrib::data::tdx::client::get_std_conn() {
-        let mut msg = level1::FinanceInfoRequest::new(security_code);
+        let mut msg = level1::FinanceInfoContext::new(security_code);
 
         // Use stream() to get the stream
-        match crate::contrib::data::tdx::protocol::process_level1_stream(conn.stream(), &mut msg) {
+        match crate::contrib::data::tdx::protocol::transact_message_sync(conn.stream(), &mut msg) {
             Ok(_) => {
                 let info = msg.info;
                 // Check if response is valid (assuming non-zero capital means valid)

@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace quant1x::data::meta::schema {
+namespace quant1x::data::schema {
 
 /// 交易方向
 enum class Direction : uint8_t {
@@ -29,6 +29,6 @@ struct Transaction {
     }
 };
 
-} // namespace quant1x::data::meta::schema
+} // namespace quant1x::data::schema
 
 #endif // QUANT1X_DATA_SCHEMA_TRADE_H

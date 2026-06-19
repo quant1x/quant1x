@@ -13,12 +13,12 @@ from ... import helpers
 from ... import protocol
 
 
-class Xdxr(protocol.BaseMessage):
+class XdxrInfoContext(protocol.BaseFrame):
     """除权除息信息"""
-    def __init__(self, exchange: Exchange, ticker: str):
+    def __init__(self, inst: Instrument):
         super().__init__(Command.STD_XDXR_INFO)
-        self._market = helpers.exchange_to_market(exchange)
-        self._ticker = ticker
+        self._market = helpers.exchange_to_market(inst.exchange)
+        self._ticker = inst.market_ticker()
         self._padding = bytes.fromhex('0100')
 
         self.count = 0
@@ -86,7 +86,7 @@ class Xdxr(protocol.BaseMessage):
         return helpers.int_to_float64(v)
 
 
-class XdxrBatch(protocol.BaseMessage):
+class XdxrBatchContext(protocol.BaseFrame):
     """批量获取除权除息信息"""
     def __init__(self, insts: List[Instrument]):
         super().__init__(Command.STD_XDXR_INFO)

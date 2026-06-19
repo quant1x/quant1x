@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
 )
 
 const (
@@ -26,31 +28,31 @@ func (meta BlockMeta) String() string {
 		meta.Size, meta.C1, hex.EncodeToString(meta.HashValue[:]), meta.C2)
 }
 
-type BlockMetaRequest struct {
+type BlockFileMetaContext struct {
 	BlockFilename [40]byte
 }
 
-func NewBlockMetaRequest(filename string) *BlockMetaRequest {
-	req := &BlockMetaRequest{}
+func NewBlockMetaRequest(filename string) *BlockFileMetaContext {
+	req := &BlockFileMetaContext{}
 	copy(req.BlockFilename[:], filename)
 	return req
 }
 
-func (req *BlockMetaRequest) Bytes() []byte {
-	return buildRequest(req.Command(), packetTypeRequest, req.BlockFilename[:])
+func (req *BlockFileMetaContext) Bytes() []byte {
+	return tdx.BuildRequest(req.Command(), tdx.PacketTypeRequest, req.BlockFilename[:])
 }
 
-func (req *BlockMetaRequest) Command() StdCommand {
-	return StdCommandBlockMeta
+func (req *BlockFileMetaContext) Command() tdx.StdCommand {
+	return tdx.StdCommandBlockMeta
 }
 
-func (req *BlockMetaRequest) String() string {
+func (req *BlockFileMetaContext) String() string {
 	filename := string(bytes.TrimRight(req.BlockFilename[:], "\x00"))
 	return fmt.Sprintf("{BlockFilename:%s}", filename)
 }
 
 type BlockMetaResponse struct {
-	ResponseBase
+	tdx.ResponseBase
 	Meta BlockMeta
 }
 

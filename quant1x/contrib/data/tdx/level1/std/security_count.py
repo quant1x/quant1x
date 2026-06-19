@@ -8,7 +8,7 @@ from ...command import Command
 from ... import protocol
 
 
-class SecurityCount(protocol.BaseMessage):
+class SecurityCountContext(protocol.BaseFrame):
     """证券数量请求"""
     def __init__(self, market: int = 0):
         super().__init__(Command.STD_SECURITY_COUNT)

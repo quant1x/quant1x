@@ -23,7 +23,7 @@ from quant1x.std.time import get_quarter_by_date
 
 from .client import get_std_conn
 from . import protocol
-from .level1 import FinanceInfoRequest
+from .level1 import FinanceInfoContext
 from .xdxr import get_xdxr_list
 from .kline import ipo_date_from_xdxrs
 from . import share_holder
@@ -197,12 +197,12 @@ def save_f10(inst: Instrument, values: List[F10]):
 URL_SAFETY_SCORE = "http://page3.tdx.com.cn:7615/site/pcwebcall_static/bxb/json/"
 DEFAULT_SAFETY_SCORE = 100
 
-def _fetch_finance_info_from_tdx(exchange: Exchange, ticker: str):
+def _fetch_finance_info_from_tdx(inst: Instrument):
     """从TDX标准行情TCP获取财务信息"""
     try:
         conn = get_std_conn()
-        msg = FinanceInfoRequest(exchange=exchange, ticker=ticker)
-        protocol.process_level1_new(conn, msg)
+        msg = FinanceInfoContext(exchange=exchange, ticker=ticker)
+        protocol.transact_message_sync(conn, msg)
         return msg.info
     except Exception:
         logger.exception(f"[tdx::f10] fetch finance_info failed for {ticker}")
@@ -345,7 +345,7 @@ def _compute_f10_from_tdx(inst: Instrument, date: str) -> Optional[F10]:
     暂不依赖的字段:
     - margin_trading_target: 依赖 exchange 层东方财富API
     """
-    security_code = inst.marker_ticker()
+    security_code = inst.market_ticker()
 
     f10 = F10()
     f10.date = date

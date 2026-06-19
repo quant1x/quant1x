@@ -30,10 +30,10 @@ namespace quant1x::contrib::data::tdx::sector {
 
     /// 获取全部板块列表 (对齐 Python get_sector_list)
     /// 首次调用时会自动触发板块文件同步 (下载 + 解析 + 生成CSV缓存)
-    std::vector<quant1x::data::meta::schema::Sector> get_sector_list();
+    std::vector<quant1x::data::schema::Sector> get_sector_list();
 
     /// 根据代码获取板块信息 (对齐 Python get_sector_info)
-    std::optional<quant1x::data::meta::schema::Sector> get_sector_info(const std::string &symbol);
+    std::optional<quant1x::data::schema::Sector> get_sector_info(const std::string &symbol);
 
 } // namespace quant1x::contrib::data::tdx::sector
 

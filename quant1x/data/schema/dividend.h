@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <cmath>
 
-namespace quant1x::data::meta::schema {
+namespace quant1x::data::schema {
 
 // ================= 枚举定义 =================
 
@@ -269,6 +269,6 @@ private:
     std::vector<DividendAdjustmentRecord> records_;
 };
 
-} // namespace quant1x::data::meta::schema
+} // namespace quant1x::data::schema
 
 #endif // QUANT1X_DATA_SCHEMA_DIVIDEND_H

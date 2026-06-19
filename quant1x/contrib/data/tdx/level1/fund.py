@@ -7,9 +7,8 @@ from enum import Enum
 from typing import List
 from dataclasses import dataclass, field
 
-from ..command import Command
-from .. import helpers
-from .. import protocol
+from quant1x.contrib.data.tdx.command import Command
+from quant1x.contrib.data.tdx import helpers, protocol
 from quant1x.data.meta import Exchange, Instrument, InstrumentType
 from quant1x.log import logger
 
@@ -70,21 +69,20 @@ def _decode_volume(ivol: int) -> float:
 
     return base + hi + mid + lo
 
-class HistoryFundFlowDetails_invalid(protocol.BaseMessage):
+class HistoryFundFlowDetails_invalid(protocol.BaseFrame):
     """历史日线资金流向"""
     PRE_REQUEST_MAX = 10 # 单次请求最大数量
 
     def __init__(self,
-                 exchange: Exchange,
-                 ticker: str,
+                 inst: Instrument,
                  start: int = 0x00000000,
                  count: int = PRE_REQUEST_MAX,
                  ):
-        super().__init__(Command.STD_SECURITY_BARS, flags=1)
+        super().__init__(Command.STD_SECURITY_BARS, packet_ctrl=1)
         logger.warning(f"请求和响应正常, 无数据返回")
         self.request_header.packet_ctrl = 0x08
-        self._market = helpers.exchange_to_market(exchange)
-        self._ticker = ticker
+        self._market = helpers.exchange_to_market(inst.exchange)
+        self._ticker = inst.market_ticker()
         #self._date = date
         self._start = start
         self._count = count
@@ -157,22 +155,19 @@ class HistoryFundFlowDetails_invalid(protocol.BaseMessage):
         self.count = num
         self.list = results
 
-class HistoryFundFlowDetails(protocol.BaseMessage):
+class HistoryFundFlowDetails(protocol.BaseFrame):
     """历史日线资金流向"""
     PRE_REQUEST_MAX = 10 # 单次请求最大数量
     #020000000001310031001812000030303030303100000000000000000000000000000000000053746F636B5F5A4A4C580000000000000000000000
     #......1.1.....000001..................Stock_ZJLX...........
     #020400000001310031001812000030303030303100000000000000000000000000000000000053746f636b5f5a4a4c580000000000000000000000
     
-    def __init__(self,
-                 exchange: Exchange,
-                 ticker: str,
-                 ):
-        super().__init__(Command.STD_FUND_FLOW, flags=2)
+    def __init__(self, inst: Instrument):
+        super().__init__(Command.STD_FUND_FLOW, packet_ctrl=2)
         logger.warning(f"请求和响应正常, 无数据返回")
         self.request_header.packet_ctrl = 0x01
-        self._market = helpers.exchange_to_market(exchange)
-        self._ticker = ticker
+        self._market = helpers.exchange_to_market(inst.exchange)
+        self._ticker = inst.market_ticker()
 
         self.count = 0
         self.list: List[HistoricalFundFlow] = []
@@ -228,14 +223,16 @@ if __name__ == '__main__':
     #conn = get_std_conn()
     
     # 测试 批量auction details
-    req = HistoryFundFlowDetails_invalid(exchange=Exchange.SZSE, ticker='000001')
-    protocol.process_level1_new(conn, req)
+    inst = Instrument(exchange=Exchange.SZSE, ticker='000001', type=InstrumentType.STOCK)
+    req = HistoryFundFlowDetails_invalid(inst=inst)
+    protocol.transact_message_sync(conn, req)
     if req.list:
         print(f"history fund flow details: count={req.count}")
         df = pd.DataFrame(req.list)
         print(df)
-    req = HistoryFundFlowDetails(exchange=Exchange.SZSE, ticker='000001')
-    protocol.process_level1_new(conn, req)
+    
+    req = HistoryFundFlowDetails(inst=inst)
+    protocol.transact_message_sync(conn, req)
     if req.result:
         print(f"history fund flow details: count={req.count}")
         print(req.result)

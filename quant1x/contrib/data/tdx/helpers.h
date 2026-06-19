@@ -1,7 +1,7 @@
 #pragma once
 #include <cmath>
-#ifndef QUANT1X_CONTRB_DATA_TDX_HELPERS_H
-#define QUANT1X_CONTRB_DATA_TDX_HELPERS_H 1
+#ifndef QUANT1X_CONTRIB_DATA_TDX_HELPERS_H
+#define QUANT1X_CONTRIB_DATA_TDX_HELPERS_H 1
 
 #include <quant1x/std/api.h>
 #include <quant1x/std/feature_detection.h>
@@ -28,7 +28,7 @@ namespace quant1x::contrib::data::tdx {
         // @param tminutes 压缩的时间(分钟)
         // @return 返回一个包含年, 月, 日, 小时和分钟的元组
         inline std::tuple<int, int, int, int, int>
-        getDatetimeFromUint32(int category, uint32_t zipday, uint16_t tminutes) {
+        get_datetime_from_u32(int category, uint32_t zipday, uint16_t tminutes) {
             int year = 0, month = 0, day = 0, hour = 15, minute = 0;
 
             if (category < 4 || category == 7 || category == 8) {
@@ -152,7 +152,7 @@ namespace quant1x::contrib::data::tdx {
         /// 转换快照中的时间戳, HH:mm:ss.SSS
         /// @param stamp 时间戳
         /// @return 返回格式化的时间字符串
-        inline std::string format_time(int64_t stamp) {
+        inline std::string format_timestamp_from_i64(int64_t stamp) {
             char buffer[32] = {0};
             int  h, tmp1, m1, tmp2, tmp3, m;
             // int s, t;
@@ -199,7 +199,7 @@ namespace quant1x::contrib::data::tdx {
         // 该函数假设输入为 32 位无符号整数, 并将其分解为 4 个字节部分, 计算出对应的 float64 值
         // 注意: 此函数仅适用于整数类型, 且不处理负数或非整数输入
         template <typename T>
-        inline f64 integerToFloat64(T integer) {
+        inline f64 integer_to_float64(T integer) {
             // 确保输入为整数类型
             static_assert(std::is_integral_v<T>, "T must be an integer type");
 
@@ -257,16 +257,16 @@ namespace quant1x::contrib::data::tdx {
         }
 
         // 判断 float64 是否为 NaN 或 Inf
-        inline bool float64IsNaN(double f) {
+        inline bool float64_is_nan(double f) {
             return std::isnan(f) || std::isinf(f);
         }
 
         // 模板函数: 将数值类型转换为 double
         template <typename T>
-        inline double numberToFloat64(T v) {
+        inline double number_to_float64(T v) {
             // 确保输入类型是 uint16_t, uint32_t 或 float
             static_assert(std::is_same_v<T, uint16_t> || std::is_same_v<T, uint32_t> || std::is_same_v<T, float>,
-                          "Unsupported type for numberToFloat64");
+                          "Unsupported type for number_to_float64");
 
             return static_cast<double>(v);
         }
@@ -281,7 +281,7 @@ namespace quant1x::contrib::data::tdx {
          * @note 对于上海市场的5开头证券或深圳市场的159开头证券, 这是ETF, 返回1000.0
          *       其他情况默认返回100.0
          */
-        inline f64 defaultBaseUnit(int marketId, const char *const code) {
+        inline f64 default_base_unit(int marketId, const char *const code) {
             // auto security_code = data::correct_security_code(static_cast<meta::Exchange>(marketId), code);
             // auto info = instruments::get_instrument_info(security_code);
             // if (info.has_value()) {
@@ -389,4 +389,4 @@ namespace quant1x::contrib::data::tdx {
 
 }  // namespace quant1x::contrib::data::tdx
 
-#endif  // QUANT1X_CONTRB_DATA_TDX_HELPERS_H
+#endif  // QUANT1X_CONTRIB_DATA_TDX_HELPERS_H

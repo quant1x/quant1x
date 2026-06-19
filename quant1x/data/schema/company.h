@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace quant1x::data::meta::schema {
+namespace quant1x::data::schema {
 
 /// 公司信息文件片段
 struct CompanyInfoChunk {
@@ -14,6 +14,6 @@ struct CompanyInfoChunk {
     int         size = 0;   ///< 大小
 };
 
-} // namespace quant1x::data::meta::schema
+} // namespace quant1x::data::schema
 
 #endif // QUANT1X_DATA_SCHEMA_COMPANY_H

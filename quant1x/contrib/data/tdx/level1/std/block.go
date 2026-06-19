@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"strings"
+
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
 )
 
 const (
@@ -23,14 +25,14 @@ func (info BlockInfo) String() string {
 		info.BlockName, info.BlockType, info.StockCount, strings.Join(info.CodeList, ","))
 }
 
-type BlockInfoRequest struct {
+type BlockFileContext struct {
 	Start         uint32
 	Size          uint32
 	BlockFilename [100]byte
 }
 
-func NewBlockInfoRequest(filename string, offset uint32) *BlockInfoRequest {
-	req := &BlockInfoRequest{
+func NewBlockInfoRequest(filename string, offset uint32) *BlockFileContext {
+	req := &BlockFileContext{
 		Start: offset,
 		Size:  BlockChunksSize,
 	}
@@ -38,25 +40,25 @@ func NewBlockInfoRequest(filename string, offset uint32) *BlockInfoRequest {
 	return req
 }
 
-func (req *BlockInfoRequest) Serialize() []byte {
+func (req *BlockFileContext) Serialize() []byte {
 	buf := new(bytes.Buffer)
 	_ = binary.Write(buf, binary.LittleEndian, req.Start)
 	_ = binary.Write(buf, binary.LittleEndian, req.Size)
 	buf.Write(req.BlockFilename[:])
-	return buildRequest(req.Command(), packetTypeRequest, buf.Bytes())
+	return tdx.BuildRequest(req.Command(), PacketTypeRequest, buf.Bytes())
 }
 
-func (req *BlockInfoRequest) Command() StdCommand {
-	return StdCommandBlockData
+func (req *BlockFileContext) Command() tdx.StdCommand {
+	return tdx.StdCommandBlockData
 }
 
-func (req *BlockInfoRequest) String() string {
+func (req *BlockFileContext) String() string {
 	filename := string(bytes.TrimRight(req.BlockFilename[:], "\x00"))
 	return fmt.Sprintf("{Start:%d, Size:%d, BlockFilename:%s}", req.Start, req.Size, filename)
 }
 
 type BlockInfoResponse struct {
-	ResponseBase
+	tdx.ResponseBase
 	Size uint32
 	Data []byte
 }

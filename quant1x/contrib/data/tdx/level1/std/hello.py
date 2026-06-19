@@ -9,7 +9,7 @@ from ...command import Command
 from ... import protocol
 
 
-class StdLogin(protocol.BaseMessage):
+class StdLoginContext(protocol.BaseFrame):
     """第一次协议握手: login"""
     def __init__(self):
         super().__init__(Command.STD_SYNCHRONIZE1)
@@ -42,7 +42,7 @@ class StdLogin(protocol.BaseMessage):
         self.reply = info
 
 
-class UpgradeTip(protocol.BaseMessage):
+class UpgradeTipContext(protocol.BaseFrame):
     """第二次协议握手"""
     def __init__(self):
         super().__init__(Command.STD_SYNCHRONIZE2)

@@ -7,7 +7,7 @@
 use crate::std::BinaryStream;
 
 use super::super::super::command::*;
-use super::super::super::protocol::{BaseMessage, RequestHeader, ResponseHeader};
+use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 
 // ============================================================
 // CompanyCategory (STD_COMPANY_CATEGORY, 0x02cf)
@@ -30,7 +30,7 @@ impl CompanyCategoryRequest {
     }
 }
 
-impl BaseMessage for CompanyCategoryRequest {
+impl BaseFrame for CompanyCategoryRequest {
     fn request_header(&self) -> &RequestHeader { &self.req_header }
     fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
     fn response_header(&self) -> &ResponseHeader { &self.resp_header }
@@ -51,13 +51,13 @@ impl BaseMessage for CompanyCategoryRequest {
 // ============================================================
 
 #[derive(Debug, Clone)]
-pub struct CompanyContentRequest {
+pub struct CompanyInfoContext {
     req_header: RequestHeader,
     resp_header: ResponseHeader,
     pub content: String,
 }
 
-impl CompanyContentRequest {
+impl CompanyInfoContext {
     pub fn new() -> Self {
         Self {
             req_header: RequestHeader::new(STD_COMPANY_CONTENT, FLAG_UNCOMPRESSED),
@@ -67,7 +67,7 @@ impl CompanyContentRequest {
     }
 }
 
-impl BaseMessage for CompanyContentRequest {
+impl BaseFrame for CompanyInfoContext {
     fn request_header(&self) -> &RequestHeader { &self.req_header }
     fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
     fn response_header(&self) -> &ResponseHeader { &self.resp_header }

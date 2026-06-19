@@ -1,8 +1,8 @@
 #pragma once
-#include <quant1x/std/base.h>
-#ifndef QUANT1X_CONTRB_DATA_TDX_SECURITY_LIST_H
-#define QUANT1X_CONTRB_DATA_TDX_SECURITY_LIST_H 1
+#ifndef QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_SECURITY_LIST_H
+#define QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_SECURITY_LIST_H 1
 
+#include <quant1x/std/base.h>
 #include <quant1x/contrib/data/tdx/helpers.h>
 #include <quant1x/contrib/data/tdx/protocol.h>
 
@@ -38,8 +38,8 @@ namespace quant1x::contrib::data::tdx {
         }
     };
 
-    // 证券列表请求/响应 (对齐 Python SecurityList)
-    struct SecurityList : public BaseMessage<SecurityList> {
+    // 证券列表请求/响应 (对齐 Python SecurityListContext)
+    struct SecurityListContext : public BaseFrame<SecurityListContext> {
         u16 market;   // 交易市场
         u32 start;    // 起始位置
         u32 count;    // 请求数量
@@ -48,7 +48,7 @@ namespace quant1x::contrib::data::tdx {
         u16                   Count;     // 响应: 返回记录数
         std::vector<Security> List;      // 响应: 证券列表
 
-        SecurityList(int market, int start, int count) : BaseMessage<SecurityList>() {
+        SecurityListContext(int market, int start, int count) : BaseFrame<SecurityListContext>() {
             request_header.frame_type       = ZlibFlag::Uncompressed;
             request_header.seq_id         = get_sequence_id();
             request_header.packet_ctrl    = 0x01;
@@ -81,7 +81,7 @@ namespace quant1x::contrib::data::tdx {
                 buf.get_array(e.Reversed2);
                 e.DecimalPoint = buf.get_u8();
                 u32 tmp        = buf.get_u32();
-                e.PreClose     = helpers::integerToFloat64(tmp);
+                e.PreClose     = helpers::integer_to_float64(tmp);
                 buf.get_array(e.Reversed3);
                 List.push_back(e);
             }
@@ -95,4 +95,4 @@ namespace quant1x::contrib::data::tdx {
     };
 }  // namespace quant1x::contrib::data::tdx
 
-#endif  // QUANT1X_CONTRB_DATA_TDX_SECURITY_LIST_H
+#endif  // QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_SECURITY_LIST_H

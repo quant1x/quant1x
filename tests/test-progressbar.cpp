@@ -222,15 +222,15 @@ private:
 
         ss << "] "
            << (speed) << "/s "
-           << format_time(cost) << " in: "
-           << format_time(estimate);
+           << format_timestamp_from_i64(cost) << " in: "
+           << format_timestamp_from_i64(estimate);
 
 #ifndef _WIN32
         ss << "\033[0m"; // 重置颜色
 #endif
     }
 
-    std::string format_time(int seconds) {
+    std::string format_timestamp_from_i64(int seconds) {
         int h = seconds / 3600;
         int m = (seconds % 3600) / 60;
         int s = seconds % 60;

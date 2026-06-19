@@ -7,20 +7,20 @@
 use encoding_rs::GBK;
 
 use super::super::super::command::*;
-use super::super::super::protocol::{BaseMessage, RequestHeader, ResponseHeader};
+use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 
 // ============================================================
-// Hello1 (STD_SYNCHRONIZE1, 0x000d) — 标准行情握手1
+// StdLoginContext (STD_SYNCHRONIZE1, 0x000d) — 标准行情握手1
 // ============================================================
 
 #[derive(Debug, Clone)]
-pub struct Hello1Request {
+pub struct StdLoginContext {
     pub req_header: RequestHeader,
     pub resp_header: ResponseHeader,
     pub info: String,
 }
 
-impl BaseMessage for Hello1Request {
+impl BaseFrame for StdLoginContext {
     fn request_header(&self) -> &RequestHeader { &self.req_header }
     fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
     fn response_header(&self) -> &ResponseHeader { &self.resp_header }
@@ -42,7 +42,7 @@ impl BaseMessage for Hello1Request {
     }
 }
 
-impl Hello1Request {
+impl StdLoginContext {
     pub fn new() -> Self {
         Self {
             req_header: RequestHeader::new(STD_SYNCHRONIZE1, FLAG_UNCOMPRESSED),
@@ -53,17 +53,17 @@ impl Hello1Request {
 }
 
 // ============================================================
-// Hello2 (STD_SYNCHRONIZE2, 0x0fdb) — 标准行情握手2
+// UpgradeTipContext (STD_SYNCHRONIZE2, 0x0fdb) — 标准行情握手2
 // ============================================================
 
 #[derive(Debug, Clone)]
-pub struct Hello2Request {
+pub struct UpgradeTipContext {
     pub req_header: RequestHeader,
     pub resp_header: ResponseHeader,
     pub info: String,
 }
 
-impl BaseMessage for Hello2Request {
+impl BaseFrame for UpgradeTipContext {
     fn request_header(&self) -> &RequestHeader { &self.req_header }
     fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
     fn response_header(&self) -> &ResponseHeader { &self.resp_header }
@@ -84,7 +84,7 @@ impl BaseMessage for Hello2Request {
     }
 }
 
-impl Hello2Request {
+impl UpgradeTipContext {
     pub fn new() -> Self {
         Self {
             req_header: RequestHeader::new(STD_SYNCHRONIZE2, FLAG_UNCOMPRESSED),

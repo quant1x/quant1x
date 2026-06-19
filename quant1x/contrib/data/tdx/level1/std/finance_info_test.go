@@ -21,8 +21,8 @@ func TestFinanceInfo(t *testing.T) {
 		},
 	}
 	resp := &FinanceResponse{}
-	if err := Process(conn, req, resp); err != nil {
-		t.Fatalf("Process() returned error: %v", err)
+	if err := TransactMessageSync(conn, req, resp); err != nil {
+		t.Fatalf("TransactMessageSync() returned error: %v", err)
 	}
 	fmt.Printf("FinanceResponse: %+v\n", resp)
 	if resp.Count != 2 {

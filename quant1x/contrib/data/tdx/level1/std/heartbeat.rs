@@ -8,16 +8,16 @@ use crate::std::BinaryStream;
 
 use super::super::super::command::*;
 use super::super::super::helpers::msg_sequence_id;
-use super::super::super::protocol::{BaseMessage, RequestHeader, ResponseHeader};
+use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 
 #[derive(Debug, Clone)]
-pub struct HeartbeatRequest {
+pub struct HeartbeatContext {
     pub req_header: RequestHeader,
     pub resp_header: ResponseHeader,
     pub info: String,
 }
 
-impl BaseMessage for HeartbeatRequest {
+impl BaseFrame for HeartbeatContext {
     fn request_header(&self) -> &RequestHeader { &self.req_header }
     fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
     fn response_header(&self) -> &ResponseHeader { &self.resp_header }
@@ -34,7 +34,7 @@ impl BaseMessage for HeartbeatRequest {
     }
 }
 
-impl HeartbeatRequest {
+impl HeartbeatContext {
     pub fn new() -> Self {
         let mut header = RequestHeader::new(STD_HEARTBEAT, FLAG_UNCOMPRESSED);
         header.sequence_id = msg_sequence_id();

@@ -156,7 +156,7 @@ func updateTransactionData(instrument exchange.InstrumentInfo, featureDate excha
 		if todayIsLastTradingDate {
 			req := std.NewTransactionRequest(instrument, start, offset)
 			resp := std.NewTransactionResponse(instrument)
-			if err := std.Process(conn, req, resp); err != nil {
+			if err := std.TransactMessageSync(conn, req, resp); err != nil {
 				logger.Errorf("[tdx::trans] code=%s, tradeDate=%d, error=%v", instrument.Symbol(), tradeDate, err)
 				break
 			}
@@ -167,7 +167,7 @@ func updateTransactionData(instrument exchange.InstrumentInfo, featureDate excha
 		} else {
 			req := std.NewHistoryTransactionRequest(instrument, u32Date, start, offset)
 			resp := std.NewHistoryTransactionResponse(instrument)
-			if err := std.Process(conn, req, resp); err != nil {
+			if err := std.TransactMessageSync(conn, req, resp); err != nil {
 				logger.Errorf("[tdx::trans] code=%s, tradeDate=%d, error=%v", instrument.Symbol(), tradeDate, err)
 				break
 			}

@@ -6,6 +6,7 @@ import struct
 from dataclasses import dataclass
 from typing import List
 
+from quant1x.data.meta import Instrument
 from ...command import Command
 from ... import helpers
 from ... import protocol
@@ -18,24 +19,21 @@ class MinuteTime:
     vol: int = 0
 
 
-class HistoryMinuteTime(protocol.BaseMessage):
+class HistoricalMinuteTimeContext(protocol.BaseFrame):
     """历史分时数据"""
-    def __init__(self, security_code: str, date: int):
+    def __init__(self, inst: Instrument, date: int):
         super().__init__(Command.STD_HISTORY_MINUTE_DATA)
         self.request_header.packet_ctrl = 0x00
         self._date = date
-        inst = detect_symbol(security_code)
-        market_id = helpers.exchange_to_market(inst.exchange)
-        symbol = inst.marker_ticker()
-        self._market = market_id
-        self._code = symbol
+        self._market = helpers.exchange_to_market(inst.exchange)
+        self._ticker = inst.market_ticker()
 
         self.count: int = 0
         self.list: List[MinuteTime] = []
 
     def serialize_request_body(self) -> bytes:
         # Body: Date(4) + Market(1) + Code(6)
-        code_bytes = self._code.encode('ascii')[:6].ljust(6, b'\x00')
+        code_bytes = self._ticker.encode('ascii')[:6].ljust(6, b'\x00')
         return struct.pack('<I B', self._date, self._market) + code_bytes
 
     def deserialize_response_body(self, data: bytes) -> None:
@@ -46,7 +44,7 @@ class HistoryMinuteTime(protocol.BaseMessage):
         self.count = struct.unpack('<H', data[:2])[0]
         pos = 2
 
-        base_unit = helpers.default_base_unit(self._market, self._code)
+        base_unit = helpers.default_base_unit(self._market, self._ticker)
         last_price = 0
 
         # Skip 4 bytes

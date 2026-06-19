@@ -37,7 +37,7 @@ func tdxFetchXdxrList(instrument exchange.InstrumentInfo) ([]schema.XdxrInfo, er
 
 	req := std.XdxrInfoRequest{Instrument: instrument}
 	resp := std.NewXdxrInfoResponse()
-	if err := std.Process(conn, req, resp); err != nil {
+	if err := std.TransactMessageSync(conn, req, resp); err != nil {
 		return nil, fmt.Errorf("xdxr request failed: %w", err)
 	}
 

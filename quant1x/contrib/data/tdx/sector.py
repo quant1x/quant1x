@@ -22,7 +22,7 @@ from quant1x.data import market
 from quant1x.data.meta import tradinghours
 
 from .client import get_std_conn
-from .level1 import BlockInfo, BLOCK_CHUNKS_SIZE
+from .level1 import BlockFileContext, BLOCK_CHUNKS_SIZE
 from . import protocol as l1protocol
 from quant1x.data.meta.calendar import last_trading_day
 
@@ -120,8 +120,8 @@ def _get_block_info_from_level1(filename: str) -> Optional[bytes]:
             start = 0
             result = bytearray()
             while True:
-                msg = BlockInfo(filename, start)
-                l1protocol.process_level1_new(conn, msg)
+                msg = BlockFileContext(filename, start)
+                l1protocol.transact_message_sync(conn, msg)
                 if msg.size == 0:
                     return None
                 if msg.size > 0:

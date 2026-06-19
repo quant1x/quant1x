@@ -8,7 +8,7 @@ use crate::std::BinaryStream;
 
 use super::super::super::command::*;
 use super::super::super::helpers;
-use super::super::super::protocol::{BaseMessage, RequestHeader, ResponseHeader};
+use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 
 #[derive(Debug, Clone)]
 pub struct MinuteTime {
@@ -37,7 +37,7 @@ impl HistoryMinuteTimeRequest {
     pub fn new(security_code: &str, date: u32) -> Self {
         let inst = crate::data::market::detect_symbol(security_code);
         let market = helpers::exchange_to_market(inst.exchange.code()).unwrap_or(0) as u8;
-        let pure = inst.marker_ticker().to_string();
+        let pure = inst.market_ticker().to_string();
         let mut code = [0u8; 6];
         let sym = pure.as_bytes();
         let copy_len = std::cmp::min(sym.len(), 6);
@@ -58,7 +58,7 @@ impl HistoryMinuteTimeRequest {
     }
 }
 
-impl BaseMessage for HistoryMinuteTimeRequest {
+impl BaseFrame for HistoryMinuteTimeRequest {
     fn request_header(&self) -> &RequestHeader { &self.req_header }
     fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
     fn response_header(&self) -> &ResponseHeader { &self.resp_header }
@@ -105,7 +105,7 @@ pub fn fetch_history_minute_time(security_code: &str, date: u32) -> Option<Histo
     match super::super::super::client::get_std_conn() {
         Ok(mut conn) => {
             let mut msg = HistoryMinuteTimeRequest::new(security_code, date);
-            match super::super::super::protocol::process_level1_stream(conn.stream(), &mut msg) {
+            match super::super::super::protocol::transact_message_sync(conn.stream(), &mut msg) {
                 Ok(()) => {
                     log::info!("level1::minute_time - code={} date={} count={}", security_code, date, msg.count);
                     Some(msg)

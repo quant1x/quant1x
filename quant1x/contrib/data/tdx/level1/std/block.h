@@ -1,9 +1,9 @@
 #pragma once
-#ifndef QUANT1X_LEVEL_BLOCK_INFO_H
-#define QUANT1X_LEVEL_BLOCK_INFO_H 1
+#ifndef QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_BLOCK_H
+#define QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_BLOCK_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
-#include <quant1x/contrib/data/tdx/level1/std/block_meta.h>
+#include "block_meta.h"
 
 // ==============================
 // 板块数据
@@ -26,15 +26,15 @@ namespace quant1x::contrib::data::tdx {
         }
     };
 
-    // 板块数据请求/响应 (对齐 Python BlockInfo)
-    struct BlockInfoMsg : public BaseMessage<BlockInfoMsg> {
+    // 板块数据请求/响应 (对齐 Python BlockFileContext)
+    struct BlockFileContext : public BaseFrame<BlockFileContext> {
         u32 Start;                       // 请求: 起始偏移
         u32 Size;                        // 请求: 数据块大小
         char BlockFilename[100];         // 请求: 板块文件名
         u32 DataSize = 0;                // 响应: 数据大小
         std::vector<u8> Data;            // 响应: 板块数据
 
-        BlockInfoMsg(const std::string &filename, u32 offset) : BaseMessage<BlockInfoMsg>(), BlockFilename() {
+        BlockFileContext(const std::string &filename, u32 offset) : BaseFrame<BlockFileContext>(), BlockFilename() {
             request_header.frame_type = ZlibFlag::Uncompressed;
             request_header.seq_id = get_sequence_id();
             request_header.packet_ctrl = 0x01;
@@ -78,4 +78,4 @@ namespace quant1x::contrib::data::tdx {
 
 }
 
-#endif //QUANT1X_LEVEL_BLOCK_INFO_H
+#endif // QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_BLOCK_H

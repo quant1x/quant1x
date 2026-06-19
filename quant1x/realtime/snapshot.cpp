@@ -10,11 +10,11 @@
 namespace realtime {
 
     /**
-     * @brief 从 SecurityQuote 中提取 imbalance 指标
+     * @brief 从 SecurityQuoteContext 中提取 imbalance 指标
      * @param quote 当前行情快照
      * @return ImbalanceResult 包含 imbalance 指标
      */
-    ImbalanceResult calculateImbalance(const tdx::SecurityQuote& quote) {
+    ImbalanceResult calculateImbalance(const tdx::SecurityQuoteContext& quote) {
         // 买盘挂单量
         std::vector<int64_t> bidVolumes = {
             quote.bidVol1, quote.bidVol2, quote.bidVol3,
@@ -116,7 +116,7 @@ namespace realtime {
     }
 
     namespace {
-        inline tsl::robin_map<std::string, tdx::SecurityQuote> mem_snapshots;
+        inline tsl::robin_map<std::string, tdx::SecurityQuoteContext> mem_snapshots;
         inline std::shared_mutex                                  mem_mutex;
     }
 
@@ -169,14 +169,14 @@ namespace realtime {
                     auto [mid, mflag, symbol] = data::detect_symbol(code);
                     maps[code] = tdx::StockInfo{static_cast<u8>(mid), symbol};
                 }
-                tdx::SecurityQuoteRequest request(sub_codes);
+                tdx::SecurityQuoteContext request(sub_codes);
                 tdx::SecurityQuoteResponse response;
                 auto conn = tdx::get_std_conn();
                 if(conn == nullptr) {
                     spdlog::error("服务器网络不稳定, 稍后重试");
                     return;
                 }
-                auto err = tdx::process_message(conn->socket(), request, response);
+                auto err = tdx::transact_message_sync(conn->socket(), request, response);
                 if (err) {
                     spdlog::error("Process error: {}", err.message());
                     return;
@@ -287,7 +287,7 @@ namespace realtime {
         }
     }
 
-    std::optional<tdx::SecurityQuote> get_snapshot(const std::string &code) {
+    std::optional<tdx::SecurityQuoteContext> get_snapshot(const std::string &code) {
         std::shared_lock lock(mem_mutex);
         auto it = mem_snapshots.find(code);
         if (it != mem_snapshots.end()) {

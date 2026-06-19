@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
+	helpers "github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
 	"github.com/quant1x/quant1x/quant1x/data/exchange"
 )
 
@@ -51,15 +53,15 @@ type StockInfo struct {
 	Code   string
 }
 
-// SecurityQuoteRequest is a lightweight representation of the C++ request.
+// SecurityQuoteContext is a lightweight representation of the C++ request.
 // Full serialization is implemented elsewhere; we keep a simple structure here.
-type SecurityQuoteRequest struct {
+type SecurityQuoteContext struct {
 	Padding []byte
 	List    []StockInfo
 }
 
 // Serialize builds the SECURITY_QUOTES_OLD request payload.
-func (r SecurityQuoteRequest) Serialize() []byte {
+func (r SecurityQuoteContext) Serialize() []byte {
 	payload := &bytes.Buffer{}
 	// padding: 8 bytes as in C++ implementation
 	if len(r.Padding) == 0 {
@@ -82,19 +84,19 @@ func (r SecurityQuoteRequest) Serialize() []byte {
 		}
 		payload.Write(codeBytes)
 	}
-	return buildRequest(StdCommandSecurityQuotesOld, packetTypeRequest, payload.Bytes())
+	return tdx.BuildRequest(tdx.StdCommandSecurityQuotesOld, tdx.PacketTypeRequest, payload.Bytes())
 }
 
 // Command returns the associated StdCommand.
-func (r SecurityQuoteRequest) Command() StdCommand { return StdCommandSecurityQuotesOld }
+func (r SecurityQuoteContext) Command() tdx.StdCommand { return tdx.StdCommandSecurityQuotesOld }
 
 // String provides a short description.
-func (r SecurityQuoteRequest) String() string {
-	return fmt.Sprintf("SecurityQuoteRequest{Count:%d}", len(r.List))
+func (r SecurityQuoteContext) String() string {
+	return fmt.Sprintf("SecurityQuoteContext{Count:%d}", len(r.List))
 }
 
-// SecurityQuote maps the C++ structure to Go.
-type SecurityQuote struct {
+// SecurityQuoteContext maps the C++ structure to Go.
+type SecurityQuoteContext struct {
 	State           TradeState
 	Market          uint8
 	Code            string
@@ -158,7 +160,7 @@ type SecurityQuote struct {
 }
 
 // ImplicitSpread computes the effective spread (price units).
-func (q *SecurityQuote) ImplicitSpread() float64 {
+func (q *SecurityQuoteContext) ImplicitSpread() float64 {
 	if math.IsNaN(q.Price) || q.Price <= 0.0 {
 		if q.Ask1 > 0.0 && q.Bid1 > 0.0 {
 			return q.Ask1 - q.Bid1
@@ -176,7 +178,7 @@ func (q *SecurityQuote) ImplicitSpread() float64 {
 }
 
 // ImplicitSpreadPct returns the spread as percentage.
-func (q *SecurityQuote) ImplicitSpreadPct() float64 {
+func (q *SecurityQuoteContext) ImplicitSpreadPct() float64 {
 	if q.Ask1 > 0.0 && q.Bid1 > 0.0 {
 		mid := (q.Ask1 + q.Bid1) / 2.0
 		s := q.ImplicitSpread()
@@ -192,7 +194,7 @@ func (q *SecurityQuote) ImplicitSpreadPct() float64 {
 }
 
 // ImplicitSpreadLevel maps percentage to an enum.
-func (q *SecurityQuote) ImplicitSpreadLevel() SpreadLevel {
+func (q *SecurityQuoteContext) ImplicitSpreadLevel() SpreadLevel {
 	pct := q.ImplicitSpreadPct()
 	if pct < SPREAD_PCT_VERY_LOW {
 		return SpreadVeryLow
@@ -212,7 +214,7 @@ func (q *SecurityQuote) ImplicitSpreadLevel() SpreadLevel {
 // SecurityQuoteResponse mirrors the C++ response header + list.
 type SecurityQuoteResponse struct {
 	Count uint16
-	List  []SecurityQuote
+	List  []SecurityQuoteContext
 }
 
 // getPrice helper mirrors C++ getPrice(baseUnit, price, diff)
@@ -231,12 +233,12 @@ func (r *SecurityQuoteResponse) Deserialize(data []byte) error {
 	}
 	r.Count = binary.LittleEndian.Uint16(data[pos : pos+2])
 	pos += 2
-	r.List = make([]SecurityQuote, 0, r.Count)
+	r.List = make([]SecurityQuoteContext, 0, r.Count)
 	now := time.Now()
 	timestamp := now.Format("20060102150405") + fmt.Sprintf("%03d", now.Nanosecond()/1e6)
 
 	for i := 0; i < int(r.Count); i++ {
-		var ele SecurityQuote
+		var ele SecurityQuoteContext
 		if pos >= len(data) {
 			return fmt.Errorf("unexpected EOF")
 		}
@@ -250,7 +252,7 @@ func (r *SecurityQuoteResponse) Deserialize(data []byte) error {
 		ele.Code = code
 		pos += 6
 
-		baseUnit := defaultBaseUnit(int(ele.Market), ele.Code)
+		baseUnit := helpers.DefaultBaseUnit(int(ele.Market), ele.Code)
 
 		if pos+2 > len(data) {
 			return fmt.Errorf("unexpected EOF for active1")
@@ -258,43 +260,43 @@ func (r *SecurityQuoteResponse) Deserialize(data []byte) error {
 		ele.Active1 = binary.LittleEndian.Uint16(data[pos : pos+2])
 		pos += 2
 
-		priceBase := varintDecode(data, &pos)
+		priceBase := helpers.VarintDecode(data, &pos)
 		ele.Price = getPrice(baseUnit, priceBase, 0)
 
-		tmp := varintDecode(data, &pos)
+		tmp := helpers.VarintDecode(data, &pos)
 		ele.LastClose = getPrice(baseUnit, priceBase, tmp)
 
-		ele.Open = getPrice(baseUnit, priceBase, varintDecode(data, &pos))
-		ele.High = getPrice(baseUnit, priceBase, varintDecode(data, &pos))
-		ele.Low = getPrice(baseUnit, priceBase, varintDecode(data, &pos))
+		ele.Open = getPrice(baseUnit, priceBase, helpers.VarintDecode(data, &pos))
+		ele.High = getPrice(baseUnit, priceBase, helpers.VarintDecode(data, &pos))
+		ele.Low = getPrice(baseUnit, priceBase, helpers.VarintDecode(data, &pos))
 
-		ele.ReversedBytes0 = varintDecode(data, &pos)
+		ele.ReversedBytes0 = helpers.VarintDecode(data, &pos)
 		if ele.ReversedBytes0 > 0 {
-			ele.ServerTime = formatTimestamp(ele.ReversedBytes0)
+			ele.ServerTime = helpers.FormatTimestampFromI64(ele.ReversedBytes0)
 		} else {
 			ele.ServerTime = "0"
 		}
 
-		ele.ReversedBytes1 = varintDecode(data, &pos)
+		ele.ReversedBytes1 = helpers.VarintDecode(data, &pos)
 
-		vol := varintDecode(data, &pos)
+		vol := helpers.VarintDecode(data, &pos)
 		ele.Vol = vol * 100
 
-		ele.CurVol = varintDecode(data, &pos)
+		ele.CurVol = helpers.VarintDecode(data, &pos)
 
 		if pos+4 > len(data) {
 			return fmt.Errorf("unexpected EOF amount")
 		}
 		rawAmount := binary.LittleEndian.Uint32(data[pos : pos+4])
 		pos += 4
-		ele.Amount = integerToFloat64(uint32(rawAmount))
+		ele.Amount = helpers.IntegerToFloat64(uint32(rawAmount))
 
-		ele.SVol = varintDecode(data, &pos)
-		ele.BVol = varintDecode(data, &pos)
+		ele.SVol = helpers.VarintDecode(data, &pos)
+		ele.BVol = helpers.VarintDecode(data, &pos)
 
-		ele.IndexOpenAmount = varintDecode(data, &pos) * 100
-		ele.StockOpenAmount = varintDecode(data, &pos) * 100
-		ex := marketIdToExchange(int(ele.Market))
+		ele.IndexOpenAmount = helpers.VarintDecode(data, &pos) * 100
+		ele.StockOpenAmount = helpers.VarintDecode(data, &pos) * 100
+		ex := helpers.MarketIdToExchange(int(ele.Market))
 		isIndexOrBlock := exchange.AssertIndexByMarketAndCode(ex, ele.Code)
 
 		var tmpOpenVolume float64
@@ -318,10 +320,10 @@ func (r *SecurityQuoteResponse) Deserialize(data []byte) error {
 		var bidVols [5]int64
 		var askVols [5]int64
 		for l := 0; l < 5; l++ {
-			bidDiff := varintDecode(data, &pos)
-			askDiff := varintDecode(data, &pos)
-			bidVol := varintDecode(data, &pos)
-			askVol := varintDecode(data, &pos)
+			bidDiff := helpers.VarintDecode(data, &pos)
+			askDiff := helpers.VarintDecode(data, &pos)
+			bidVol := helpers.VarintDecode(data, &pos)
+			askVol := helpers.VarintDecode(data, &pos)
 			bidPrices[l] = getPrice(baseUnit, bidDiff, priceBase)
 			askPrices[l] = getPrice(baseUnit, askDiff, priceBase)
 			bidVols[l] = bidVol
@@ -342,10 +344,10 @@ func (r *SecurityQuoteResponse) Deserialize(data []byte) error {
 		ele.ReversedBytes4 = binary.LittleEndian.Uint16(data[pos : pos+2])
 		pos += 2
 
-		ele.ReversedBytes5 = varintDecode(data, &pos)
-		ele.ReversedBytes6 = varintDecode(data, &pos)
-		ele.ReversedBytes7 = varintDecode(data, &pos)
-		ele.ReversedBytes8 = varintDecode(data, &pos)
+		ele.ReversedBytes5 = helpers.VarintDecode(data, &pos)
+		ele.ReversedBytes6 = helpers.VarintDecode(data, &pos)
+		ele.ReversedBytes7 = helpers.VarintDecode(data, &pos)
+		ele.ReversedBytes8 = helpers.VarintDecode(data, &pos)
 
 		if pos+2 > len(data) {
 			return fmt.Errorf("unexpected EOF for rate")

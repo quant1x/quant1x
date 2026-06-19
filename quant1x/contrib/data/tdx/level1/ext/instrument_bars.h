@@ -9,7 +9,7 @@ namespace quant1x::contrib::data::tdx {
 
 /// 扩展行情K线请求 (对应 Python level1/ext.py InstrumentBars, 命令字 0x23FF)
 /// 协议格式: packet_ctrl=0x01, frame_type=0x01 (FLAG_GENERIC)
-struct InstrumentBars : public BaseMessage<InstrumentBars> {
+struct InstrumentBars : public BaseFrame<InstrumentBars> {
     static constexpr int PRE_REQUEST_MAX = 700;
 
     u8  market;
@@ -20,10 +20,10 @@ struct InstrumentBars : public BaseMessage<InstrumentBars> {
     u16 count;
 
     /// 响应数据 — 已经转换为 domain Bar (对应 Python bars.reply)
-    std::vector<meta::schema::Bar> reply;
+    std::vector<quant1x::data::schema::Bar> reply;
 
     InstrumentBars(u8 _market, const std::string& _ticker, u16 _category, u32 _start, u16 _count)
-        : BaseMessage<InstrumentBars>()
+        : BaseFrame<InstrumentBars>()
         , market(_market)
         , ticker(_ticker)
         , category(_category)
@@ -86,7 +86,7 @@ struct InstrumentBars : public BaseMessage<InstrumentBars> {
             u32 volume_u32 = bs.get_u32();
             (void)bs.get_float();     // skip price
 
-            meta::schema::Bar bar;
+            quant1x::data::schema::Bar bar;
             bar.date      = fmt::format("{:04d}-{:02d}-{:02d}", year, month, day);
             bar.open      = open_f;
             bar.close     = close_f;

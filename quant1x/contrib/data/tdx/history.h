@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_TDX_HISTORY_ADAPTER_H
-#define QUANT1X_TDX_HISTORY_ADAPTER_H 1
+#ifndef QUANT1X_CONTRIB_DATA_TDX_HISTORY_ADAPTER_H
+#define QUANT1X_CONTRIB_DATA_TDX_HISTORY_ADAPTER_H 1
 
 #include <quant1x/data/adapter.h>
 #include <quant1x/factors/history.h>
@@ -31,4 +31,4 @@ namespace quant1x::contrib::data::tdx {
 
 } // namespace quant1x::contrib::data::tdx
 
-#endif // QUANT1X_TDX_HISTORY_ADAPTER_H
+#endif // QUANT1X_CONTRIB_DATA_TDX_HISTORY_ADAPTER_H

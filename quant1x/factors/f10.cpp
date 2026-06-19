@@ -28,7 +28,7 @@ static std::tuple<f64, f64, std::string, std::string> get_finance_info(const std
         tdx::FinanceRequest request(security_code);
         tdx::FinanceResponse response{};
         auto conn = tdx::get_std_conn();
-        tdx::process_message(conn->socket(), request, response);
+        tdx::transact_message_sync(conn->socket(), request, response);
         if(response.Count>0) {
             auto const &info = response.Info;
             if(info.LiuTongGuBen>0 && info.ZongGuBen > 0) {

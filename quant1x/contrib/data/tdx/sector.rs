@@ -15,11 +15,11 @@ use once_cell::sync::Lazy;
 use encoding::{DecoderTrap, Encoding};
 use encoding::all::GBK;
 
-use super::level1::std::block::BlockInfo;
+use super::level1::std::block::BlockFileContext;
 use super::level1::std::block_meta::{
     BLOCK_DEFAULT, BLOCK_FENGGE, BLOCK_GAINIAN, BLOCK_ZHISHU,
 };
-use super::protocol::process_level1_stream;
+use super::protocol::transact_message_sync;
 use super::client::get_std_conn;
 
 /// 内存缓存: 板块列表
@@ -52,11 +52,11 @@ fn get_block_info_from_level1(filename: &str) -> Option<Vec<u8>> {
     let mut start: u32 = 0;
     let mut result: Vec<u8> = Vec::new();
     loop {
-        let mut msg = BlockInfo::new(filename, start);
-        match process_level1_stream(conn.stream(), &mut msg) {
+        let mut msg = BlockFileContext::new(filename, start);
+        match transact_message_sync(conn.stream(), &mut msg) {
             Ok(()) => {}
             Err(e) => {
-                log::error!("sector: process_level1_stream for {} at offset {} failed: {}", filename, start, e);
+                log::error!("sector: transact_message_sync for {} at offset {} failed: {}", filename, start, e);
                 return None;
             }
         }

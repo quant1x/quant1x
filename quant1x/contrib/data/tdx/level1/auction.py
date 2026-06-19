@@ -22,7 +22,7 @@ class AuctionInfo:
     unmatched: int # 未匹配量
     u: int # 未知
 
-class AuctionDetails(protocol.BaseMessage):
+class AuctionContext(protocol.BaseFrame):
     """集合竞价详情"""
     PRE_REQUEST_MAX = 500 # 单次请求最大数量
 
@@ -101,15 +101,15 @@ if __name__ == '__main__':
     
     # # 测试 单个xdxr
     # req = Xdxr(exchange=Exchange.SZSE, ticker='000001')
-    # protocol.process_level1_new(conn, req)
+    # protocol.transact_message_sync(conn, req)
     # if req.list:
     #     print(f"xdxr: count={req.count}")
     #     df = pd.DataFrame(req.list)
     #     print(df)
     
     # 测试 批量auction details
-    req = AuctionDetails(exchange=Exchange.SZSE, ticker='000001', type=3, date=20260423)
-    protocol.process_level1_new(conn, req)
+    req = AuctionContext(exchange=Exchange.SZSE, ticker='000001', type=3, date=20260423)
+    protocol.transact_message_sync(conn, req)
     if req.list:
         print(f"auction details: count={req.count}")
         df = pd.DataFrame(req.list)

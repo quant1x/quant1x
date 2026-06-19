@@ -25,13 +25,13 @@ namespace quant1x::contrib::data::tdx {
 std::string get_kline_filename(const quant1x::data::meta::Instrument& inst);
 
 /// 从CSV文件读取K线数据 (对应 Python read_kline_from_csv)
-std::vector<quant1x::data::meta::schema::Bar> read_kline_from_csv(const std::string& filename);
+std::vector<quant1x::data::schema::Bar> read_kline_from_csv(const std::string& filename);
 
 /// 保存K线数据到CSV文件 (对应 Python save_kline)
-void save_kline(const std::string& filename, const std::vector<quant1x::data::meta::schema::Bar>& klines);
+void save_kline(const std::string& filename, const std::vector<quant1x::data::schema::Bar>& klines);
 
 /// 加载某只证券的K线缓存 (对应 Python load_kline)
-std::vector<quant1x::data::meta::schema::Bar> load_kline(const quant1x::data::meta::Instrument& inst);
+std::vector<quant1x::data::schema::Bar> load_kline(const quant1x::data::meta::Instrument& inst);
 
 // =============================
 // 复权因子
@@ -47,20 +47,20 @@ std::vector<XdxrInfo> get_xdxr_list(const std::string& security_code);
 std::optional<std::string> ipo_date_from_xdxrs(std::span<const XdxrInfo> xdxrs);
 
 /// 聚合给定一个时间范围内的复权因子 (对应 Python combine_adjustments_in_period)
-std::vector<quant1x::data::meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
+std::vector<quant1x::data::schema::CumulativeAdjustment> combine_adjustments_in_period(
     std::span<const XdxrInfo> xdxrs,
     const quant1x::data::meta::Timestamp& start_date,
     const quant1x::data::meta::Timestamp& end_date);
 
 /// 聚合给定一个时间范围内的复权因子 — 日期字符串便捷重载
-std::vector<quant1x::data::meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
+std::vector<quant1x::data::schema::CumulativeAdjustment> combine_adjustments_in_period(
     const std::vector<XdxrInfo>& xdxrs,
         const std::string& start_date,
         const std::string& end_date);
 
 /// 对K线数据进行一次性前复权 (对应 Python apply_forward_adjustment_incrementally)
 void apply_forward_adjustments_once(
-        std::vector<quant1x::data::meta::schema::Bar>& klines,
+        std::vector<quant1x::data::schema::Bar>& klines,
         std::span<const XdxrInfo> xdxrs,
         const quant1x::data::meta::Timestamp& start_date,
         const quant1x::data::meta::Timestamp& end_date,
@@ -68,12 +68,12 @@ void apply_forward_adjustments_once(
 
 /// 对K线数据进行前复权计算 (对应 Python calculate_pre_adjust)
 void calculate_pre_adjust(
-        std::vector<quant1x::data::meta::schema::Bar>& klines,
+        std::vector<quant1x::data::schema::Bar>& klines,
         const std::vector<XdxrInfo>& dividends);
 
 /// 对增量K线应用前复权 (对应 Python apply_forward_adjustment_for_event)
 void apply_forward_adjustment_for_event(
-        std::vector<quant1x::data::meta::schema::Bar>& klines,
+        std::vector<quant1x::data::schema::Bar>& klines,
         const quant1x::data::meta::Timestamp& start_date,
         const std::vector<XdxrInfo>& dividends);
 
@@ -105,7 +105,7 @@ int check_kline_offset(const std::vector<T>& klines, const std::string& date) {
 /// 获取指定证券代码截至指定日期的前复权K线数据 (对应 Python/Rust get_cross_section_forward_adjusted_klines)
 ///   - 如果缓存文件不存在, 先通过 DataKLine 从服务器拉取并生成缓存
 ///   - 从已复权的 K 线缓存 CSV 读取, 按 as_of_date 过滤
-std::vector<quant1x::data::meta::schema::Bar> get_cross_section_forward_adjusted_klines(
+std::vector<quant1x::data::schema::Bar> get_cross_section_forward_adjusted_klines(
     const quant1x::data::meta::Instrument& inst, const std::string& as_of_date);
 
 /// 捡出截至指定日期的K线记录 (原 factors::checkout_klines, 对齐 Python)

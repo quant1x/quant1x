@@ -15,7 +15,7 @@ from ... import protocol
 SECURITY_LIST_PRE_REQUEST_MAX = 1600  # 预请求最大数量
 
 
-class SecurityList(protocol.BaseMessage):
+class SecurityListContext(protocol.BaseFrame):
     """证券列表"""
     def __init__(self, exchange: Exchange, start: int = 0, count: int = 0):
         super().__init__(Command.STD_SECURITY_LIST)

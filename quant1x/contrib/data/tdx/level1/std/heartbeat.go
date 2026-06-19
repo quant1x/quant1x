@@ -3,27 +3,29 @@ package std
 import (
 	"fmt"
 	"strings"
+
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
 )
 
 const heartbeatInfoLength = 10
 
-// HeartbeatRequest mirrors C++ HeartbeatRequest.
-type HeartbeatRequest struct{}
+// HeartbeatContext mirrors C++ HeartbeatContext.
+type HeartbeatContext struct{}
 
 // Bytes serializes the heartbeat request payload.
-func (HeartbeatRequest) Bytes() []byte {
-	return buildRequest(StdCommandHeartbeat, packetTypeHeartbeat, nil)
+func (HeartbeatContext) Bytes() []byte {
+	return tdx.BuildRequest(tdx.StdCommandHeartbeat, tdx.PacketCtrlHeartbeat, nil)
 }
 
 // Command returns the heartbeat command identifier.
-func (HeartbeatRequest) Command() StdCommand { return StdCommandHeartbeat }
+func (HeartbeatContext) Command() tdx.StdCommand { return tdx.StdCommandHeartbeat }
 
 // String returns a description of the request.
-func (HeartbeatRequest) String() string { return "HeartbeatRequest" }
+func (HeartbeatContext) String() string { return "HeartbeatContext" }
 
 // HeartbeatResponse mirrors C++ HeartbeatResponse.
 type HeartbeatResponse struct {
-	ResponseBase
+	tdx.ResponseBase
 	Info string
 }
 

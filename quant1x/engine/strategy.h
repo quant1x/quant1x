@@ -13,7 +13,7 @@
 #include <quant1x/data/kline.h>
 
 // 前向声明 — 避免引入 level1 整个模块的依赖
-namespace tdx { struct SecurityQuote; }
+namespace tdx { struct SecurityQuoteContext; }
 
 // 前向声明
 struct ResultInfo;
@@ -80,7 +80,7 @@ public:
         return quant1x::make_error_code(0, "no problem");
     }
     virtual quant1x::error Filter(const config::StrategyParameter &parameter,
-                              const tdx::SecurityQuote     &snapshot) const = 0;
+                              const tdx::SecurityQuoteContext     &snapshot) const = 0;
 };
 
 /**
@@ -113,7 +113,7 @@ public:
     virtual void Evaluate(const SecurityCode &code, ResultInfo &result) const = 0;
     // 增量计算评估
     virtual void Evaluate(const SecurityCode &code, ResultInfo &result, const Snapshot::Reader &snapshot) const = 0;
-    virtual void Evaluate(const SecurityCode &code, ResultInfo &result, const tdx::SecurityQuote &snapshot) const = 0;
+    virtual void Evaluate(const SecurityCode &code, ResultInfo &result, const tdx::SecurityQuoteContext &snapshot) const = 0;
     // 更新指标数据(如均线)
     virtual void updateIndicators(const SecurityCode &code) = 0;
 

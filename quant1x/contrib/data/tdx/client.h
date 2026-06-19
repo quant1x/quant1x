@@ -12,8 +12,7 @@
 #include <quant1x/data/meta/session.h>
 #include <quant1x/contrib/data/tdx/protocol.h>
 #include <quant1x/contrib/data/tdx/helpers.h>
-#include <quant1x/contrib/data/tdx/level1/std/hello1.h>
-#include <quant1x/contrib/data/tdx/level1/std/hello2.h>
+#include <quant1x/contrib/data/tdx/level1/std/hello.h>
 #include <quant1x/contrib/data/tdx/level1/std/heartbeat.h>
 #include <quant1x/contrib/data/tdx/level1/std/xdxr_info.h>
 #include <quant1x/contrib/data/tdx/level1/std/finance_info.h>
@@ -21,10 +20,9 @@
 #include <quant1x/contrib/data/tdx/level1/std/security_list.h>
 #include <quant1x/contrib/data/tdx/level1/std/security_quote.h>
 #include <quant1x/contrib/data/tdx/level1/std/security_bars.h>
-#include <quant1x/contrib/data/tdx/level1/std/transaction_data.h>
-#include <quant1x/contrib/data/tdx/level1/std/transaction_history.h>
+#include <quant1x/contrib/data/tdx/level1/std/transaction.h>
 #include <quant1x/contrib/data/tdx/level1/std/block_meta.h>
-#include <quant1x/contrib/data/tdx/level1/std/block_info.h>
+#include <quant1x/contrib/data/tdx/level1/std/block.h>
 #include <quant1x/contrib/data/tdx/level1/std/minute_time.h>
 #include <quant1x/contrib/data/tdx/level1/ext/ext_sync.h>
 #include <quant1x/contrib/data/tdx/config.h>
@@ -41,11 +39,11 @@ namespace quant1x::contrib::data::tdx {
         bool handshakeImpl(asio::ip::tcp::socket &socket) {
             try {
                 // 第一次协议握手
-                Hello1 hello1;
-                process_message(socket, hello1);
+                StdLoginContext hello1;
+                transact_message_sync(socket, hello1);
                 // 第二次协议握手
-                Hello2 hello2;
-                process_message(socket, hello2);
+                UpgradeTipContext hello2;
+                transact_message_sync(socket, hello2);
                 return true;
             } catch (const std::bad_cast& e) {
                 spdlog::error("Cannot cast: {}", e.what());
@@ -58,8 +56,8 @@ namespace quant1x::contrib::data::tdx {
         bool keepaliveImpl(asio::ip::tcp::socket &socket) {
             try {
                 // 心跳检测
-                Heartbeat hb;
-                process_message(socket, hb);
+                HeartbeatContext hb;
+                transact_message_sync(socket, hb);
                 return true;
             } catch (...) {
                 return false;
@@ -85,9 +83,9 @@ namespace quant1x::contrib::data::tdx {
     public:
         bool handshakeImpl(asio::ip::tcp::socket &socket) {
             try {
-                // 扩展行情同步握手 (对齐 Python Synchronize / Rust ExtSynchronizeRequest)
+                // 扩展行情同步握手 (对齐 Python SynchronizeContext / Rust ExtSynchronizeRequest)
                 ExtSync sync;
-                process_message(socket, sync);
+                transact_message_sync(socket, sync);
                 return sync.success;
             } catch (...) {
                 return false;
@@ -98,7 +96,7 @@ namespace quant1x::contrib::data::tdx {
             // 扩展行情心跳: 暂用同步消息保持连接 (对齐 Rust: InstrumentCountRequest 保持心跳)
             try {
                 ExtSync sync;
-                process_message(socket, sync);
+                transact_message_sync(socket, sync);
                 return true;
             } catch (...) {
                 return false;

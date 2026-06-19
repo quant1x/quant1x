@@ -7,17 +7,17 @@
 use crate::std::BinaryStream;
 
 use super::super::super::command::*;
-use super::super::super::protocol::{BaseMessage, RequestHeader, ResponseHeader};
+use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 
 #[derive(Debug, Clone)]
-pub struct SecurityCountRequest {
+pub struct SecurityCountContext {
     req_header: RequestHeader,
     resp_header: ResponseHeader,
     pub market: u16,
     pub count: usize,
 }
 
-impl SecurityCountRequest {
+impl SecurityCountContext {
     pub fn new(market: u16) -> Self {
         Self {
             req_header: RequestHeader::new(STD_SECURITY_COUNT, FLAG_UNCOMPRESSED),
@@ -28,7 +28,7 @@ impl SecurityCountRequest {
     }
 }
 
-impl BaseMessage for SecurityCountRequest {
+impl BaseFrame for SecurityCountContext {
     fn request_header(&self) -> &RequestHeader { &self.req_header }
     fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
     fn response_header(&self) -> &ResponseHeader { &self.resp_header }
@@ -53,11 +53,11 @@ impl BaseMessage for SecurityCountRequest {
 }
 
 /// 获取指定市场的证券数量
-pub fn fetch_security_count(market: u16) -> Option<SecurityCountRequest> {
+pub fn fetch_security_count(market: u16) -> Option<SecurityCountContext> {
     match super::super::super::client::get_std_conn() {
         Ok(mut conn) => {
-            let mut msg = SecurityCountRequest::new(market);
-            match super::super::super::protocol::process_level1_stream(conn.stream(), &mut msg) {
+            let mut msg = SecurityCountContext::new(market);
+            match super::super::super::protocol::transact_message_sync(conn.stream(), &mut msg) {
                 Ok(()) => {
                     log::info!("level1::security_count - market={} count={}", market, msg.count);
                     Some(msg)

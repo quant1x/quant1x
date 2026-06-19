@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_CONTRB_DATA_TDX_SECURITY_QUOTE_H
-#define QUANT1X_CONTRB_DATA_TDX_SECURITY_QUOTE_H 1
+#ifndef QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_SECURITY_QUOTE_H
+#define QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_SECURITY_QUOTE_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
 #include <quant1x/contrib/data/tdx/helpers.h>
@@ -217,8 +217,8 @@ namespace quant1x::contrib::data::tdx {
         }
     };
 
-    /// 即时行情 - 请求/响应 (对齐 Python SecurityQuote)
-    struct SecurityQuoteMsg : public BaseMessage<SecurityQuoteMsg> {
+    /// 即时行情 - 请求/响应 (对齐 Python SecurityQuoteContext)
+    struct SecurityQuoteContext : public BaseFrame<SecurityQuoteContext> {
         std::vector<u8> padding;
         std::vector<StockInfo> list;
 
@@ -230,7 +230,7 @@ namespace quant1x::contrib::data::tdx {
             return f64(price + diff) / baseUnit;
         }
 
-        SecurityQuoteMsg(const std::vector<meta::Instrument> &insts) : BaseMessage<SecurityQuoteMsg>() {
+        SecurityQuoteContext(const std::vector<meta::Instrument> &insts) : BaseFrame<SecurityQuoteContext>() {
             request_header.frame_type = ZlibFlag::Uncompressed;
             request_header.seq_id = get_sequence_id();
             request_header.packet_ctrl = 0x01;
@@ -240,7 +240,7 @@ namespace quant1x::contrib::data::tdx {
             for (auto const &inst : insts) {
                 StockInfo stockInfo{};
                 stockInfo.market = static_cast<u8>(helpers::exchange_to_market(inst.exchange));
-                stockInfo.code   = inst.marker_ticker();
+                stockInfo.code   = inst.market_ticker();
                 list.emplace_back(stockInfo);
             }
         }
@@ -273,7 +273,7 @@ namespace quant1x::contrib::data::tdx {
                 SecurityQuote ele = {};
                 ele.market = stream.get_u8();
                 ele.code = stream.get_string(6);
-                f64 baseUnit = helpers::defaultBaseUnit(ele.market, ele.code.c_str());
+                f64 baseUnit = helpers::default_base_unit(ele.market, ele.code.c_str());
                 ele.active1 = stream.get_u16();
 
                 i64 price_base = stream.varint_decode();
@@ -287,7 +287,7 @@ namespace quant1x::contrib::data::tdx {
                 ele.reversedBytes0 = stream.varint_decode();
                 if (ele.reversedBytes0 > 0) {
                     //ele.ServerTime = timeFromStr(fmt.Sprintf("%d",ele.ReversedBytes0))
-                    ele.serverTime = helpers::format_time(ele.reversedBytes0);
+                    ele.serverTime = helpers::format_timestamp_from_i64(ele.reversedBytes0);
                 } else {
                     ele.serverTime = "0";
                     // 如果出现这种情况, 可能是退市或者其实交易状态异常的数据, 摘牌的情况下, 证券代码是错的
@@ -300,7 +300,7 @@ namespace quant1x::contrib::data::tdx {
                 ele.vol *= 100;
                 ele.curVol = stream.varint_decode();
                 u32 rawAmount = stream.get_u32();
-                ele.amount = helpers::integerToFloat64(int(rawAmount));
+                ele.amount = helpers::integer_to_float64(int(rawAmount));
 
                 ele.sVol = stream.varint_decode();
                 ele.bVol = stream.varint_decode();
@@ -469,7 +469,7 @@ namespace quant1x::contrib::data::tdx {
             return out.str();
         }
 
-        friend std::ostream &operator<<(std::ostream &os, const SecurityQuoteMsg &response) {
+        friend std::ostream &operator<<(std::ostream &os, const SecurityQuoteContext &response) {
             os << response.to_string_impl();
             return os;
         }
@@ -477,4 +477,4 @@ namespace quant1x::contrib::data::tdx {
 
 }
 
-#endif //QUANT1X_CONTRB_DATA_TDX_SECURITY_QUOTE_H
+#endif // QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_SECURITY_QUOTE_H

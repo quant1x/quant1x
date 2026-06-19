@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_CONTRB_DATA_TDX_FINANCE_INFO_H
-#define QUANT1X_CONTRB_DATA_TDX_FINANCE_INFO_H 1
+#ifndef QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_FINANCE_INFO_H
+#define QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_FINANCE_INFO_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
 #include <quant1x/contrib/data/tdx/helpers.h>
@@ -233,8 +233,8 @@ namespace quant1x::contrib::data::tdx {
         }
     };
 
-    // 财务信息请求/响应 (对齐 Python FinanceInfoRequest)
-    struct FinanceInfoMsg : public BaseMessage<FinanceInfoMsg> {
+    // 财务信息请求/响应 (对齐 Python FinanceInfoContext)
+    struct FinanceInfoContext : public BaseFrame<FinanceInfoContext> {
         u16 ReqCount;         // 请求: 数量
         u8 Market;            // 请求: 市场
         char Code[6]{};       // 请求: 证券代码
@@ -242,14 +242,14 @@ namespace quant1x::contrib::data::tdx {
         u16 Count; //  总数
         FinanceInfo Info;
 
-        FinanceInfoMsg(const meta::Instrument &inst) : BaseMessage<FinanceInfoMsg>() {
+        FinanceInfoContext(const meta::Instrument &inst) : BaseFrame<FinanceInfoContext>() {
             request_header.frame_type = ZlibFlag::Uncompressed;
             request_header.seq_id = get_sequence_id();
             request_header.packet_ctrl = 0x01;
             request_header.cmd_id = StdCommand::FINANCE_INFO;
             ReqCount = 1;
             Market = static_cast<u8>(helpers::exchange_to_market(inst.exchange));
-            const char *const tmp = inst.marker_ticker().c_str();
+            const char *const tmp = inst.market_ticker().c_str();
             std::memcpy(Code, tmp, sizeof(Code));
         }
 
@@ -273,41 +273,41 @@ namespace quant1x::contrib::data::tdx {
             const static int baseUnit = 10000;
             auto symbol = strings::from(raw.Code);
             Info.Code = quant1x::data::correct_security_code(std::string(raw.Code, sizeof(raw.Code)));
-            Info.LiuTongGuBen = helpers::numberToFloat64(raw.LiuTongGuBen) * baseUnit;
+            Info.LiuTongGuBen = helpers::number_to_float64(raw.LiuTongGuBen) * baseUnit;
             Info.Province = raw.Province;
             Info.Industry = raw.Industry;
             Info.UpdatedDate = raw.UpdatedDate;
             Info.IPODate = raw.IPODate;
-            Info.ZongGuBen = helpers::numberToFloat64(raw.ZongGuBen) * baseUnit;
-            Info.GuoJiaGu = helpers::numberToFloat64(raw.GuoJiaGu) * baseUnit;
-            Info.FaQiRenFaRenGu = helpers::numberToFloat64(raw.FaQiRenFaRenGu) * baseUnit;
-            Info.FaRenGu = helpers::numberToFloat64(raw.FaRenGu) * baseUnit;
-            Info.BGu = helpers::numberToFloat64(raw.BGu) * baseUnit;
-            Info.HGu = helpers::numberToFloat64(raw.HGu) * baseUnit;
-            Info.ZhiGongGu = helpers::numberToFloat64(raw.ZhiGongGu) * baseUnit;
-            Info.ZongZiChan = helpers::numberToFloat64(raw.ZongZiChan) * baseUnit;
-            Info.LiuDongZiChan = helpers::numberToFloat64(raw.LiuDongZiChan) * baseUnit;
-            Info.GuDingZiChan = helpers::numberToFloat64(raw.GuDingZiChan) * baseUnit;
-            Info.WuXingZiChan = helpers::numberToFloat64(raw.WuXingZiChan) * baseUnit;
-            Info.GuDongRenShu = helpers::numberToFloat64(raw.GuDongRenShu);
-            Info.LiuDongFuZhai = helpers::numberToFloat64(raw.LiuDongFuZhai) * baseUnit;
-            Info.ChangQiFuZhai = helpers::numberToFloat64(raw.ChangQiFuZhai) * baseUnit;
-            Info.ZiBenGongJiJin = helpers::numberToFloat64(raw.ZiBenGongJiJin) * baseUnit;
-            Info.JingZiChan = helpers::numberToFloat64(raw.JingZiChan) * baseUnit;
-            Info.ZhuYingShouRu = helpers::numberToFloat64(raw.ZhuYingShouRu) * baseUnit;
-            Info.ZhuYingLiRun = helpers::numberToFloat64(raw.ZhuYingLiRun) * baseUnit;
-            Info.YingShouZhangKuan = helpers::numberToFloat64(raw.YingShouZhangKuan) * baseUnit;
-            Info.YingYeLiRun = helpers::numberToFloat64(raw.YingYeLiRun) * baseUnit;
-            Info.TouZiShouYu = helpers::numberToFloat64(raw.TouZiShouYu) * baseUnit;
-            Info.JingYingXianJinLiu = helpers::numberToFloat64(raw.JingYingXianJinLiu) * baseUnit;
-            Info.ZongXianJinLiu = helpers::numberToFloat64(raw.ZongXianJinLiu) * baseUnit;
-            Info.CunHuo = helpers::numberToFloat64(raw.CunHuo) * baseUnit;
-            Info.LiRunZongHe = helpers::numberToFloat64(raw.LiRunZongHe) * baseUnit;
-            Info.ShuiHouLiRun = helpers::numberToFloat64(raw.ShuiHouLiRun) * baseUnit;
-            Info.JingLiRun = helpers::numberToFloat64(raw.JingLiRun) * baseUnit;
-            Info.WeiFenLiRun = helpers::numberToFloat64(raw.WeiFenLiRun) * baseUnit;
-            Info.MeiGuJingZiChan = helpers::numberToFloat64(raw.BaoLiu1) * baseUnit;
-            Info.BaoLiu2 = helpers::numberToFloat64(raw.BaoLiu2);
+            Info.ZongGuBen = helpers::number_to_float64(raw.ZongGuBen) * baseUnit;
+            Info.GuoJiaGu = helpers::number_to_float64(raw.GuoJiaGu) * baseUnit;
+            Info.FaQiRenFaRenGu = helpers::number_to_float64(raw.FaQiRenFaRenGu) * baseUnit;
+            Info.FaRenGu = helpers::number_to_float64(raw.FaRenGu) * baseUnit;
+            Info.BGu = helpers::number_to_float64(raw.BGu) * baseUnit;
+            Info.HGu = helpers::number_to_float64(raw.HGu) * baseUnit;
+            Info.ZhiGongGu = helpers::number_to_float64(raw.ZhiGongGu) * baseUnit;
+            Info.ZongZiChan = helpers::number_to_float64(raw.ZongZiChan) * baseUnit;
+            Info.LiuDongZiChan = helpers::number_to_float64(raw.LiuDongZiChan) * baseUnit;
+            Info.GuDingZiChan = helpers::number_to_float64(raw.GuDingZiChan) * baseUnit;
+            Info.WuXingZiChan = helpers::number_to_float64(raw.WuXingZiChan) * baseUnit;
+            Info.GuDongRenShu = helpers::number_to_float64(raw.GuDongRenShu);
+            Info.LiuDongFuZhai = helpers::number_to_float64(raw.LiuDongFuZhai) * baseUnit;
+            Info.ChangQiFuZhai = helpers::number_to_float64(raw.ChangQiFuZhai) * baseUnit;
+            Info.ZiBenGongJiJin = helpers::number_to_float64(raw.ZiBenGongJiJin) * baseUnit;
+            Info.JingZiChan = helpers::number_to_float64(raw.JingZiChan) * baseUnit;
+            Info.ZhuYingShouRu = helpers::number_to_float64(raw.ZhuYingShouRu) * baseUnit;
+            Info.ZhuYingLiRun = helpers::number_to_float64(raw.ZhuYingLiRun) * baseUnit;
+            Info.YingShouZhangKuan = helpers::number_to_float64(raw.YingShouZhangKuan) * baseUnit;
+            Info.YingYeLiRun = helpers::number_to_float64(raw.YingYeLiRun) * baseUnit;
+            Info.TouZiShouYu = helpers::number_to_float64(raw.TouZiShouYu) * baseUnit;
+            Info.JingYingXianJinLiu = helpers::number_to_float64(raw.JingYingXianJinLiu) * baseUnit;
+            Info.ZongXianJinLiu = helpers::number_to_float64(raw.ZongXianJinLiu) * baseUnit;
+            Info.CunHuo = helpers::number_to_float64(raw.CunHuo) * baseUnit;
+            Info.LiRunZongHe = helpers::number_to_float64(raw.LiRunZongHe) * baseUnit;
+            Info.ShuiHouLiRun = helpers::number_to_float64(raw.ShuiHouLiRun) * baseUnit;
+            Info.JingLiRun = helpers::number_to_float64(raw.JingLiRun) * baseUnit;
+            Info.WeiFenLiRun = helpers::number_to_float64(raw.WeiFenLiRun) * baseUnit;
+            Info.MeiGuJingZiChan = helpers::number_to_float64(raw.BaoLiu1) * baseUnit;
+            Info.BaoLiu2 = helpers::number_to_float64(raw.BaoLiu2);
         }
 
         std::string to_string_impl() const {
@@ -326,4 +326,4 @@ namespace quant1x::contrib::data::tdx {
 
 }
 
-#endif //QUANT1X_CONTRB_DATA_TDX_FINANCE_INFO_H
+#endif // QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_FINANCE_INFO_H

@@ -6,12 +6,11 @@ import struct
 from enum import Enum
 from typing import List
 
-from quant1x.data.meta import Exchange
+from quant1x.data.meta import Exchange, Instrument
 from quant1x.data.schema import Bar
 
-from ...command import Command
-from ... import helpers
-from ... import protocol
+from quant1x.contrib.data.tdx.command import Command
+from quant1x.contrib.data.tdx import helpers, protocol
 
 SECURITY_BARS_PRE_REQUEST_MAX = 700  # 800
 
@@ -37,17 +36,17 @@ class KLineType(Enum):
         return ktype.name
 
 
-class SecurityBars(protocol.BaseMessage):
+class SecurityBarsContext(protocol.BaseFrame):
     """K线数据"""
-    def __init__(self, exchange: Exchange, code: str, category: KLineType, start: int, count: int, is_index: bool = False):
+    def __init__(self, inst: Instrument, category: KLineType, start: int, count: int, is_index: bool = False):
         super().__init__(Command.STD_SECURITY_BARS)
         self.request_header.packet_ctrl = 0x00
         self._category = category
         self._i = 1
         self._start = start
         self._count = count
-        self._market = helpers.exchange_to_market(exchange)
-        self._code = code
+        self._market = helpers.exchange_to_market(inst.exchange)
+        self._ticker = inst.market_ticker()
         self._padding = bytes.fromhex("00000000000000000000")
         self._is_index = is_index
 
@@ -55,7 +54,7 @@ class SecurityBars(protocol.BaseMessage):
         self.list: List[Bar] = []
 
     def serialize_request_body(self) -> bytes:
-        code_bytes = self._code.encode('ascii')
+        code_bytes = self._ticker.encode('ascii')
         if len(code_bytes) < 6:
             code_bytes = code_bytes + b'\x00' * (6 - len(code_bytes))
         else:

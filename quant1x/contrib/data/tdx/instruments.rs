@@ -207,7 +207,7 @@ pub fn init_securities() {
             let mut rows: Vec<Instrument> = Vec::new();
             loop {
                 let mut ii = super::level1::ext::InstrumentInfoRequest::new(start, offset);
-                let fetch_count = match super::protocol::process_level1_stream(pooled.stream(), &mut ii) {
+                let fetch_count = match super::protocol::transact_message_sync(pooled.stream(), &mut ii) {
                     Ok(()) => ii.list.len(),
                     Err(e) => {
                         log::error!("[tdx/instruments] ext InstrumentInfo request failed: {}", e);

@@ -33,8 +33,8 @@ std::string get_kline_filename(const quant1x::data::meta::Instrument& inst) {
     return config::default_cache_path() + "/day/" + inst.cache_dir() + "/" + inst.symbol() + ".csv";
 }
 
-std::vector<quant1x::data::meta::schema::Bar> read_kline_from_csv(const std::string& filename) {
-    std::vector<quant1x::data::meta::schema::Bar> klines;
+std::vector<quant1x::data::schema::Bar> read_kline_from_csv(const std::string& filename) {
+    std::vector<quant1x::data::schema::Bar> klines;
     if (!std::filesystem::exists(filename)) {
         return klines;
     }
@@ -55,7 +55,7 @@ std::vector<quant1x::data::meta::schema::Bar> read_kline_from_csv(const std::str
         if (line.empty()) continue;
 
         std::istringstream ss(line);
-        quant1x::data::meta::schema::Bar bar;
+        quant1x::data::schema::Bar bar;
         std::string token;
 
         auto next_token = [&]() -> std::string {
@@ -85,7 +85,7 @@ std::vector<quant1x::data::meta::schema::Bar> read_kline_from_csv(const std::str
     return klines;
 }
 
-void save_kline(const std::string& filename, const std::vector<quant1x::data::meta::schema::Bar>& klines) {
+void save_kline(const std::string& filename, const std::vector<quant1x::data::schema::Bar>& klines) {
     if (klines.empty()) return;
 
     auto dir = std::filesystem::path(filename).parent_path().string();
@@ -109,7 +109,7 @@ void save_kline(const std::string& filename, const std::vector<quant1x::data::me
     out.close();
 }
 
-std::vector<quant1x::data::meta::schema::Bar> load_kline(const quant1x::data::meta::Instrument& inst) {
+std::vector<quant1x::data::schema::Bar> load_kline(const quant1x::data::meta::Instrument& inst) {
     auto filename = get_kline_filename(inst);
     spdlog::debug("[load_kline] file: {}", filename);
     return read_kline_from_csv(filename);
@@ -202,12 +202,12 @@ std::optional<std::string> ipo_date_from_xdxrs(std::span<const XdxrInfo> xdxrs) 
 // Adjustment aggregation (Python combine_adjustments_in_period)
 // =============================
 
-std::vector<quant1x::data::meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
+std::vector<quant1x::data::schema::CumulativeAdjustment> combine_adjustments_in_period(
         std::span<const XdxrInfo> xdxrs,
         const quant1x::data::meta::Timestamp& start_date,
         const quant1x::data::meta::Timestamp& end_date) {
 
-    std::vector<quant1x::data::meta::schema::CumulativeAdjustment> result;
+    std::vector<quant1x::data::schema::CumulativeAdjustment> result;
 
     for (const auto& info : xdxrs) {
         // 只处理除权除息 (Category == 1)
@@ -237,7 +237,7 @@ std::vector<quant1x::data::meta::schema::CumulativeAdjustment> combine_adjustmen
             factor.share_adjustment_ratio = new_share;
         }
 
-        quant1x::data::meta::schema::CumulativeAdjustment entry{};
+        quant1x::data::schema::CumulativeAdjustment entry{};
         entry.timestamp             = event_ts;
         entry.m                     = m;
         entry.a                     = a;
@@ -251,7 +251,7 @@ std::vector<quant1x::data::meta::schema::CumulativeAdjustment> combine_adjustmen
 }
 
 // 日期字符串便捷重载
-std::vector<quant1x::data::meta::schema::CumulativeAdjustment> combine_adjustments_in_period(
+std::vector<quant1x::data::schema::CumulativeAdjustment> combine_adjustments_in_period(
         const std::vector<XdxrInfo>& xdxrs,
         const std::string& start_date,
         const std::string& end_date) {
@@ -265,7 +265,7 @@ std::vector<quant1x::data::meta::schema::CumulativeAdjustment> combine_adjustmen
 // =============================
 
 void apply_forward_adjustments_once(
-        std::vector<quant1x::data::meta::schema::Bar>& klines,
+        std::vector<quant1x::data::schema::Bar>& klines,
         std::span<const XdxrInfo> xdxrs,
         const quant1x::data::meta::Timestamp& start_date,
         const quant1x::data::meta::Timestamp& end_date,
@@ -317,7 +317,7 @@ void apply_forward_adjustments_once(
 // =============================
 
 void calculate_pre_adjust(
-        std::vector<quant1x::data::meta::schema::Bar>& klines,
+        std::vector<quant1x::data::schema::Bar>& klines,
         const std::vector<XdxrInfo>& dividends) {
 
     if (klines.empty()) return;
@@ -332,7 +332,7 @@ void calculate_pre_adjust(
 // =============================
 
 void apply_forward_adjustment_for_event(
-        std::vector<quant1x::data::meta::schema::Bar>& klines,
+        std::vector<quant1x::data::schema::Bar>& klines,
         const quant1x::data::meta::Timestamp& current_start_date,
         const std::vector<XdxrInfo>& dividends) {
 
@@ -384,7 +384,7 @@ void apply_forward_adjustment_for_event(
 // get_cross_section_forward_adjusted_klines (对应 Python/Rust)
 // =============================
 
-std::vector<quant1x::data::meta::schema::Bar> get_cross_section_forward_adjusted_klines(
+std::vector<quant1x::data::schema::Bar> get_cross_section_forward_adjusted_klines(
         const quant1x::data::meta::Instrument& inst, const std::string& as_of_date) {
 
     auto filename = get_kline_filename(inst);
@@ -405,7 +405,7 @@ std::vector<quant1x::data::meta::schema::Bar> get_cross_section_forward_adjusted
     }
 
     // 过滤 as_of_date 及之前的K线
-    std::vector<quant1x::data::meta::schema::Bar> result;
+    std::vector<quant1x::data::schema::Bar> result;
     for (auto& kline : all_klines) {
         if (kline.date <= as_of_date) {
             result.push_back(std::move(kline));
@@ -420,7 +420,7 @@ std::vector<quant1x::data::meta::schema::Bar> get_cross_section_forward_adjusted
 // =============================
 
 /// 内部 helper: Bar -> quant1x::data::KLine
-static quant1x::data::KLine bar_to_kline(const quant1x::data::meta::schema::Bar& bar, const std::string& code) {
+static quant1x::data::KLine bar_to_kline(const quant1x::data::schema::Bar& bar, const std::string& code) {
     quant1x::data::KLine kline;
     kline.date   = bar.date;
     kline.code   = code;
@@ -434,7 +434,7 @@ static quant1x::data::KLine bar_to_kline(const quant1x::data::meta::schema::Bar&
 }
 
 static std::vector<quant1x::data::KLine> bars_to_klines(
-        std::vector<quant1x::data::meta::schema::Bar>&& bars, const std::string& code) {
+        std::vector<quant1x::data::schema::Bar>&& bars, const std::string& code) {
     std::vector<quant1x::data::KLine> result;
     result.reserve(bars.size());
     for (auto& bar : bars) {
@@ -496,7 +496,7 @@ void DataKLine::Update(const quant1x::data::meta::Instrument& inst, const quant1
     // 3. 分页拉取原始日线数据 -> fetch_kline_raw 返回 domain Bar (对齐 Python: reply = fetch_kline_raw(inst, start, count, freq))
     int32_t step = security_bars_max;
     int32_t start = 0;
-    std::vector<std::vector<quant1x::data::meta::schema::Bar>> batches;
+    std::vector<std::vector<quant1x::data::schema::Bar>> batches;
     size_t element_count = 0;
 
     while (true) {
@@ -528,7 +528,7 @@ void DataKLine::Update(const quant1x::data::meta::Instrument& inst, const quant1
     // 4. 反转批次并过滤日期范围
     std::reverse(batches.begin(), batches.end());
 
-    std::vector<quant1x::data::meta::schema::Bar> incremental_klines;
+    std::vector<quant1x::data::schema::Bar> incremental_klines;
     for (auto& batch : batches) {
         for (auto& bar : batch) {
             auto date_time = quant1x::data::meta::Timestamp(bar.date).pre_market_time();
@@ -554,7 +554,7 @@ void DataKLine::Update(const quant1x::data::meta::Instrument& inst, const quant1
     }
 
     // 7. 合并旧缓存和新数据
-    std::vector<quant1x::data::meta::schema::Bar> klines;
+    std::vector<quant1x::data::schema::Bar> klines;
     if (klines_length > klines_offset_days) {
         klines.insert(klines.end(),
                       cache_klines.begin(),

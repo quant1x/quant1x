@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <optional>
 #include <sstream>
@@ -11,6 +12,7 @@
 
 #include <quant1x/config/base.h>
 #include <quant1x/data/market.h>
+#include <quant1x/io/csv-writer.h>
 #include <quant1x/data/meta/calendar.h>
 #include <quant1x/data/meta/timestamp.h>
 #include <quant1x/data/status.h>
@@ -18,8 +20,7 @@
 #include <quant1x/runtime/once.h>
 #include <quant1x/contrib/data/tdx/client.h>
 #include <quant1x/contrib/data/tdx/protocol.h>
-#include <quant1x/contrib/data/tdx/level1/std/block_info.h>
-#include <quant1x/contrib/data/tdx/level1/std/block_meta.h>
+#include <quant1x/contrib/data/tdx/level1/std/block.h>
 
 namespace config = quant1x::config;
 using quant1x::contrib::data::tdx::BLOCK_CHUNKS_SIZE;
@@ -27,13 +28,13 @@ using quant1x::contrib::data::tdx::BLOCK_DEFAULT;
 using quant1x::contrib::data::tdx::BLOCK_FENGGE;
 using quant1x::contrib::data::tdx::BLOCK_GAINIAN;
 using quant1x::contrib::data::tdx::BLOCK_ZHISHU;
-using quant1x::contrib::data::tdx::BlockInfoMsg;
+using quant1x::contrib::data::tdx::BlockFileContext;
 
 namespace quant1x::contrib::data::tdx::sector {
 
-    namespace config = quant1x::config;
-    namespace data = quant1x::data;
-    namespace meta = quant1x::data::meta;
+    // namespace config = quant1x::config;
+    // namespace data = quant1x::data;
+    using namespace quant1x::data;
 
     // ============================================================
     // 内部类型
@@ -62,8 +63,8 @@ namespace quant1x::contrib::data::tdx::sector {
     // ============================================================
 
     static auto sector_once = RollingOnce::create("tdx-sector", meta::cron_expr_daily_9am);
-    static std::vector<meta::schema::Sector> g_cached_sectors;
-    static tsl::robin_map<std::string, meta::schema::Sector> g_cached_sector_map;
+    static std::vector<schema::Sector> g_cached_sectors;
+    static tsl::robin_map<std::string, schema::Sector> g_cached_sector_map;
 
     // ============================================================
     // 工具函数
@@ -195,10 +196,10 @@ namespace quant1x::contrib::data::tdx::sector {
         uint32_t start = 0;
         std::vector<uint8_t> result;
         while (true) {
-            BlockInfoMsg msg(filename, start);
-            auto err = process_message(socket, msg);
+            BlockFileContext msg(filename, start);
+            auto err = transact_message_sync(socket, msg);
             if (err.value() != 0) {
-                spdlog::error("sector: process BlockInfoMsg for {} at offset {} failed: {}", filename, start, err.message());
+                spdlog::error("sector: process BlockFileContext for {} at offset {} failed: {}", filename, start, err.message());
                 return std::nullopt;
             }
             if (msg.DataSize == 0) {
@@ -223,7 +224,7 @@ namespace quant1x::contrib::data::tdx::sector {
         {
             std::ifstream check(filepath);
             if (check.good()) {
-                if (!data::should_initialize_file(filepath)) {
+                if (!quant1x::data::should_initialize_file(filepath)) {
                     spdlog::debug("sector: {} exists and is up-to-date, skip download", filename);
                     return filepath;
                 }
@@ -596,38 +597,30 @@ namespace quant1x::contrib::data::tdx::sector {
 
         // 写入 CSV
         auto out_fn = get_sector_filename();
-        // 确保目录存在
-        auto parent = out_fn.substr(0, out_fn.find_last_of("/\\"));
+        auto parent = std::filesystem::path(out_fn).parent_path().string();
         if (!parent.empty()) {
-            // 创建目录 (简单方式: 尝试打开文件, 失败则警告)
-            // 实际使用中 meta_path 应该已存在
+            std::filesystem::create_directories(parent);
         }
 
-        std::ofstream csv(out_fn);
-        if (!csv) {
-            spdlog::error("sector: failed to open CSV for writing: {}", out_fn);
+        try {
+            io::CSVWriter writer(out_fn);
+            writer.write_row("name", "code", "type", "count", "block", "constituent_stocks");
+            for (const auto &row : rows) {
+                const auto &name    = std::get<0>(row);
+                const auto &code    = std::get<1>(row);
+                int         btype   = std::get<2>(row);
+                int         cnt     = std::get<3>(row);
+                const auto &block   = std::get<4>(row);
+                const auto &cs      = std::get<5>(row);
+                auto cs_json = to_json_string_array(cs);
+
+                writer.write_row(name, code, btype, cnt, block, cs_json);
+            }
+            writer.close();
+        } catch (const std::exception& e) {
+            spdlog::error("sector: failed to write CSV: {}", e.what());
             return std::nullopt;
         }
-
-        // CSV header
-        csv << "name,code,type,count,block,constituent_stocks\n";
-        for (const auto &row : rows) {
-            const auto &name    = std::get<0>(row);
-            const auto &code    = std::get<1>(row);
-            int         btype   = std::get<2>(row);
-            int         cnt     = std::get<3>(row);
-            const auto &block   = std::get<4>(row);
-            const auto &cs      = std::get<5>(row);
-            auto cs_json = to_json_string_array(cs);
-
-            csv << "\"" << name << "\","
-                << "\"" << code << "\","
-                << btype << ","
-                << cnt << ","
-                << "\"" << block << "\","
-                << "\"" << cs_json << "\"\n";
-        }
-        csv.close();
 
         spdlog::info("sector: generated sector CSV: {} entries → {}", rows.size(), out_fn);
         return out_fn;
@@ -677,7 +670,7 @@ namespace quant1x::contrib::data::tdx::sector {
             }
         }
         if (!need_sync) {
-            need_sync = data::should_initialize_file(bk_filename);
+            need_sync = quant1x::data::should_initialize_file(bk_filename);
         }
 
         if (need_sync) {
@@ -692,8 +685,8 @@ namespace quant1x::contrib::data::tdx::sector {
             return;
         }
 
-        std::vector<meta::schema::Sector> sectors;
-        tsl::robin_map<std::string, meta::schema::Sector> sector_map;
+        std::vector<schema::Sector> sectors;
+        tsl::robin_map<std::string, schema::Sector> sector_map;
         std::string line;
 
         // 跳过 header
@@ -707,7 +700,7 @@ namespace quant1x::contrib::data::tdx::sector {
             auto fields = parse_csv_line(line);
             if (fields.size() < 6) continue;
 
-            meta::schema::Sector s;
+            schema::Sector s;
             s.name               = fields[0];
             s.code               = fields[1];
             s.type               = std::stoi(fields[2]);
@@ -729,19 +722,19 @@ namespace quant1x::contrib::data::tdx::sector {
     // 公共 API
     // ============================================================
 
-    std::vector<meta::schema::Sector> get_sector_list() {
+    std::vector<schema::Sector> get_sector_list() {
         sector_once->Do([] {
             load_cache_block_infos();
         });
         return g_cached_sectors;
     }
 
-    std::optional<meta::schema::Sector> get_sector_info(const std::string &symbol) {
+    std::optional<schema::Sector> get_sector_info(const std::string &symbol) {
         sector_once->Do([] {
             load_cache_block_infos();
         });
 
-        auto inst = data::detect_symbol(symbol);
+        auto inst = quant1x::data::detect_symbol(symbol);
         auto it = g_cached_sector_map.find(inst.symbol());
         if (it != g_cached_sector_map.end()) {
             return it->second;

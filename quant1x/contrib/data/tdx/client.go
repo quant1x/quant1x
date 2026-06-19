@@ -98,40 +98,40 @@ func (h *StandardProtocolHandler) processRequest(conn *net.TCPConn, req []byte) 
 }
 
 func (h *StandardProtocolHandler) Handshake(conn *net.TCPConn) (bool, error) {
-	req1 := Hello1Request{}
+	req1 := StdLoginContext{}
 	body1, _, err := h.processRequest(conn, req1.Bytes())
 	if err != nil {
-		log.Errorf("level1 handshake Hello1 failed: %v", err)
+		log.Errorf("level1 handshake StdLoginContext failed: %v", err)
 		return false, err
 	}
 	if len(body1) == 0 {
-		return false, errors.New("level1 handshake Hello1 empty body")
+		return false, errors.New("level1 handshake StdLoginContext empty body")
 	}
 	var resp1 Hello1Response
 	if err := resp1.Deserialize(body1); err != nil {
-		log.Errorf("level1 handshake Hello1 validation failed: %v", err)
+		log.Errorf("level1 handshake StdLoginContext validation failed: %v", err)
 		return false, err
 	}
 
-	req2 := Hello2Request{}
+	req2 := UpgradeTipContext{}
 	body2, _, err := h.processRequest(conn, req2.Bytes())
 	if err != nil {
-		log.Errorf("level1 handshake Hello2 failed: %v", err)
+		log.Errorf("level1 handshake UpgradeTipContext failed: %v", err)
 		return false, err
 	}
 	if len(body2) == 0 {
-		return false, errors.New("level1 handshake Hello2 empty body")
+		return false, errors.New("level1 handshake UpgradeTipContext empty body")
 	}
 	var resp2 Hello2Response
 	if err := resp2.Deserialize(body2); err != nil {
-		log.Errorf("level1 handshake Hello2 validation failed: %v", err)
+		log.Errorf("level1 handshake UpgradeTipContext validation failed: %v", err)
 		return false, err
 	}
 	return true, nil
 }
 
 func (h *StandardProtocolHandler) Keepalive(conn *net.TCPConn) (bool, error) {
-	body, _, err := h.processRequest(conn, HeartbeatRequest{}.Bytes())
+	body, _, err := h.processRequest(conn, HeartbeatContext{}.Bytes())
 	if err != nil {
 		return false, err
 	}

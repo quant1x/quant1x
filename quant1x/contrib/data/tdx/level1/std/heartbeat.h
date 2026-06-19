@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_CONTRB_DATA_TDX_HEARTBEAT_H
-#define QUANT1X_CONTRB_DATA_TDX_HEARTBEAT_H 1
+#ifndef QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_HEARTBEAT_H
+#define QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_HEARTBEAT_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
 
@@ -10,11 +10,11 @@
 
 namespace quant1x::contrib::data::tdx {
 
-    // 心跳 (对齐 Python Heartbeat)
-    struct Heartbeat : public BaseMessage<Heartbeat> {
+    // 心跳 (对齐 Python HeartbeatContext)
+    struct HeartbeatContext : public BaseFrame<HeartbeatContext> {
         std::string info;// 10个字节的消息, 未解
 
-        Heartbeat() : BaseMessage<Heartbeat>() {
+        HeartbeatContext() : BaseFrame<HeartbeatContext>() {
             request_header.frame_type = ZlibFlag::Uncompressed;
             request_header.seq_id = get_sequence_id();
             request_header.packet_ctrl = 0x02;
@@ -37,4 +37,4 @@ namespace quant1x::contrib::data::tdx {
 
 }
 
-#endif //QUANT1X_CONTRB_DATA_TDX_HEARTBEAT_H
+#endif // QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_HEARTBEAT_H

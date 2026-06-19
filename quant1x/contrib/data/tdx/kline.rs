@@ -219,10 +219,10 @@ fn fetch_kline_raw_as_bars(inst: &Instrument, start: u32, count: u16) -> Vec<Bar
 /// 获取除权除息数据列表
 /// 与 Python from .xdxr import get_xdxr_list 对齐
 fn get_xdxr_list(inst: &Instrument) -> Vec<XdxrInfo> {
-    use super::level1::std::xdxr;
+    use super::level1::std::xdxr_info;
     let exchange = inst.exchange;
-    let ticker = inst.marker_ticker();
-    match xdxr::fetch_xdxr(exchange, ticker) {
+    let ticker = inst.market_ticker();
+    match xdxr_info::fetch_xdxr(exchange, ticker) {
         Some(msg) => msg.list,
         None => Vec::new(),
     }

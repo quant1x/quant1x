@@ -5,7 +5,7 @@
 using namespace tdx;
 
 TEST(SecurityQuoteImplicitSpread, TradePriceAndBidAskPresent) {
-    SecurityQuote q{};
+    SecurityQuoteContext q{};
     q.price = 10.5;
     q.bid1 = 10.4;
     q.ask1 = 10.6;
@@ -16,7 +16,7 @@ TEST(SecurityQuoteImplicitSpread, TradePriceAndBidAskPresent) {
 }
 
 TEST(SecurityQuoteImplicitSpread, TradePriceOffMid) {
-    SecurityQuote q{};
+    SecurityQuoteContext q{};
     q.price = 10.55;
     q.bid1 = 10.4;
     q.ask1 = 10.6;
@@ -27,7 +27,7 @@ TEST(SecurityQuoteImplicitSpread, TradePriceOffMid) {
 }
 
 TEST(SecurityQuoteImplicitSpread, NoTradePriceUseOnbook) {
-    SecurityQuote q{};
+    SecurityQuoteContext q{};
     q.price = 0.0; // invalid
     q.bid1 = 5.0;
     q.ask1 = 5.2;
@@ -38,7 +38,7 @@ TEST(SecurityQuoteImplicitSpread, NoTradePriceUseOnbook) {
 }
 
 TEST(SecurityQuoteImplicitSpread, NoBidAskNoPrice) {
-    SecurityQuote q{};
+    SecurityQuoteContext q{};
     q.price = 0.0;
     q.bid1 = 0.0;
     q.ask1 = 0.0;
@@ -49,7 +49,7 @@ TEST(SecurityQuoteImplicitSpread, NoBidAskNoPrice) {
 }
 
 TEST(SecurityQuoteImplicitSpread, FallbackToLastClosePercent) {
-    SecurityQuote q{};
+    SecurityQuoteContext q{};
     q.price = 0.0;
     q.bid1 = 0.0;
     q.ask1 = 0.0;
@@ -63,7 +63,7 @@ TEST(SecurityQuoteImplicitSpread, FallbackToLastClosePercent) {
 #include <cmath>
 
 TEST(SecurityQuoteImplicitSpread, NaNPrice) {
-    SecurityQuote q{};
+    SecurityQuoteContext q{};
     q.price = std::numeric_limits<double>::quiet_NaN();
     q.bid1 = 3.0;
     q.ask1 = 3.5;

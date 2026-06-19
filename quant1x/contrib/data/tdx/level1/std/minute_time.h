@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_CONTRB_DATA_TDX_MINUTE_TIME_H
-#define QUANT1X_CONTRB_DATA_TDX_MINUTE_TIME_H 1
+#ifndef QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_MINUTE_TIME_H
+#define QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_MINUTE_TIME_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
 #include <quant1x/contrib/data/tdx/helpers.h>
@@ -23,8 +23,8 @@ namespace quant1x::contrib::data::tdx {
         }
     };
 
-    // 历史分时数据 (对齐 Python HistoryMinuteTime)
-    struct HistoryMinuteTime : public BaseMessage<HistoryMinuteTime> {
+    // 历史分时数据 (对齐 Python HistoricalMinuteTimeContext)
+    struct HistoricalMinuteTimeContext : public BaseFrame<HistoricalMinuteTimeContext> {
         uint32_t Date;      // 日期
         uint8_t  Market;    // 市场代码
         char Code[6];       // 证券代码(固定6字节)
@@ -34,14 +34,14 @@ namespace quant1x::contrib::data::tdx {
         int market_;
         const char *code_;
 
-        HistoryMinuteTime(const meta::Instrument &inst, u32 date) : BaseMessage<HistoryMinuteTime>() {
+        HistoricalMinuteTimeContext(const meta::Instrument &inst, u32 date) : BaseFrame<HistoricalMinuteTimeContext>() {
             request_header.frame_type = ZlibFlag::Uncompressed;
             request_header.seq_id = get_sequence_id();
             request_header.packet_ctrl = 0x00;
             request_header.cmd_id = StdCommand::HISTORY_MINUTE_DATA;
             {
                 Market = static_cast<u8>(helpers::exchange_to_market(inst.exchange));
-                const char *const tmp = inst.marker_ticker().c_str();
+                const char *const tmp = inst.market_ticker().c_str();
                 std::memcpy(Code, tmp, sizeof(Code));
             }
             Date = date;
@@ -65,7 +65,7 @@ namespace quant1x::contrib::data::tdx {
             BinaryStream bs(data);
             Count = bs.get_u16();
             List.reserve(Count);
-            auto baseUnit = helpers::defaultBaseUnit(market_, code_);
+            auto baseUnit = helpers::default_base_unit(market_, code_);
             i64 lastPrice = 0;
             bs.skip(4); // 历史分笔成交记录, 跳过4个字节
             try {
@@ -81,7 +81,7 @@ namespace quant1x::contrib::data::tdx {
                     List.emplace_back(e);
                 }
             } catch(const std::out_of_range&) {
-                spdlog::warn("[HistoryMinuteTime] insufficient data for {} minute times, parsed {} successfully", Count, List.size());
+                spdlog::warn("[HistoricalMinuteTimeContext] insufficient data for {} minute times, parsed {} successfully", Count, List.size());
                 Count = List.size();
             }
         }
@@ -106,4 +106,4 @@ namespace quant1x::contrib::data::tdx {
 }
 
 
-#endif //QUANT1X_CONTRB_DATA_TDX_MINUTE_TIME_H
+#endif // QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_MINUTE_TIME_H

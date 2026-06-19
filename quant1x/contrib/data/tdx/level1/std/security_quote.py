@@ -17,7 +17,7 @@ class StockInfo:
     code: str = ""
 
 
-class SecurityQuote(protocol.BaseMessage):
+class SecurityQuoteContext(protocol.BaseFrame):
     """行情快照"""
     def __init__(self, codes: List[str]):
         super().__init__(Command.STD_SECURITY_QUOTES_OLD)
@@ -30,7 +30,7 @@ class SecurityQuote(protocol.BaseMessage):
                 continue
             inst = detect_symbol(sc)
             market_id = helpers.exchange_to_market(inst.exchange)
-            symbol = inst.marker_ticker()
+            symbol = inst.market_ticker()
             self.list.append(StockInfo(market=market_id, code=symbol))
 
         self.count = 0

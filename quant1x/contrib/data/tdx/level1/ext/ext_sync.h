@@ -7,12 +7,12 @@
 
 namespace quant1x::contrib::data::tdx {
 
-/// 扩展行情握手请求 (对应 Python level1/ext.py Synchronize, 命令字 0x2454)
+/// 扩展行情握手请求 (对应 Python level1/ext.py SynchronizeContext, 命令字 0x2454)
 /// 协议格式与标准行情不同: packet_ctrl=0x01, frame_type=0x01 (FLAG_GENERIC)
-struct ExtSync : public BaseMessage<ExtSync> {
+struct ExtSync : public BaseFrame<ExtSync> {
     bool success = false;
 
-    ExtSync() : BaseMessage<ExtSync>() {
+    ExtSync() : BaseFrame<ExtSync>() {
         request_header.frame_type    = 0x01; // FLAG_GENERIC
         request_header.seq_id      = get_sequence_id();
         request_header.packet_ctrl = 0x01; // ext frame type
@@ -20,7 +20,7 @@ struct ExtSync : public BaseMessage<ExtSync> {
     }
 
     std::vector<u8> serialize_request_body_impl() {
-        // 80 字节 padding (对齐 Python Synchronize.serialize_request_body)
+        // 80 字节 padding (对齐 Python SynchronizeContext.serialize_request_body)
         return strings::hexToBytes(
             "e5bb1c2fafe52594"
             "1f32c6e5d53dfb41"

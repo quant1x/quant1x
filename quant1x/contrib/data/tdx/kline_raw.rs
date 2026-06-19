@@ -14,8 +14,8 @@ use crate::data::meta::Timestamp;
 use crate::data::{BaseRawDailyKLine};
 use super::command::{EXT_INSTRUMENT_BARS, FLAG_GENERIC};
 use super::helpers::msg_sequence_id;
-use super::level1::std::security_bars::{SecurityBarsRequest, SecurityBar as StdSecurityBar};
-use super::protocol::{BaseMessage, RequestHeader, ResponseHeader};
+use super::level1::std::security_bars::{SecurityBarsContext, SecurityBar as StdSecurityBar};
+use super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 use crate::std::BinaryStream;
 
 /// 日线增量更新时丢弃的缓存天数, 与 Python MaxCachedDaysToDropOnIncrementalUpdate 对齐
@@ -47,7 +47,7 @@ pub struct SecurityBar {
     pub down_count: i32,
 }
 
-/// SecurityBars 响应包装(本地定义)
+/// SecurityBarsContext 响应包装(本地定义)
 #[derive(Debug, Clone)]
 pub struct SecurityBarsResponse {
     pub count: u16,
@@ -122,7 +122,7 @@ pub struct InstrumentBars {
     pub reply: Vec<SecurityBar>,
 }
 
-impl BaseMessage for InstrumentBars {
+impl BaseFrame for InstrumentBars {
     fn request_header(&self) -> &RequestHeader {
         &self.req_header
     }
@@ -387,29 +387,29 @@ pub fn fetch_kline_raw(
 
 /// 从标准行情获取原始K线
 /// 对应 Python kline_raw.py fetch_kline_raw_from_std:
-///   msg = SecurityBars(inst.exchange, inst.ticker, kline_type, start, count, inst.type.is_index())
+///   msg = SecurityBarsContext(inst.exchange, inst.ticker, kline_type, start, count, inst.type.is_index())
 /// 使用 STD_SECURITY_BARS (0x052d) 命令, 通过标准行情连接获取
 fn fetch_kline_raw_from_std(
     inst: &Instrument,
     start: u32,
     count: u16,
 ) -> Option<SecurityBarsResponse> {
-    let code = inst.marker_ticker();
+    let code = inst.market_ticker();
     let ticker = code.to_uppercase();
     let category = kline_type_to_value(KLineType::Daily);
 
     match super::client::get_std_conn() {
         Ok(mut conn) => {
-            // 使用 SecurityBarsRequest (STD_SECURITY_BARS, 0x052d), 不是 InstrumentBars (EXT_INSTRUMENT_BARS, 0x23ff)
+            // 使用 SecurityBarsContext (STD_SECURITY_BARS, 0x052d), 不是 InstrumentBars (EXT_INSTRUMENT_BARS, 0x23ff)
             let symbol = format!("{}{}", inst.exchange.identifier(), ticker);
-            let mut bars = SecurityBarsRequest::with_is_index(
+            let mut bars = SecurityBarsContext::with_is_index(
                 &symbol,
                 category,
                 start as u16,
                 count,
                 inst.instrument_type.is_index(),
             );
-            match super::protocol::process_level1_stream(conn.stream(), &mut bars) {
+            match super::protocol::transact_message_sync(conn.stream(), &mut bars) {
                 Ok(()) => {
                     log::debug!("[kline_raw] fetch_kline_raw_from_std: {} bars for {}", bars.list.len(), inst.symbol());
                     let list: Vec<SecurityBar> = bars.list.into_iter().map(|b| SecurityBar {
@@ -455,14 +455,14 @@ fn fetch_kline_raw_from_ext(
     start: u32,
     count: u16,
 ) -> Option<SecurityBarsResponse> {
-    let code = inst.marker_ticker();
+    let code = inst.market_ticker();
     let ticker = code.to_uppercase();
     let category = kline_type_to_value(KLineType::Daily);
 
     match super::client::get_ext_conn() {
         Ok(mut conn) => {
             let mut bars = InstrumentBars::new(inst.ext_market as u8, &ticker, category, start, count);
-            match super::protocol::process_level1_stream(conn.stream(), &mut bars) {
+            match super::protocol::transact_message_sync(conn.stream(), &mut bars) {
                 Ok(()) => {
                     log::debug!("[kline_raw] fetch_kline_raw_from_ext: {} bars for {}", bars.reply.len(), inst.symbol());
                     Some(SecurityBarsResponse {

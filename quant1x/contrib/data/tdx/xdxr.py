@@ -12,7 +12,7 @@ from quant1x.data import status
 from quant1x.data.schema import XdxrInfo, XdxrCategory
 from quant1x.data.meta.timestamp import Timestamp
 from quant1x.data.market import Instrument, Exchange
-from .level1 import Xdxr
+from .level1 import XdxrInfoContext
 from . import protocol
 from .client import get_std_conn, get_ext_conn
 from quant1x.log import logger
@@ -85,8 +85,8 @@ def save_xdxr(inst: Instrument, values: list[XdxrInfo]):
 def update_xdxr_from_std(inst: Instrument):
     try:
         conn = get_std_conn()
-        msg = Xdxr(exchange=inst.exchange, ticker=inst.ticker)
-        protocol.process_level1_new(conn, msg)
+        msg = XdxrInfoContext(exchange=inst.exchange, ticker=inst.ticker)
+        protocol.transact_message_sync(conn, msg)
         if msg.count > 0:
             save_xdxr(inst, msg.list)
     except Exception:
@@ -103,14 +103,14 @@ def update_xdxr_from_ext_0x24b9(inst: Instrument):
     try:
         conn = get_ext_conn()
         from .level1.ext import CompanyInfoCategories, CompanyInfoContent
-        categories = CompanyInfoCategories(market=inst.ext_market, ticker=inst.marker_ticker())
-        protocol.process_level1_new(conn, categories)
+        categories = CompanyInfoCategories(market=inst.ext_market, ticker=inst.market_ticker())
+        protocol.transact_message_sync(conn, categories)
         if categories.reply:
             # 捡出 分红送股
             for category in categories.reply:
                 if category.title == '分红送股':
                     xdxr_info = CompanyInfoContent(market=categories.market, ticker=categories.ticker, filename=category.filename, offset=category.offset, size=category.size)
-                    protocol.process_level1_new(conn, xdxr_info)
+                    protocol.transact_message_sync(conn, xdxr_info)
                     if xdxr_info.reply:
                         xdxr_records = parse_text_to_list(xdxr_info.reply, inst.exchange.region.currency)
                         converted: List[XdxrInfo] = []

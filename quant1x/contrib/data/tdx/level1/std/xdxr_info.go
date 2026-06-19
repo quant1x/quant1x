@@ -7,6 +7,7 @@ import (
 	"io"
 	"math"
 
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
 	"github.com/quant1x/quant1x/quant1x/data/exchange"
 )
 
@@ -77,13 +78,13 @@ func (r XdxrInfoRequest) Serialize() []byte {
 	payload := &bytes.Buffer{}
 	padding := []byte{0x01, 0x00}
 	payload.Write(padding)
-	market := uint8(exchangeToMarketId(r.Instrument.Exchange))
+	market := uint8(ExchangeToMarketId(r.Instrument.Exchange))
 	payload.WriteByte(market)
 	payload.Write([]byte(r.Instrument.Ticker)[:6])
-	return buildRequest(StdCommandXdxrInfo, packetTypeRequest, payload.Bytes())
+	return tdx.BuildRequest(tdx.StdCommandXdxrInfo, tdx.PacketTypeRequest, payload.Bytes())
 }
 
-func (r XdxrInfoRequest) Command() StdCommand { return StdCommandXdxrInfo }
+func (r XdxrInfoRequest) Command() tdx.StdCommand { return tdx.StdCommandXdxrInfo }
 
 func (r XdxrInfoRequest) String() string {
 	return fmt.Sprintf("XdxrInfoRequest{%s}", r.Instrument.Symbol())
@@ -201,7 +202,7 @@ func (x XdxrInfo) String() string {
 
 // XdxrInfoResponse decodes the response body for XDXR_INFO
 type XdxrInfoResponse struct {
-	ResponseBase
+	tdx.ResponseBase
 	Count uint16
 	List  []XdxrInfo
 }
@@ -245,7 +246,7 @@ func (r *XdxrInfoResponse) Deserialize(body []byte) error {
 			return err
 		}
 
-		y, m, d, _, _ := getDatetimeFromUint32(9, dateRaw, 0)
+		y, m, d, _, _ := GetDatetimeFromUint32(9, dateRaw, 0)
 		xi := XdxrInfo{Date: fmt.Sprintf("%04d-%02d-%02d", y, m, d), Category: int(category), Name: XdxrCategory(category).ToString()}
 
 		// parse data per category similar to C++ logic
@@ -280,13 +281,13 @@ func (r *XdxrInfoResponse) Deserialize(body []byte) error {
 		default:
 			var v uint32
 			_ = binary.Read(db, binary.LittleEndian, &v)
-			xi.QianLiuTong = integerToFloat64(v)
+			xi.QianLiuTong = IntegerToFloat64(v)
 			_ = binary.Read(db, binary.LittleEndian, &v)
-			xi.QianZongGuBen = integerToFloat64(v)
+			xi.QianZongGuBen = IntegerToFloat64(v)
 			_ = binary.Read(db, binary.LittleEndian, &v)
-			xi.HouLiuTong = integerToFloat64(v)
+			xi.HouLiuTong = IntegerToFloat64(v)
 			_ = binary.Read(db, binary.LittleEndian, &v)
-			xi.HouZongGuBen = integerToFloat64(v)
+			xi.HouZongGuBen = IntegerToFloat64(v)
 		}
 
 		r.List = append(r.List, xi)

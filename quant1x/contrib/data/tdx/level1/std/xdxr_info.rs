@@ -12,16 +12,16 @@ use crate::data::meta::Exchange;
 
 use super::super::super::command::*;
 use super::super::super::helpers::{get_datetime_from_u32, int_to_float64, exchange_to_market, market_to_exchange};
-use super::super::super::protocol::{BaseMessage, RequestHeader, ResponseHeader};
+use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 
 // ============================================================
-// XdxrRequest — 单只证券除权除息查询
+// XdxrInfoContext — 单只证券除权除息查询
 // 对应 Python class Xdxr
 // ============================================================
 
 /// 单只证券除权除息请求/响应
 #[derive(Debug, Clone)]
-pub struct XdxrRequest {
+pub struct XdxrInfoContext {
     req_header: RequestHeader,
     resp_header: ResponseHeader,
     /// TDX 市场编号 (0:深圳, 1:上海)
@@ -34,7 +34,7 @@ pub struct XdxrRequest {
     pub list: Vec<XdxrInfo>,
 }
 
-impl XdxrRequest {
+impl XdxrInfoContext {
     pub fn new(exchange: Exchange, ticker: &str) -> Self {
         let market_id = exchange_to_market(exchange.code())
             .unwrap_or(0) as u8;
@@ -50,7 +50,7 @@ impl XdxrRequest {
     }
 }
 
-impl BaseMessage for XdxrRequest {
+impl BaseFrame for XdxrInfoContext {
     fn request_header(&self) -> &RequestHeader { &self.req_header }
     fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
     fn response_header(&self) -> &ResponseHeader { &self.resp_header }
@@ -172,7 +172,7 @@ impl BaseMessage for XdxrRequest {
     }
 }
 
-impl XdxrRequest {
+impl XdxrInfoContext {
     /// 将 u32 整数转换为 f64 浮点数(与 level1 协议中使用的转换一致)
     fn get_v(v: u32) -> f64 {
         if v == 0 {
@@ -212,7 +212,7 @@ impl XdxrBatchRequest {
     }
 }
 
-impl BaseMessage for XdxrBatchRequest {
+impl BaseFrame for XdxrBatchRequest {
     fn request_header(&self) -> &RequestHeader { &self.req_header }
     fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
     fn response_header(&self) -> &ResponseHeader { &self.resp_header }
@@ -335,13 +335,13 @@ impl BaseMessage for XdxrBatchRequest {
                     }
                     _ => {
                         let v1 = tmp.get_u32()?;
-                        info.qian_liu_tong = XdxrRequest::get_v(v1);
+                        info.qian_liu_tong = XdxrInfoContext::get_v(v1);
                         let v2 = tmp.get_u32()?;
-                        info.qian_zong_gu_ben = XdxrRequest::get_v(v2);
+                        info.qian_zong_gu_ben = XdxrInfoContext::get_v(v2);
                         let v3 = tmp.get_u32()?;
-                        info.hou_liu_tong = XdxrRequest::get_v(v3);
+                        info.hou_liu_tong = XdxrInfoContext::get_v(v3);
                         let v4 = tmp.get_u32()?;
-                        info.hou_zong_gu_ben = XdxrRequest::get_v(v4);
+                        info.hou_zong_gu_ben = XdxrInfoContext::get_v(v4);
                     }
                 }
 
@@ -363,11 +363,11 @@ impl BaseMessage for XdxrBatchRequest {
 // ============================================================
 
 /// 获取单只证券的除权除息信息
-pub fn fetch_xdxr(exchange: Exchange, ticker: &str) -> Option<XdxrRequest> {
+pub fn fetch_xdxr(exchange: Exchange, ticker: &str) -> Option<XdxrInfoContext> {
     match super::super::super::client::get_std_conn() {
         Ok(mut conn) => {
-            let mut msg = XdxrRequest::new(exchange, ticker);
-            match super::super::super::protocol::process_level1_stream(conn.stream(), &mut msg) {
+            let mut msg = XdxrInfoContext::new(exchange, ticker);
+            match super::super::super::protocol::transact_message_sync(conn.stream(), &mut msg) {
                 Ok(()) => Some(msg),
                 Err(e) => {
                     log::error!("level1 xdxr process error for {} {}: {}", exchange.code(), ticker, e);
@@ -390,7 +390,7 @@ pub fn fetch_xdxr_batch(instruments: Vec<(Exchange, String)>) -> Option<XdxrBatc
     match super::super::super::client::get_std_conn() {
         Ok(mut conn) => {
             let mut msg = XdxrBatchRequest::new(instruments);
-            match super::super::super::protocol::process_level1_stream(conn.stream(), &mut msg) {
+            match super::super::super::protocol::transact_message_sync(conn.stream(), &mut msg) {
                 Ok(()) => Some(msg),
                 Err(e) => {
                     log::error!("level1 xdxr_batch process error: {}", e);

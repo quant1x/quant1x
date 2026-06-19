@@ -444,7 +444,7 @@ def get_f10_hk_stock_split(symbol: str) -> List[StockSplit]:
 def get_ext_xdxr_info(inst: Instrument) -> List[XdxrInfo]:
     if inst.exchange.region != Region.HK:
         return []
-    code = inst.marker_ticker()
+    code = inst.market_ticker()
     dividends = get_f10_hk_dividend(code)
     rights = get_f10_hk_rights_issue(code)
     splits = get_f10_hk_stock_split(code)

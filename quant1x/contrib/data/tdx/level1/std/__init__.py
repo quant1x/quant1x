@@ -4,48 +4,40 @@
 #
 # 标准行情协议包 — 按命令字拆分
 
-from .hello import StdLogin, UpgradeTip
-from .heartbeat import Heartbeat
-from .security_list import SecurityList, SECURITY_LIST_PRE_REQUEST_MAX
-from .security_count import SecurityCount
-from .security_bars import SecurityBars, KLineType, SECURITY_BARS_PRE_REQUEST_MAX
+from .hello import StdLoginContext, UpgradeTipContext
+from .heartbeat import HeartbeatContext
+from .security_list import SecurityListContext, SECURITY_LIST_PRE_REQUEST_MAX
+from .security_count import SecurityCountContext
+from .security_bars import SecurityBarsContext, KLineType, SECURITY_BARS_PRE_REQUEST_MAX
 from .transaction import (
-    Transaction, HistoricalTransaction,
+    TransactionContext, HistoricalTransactionContext,
     TICK_BUY, TICK_SELL, TICK_NEUTRAL, TICK_UNKNOWN,
     TICK_TRANSACTION_PER_REQUEST_MAX,
 )
-from .finance_info import FinanceInfoRequest
-from .xdxr import Xdxr, XdxrBatch
-from .block import BlockInfo, BLOCK_CHUNKS_SIZE
-from .block_meta import BlockMetaRequest, BlockMeta, BLOCK_ZHISHU, BLOCK_FENGGE, BLOCK_GAINIAN, BLOCK_DEFAULT
-from .security_quote import SecurityQuote, StockInfo
-from .minute_time import HistoryMinuteTime, MinuteTime
+from .finance_info import FinanceInfoContext
+from .xdxr_info import XdxrInfoContext, XdxrBatchContext
+from .block import BlockFileContext, BLOCK_CHUNKS_SIZE
+from .block_meta import BlockFileMetaContext, BlockMeta, BLOCK_ZHISHU, BLOCK_FENGGE, BLOCK_GAINIAN, BLOCK_DEFAULT
+from .security_quote import SecurityQuoteContext, StockInfo
+from .minute_time import HistoricalMinuteTimeContext, MinuteTime
 
 __all__ = [
-    # hello
-    'StdLogin', 'UpgradeTip',
-    # heartbeat
-    'Heartbeat',
-    # security_count
-    'SecurityCount',
-    # security_list
-    'SecurityList', 'SECURITY_LIST_PRE_REQUEST_MAX',
-    # security_bars
-    'SecurityBars', 'KLineType', 'SECURITY_BARS_PRE_REQUEST_MAX',
-    # transaction
-    'Transaction', 'HistoricalTransaction',
+    'StdLoginContext', 'UpgradeTipContext',
+    'HeartbeatContext',
+    'SecurityCountContext',
+    'SecurityListContext', 'SECURITY_LIST_PRE_REQUEST_MAX',
+    'SecurityBarsContext', 'KLineType', 'SECURITY_BARS_PRE_REQUEST_MAX',
+    'TransactionContext', 'HistoricalTransactionContext',
     'TICK_BUY', 'TICK_SELL', 'TICK_NEUTRAL', 'TICK_UNKNOWN',
     'TICK_TRANSACTION_PER_REQUEST_MAX',
-    # finance_info
-    'FinanceInfoRequest',
-    # xdxr
-    'Xdxr', 'XdxrBatch',
+    'FinanceInfoContext',
+    'XdxrInfoContext', 'XdxrBatchContext',
     # block
-    'BlockInfo', 'BLOCK_CHUNKS_SIZE',
+    'BlockFileContext', 'BLOCK_CHUNKS_SIZE',
     # block_meta
-    'BlockMetaRequest', 'BlockMeta', 'BLOCK_ZHISHU', 'BLOCK_FENGGE', 'BLOCK_GAINIAN', 'BLOCK_DEFAULT',
+    'BlockFileMetaContext', 'BlockMeta', 'BLOCK_ZHISHU', 'BLOCK_FENGGE', 'BLOCK_GAINIAN', 'BLOCK_DEFAULT',
     # security_quote
-    'SecurityQuote', 'StockInfo',
+    'SecurityQuoteContext', 'StockInfo',
     # minute_time
-    'HistoryMinuteTime', 'MinuteTime',
+    'HistoricalMinuteTimeContext', 'MinuteTime',
 ]

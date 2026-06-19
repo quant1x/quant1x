@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_TDX_INSTRUMENTS_H
-#define QUANT1X_TDX_INSTRUMENTS_H 1
+#ifndef QUANT1X_CONTRIB_DATA_TDX_INSTRUMENTS_H
+#define QUANT1X_CONTRIB_DATA_TDX_INSTRUMENTS_H 1
 
 /// tdx/instruments — TDX 证券信息缓存读取
 /// 与 Python contrib/data/tdx/instruments.py 和 Rust instruments.rs 对齐
@@ -41,4 +41,4 @@ namespace instruments {
 } // namespace instruments
 } // namespace quant1x::contrib::data::tdx
 
-#endif // QUANT1X_TDX_INSTRUMENTS_H
+#endif // QUANT1X_CONTRIB_DATA_TDX_INSTRUMENTS_H

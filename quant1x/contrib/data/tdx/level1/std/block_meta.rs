@@ -7,7 +7,7 @@
 use crate::std::BinaryStream;
 
 use super::super::super::command::*;
-use super::super::super::protocol::{BaseMessage, RequestHeader, ResponseHeader};
+use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 
 // Constants
 pub const BLOCK_ZHISHU: &str = "block_zs.dat";
@@ -35,14 +35,14 @@ impl BlockMeta {
 }
 
 #[derive(Debug, Clone)]
-pub struct BlockMetaRequest {
+pub struct BlockFileMetaContext {
     req_header: RequestHeader,
     resp_header: ResponseHeader,
     filename: String,
     pub meta: BlockMeta,
 }
 
-impl BlockMetaRequest {
+impl BlockFileMetaContext {
     pub fn new(filename: &str) -> Self {
         Self {
             req_header: RequestHeader::new(STD_BLOCK_META, FLAG_UNCOMPRESSED),
@@ -53,7 +53,7 @@ impl BlockMetaRequest {
     }
 }
 
-impl BaseMessage for BlockMetaRequest {
+impl BaseFrame for BlockFileMetaContext {
     fn request_header(&self) -> &RequestHeader { &self.req_header }
     fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
     fn response_header(&self) -> &ResponseHeader { &self.resp_header }

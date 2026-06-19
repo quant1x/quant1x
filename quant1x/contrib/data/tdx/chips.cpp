@@ -28,7 +28,7 @@ namespace quant1x::contrib::data::tdx {
             return;
         }
         io::CSVReader<6, io::trim_chars<' ', '\t'>, io::double_quote_escape<',', '"'>> csvReader(cache_filename);
-        csvReader.read_header(io::ignore_extra_column, "time", "price", "vol", "num", "amount", "buyOrSell");
+        csvReader.read_header(io::ignore_extra_column | io::ignore_missing_column, "time", "price", "volume", "num", "amount", "direction");
         std::string Time;
         f64 Price = 0;
         f64 Vol = 0;

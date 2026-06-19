@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_CONTRB_DATA_TDX_SECURITY_COUNT_H
-#define QUANT1X_CONTRB_DATA_TDX_SECURITY_COUNT_H 1
+#ifndef QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_SECURITY_COUNT_H
+#define QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_SECURITY_COUNT_H 1
 
 // ==============================
 // 证券统计
@@ -10,13 +10,13 @@
 
 namespace quant1x::contrib::data::tdx {
 
-    // 证券统计 (对齐 Python SecurityCount)
-    struct SecurityCount : public BaseMessage<SecurityCount> {
+    // 证券统计 (对齐 Python SecurityCountContext)
+    struct SecurityCountContext : public BaseFrame<SecurityCountContext> {
         u16 Market;                    // 市场
         std::vector<u8> padding={};    // 填充
         u16 Count;                     // 返回数量
 
-        SecurityCount() : BaseMessage<SecurityCount>() {
+        SecurityCountContext() : BaseFrame<SecurityCountContext>() {
             request_header.frame_type = ZlibFlag::Uncompressed;
             request_header.seq_id = get_sequence_id();
             request_header.packet_ctrl = 0x01;
@@ -51,4 +51,4 @@ namespace quant1x::contrib::data::tdx {
     };
 
 }
-#endif //QUANT1X_CONTRB_DATA_TDX_SECURITY_COUNT_H
+#endif // QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_SECURITY_COUNT_H

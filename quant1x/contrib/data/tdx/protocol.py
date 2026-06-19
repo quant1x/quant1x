@@ -143,7 +143,7 @@ class ResponseHeader(Stringable, Sizeable, abc.ABC):
         # - body_raw_len (unsigned short): 2字节无符号整数
 
 
-class BaseMessage(abc.ABC):
+class BaseFrame(abc.ABC):
     """
     消息基类
     
@@ -224,7 +224,21 @@ def _recv_exact(conn_like: ConnectionHandle, n: int) -> bytes:
     return bytes(buf)
 
 
-def process_level1_new(conn_handle: ConnectionHandle, msg: BaseMessage) -> None:
+def transact_message_sync(conn_handle: ConnectionHandle, msg: BaseFrame) -> None:
+    """
+    同步发送请求消息并接收响应，完成完整的TDX协议交互流程
+    
+    Args:
+        conn_handle (ConnectionHandle): 已建立的连接句柄，用于发送和接收数据
+        msg (BaseFrame): 待处理的协议帧对象，包含请求序列化和响应反序列化逻辑
+    
+    Returns:
+        None: 本函数无返回值，响应数据直接写入msg对象的属性中
+    
+    Note:
+        当响应体的压缩长度与原始长度不一致时，会自动进行zlib解压缩处理。
+        若响应头中body_wire_len为0，则直接返回，不读取响应体。
+    """
     req_buf = msg.serialize_request()
     logger.debug(f"process_level1: request={msg.request_header.to_string()}")
     logger.debug(f"process_level1: req_buf={req_buf.hex()}")
@@ -262,14 +276,10 @@ class StandardProtocolHandler(NetworkOperationHandler):
 
     def handshake(self, conn) -> bool:
         try:
-            from .level1 import StdLogin
-            #from .level1.ext import Synchronize as ext_Synchronize2
+            from .level1 import StdLoginContext
 
-            msg1 = StdLogin()
-            process_level1_new(conn, msg1)
-
-            #msg2 = ext_Synchronize2()
-            #process_level1_new(conn, msg2)
+            ctx = StdLoginContext()
+            transact_message_sync(conn, ctx)
             return True
         except Exception as e:
             logger.exception('StandardProtocolHandler.handshake failed: {}', e)
@@ -277,10 +287,10 @@ class StandardProtocolHandler(NetworkOperationHandler):
 
     def keepalive(self, conn) -> bool:
         try:
-            from .level1 import Heartbeat
+            from .level1 import HeartbeatContext
 
-            msg = Heartbeat()
-            process_level1_new(conn, msg)
+            ctx = HeartbeatContext()
+            transact_message_sync(conn, ctx)
             return True
         except Exception as e:
             logger.exception('StandardProtocolHandler.keepalive failed: {}', e)
@@ -295,11 +305,11 @@ class ExtensionProtocolHandler(NetworkOperationHandler):
     def handshake(self, conn) -> bool:
         # 使用阻塞请求助手执行Synchronize1然后Synchronize2
         try:
-            from .level1.ext import Synchronize
+            from .level1.ext import SynchronizeContext
             
-            req = Synchronize()
-            process_level1_new(conn, req)
-            return req.success
+            ctx = SynchronizeContext()
+            transact_message_sync(conn, ctx)
+            return ctx.success
         except Exception as e:
             # 使用调试日志以避免在服务器检测期间产生噪音
             logger.exception('ExtensionProtocolHandler.handshake failed: {}', e)
@@ -307,11 +317,11 @@ class ExtensionProtocolHandler(NetworkOperationHandler):
 
     def keepalive(self, conn) -> bool:
         try:
-            from .level1.ext import InstrumentCount
+            from .level1.ext import InstrumentCountContext
             
-            req = InstrumentCount()
-            process_level1_new(conn, req)
-            return req.reply.get("count", 0) > 0
+            ctx = InstrumentCountContext()
+            transact_message_sync(conn, ctx)
+            return ctx.reply.get("count", 0) > 0
         except Exception as e:
             # 使用调试日志以避免在服务器检测期间产生噪音
             logger.exception('ExtensionProtocolHandler.keepalive failed: {}', e)

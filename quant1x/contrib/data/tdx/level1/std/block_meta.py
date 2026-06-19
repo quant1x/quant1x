@@ -24,7 +24,7 @@ class BlockMeta:
     c2: int = 0
 
 
-class BlockMetaRequest(protocol.BaseMessage):
+class BlockFileMetaContext(protocol.BaseFrame):
     """板块元数据请求"""
     def __init__(self, filename: str):
         super().__init__(Command.STD_BLOCK_META)

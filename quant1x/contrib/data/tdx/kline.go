@@ -11,7 +11,7 @@ import (
 	logger "github.com/quant1x/quant1x/quant1x/log"
 )
 
-// tdxFetchRawSecurityBars 执行底层 level1 SecurityBars 请求并返回原始响应列表(未转换).
+// tdxFetchRawSecurityBars 执行底层 level1 SecurityBarsContext 请求并返回原始响应列表(未转换).
 func tdxFetchRawSecurityBars(securityCode exchange.InstrumentInfo, category std.KLineType, start, count uint16) ([]std.SecurityBar, error) {
 	conn, release, err := std.GetStdConnection()
 	if err != nil {
@@ -26,7 +26,7 @@ func tdxFetchRawSecurityBars(securityCode exchange.InstrumentInfo, category std.
 
 	req := std.NewSecurityBarsRequest(securityCode, category, start, count)
 	resp := std.NewSecurityBarsResponse(req.IsIndex, uint16(req.Param.Category))
-	if err := std.Process(conn, req, resp); err != nil {
+	if err := std.TransactMessageSync(conn, req, resp); err != nil {
 		return nil, fmt.Errorf("security bars request failed: %w", err)
 	}
 	return resp.List, nil

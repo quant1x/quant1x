@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
+	"github.com/quant1x/quant1x/quant1x/data/meta"
 )
 
 type KLineType uint8
@@ -57,24 +58,24 @@ type SecurityBar struct {
 	DownCount uint16  // 下跌家数(仅指数K线)
 }
 
-// SecurityBarsRequest encodes a SECURITY_BARS command.
-type SecurityBarsRequest struct {
+// SecurityBarsContext encodes a SECURITY_BARS command.
+type SecurityBarsContext struct {
 	Param   SecurityBarsParameter
 	Padding []byte
 	IsIndex bool
 }
 
 // NewSecurityBarsRequest constructs a request aligned with the C++ structure.
-func NewSecurityBarsRequest(sc exchange.InstrumentInfo, category KLineType, start, count uint16) SecurityBarsRequest {
+func NewSecurityBarsRequest(inst meta.Instrument, category KLineType, start, count uint16) SecurityBarsContext {
 	if count == 0 || count > SecurityBarsMax {
 		count = SecurityBarsMax
 	}
 
 	var code [6]byte
-	copy(code[:], sc.Ticker)
+	copy(code[:], inst.Ticker)
 
 	param := SecurityBarsParameter{
-		Market:   uint16(exchangeToMarketId(sc.Exchange)),
+		Market:   uint16(tdx.ExchangeToMarketId(inst.Exchange)),
 		Code:     code,
 		Category: uint16(category),
 		I:        1,
@@ -82,16 +83,16 @@ func NewSecurityBarsRequest(sc exchange.InstrumentInfo, category KLineType, star
 		Count:    count,
 	}
 
-	req := SecurityBarsRequest{
+	req := SecurityBarsContext{
 		Param:   param,
 		Padding: make([]byte, 10),
 	}
-	req.IsIndex = sc.Type.IsIndex()
+	req.IsIndex = inst.Type.IsIndex()
 	return req
 }
 
 // Serialize serializes the request payload.
-func (r SecurityBarsRequest) Serialize() []byte {
+func (r SecurityBarsContext) Serialize() []byte {
 	payload := &bytes.Buffer{}
 	_ = binary.Write(payload, binary.LittleEndian, r.Param.Market)
 	payload.Write(r.Param.Code[:])
@@ -100,21 +101,21 @@ func (r SecurityBarsRequest) Serialize() []byte {
 	_ = binary.Write(payload, binary.LittleEndian, r.Param.Start)
 	_ = binary.Write(payload, binary.LittleEndian, r.Param.Count)
 	payload.Write(r.Padding)
-	return buildRequest(StdCommandSecurityBars, packetTypeRequest, payload.Bytes())
+	return tdx.BuildRequest(tdx.StdCommandSecurityBars, tdx.PacketTypeRequest, payload.Bytes())
 }
 
 // Command returns the associated StdCommand.
-func (r SecurityBarsRequest) Command() StdCommand { return StdCommandSecurityBars }
+func (r SecurityBarsContext) Command() tdx.StdCommand { return tdx.StdCommandSecurityBars }
 
 // String provides a readable representation.
-func (r SecurityBarsRequest) String() string {
+func (r SecurityBarsContext) String() string {
 	code := strings.TrimRight(string(r.Param.Code[:]), "\x00 ")
-	return fmt.Sprintf("SecurityBarsRequest{Market:%d,Code:%s,Category:%d,Start:%d,Count:%d}", r.Param.Market, code, r.Param.Category, r.Param.Start, r.Param.Count)
+	return fmt.Sprintf("SecurityBarsContext{Market:%d,Code:%s,Category:%d,Start:%d,Count:%d}", r.Param.Market, code, r.Param.Category, r.Param.Start, r.Param.Count)
 }
 
 // SecurityBarsResponse captures the parsed response body.
 type SecurityBarsResponse struct {
-	ResponseBase
+	tdx.ResponseBase
 	Count    uint16
 	List     []SecurityBar
 	isIndex  bool
@@ -168,7 +169,7 @@ func (r *SecurityBarsResponse) parseBar(reader *bytes.Reader, preDiffBase *int64
 			return bar, err
 		}
 	}
-	year, month, day, hour, minute := getDatetimeFromUint32(int(r.category), zipday32, tminutes)
+	year, month, day, hour, minute := tdx.GetDatetimeFromUint32(int(r.category), zipday32, tminutes)
 	bar.Year, bar.Month, bar.Day, bar.Hour, bar.Minute = year, month, day, hour, minute
 	bar.DateTime = fmt.Sprintf("%04d-%02d-%02d %02d:%02d:00", year, month, day, hour, minute)
 
@@ -193,13 +194,13 @@ func (r *SecurityBarsResponse) parseBar(reader *bytes.Reader, preDiffBase *int64
 	if err := binary.Read(reader, binary.LittleEndian, &volRaw); err != nil {
 		return bar, err
 	}
-	bar.Vol = integerToFloat64(volRaw)
+	bar.Vol = tdx.IntegerToFloat64(volRaw)
 
 	var amountRaw uint32
 	if err := binary.Read(reader, binary.LittleEndian, &amountRaw); err != nil {
 		return bar, err
 	}
-	bar.Amount = integerToFloat64(amountRaw)
+	bar.Amount = tdx.IntegerToFloat64(amountRaw)
 
 	base := *preDiffBase + openDiff
 	bar.Open = float64(base) / 1000.0

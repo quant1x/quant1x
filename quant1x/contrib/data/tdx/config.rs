@@ -410,19 +410,19 @@ fn try_probe_one(
     let _ = std_stream.set_read_timeout(Some(timeout));
     let _ = std_stream.set_write_timeout(Some(timeout));
 
-    // Perform protocol handshake via level1 Hello1 + Hello2
+    // Perform protocol handshake via level1 StdLoginContext + UpgradeTipContext
     let handshake_result = (|| -> std::io::Result<()> {
-        let mut req1 = crate::contrib::data::tdx::level1::std::Hello1Request::new();
-        crate::contrib::data::tdx::protocol::process_level1_stream(&mut std_stream, &mut req1)
+        let mut req1 = crate::contrib::data::tdx::level1::std::StdLoginContext::new();
+        crate::contrib::data::tdx::protocol::transact_message_sync(&mut std_stream, &mut req1)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
         if req1.info.trim().is_empty() {
-            return Err(std::io::Error::new(std::io::ErrorKind::Other, "Hello1 response empty"));
+            return Err(std::io::Error::new(std::io::ErrorKind::Other, "StdLoginContext response empty"));
         }
-        let mut req2 = crate::contrib::data::tdx::level1::std::Hello2Request::new();
-        crate::contrib::data::tdx::protocol::process_level1_stream(&mut std_stream, &mut req2)
+        let mut req2 = crate::contrib::data::tdx::level1::std::UpgradeTipContext::new();
+        crate::contrib::data::tdx::protocol::transact_message_sync(&mut std_stream, &mut req2)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
         if req2.info.trim().is_empty() {
-            return Err(std::io::Error::new(std::io::ErrorKind::Other, "Hello2 response empty"));
+            return Err(std::io::Error::new(std::io::ErrorKind::Other, "UpgradeTipContext response empty"));
         }
         Ok(())
     })();
@@ -459,7 +459,7 @@ fn try_probe_one(
 ///
 /// # 返回值
 /// BTreeMap 按协议类型分组:
-/// - "standard": 标准行情服务器列表 (Hello1+Hello2 握手)
+/// - "standard": 标准行情服务器列表 (StdLoginContext+UpgradeTipContext 握手)
 /// - "extension": 扩展行情服务器列表 (ExtSynchronize 0x2454 握手)
 pub fn detect(
     elapsed_time_ms: i64,
@@ -606,7 +606,7 @@ fn try_probe_extension_one(
     // Perform extension protocol handshake via ExtensionProtocolHandler
     let handshake_result = (|| -> std::io::Result<()> {
         let mut req = crate::contrib::data::tdx::level1::ext::ExtSynchronizeRequest::new();
-        crate::contrib::data::tdx::protocol::process_level1_stream(&mut std_stream, &mut req)
+        crate::contrib::data::tdx::protocol::transact_message_sync(&mut std_stream, &mut req)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
         if !req.success {
             return Err(std::io::Error::new(std::io::ErrorKind::Other, "ExtSynchronize failed (success=false)"));

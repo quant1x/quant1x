@@ -6,14 +6,14 @@
 // 对应 Python quant1x/contrib/data/tdx/level1/std/block.py
 
 use super::super::super::command::*;
-use super::super::super::protocol::{BaseMessage, RequestHeader, ResponseHeader};
+use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 
 /// Python `BLOCK_CHUNKS_SIZE` = 0x7530
 pub const BLOCK_CHUNKS_SIZE: usize = 0x7530;
 
 /// 板块文件数据请求/响应
-/// 对应 Python `BlockInfo`
-pub struct BlockInfo {
+/// 对应 Python `BlockFileContext`
+pub struct BlockFileContext {
     req_header: RequestHeader,
     resp_header: ResponseHeader,
     filename: String,
@@ -23,7 +23,7 @@ pub struct BlockInfo {
     pub data: Vec<u8>,
 }
 
-impl BlockInfo {
+impl BlockFileContext {
     pub fn new(filename: &str, offset: u32) -> Self {
         Self {
             req_header: RequestHeader::new(STD_BLOCK_DATA, FLAG_UNCOMPRESSED),
@@ -37,7 +37,7 @@ impl BlockInfo {
     }
 }
 
-impl BaseMessage for BlockInfo {
+impl BaseFrame for BlockFileContext {
     fn request_header(&self) -> &RequestHeader {
         &self.req_header
     }

@@ -29,10 +29,10 @@ TEST_CASE("base-snapshot", "[runtime]") {
                 auto [mid, mflag, symbol] = data::detect_symbol(code);
                 maps[code] = tdx::StockInfo{mid, symbol};
             }
-            tdx::SecurityQuoteRequest request(sub_codes);
+            tdx::SecurityQuoteContext request(sub_codes);
             tdx::SecurityQuoteResponse response;
             auto conn = tdx::get_std_conn();
-            auto err = tdx::process_message(conn->socket(), request, response);
+            auto err = tdx::transact_message_sync(conn->socket(), request, response);
             REQUIRE(!err);
             response.verify_delisted_securities(maps);
             spdlog::warn("code range: {}=>{}, end", start, start+length);
@@ -247,10 +247,10 @@ TEST_CASE("tick-snapshot", "[runtime]") {
                 auto [mid, mflag, symbol] = data::detect_symbol(code);
                 maps[code] = tdx::StockInfo{mid, symbol};
             }
-            tdx::SecurityQuoteRequest request(sub_codes);
+            tdx::SecurityQuoteContext request(sub_codes);
             tdx::SecurityQuoteResponse response;
             auto conn = tdx::get_std_conn();
-            auto err = tdx::process_message(conn->socket(), request, response);
+            auto err = tdx::transact_message_sync(conn->socket(), request, response);
             REQUIRE(!err);
             response.verify_delisted_securities(maps);
             for (int j = 0; j < response.count; ++j) {

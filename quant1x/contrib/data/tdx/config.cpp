@@ -1,6 +1,5 @@
 #include <quant1x/contrib/data/tdx/config.h>
-#include <quant1x/contrib/data/tdx/level1/std/hello1.h>
-#include <quant1x/contrib/data/tdx/level1/std/hello2.h>
+#include <quant1x/contrib/data/tdx/level1/std/hello.h>
 #include <quant1x/io/base.h>
 
 namespace quant1x::contrib::data::tdx {
@@ -248,15 +247,15 @@ namespace quant1x::contrib::data::tdx {
                     auto start_time = std::chrono::high_resolution_clock::now();
 
                     // 协议握手
-                    Hello1 hello1;
-                    auto err1 = process_message(socket_guard.socket(), hello1);
+                    StdLoginContext login_ctx;
+                    auto err1 = transact_message_sync(socket_guard.socket(), login_ctx);
                     if (err1) {
                         spdlog::error("[Server Detection] Level1 protocol handshake phase 1 failed with {} - skipping server", err1.message());
                         continue; // 跳过这个服务器
                     }
 
-                    Hello2 hello2;
-                    auto err2 = process_message(socket_guard.socket(), hello2);
+                    UpgradeTipContext upgrade_ctx;
+                    auto err2 = transact_message_sync(socket_guard.socket(), upgrade_ctx);
                     if (err2) {
                         spdlog::error("[Server Detection] Level1 protocol handshake phase 2 failed with {} - skipping server", err2.message());
                         continue; // 跳过这个服务器

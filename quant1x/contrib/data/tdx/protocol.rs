@@ -134,13 +134,13 @@ impl ResponseHeader {
 }
 
 // ============================================================
-// 消息基类 — BaseMessage
+// 消息基类 — BaseFrame
 // ============================================================
 
-/// 消息基类, 对应 Python `BaseMessage`
+/// 消息基类, 对应 Python `BaseFrame`
 ///
 /// 包含请求头和响应头, 子类需实现 `serialize_request_body` 和 `deserialize_response_body`. 
-pub trait BaseMessage {
+pub trait BaseFrame {
     fn request_header(&self) -> &RequestHeader;
     fn request_header_mut(&mut self) -> &mut RequestHeader;
     fn response_header(&self) -> &ResponseHeader;
@@ -229,10 +229,10 @@ fn unzip(body: Vec<u8>, unzipped_size: usize) -> std::io::Result<Vec<u8>> {
 // process_level1 — 泛型协议处理
 // ============================================================
 
-/// 泛型 process 函数, 对应 Python `process_level1_new`
+/// 泛型 process 函数, 对应 Python `transact_message_sync`
 ///
 /// 发送请求, 读取响应头, 按需解压响应体, 解析响应体. 
-pub fn process_level1<M: BaseMessage, R: Read>(
+pub fn process_level1<M: BaseFrame, R: Read>(
     reader: &mut R,
     writer: &mut dyn std::io::Write,
     msg: &mut M,
@@ -242,7 +242,7 @@ pub fn process_level1<M: BaseMessage, R: Read>(
 
 /// 对单一 Read+Write stream 执行 process_level1
 /// 使用阻塞 std::net::TcpStream, 已设置读写超时
-pub fn process_level1_stream<M: BaseMessage, T: Read + Write>(
+pub fn transact_message_sync<M: BaseFrame, T: Read + Write>(
     stream: &mut T,
     msg: &mut M,
 ) -> Result<(), crate::std::DeserializeError> {
@@ -251,8 +251,8 @@ pub fn process_level1_stream<M: BaseMessage, T: Read + Write>(
 
     // 1. 发送请求
     let req_buf = msg.serialize_request();
-    log::debug!("process_level1_stream: request={}", msg.request_header().to_string());
-    log::debug!("process_level1_stream: req_buf hex={}", hex::encode(&req_buf));
+    log::debug!("transact_message_sync: request={}", msg.request_header().to_string());
+    log::debug!("transact_message_sync: req_buf hex={}", hex::encode(&req_buf));
     stream
         .write_all(&req_buf)
         .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
@@ -270,7 +270,7 @@ pub fn process_level1_stream<M: BaseMessage, T: Read + Write>(
         return Ok(());
     }
 
-    log::debug!("process_level1_stream: response_header={}", msg.response_header().to_string());
+    log::debug!("transact_message_sync: response_header={}", msg.response_header().to_string());
 
     // 5. 读取响应体
     let resp_body_bytes = recv_exact(stream, msg.response_zip_size())
@@ -295,7 +295,7 @@ pub fn process_level1_stream<M: BaseMessage, T: Read + Write>(
     Ok(())
 }
 
-fn process_level1_impl<M: BaseMessage, R: Read>(
+fn process_level1_impl<M: BaseFrame, R: Read>(
     reader: &mut R,
     writer: &mut dyn std::io::Write,
     msg: &mut M,
@@ -364,39 +364,39 @@ use std::time::Duration;
 
 use crate::io::operation_handler::NetworkOperationHandler;
 
-use super::level1::std::hello::{Hello1Request, Hello2Request};
-use super::level1::std::heartbeat::HeartbeatRequest;
+use super::level1::std::hello::{StdLoginContext, UpgradeTipContext};
+use super::level1::std::heartbeat::HeartbeatContext;
 
 pub struct StandardProtocolHandler;
 
 impl NetworkOperationHandler for StandardProtocolHandler {
     fn handshake(&self, stream: &mut StdTcpStream) -> std::io::Result<()> {
-        // Hello1
-        let mut req1 = Hello1Request::new();
-        match process_level1_stream(stream, &mut req1) {
+        // StdLoginContext
+        let mut req1 = StdLoginContext::new();
+        match transact_message_sync(stream, &mut req1) {
             Ok(()) => {
                 if req1.info.trim().is_empty() {
-                    log::error!("StandardProtocolHandler::handshake Hello1 validation failed: empty info");
-                    return Err(std::io::Error::new(std::io::ErrorKind::Other, "Hello1 response invalid or empty"));
+                    log::error!("StandardProtocolHandler::handshake StdLoginContext validation failed: empty info");
+                    return Err(std::io::Error::new(std::io::ErrorKind::Other, "StdLoginContext response invalid or empty"));
                 }
             }
             Err(e) => {
-                log::error!("StandardProtocolHandler::handshake Hello1 failed: {}", e);
+                log::error!("StandardProtocolHandler::handshake StdLoginContext failed: {}", e);
                 return Err(std::io::Error::new(std::io::ErrorKind::Other, e.to_string()));
             }
         }
 
-        // Hello2
-        let mut req2 = Hello2Request::new();
-        match process_level1_stream(stream, &mut req2) {
+        // UpgradeTipContext
+        let mut req2 = UpgradeTipContext::new();
+        match transact_message_sync(stream, &mut req2) {
             Ok(()) => {
                 if req2.info.trim().is_empty() {
-                    log::error!("StandardProtocolHandler::handshake Hello2 validation failed: empty info");
-                    return Err(std::io::Error::new(std::io::ErrorKind::Other, "Hello2 response invalid or empty"));
+                    log::error!("StandardProtocolHandler::handshake UpgradeTipContext validation failed: empty info");
+                    return Err(std::io::Error::new(std::io::ErrorKind::Other, "UpgradeTipContext response invalid or empty"));
                 }
             }
             Err(e) => {
-                log::error!("StandardProtocolHandler::handshake Hello2 failed: {}", e);
+                log::error!("StandardProtocolHandler::handshake UpgradeTipContext failed: {}", e);
                 return Err(std::io::Error::new(std::io::ErrorKind::Other, e.to_string()));
             }
         }
@@ -405,8 +405,8 @@ impl NetworkOperationHandler for StandardProtocolHandler {
     }
 
     fn keepalive(&self, stream: &mut mio::net::TcpStream) -> std::io::Result<bool> {
-        let mut req = HeartbeatRequest::new();
-        match process_level1_stream(stream, &mut req) {
+        let mut req = HeartbeatContext::new();
+        match transact_message_sync(stream, &mut req) {
             Ok(()) => Ok(true),
             Err(_) => Ok(false),
         }
@@ -433,7 +433,7 @@ pub struct ExtensionProtocolHandler;
 impl NetworkOperationHandler for ExtensionProtocolHandler {
     fn handshake(&self, stream: &mut StdTcpStream) -> std::io::Result<()> {
         let mut req = ExtSynchronizeRequest::new();
-        match process_level1_stream(stream, &mut req) {
+        match transact_message_sync(stream, &mut req) {
             Ok(()) if req.success => Ok(()),
             Ok(()) => Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
@@ -445,7 +445,7 @@ impl NetworkOperationHandler for ExtensionProtocolHandler {
 
     fn keepalive(&self, stream: &mut mio::net::TcpStream) -> std::io::Result<bool> {
         let mut req = InstrumentCountRequest::new();
-        match process_level1_stream(stream, &mut req) {
+        match transact_message_sync(stream, &mut req) {
             Ok(()) => Ok(req.count > 0),
             Err(_) => Ok(false),
         }

@@ -96,7 +96,7 @@ pub fn varint_decode(data: &[u8], pos: usize) -> (i64, usize) {
 // 日期时间解析
 // ============================================================
 
-/// 对应 C++ helpers::getDatetimeFromUint32, 用于从压缩的日期/分钟编码中恢复年月日时分
+/// 对应 C++ helpers::get_datetime_from_u32, 用于从压缩的日期/分钟编码中恢复年月日时分
 pub fn get_datetime_from_u32(
     category: i32,
     zipday: u32,
@@ -119,7 +119,7 @@ pub fn get_datetime_from_u32(
 }
 
 // ============================================================
-// 整数转浮点价格 (C++ helpers::integerToFloat64)
+// 整数转浮点价格 (C++ helpers::integer_to_float64)
 // ============================================================
 
 /// 将 32 位无符号整数解释并转换为浮点数(与 level1 协议中使用的转换一致). 

@@ -30,12 +30,12 @@ namespace quant1x::contrib::data::tdx {
         }
     };
 
-    // 板块元数据请求/响应 (对齐 Python BlockMetaRequest)
-    struct BlockMetaMsg : public BaseMessage<BlockMetaMsg> {
+    // 板块元数据请求/响应 (对齐 Python BlockFileMetaContext)
+    struct BlockFileMetaContext : public BaseFrame<BlockFileMetaContext> {
         char BlockFilename[40];       // 请求: 板块文件名
         BlockMeta Meta{};             // 响应: 板块元数据
 
-        BlockMetaMsg(const std::string &filename) : BaseMessage<BlockMetaMsg>() {
+        BlockFileMetaContext(const std::string &filename) : BaseFrame<BlockFileMetaContext>() {
             request_header.frame_type    = ZlibFlag::Uncompressed;
             request_header.seq_id      = get_sequence_id();
             request_header.packet_ctrl = 0x01;

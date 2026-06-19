@@ -6,7 +6,7 @@ from ...command import Command
 from ... import protocol
 
 
-class Heartbeat(protocol.BaseMessage):
+class HeartbeatContext(protocol.BaseFrame):
     """心跳(合并Request和Response)"""
     def __init__(self):
         super().__init__(Command.STD_HEARTBEAT)

@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_CONTRB_DATA_TDX_XDXR_INFO_H
-#define QUANT1X_CONTRB_DATA_TDX_XDXR_INFO_H 1
+#ifndef QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_XDXR_INFO_H
+#define QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_XDXR_INFO_H 1
 
 #include <quant1x/data/meta/exchange.h>
 #include <quant1x/contrib/data/tdx/protocol.h>
@@ -54,7 +54,7 @@ namespace quant1x::contrib::data::tdx {
     }
 
     // ==========================================================
-    // 解析后的除权除息信息 (定义在前, 被 Xdxr 使用)
+    // 解析后的除权除息信息 (定义在前, 被 XdxrInfoContext 使用)
     // ==========================================================
     struct XdxrInfo {
         std::string Date;           // 日期 YYYY-MM-DD格式
@@ -166,8 +166,8 @@ namespace quant1x::contrib::data::tdx {
         }
     };
 
-    // 除权除息请求/响应 (对齐 Python Xdxr)
-    struct Xdxr : public BaseMessage<Xdxr> {
+    // 除权除息请求/响应 (对齐 Python XdxrInfoContext)
+    struct XdxrInfoContext : public BaseFrame<XdxrInfoContext> {
         u8              Market;   // 市场代码 0:深圳 1:上海
         char            Code[6];  // 股票代码
         std::vector<u8> padding;
@@ -175,14 +175,14 @@ namespace quant1x::contrib::data::tdx {
         u16                   Count;       // 响应: 数据条数
         std::vector<XdxrInfo> List;        // 响应: 解析后的除权除息列表
 
-        Xdxr(const meta::Instrument &inst) : BaseMessage<Xdxr>() {
+        XdxrInfoContext(const meta::Instrument &inst) : BaseFrame<XdxrInfoContext>() {
             request_header.frame_type  = ZlibFlag::Uncompressed;
             request_header.seq_id      = get_sequence_id();
             request_header.packet_ctrl = 0x01;
             request_header.cmd_id      = StdCommand::XDXR_INFO;
             
             Market                = static_cast<u8>(helpers::exchange_to_market(inst.exchange));
-            const char *const tmp = inst.marker_ticker().c_str();
+            const char *const tmp = inst.market_ticker().c_str();
             std::memcpy(Code, tmp, sizeof(Code));
             padding = strings::hexToBytes("0100");
         }
@@ -210,7 +210,7 @@ namespace quant1x::contrib::data::tdx {
                 u8  category = bs.get_u8();           // 类型
                 u8  data[16] = {0};                   // 数据
                 bs.get_array(data);
-                auto [year, month, day, hour, minute] = helpers::getDatetimeFromUint32(9, date, 0);
+                auto [year, month, day, hour, minute] = helpers::get_datetime_from_u32(9, date, 0);
                 info.Category                            = category;
                 info.Date                                = fmt::format("{:04d}-{:02d}-{:02d}", year, month, day);
                 info.Name                                = quant1x::contrib::data::tdx::to_string(static_cast<XdxrCategory>(info.Category));
@@ -281,7 +281,7 @@ namespace quant1x::contrib::data::tdx {
             if (v == 0) {
                 return 0;
             }
-            return helpers::integerToFloat64(v);
+            return helpers::integer_to_float64(v);
         }
     };
 
@@ -303,7 +303,7 @@ namespace quant1x::contrib::data::tdx {
     };
 
     // 除权除息批量请求 (对齐 Python XdxrBatch, Python有, C++原无)
-    struct XdxrBatch : public BaseMessage<XdxrBatch> {
+    struct XdxrBatch : public BaseFrame<XdxrBatch> {
         struct StockEntry {
             u8 market;
             char code[6];
@@ -319,7 +319,7 @@ namespace quant1x::contrib::data::tdx {
         };
         std::vector<BatchEntry> entries;
 
-        XdxrBatch(const std::vector<meta::Instrument> &insts) : BaseMessage<XdxrBatch>() {
+        XdxrBatch(const std::vector<meta::Instrument> &insts) : BaseFrame<XdxrBatch>() {
             request_header.frame_type = ZlibFlag::Uncompressed;
             request_header.seq_id = get_sequence_id();
             request_header.packet_ctrl = 0x01;
@@ -327,7 +327,7 @@ namespace quant1x::contrib::data::tdx {
             for (auto const &inst : insts) {
                 StockEntry entry{};
                 entry.market = helpers::exchange_to_market(inst.exchange);
-                const char *tmp = inst.marker_ticker().c_str();
+                const char *tmp = inst.market_ticker().c_str();
                 std::memcpy(entry.code, tmp, sizeof(entry.code));
                 stocks.push_back(entry);
             }
@@ -362,7 +362,7 @@ namespace quant1x::contrib::data::tdx {
                     u8 cat = bs.get_u8();
                     u8 d[16] = {0};
                     bs.get_array(d);
-                    auto [year, month, day, h, m] = helpers::getDatetimeFromUint32(9, date, 0);
+                    auto [year, month, day, h, m] = helpers::get_datetime_from_u32(9, date, 0);
                     XdxrInfo info{};
                     info.Category = cat;
                     info.Date = fmt::format("{:04d}-{:02d}-{:02d}", year, month, day);
@@ -404,10 +404,10 @@ namespace quant1x::contrib::data::tdx {
     private:
         static f64 _get_v(u32 v) {
             if (v == 0) return 0;
-            return helpers::integerToFloat64(v);
+            return helpers::integer_to_float64(v);
         }
     };
 
 }  // namespace quant1x::contrib::data::tdx
 
-#endif  // QUANT1X_CONTRB_DATA_TDX_XDXR_INFO_H
+#endif  // QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_XDXR_INFO_H

@@ -386,9 +386,9 @@ std::vector<tdx::SecurityBar> fetch(const std::string &code, u16 start, u16 coun
     try {
         auto conn = tdx::get_std_conn();
         auto category = tdx::KLineType::RI_K;
-        tdx::SecurityBarsRequest request(code, category, start, count);
+        tdx::SecurityBarsContext request(code, category, start, count);
         tdx::SecurityBarsResponse response(request.isIndex, category);
-        auto err = tdx::process_message(conn->socket(), request, response);
+        auto err = tdx::transact_message_sync(conn->socket(), request, response);
         if (err) {
             spdlog::error("Process error: {}", err.message());
             return {};

@@ -18,7 +18,7 @@ from quant1x.data.meta.ticker_rules.market_usa import usa_code_to_ticker
 from ... import helpers
 from quant1x.data.meta.calendar import last_trading_day
 
-class Synchronize(protocol.BaseMessage):
+class SynchronizeContext(protocol.BaseFrame):
     """
     协议握手
     """
@@ -43,7 +43,7 @@ class Synchronize(protocol.BaseMessage):
         return padding
         
     def deserialize_response_body(self, data: bytes) -> None:
-        logger.debug(f"Synchronize.deserialize_response_body: {data.hex()}")
+        logger.debug(f"SynchronizeContext.deserialize_response_body: {data.hex()}")
         result_code, result_message, year, month, day, minute, hour, ms, second, server_name, u1, u2, u3, u4, u5, desc, u6, u7, u8, ip = struct.unpack('<B52sHBBBBBB21sfBHHH151sBBB52s', data)
         
         result_message = result_message.decode('gbk', errors='ignore').rstrip('\x00')
@@ -52,7 +52,7 @@ class Synchronize(protocol.BaseMessage):
         desc = desc.decode('gbk').replace('\x00', '')
         ip = ip.decode('gbk').replace('\x00', '')
         unknown = [u1, u2, u3, u4, u5, u6, u7, u8, ms]
-        logger.debug(f"Synchronize response: result_code={result_code}, result_message={result_message}, date_time={date_time}, server_name={server_name}, desc={desc}, ip={ip}, unknown={unknown}")
+        logger.debug(f"SynchronizeContext response: result_code={result_code}, result_message={result_message}, date_time={date_time}, server_name={server_name}, desc={desc}, ip={ip}, unknown={unknown}")
         
         # offset = 0
         # if len(data) >= offset:
@@ -61,10 +61,10 @@ class Synchronize(protocol.BaseMessage):
         #         self.info = info_bytes.decode('gbk', errors='ignore').replace('\x00', '')
         #     except Exception:
         #         self.info = info_bytes.decode('utf-8', errors='ignore').replace('\x00', '')
-        #     logger.debug("Synchronize.deserialize_response_body info={}", self.info)
+        #     logger.debug("SynchronizeContext.deserialize_response_body info={}", self.info)
         self.success = result_code>0
 
-class Synchronize2(protocol.BaseMessage):
+class Synchronize2(protocol.BaseFrame):
     """
     协议握手
     """
@@ -111,7 +111,7 @@ class Synchronize2(protocol.BaseMessage):
         self.success = result_code>0
 
 
-class MarketList(protocol.BaseMessage):
+class MarketList(protocol.BaseFrame):
     """
     市场信息列表
     """
@@ -152,7 +152,7 @@ class MarketList(protocol.BaseMessage):
         logger.debug("MarketList.deserialize_response_body reply: {}", self.reply)
 
 
-class InstrumentCount(protocol.BaseMessage):
+class InstrumentCountContext(protocol.BaseFrame):
     """
     市场数量请求
     """
@@ -165,22 +165,22 @@ class InstrumentCount(protocol.BaseMessage):
 
     def deserialize_response_body(self, data: bytes) -> None:
         # 31个字节
-        logger.debug(f"[InstrumentCount] deserialize: len={len(data)}, data={data.hex()}")
+        logger.debug(f"[InstrumentCountContext] deserialize: len={len(data)}, data={data.hex()}")
         # pos = 19
-        # logger.debug(f"[InstrumentCount] deserialize: {data[pos:pos+4].hex()}")
+        # logger.debug(f"[InstrumentCountContext] deserialize: {data[pos:pos+4].hex()}")
         # (num,) = struct.unpack("<I", data[pos: pos+4])
-        # logger.debug(f"[InstrumentCount] deserialize: num={num}")
+        # logger.debug(f"[InstrumentCountContext] deserialize: num={num}")
         (name, reversed1, reversed2, num, reversed3, reversed4) = struct.unpack("<11s5I", data[:31])
         name = name.decode("gbk").rstrip("\x00")
-        logger.debug(f"[InstrumentCount] deserialize: name={name}, num={num}, ignore={reversed1}, {reversed2}, {reversed3}, {reversed4}")
+        logger.debug(f"[InstrumentCountContext] deserialize: name={name}, num={num}, ignore={reversed1}, {reversed2}, {reversed3}, {reversed4}")
         
         self.reply = {
             "source": name,
             "count": num
         }
-        logger.debug("[InstrumentCount] reply: {}", self.reply)
+        logger.debug("[InstrumentCountContext] reply: {}", self.reply)
 
-class InstrumentInfo(protocol.BaseMessage):
+class InstrumentInfo(protocol.BaseFrame):
     """
     instrument 信息
     """
@@ -241,7 +241,7 @@ class InstrumentInfo(protocol.BaseMessage):
         self.reply = {'count': count, 'list': result}
         #logger.debug("[InstrumentInfo] reply: {}", self.reply)
 
-class InstrumentQuote1(protocol.BaseMessage):
+class InstrumentQuote1(protocol.BaseFrame):
     """即时行情"""
     def __init__(self, market, ticker: str):
         super().__init__(Command.EXT_INSTRUMENT_QUOTE_X1, frame_type=0x01)
@@ -316,7 +316,7 @@ class InstrumentQuote1(protocol.BaseMessage):
         logger.debug("[InstrumentQuote1] deserialize: {}", one)
         self.reply.append(one)
 
-class InstrumentQuote2(protocol.BaseMessage):
+class InstrumentQuote2(protocol.BaseFrame):
     """即时行情"""
     def __init__(self, futures: list[tuple[int, str]]):
         super().__init__(Command.EXT_INSTRUMENT_QUOTE_X2, frame_type=0x01)
@@ -359,7 +359,7 @@ class InstrumentQuote2(protocol.BaseMessage):
     
 
 from quant1x.data.schema import Bar
-class InstrumentBars(protocol.BaseMessage):
+class InstrumentBars(protocol.BaseFrame):
     """
     K线数据
     """
@@ -432,7 +432,7 @@ class InstrumentBars(protocol.BaseMessage):
 
 from quant1x.data.schema import Transaction
 from datetime import date as datetime_date, time as datetime_time
-class TransactionData(protocol.BaseMessage):
+class TransactionData(protocol.BaseFrame):
     PRE_REQUEST_MAX = 1800
     """
     获取最新的(最后一个交易日)成交数据
@@ -546,7 +546,7 @@ class TransactionData(protocol.BaseMessage):
             ]))
         self.reply = result
 
-class DailyTransactionData(protocol.BaseMessage):
+class DailyTransactionData(protocol.BaseFrame):
     PRE_REQUEST_MAX = 1800
     """
     获取某日的成交数据
@@ -661,7 +661,7 @@ class DailyTransactionData(protocol.BaseMessage):
         self.reply = result
 
 
-class TodoCmd0X2459(protocol.BaseMessage):
+class TodoCmd0X2459(protocol.BaseFrame):
     """
     获取股票的公告信息, html格式
     """
@@ -686,7 +686,7 @@ class TodoCmd0X2459(protocol.BaseMessage):
             logger.debug(f"[TodoCmd0X2459] info={self.info}")
 
 from quant1x.data.schema.company import CompanyInfoChunk
-class CompanyInfoCategories(protocol.BaseMessage):
+class CompanyInfoCategories(protocol.BaseFrame):
     """
     基础F0 数据文件的块信息, 编码格式为gbk
     """
@@ -722,7 +722,7 @@ class CompanyInfoCategories(protocol.BaseMessage):
             self.reply.append(e)
             
 
-class CompanyInfoContent(protocol.BaseMessage):
+class CompanyInfoContent(protocol.BaseFrame):
     """
     基础F0 数据文件的块信息, 编码格式为gbk
     """
@@ -759,7 +759,7 @@ class CompanyInfoContent(protocol.BaseMessage):
 
 
 from quant1x.data.schema import XdxrInfo, XdxrCategory
-class TodoCmd0X2488(protocol.BaseMessage):
+class TodoCmd0X2488(protocol.BaseFrame):
     """
     待确认命令, 0x2488, 可能是与当日行情有关系的数据
     """
@@ -828,7 +828,7 @@ class TodoCmd0X2488(protocol.BaseMessage):
                 
             self.reply.append(info)
 
-class TodoCmd0X2489(protocol.BaseMessage):
+class TodoCmd0X2489(protocol.BaseFrame):
     """
     K线数据
     """
@@ -965,7 +965,7 @@ def unpack_futures(data, code_len: int = 23):
     logger.debug(f"[Futures_Quotes] deserialize: snapshot={snapshot}, u9={u9}, u10={u10}, u11={u11}, u12={u12}")
     return snapshot
 
-class Futures_Quotes(protocol.BaseMessage):
+class Futures_Quotes(protocol.BaseFrame):
     """期货行情"""
     def __init__(self, futures: list[tuple[int, str]]):
         super().__init__(Command.EXT_FUTURES_QUOTES, frame_type=0x01)
@@ -1006,7 +1006,7 @@ class Futures_Quotes(protocol.BaseMessage):
             self.reply.append(one)
             pos += step
     
-class IntradayChartSampling(protocol.BaseMessage):
+class IntradayChartSampling(protocol.BaseFrame):
     """
     当日分时简图
     """
@@ -1045,7 +1045,7 @@ class IntradayChartSampling(protocol.BaseMessage):
             pos += 4
         logger.debug(f"[IntradayChartSampling] deserialize: pos={pos}, data={data[pos:].hex()}")
 
-class TodoCmdUnknown(protocol.BaseMessage):
+class TodoCmdUnknown(protocol.BaseFrame):
     """
     获取股票的公告信息, html格式
     """

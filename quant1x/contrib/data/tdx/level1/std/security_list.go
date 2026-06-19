@@ -8,6 +8,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
 	"github.com/quant1x/quant1x/quant1x/data/exchange"
 	"github.com/quant1x/quant1x/quant1x/encoding"
 )
@@ -16,41 +17,41 @@ const (
 	SecurityListPerRequestMax = 1600 // 单次请求的最大记录数
 )
 
-type SecurityListRequest struct {
+type SecurityListContext struct {
 	Market  uint16
 	Start   uint32
 	Count   uint32
 	Unknown uint32
 }
 
-func NewSecurityListRequest(market exchange.Exchange, start, count int) SecurityListRequest {
+func NewSecurityListRequest(market exchange.Exchange, start, count int) SecurityListContext {
 	if count <= 0 || count > SecurityListPerRequestMax {
 		count = SecurityListPerRequestMax
 	}
 	if start < 0 {
 		start = 0
 	}
-	return SecurityListRequest{
-		Market:  uint16(exchangeToMarketId(market)),
+	return SecurityListContext{
+		Market:  uint16(tdx.ExchangeToMarketId(market)),
 		Start:   uint32(start),
 		Count:   uint32(count),
 		Unknown: 0,
 	}
 }
 
-func (r SecurityListRequest) Serialize() []byte {
+func (r SecurityListContext) Serialize() []byte {
 	payload := &bytes.Buffer{}
 	_ = binary.Write(payload, binary.LittleEndian, r.Market)
 	_ = binary.Write(payload, binary.LittleEndian, r.Start)
 	_ = binary.Write(payload, binary.LittleEndian, r.Count)
 	_ = binary.Write(payload, binary.LittleEndian, r.Unknown)
-	return buildRequest(StdCommandSecurityList, packetTypeRequest, payload.Bytes())
+	return tdx.BuildRequest(tdx.StdCommandSecurityList, tdx.PacketTypeRequest, payload.Bytes())
 }
 
-func (SecurityListRequest) Command() StdCommand { return StdCommandSecurityList }
+func (SecurityListContext) Command() tdx.StdCommand { return tdx.StdCommandSecurityList }
 
-func (r SecurityListRequest) String() string {
-	return fmt.Sprintf("SecurityListRequest{Market:%d,Start:%d,Count:%d}", r.Market, r.Start, r.Count)
+func (r SecurityListContext) String() string {
+	return fmt.Sprintf("SecurityListContext{Market:%d,Start:%d,Count:%d}", r.Market, r.Start, r.Count)
 }
 
 type Security struct {
@@ -64,7 +65,7 @@ type Security struct {
 }
 
 type SecurityListResponse struct {
-	ResponseBase
+	tdx.ResponseBase
 	Count uint16
 	List  []Security
 }
@@ -116,7 +117,7 @@ func (r *SecurityListResponse) Deserialize(body []byte) error {
 		if err := binary.Read(reader, binary.LittleEndian, &tmp); err != nil {
 			return err
 		}
-		entry.PreClose = integerToFloat64(tmp)
+		entry.PreClose = IntegerToFloat64(tmp)
 
 		if _, err := io.ReadFull(reader, entry.Reversed3[:]); err != nil {
 			return err

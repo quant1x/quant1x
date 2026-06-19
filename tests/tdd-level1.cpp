@@ -45,9 +45,9 @@ TEST_CASE("heartbeat", "[level1]") {
     //fmt::println("{}", resp.info);
     //tdx::client.add_endpoint(defualt_endpoint);
     auto conn = tdx::get_std_conn();
-    tdx::HeartbeatRequest req;
+    tdx::HeartbeatContext req;
     tdx::HeartbeatResponse resp;
-    auto err = tdx::process_message(conn->socket(), req, resp);
+    auto err = tdx::transact_message_sync(conn->socket(), req, resp);
     REQUIRE(!err);
 }
 
@@ -55,9 +55,9 @@ TEST_CASE("heartbeat", "[level1]") {
 TEST_CASE("heartbeat-tpl", "[level1]") {
     spdlog::set_level(spdlog::level::debug);
     auto conn = tdx::get_std_conn();
-    tdx::HeartbeatRequest req;
+    tdx::HeartbeatContext req;
     tdx::HeartbeatResponse resp;
-    auto err = tdx::process_message(conn->socket(), req, resp);
+    auto err = tdx::transact_message_sync(conn->socket(), req, resp);
     REQUIRE(!err);
 }
 
@@ -71,7 +71,7 @@ TEST_CASE("xdxr-response", "[level1]") {
     response.deserialize(buf1);
     //tdx::client.add_endpoint(defualt_endpoint);
     //auto conn = tdx::client.acquire();
-    //tdx::process_message(conn->socket(), request, response);
+    //tdx::transact_message_sync(conn->socket(), request, response);
     for(int i = 0; i < response.Count; i ++) {
         auto e = &response.List[i];
         std::cout << *e << std::endl;
@@ -85,7 +85,7 @@ TEST_CASE("xdxr-network", "[level1]") {
     tdx::XdxrInfoResponse response;
     //tdx::client.add_endpoint(defualt_endpoint);
     auto conn = tdx::get_std_conn();
-    auto err = tdx::process_message(conn->socket(), request, response);
+    auto err = tdx::transact_message_sync(conn->socket(), request, response);
     REQUIRE(!err);
     for(int i = 0; i < response.Count; i ++) {
         auto e = &response.List[i];
@@ -112,7 +112,7 @@ TEST_CASE("finance-info-network", "[level1]") {
     spdlog::debug(request.toString());
     tdx::FinanceResponse response{};
     auto conn = tdx::get_std_conn();
-    auto err = tdx::process_message(conn->socket(), request, response);
+    auto err = tdx::transact_message_sync(conn->socket(), request, response);
     REQUIRE(!err);
     spdlog::debug(response.toString());
 }
@@ -124,7 +124,7 @@ TEST_CASE("security-count", "[level1]") {
     tdx::SecurityCountResponse response;
     //tdx::client.add_endpoint(defualt_endpoint);
     auto conn = tdx::get_std_conn();
-    auto err = tdx::process_message(conn->socket(), request, response);
+    auto err = tdx::transact_message_sync(conn->socket(), request, response);
     REQUIRE(!err);
     spdlog::debug(response.toString());
 }
@@ -163,11 +163,11 @@ TEST_CASE("security-quote-network", "[level1]") {
     maps["sz301678"] = tdx::StockInfo{0, "301678"}; // 2025-06-10 未上市, 状态IPO
     std::vector<std::string> list={"sz301678"};
 
-    tdx::SecurityQuoteRequest request(list);
+    tdx::SecurityQuoteContext request(list);
     tdx::SecurityQuoteResponse response;
     //tdx::client.add_endpoint(defualt_endpoint);
     auto conn = tdx::get_std_conn();
-    auto err = tdx::process_message(conn->socket(), request, response);
+    auto err = tdx::transact_message_sync(conn->socket(), request, response);
     REQUIRE(!err);
     response.verify_delisted_securities(maps);
     spdlog::debug(response.toString());
@@ -183,11 +183,11 @@ TEST_CASE("transaction-base", "[level1]") {
 
 TEST_CASE("transaction-network", "[level1]") {
     runtime::logger_set(true, true);
-    tdx::TransactionRequest request("600010", 0, 2);
+    tdx::TransactionContext request("600010", 0, 2);
     tdx::TransactionResponse response(1, "600010");
     //tdx::client.add_endpoint(defualt_endpoint);
     auto conn = tdx::get_std_conn();
-    auto err = tdx::process_message(conn->socket(), request, response);
+    auto err = tdx::transact_message_sync(conn->socket(), request, response);
     REQUIRE(!err);
     spdlog::debug(response.toString());
 }
@@ -206,7 +206,7 @@ TEST_CASE("history-transaction-network", "[level1]") {
     tdx::HistoryTransactionResponse response(1, "600010");
     //tdx::client.add_endpoint(defualt_endpoint);
     auto conn = tdx::get_std_conn();
-    auto err = tdx::process_message(conn->socket(), request, response);
+    auto err = tdx::transact_message_sync(conn->socket(), request, response);
     REQUIRE(!err);
     spdlog::debug(response.toString());
 }
@@ -216,7 +216,7 @@ TEST_CASE("minutetime-network", "[level1]") {
     tdx::HistoryMinuteTimeRequest request("510050", 20250512);
     tdx::HistoryMinuteTimeResponse response(1, "510050");
     auto conn = tdx::get_std_conn();
-    auto err = tdx::process_message(conn->socket(), request, response);
+    auto err = tdx::transact_message_sync(conn->socket(), request, response);
     REQUIRE(!err);
     spdlog::debug(response.toString());
 }
@@ -231,33 +231,33 @@ TEST_CASE("kline-base", "[level1]") {
 
 TEST_CASE("kline-network-stock", "[level1]") {
     spdlog::set_level(spdlog::level::debug);
-    tdx::SecurityBarsRequest request("600600", tdx::KLineType::RI_K, 0, 5);
+    tdx::SecurityBarsContext request("600600", tdx::KLineType::RI_K, 0, 5);
     spdlog::debug(request.toString());
     tdx::SecurityBarsResponse response(request.isIndex, 9);
     auto conn = tdx::get_std_conn();
-    auto err = tdx::process_message(conn->socket(), request, response);
+    auto err = tdx::transact_message_sync(conn->socket(), request, response);
     REQUIRE(!err);
     spdlog::debug(response.toString());
 }
 
 TEST_CASE("block-network-meta", "[level1]") {
     spdlog::set_level(spdlog::level::debug);
-    tdx::BlockMetaRequest request(tdx::BLOCK_DEFAULT);
+    tdx::BlockFileMetaContext request(tdx::BLOCK_DEFAULT);
     spdlog::debug(request.toString());
     tdx::BlockMetaResponse response;
     auto conn = tdx::get_std_conn();
-    auto err = tdx::process_message(conn->socket(), request, response);
+    auto err = tdx::transact_message_sync(conn->socket(), request, response);
     REQUIRE(!err);
     spdlog::debug(response.toString());
 }
 
 TEST_CASE("block-network-info", "[level1]") {
     spdlog::set_level(spdlog::level::debug);
-    tdx::BlockInfoRequest request(tdx::BLOCK_DEFAULT, 0);
+    tdx::BlockFileContext request(tdx::BLOCK_DEFAULT, 0);
     spdlog::debug(request.toString());
     tdx::BlockInfoResponse response;
     auto conn = tdx::get_std_conn();
-    auto err = tdx::process_message(conn->socket(), request, response);
+    auto err = tdx::transact_message_sync(conn->socket(), request, response);
     REQUIRE(!err);
     spdlog::debug(response.toString());
 }

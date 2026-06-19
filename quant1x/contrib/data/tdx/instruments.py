@@ -15,7 +15,7 @@ from quant1x.data.meta import Exchange, Instrument, InstrumentType
 from quant1x.runtime.once import RollingOnce
 from quant1x.log import logger
 from . import client, config as tdx_config, protocol
-from .level1 import SecurityList, SECURITY_LIST_PRE_REQUEST_MAX
+from .level1 import SecurityListContext, SECURITY_LIST_PRE_REQUEST_MAX
 
 
 # in-memory cache and synchronization
@@ -83,8 +83,8 @@ def fetch_security_list(exchange: Exchange, start: int, count: int) -> List[Inst
     """
     try:
         conn = client.get_std_conn()
-        msg = SecurityList(exchange, start, count)
-        protocol.process_level1_new(conn, msg)
+        msg = SecurityListContext(exchange, start, count)
+        protocol.transact_message_sync(conn, msg)
         return msg.list
     except Exception:
         logger.exception('fetch_security_list failed')
@@ -136,7 +136,7 @@ def init_securities():
                 fetch_count = 0
                 try:
                     ii = InstrumentInfo(start, offset)
-                    protocol.process_level1_new(conn, ii)
+                    protocol.transact_message_sync(conn, ii)
                     fetch_count = ii.reply.get('count', 0)
                     if ii.reply['count'] > 0:
                         page = ii.reply['list']

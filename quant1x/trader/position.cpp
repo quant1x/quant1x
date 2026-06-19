@@ -139,10 +139,10 @@ namespace trader {
                 tsl::robin_map<std::string, tdx::StockInfo> maps;
                 maps[code] = tdx::StockInfo{static_cast<u8>(mid), symbol};
                 std::vector<std::string> codes={code};
-                tdx::SecurityQuoteRequest request(codes);
+                tdx::SecurityQuoteContext request(codes);
                 tdx::SecurityQuoteResponse response;
                 auto conn = tdx::get_std_conn();
-                auto err = tdx::process_message(conn->socket(), request, response);
+                auto err = tdx::transact_message_sync(conn->socket(), request, response);
                 if (err) {
                     spdlog::error("Process error: {}", err.message());
                     err.clear();

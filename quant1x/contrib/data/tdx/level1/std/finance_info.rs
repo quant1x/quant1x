@@ -1,12 +1,12 @@
 #![allow(dead_code)]
 
 use super::super::super::command::*;
-use super::super::super::protocol::{BaseMessage, RequestHeader, ResponseHeader};
+use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 use crate::std::BinaryStream;
 use encoding_rs::GBK;
 
 #[derive(Debug, Clone)]
-pub struct FinanceInfoRequest {
+pub struct FinanceInfoContext {
     pub req_header: RequestHeader,
     pub resp_header: ResponseHeader,
     pub count: u16,
@@ -15,12 +15,12 @@ pub struct FinanceInfoRequest {
     pub info: FinanceInfo,
 }
 
-impl FinanceInfoRequest {
+impl FinanceInfoContext {
     pub fn new(security_code: &str) -> Self {
         let mut code = [0u8; 6];
         let inst = crate::data::market::detect_symbol(security_code);
         let market = inst.ext_market as u8;
-        let pure = inst.marker_ticker().to_string();
+        let pure = inst.market_ticker().to_string();
         let bytes = pure.as_bytes();
         for i in 0..bytes.len().min(6) {
             code[i] = bytes[i];
@@ -28,7 +28,7 @@ impl FinanceInfoRequest {
 
         let mut req_header = RequestHeader::new(STD_FINANCE_INFO, FLAG_UNCOMPRESSED);
         req_header.packet_ctrl = 0x01;
-        FinanceInfoRequest {
+        FinanceInfoContext {
             req_header,
             resp_header: ResponseHeader::new(),
             count: 1,
@@ -39,7 +39,7 @@ impl FinanceInfoRequest {
     }
 }
 
-impl BaseMessage for FinanceInfoRequest {
+impl BaseFrame for FinanceInfoContext {
     fn request_header(&self) -> &RequestHeader { &self.req_header }
     fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
     fn response_header(&self) -> &ResponseHeader { &self.resp_header }
@@ -309,15 +309,15 @@ impl RawFinanceInfo {
     }
 }
 
-/// FinanceInfoResponse 已合并到 FinanceInfoRequest 中. 
+/// FinanceInfoResponse 已合并到 FinanceInfoContext 中. 
 /// 保留类型别名以兼容旧代码. 
-pub type FinanceInfoResponse = FinanceInfoRequest;
+pub type FinanceInfoResponse = FinanceInfoContext;
 
 pub fn fetch_finance_info(security_code: &str) -> Option<FinanceInfoResponse> {
     match super::super::super::client::get_std_conn() {
         Ok(mut pooled) => {
-            let mut msg = FinanceInfoRequest::new(security_code);
-            match super::super::super::protocol::process_level1_stream(pooled.stream(), &mut msg) {
+            let mut msg = FinanceInfoContext::new(security_code);
+            match super::super::super::protocol::transact_message_sync(pooled.stream(), &mut msg) {
                 Ok(_) => Some(msg),
                 Err(e) => {
                     log::error!("level1 protocol::process error for finance_info: {}", e);
@@ -341,7 +341,7 @@ mod tests {
     fn deserialize_sample_matches_cpp_behavior() {
         let hex_data = "010001363030313135dfead04910000800d9fe340121bc3001270e084a0000cf4460f0f9ca8c08d94c00000000b9c5fc485c8f42bea6e4834d8cbe914badddbf4ca042334a40cc27488771d94c801c5649703d4a4c089e1a4cb8fffb4c9a46f14c80b6e649303f86ca00e1964874570e4c60bbedca0014cd4900486eca606c92caa0f780ca00000000fca9313f00004041";
         let buf = hex::decode(hex_data).unwrap();
-        let mut msg = FinanceInfoRequest::new("sh600115");
+        let mut msg = FinanceInfoContext::new("sh600115");
         msg.deserialize_response_body(&buf).unwrap();
         assert!(msg.count == 0 || !msg.info.code.is_empty());
     }

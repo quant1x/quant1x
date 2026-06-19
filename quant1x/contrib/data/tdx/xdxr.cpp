@@ -27,7 +27,7 @@ namespace quant1x::contrib::data::tdx {
             auto conn = get_std_conn();
             // XdxrBatch 内部处理 market 检测
             XdxrBatch batch({inst});
-            process_message(conn->socket(), batch);
+            transact_message_sync(conn->socket(), batch);
             // save to {cache}/xdxr/{cache_dir}/{symbol}.csv (对齐 Rust/Python)
             auto filename = xdxr_cache_filename(inst);
             auto parent = std::filesystem::path(filename).parent_path().string();

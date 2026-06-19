@@ -9,7 +9,7 @@ use crate::std::BinaryStream;
 
 use super::super::super::command::*;
 use super::super::super::helpers;
-use super::super::super::protocol::{BaseMessage, RequestHeader, ResponseHeader};
+use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 
 #[derive(Debug, Clone)]
 pub struct StockInfo {
@@ -77,7 +77,7 @@ impl SecurityQuoteData {
 }
 
 #[derive(Debug, Clone)]
-pub struct SecurityQuoteRequest {
+pub struct SecurityQuoteContext {
     req_header: RequestHeader,
     resp_header: ResponseHeader,
     padding: Vec<u8>,
@@ -86,7 +86,7 @@ pub struct SecurityQuoteRequest {
     pub quotes: Vec<SecurityQuoteData>,
 }
 
-impl SecurityQuoteRequest {
+impl SecurityQuoteContext {
     pub fn new(codes: &[String]) -> Self {
         let mut list: Vec<StockInfo> = Vec::new();
         for s in codes.iter() {
@@ -96,7 +96,7 @@ impl SecurityQuoteRequest {
             }
             let inst = crate::data::market::detect_symbol(sc);
             let market = helpers::exchange_to_market(inst.exchange.code()).unwrap_or(0) as u8;
-            let mut code = inst.marker_ticker().to_string();
+            let mut code = inst.market_ticker().to_string();
             if code.len() > 6 {
                 code.truncate(6);
             }
@@ -114,7 +114,7 @@ impl SecurityQuoteRequest {
     }
 }
 
-fn format_time(stamp: i64) -> String {
+fn format_timestamp_from_i64(stamp: i64) -> String {
     if stamp <= 0 {
         return "0".to_string();
     }
@@ -135,7 +135,7 @@ fn format_time(stamp: i64) -> String {
     format!("{:02}:{:02}:{:06.3}", h, m, st)
 }
 
-impl BaseMessage for SecurityQuoteRequest {
+impl BaseFrame for SecurityQuoteContext {
     fn request_header(&self) -> &RequestHeader { &self.req_header }
     fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
     fn response_header(&self) -> &ResponseHeader { &self.resp_header }
@@ -180,7 +180,7 @@ impl BaseMessage for SecurityQuoteRequest {
             ele.low = ((price_base + bs.varint_decode()?) as f64) / base_unit;
 
             let rb0 = bs.varint_decode()?;
-            let _server_time = if rb0 > 0 { format_time(rb0) } else { "0".to_string() };
+            let _server_time = if rb0 > 0 { format_timestamp_from_i64(rb0) } else { "0".to_string() };
             let _rb1 = bs.varint_decode()?;
 
             ele.vol = bs.varint_decode()?;

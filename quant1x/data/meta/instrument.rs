@@ -206,7 +206,7 @@ impl Instrument {
     }
 
     /// 获取市场惯例代码(优先返回 alias_ticker, 否则返回 ticker)
-    pub fn marker_ticker(&self) -> &str {
+    pub fn market_ticker(&self) -> &str {
         if self.alias_ticker.is_empty() {
             &self.ticker
         } else {

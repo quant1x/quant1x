@@ -242,21 +242,21 @@ if __name__ == '__main__':
     # # 测试0x2455
     # from .level1.ext import Synchronize2
     # unknown = Synchronize2()
-    # protocol.process_level1_new(conn, unknown)
+    # protocol.transact_message_sync(conn, unknown)
     # if unknown.reply:
     #     df = pd.DataFrame(unknown.reply)
     #     print(df)
     # market_list = MarketList()
-    # protocol.process_level1_new(conn, market_list)
+    # protocol.transact_message_sync(conn, market_list)
     # if market_list.reply:
     #     df = pd.DataFrame(market_list.reply)
     #     df.to_csv('ext-markets.csv', index=False)
     #     print(df)
     
     # # 证券代码总数
-    # from .level1.ext import InstrumentCount
-    # ic = InstrumentCount()
-    # protocol.process_level1_new(conn, ic)
+    # from .level1.ext import InstrumentCountContext
+    # ic = InstrumentCountContext()
+    # protocol.transact_message_sync(conn, ic)
     # print(f'instrument count: {ic.reply}')
     
     # # 证券代码列表
@@ -266,7 +266,7 @@ if __name__ == '__main__':
     # offset = InstrumentInfo.PRE_REQUEST_MAX
     # while True:
     #     ii = InstrumentInfo(start, offset)
-    #     protocol.process_level1_new(conn, ii)
+    #     protocol.transact_message_sync(conn, ii)
     #     if ii.reply['count']>0:
     #         list.extend(ii.reply['list'])
     #     else:
@@ -280,7 +280,7 @@ if __name__ == '__main__':
     #bars = InstrumentBars(9, 0x17, ticker='HSIL8', start=0, count=700)
     bars = InstrumentBars(8, 31, ticker='00700', start=0, count=700)
     #bars = InstrumentBars(9, 12, ticker='A_IXIC', start=0, count=700)
-    protocol.process_level1_new(conn, bars)
+    protocol.transact_message_sync(conn, bars)
     if bars.reply:
         df = pd.DataFrame(bars.reply)
         print(df)
@@ -289,7 +289,7 @@ if __name__ == '__main__':
     from .level1.ext import TransactionData, DailyTransactionData
     # 1. 最新的成交数据
     req = TransactionData(market=31, ticker='00700', offset=0)
-    protocol.process_level1_new(conn, req)
+    protocol.transact_message_sync(conn, req)
     if req.reply:
         df = pd.DataFrame(req.reply)
         print(df)
@@ -297,7 +297,7 @@ if __name__ == '__main__':
         print('no transaction data')
     # # 2. 日交易数据
     # req = DailyTransactionData(market=31, ticker='00700', offset=0, date=20260305)
-    # protocol.process_level1_new(conn, req)
+    # protocol.transact_message_sync(conn, req)
     # if req.reply:
     #     df = pd.DataFrame(req.reply)
     #     print(df)
@@ -305,7 +305,7 @@ if __name__ == '__main__':
     # # 公司信息(F10)
     # from .level1.ext import CompanyInfoCategories, CompanyInfoContent
     # categories = CompanyInfoCategories(market=31, ticker='00700')
-    # protocol.process_level1_new(conn, categories)
+    # protocol.transact_message_sync(conn, categories)
     # if categories.reply:
     #     df = pd.DataFrame(categories.reply)
     #     print(df)
@@ -317,7 +317,7 @@ if __name__ == '__main__':
     #         if category.title == '分红送股':
     #             xdxr_info = CompanyInfoContent(market=categories.market, ticker=categories.ticker, filename=category.filename, offset=category.offset, size=category.size)
     #             #xdxr_info = CompanyInfoContent(market=categories.market, ticker=categories.ticker, filename=category.filename, offset=0, size=content_length)
-    #             protocol.process_level1_new(conn, xdxr_info)
+    #             protocol.transact_message_sync(conn, xdxr_info)
     #             if xdxr_info.reply:
     #                 import json
     #                 #print(xdxr_info.reply)
@@ -329,14 +329,14 @@ if __name__ == '__main__':
     # # 除权除息信息
     # from .level1.ext import TodoCmd0X2488, TodoCmd0X2489, TodoCmd0X2459
     # xdxr_info = TodoCmd0X2459(market=31, ticker='00700')
-    # protocol.process_level1_new(conn, xdxr_info)
+    # protocol.transact_message_sync(conn, xdxr_info)
     # if xdxr_info.reply:
     #     df = pd.DataFrame(xdxr_info.reply)
     #     print(df)
         
     # from .level1.ext import InstrumentQuote1
     # xdxr_info = InstrumentQuote1(market=31, ticker='00700')
-    # protocol.process_level1_new(conn, xdxr_info)
+    # protocol.transact_message_sync(conn, xdxr_info)
     # if xdxr_info.reply:
     #     df = pd.DataFrame(xdxr_info.reply)
     #     print(df)
@@ -344,7 +344,7 @@ if __name__ == '__main__':
     
     # from .level1.ext import InstrumentQuote2
     # req = InstrumentQuote2([(70, 'HK0211'),(70, 'HK0222'), (70, 'HK1061')])
-    # protocol.process_level1_new(conn, req)
+    # protocol.transact_message_sync(conn, req)
     # if req.reply:
     #     df = pd.DataFrame(req.reply)
     #     print(df)
@@ -352,7 +352,7 @@ if __name__ == '__main__':
     # # 期货行情
     # from .level1.ext import Futures_Quotes
     # req = Futures_Quotes([(70, 'HK0211'),(70, 'HK0222'), (70, 'HK1061')])
-    # protocol.process_level1_new(conn, req)
+    # protocol.transact_message_sync(conn, req)
     # if req.reply:
     #     df = pd.DataFrame(req.reply)
     #     print(df)
@@ -361,7 +361,7 @@ if __name__ == '__main__':
     # from .level1.ext import IntradayChartSampling
     # #req = IntradayChartSampling(0x1f, '00700')
     # req = IntradayChartSampling(0x46, 'HK0272')
-    # protocol.process_level1_new(conn, req)
+    # protocol.transact_message_sync(conn, req)
     # if req.reply:
     #     df = pd.DataFrame(req.reply)
     #     print(df)
@@ -370,7 +370,7 @@ if __name__ == '__main__':
     # from .level1.ext import TodoCmdUnknown
     # #req = TodoCmdUnknown(0x254D, 0x1f, '00700')
     # req = TodoCmdUnknown(0x254D, 0x46, 'HK0272')
-    # protocol.process_level1_new(conn, req)
+    # protocol.transact_message_sync(conn, req)
     # if req.reply:
     #     df = pd.DataFrame(req.reply)
     #     print(df)

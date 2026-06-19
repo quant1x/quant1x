@@ -2,12 +2,12 @@
 #include <quant1x/contrib/data/tdx/client.h>
 #include <quant1x/contrib/data/tdx/level1/std/minute_time.h>
 #include <quant1x/config/base.h>
+#include <quant1x/io/csv-writer.h>
 #include <spdlog/spdlog.h>
-#include <fstream>
 
 namespace config = quant1x::config;
 namespace meta = quant1x::data::meta;
-using quant1x::contrib::data::tdx::HistoryMinuteTime;
+using quant1x::contrib::data::tdx::HistoricalMinuteTimeContext;
 
 namespace quant1x::contrib::data::tdx {
 
@@ -26,20 +26,18 @@ namespace quant1x::contrib::data::tdx {
             auto conn = get_std_conn();
             // 使用标准行情连接获取历史分时数据
             auto date_int = static_cast<uint32_t>(date.yyyymmdd_u32());
-            HistoryMinuteTime minute(inst, date_int);
-            process_message(conn->socket(), minute);
+            HistoricalMinuteTimeContext minute(inst, date_int);
+            transact_message_sync(conn->socket(), minute);
             // 保存到 {cache}/minute/{cache_dir}/{symbol}.csv
             auto filename = minute_cache_filename(inst);
             auto parent = std::filesystem::path(filename).parent_path().string();
             std::filesystem::create_directories(parent);
-            std::ofstream out(filename);
-            if (out) {
-                out << "price,volume\n";
-                for (auto const& m : minute.List) {
-                    out << m.Price << "," << m.Vol << "\n";
-                }
-                out.close();
+            io::CSVWriter writer(filename);
+            writer.write_row("price", "volume");
+            for (auto const& m : minute.List) {
+                writer.write_row(m.Price, m.Vol);
             }
+            writer.close();
             spdlog::info("[DataMinute] saved {} bars for {} to {}", minute.List.size(), code, filename);
         } catch (const std::exception& e) {
             spdlog::warn("[DataMinute] update failed for {}: {}", code, e.what());

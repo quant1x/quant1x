@@ -14,7 +14,7 @@ from .client import get_std_conn
 from . import protocol
 from .level1 import (
     TICK_TRANSACTION_PER_REQUEST_MAX,
-    Transaction, HistoricalTransaction
+    TransactionContext, HistoricalTransactionContext
 )
 from quant1x.data.schema import Transaction
 from quant1x.data.meta.calendar import last_trading_day
@@ -185,10 +185,10 @@ def update_transaction_data(inst: Instrument, feature_date: Timestamp, start_tim
     while True:
         try:
             if today_is_last_trading_date:
-                msg = Transaction(exchange, code, start, offset, price_precision, is_index)
+                msg = TransactionContext(exchange, code, start, offset, price_precision, is_index)
             else:
-                msg = HistoricalTransaction(exchange, code, trade_date_int, start, offset, price_precision, is_index)
-            protocol.process_level1_new(conn, msg)
+                msg = HistoricalTransactionContext(exchange, code, trade_date_int, start, offset, price_precision, is_index)
+            protocol.transact_message_sync(conn, msg)
 
             if msg.count == 0 or not msg.list:
                 break
@@ -314,12 +314,14 @@ def checkout_transaction_data(inst: Instrument, feature_date: Timestamp, ignore_
 
 if __name__ == "__main__":
     # Example usage
+    import pandas as pd
     from .instruments import get_instrument_info
-    code = "sh510050"
-    date = Timestamp.parse("2023-01-04")
+    code = "sh000001"
+    date = Timestamp.parse("2026-06-18")
     inst = get_instrument_info(code)
     if inst is None:
         print(f"Instrument not found: {code}")
         exit(1)
     transactions = checkout_transaction_data(inst, date, False)
-    #print(transactions)
+    df = pd.DataFrame([t.to_dict() for t in transactions], columns=Transaction.headers())
+    print(df)

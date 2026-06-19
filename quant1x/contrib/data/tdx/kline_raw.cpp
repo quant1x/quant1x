@@ -16,9 +16,9 @@
 namespace config = quant1x::config;
 namespace data = quant1x::data;
 namespace io = ::io;
-namespace meta = quant1x::data::meta;
+namespace meta = quant1x::data;
 using quant1x::contrib::data::tdx::KLineType;
-using quant1x::contrib::data::tdx::SecurityBars;
+using quant1x::contrib::data::tdx::SecurityBarsContext;
 
 namespace quant1x::contrib::data::tdx {
 
@@ -52,7 +52,7 @@ struct BarRaw {
     std::string timestamp;
 
     /// 从 domain Bar 构造 (对齐 Python: for row in vec: BarRaw(date=..., open=row.open, ...))
-    static BarRaw from_bar(const meta::schema::Bar& bar) {
+    static BarRaw from_bar(const schema::Bar& bar) {
         return BarRaw{
             bar.date,
             bar.open,
@@ -112,21 +112,21 @@ static std::vector<BarRaw> read_kline_raw_from_csv(const std::string& filename) 
 
 /// fetch_kline_raw_from_std — 从标准行情获取原始K线, 转换为 domain Bar
 /// 对应 Python kline_raw.py fetch_kline_raw_from_std:
-///   msg = SecurityBars(inst.exchange, inst.ticker, kline_type, start, count, inst.type.is_index())
-///   protocol.process_level1_new(conn, msg)
+///   msg = SecurityBarsContext(inst.exchange, inst.ticker, kline_type, start, count, inst.type.is_index())
+///   protocol.transact_message_sync(conn, msg)
 ///   return msg.list  # msg.list 已经是 List[Bar]
-static std::vector<meta::schema::Bar> fetch_kline_raw_from_std(
+static std::vector<schema::Bar> fetch_kline_raw_from_std(
         const meta::Instrument& inst, int start, int count, u16 category) {
     try {
         auto conn = get_std_conn();
-        SecurityBars bars(inst, category,
+        SecurityBarsContext bars(inst, category,
                                   static_cast<u16>(start), static_cast<u16>(count));
-        process_message(conn->socket(), bars);
+        transact_message_sync(conn->socket(), bars);
 
-        std::vector<meta::schema::Bar> result;
+        std::vector<schema::Bar> result;
         result.reserve(bars.List.size());
         for (auto const& raw : bars.List) {
-            meta::schema::Bar bar;
+            schema::Bar bar;
             bar.date             = raw.DateTime.substr(0, 10);
             bar.open             = raw.Open;
             bar.close            = raw.Close;
@@ -155,9 +155,9 @@ static std::vector<meta::schema::Bar> fetch_kline_raw_from_std(
 /// 对应 Python kline_raw.py fetch_kline_raw_from_ext:
 ///   with get_ext_conn() as conn:
 ///       bars = InstrumentBars(kline_type.value, inst.ext_market, ticker=code.upper(), start=start, count=count)
-///       protocol.process_level1_new(conn, bars)
+///       protocol.transact_message_sync(conn, bars)
 ///       return bars.reply  # bars.reply 已经是 List[Bar]
-static std::vector<meta::schema::Bar> fetch_kline_raw_from_ext(
+static std::vector<schema::Bar> fetch_kline_raw_from_ext(
         const meta::Instrument& inst, int start, int count, u16 category) {
     try {
         auto conn = get_ext_conn();
@@ -183,7 +183,7 @@ static std::vector<meta::schema::Bar> fetch_kline_raw_from_ext(
             static_cast<u16>(count)
         );
 
-        process_message(conn->socket(), bars);
+        transact_message_sync(conn->socket(), bars);
 
         spdlog::debug("[kline_raw] fetch_kline_raw_from_ext: {} bars for {}",
                       bars.reply.size(), inst.symbol());
@@ -195,7 +195,7 @@ static std::vector<meta::schema::Bar> fetch_kline_raw_from_ext(
     }
 }
 
-std::vector<meta::schema::Bar> fetch_kline_raw(
+std::vector<schema::Bar> fetch_kline_raw(
         const meta::Instrument& inst, int start, int count, u16 category) {
     if (exchange_is_std_quote(inst.exchange)) {
         return fetch_kline_raw_from_std(inst, start, count, category);
@@ -247,7 +247,7 @@ void DataKLineRaw::Update(const meta::Instrument& inst, const meta::Timestamp& d
     // 3. 分页拉取原始K线 — fetch_kline_raw 返回 domain Bar (对齐 Python: reply = fetch_kline_raw(inst, start, count, freq))
     int step = kSecurityBarsPreRequestMax;
     int start = 0;
-    std::vector<std::vector<meta::schema::Bar>> batches;
+    std::vector<std::vector<schema::Bar>> batches;
     size_t element_count = 0;
 
     while (true) {

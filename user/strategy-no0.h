@@ -30,7 +30,7 @@ public:
 
     quant1x::error Filter(const quant1x::config::StrategyParameter& parameter, const Snapshot::Reader& snapshot) const override;
 
-    quant1x::error Filter(const quant1x::config::StrategyParameter &parameter, const tdx::SecurityQuote &snapshot) const override;
+    quant1x::error Filter(const quant1x::config::StrategyParameter &parameter, const tdx::SecurityQuoteContext &snapshot) const override;
 
     SortedStatus Sort(std::vector<Snapshot> &snapshots) const override {
         (void)snapshots;
@@ -49,7 +49,7 @@ public:
     // 增量计算评估
     void Evaluate(const SecurityCode &code, ResultInfo &result, const Snapshot::Reader &snapshot) const override;
 
-    void Evaluate(const SecurityCode &code, ResultInfo &result, const tdx::SecurityQuote &snapshot) const override;
+    void Evaluate(const SecurityCode &code, ResultInfo &result, const tdx::SecurityQuoteContext &snapshot) const override;
 };
 
 #endif //QUANT1X_STRATEGIES_NO0_H

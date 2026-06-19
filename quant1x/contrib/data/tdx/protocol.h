@@ -215,17 +215,17 @@ namespace quant1x::contrib::data::tdx {
     constexpr auto response_header_length = 0x10;
 
     /**
-     * BaseMessage — 消息基类 (对齐 Python protocol.BaseMessage)
+     * BaseFrame — 消息基类 (对齐 Python protocol.BaseFrame)
      *
      * 用于处理消息头和消息体的解析和序列化. 
-     * Python 参考: quant1x/contrib/data/tdx/protocol.py BaseMessage
+     * Python 参考: quant1x/contrib/data/tdx/protocol.py BaseFrame
      */
     template <typename Derived>
-    struct BaseMessage {
+    struct BaseFrame {
         RequestHeader<Derived> request_header;
         ResponseHeader<Derived> response_header;
 
-        BaseMessage() : request_header(), response_header() {}
+        BaseFrame() : request_header(), response_header() {}
 
         /// 序列化请求体 (子类实现)
         std::vector<u8> serialize_request_body() { return static_cast<Derived *>(this)->serialize_request_body_impl(); }
@@ -263,9 +263,9 @@ namespace quant1x::contrib::data::tdx {
         std::string to_string() { return static_cast<Derived *>(this)->to_string_impl(); }
     };
 
-    // 基于 BaseMessage 的 process 函数 (对齐 Python process_level1_new)
+    // 基于 BaseFrame 的 process 函数 (对齐 Python transact_message_sync)
     template <typename MessageType>
-    quant1x::error process_message(asio::ip::tcp::socket &socket, BaseMessage<MessageType> &msg) {
+    quant1x::error transact_message_sync(asio::ip::tcp::socket &socket, BaseFrame<MessageType> &msg) {
         std::string cmd     = msg.command();
         auto        req_buf = msg.serialize_request();
         spdlog::debug("[{}]Send buffer: {}", cmd, strings::bytesToHex(req_buf));

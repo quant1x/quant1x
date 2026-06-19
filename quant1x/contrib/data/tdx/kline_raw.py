@@ -16,7 +16,7 @@ from quant1x.data.schema import Bar
 from quant1x.data import adapter, MaxCachedDaysToDropOnIncrementalUpdate
 from . import protocol
 from .client import get_std_conn, get_ext_conn
-from .level1 import SecurityBars, KLineType, SECURITY_BARS_PRE_REQUEST_MAX
+from .level1 import SecurityBarsContext, KLineType, SECURITY_BARS_PRE_REQUEST_MAX
 from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASEDATA, register, DEFAULT_DATA_PROVIDER
 from quant1x.data.base import BASEDATA_RAW_DAILY_KLINE, GLOBAL_DEFAULT_START_DATE, MarketCnFirstListTime
 from quant1x.data.meta import Instrument, Frequency, TimeUnit, FREQ_DAILY
@@ -269,8 +269,8 @@ def fetch_kline_raw_from_std(inst: Instrument, start: int, count: int, freq: Fre
     try:
         kline_type = frequency_to_kline_type(freq)
         with get_std_conn() as conn:
-            msg = SecurityBars(inst.exchange, inst.ticker, kline_type, start, count, inst.type.is_index())
-            protocol.process_level1_new(conn, msg)
+            msg = SecurityBarsContext(inst.exchange, inst.ticker, kline_type, start, count, inst.type.is_index())
+            protocol.transact_message_sync(conn, msg)
             return msg.list
     except Exception as e:
         logger.error(f"[basedata::KLine] fetch_kline_raw error: {e}")
@@ -282,7 +282,7 @@ def fetch_kline_raw_from_ext(inst: Instrument, start: int, count: int, freq: Fre
         with get_ext_conn() as conn:
             code = inst.ticker if inst.alias_ticker=='' else inst.alias_ticker
             bars = InstrumentBars(kline_type.value, inst.ext_market, ticker=code.upper(), start=start, count=count)
-            protocol.process_level1_new(conn, bars)
+            protocol.transact_message_sync(conn, bars)
             return bars.reply
     except Exception as e:
         logger.error(f"[basedata::KLine] fetch_kline_raw error: {e}")

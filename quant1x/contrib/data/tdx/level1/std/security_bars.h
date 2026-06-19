@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_CONTRB_DATA_TDX_SECURITY_BARS_H
-#define QUANT1X_CONTRB_DATA_TDX_SECURITY_BARS_H 1
+#ifndef QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_SECURITY_BARS_H
+#define QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_SECURITY_BARS_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
 #include <quant1x/data/meta/instrument.h>
@@ -95,8 +95,8 @@ namespace quant1x::contrib::data::tdx {
         }
     };
 
-    // K线 (对齐 Python SecurityBars)
-    struct SecurityBars : public BaseMessage<SecurityBars> {
+    // K线 (对齐 Python SecurityBarsContext)
+    struct SecurityBarsContext : public BaseFrame<SecurityBarsContext> {
         SecurityBarsParameter param{};
         std::vector<u8> padding{};
         bool isIndex = false;
@@ -106,7 +106,7 @@ namespace quant1x::contrib::data::tdx {
 
         u16 category_;
 
-        SecurityBars(const meta::Instrument &inst, u16 category, u16 start, u16 count) : BaseMessage<SecurityBars>() {
+        SecurityBarsContext(const meta::Instrument &inst, u16 category, u16 start, u16 count) : BaseFrame<SecurityBarsContext>() {
             request_header.frame_type = ZlibFlag::Uncompressed;
             request_header.seq_id = get_sequence_id();
             request_header.packet_ctrl = 0x00;
@@ -119,7 +119,7 @@ namespace quant1x::contrib::data::tdx {
             param.Count = count;
             {
                 param.Market = static_cast<u16>(helpers::exchange_to_market(inst.exchange));
-                const char *const tmp = inst.marker_ticker().c_str();
+                const char *const tmp = inst.market_ticker().c_str();
                 std::memcpy(param.Code, tmp, sizeof(param.Code));
                 if (meta::instype_is_index(inst.type)) {
                     isIndex = true;
@@ -179,10 +179,10 @@ namespace quant1x::contrib::data::tdx {
                 auto price_low_diff = bs.varint_decode();
 
                 u32 ivol = bs.get_u32();
-                e.Vol = helpers::integerToFloat64(ivol);
+                e.Vol = helpers::integer_to_float64(ivol);
 
                 u32 dbvol = bs.get_u32();
-                e.Amount = helpers::integerToFloat64(i64(dbvol));
+                e.Amount = helpers::integer_to_float64(i64(dbvol));
 
                 e.Open = f64(price_open_diff+pre_diff_base) / 1000.0;
                 price_open_diff += pre_diff_base;
@@ -222,4 +222,4 @@ namespace quant1x::contrib::data::tdx {
     };
 
 }
-#endif //QUANT1X_CONTRB_DATA_TDX_SECURITY_BARS_H
+#endif // QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_SECURITY_BARS_H

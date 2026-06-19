@@ -18,7 +18,7 @@ pub enum KLineType {
 
 use super::super::super::command::*;
 use super::super::super::helpers::{get_datetime_from_u32, int_to_float64};
-use super::super::super::protocol::{BaseMessage, RequestHeader, ResponseHeader};
+use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 use crate::helpers;
 use crate::std::BinaryStream;
 
@@ -48,9 +48,9 @@ impl Default for SecurityBarsParameter {
     }
 }
 
-/// K线数据 — 对应 Python SecurityBars(protocol.BaseMessage)
+/// K线数据 — 对应 Python SecurityBarsContext(protocol.BaseFrame)
 #[derive(Debug, Clone)]
-pub struct SecurityBarsRequest {
+pub struct SecurityBarsContext {
     pub req_header: RequestHeader,
     pub resp_header: ResponseHeader,
     param: SecurityBarsParameter,
@@ -60,10 +60,10 @@ pub struct SecurityBarsRequest {
     pub list: Vec<SecurityBar>,
 }
 
-impl SecurityBarsRequest {
+impl SecurityBarsContext {
     /// 构造 K线请求
     ///
-    /// 对应 Python `SecurityBars.__init__(exchange, code, category, start, count, is_index)`
+    /// 对应 Python `SecurityBarsContext.__init__(exchange, code, category, start, count, is_index)`
     pub fn new(
         security_code: &str,
         category: u16,
@@ -106,7 +106,7 @@ impl SecurityBarsRequest {
         let inst = crate::data::market::detect_symbol(security_code);
         //let market_id = inst.ext_market;
         let market_id = helpers::exchange_to_market(inst.exchange.code()).unwrap_or(0);
-        let pure = inst.marker_ticker().to_string();
+        let pure = inst.market_ticker().to_string();
         let mut code_bytes = [0u8; 6];
         let sym = pure.as_bytes();
         let copy_len = std::cmp::min(sym.len(), code_bytes.len());
@@ -115,7 +115,7 @@ impl SecurityBarsRequest {
         let mut req_header = RequestHeader::new(STD_SECURITY_BARS, FLAG_UNCOMPRESSED);
         req_header.packet_ctrl = 0x00;
 
-        SecurityBarsRequest {
+        SecurityBarsContext {
             req_header,
             resp_header: ResponseHeader::new(),
             param: SecurityBarsParameter {
@@ -149,7 +149,7 @@ impl SecurityBarsRequest {
     }
 }
 
-impl BaseMessage for SecurityBarsRequest {
+impl BaseFrame for SecurityBarsContext {
     fn request_header(&self) -> &RequestHeader { &self.req_header }
     fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
     fn response_header(&self) -> &ResponseHeader { &self.resp_header }
@@ -312,9 +312,9 @@ impl SecurityBar {
     }
 }
 
-/// SecurityBarsResponse 已合并到 SecurityBarsRequest 中. 
+/// SecurityBarsResponse 已合并到 SecurityBarsContext 中. 
 /// 保留类型别名以兼容旧代码. 
-pub type SecurityBarsResponse = SecurityBarsRequest;
+pub type SecurityBarsResponse = SecurityBarsContext;
 
 #[cfg(test)]
 mod tests {
@@ -325,8 +325,8 @@ mod tests {
     fn deserialize_sample_matches_cpp_output() {
         let hex_data = "05002bff3401a52910134982d4834e07eb2f4f2eff340102060e4a8a70db4dca40934e2fff3401440a0f4aef5a734e3b6c234f30ff340141191f515cd8094f6d64ba4f31ff34014d102c4398098b4e44b03c4f";
         let buf = hex::decode(hex_data).unwrap();
-        // 对应 Python: SecurityBars(exchange, "sh000001", KLineType.RI_K, 0, 800, is_index=True)
-        let mut req = SecurityBarsRequest::with_is_index("sh000001", 9, 0, 800, true);
+        // 对应 Python: SecurityBarsContext(exchange, "sh000001", KLineType.RI_K, 0, 800, is_index=True)
+        let mut req = SecurityBarsContext::with_is_index("sh000001", 9, 0, 800, true);
         let _ = req.deserialize_response_body(&buf);
         assert_eq!(req.count as usize, req.list.len());
         assert!(req.list.len() > 0 || req.count == 0);

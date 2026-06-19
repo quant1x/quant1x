@@ -185,7 +185,7 @@ struct Instrument {
 
     /// 获取市场惯例代码(优先返回 alias_ticker, 否则返回交易所原始 ticker)
     /// 语义: alias_ticker 表示市场惯例写法/别名映射, 而非交易所原始代码
-    std::string marker_ticker() const {
+    std::string market_ticker() const {
         return alias_ticker.empty() ? ticker : alias_ticker;
     }
 

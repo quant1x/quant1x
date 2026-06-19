@@ -5,11 +5,10 @@
 import struct
 from dataclasses import dataclass
 
-from quant1x.data.meta import Exchange
+from quant1x.data.meta import Exchange, Instrument
 
-from ...command import Command
-from ... import helpers
-from ... import protocol
+from quant1x.contrib.data.tdx.command import Command
+from quant1x.contrib.data.tdx import helpers, protocol
 
 
 @dataclass
@@ -27,13 +26,13 @@ class FinanceInfo:
         return self.ipo_date == 0 and self.zong_gu_ben == 0 and self.liu_tong_gu_ben == 0
 
 
-class FinanceInfoRequest(protocol.BaseMessage):
+class FinanceInfoContext(protocol.BaseFrame):
     """财务信息请求/响应"""
 
-    def __init__(self, exchange: Exchange, ticker: str):
+    def __init__(self, inst: Instrument):
         super().__init__(Command.STD_FINANCE_INFO)
-        self._market = helpers.exchange_to_market(exchange)
-        self._ticker = ticker
+        self._market = helpers.exchange_to_market(inst.exchange)
+        self._ticker = inst.market_ticker()
 
         self.count = 0
         self.info: FinanceInfo = FinanceInfo()

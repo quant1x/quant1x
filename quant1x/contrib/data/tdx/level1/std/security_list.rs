@@ -12,7 +12,7 @@ use crate::std::BinaryStream;
 
 use super::super::super::command::*;
 use super::super::super::helpers::int_to_float64;
-use super::super::super::protocol::{BaseMessage, RequestHeader, ResponseHeader};
+use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 
 /// 单次请求的最大记录数, 对应 Python SECURITY_LIST_PRE_REQUEST_MAX
 pub const PRE_REQUEST_MAX: u32 = 1600;
@@ -29,7 +29,7 @@ pub struct Security {
 
 /// 证券列表请求/响应
 #[derive(Debug, Clone)]
-pub struct SecurityListRequest {
+pub struct SecurityListContext {
     req_header: RequestHeader,
     resp_header: ResponseHeader,
     pub market: u16,
@@ -38,7 +38,7 @@ pub struct SecurityListRequest {
     pub list: Vec<Security>,
 }
 
-impl SecurityListRequest {
+impl SecurityListContext {
     pub fn new(market: u16, start: u32, count: u32) -> Self {
         Self {
             req_header: RequestHeader::new(STD_SECURITY_LIST, FLAG_UNCOMPRESSED),
@@ -51,7 +51,7 @@ impl SecurityListRequest {
     }
 }
 
-impl BaseMessage for SecurityListRequest {
+impl BaseFrame for SecurityListContext {
     fn request_header(&self) -> &RequestHeader { &self.req_header }
     fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
     fn response_header(&self) -> &ResponseHeader { &self.resp_header }
@@ -141,11 +141,11 @@ impl BaseMessage for SecurityListRequest {
 }
 
 /// 获取证券列表
-pub fn fetch_security_list(market: u16, start: u32, count: u32) -> Option<SecurityListRequest> {
+pub fn fetch_security_list(market: u16, start: u32, count: u32) -> Option<SecurityListContext> {
     match super::super::super::client::get_std_conn() {
         Ok(mut conn) => {
-            let mut msg = SecurityListRequest::new(market, start, count);
-            match super::super::super::protocol::process_level1_stream(conn.stream(), &mut msg) {
+            let mut msg = SecurityListContext::new(market, start, count);
+            match super::super::super::protocol::transact_message_sync(conn.stream(), &mut msg) {
                 Ok(()) => Some(msg),
                 Err(e) => {
                     log::error!("level1 security_list process error for market={} start={}: {}", market, start, e);
