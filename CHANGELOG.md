@@ -3,10 +3,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.37] - 2026-06-20
+### Changed
+- fix_last_trading_day_with_debug_timestamp_parameter
+- feat: implement Print methods for all data adapters; add blocks comparison tool
+
 ## [0.7.36] - 2026-06-19
 ### Changed
 - c++修订注释
 - 统一消息名称签名格式
+- release v0.7.36
 
 ## [0.7.35] - 2026-06-18
 ### Changed
@@ -1921,7 +1927,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.36...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.37...HEAD
+[0.7.37]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.36...v0.7.37
 [0.7.36]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.35...v0.7.36
 [0.7.35]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.34...v0.7.35
 [0.7.34]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.33...v0.7.34
