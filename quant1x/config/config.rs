@@ -5,6 +5,18 @@ use std::path::PathBuf;
 
 // Typed application-level configuration parsed once at startup.
 use std::collections::HashMap;
+use std::sync::LazyLock;
+
+/// 盘前9点
+pub const PRE_MARKET_HOUR: u32 = 9;
+/// 盘前9点0分
+pub const PRE_MARKET_MINUTE: u32 = 0;
+/// 盘前9点0分0秒
+pub const PRE_MARKET_SECOND: u32 = 0;
+/// 每天9点整
+pub static GLOBAL_CRON_EXPR_DAILY_INIT: LazyLock<String> = LazyLock::new(|| {
+    format!( "{} {} {} * * *", PRE_MARKET_SECOND, PRE_MARKET_MINUTE, PRE_MARKET_HOUR)
+});
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DataSection {

@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/quant1x/quant1x/quant1x/core"
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/data/meta"
 )
 
 // Kind 表示插件类型标识
@@ -36,17 +36,17 @@ type Schema interface {
 type DataAdapter interface {
 	Schema
 	// Print 控制台打印, dates 可选
-	Print(instrument exchange.InstrumentInfo, dates ...exchange.Timestamp)
+	Print(instrument meta.Instrument, dates ...meta.Timestamp)
 	// Update 更新数据
-	Update(instrument exchange.InstrumentInfo, date exchange.Timestamp)
+	Update(instrument meta.Instrument, date meta.Timestamp)
 }
 
 // FeatureAdapter 特征数据适配器接口
 type FeatureAdapter interface {
 	DataAdapter
 	// Filename 返回对应的聚合文件路径
-	Filename(timestamp exchange.Timestamp) string
-	Init(timestamp exchange.Timestamp)
+	Filename(timestamp meta.Timestamp) string
+	Init(timestamp meta.Timestamp)
 	Clone() FeatureAdapter
 	Headers() []string
 	Values() []string
@@ -65,7 +65,7 @@ const cache1dPrefix = "flash"
 // 返回:
 //
 //	生成的完整缓存文件路径, 路径已清理
-func FeatureFilename(f FeatureAdapter, timestamp exchange.Timestamp) string {
+func FeatureFilename(f FeatureAdapter, timestamp meta.Timestamp) string {
 	key := f.Key()
 	pos := strings.IndexByte(key, '/')
 	var cachePath, actualKey string

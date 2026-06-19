@@ -10,10 +10,8 @@ pub const MILLISECONDS_PER_MINUTE: i64 = SECONDS_PER_MINUTE * MILLISECONDS_PER_S
 pub const MILLISECONDS_PER_HOUR: i64 = SECONDS_PER_HOUR * MILLISECONDS_PER_SECOND;
 pub const MILLISECONDS_PER_DAY: i64 = SECONDS_PER_DAY * MILLISECONDS_PER_SECOND;
 
-// 盘前时间配置 (对应 C++ 中的 config::cn_pre_market_*)
-pub const PRE_MARKET_HOUR: u32 = 9;
-pub const PRE_MARKET_MINUTE: u32 = 0;
-pub const PRE_MARKET_SECOND: u32 = 0;
+// 盘前时间配置统一在 config 模块 (对应 C++ 中的 config::cn_pre_market_*)
+// pub use crate::config::{PRE_MARKET_HOUR, PRE_MARKET_MINUTE, PRE_MARKET_SECOND};
 
 /// 本地时间戳, 单位毫秒. 
 ///
@@ -96,9 +94,9 @@ impl Timestamp {
             year,
             month,
             day,
-            PRE_MARKET_HOUR,
-            PRE_MARKET_MINUTE,
-            PRE_MARKET_SECOND,
+            crate::config::PRE_MARKET_HOUR,
+            crate::config::PRE_MARKET_MINUTE,
+            crate::config::PRE_MARKET_SECOND,
             0,
         )
     }
@@ -292,7 +290,7 @@ impl Timestamp {
     /// 转换为盘前时间. 
     pub fn pre_market_time_from_current(&self) -> Option<Self> {
         let _dt = self.to_datetime();
-        self.today(PRE_MARKET_HOUR, PRE_MARKET_MINUTE, PRE_MARKET_SECOND, 0)
+        self.today(crate::config::PRE_MARKET_HOUR, crate::config::PRE_MARKET_MINUTE, crate::config::PRE_MARKET_SECOND, 0)
     }
 
     /// 调整到分钟的开始(秒和毫秒归零). 

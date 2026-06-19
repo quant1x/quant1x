@@ -6,7 +6,7 @@ import time
 from datetime import datetime, timedelta
 from typing import Optional, Tuple, Union
 # Pre-market time constants
-from .tradinghours import PRE_MARKET_HOUR, PRE_MARKET_MINUTE, PRE_MARKET_SECOND
+from quant1x.config import PRE_MARKET_HOUR, PRE_MARKET_MINUTE, PRE_MARKET_SECOND
 
 # Constants
 SECONDS_PER_MINUTE = 60

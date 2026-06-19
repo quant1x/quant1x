@@ -470,7 +470,7 @@ pub fn resolve_as_of_date(inst: &Instrument, end_date: Option<&str>) -> String {
                 || inst.exchange == Exchange::SZSE
                 || inst.exchange == Exchange::BSE
             {
-                crate::data::meta::calendar::last_trading_day(Timestamp::now()).only_date()
+                crate::data::meta::calendar::last_trading_day(Timestamp::now(), None).only_date()
             } else {
                 // 非A股: 当天日期
                 Timestamp::now().only_date()

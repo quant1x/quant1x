@@ -18,6 +18,11 @@ logger = logging.getLogger(__name__)
 default_workspace_path = 'q1x'
 """默认工作目录关键词"""
 
+PRE_MARKET_HOUR = 9
+PRE_MARKET_MINUTE = 0
+PRE_MARKET_SECOND = 0
+GLOBAL_CRON_EXPR_DAILY_INIT = f"{PRE_MARKET_SECOND} {PRE_MARKET_MINUTE} {PRE_MARKET_HOUR} * * *"
+
 def get_quant1x_env(key: str) -> str:
     key = key.strip()
     # 1. 尝试从开发环境变量文件.env中读取
@@ -278,3 +283,10 @@ def reports_filename(date: str) -> str:
     path = os.path.join(base_config.data_path, "infoq", quarter_str)
     os.makedirs(path, exist_ok=True)
     return os.path.join(path, "reports.csv")
+
+__all__ = [
+    "PRE_MARKET_HOUR",
+    "PRE_MARKET_MINUTE",
+    "PRE_MARKET_SECOND",
+    "GLOBAL_CRON_EXPR_DAILY_INIT",
+]

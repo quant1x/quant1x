@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/quant1x/quant1x/quant1x/config"
 	"github.com/quant1x/quant1x/quant1x/data"
 	"github.com/quant1x/quant1x/quant1x/runtime"
 	"github.com/quant1x/quant1x/quant1x/std"
@@ -653,7 +654,7 @@ func InitUSSession() (*TradingSession, error) {
 var (
 	tradingHoursMap     = make(map[string]*TradingSession)
 	tradingHoursDefault *TradingSession
-	tradingHoursOnce    = runtime.RollingOnceFromSpec(data.CnCronExprDailyInit) // 每天9:00重置
+	tradingHoursOnce    = runtime.RollingOnceFromSpec(config.CronExprDaily9am) // 每天9:00重置
 )
 
 // GetTradingHoursMap 获取交易时段映射

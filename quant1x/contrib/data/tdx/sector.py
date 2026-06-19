@@ -16,10 +16,9 @@ from quant1x.log import logger
 from quant1x.runtime.once import RollingOnce
 from quant1x.data.meta import Timestamp
 from quant1x.data.schema import Sector
-from quant1x.config import config
+from quant1x.config import config, GLOBAL_CRON_EXPR_DAILY_INIT
 from quant1x.data import status as market_status
 from quant1x.data import market
-from quant1x.data.meta import tradinghours
 
 from .client import get_std_conn
 from .level1 import BlockFileContext, BLOCK_CHUNKS_SIZE
@@ -456,7 +455,7 @@ def load_cache_block_infos() -> None:
             continue
 
 
-_onceBlockFiles = RollingOnce(name='sector', cron=tradinghours.cn_cron_expr_daily_init)
+_onceBlockFiles = RollingOnce(name='sector', cron=GLOBAL_CRON_EXPR_DAILY_INIT)
 
 def get_sector_list() -> List[Sector]:
     _onceBlockFiles.do(load_cache_block_infos)

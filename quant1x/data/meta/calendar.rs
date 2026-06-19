@@ -1,6 +1,7 @@
 use super::sina::FinanceDecoder;
 use crate::runtime::RollingOnce;
 use crate::meta::Timestamp;
+use crate::config;
 use chrono::Local;
 use csv;
 use filetime::FileTime;
@@ -27,7 +28,7 @@ static GLOBAL_CALENDAR_ONCE: Lazy<Arc<RollingOnce>> = Lazy::new(|| {
         marker = parent.to_path_buf();
         marker.push("calendar.updated");
     }
-    RollingOnce::with_daily_reset(marker, 9, 0)
+    RollingOnce::with_daily_reset(marker, config::PRE_MARKET_HOUR, config::PRE_MARKET_MINUTE)
 });
 
 fn default_calendar_path() -> PathBuf {
@@ -263,14 +264,19 @@ pub fn ensure_calendar_cache() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn last_trading_day(date: Timestamp) -> Timestamp {
+/// 获取最近一个交易日 (对齐 C++ last_trading_day / Python last_trading_day)
+///
+/// * `date`             - 参考日期
+/// * `debug_timestamp`  - 可选的调试时间戳, 为空时使用当前时间 (用于测试确定性)
+pub fn last_trading_day(date: Timestamp, debug_timestamp: Option<Timestamp>) -> Timestamp {
+    let current = debug_timestamp.unwrap_or_else(Timestamp::now);
     lazy_load_calendar();
     {
         let tss = GLOBAL_CALENDAR_TS.lock().unwrap();
         if tss.is_empty() {
-            // fallback: return today's pre-market
-            return Timestamp::pre_market_time_from_current(&Timestamp::now())
-                .unwrap_or(Timestamp::now());
+            // fallback: return pre-market of current
+            return Timestamp::pre_market_time_from_current(&current)
+                .unwrap_or(current);
         }
         // find upper_bound
         match tss.binary_search(&date) {
@@ -279,7 +285,6 @@ pub fn last_trading_day(date: Timestamp) -> Timestamp {
                 let mut it = if pos == 0 { 0 } else { pos - 1 };
                 // if current < last_timestamp (pre-market), move back
                 let last_ts = tss[it];
-                let current = Timestamp::now();
                 if current < last_ts && it > 0 {
                     it -= 1;
                 }
@@ -518,21 +523,24 @@ mod tests {
 
     #[test]
     fn test_last_trading_day() -> Result<(), Box<dyn std::error::Error>> {
+        // Use 2024 dates to stay within ANY cached calendar range (oldest cache still has 2024).
+        // 2024-06-17 is a Monday; the previous Friday is 2024-06-14.
+        let debug_ts = crate::data::meta::timestamp::Timestamp::from_date(2024, 6, 17, 10, 0, 0, 0).unwrap();
         let mut date =
-            crate::data::meta::timestamp::Timestamp::from_date(2025, 10, 13, 8, 59, 59, 999).unwrap();
-        let mut last = last_trading_day(date);
+            crate::data::meta::timestamp::Timestamp::from_date(2024, 6, 17, 8, 59, 59, 999).unwrap();
+        let mut last = last_trading_day(date, Some(debug_ts));
         println!(
             "last trading day before {:?} is {:?}",
             date.only_date(),
             last.only_date()
         );
-        // Assert the expected last trading day is 2025-10-10 (previous Friday)
+        // Assert the expected last trading day is 2024-06-14 (previous Friday)
         let mut expected =
-            crate::data::meta::timestamp::Timestamp::from_date(2025, 10, 10, 9, 0, 0, 0).unwrap();
+            crate::data::meta::timestamp::Timestamp::from_date(2024, 6, 14, 9, 0, 0, 0).unwrap();
         assert_eq!(last.only_date(), expected.only_date());
-        date = crate::data::meta::timestamp::Timestamp::from_date(2025, 10, 13, 9, 0, 0, 1).unwrap();
-        last = last_trading_day(date);
-        expected = crate::data::meta::timestamp::Timestamp::from_date(2025, 10, 13, 9, 0, 0, 0).unwrap();
+        date = crate::data::meta::timestamp::Timestamp::from_date(2024, 6, 17, 9, 0, 0, 1).unwrap();
+        last = last_trading_day(date, Some(debug_ts));
+        expected = crate::data::meta::timestamp::Timestamp::from_date(2024, 6, 17, 9, 0, 0, 0).unwrap();
         assert_eq!(last.only_date(), expected.only_date());
         Ok(())
     }

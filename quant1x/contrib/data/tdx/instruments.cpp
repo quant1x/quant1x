@@ -36,7 +36,7 @@ constexpr int SECURITY_LIST_PRE_REQUEST_MAX = 1600;  ///< 单次请求最大证�
 // 内存缓存: symbol -> Instrument
 // RollingOnce 保证每日首次调用时初始化, 长期运行每天自动重新加载
 // ============================================================
-static auto security_once = RollingOnce::create("tdx-instruments", quant1x::data::meta::cron_expr_daily_9am);
+static auto security_once = RollingOnce::create("tdx-instruments", quant1x::config::GLOBAL_CRON_EXPR_DAILY_INIT);
 static std::mutex g_security_mutex;
 static tsl::robin_map<std::string, quant1x::data::meta::Instrument> g_security_map;
 

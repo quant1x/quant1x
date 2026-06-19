@@ -17,9 +17,8 @@ use crate::runtime::RollingOnce;
 use super::calendar;
 use super::exchange::Exchange;
 use super::region::Region;
-use super::timestamp::{
-    Timestamp, MILLISECONDS_PER_MINUTE, PRE_MARKET_HOUR, PRE_MARKET_MINUTE,
-};
+use super::timestamp::{Timestamp, MILLISECONDS_PER_MINUTE};
+use crate::config::{PRE_MARKET_HOUR, PRE_MARKET_MINUTE};
 
 // ==========================================
 // 1. 权限位掩码 (Permission) - 全属性统一
@@ -757,7 +756,7 @@ pub fn check_trading_timestamp(
 
     log::debug!("check_trading_timestamp: {}", ts);
 
-    let last_day = calendar::last_trading_day(now);
+    let last_day = calendar::last_trading_day(now, None);
 
     // 1. timestamp before last trading day
     if ts < last_day {

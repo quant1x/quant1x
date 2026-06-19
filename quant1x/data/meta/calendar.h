@@ -38,8 +38,7 @@ namespace quant1x::data::meta {
 //============================================================
 
 namespace quant1x::data::meta {
-    // 每天9点整
-    inline std::string cron_expr_daily_9am = std::format("0 {} {} * * *", quant1x::config::cn_pre_market_minute, quant1x::config::cn_pre_market_hour);
+    
 
     namespace {
 

@@ -752,7 +752,7 @@ pub fn try_run_subcommand(
             let _count = crate::data::update_all_mask(
                 crate::data::PLUGIN_MASK_BASE_DATA,
                 None,
-                crate::meta::last_trading_day(crate::meta::Timestamp::now()),
+                crate::meta::last_trading_day(crate::meta::Timestamp::now(), None),
             );
             log::info!("Updated {} base adapters", _count);
         } else {
@@ -761,7 +761,7 @@ pub fn try_run_subcommand(
             let _count = crate::data::update_all_mask(
                 crate::data::PLUGIN_MASK_BASE_DATA,
                 Some(&ks),
-                crate::meta::last_trading_day(crate::meta::Timestamp::now()),
+                crate::meta::last_trading_day(crate::meta::Timestamp::now(), None),
             );
             log::info!("Updated {} selected base adapters", _count);
         }
@@ -783,7 +783,7 @@ pub fn try_run_subcommand(
             let _count = crate::data::update_all_mask(
                 crate::data::PLUGIN_MASK_FEATURE,
                 None,
-                crate::meta::last_trading_day(crate::meta::Timestamp::now()),
+                crate::meta::last_trading_day(crate::meta::Timestamp::now(), None),
             );
             log::info!("Updated {} feature adapters", _count);
         } else {
@@ -792,7 +792,7 @@ pub fn try_run_subcommand(
             let _count = crate::data::update_all_mask(
                 crate::data::PLUGIN_MASK_FEATURE,
                 Some(&ks),
-                crate::meta::last_trading_day(crate::meta::Timestamp::now()),
+                crate::meta::last_trading_day(crate::meta::Timestamp::now(), None),
             );
             log::info!("Updated {} selected feature adapters", _count);
         }

@@ -94,7 +94,7 @@ pub fn checkout_transaction_data(
 pub fn resolve_transaction_date(date: Option<&str>) -> Timestamp {
     match date {
         Some(d) => Timestamp::parse(d).unwrap_or_else(|_| Timestamp::now()),
-        None => crate::data::meta::calendar::last_trading_day(Timestamp::now()),
+        None => crate::data::meta::calendar::last_trading_day(Timestamp::now(), None),
     }
 }
 

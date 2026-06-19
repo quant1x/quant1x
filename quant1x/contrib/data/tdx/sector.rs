@@ -29,7 +29,7 @@ static SECTOR_CACHE: Lazy<Mutex<Option<Vec<Sector>>>> = Lazy::new(|| Mutex::new(
 /// 与 Python get_sector_filename() 对齐: {meta_path}/blocks.{last_trading_day}
 pub fn get_sector_filename() -> String {
     let current_date = crate::data::meta::Timestamp::now();
-    let cache_date = crate::data::meta::calendar::last_trading_day(current_date).only_date();
+    let cache_date = crate::data::meta::calendar::last_trading_day(current_date, None).only_date();
     let filename = format!("blocks.{}", cache_date);
     let meta_path = crate::config::get_meta_path();
     format!("{}/{}", meta_path, filename)

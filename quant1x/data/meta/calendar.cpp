@@ -64,7 +64,7 @@ namespace quant1x::data::meta {
         }
     }  // namespace detail
 
-    inline auto global_calendar_once = RollingOnce::create("meta-calendar", cron_expr_daily_9am);
+    inline auto global_calendar_once = RollingOnce::create("meta-calendar", quant1x::config::GLOBAL_CRON_EXPR_DAILY_INIT);
     inline std::vector<std::string> global_calendars_string    = {};
     inline std::vector<Timestamp>   global_calendars_timestamp = {};
 

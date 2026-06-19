@@ -62,7 +62,7 @@ namespace quant1x::contrib::data::tdx::sector {
     // 缓存: 通过 RollingOnce 保证每日首次调用时初始化一次
     // ============================================================
 
-    static auto sector_once = RollingOnce::create("tdx-sector", meta::cron_expr_daily_9am);
+    static auto sector_once = RollingOnce::create("tdx-sector", quant1x::config::GLOBAL_CRON_EXPR_DAILY_INIT);
     static std::vector<schema::Sector> g_cached_sectors;
     static tsl::robin_map<std::string, schema::Sector> g_cached_sector_map;
 

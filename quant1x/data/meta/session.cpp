@@ -308,7 +308,7 @@ TradingSession latest_session_by_exchange(Exchange exchange) {
 
 /// 今日盘前初始化时间戳 (每日仅计算一次)
 static Timestamp ts_today_init_cache = Timestamp::zero();
-static auto ts_today_once = RollingOnce::create("session-today-init", cron_expr_daily_9am);
+static auto ts_today_once = RollingOnce::create("session-today-init", quant1x::config::GLOBAL_CRON_EXPR_DAILY_INIT);
 
 Timestamp get_today() {
     ts_today_once->Do([]() {
