@@ -504,14 +504,14 @@ set(quant1x-headers
     # level1
     quant1x/contrib/data/tdx/level1/std/minute_time.h
 
-    # tdx adapters (TODO: xdxr, chips, kline_raw, f10 API migration pending)
+    # tdx adapters (TODO: xdxr, chips, bar_raw, f10 API migration pending)
     quant1x/contrib/data/tdx/xdxr.h
-    # quant1x/contrib/data/tdx/kline_raw.h
-    quant1x/contrib/data/tdx/kline.h
+    # quant1x/contrib/data/tdx/bar_raw.h
+    quant1x/contrib/data/tdx/bar.h
     quant1x/contrib/data/tdx/trans.h
     quant1x/contrib/data/tdx/minute.h
     quant1x/contrib/data/tdx/chips.h
-    quant1x/contrib/data/tdx/kline_minute.h
+    quant1x/contrib/data/tdx/bar_minute.h
     quant1x/contrib/data/tdx/instruments.h
     quant1x/contrib/data/tdx/datasource.h
     quant1x/contrib/data/tdx/sector.h
@@ -643,12 +643,12 @@ set(quant1x-sources
 
     # tdx adapters (TODO: chips, f10, history API migration pending)
     quant1x/contrib/data/tdx/xdxr.cpp
-    quant1x/contrib/data/tdx/kline_raw.cpp
-    quant1x/contrib/data/tdx/kline.cpp
+    quant1x/contrib/data/tdx/bar_raw.cpp
+    quant1x/contrib/data/tdx/bar.cpp
     quant1x/contrib/data/tdx/trans.cpp
     quant1x/contrib/data/tdx/minute.cpp
     # quant1x/contrib/data/tdx/chips.cpp
-    quant1x/contrib/data/tdx/kline_minute.cpp
+    quant1x/contrib/data/tdx/bar_minute.cpp
     quant1x/contrib/data/tdx/instruments.cpp
     quant1x/contrib/data/tdx/datasource.cpp
     quant1x/contrib/data/tdx/sector.cpp

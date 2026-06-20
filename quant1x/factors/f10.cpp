@@ -4,7 +4,7 @@
 #include <quant1x/data/xdxr.h>
 #include <quant1x/factors/f10.h>
 #include <quant1x/factors/base_compat.h>
-#include <quant1x/contrib/data/tdx/kline.h>
+#include <quant1x/contrib/data/tdx/bar.h>
 #include <quant1x/factors/notice.h>
 #include <quant1x/factors/financial_report.h>
 #include <quant1x/factors/share_holder.h>

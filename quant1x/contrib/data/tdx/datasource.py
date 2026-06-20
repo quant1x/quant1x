@@ -14,7 +14,7 @@ from quant1x.data.schema import Sector, Bar, Transaction, Direction
 from quant1x.log import logger
 from . import sector
 from .instruments import get_instrument_info
-from .kline import get_cross_section_forward_adjusted_klines
+from .bar import get_cross_section_forward_adjusted_klines
 from .trans import checkout_transaction_data
 from ._constants import ALL_INDEX_LIST
 

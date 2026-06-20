@@ -45,7 +45,7 @@ func (req *BlockFileContext) Serialize() []byte {
 	_ = binary.Write(buf, binary.LittleEndian, req.Start)
 	_ = binary.Write(buf, binary.LittleEndian, req.Size)
 	buf.Write(req.BlockFilename[:])
-	return tdx.BuildRequest(req.Command(), PacketTypeRequest, buf.Bytes())
+	return tdx.BuildRequest(req.Command(), tdx.PacketTypeRequest, buf.Bytes())
 }
 
 func (req *BlockFileContext) Command() tdx.StdCommand {

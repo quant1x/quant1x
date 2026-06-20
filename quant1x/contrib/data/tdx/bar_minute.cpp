@@ -1,4 +1,4 @@
-#include <quant1x/contrib/data/tdx/kline_minute.h>
+#include <quant1x/contrib/data/tdx/bar_minute.h>
 #include <quant1x/contrib/data/tdx/client.h>
 #include <quant1x/contrib/data/tdx/level1/std/security_bars.h>
 #include <quant1x/config/base.h>

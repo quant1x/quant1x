@@ -193,7 +193,7 @@ fn apply_forward_adjustment_for_event(
 /// 从原始K线响应转换为 Bar 列表
 /// 对应 Python 中 fetch_kline_raw 返回 List[Bar] 后的转换逻辑
 fn fetch_kline_raw_as_bars(inst: &Instrument, start: u32, count: u16) -> Vec<Bar> {
-    let resp = match super::kline_raw::fetch_kline_raw(inst, start, count) {
+    let resp = match super::bar_raw::fetch_kline_raw(inst, start, count) {
         Some(r) => r,
         None => return Vec::new(),
     };

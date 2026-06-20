@@ -2,7 +2,7 @@
 #include <quant1x/formula.h>
 #include <quant1x/pandas/dataframe.h>
 #include <quant1x/factors/factory.h>
-#include <quant1x/contrib/data/tdx/kline.h>
+#include <quant1x/contrib/data/tdx/bar.h>
 #include <fmt/format.h>
 
 #include "no0.h"

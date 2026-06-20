@@ -1,6 +1,6 @@
 #include <fmt/format.h>
 #include <quant1x/backtest/backtest.h>
-#include <quant1x/contrib/data/tdx/kline.h>
+#include <quant1x/contrib/data/tdx/bar.h>
 #include <user/no0.h>
 #include <user/strategy-no0.h>
 

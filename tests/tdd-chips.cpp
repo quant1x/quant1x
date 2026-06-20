@@ -27,7 +27,7 @@ TEST_CASE("load-chips", "[chips]") {
 }
 
 #include <quant1x/factors/base_compat.h>
-#include <quant1x/contrib/data/tdx/kline.h>
+#include <quant1x/contrib/data/tdx/bar.h>
 #include <quant1x/factors/f10.h>
 #include <quant1x/std/safe.h>
 

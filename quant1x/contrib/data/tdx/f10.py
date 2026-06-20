@@ -25,7 +25,7 @@ from .client import get_std_conn
 from . import protocol
 from .level1 import FinanceInfoContext
 from .xdxr import get_xdxr_list
-from .kline import ipo_date_from_xdxrs
+from .bar import ipo_date_from_xdxrs
 from . import share_holder
 from . import financial_report
 from . import notice

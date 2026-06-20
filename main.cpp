@@ -13,12 +13,12 @@
 #include <quant1x/runtime/core.h>
 
 // TDX 数据适配器 — 显式注册以强制 linker 拉入对应目标文件
-#include <quant1x/contrib/data/tdx/kline.h>
-#include <quant1x/contrib/data/tdx/kline_minute.h>
+#include <quant1x/contrib/data/tdx/bar.h>
+#include <quant1x/contrib/data/tdx/bar_minute.h>
 #include <quant1x/contrib/data/tdx/trans.h>
 #include <quant1x/contrib/data/tdx/minute.h>
 #include <quant1x/contrib/data/tdx/xdxr.h>
-#include <quant1x/contrib/data/tdx/kline_raw.h>
+#include <quant1x/contrib/data/tdx/bar_raw.h>
 // #if HAVE_MIMALLOC
 // #include <mimalloc.h>
 // #endif

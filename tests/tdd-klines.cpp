@@ -1,11 +1,11 @@
 #include <quant1x/test/test.h>
 #include <quant1x/data/meta/timestamp.h>
 #include <quant1x/data/kline_raw.h>
-#include <quant1x/contrib/data/tdx/kline.h>
+#include <quant1x/contrib/data/tdx/bar.h>
 #include <quant1x/data/kline_minute.h>
 #include <quant1x/pandas/dataframe.h>
 #include <quant1x/factors/base_compat.h>
-#include <quant1x/contrib/data/tdx/kline.h>
+#include <quant1x/contrib/data/tdx/bar.h>
 
 TEST_CASE("download-kline-raw", "[data]") {
     std::string code = "sz300773";

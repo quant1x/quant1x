@@ -1,7 +1,7 @@
 #include <quant1x/test/test.h>
 #include <quant1x/datasets/xdxr.h>
 #include <quant1x/datasets/xdxr_adjust_factor.h>
-#include <quant1x/contrib/data/tdx/kline.h>
+#include <quant1x/contrib/data/tdx/bar.h>
 
 #include <ranges>
 #include <quant1x/datasets/kline.h>

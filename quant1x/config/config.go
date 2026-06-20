@@ -93,38 +93,38 @@ func GetMinutePath() string {
 	return filepath.Join(core.DefaultCachePath(), "minutes")
 }
 
-// GetXdxrFilename 根据证券代码生成对应的除权除息数据文件路径
+// // GetXdxrFilename 根据证券代码生成对应的除权除息数据文件路径
+// //
+// //	参数 code: 8位证券代码
+// //	返回: 完整的文件路径字符串
+// //	如果证券代码长度不为8位, 会触发panic
+// func GetXdxrFilename(code string) string {
+// 	if len(code) != 8 {
+// 		panic("invalid security code length")
+// 	}
+// 	p := filepath.Join(GetXdxrPath(), CacheIdPath(code)+".csv")
+// 	return filepath.Clean(p)
+// }
 //
-//	参数 code: 8位证券代码
-//	返回: 完整的文件路径字符串
-//	如果证券代码长度不为8位, 会触发panic
-func GetXdxrFilename(code string) string {
-	if len(code) != 8 {
-		panic("invalid security code length")
-	}
-	p := filepath.Join(GetXdxrPath(), CacheIdPath(code)+".csv")
-	return filepath.Clean(p)
-}
-
-func GetKlineFilename(code string, forward bool) string {
-	if len(code) != 8 {
-		panic("invalid security code length")
-	}
-	ext := "raw"
-	if forward {
-		ext = "csv"
-	}
-	p := filepath.Join(GetDayPath(), CacheIdPath(code)+"."+ext)
-	return filepath.Clean(p)
-}
-
-func GetKlineFilenameEx(code, freq string) string {
-	if len(code) != 8 {
-		panic("invalid security code length")
-	}
-	p := filepath.Join(GetKlinePath(freq), CacheIdPath(code)+".csv")
-	return filepath.Clean(p)
-}
+// func GetKlineFilename(code string, forward bool) string {
+// 	if len(code) != 8 {
+// 		panic("invalid security code length")
+// 	}
+// 	ext := "raw"
+// 	if forward {
+// 		ext = "csv"
+// 	}
+// 	p := filepath.Join(GetDayPath(), CacheIdPath(code)+"."+ext)
+// 	return filepath.Clean(p)
+// }
+//
+// func GetKlineFilenameEx(code, freq string) string {
+// 	if len(code) != 8 {
+// 		panic("invalid security code length")
+// 	}
+// 	p := filepath.Join(GetKlinePath(freq), CacheIdPath(code)+".csv")
+// 	return filepath.Clean(p)
+// }
 
 func GetMinuteFilename(code, cacheDate string) string {
 	if len(code) != 8 {

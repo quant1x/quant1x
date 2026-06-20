@@ -14,10 +14,10 @@ pub mod datasource;
 pub use datasource::*;
 pub mod instruments;
 pub use instruments::*;
-pub mod kline_raw;
-pub use kline_raw::*;
-pub mod kline;
-pub use kline::*;
+pub mod bar_raw;
+pub use bar_raw::*;
+pub mod bar;
+pub use bar::*;
 pub mod trans;
 pub use trans::*;
 pub mod sector;
@@ -29,7 +29,7 @@ pub fn init() {
     // register xdxr, day kline, minute kline, transaction adapters
     // ignore failures — each sub-init handles its own logging
     xdxr::init();
-    kline::init();
+    bar::init();
     //kline_minute::init();
     //trans::init();
 }

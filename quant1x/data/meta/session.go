@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/quant1x/quant1x/quant1x/config"
-	"github.com/quant1x/quant1x/quant1x/data"
 	"github.com/quant1x/quant1x/quant1x/runtime"
 	"github.com/quant1x/quant1x/quant1x/std"
 )
@@ -654,7 +653,7 @@ func InitUSSession() (*TradingSession, error) {
 var (
 	tradingHoursMap     = make(map[string]*TradingSession)
 	tradingHoursDefault *TradingSession
-	tradingHoursOnce    = runtime.RollingOnceFromSpec(config.CronExprDaily9am) // 每天9:00重置
+	tradingHoursOnce    = runtime.RollingOnceFromSpec(config.GLOBAL_CRON_EXPR_DAILY_INIT) // 每天9:00重置
 )
 
 // GetTradingHoursMap 获取交易时段映射
@@ -778,7 +777,7 @@ func CheckTradingTimestamp(exchange Exchange, lastModified *Timestamp) RuntimeSt
 
 var (
 	tsTodayInit     Timestamp
-	tsTodayInitOnce = runtime.RollingOnceFromSpec(data.CnCronExprDailyInit) // 每天9:00重置
+	tsTodayInitOnce = runtime.RollingOnceFromSpec(config.GLOBAL_CRON_EXPR_DAILY_INIT) // 每天9:00重置
 )
 
 // GetTodayInit 获取今日初始化时间

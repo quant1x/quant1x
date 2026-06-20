@@ -1,6 +1,6 @@
 #include <quant1x/test/test.h>
 #include <quant1x/factors/history.h>
-#include <quant1x/contrib/data/tdx/kline.h>
+#include <quant1x/contrib/data/tdx/bar.h>
 #include <quant1x/dataframe/dataframe.h>
 #include <quant1x/formula.h>
 #include <quant1x/datasets/trans.h>

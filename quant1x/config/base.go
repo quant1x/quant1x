@@ -12,5 +12,5 @@ const (
 
 var (
 	// 每天9点整
-	CronExprDaily9am = fmt.Sprintf("0 %d %d * * *", Cn_pre_market_minute, Cn_pre_market_hour)
+	GLOBAL_CRON_EXPR_DAILY_INIT = fmt.Sprintf("0 %d %d * * *", Cn_pre_market_minute, Cn_pre_market_hour)
 )

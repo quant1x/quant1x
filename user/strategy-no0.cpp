@@ -1,5 +1,5 @@
 #include "strategy-no0.h"
-#include <quant1x/contrib/data/tdx/kline.h>
+#include <quant1x/contrib/data/tdx/bar.h>
 #include <quant1x/factors/history.h>
 #include <quant1x/factors/base_compat.h>
 #include <quant1x/formula.h>

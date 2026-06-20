@@ -99,7 +99,7 @@ pub fn init() {
     // register xdxr, day kline, minute kline, transaction adapters
     // ignore failures — each sub-init handles its own logging
     crate::contrib::data::tdx::xdxr::init();
-    crate::contrib::data::tdx::kline::init();
+    crate::contrib::data::tdx::bar::init();
     //kline_minute::init();
     //trans::init();
 }

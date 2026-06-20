@@ -20,7 +20,7 @@ from . import protocol
 from .level1 import KLineType, SECURITY_BARS_PRE_REQUEST_MAX
 import pandas as pd
 from quant1x.log import logger
-from .kline_raw import BarRaw, checkout_kline_raw, fetch_kline_raw
+from .bar_raw import BarRaw, checkout_kline_raw, fetch_kline_raw
 from .instruments import get_instrument_info
 
 

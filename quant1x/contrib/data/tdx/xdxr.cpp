@@ -1,6 +1,6 @@
 #include <quant1x/contrib/data/tdx/xdxr.h>
 #include <quant1x/contrib/data/tdx/client.h>
-#include <quant1x/contrib/data/tdx/kline.h>
+#include <quant1x/contrib/data/tdx/bar.h>
 #include <quant1x/contrib/data/tdx/level1/std/xdxr_info.h>
 #include <quant1x/config/base.h>
 #include <spdlog/spdlog.h>

@@ -5,7 +5,7 @@
 #include <quant1x/std/api.h>
 #include <quant1x/data/adapter.h>
 #include <quant1x/factors/base_compat.h>
-#include <quant1x/contrib/data/tdx/kline.h>
+#include <quant1x/contrib/data/tdx/bar.h>
 
 struct History {
     std::string Date;                 // 日期, 数据落地的日期

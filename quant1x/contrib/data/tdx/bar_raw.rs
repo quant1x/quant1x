@@ -1,7 +1,7 @@
 // Copyright (c) Quant1X <wangfengxy@sina.cn>.
 // Licensed under the MIT License.
 //
-// kline_raw — 未复权K线数据适配器, 与 Python contrib/data/tdx/kline_raw.py 对齐
+// kline_raw — 未复权K线数据适配器, 与 Python contrib/data/tdx/bar_raw.py 对齐
 //
 // 不依赖 crate::contrib::data::tdx::standard, 所有类型均使用 tdx/ 本地模块定义. 
 
