@@ -5,15 +5,15 @@ import (
 
 	"github.com/quant1x/quant1x/quant1x/config"
 	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/level1/std"
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/tdxproto"
 	"github.com/quant1x/quant1x/quant1x/data"
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
 	"github.com/quant1x/quant1x/quant1x/encoding"
 	logger "github.com/quant1x/quant1x/quant1x/log"
 )
 
 // tdxFetchRawSecurityBars 执行底层 level1 SecurityBarsContext 请求并返回原始响应列表(未转换).
-func tdxFetchRawSecurityBars(securityCode exchange.InstrumentInfo, category std.KLineType, start, count uint16) ([]std.SecurityBar, error) {
-	conn, release, err := std.GetStdConnection()
+func tdxFetchRawSecurityBars(securityCode data.InstrumentInfo, category std.KLineType, start, count uint16) ([]std.SecurityBar, error) {
+	conn, release, err := GetStdConnection()
 	if err != nil {
 		return nil, fmt.Errorf("level1 client acquire failed: %w", err)
 	}
@@ -24,19 +24,18 @@ func tdxFetchRawSecurityBars(securityCode exchange.InstrumentInfo, category std.
 		return nil, fmt.Errorf("nil connection from level1 client")
 	}
 
-	req := std.NewSecurityBarsRequest(securityCode, category, start, count)
-	resp := std.NewSecurityBarsResponse(req.IsIndex, uint16(req.Param.Category))
-	if err := std.TransactMessageSync(conn, req, resp); err != nil {
+	msg := std.NewSecurityBarsContext(securityCode, category, start, count)
+	if err := tdxproto.TransactMessageSync(conn, msg); err != nil {
 		return nil, fmt.Errorf("security bars request failed: %w", err)
 	}
-	return resp.List, nil
+	return msg.List, nil
 }
 
 // Update 对应 C++ DataKLine::Update 的行为: 读取本地缓存, 确定时间窗口, 分页拉取 level1 数据,
 // 反转与合并结果, 在适当时机应用前复权, 并写回缓存文件.
-func tdxUpdateKLine(symbol exchange.InstrumentInfo, _date exchange.Timestamp) {
+func tdxUpdateKLine(symbol data.InstrumentInfo, _date data.Timestamp) {
 	_ = _date
-	if symbol.Type == exchange.SecurityTypeUnknown {
+	if symbol.Type == data.SecurityTypeUnknown {
 		logger.Debugf("[DataKLine] unknown security type for code %s", symbol.Symbol())
 		return
 	}
@@ -54,7 +53,7 @@ func tdxUpdateKLine(symbol exchange.InstrumentInfo, _date exchange.Timestamp) {
 	adjustTimes := 0
 
 	// 默认起始日期(使用 datasets.MarketFirstDate, 与 C++ 的 market_first_date 等价)
-	currentStartDate := exchange.GetFirstMarketDate(symbol.Exchange)
+	currentStartDate := data.GetFirstMarketDate(symbol.Exchange)
 	if klinesLength > 0 {
 		if klinesOffsetDays > klinesLength {
 			klinesOffsetDays = klinesLength
@@ -62,7 +61,7 @@ func tdxUpdateKLine(symbol exchange.InstrumentInfo, _date exchange.Timestamp) {
 		// use the cached kline at offset as the start date
 		idx := klinesLength - klinesOffsetDays
 		if idx >= 0 && idx < klinesLength {
-			if ts, err := exchange.ParseTimestamp(cacheKLines[idx].Date); err == nil {
+			if ts, err := data.ParseTimestamp(cacheKLines[idx].Date); err == nil {
 				currentStartDate = ts.PreMarketTime()
 			}
 		}
@@ -80,16 +79,16 @@ func tdxUpdateKLine(symbol exchange.InstrumentInfo, _date exchange.Timestamp) {
 		}
 		firstNotAdjustedBar := cacheKLines[firstNotAdjustedIdx]
 		adjustTimes = firstNotAdjustedBar.AdjustmentCount
-		currentStartDate, _ = exchange.ParseTimestamp(firstNotAdjustedBar.Date)
+		currentStartDate, _ = data.ParseTimestamp(firstNotAdjustedBar.Date)
 		logger.Debugf("[DataKLine] [%s]: cached klines=%d, adjustTimes=%d, start from %s", symbol.Symbol(), klinesLength, adjustTimes, currentStartDate.OnlyDate())
 	}
 
 	// 2. 确定结束日期
 	// 使用当前时间的盘前时间作为结束日期, 并生成每日序列作为拉取区间(C++ 使用交易日历的 date_range)
-	currentEndDate := exchange.NowTimestamp().PreMarketTime()
+	currentEndDate := data.NowTimestamp().PreMarketTime()
 	startT := currentStartDate
 	endT := currentEndDate
-	var ts []exchange.Timestamp
+	var ts []data.Timestamp
 	for t := startT; !t.Greater(endT); t = t.Offset(24, 0, 0, 0) {
 		ts = append(ts, t)
 	}
@@ -142,7 +141,7 @@ func tdxUpdateKLine(symbol exchange.InstrumentInfo, _date exchange.Timestamp) {
 	incremental := make([]data.KLine, 0, elementCount)
 	for _, vec := range hs {
 		for _, row := range vec {
-			dts := exchange.PreMarketTimestamp(row.Year, row.Month, row.Day)
+			dts := data.PreMarketTimestamp(row.Year, row.Month, row.Day)
 			if dts.Less(startT) || dts.Greater(endT) {
 				continue
 			}
@@ -200,7 +199,7 @@ func (d *DataKLine) Key() string     { return "day" }
 func (d *DataKLine) Name() string    { return "日K线" }
 func (d *DataKLine) Usage() string   { return "日K线" }
 
-func (d *DataKLine) Print(code exchange.InstrumentInfo, dates ...exchange.Timestamp) {
+func (d *DataKLine) Print(code data.InstrumentInfo, dates ...data.Timestamp) {
 	// no-op, matches C++ stub
 	_ = code
 	_ = dates
@@ -209,7 +208,7 @@ func (d *DataKLine) Print(code exchange.InstrumentInfo, dates ...exchange.Timest
 // Update mirrors the C++ DataKLine::Update behavior: read local cache, determine
 // date window, page-fetch from level1, reverse/merge results, apply forward
 // adjustments when appropriate, and save back the cache file.
-func (d *DataKLine) Update(code exchange.InstrumentInfo, _date exchange.Timestamp) {
+func (d *DataKLine) Update(code data.InstrumentInfo, _date data.Timestamp) {
 	tdxUpdateKLine(code, _date)
 }
 
