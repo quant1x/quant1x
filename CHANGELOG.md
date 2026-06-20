@@ -3,9 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.43] - 2026-06-21
+### Changed
+- 删除过期的演示代码
+
 ## [0.7.42] - 2026-06-21
 ### Changed
 - 补充开发规范缺失的目录结构示意图
+- release v0.7.42
 
 ## [0.7.41] - 2026-06-20
 ### Changed
@@ -1959,7 +1964,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.42...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.43...HEAD
+[0.7.43]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.42...v0.7.43
 [0.7.42]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.41...v0.7.42
 [0.7.41]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.40...v0.7.41
 [0.7.40]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.39...v0.7.40
