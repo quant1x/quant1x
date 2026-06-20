@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.45] - 2026-06-21
+### Changed
+- c++: 删除废弃的示例代码
+
 ## [0.7.44] - 2026-06-21
 ### Changed
 - go: 初步与新的数据框架对齐
@@ -16,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - seek/skip 添加 assert 边界检查
 - ensure_capacity 替换为 prepare_write 增加 overflow 检查，防止写入越界
 - 修复 get_array 返回 std::array 时的重载匹配编译错误
+- release v0.7.44
 
 ## [0.7.43] - 2026-06-21
 ### Changed
@@ -1979,7 +1984,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.44...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.45...HEAD
+[0.7.45]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.44...v0.7.45
 [0.7.44]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.43...v0.7.44
 [0.7.43]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.42...v0.7.43
 [0.7.42]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.41...v0.7.42
