@@ -304,11 +304,14 @@ namespace quant1x::contrib::data::tdx::sector {
             u8 tmpBuf2[400*7];
             bs1.get_array(tmpBuf2);
             BinaryStream bs2(tmpBuf2);
-            bi.constituent_stocks.resize(bi.count); // 成分股
-            for (int j = 0; j < bi.count; j++) {
+            // 扫描全部400个槽位（与Rust/Python一致），不依赖num字段
+            for (int j = 0; j < 400; j++) {
                 std::string symbol = bs2.get_string(7);
-                bi.constituent_stocks[j] = symbol;
+                if (!symbol.empty()) {
+                    bi.constituent_stocks.emplace_back(symbol);
+                }
             }
+            bi.count = u16(bi.constituent_stocks.size());
             list.emplace_back(bi);
         }
         in.close();
@@ -506,7 +509,6 @@ namespace quant1x::contrib::data::tdx::sector {
         tsl::robin_map<std::string, std::string> block2Name{};
         for(auto const & v : blockInfos) {
             block2Name[v.block] = v.name;
-            spdlog::debug("[parse_and_generate_block_file/block2Name] {} -> code={}, name={}", v.block, v.code, v.name);
         }
         auto bks = {
             BLOCK_DEFAULT,
@@ -537,7 +539,6 @@ namespace quant1x::contrib::data::tdx::sector {
             v->code = quant1x::data::correct_security_code(v->code);
             auto bn = v->name;
             auto it = name2block.find(bn);
-            bool is_target = (v->code == "sh880915" || bn == "昨日突涨");
             if (it != name2block.end()) {
                 auto _info = it->second;
                 std::vector<std::string> list{};
@@ -546,23 +547,16 @@ namespace quant1x::contrib::data::tdx::sector {
                         continue;
                     }
                     auto inst = quant1x::data::detect_symbol(symbol);
-                    // auto [marketId, prefix, x2] = exchange::DetectMarket(symbol);
-                    // if (marketId == exchange::ExchangeId::BeiJing) {
-                    //     continue;
-                    // }
                     list.emplace_back(inst.symbol());
                 }
-                blockInfo.count = int(_info.count);
-                blockInfo.constituent_stocks = list;
-                if (is_target) {
-                    spdlog::debug("[sector] 昨日突涨: found in name2block, stocks count={}", list.size());
+                if (!list.empty()) {
+                    blockInfo.count = int(_info.count);
+                    blockInfo.constituent_stocks = list;
+                    continue;
                 }
-                continue;
             }
-            auto &bc        = v->block;
-            if (is_target) {
-                spdlog::debug("[sector] 昨日突涨: NOT in name2block, block field='{}', checking industry...", bc);
-            }
+            // fallback: industry mapping
+            auto &bc = v->block;
             auto rawList = industry_constituent_stock_list(hys, bc);
             if (!rawList.empty()) {
                 std::vector<std::string> stockList;
@@ -572,23 +566,11 @@ namespace quant1x::contrib::data::tdx::sector {
                 }
                 blockInfo.count = u16(stockList.size());
                 blockInfo.constituent_stocks = stockList;
-                if (is_target) {
-                    spdlog::debug("[sector] 昨日突涨: got {} stocks from industry, block='{}'", stockList.size(), bc);
-                }
-            } else {
-                if (is_target) {
-                    spdlog::debug("[sector] 昨日突涨: industry_constituent_stock_list returned EMPTY for block='{}'", bc);
-                }
             }
         }
         blockInfos.erase(std::remove_if(blockInfos.begin(),
                                         blockInfos.end(),
-                                        [](const quant1x::data::schema::Sector &bi) {
-                                            if (bi.code == "sh880915") {
-                                                spdlog::debug("[sector] 昨日突涨: ERASED because constituent_stocks is empty");
-                                            }
-                                            return bi.constituent_stocks.empty();
-                                        }),
+                                        [](const quant1x::data::schema::Sector &bi) {return bi.constituent_stocks.empty();}),
                          blockInfos.end());
         return blockInfos;
     }
