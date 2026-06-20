@@ -416,48 +416,6 @@ std::vector<quant1x::data::schema::Bar> get_cross_section_forward_adjusted_kline
 }
 
 // =============================
-// checkout_klines / klines_forward_adjusted_to_date
-//   两者等效: DataKLine::Update 写入的缓存已是前复权数据
-// =============================
-
-/// 内部 helper: Bar -> quant1x::data::KLine
-static quant1x::data::KLine bar_to_kline(const quant1x::data::schema::Bar& bar, const std::string& code) {
-    quant1x::data::KLine kline;
-    kline.date   = bar.date;
-    kline.code   = code;
-    kline.open   = bar.open;
-    kline.close  = bar.close;
-    kline.high   = bar.high;
-    kline.low    = bar.low;
-    kline.volume = bar.volume;
-    kline.amount = bar.amount;
-    return kline;
-}
-
-static std::vector<quant1x::data::KLine> bars_to_klines(
-        std::vector<quant1x::data::schema::Bar>&& bars, const std::string& code) {
-    std::vector<quant1x::data::KLine> result;
-    result.reserve(bars.size());
-    for (auto& bar : bars) {
-        result.push_back(bar_to_kline(bar, code));
-    }
-    return result;
-}
-
-std::vector<quant1x::data::KLine> checkout_klines(const std::string& code, const std::string& date) {
-    std::string sec_code = quant1x::data::correct_security_code(code);
-    auto inst_opt = instruments::get_instrument_info(sec_code);
-    if (!inst_opt) return {};
-    auto bars = get_cross_section_forward_adjusted_klines(*inst_opt, date);
-    return bars_to_klines(std::move(bars), sec_code);
-}
-
-std::vector<quant1x::data::KLine> klines_forward_adjusted_to_date(const std::string& code, const std::string& date) {
-    // 与 checkout_klines 等效, 缓存中已是前复权数据
-    return checkout_klines(code, date);
-}
-
-// =============================
 // DataKLine 适配器实现
 // =============================
 

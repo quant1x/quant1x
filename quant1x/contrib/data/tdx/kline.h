@@ -4,7 +4,6 @@
 
 #include <quant1x/data/adapter.h>
 #include <quant1x/data/base.h>
-#include <quant1x/data/kline.h>
 #include <quant1x/data/schema/bar.h>
 #include <quant1x/data/schema/adjustment.h>
 #include <quant1x/data/meta/instrument.h>
@@ -107,14 +106,6 @@ int check_kline_offset(const std::vector<T>& klines, const std::string& date) {
 ///   - 从已复权的 K 线缓存 CSV 读取, 按 as_of_date 过滤
 std::vector<quant1x::data::schema::Bar> get_cross_section_forward_adjusted_klines(
     const quant1x::data::meta::Instrument& inst, const std::string& as_of_date);
-
-/// 捡出截至指定日期的K线记录 (原 factors::checkout_klines, 对齐 Python)
-///   从已复权的 K 线缓存读取, 按日期过滤, 返回 data::KLine
-std::vector<quant1x::data::KLine> checkout_klines(const std::string& code, const std::string& date);
-
-/// 捡出截至指定日期的前复权K线记录 (原 factors::klines_forward_adjusted_to_date, 对齐 Python)
-///   与 checkout_klines 等效 — DataKLine::Update 写入的缓存已是前复权数据
-std::vector<quant1x::data::KLine> klines_forward_adjusted_to_date(const std::string& code, const std::string& date);
 
 /// 前复权K线适配器 (对应 Python DataKLine)
 class DataKLine : public quant1x::data::DataAdapter {
