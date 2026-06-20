@@ -3,10 +3,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.41] - 2026-06-20
+### Changed
+- fix: 修复 security_list_test 编译和链接错误
+
+- data.ExchangeBSE -> data.BSE (修正不存在常量)
+- 移除 _ = data.DataHandler() (go:linkname 依赖 tdx 包导致链接失败)
+- bar.go: 移除 gitee.com 外部依赖, exchange.Timestamp -> data.Timestamp
+- 测试改为自包含连接提供者, 直接拨号+握手, 不依赖 tdx 包 init()
+
 ## [0.7.40] - 2026-06-20
 ### Changed
 - 统一调整KLine命名为Bar
 - 新增开发规范
+- release v0.7.40
 
 ## [0.7.39] - 2026-06-20
 ### Changed
@@ -1944,7 +1954,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.40...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.41...HEAD
+[0.7.41]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.40...v0.7.41
 [0.7.40]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.39...v0.7.40
 [0.7.39]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.38...v0.7.39
 [0.7.38]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.37...v0.7.38
