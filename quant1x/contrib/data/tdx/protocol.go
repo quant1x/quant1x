@@ -1,287 +1,61 @@
+// Copyright (c) Quant1X <wangfengxy@sina.cn>.
+// Licensed under the MIT License.
+
 package tdx
 
 import (
-	"bytes"
-	"compress/zlib"
-	"encoding/binary"
-	"errors"
-	"fmt"
-	stdio "io"
-	"sync/atomic"
-
-	qio "github.com/quant1x/quant1x/quant1x/io"
-	logger "github.com/quant1x/quant1x/quant1x/log"
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/tdxproto"
 )
 
-// StdCommand 标准命令类型
-type StdCommand uint16
+// Re-export protocol types from tdxproto, 对齐 C++/Rust/Python.
+
+type StdCommand = tdxproto.StdCommand
 
 const (
-	StdCommandHeartbeat              StdCommand = 0x0004 // 心跳
-	StdCommandLogin1                 StdCommand = 0x000d // 登录1
-	StdCommandLogin2                 StdCommand = 0x0fdb // 登录2
-	StdCommandXdxrInfo               StdCommand = 0x000f // 除权除息信息
-	StdCommandFinanceInfo            StdCommand = 0x0010 // 财务信息
-	StdCommandPing                   StdCommand = 0x0015 // Ping
-	StdCommandCompanyCategory        StdCommand = 0x02cf // 公司信息分类
-	StdCommandCompanyContent         StdCommand = 0x02d0 //	公司信息内容
-	StdCommandSecurityCount          StdCommand = 0x044e // 证券数量
-	StdCommandSecurityList           StdCommand = 0x044d // 证券列表
-	StdCommandOldSecurityList        StdCommand = 0x0450 // 旧版证券列表
-	StdCommandIndexBars              StdCommand = 0x052d // 指数K线数据
-	StdCommandSecurityBars           StdCommand = 0x052d // 证券K线数据
-	StdCommandSecurityQuotesOld      StdCommand = 0x053e // 旧版证券行情数据
-	StdCommandSecurityQuotesNew      StdCommand = 0x054c // 新版证券行情数据
-	StdCommandMinuteTimeData         StdCommand = 0x051d // 分时数据
-	StdCommandBlockMeta              StdCommand = 0x02c5 // 板块元数据
-	StdCommandBlockData              StdCommand = 0x06b9 // 板块数据
-	StdCommandTransactionData        StdCommand = 0x0fc5 // 逐笔数据
-	StdCommandHistoryMinuteData      StdCommand = 0x0fb4 // 历史分时数据
-	StdCommandHistoryTransactionData StdCommand = 0x0fb5 // 历史逐笔数据
+	StdCommandHeartbeat              = tdxproto.StdCommandHeartbeat
+	StdCommandLogin1                 = tdxproto.StdCommandLogin1
+	StdCommandLogin2                 = tdxproto.StdCommandLogin2
+	StdCommandXdxrInfo               = tdxproto.StdCommandXdxrInfo
+	StdCommandFinanceInfo            = tdxproto.StdCommandFinanceInfo
+	StdCommandPing                   = tdxproto.StdCommandPing
+	StdCommandCompanyCategory        = tdxproto.StdCommandCompanyCategory
+	StdCommandCompanyContent         = tdxproto.StdCommandCompanyContent
+	StdCommandSecurityCount          = tdxproto.StdCommandSecurityCount
+	StdCommandSecurityList           = tdxproto.StdCommandSecurityList
+	StdCommandOldSecurityList        = tdxproto.StdCommandOldSecurityList
+	StdCommandIndexBars              = tdxproto.StdCommandIndexBars
+	StdCommandSecurityBars           = tdxproto.StdCommandSecurityBars
+	StdCommandSecurityQuotesOld      = tdxproto.StdCommandSecurityQuotesOld
+	StdCommandSecurityQuotesNew      = tdxproto.StdCommandSecurityQuotesNew
+	StdCommandMinuteTimeData         = tdxproto.StdCommandMinuteTimeData
+	StdCommandBlockMeta              = tdxproto.StdCommandBlockMeta
+	StdCommandBlockData              = tdxproto.StdCommandBlockData
+	StdCommandTransactionData        = tdxproto.StdCommandTransactionData
+	StdCommandHistoryMinuteData      = tdxproto.StdCommandHistoryMinuteData
+	StdCommandHistoryTransactionData = tdxproto.StdCommandHistoryTransactionData
 )
 
 const (
-	PacketTypeRequest   uint8 = 0x01
-	PacketCtrlHeartbeat uint8 = 0x02
+	PacketTypeRequest   = tdxproto.PacketTypeRequest
+	PacketCtrlHeartbeat = tdxproto.PacketCtrlHeartbeat
+	FlagZip             = tdxproto.FlagZip
+	FlagUncompressed    = tdxproto.FlagUncompressed
+	FlagZipped          = tdxproto.FlagZipped
 )
 
-const (
-	FlagZip          uint8 = 0x10                       // zip帧类型标志位
-	FlagUncompressed uint8 = 0x0C                       // 未压缩
-	FlagZipped             = FlagZip | FlagUncompressed // zip压缩
-)
+type RequestHeader = tdxproto.RequestHeader
+type ResponseHeader = tdxproto.ResponseHeader
+type FrameBase = tdxproto.FrameBase
+type BaseFrame = tdxproto.BaseFrame
 
-var seqId uint32
+var NewFrameBase = tdxproto.NewFrameBase
+var SerializeRequest = tdxproto.SerializeRequest
+var ReadResponseHeader = tdxproto.ReadResponseHeader
+var CommandToString = tdxproto.CommandToString
+var UnzipZlib = tdxproto.UnzipZlib
+var TransactMessageSync = tdxproto.TransactMessageSync
 
-func nextSequenceId() uint32 {
-	return atomic.AddUint32(&seqId, 1)
-}
-
-func command_to_string(cmd StdCommand) string {
-	switch cmd {
-	case StdCommandHeartbeat:
-		return "L1:HEARTBEAT"
-	case StdCommandLogin1:
-		return "L1:LOGIN1"
-	case StdCommandLogin2:
-		return "L1:LOGIN2"
-	case StdCommandXdxrInfo:
-		return "L1:XDXR_INFO"
-	case StdCommandFinanceInfo:
-		return "L1:FINANCE_INFO"
-	case StdCommandPing:
-		return "L1:PING"
-	case StdCommandCompanyCategory:
-		return "L1:COMPANY_CATEGORY"
-	case StdCommandCompanyContent:
-		return "L1:COMPANY_CONTENT"
-	case StdCommandSecurityCount:
-		return "L1:SECURITY_COUNT"
-	case StdCommandSecurityList:
-		return "L1:SECURITY_LIST"
-	case StdCommandSecurityBars:
-		return "L1:SECURITY_BARS"
-	case StdCommandSecurityQuotesOld:
-		return "L1:SECURITY_QUOTES_OLD"
-	case StdCommandSecurityQuotesNew:
-		return "L1:SECURITY_QUOTES_NEW"
-	case StdCommandMinuteTimeData:
-		return "L1:MINUTE_TIME_DATA"
-	case StdCommandBlockMeta:
-		return "L1:BLOCK_META"
-	case StdCommandBlockData:
-		return "L1:BLOCK_DATA"
-	case StdCommandTransactionData:
-		return "L1:TRANSACTION_DATA"
-	case StdCommandHistoryMinuteData:
-		return "L1:HISTORY_MINUTE_DATA"
-	case StdCommandHistoryTransactionData:
-		return "L1:HISTORY_TRANSACTION_DATA"
-	default:
-		return "L1:UNKNOWN_CMD"
-	}
-}
-
-// RequestHeader 请求-消息头
-type RequestHeader struct {
-	FrameType   uint8  // FrameType
-	SeqId       uint32 // 请求编号
-	PacketCtrl  uint8  // 包类型
-	BodyWireLen uint16 // 消息体长度1
-	BodyRawLen  uint16 // 消息体长度2
-	Method      uint16 // 命令字
-}
-
-func (h RequestHeader) String() string {
-	return fmt.Sprintf("{FrameType: %d, SeqId: %d, PacketCtrl: %d, BodyWireLen: %d, BodyRawLen: %d, Method: %d}",
-		h.FrameType, h.SeqId, h.PacketCtrl, h.BodyWireLen, h.BodyRawLen, h.Method)
-}
-
-// ResponseHeader 响应-消息头
-type ResponseHeader struct {
-	MagicNumber uint32 // reserved
-	FrameType   uint8  // 帧类型标志
-	SeqId       uint32 // 序列号
-	PacketCtrl  uint8  // 包控制
-	Method      uint16 // 命令字
-	BodyWireLen uint16 // 压缩后大小
-	BodyRawLen  uint16 // 解压后大小
-}
-
-func readResponseHeader(r stdio.Reader) (*ResponseHeader, error) {
-	var buf [16]byte
-	if _, err := stdio.ReadFull(r, buf[:]); err != nil {
-		return nil, err
-	}
-	hdr := &ResponseHeader{}
-	hdr.MagicNumber = binary.LittleEndian.Uint32(buf[0:4])
-	hdr.FrameType = buf[4]
-	hdr.SeqId = binary.LittleEndian.Uint32(buf[5:9])
-	hdr.PacketCtrl = buf[9]
-	hdr.Method = binary.LittleEndian.Uint16(buf[10:12])
-	hdr.BodyWireLen = binary.LittleEndian.Uint16(buf[12:14])
-	hdr.BodyRawLen = binary.LittleEndian.Uint16(buf[14:16])
-	return hdr, nil
-}
-
-type ProtocolRequest interface {
-	Serialize() []byte
-	Command() StdCommand
-	String() string
-}
-
-type ProtocolResponse interface {
-	SetHeader(*ResponseHeader)
-	Header() *ResponseHeader
-	Deserialize([]byte) error
-	String() string
-}
-
-type ResponseBase struct {
-	header ResponseHeader
-}
-
-func (b *ResponseBase) Header() *ResponseHeader {
-	return &b.header
-}
-
-func (b *ResponseBase) SetHeader(h *ResponseHeader) {
-	if h == nil {
-		b.header = ResponseHeader{}
-		return
-	}
-	b.header = *h
-}
-
-// BuildRequest 构建请求数据包
-//
-// 参数:
-//
-//	method: 标准命令类型
-//	packetType: 数据包类型
-//	payload: 请求负载数据
-//
-// 返回值:
-//
-//	构建完成的请求字节数组
-func BuildRequest(method StdCommand, packetType uint8, payload []byte) []byte {
-	seqId := nextSequenceId()
-	pkgLen := uint16(2)
-	if payload != nil {
-		pkgLen = uint16(2 + len(payload))
-	}
-	req := RequestHeader{
-		FrameType:   FlagUncompressed,
-		SeqId:       seqId,
-		PacketCtrl:  packetType,
-		BodyWireLen: pkgLen,
-		BodyRawLen:  pkgLen,
-		Method:      uint16(method),
-	}
-	buf := &bytes.Buffer{}
-	_ = binary.Write(buf, binary.LittleEndian, req)
-	if payload != nil {
-		buf.Write(payload)
-	}
-	return buf.Bytes()
-}
-
-// unzipZlib 解压zlib压缩的数据
-//
-// 参数:
-//
-//	data - 待解压的zlib压缩数据
-//
-// 返回值:
-//
-//	[]byte - 解压后的原始数据
-//	error - 解压过程中遇到的错误
-func unzipZlib(data []byte) ([]byte, error) {
-	r, err := zlib.NewReader(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
-	out := &bytes.Buffer{}
-	if _, err := stdio.Copy(out, r); err != nil {
-		return nil, err
-	}
-	return out.Bytes(), nil
-}
-
-// TransactMessageSync 处理请求并获取响应
-//
-// 参数:
-//
-//	conn - 已建立的 TCP 连接
-//	req - 待发送的请求对象
-//	resp - 用于接收响应数据的响应对象
-//
-// 返回值:
-//
-//	error - 处理过程中遇到的错误
-func TransactMessageSync[T ProtocolRequest, R ProtocolResponse](conn_ *qio.Connection, req T, resp R) error {
-	conn := conn_.Conn()
-	if conn == nil {
-		return errors.New("nil connection")
-	}
-
-	cmd := command_to_string(req.Command())
-	payload := req.Serialize()
-	logger.Debugf("[%s] send request bytes: %d", cmd, len(payload))
-	logger.Debugf("[%s] request: %s", cmd, req.String())
-
-	if _, err := conn.Write(payload); err != nil {
-		return err
-	}
-
-	hdr, err := readResponseHeader(conn)
-	if err != nil {
-		return err
-	}
-	resp.SetHeader(hdr)
-	logger.Debugf("[%s] response header: %+v", cmd, *hdr)
-
-	if hdr.BodyWireLen == 0 {
-		return nil
-	}
-
-	body := make([]byte, hdr.BodyWireLen)
-	if _, err := stdio.ReadFull(conn, body); err != nil {
-		return err
-	}
-
-	if hdr.BodyWireLen != hdr.BodyRawLen {
-		body, err = unzipZlib(body)
-		if err != nil {
-			return err
-		}
-	}
-
-	logger.Debugf("[%s] response body length: %d", cmd, len(body))
-	if err := resp.Deserialize(body); err != nil {
-		return err
-	}
-	logger.Debugf("[%s] response: %s", cmd, resp.String())
-	return nil
-}
+// Keep internal references working
+var command_to_string = tdxproto.CommandToString
+var readResponseHeader = tdxproto.ReadResponseHeader
+var unzipZlib = tdxproto.UnzipZlib

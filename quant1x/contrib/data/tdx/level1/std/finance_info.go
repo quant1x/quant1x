@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/tdxproto"
+	"github.com/quant1x/quant1x/quant1x/data"
 	"github.com/quant1x/quant1x/quant1x/std"
 )
 
@@ -14,35 +15,100 @@ const (
 	FinanceInfoPerRequestMax = 100 // 单次请求的最大记录数
 )
 
-// FinanceRequest 请求结构
-type FinanceRequest struct {
-	Codes []exchange.InstrumentInfo // 证券代码列表
+// FinanceInfoContext 对齐 C++/Rust/Python FinanceRequest/FinanceResponse, 合并请求和响应.
+type FinanceInfoContext struct {
+	tdxproto.FrameBase
+	Codes []data.InstrumentInfo // 请求: 证券代码列表
+	RespCount uint16             // 响应: 记录数量
+	List  []FinanceInfo          // 响应: 解析结果
 }
 
-func (r FinanceRequest) Serialize() []byte {
+// NewFinanceInfoContext 构造财务信息请求, 对齐 C++/Rust.
+func NewFinanceInfoContext(codes []data.InstrumentInfo) *FinanceInfoContext {
+	return &FinanceInfoContext{
+		FrameBase: tdxproto.NewFrameBase(tdxproto.StdCommandFinanceInfo, tdxproto.FlagUncompressed, tdxproto.PacketTypeRequest),
+		Codes:     codes,
+	}
+}
+
+// SerializeRequestBody 序列化请求体, 对齐 C++/Rust/Python.
+func (f *FinanceInfoContext) SerializeRequestBody() []byte {
 	buf := &bytes.Buffer{}
-	// 写入代码数量
-	count := uint16(len(r.Codes))
+	count := uint16(len(f.Codes))
 	_ = binary.Write(buf, binary.LittleEndian, count)
-	// 遍历 Codes 列表, 写入每个代码
-	for _, code := range r.Codes {
-		// 写入市场代码
-		_ = buf.WriteByte(uint8(ExchangeToMarketId(code.Exchange)))
-		// 写入证券代码, 固定6字节
+	for _, code := range f.Codes {
+		_ = buf.WriteByte(uint8(tdxproto.ExchangeToMarketId(code.Exchange)))
 		sym := std.String2Bytes(code.Ticker)
 		if len(sym) > 6 {
 			sym = sym[:6]
 		}
 		buf.Write([]byte(sym))
 	}
-	return BuildRequest(StdCommandFinanceInfo, PacketTypeRequest, buf.Bytes())
+	return buf.Bytes()
 }
 
-func (FinanceRequest) Command() StdCommand { return StdCommandFinanceInfo }
+// DeserializeResponseBody 解析财务信息响应体, 对齐 C++/Rust/Python.
+func (f *FinanceInfoContext) DeserializeResponseBody(body []byte) error {
+	reader := bytes.NewReader(body)
+	if err := binary.Read(reader, binary.LittleEndian, &f.RespCount); err != nil {
+		return err
+	}
+	if f.RespCount == 0 {
+		return nil
+	}
+	for i := 0; i < int(f.RespCount); i++ {
+		var raw RawFinanceInfo
+		if err := raw.decode(reader); err != nil {
+			return err
+		}
+		var info FinanceInfo
+		const baseUnit = 10000.0
 
-func (r FinanceRequest) String() string {
-	count := len(r.Codes)
-	return fmt.Sprintf("FinanceRequest{Count:%d,Codes:%s}", count, instrumentsToString(r.Codes))
+		ex := tdxproto.MarketIdToExchange(int(raw.Market))
+		ticker := std.Bytes2String(raw.Code[:])
+
+		info.Code = data.BuildInstrument(ex, ticker)
+		info.LiuTongGuBen = tdxproto.NumberToFloat64(raw.LiuTongGuBen) * baseUnit
+		info.Province = raw.Province
+		info.Industry = raw.Industry
+		info.UpdatedDate = raw.UpdatedDate
+		info.IPODate = raw.IPODate
+		info.ZongGuBen = tdxproto.NumberToFloat64(raw.ZongGuBen) * baseUnit
+		info.GuoJiaGu = tdxproto.NumberToFloat64(raw.GuoJiaGu) * baseUnit
+		info.FaQiRenFaRenGu = tdxproto.NumberToFloat64(raw.FaQiRenFaRenGu) * baseUnit
+		info.FaRenGu = tdxproto.NumberToFloat64(raw.FaRenGu) * baseUnit
+		info.BGu = tdxproto.NumberToFloat64(raw.BGu) * baseUnit
+		info.HGu = tdxproto.NumberToFloat64(raw.HGu) * baseUnit
+		info.ZhiGongGu = tdxproto.NumberToFloat64(raw.ZhiGongGu) * baseUnit
+		info.ZongZiChan = tdxproto.NumberToFloat64(raw.ZongZiChan) * baseUnit
+		info.LiuDongZiChan = tdxproto.NumberToFloat64(raw.LiuDongZiChan) * baseUnit
+		info.GuDingZiChan = tdxproto.NumberToFloat64(raw.GuDingZiChan) * baseUnit
+		info.WuXingZiChan = tdxproto.NumberToFloat64(raw.WuXingZiChan) * baseUnit
+		info.GuDongRenShu = tdxproto.NumberToFloat64(raw.GuDongRenShu)
+		info.LiuDongFuZhai = tdxproto.NumberToFloat64(raw.LiuDongFuZhai) * baseUnit
+		info.ChangQiFuZhai = tdxproto.NumberToFloat64(raw.ChangQiFuZhai) * baseUnit
+		info.ZiBenGongJiJin = tdxproto.NumberToFloat64(raw.ZiBenGongJiJin) * baseUnit
+		info.JingZiChan = tdxproto.NumberToFloat64(raw.JingZiChan) * baseUnit
+		info.ZhuYingShouRu = tdxproto.NumberToFloat64(raw.ZhuYingShouRu) * baseUnit
+		info.ZhuYingLiRun = tdxproto.NumberToFloat64(raw.ZhuYingLiRun) * baseUnit
+		info.YingShouZhangKuan = tdxproto.NumberToFloat64(raw.YingShouZhangKuan) * baseUnit
+		info.YingYeLiRun = tdxproto.NumberToFloat64(raw.YingYeLiRun) * baseUnit
+		info.TouZiShouYu = tdxproto.NumberToFloat64(raw.TouZiShouYu) * baseUnit
+		info.JingYingXianJinLiu = tdxproto.NumberToFloat64(raw.JingYingXianJinLiu) * baseUnit
+		info.ZongXianJinLiu = tdxproto.NumberToFloat64(raw.ZongXianJinLiu) * baseUnit
+		info.CunHuo = tdxproto.NumberToFloat64(raw.CunHuo) * baseUnit
+		info.LiRunZongHe = tdxproto.NumberToFloat64(raw.LiRunZongHe) * baseUnit
+		info.ShuiHouLiRun = tdxproto.NumberToFloat64(raw.ShuiHouLiRun) * baseUnit
+		info.JingLiRun = tdxproto.NumberToFloat64(raw.JingLiRun) * baseUnit
+		info.WeiFenLiRun = tdxproto.NumberToFloat64(raw.WeiFenLiRun) * baseUnit
+		info.MeiGuJingZiChan = tdxproto.NumberToFloat64(raw.BaoLiu1) * baseUnit
+		f.List = append(f.List, info)
+	}
+	return nil
+}
+
+func (f *FinanceInfoContext) String() string {
+	return fmt.Sprintf("FinanceInfoContext{RespCount:%d, ListLen:%d}", f.RespCount, len(f.List))
 }
 
 // RawFinanceInfo 对应二进制原始结构(按 finance_info.h 定义)
@@ -87,7 +153,6 @@ type RawFinanceInfo struct {
 }
 
 func (r *RawFinanceInfo) decode(reader *bytes.Reader) error {
-	// Market
 	if b, err := reader.ReadByte(); err != nil {
 		return err
 	} else {
@@ -207,121 +272,47 @@ func (r *RawFinanceInfo) decode(reader *bytes.Reader) error {
 
 // FinanceInfo 高级表示
 type FinanceInfo struct {
-	Code               string  `csv:"code"`                   // 证券代码
-	LiuTongGuBen       float64 `csv:"liu_tong_gu_ben"`        // 流通股本
-	Province           uint16  `csv:"province"`               // 省份
-	Industry           uint16  `csv:"industry"`               // 行业
-	UpdatedDate        uint32  `csv:"updated_date"`           // 数据更新日期
-	IPODate            uint32  `csv:"ipo_date"`               // IPO日期
-	ZongGuBen          float64 `csv:"zong_gu_ben"`            // 总股本
-	GuoJiaGu           float64 `csv:"guo_jia_gu"`             // 国家股
-	FaQiRenFaRenGu     float64 `csv:"fa_qi_ren_fa_ren_gu"`    // 发起人发认股
-	FaRenGu            float64 `csv:"fa_ren_gu"`              // 法人股
-	BGu                float64 `csv:"b_gu"`                   // B股
-	HGu                float64 `csv:"h_gu"`                   // H股
-	ZhiGongGu          float64 `csv:"zhi_gong_gu"`            // 职工股
-	ZongZiChan         float64 `csv:"zong_zi_chan"`           // 总资产
-	LiuDongZiChan      float64 `csv:"liu_dong_zi_chan"`       // 流动资产
-	GuDingZiChan       float64 `csv:"gu_ding_zi_chan"`        // 固定资产
-	WuXingZiChan       float64 `csv:"wu_xing_zi_chan"`        // 无形资产
-	GuDongRenShu       float64 `csv:"gu_dong_ren_shu"`        // 股东人数
-	LiuDongFuZhai      float64 `csv:"liu_dong_fu_zhai"`       // 流动负债
-	ChangQiFuZhai      float64 `csv:"chang_qi_fu_zhai"`       // 长期负债
-	ZiBenGongJiJin     float64 `csv:"zi_ben_gong_ji_jin"`     // 资本公积金
-	JingZiChan         float64 `csv:"jing_zi_chan"`           // 净资产
-	ZhuYingShouRu      float64 `csv:"zhu_ying_shou_ru"`       // 主营收入
-	ZhuYingLiRun       float64 `csv:"zhu_ying_li_run"`        // 主营利润
-	YingShouZhangKuan  float64 `csv:"ying_shou_zhang_kuan"`   // 应收账款
-	YingYeLiRun        float64 `csv:"ying_ye_li_run"`         // 营业利润
-	TouZiShouYu        float64 `csv:"tou_zi_shou_yu"`         // 投资收益
-	JingYingXianJinLiu float64 `csv:"jing_ying_xian_jin_liu"` // 经营现金流
-	ZongXianJinLiu     float64 `csv:"zong_xian_jin_liu"`      // 总现金流
-	CunHuo             float64 `csv:"cun_huo"`                // 存货
-	LiRunZongHe        float64 `csv:"li_run_zong_he"`         // 利润总和
-	ShuiHouLiRun       float64 `csv:"shui_hou_li_run"`        // 税后利润
-	JingLiRun          float64 `csv:"jing_li_run"`            // 净利润
-	WeiFenLiRun        float64 `csv:"wei_fen_li_run"`         // 未分利润
-	MeiGuJingZiChan    float64 `csv:"mei_gu_jing_zi_chan"`    // 每股净资产
+	Code               string  `csv:"code"`
+	LiuTongGuBen       float64 `csv:"liu_tong_gu_ben"`
+	Province           uint16  `csv:"province"`
+	Industry           uint16  `csv:"industry"`
+	UpdatedDate        uint32  `csv:"updated_date"`
+	IPODate            uint32  `csv:"ipo_date"`
+	ZongGuBen          float64 `csv:"zong_gu_ben"`
+	GuoJiaGu           float64 `csv:"guo_jia_gu"`
+	FaQiRenFaRenGu     float64 `csv:"fa_qi_ren_fa_ren_gu"`
+	FaRenGu            float64 `csv:"fa_ren_gu"`
+	BGu                float64 `csv:"b_gu"`
+	HGu                float64 `csv:"h_gu"`
+	ZhiGongGu          float64 `csv:"zhi_gong_gu"`
+	ZongZiChan         float64 `csv:"zong_zi_chan"`
+	LiuDongZiChan      float64 `csv:"liu_dong_zi_chan"`
+	GuDingZiChan       float64 `csv:"gu_ding_zi_chan"`
+	WuXingZiChan       float64 `csv:"wu_xing_zi_chan"`
+	GuDongRenShu       float64 `csv:"gu_dong_ren_shu"`
+	LiuDongFuZhai      float64 `csv:"liu_dong_fu_zhai"`
+	ChangQiFuZhai      float64 `csv:"chang_qi_fu_zhai"`
+	ZiBenGongJiJin     float64 `csv:"zi_ben_gong_ji_jin"`
+	JingZiChan         float64 `csv:"jing_zi_chan"`
+	ZhuYingShouRu      float64 `csv:"zhu_ying_shou_ru"`
+	ZhuYingLiRun       float64 `csv:"zhu_ying_li_run"`
+	YingShouZhangKuan  float64 `csv:"ying_shou_zhang_kuan"`
+	YingYeLiRun        float64 `csv:"ying_ye_li_run"`
+	TouZiShouYu        float64 `csv:"tou_zi_shou_yu"`
+	JingYingXianJinLiu float64 `csv:"jing_ying_xian_jin_liu"`
+	ZongXianJinLiu     float64 `csv:"zong_xian_jin_liu"`
+	CunHuo             float64 `csv:"cun_huo"`
+	LiRunZongHe        float64 `csv:"li_run_zong_he"`
+	ShuiHouLiRun       float64 `csv:"shui_hou_li_run"`
+	JingLiRun          float64 `csv:"jing_li_run"`
+	WeiFenLiRun        float64 `csv:"wei_fen_li_run"`
+	MeiGuJingZiChan    float64 `csv:"mei_gu_jing_zi_chan"`
 }
 
-// IsDelisting 判断该金融信息是否表示股票已退市
-//
-//	当IPO日期, 总股本和流通股本均为0时返回true
 func (f FinanceInfo) IsDelisting() bool {
 	return f.IPODate == 0 && f.ZongGuBen == 0 && f.LiuTongGuBen == 0
 }
 
 func (f FinanceInfo) String() string {
 	return fmt.Sprintf("FinanceInfo{Code: %s, LiuTongGuBen: %f, Province: %d, Industry: %d, UpdatedDate: %d, IPODate: %d, ZongGuBen: %f, GuoJiaGu: %f, FaQiRenFaRenGu: %f, FaRenGu: %f, BGu: %f, HGu: %f, ZhiGongGu: %f, ZongZiChan: %f, LiuDongZiChan: %f, GuDingZiChan: %f, WuXingZiChan: %f, GuDongRenShu: %f, LiuDongFuZhai: %f, ChangQiFuZhai: %f, ZiBenGongJiJin: %f, JingZiChan: %f, ZhuYingShouRu: %f, ZhuYingLiRun: %f, YingShouZhangKuan: %f, YingYeLiRun: %f, TouZiShouYu: %f, JingYingXianJinLiu: %f, ZongXianJinLiu: %f, CunHuo: %f, LiRunZongHe: %f, ShuiHouLiRun: %f, JingLiRun: %f, WeiFenLiRun: %f, MeiGuJingZiChan: %f}", f.Code, f.LiuTongGuBen, f.Province, f.Industry, f.UpdatedDate, f.IPODate, f.ZongGuBen, f.GuoJiaGu, f.FaQiRenFaRenGu, f.FaRenGu, f.BGu, f.HGu, f.ZhiGongGu, f.ZongZiChan, f.LiuDongZiChan, f.GuDingZiChan, f.WuXingZiChan, f.GuDongRenShu, f.LiuDongFuZhai, f.ChangQiFuZhai, f.ZiBenGongJiJin, f.JingZiChan, f.ZhuYingShouRu, f.ZhuYingLiRun, f.YingShouZhangKuan, f.YingYeLiRun, f.TouZiShouYu, f.JingYingXianJinLiu, f.ZongXianJinLiu, f.CunHuo, f.LiRunZongHe, f.ShuiHouLiRun, f.JingLiRun, f.WeiFenLiRun, f.MeiGuJingZiChan)
-}
-
-// FinanceResponse 响应
-type FinanceResponse struct {
-	ResponseBase
-	Count uint16
-	Info  FinanceInfo
-	List  []FinanceInfo
-}
-
-func (r *FinanceResponse) Deserialize(body []byte) error {
-	reader := bytes.NewReader(body)
-	if err := binary.Read(reader, binary.LittleEndian, &r.Count); err != nil {
-		return err
-	}
-	if r.Count == 0 {
-		return nil
-	}
-	for i := 0; i < int(r.Count); i++ {
-		var raw RawFinanceInfo
-		if err := raw.decode(reader); err != nil {
-			return err
-		}
-		var info FinanceInfo
-		const baseUnit = 10000.0
-
-		ex := MarketIdToExchange(int(raw.Market))
-		ticker := std.Bytes2String(raw.Code[:])
-
-		info.Code = exchange.BuildInstrument(ex, ticker)
-		info.LiuTongGuBen = NumberToFloat64(raw.LiuTongGuBen) * baseUnit
-		info.Province = raw.Province
-		info.Industry = raw.Industry
-		info.UpdatedDate = raw.UpdatedDate
-		info.IPODate = raw.IPODate
-		info.ZongGuBen = NumberToFloat64(raw.ZongGuBen) * baseUnit
-		info.GuoJiaGu = NumberToFloat64(raw.GuoJiaGu) * baseUnit
-		info.FaQiRenFaRenGu = NumberToFloat64(raw.FaQiRenFaRenGu) * baseUnit
-		info.FaRenGu = NumberToFloat64(raw.FaRenGu) * baseUnit
-		info.BGu = NumberToFloat64(raw.BGu) * baseUnit
-		info.HGu = NumberToFloat64(raw.HGu) * baseUnit
-		info.ZhiGongGu = NumberToFloat64(raw.ZhiGongGu) * baseUnit
-		info.ZongZiChan = NumberToFloat64(raw.ZongZiChan) * baseUnit
-		info.LiuDongZiChan = NumberToFloat64(raw.LiuDongZiChan) * baseUnit
-		info.GuDingZiChan = NumberToFloat64(raw.GuDingZiChan) * baseUnit
-		info.WuXingZiChan = NumberToFloat64(raw.WuXingZiChan) * baseUnit
-		info.GuDongRenShu = NumberToFloat64(raw.GuDongRenShu)
-		info.LiuDongFuZhai = NumberToFloat64(raw.LiuDongFuZhai) * baseUnit
-		info.ChangQiFuZhai = NumberToFloat64(raw.ChangQiFuZhai) * baseUnit
-		info.ZiBenGongJiJin = NumberToFloat64(raw.ZiBenGongJiJin) * baseUnit
-		info.JingZiChan = NumberToFloat64(raw.JingZiChan) * baseUnit
-		info.ZhuYingShouRu = NumberToFloat64(raw.ZhuYingShouRu) * baseUnit
-		info.ZhuYingLiRun = NumberToFloat64(raw.ZhuYingLiRun) * baseUnit
-		info.YingShouZhangKuan = NumberToFloat64(raw.YingShouZhangKuan) * baseUnit
-		info.YingYeLiRun = NumberToFloat64(raw.YingYeLiRun) * baseUnit
-		info.TouZiShouYu = NumberToFloat64(raw.TouZiShouYu) * baseUnit
-		info.JingYingXianJinLiu = NumberToFloat64(raw.JingYingXianJinLiu) * baseUnit
-		info.ZongXianJinLiu = NumberToFloat64(raw.ZongXianJinLiu) * baseUnit
-		info.CunHuo = NumberToFloat64(raw.CunHuo) * baseUnit
-		info.LiRunZongHe = NumberToFloat64(raw.LiRunZongHe) * baseUnit
-		info.ShuiHouLiRun = NumberToFloat64(raw.ShuiHouLiRun) * baseUnit
-		info.JingLiRun = NumberToFloat64(raw.JingLiRun) * baseUnit
-		info.WeiFenLiRun = NumberToFloat64(raw.WeiFenLiRun) * baseUnit
-		info.MeiGuJingZiChan = NumberToFloat64(raw.BaoLiu1) * baseUnit
-		r.List = append(r.List, info)
-	}
-	return nil
-}
-
-func (r *FinanceResponse) String() string {
-	return fmt.Sprintf("FinanceResponse{Count:%d, List:%v}", r.Count, r.List)
 }

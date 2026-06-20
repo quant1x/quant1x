@@ -10,39 +10,38 @@ import (
 	"testing"
 	"time"
 
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/level1/std"
+	"github.com/quant1x/quant1x/quant1x/encoding"
 	"golang.org/x/text/encoding/simplifiedchinese"
 )
 
 func TestBuildRequest(t *testing.T) {
 	atomic.StoreUint32(&seqId, 0)
-	payload := []byte{0xAA, 0xBB, 0xCC}
-	req := BuildRequest(StdCommandSecurityList, PacketCtrlHeartbeat, payload)
+	ctx := NewHeartbeatContext()
+	payload := SerializeRequest(ctx)
 
-	wantLen := 1 + 4 + 1 + 2 + 2 + 2 + len(payload)
-	if len(req) != wantLen {
-		t.Fatalf("unexpected request length: got %d want %d", len(req), wantLen)
+	wantLen := RequestHeaderLength
+	if len(payload) != wantLen {
+		t.Fatalf("unexpected request length: got %d want %d", len(payload), wantLen)
 	}
-	if req[0] != FlagUncompressed {
-		t.Fatalf("expected zip flag 0x%02X got 0x%02X", FlagUncompressed, req[0])
+	if payload[0] != FlagUncompressed {
+		t.Fatalf("expected zip flag 0x%02X got 0x%02X", FlagUncompressed, payload[0])
 	}
-	if seq := binary.LittleEndian.Uint32(req[1:5]); seq != 1 {
+	if seq := binary.LittleEndian.Uint32(payload[1:5]); seq != 1 {
 		t.Fatalf("expected seq 1 got %d", seq)
 	}
-	if pkt := req[5]; pkt != 0x02 {
+	if pkt := payload[5]; pkt != PacketCtrlHeartbeat {
 		t.Fatalf("expected packet type 0x02 got 0x%02X", pkt)
 	}
-	pkgLen := uint16(2 + len(payload))
-	if got := binary.LittleEndian.Uint16(req[6:8]); got != pkgLen {
+	pkgLen := uint16(2)
+	if got := binary.LittleEndian.Uint16(payload[6:8]); got != pkgLen {
 		t.Fatalf("unexpected pkgLen1: got %d want %d", got, pkgLen)
 	}
-	if got := binary.LittleEndian.Uint16(req[8:10]); got != pkgLen {
+	if got := binary.LittleEndian.Uint16(payload[8:10]); got != pkgLen {
 		t.Fatalf("unexpected pkgLen2: got %d want %d", got, pkgLen)
 	}
-	if method := binary.LittleEndian.Uint16(req[10:12]); method != uint16(StdCommandSecurityList) {
+	if method := binary.LittleEndian.Uint16(payload[10:12]); method != uint16(StdCommandHeartbeat) {
 		t.Fatalf("unexpected method: got 0x%04X", method)
-	}
-	if !bytes.Equal(req[12:], payload) {
-		t.Fatalf("payload mismatch")
 	}
 }
 
@@ -65,37 +64,38 @@ func TestReadResponseHeader(t *testing.T) {
 	if err != nil {
 		t.Fatalf("readResponseHeader failed: %v", err)
 	}
-	if hdr.I1 != 0xAABBCCDD || hdr.FrameType != FlagUncompressed || hdr.SeqId != 42 || hdr.I2 != 0x01 || hdr.Method != 128 || hdr.BodyWireLen != 256 || hdr.BodyRawLen != 512 {
+	if hdr.MagicNumber != 0xAABBCCDD || hdr.FrameType != FlagUncompressed || hdr.SeqId != 42 || hdr.PacketCtrl != 0x01 || hdr.Method != 128 || hdr.BodyWireLen != 256 || hdr.BodyRawLen != 512 {
 		t.Fatalf("unexpected header %+v", hdr)
 	}
 }
 
-func TestHeartbeatRequestBytes(t *testing.T) {
+func TestHeartbeatRequest(t *testing.T) {
 	atomic.StoreUint32(&seqId, 0)
-	req := HeartbeatContext{}.Bytes()
-	if len(req) != 12 {
-		t.Fatalf("unexpected heartbeat request length: %d", len(req))
+	ctx := std.NewHeartbeatContext()
+	payload := SerializeRequest(ctx)
+	if len(payload) != RequestHeaderLength {
+		t.Fatalf("unexpected heartbeat request length: %d", len(payload))
 	}
-	if req[5] != PacketCtrlHeartbeat {
-		t.Fatalf("unexpected packet type: 0x%02X", req[5])
+	if payload[5] != PacketCtrlHeartbeat {
+		t.Fatalf("unexpected packet type: 0x%02X", payload[5])
 	}
-	method := binary.LittleEndian.Uint16(req[10:12])
+	method := binary.LittleEndian.Uint16(payload[10:12])
 	if method != uint16(StdCommandHeartbeat) {
 		t.Fatalf("unexpected method: 0x%04X", method)
 	}
 }
 
 func TestHeartbeatResponseDeserialize(t *testing.T) {
-	payload := make([]byte, heartbeatInfoLength)
+	payload := make([]byte, std.HeartbeatInfoLength)
 	copy(payload, []byte("ALIVE"))
-	var resp HeartbeatResponse
-	if err := resp.Deserialize(payload); err != nil {
+	ctx := std.NewHeartbeatContext()
+	if err := ctx.DeserializeResponseBody(payload); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if resp.Info != "ALIVE" {
-		t.Fatalf("unexpected info: %q", resp.Info)
+	if ctx.Info != "ALIVE" {
+		t.Fatalf("unexpected info: %q", ctx.Info)
 	}
-	if err := resp.Deserialize([]byte("short")); err == nil {
+	if err := ctx.DeserializeResponseBody([]byte("short")); err == nil {
 		t.Fatalf("expected error for short payload")
 	}
 }
@@ -106,36 +106,12 @@ func TestGBKToUTF8(t *testing.T) {
 	if err != nil {
 		t.Fatalf("gbk encode failed: %v", err)
 	}
-	out, err := gbkToUTF8(encoded)
+	out, err := encoding.GBKToUTF8(encoded)
 	if err != nil {
-		t.Fatalf("gbkToUTF8 failed: %v", err)
+		t.Fatalf("GBKToUTF8 failed: %v", err)
 	}
 	if out != input {
 		t.Fatalf("unexpected conversion result: got %q want %q", out, input)
-	}
-}
-
-func TestDecodeHelloInfo(t *testing.T) {
-	message := "欢迎"
-	encoded, err := simplifiedchinese.GBK.NewEncoder().Bytes([]byte(message))
-	if err != nil {
-		t.Fatalf("gbk encode failed: %v", err)
-	}
-	body := append(make([]byte, 8), encoded...)
-	out, err := decodeHelloInfo(body, 8)
-	if err != nil {
-		t.Fatalf("decodeHelloInfo failed: %v", err)
-	}
-	if out != message {
-		t.Fatalf("unexpected message: got %q want %q", out, message)
-	}
-	if _, err := decodeHelloInfo([]byte{0x00}, 10); err == nil {
-		t.Fatalf("expected error for short body")
-	}
-	empty, _ := simplifiedchinese.GBK.NewEncoder().Bytes([]byte("   "))
-	body = append(make([]byte, 2), empty...)
-	if _, err := decodeHelloInfo(body, 2); err == nil {
-		t.Fatalf("expected error for blank message")
 	}
 }
 

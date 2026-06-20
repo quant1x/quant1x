@@ -5,45 +5,39 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/tdxproto"
 	"github.com/quant1x/quant1x/quant1x/encoding"
 )
 
 const stdLoginInfoOffset = 68
 
-// StdLoginContext 对应第一次握手请求.
-type StdLoginContext struct{}
-
-// Bytes 序列化请求数据.
-func (StdLoginContext) Bytes() []byte {
-	payload := []byte{0x01}
-	return BuildRequest(StdCommandLogin1, PacketTypeRequest, payload)
-}
-
-// Command 返回命令类型.
-func (StdLoginContext) Command() tdx.StdCommand { return tdx.StdCommandLogin1 }
-
-// String 返回描述.
-func (StdLoginContext) String() string { return "StdLoginContext" }
-
-// StdLoginResponse 对应第一次握手响应.
-type StdLoginResponse struct {
-	tdx.ResponseBase
+// StdLoginContext 对齐 C++/Rust/Python StdLoginContext (STD_SYNCHRONIZE1), 合并请求和响应.
+type StdLoginContext struct {
+	tdxproto.FrameBase
 	Info string
 }
 
-// Deserialize 解析响应数据.
-func (r *StdLoginResponse) Deserialize(body []byte) error {
+// NewStdLoginContext 构造第一次握手请求, 对齐 C++/Rust.
+func NewStdLoginContext() *StdLoginContext {
+	return &StdLoginContext{
+		FrameBase: tdxproto.NewFrameBase(tdxproto.StdCommandLogin1, tdxproto.FlagUncompressed, tdxproto.PacketTypeRequest),
+	}
+}
+
+// SerializeRequestBody 序列化请求体(1字节padding), 对齐 C++/Rust/Python.
+func (s *StdLoginContext) SerializeRequestBody() []byte { return []byte{0x01} }
+
+// DeserializeResponseBody 解析响应体, 对齐 C++/Rust/Python.
+func (s *StdLoginContext) DeserializeResponseBody(body []byte) error {
 	info, err := decodeHelloInfo(body, stdLoginInfoOffset)
 	if err != nil {
 		return err
 	}
-	r.Info = info
+	s.Info = info
 	return nil
 }
 
-// String 返回响应描述.
-func (r *StdLoginResponse) String() string { return fmt.Sprintf("StdLoginResponse{Info:%q}", r.Info) }
+func (s *StdLoginContext) String() string { return fmt.Sprintf("StdLoginContext{Info:%q}", s.Info) }
 
 func decodeHelloInfo(body []byte, offset int) (string, error) {
 	if len(body) <= offset {
@@ -73,40 +67,33 @@ const upgradeTipInfoOffset = 58
 var upgradeTipPayload = []byte{
 	0xd5, 0xd0, 0xc9, 0xcc, 0xd6, 0xa4, 0xa8, 0xaf, 0x00, 0x00,
 	0x00, 0x8f, 0xc2, 0x25, 0x40, 0x13, 0x00, 0x00, 0xd5, 0x00,
-	0xc9, 0xcc, 0xbd, 0xf0, 0xd7, 0xea, 0x00, 0x00, 0x00, 0x02,
+	0xc9, 0xcc, 0xbd, 0xf6, 0xd7, 0xea, 0x00, 0x00, 0x00, 0x02,
 }
 
-// UpgradeTipContext 对应第二次握手请求.
-type UpgradeTipContext struct{}
-
-// Bytes 序列化请求数据.
-func (UpgradeTipContext) Bytes() []byte {
-	return BuildRequest(tdx.StdCommandLogin2, PacketTypeRequest, upgradeTipPayload)
-}
-
-// Command 返回命令类型.
-func (UpgradeTipContext) Command() tdx.StdCommand { return tdx.StdCommandLogin2 }
-
-// String 返回描述.
-func (UpgradeTipContext) String() string { return "UpgradeTipContext" }
-
-// UpgradeTipResponse 对应第二次握手响应.
-type UpgradeTipResponse struct {
-	ResponseBase
+// UpgradeTipContext 对齐 C++/Rust/Python UpgradeTipContext (STD_SYNCHRONIZE2), 合并请求和响应.
+type UpgradeTipContext struct {
+	tdxproto.FrameBase
 	Info string
 }
 
-// Deserialize 解析响应数据.
-func (r *UpgradeTipResponse) Deserialize(body []byte) error {
+// NewUpgradeTipContext 构造第二次握手请求, 对齐 C++/Rust.
+func NewUpgradeTipContext() *UpgradeTipContext {
+	return &UpgradeTipContext{
+		FrameBase: tdxproto.NewFrameBase(tdxproto.StdCommandLogin2, tdxproto.FlagUncompressed, tdxproto.PacketTypeRequest),
+	}
+}
+
+// SerializeRequestBody 序列化请求体(30字节硬编码payload), 对齐 C++/Rust/Python.
+func (u *UpgradeTipContext) SerializeRequestBody() []byte { return upgradeTipPayload }
+
+// DeserializeResponseBody 解析响应体, 对齐 C++/Rust/Python.
+func (u *UpgradeTipContext) DeserializeResponseBody(body []byte) error {
 	info, err := decodeHelloInfo(body, upgradeTipInfoOffset)
 	if err != nil {
 		return err
 	}
-	r.Info = info
+	u.Info = info
 	return nil
 }
 
-// String 返回响应描述.
-func (r *UpgradeTipResponse) String() string {
-	return fmt.Sprintf("UpgradeTipResponse{Info:%q}", r.Info)
-}
+func (u *UpgradeTipContext) String() string { return fmt.Sprintf("UpgradeTipContext{Info:%q}", u.Info) }

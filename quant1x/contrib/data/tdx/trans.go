@@ -9,8 +9,8 @@ import (
 
 	"github.com/quant1x/quant1x/quant1x/config"
 	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/level1/std"
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/tdxproto"
 	"github.com/quant1x/quant1x/quant1x/data"
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
 	"github.com/quant1x/quant1x/quant1x/data/schema"
 	"github.com/quant1x/quant1x/quant1x/encoding"
 	logger "github.com/quant1x/quant1x/quant1x/log"
@@ -28,13 +28,13 @@ const defaultTrainsBeginDate = "2024-10-01"
 var (
 	historicalTradingDataOnce  sync.Once
 	historicalTradingDataMutex sync.Mutex
-	historicalTradingDataBegin exchange.Timestamp
+	historicalTradingDataBegin data.Timestamp
 )
 
 func initHistoricalTradingData() {
-	ts, err := exchange.ParseTimestamp(defaultTrainsBeginDate)
+	ts, err := data.ParseTimestamp(defaultTrainsBeginDate)
 	if err != nil {
-		historicalTradingDataBegin = exchange.ZeroTimestamp()
+		historicalTradingDataBegin = data.ZeroTimestamp()
 		return
 	}
 	historicalTradingDataBegin = ts
@@ -42,7 +42,7 @@ func initHistoricalTradingData() {
 
 // getBeginDateOfHistoricalTradingData 返回配置的历史逐笔数据的最早日期.
 // 该值为惰性初始化, 来源于 defaultTrainsBeginDate.
-func getBeginDateOfHistoricalTradingData() exchange.Timestamp {
+func getBeginDateOfHistoricalTradingData() data.Timestamp {
 	historicalTradingDataOnce.Do(initHistoricalTradingData)
 	return historicalTradingDataBegin
 }
@@ -53,7 +53,7 @@ func updateBeginDateOfHistoricalTradingData(date string) {
 	_ = getBeginDateOfHistoricalTradingData()
 	historicalTradingDataMutex.Lock()
 	defer historicalTradingDataMutex.Unlock()
-	if ts, err := exchange.ParseTimestamp(date); err == nil {
+	if ts, err := data.ParseTimestamp(date); err == nil {
 		historicalTradingDataBegin = ts
 	}
 }
@@ -76,7 +76,7 @@ type TurnoverDataSummary struct {
 }
 
 // loadTransactionDataFromCache 从 CSV 缓存读取逐笔数据并返回数据列表及起始时间字符串.
-func loadTransactionDataFromCache(instrument exchange.InstrumentInfo, featureDate exchange.Timestamp, ignorePreviousData bool) ([]data.Transaction, string) {
+func loadTransactionDataFromCache(instrument data.InstrumentInfo, featureDate data.Timestamp, ignorePreviousData bool) ([]data.Transaction, string) {
 	list := make([]schema.Transaction, 0)
 
 	if ignorePreviousData {
@@ -131,15 +131,15 @@ func loadTransactionDataFromCache(instrument exchange.InstrumentInfo, featureDat
 }
 
 // updateTransactionData 从 level1 拉取逐笔数据并写入合并后的 CSV 缓存.
-func updateTransactionData(instrument exchange.InstrumentInfo, featureDate exchange.Timestamp, startTime string) {
+func updateTransactionData(instrument data.InstrumentInfo, featureDate data.Timestamp, startTime string) {
 	tradeDate := featureDate.YYYYMMDD()
-	todayIsLastTradingDate := featureDate.IsSameDate(exchange.NowTimestamp())
+	todayIsLastTradingDate := featureDate.IsSameDate(data.NowTimestamp())
 	offset := int(std.TickTransactionPerRequestMax)
 	start := 0
 	history := make([]schema.Transaction, 0)
 	hs := make([][]schema.Transaction, 0)
 	u32Date := uint32(tradeDate)
-	conn, release, err := std.GetStdConnection()
+	conn, release, err := GetStdConnection()
 	if err != nil {
 		logger.Errorf("level1 client acquire failed: %v", err)
 		return
@@ -154,27 +154,25 @@ func updateTransactionData(instrument exchange.InstrumentInfo, featureDate excha
 	for {
 		var reply *std.TransactionReply
 		if todayIsLastTradingDate {
-			req := std.NewTransactionRequest(instrument, start, offset)
-			resp := std.NewTransactionResponse(instrument)
-			if err := std.TransactMessageSync(conn, req, resp); err != nil {
+			msg := std.NewTransactionContext(instrument, start, offset)
+			if err := tdxproto.TransactMessageSync(conn, msg); err != nil {
 				logger.Errorf("[tdx::trans] code=%s, tradeDate=%d, error=%v", instrument.Symbol(), tradeDate, err)
 				break
 			}
-			if resp.Reply.Count == 0 || len(resp.Reply.List) == 0 {
+			if msg.Reply.Count == 0 || len(msg.Reply.List) == 0 {
 				break
 			}
-			reply = &resp.Reply
+			reply = &msg.Reply
 		} else {
-			req := std.NewHistoryTransactionRequest(instrument, u32Date, start, offset)
-			resp := std.NewHistoryTransactionResponse(instrument)
-			if err := std.TransactMessageSync(conn, req, resp); err != nil {
+			msg := std.NewHistoryTransactionContext(instrument, u32Date, start, offset)
+			if err := tdxproto.TransactMessageSync(conn, msg); err != nil {
 				logger.Errorf("[tdx::trans] code=%s, tradeDate=%d, error=%v", instrument.Symbol(), tradeDate, err)
 				break
 			}
-			if resp.Reply.Count == 0 || len(resp.Reply.List) == 0 {
+			if msg.Reply.Count == 0 || len(msg.Reply.List) == 0 {
 				break
 			}
-			reply = &resp.Reply
+			reply = &msg.Reply
 		}
 		var incremental []schema.Transaction // 临时存储本次请求的数据
 		var incrementalCount int             // 记录增量数据数量
@@ -251,7 +249,7 @@ func updateTransactionData(instrument exchange.InstrumentInfo, featureDate excha
 	}
 }
 
-func ensureTransactionDataUpdated(instrument exchange.InstrumentInfo, featureDate exchange.Timestamp, ignorePreviousData bool) {
+func ensureTransactionDataUpdated(instrument data.InstrumentInfo, featureDate data.Timestamp, ignorePreviousData bool) {
 	list, startTime := loadTransactionDataFromCache(instrument, featureDate, ignorePreviousData)
 	needsUpdate := len(list) == 0 || (list[len(list)-1].Time != HistoricalTransactionDataLastTime)
 	if needsUpdate {
@@ -260,19 +258,19 @@ func ensureTransactionDataUpdated(instrument exchange.InstrumentInfo, featureDat
 }
 
 // CheckoutTransactionData 导出: 检出指定日期的逐笔成交数据
-func CheckoutTransactionData(instrument exchange.InstrumentInfo, featureDate exchange.Timestamp, ignorePreviousData bool) []data.Transaction {
+func CheckoutTransactionData(instrument data.InstrumentInfo, featureDate data.Timestamp, ignorePreviousData bool) []data.Transaction {
 	ensureTransactionDataUpdated(instrument, featureDate, ignorePreviousData)
 	list, _ := loadTransactionDataFromCache(instrument, featureDate, ignorePreviousData)
 	return list
 }
 
 // CountInflow 计算成交额/成交量汇总, 行为与 C++ 实现相似.
-func CountInflow(list []std.TickTransaction, securityCode string, featureDate exchange.Timestamp) TurnoverDataSummary {
+func CountInflow(list []std.TickTransaction, securityCode string, featureDate data.Timestamp) TurnoverDataSummary {
 	summary := TurnoverDataSummary{}
 	if len(list) == 0 {
 		return summary
 	}
-	//correctedCode := exchange.CorrectSecurityCode(securityCode)
+	//correctedCode := data.CorrectSecurityCode(securityCode)
 	var lastPrice float64
 	for _, v := range list {
 		tm := v.Time
@@ -329,12 +327,12 @@ func (d *DataTrans) Key() string     { return "trans" }
 func (d *DataTrans) Name() string    { return "逐笔成交" }
 func (d *DataTrans) Usage() string   { return "" }
 
-func (d *DataTrans) Print(instrument exchange.InstrumentInfo, dates ...exchange.Timestamp) {
+func (d *DataTrans) Print(instrument data.InstrumentInfo, dates ...exchange.Timestamp) {
 	_ = instrument
 	_ = dates
 }
 
-func (d *DataTrans) Update(instrument exchange.InstrumentInfo, date exchange.Timestamp) {
+func (d *DataTrans) Update(instrument data.InstrumentInfo, date data.Timestamp) {
 	ensureTransactionDataUpdated(instrument, date, false)
 }
 

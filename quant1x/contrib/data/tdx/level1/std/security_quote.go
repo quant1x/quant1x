@@ -1,4 +1,4 @@
-package std
+﻿package std
 
 import (
 	"bytes"
@@ -8,9 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
-	helpers "github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/tdxproto"
+	quant "github.com/quant1x/quant1x/quant1x/data"
 )
 
 // TradeState mirrors the C++ TradeState enum.
@@ -47,56 +46,13 @@ const (
 	SPREAD_PCT_HIGH     = 2.0
 )
 
-// StockInfo holds minimal security identity info.
 type StockInfo struct {
 	Market uint8
 	Code   string
 }
 
-// SecurityQuoteContext is a lightweight representation of the C++ request.
-// Full serialization is implemented elsewhere; we keep a simple structure here.
-type SecurityQuoteContext struct {
-	Padding []byte
-	List    []StockInfo
-}
-
-// Serialize builds the SECURITY_QUOTES_OLD request payload.
-func (r SecurityQuoteContext) Serialize() []byte {
-	payload := &bytes.Buffer{}
-	// padding: 8 bytes as in C++ implementation
-	if len(r.Padding) == 0 {
-		r.Padding = []byte{0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
-	}
-	payload.Write(r.Padding)
-	// count
-	count := uint16(len(r.List))
-	_ = binary.Write(payload, binary.LittleEndian, count)
-	for _, v := range r.List {
-		payload.WriteByte(v.Market)
-		// write code as 6 bytes, padded with 0
-		codeBytes := []byte(v.Code)
-		if len(codeBytes) > 6 {
-			codeBytes = codeBytes[:6]
-		}
-		if len(codeBytes) < 6 {
-			pad := make([]byte, 6-len(codeBytes))
-			codeBytes = append(codeBytes, pad...)
-		}
-		payload.Write(codeBytes)
-	}
-	return tdx.BuildRequest(tdx.StdCommandSecurityQuotesOld, tdx.PacketTypeRequest, payload.Bytes())
-}
-
-// Command returns the associated StdCommand.
-func (r SecurityQuoteContext) Command() tdx.StdCommand { return tdx.StdCommandSecurityQuotesOld }
-
-// String provides a short description.
-func (r SecurityQuoteContext) String() string {
-	return fmt.Sprintf("SecurityQuoteContext{Count:%d}", len(r.List))
-}
-
-// SecurityQuoteContext maps the C++ structure to Go.
-type SecurityQuoteContext struct {
+// SecurityQuote mirrors a single quote entry in the response.
+type SecurityQuote struct {
 	State           TradeState
 	Market          uint8
 	Code            string
@@ -159,8 +115,7 @@ type SecurityQuoteContext struct {
 	TimeStamp string
 }
 
-// ImplicitSpread computes the effective spread (price units).
-func (q *SecurityQuoteContext) ImplicitSpread() float64 {
+func (q *SecurityQuote) ImplicitSpread() float64 {
 	if math.IsNaN(q.Price) || q.Price <= 0.0 {
 		if q.Ask1 > 0.0 && q.Bid1 > 0.0 {
 			return q.Ask1 - q.Bid1
@@ -177,8 +132,7 @@ func (q *SecurityQuoteContext) ImplicitSpread() float64 {
 	return 0.0
 }
 
-// ImplicitSpreadPct returns the spread as percentage.
-func (q *SecurityQuoteContext) ImplicitSpreadPct() float64 {
+func (q *SecurityQuote) ImplicitSpreadPct() float64 {
 	if q.Ask1 > 0.0 && q.Bid1 > 0.0 {
 		mid := (q.Ask1 + q.Bid1) / 2.0
 		s := q.ImplicitSpread()
@@ -193,8 +147,7 @@ func (q *SecurityQuoteContext) ImplicitSpreadPct() float64 {
 	return 0.0
 }
 
-// ImplicitSpreadLevel maps percentage to an enum.
-func (q *SecurityQuoteContext) ImplicitSpreadLevel() SpreadLevel {
+func (q *SecurityQuote) ImplicitSpreadLevel() SpreadLevel {
 	pct := q.ImplicitSpreadPct()
 	if pct < SPREAD_PCT_VERY_LOW {
 		return SpreadVeryLow
@@ -211,19 +164,54 @@ func (q *SecurityQuoteContext) ImplicitSpreadLevel() SpreadLevel {
 	return SpreadVeryHigh
 }
 
-// SecurityQuoteResponse mirrors the C++ response header + list.
-type SecurityQuoteResponse struct {
-	Count uint16
-	List  []SecurityQuoteContext
-}
-
-// getPrice helper mirrors C++ getPrice(baseUnit, price, diff)
 func getPrice(baseUnit float64, price int64, diff int64) float64 {
 	return float64(price+diff) / baseUnit
 }
 
-// Deserialize parses the binary payload into the response structure.
-func (r *SecurityQuoteResponse) Deserialize(data []byte) error {
+// SecurityQuoteContext 对齐 C++/Rust/Python SecurityQuoteContext, 合并请求和响应.
+type SecurityQuoteContext struct {
+	tdxproto.FrameBase
+	Padding    []byte
+	StockList  []StockInfo
+	RespCount  uint16
+	QuoteList  []SecurityQuote
+}
+
+// NewSecurityQuoteContext 构造行情请求, 对齐 C++/Rust.
+func NewSecurityQuoteContext(list []StockInfo) *SecurityQuoteContext {
+	return &SecurityQuoteContext{
+		FrameBase: tdxproto.NewFrameBase(tdxproto.StdCommandSecurityQuotesOld, tdxproto.FlagUncompressed, tdxproto.PacketTypeRequest),
+		StockList: list,
+		Padding:   []byte{0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+	}
+}
+
+// SerializeRequestBody 序列化请求体, 对齐 C++/Rust/Python.
+func (s *SecurityQuoteContext) SerializeRequestBody() []byte {
+	payload := &bytes.Buffer{}
+	if len(s.Padding) == 0 {
+		s.Padding = []byte{0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	}
+	payload.Write(s.Padding)
+	count := uint16(len(s.StockList))
+	_ = binary.Write(payload, binary.LittleEndian, count)
+	for _, v := range s.StockList {
+		payload.WriteByte(v.Market)
+		codeBytes := []byte(v.Code)
+		if len(codeBytes) > 6 {
+			codeBytes = codeBytes[:6]
+		}
+		if len(codeBytes) < 6 {
+			pad := make([]byte, 6-len(codeBytes))
+			codeBytes = append(codeBytes, pad...)
+		}
+		payload.Write(codeBytes)
+	}
+	return payload.Bytes()
+}
+
+// DeserializeResponseBody 解析行情响应体, 对齐 C++/Rust/Python.
+func (s *SecurityQuoteContext) DeserializeResponseBody(data []byte) error {
 	if len(data) < 4 {
 		return fmt.Errorf("data too short")
 	}
@@ -231,14 +219,14 @@ func (r *SecurityQuoteResponse) Deserialize(data []byte) error {
 	if pos+2 > len(data) {
 		return fmt.Errorf("truncated data")
 	}
-	r.Count = binary.LittleEndian.Uint16(data[pos : pos+2])
+	s.RespCount = binary.LittleEndian.Uint16(data[pos : pos+2])
 	pos += 2
-	r.List = make([]SecurityQuoteContext, 0, r.Count)
+	s.QuoteList = make([]SecurityQuote, 0, s.RespCount)
 	now := time.Now()
 	timestamp := now.Format("20060102150405") + fmt.Sprintf("%03d", now.Nanosecond()/1e6)
 
-	for i := 0; i < int(r.Count); i++ {
-		var ele SecurityQuoteContext
+	for i := 0; i < int(s.RespCount); i++ {
+		var ele SecurityQuote
 		if pos >= len(data) {
 			return fmt.Errorf("unexpected EOF")
 		}
@@ -252,7 +240,7 @@ func (r *SecurityQuoteResponse) Deserialize(data []byte) error {
 		ele.Code = code
 		pos += 6
 
-		baseUnit := helpers.DefaultBaseUnit(int(ele.Market), ele.Code)
+		baseUnit := tdxproto.DefaultBaseUnit(int(ele.Market), ele.Code)
 
 		if pos+2 > len(data) {
 			return fmt.Errorf("unexpected EOF for active1")
@@ -260,44 +248,44 @@ func (r *SecurityQuoteResponse) Deserialize(data []byte) error {
 		ele.Active1 = binary.LittleEndian.Uint16(data[pos : pos+2])
 		pos += 2
 
-		priceBase := helpers.VarintDecode(data, &pos)
+		priceBase := tdxproto.VarintDecode(data, &pos)
 		ele.Price = getPrice(baseUnit, priceBase, 0)
 
-		tmp := helpers.VarintDecode(data, &pos)
+		tmp := tdxproto.VarintDecode(data, &pos)
 		ele.LastClose = getPrice(baseUnit, priceBase, tmp)
 
-		ele.Open = getPrice(baseUnit, priceBase, helpers.VarintDecode(data, &pos))
-		ele.High = getPrice(baseUnit, priceBase, helpers.VarintDecode(data, &pos))
-		ele.Low = getPrice(baseUnit, priceBase, helpers.VarintDecode(data, &pos))
+		ele.Open = getPrice(baseUnit, priceBase, tdxproto.VarintDecode(data, &pos))
+		ele.High = getPrice(baseUnit, priceBase, tdxproto.VarintDecode(data, &pos))
+		ele.Low = getPrice(baseUnit, priceBase, tdxproto.VarintDecode(data, &pos))
 
-		ele.ReversedBytes0 = helpers.VarintDecode(data, &pos)
+		ele.ReversedBytes0 = tdxproto.VarintDecode(data, &pos)
 		if ele.ReversedBytes0 > 0 {
-			ele.ServerTime = helpers.FormatTimestampFromI64(ele.ReversedBytes0)
+			ele.ServerTime = tdxproto.FormatTimestampFromI64(ele.ReversedBytes0)
 		} else {
 			ele.ServerTime = "0"
 		}
 
-		ele.ReversedBytes1 = helpers.VarintDecode(data, &pos)
+		ele.ReversedBytes1 = tdxproto.VarintDecode(data, &pos)
 
-		vol := helpers.VarintDecode(data, &pos)
+		vol := tdxproto.VarintDecode(data, &pos)
 		ele.Vol = vol * 100
 
-		ele.CurVol = helpers.VarintDecode(data, &pos)
+		ele.CurVol = tdxproto.VarintDecode(data, &pos)
 
 		if pos+4 > len(data) {
 			return fmt.Errorf("unexpected EOF amount")
 		}
 		rawAmount := binary.LittleEndian.Uint32(data[pos : pos+4])
 		pos += 4
-		ele.Amount = helpers.IntegerToFloat64(uint32(rawAmount))
+		ele.Amount = tdxproto.IntegerToFloat64(uint32(rawAmount))
 
-		ele.SVol = helpers.VarintDecode(data, &pos)
-		ele.BVol = helpers.VarintDecode(data, &pos)
+		ele.SVol = tdxproto.VarintDecode(data, &pos)
+		ele.BVol = tdxproto.VarintDecode(data, &pos)
 
-		ele.IndexOpenAmount = helpers.VarintDecode(data, &pos) * 100
-		ele.StockOpenAmount = helpers.VarintDecode(data, &pos) * 100
-		ex := helpers.MarketIdToExchange(int(ele.Market))
-		isIndexOrBlock := exchange.AssertIndexByMarketAndCode(ex, ele.Code)
+		ele.IndexOpenAmount = tdxproto.VarintDecode(data, &pos) * 100
+		ele.StockOpenAmount = tdxproto.VarintDecode(data, &pos) * 100
+		ex := tdxproto.MarketIdToExchange(int(ele.Market))
+		isIndexOrBlock := quant.AssertIndexByMarketAndCode(ex, ele.Code)
 
 		var tmpOpenVolume float64
 		if isIndexOrBlock {
@@ -314,16 +302,15 @@ func (r *SecurityQuoteResponse) Deserialize(data []byte) error {
 		}
 		ele.OpenVolume = int64(tmpOpenVolume)
 
-		// bid/ask levels
 		var bidPrices [5]float64
 		var askPrices [5]float64
 		var bidVols [5]int64
 		var askVols [5]int64
 		for l := 0; l < 5; l++ {
-			bidDiff := helpers.VarintDecode(data, &pos)
-			askDiff := helpers.VarintDecode(data, &pos)
-			bidVol := helpers.VarintDecode(data, &pos)
-			askVol := helpers.VarintDecode(data, &pos)
+			bidDiff := tdxproto.VarintDecode(data, &pos)
+			askDiff := tdxproto.VarintDecode(data, &pos)
+			bidVol := tdxproto.VarintDecode(data, &pos)
+			askVol := tdxproto.VarintDecode(data, &pos)
 			bidPrices[l] = getPrice(baseUnit, bidDiff, priceBase)
 			askPrices[l] = getPrice(baseUnit, askDiff, priceBase)
 			bidVols[l] = bidVol
@@ -344,10 +331,10 @@ func (r *SecurityQuoteResponse) Deserialize(data []byte) error {
 		ele.ReversedBytes4 = binary.LittleEndian.Uint16(data[pos : pos+2])
 		pos += 2
 
-		ele.ReversedBytes5 = helpers.VarintDecode(data, &pos)
-		ele.ReversedBytes6 = helpers.VarintDecode(data, &pos)
-		ele.ReversedBytes7 = helpers.VarintDecode(data, &pos)
-		ele.ReversedBytes8 = helpers.VarintDecode(data, &pos)
+		ele.ReversedBytes5 = tdxproto.VarintDecode(data, &pos)
+		ele.ReversedBytes6 = tdxproto.VarintDecode(data, &pos)
+		ele.ReversedBytes7 = tdxproto.VarintDecode(data, &pos)
+		ele.ReversedBytes8 = tdxproto.VarintDecode(data, &pos)
 
 		if pos+2 > len(data) {
 			return fmt.Errorf("unexpected EOF for rate")
@@ -362,7 +349,6 @@ func (r *SecurityQuoteResponse) Deserialize(data []byte) error {
 		ele.Active2 = binary.LittleEndian.Uint16(data[pos : pos+2])
 		pos += 2
 
-		// state logic
 		if ele.LastClose == 0.0 && ele.Open == 0.0 {
 			ele.State = TradeDelisting
 		} else {
@@ -380,11 +366,13 @@ func (r *SecurityQuoteResponse) Deserialize(data []byte) error {
 			ele.IndexDownLimit = ele.AskVol2
 		}
 
-		// closing logic omitted (requires exchange time status)
-
 		ele.TimeStamp = timestamp
-		r.List = append(r.List, ele)
+		s.QuoteList = append(s.QuoteList, ele)
 	}
 
 	return nil
+}
+
+func (s *SecurityQuoteContext) String() string {
+	return fmt.Sprintf("SecurityQuoteContext{StockCount:%d, RespCount:%d}", len(s.StockList), s.RespCount)
 }

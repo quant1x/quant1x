@@ -9,7 +9,7 @@ import (
 	"github.com/quant1x/quant1x/quant1x/config"
 	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/level1/std"
 	"github.com/quant1x/quant1x/quant1x/data"
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/data"
 	"github.com/quant1x/quant1x/quant1x/data/schema"
 	"github.com/quant1x/quant1x/quant1x/encoding"
 	logger "github.com/quant1x/quant1x/quant1x/log"
@@ -26,14 +26,14 @@ func (d *DataBarRaw) Name() string    { return "日K线RAW" }
 func (d *DataBarRaw) Usage() string   { return "日K线RAW" }
 
 // Print 实现 DataAdapter.Print(可变参数日期)
-func (d *DataBarRaw) Print(code exchange.InstrumentInfo, dates ...exchange.Timestamp) {
+func (d *DataBarRaw) Print(code data.InstrumentInfo, dates ...exchange.Timestamp) {
 	_ = code
 	_ = dates
 }
 
 // Update 对应 C++ DataBarRaw::Update 的行为: 读取本地缓存, 确定时间窗口, 分页拉取 level1 数据,
 // 反转与合并结果, 并写回缓存文件.
-func (d *DataBarRaw) Update(code exchange.InstrumentInfo, _date exchange.Timestamp) {
+func (d *DataBarRaw) Update(code data.InstrumentInfo, _date data.Timestamp) {
 	// 1. 确定缓存文件并读取本地缓存
 	cacheFilename := config.GetKlineFilename(code.Symbol(), false)
 	var cacheKLines []BarRaw
@@ -43,19 +43,19 @@ func (d *DataBarRaw) Update(code exchange.InstrumentInfo, _date exchange.Timesta
 	klinesOffsetDays := schema.MaxCachedDaysToDropOnIncrementalUpdate
 
 	// 默认起始日期(使用 datasets.MarketFirstDate, 与 C++ 的 market_first_date 等价)
-	currentStartDate := exchange.GetFirstMarketDate(code.Exchange)
+	currentStartDate := data.GetFirstMarketDate(code.Exchange)
 	if klinesLength > 0 {
 		if klinesOffsetDays > klinesLength {
 			klinesOffsetDays = klinesLength
 		}
 		kline := cacheKLines[klinesLength-klinesOffsetDays]
-		if ts, err := exchange.ParseTimestamp(kline.Date); err == nil {
+		if ts, err := data.ParseTimestamp(kline.Date); err == nil {
 			currentStartDate = ts
 		}
 	}
 
 	// 2. 确定结束日期
-	currentEndDate := exchange.NowTimestamp().PreMarketTime()
+	currentEndDate := data.NowTimestamp().PreMarketTime()
 	logger.Debugf("[dataset::BarRaw] [%s]: from %s to %s", code, currentStartDate.OnlyDate(), currentEndDate.OnlyDate())
 
 	step := uint16(std.SecurityBarsMax)
@@ -74,7 +74,7 @@ func (d *DataBarRaw) Update(code exchange.InstrumentInfo, _date exchange.Timesta
 		hs = append(hs, reply)
 
 		lastBar := reply[len(reply)-1]
-		lastBarDate := exchange.PreMarketTimestamp(lastBar.Year, lastBar.Month, lastBar.Day)
+		lastBarDate := data.PreMarketTimestamp(lastBar.Year, lastBar.Month, lastBar.Day)
 
 		if lastBarDate.Less(currentStartDate) {
 			break
@@ -96,7 +96,7 @@ func (d *DataBarRaw) Update(code exchange.InstrumentInfo, _date exchange.Timesta
 
 	for _, vec := range hs {
 		for _, row := range vec {
-			dateTime := exchange.PreMarketTimestamp(row.Year, row.Month, row.Day)
+			dateTime := data.PreMarketTimestamp(row.Year, row.Month, row.Day)
 
 			if dateTime.Less(currentStartDate) || dateTime.Greater(currentEndDate) {
 				continue

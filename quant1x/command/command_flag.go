@@ -6,7 +6,7 @@ import (
 
 	"github.com/quant1x/pkg/tablewriter"
 	"github.com/quant1x/quant1x/quant1x/data"
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/data"
 	"github.com/quant1x/quant1x/quant1x/std/meta"
 	cli "github.com/spf13/cobra"
 )
@@ -19,8 +19,8 @@ var (
 	flagAll       = cmdFlag[bool]{Name: "all", Value: false, Usage: "全部"}
 	flagBaseData  = cmdFlag[string]{Name: "base", Value: "", Usage: "基础数据"}
 	flagFeatures  = cmdFlag[string]{Name: "features", Value: "", Usage: "特征数据"}
-	flagStartDate = cmdFlag[string]{Name: "start", Value: exchange.LastTradingDay(exchange.NowTimestamp()).OnlyDate(), Usage: "开始日期"}
-	flagEndDate   = cmdFlag[string]{Name: "end", Value: exchange.LastTradingDay(exchange.NowTimestamp()).OnlyDate(), Usage: "结束日期"}
+	flagStartDate = cmdFlag[string]{Name: "start", Value: data.LastTradingDay(data.NowTimestamp()).OnlyDate(), Usage: "开始日期"}
+	flagEndDate   = cmdFlag[string]{Name: "end", Value: data.LastTradingDay(data.NowTimestamp()).OnlyDate(), Usage: "结束日期"}
 	flagDate      = cmdFlag[string]{Name: "date", Value: "", Usage: "日期"}
 )
 

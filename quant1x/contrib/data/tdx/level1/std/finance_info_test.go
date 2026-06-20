@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/tdxproto"
+	"github.com/quant1x/quant1x/quant1x/data"
 )
 
 func TestFinanceInfo(t *testing.T) {
@@ -14,18 +15,15 @@ func TestFinanceInfo(t *testing.T) {
 	}
 	defer release()
 
-	req := &FinanceRequest{
-		Codes: []exchange.InstrumentInfo{
-			{Exchange: exchange.ExchangeSSE, Ticker: "600600"},
-			{Exchange: exchange.ExchangeSZSE, Ticker: "000001"},
-		},
-	}
-	resp := &FinanceResponse{}
-	if err := TransactMessageSync(conn, req, resp); err != nil {
+	ctx := NewFinanceInfoContext([]data.InstrumentInfo{
+		{Exchange: data.ExchangeSSE, Ticker: "600600"},
+		{Exchange: data.ExchangeSZSE, Ticker: "000001"},
+	})
+	if err := tdxproto.TransactMessageSync(conn, ctx); err != nil {
 		t.Fatalf("TransactMessageSync() returned error: %v", err)
 	}
-	fmt.Printf("FinanceResponse: %+v\n", resp)
-	if resp.Count != 2 {
-		t.Fatalf("expected Count=2 got %d", resp.Count)
+	fmt.Printf("FinanceInfoContext: %+v\n", ctx)
+	if ctx.RespCount != 2 {
+		t.Fatalf("expected RespCount=2 got %d", ctx.RespCount)
 	}
 }

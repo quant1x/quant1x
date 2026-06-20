@@ -1,6 +1,6 @@
 module github.com/quant1x/quant1x
 
-go 1.26.0
+go 1.27rc1
 
 require (
 	github.com/klauspost/cpuid/v2 v2.3.0

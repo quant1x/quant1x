@@ -9,7 +9,7 @@ import (
 	"github.com/quant1x/num"
 	_ "github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
 	"github.com/quant1x/quant1x/quant1x/data"
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/data"
 	"github.com/quant1x/quant1x/quant1x/data/market"
 	"github.com/quant1x/quant1x/quant1x/learn/preprocessing"
 )
@@ -124,7 +124,7 @@ func TestDBSCAN_TickData(t *testing.T) {
 	date = "2025-09-12"
 	//date = "2026-01-15"
 	D := data.DataHandler()
-	securityCode := exchange.CorrectSecurityCode(code)
+	securityCode := data.CorrectSecurityCode(code)
 	securityName := market.GetStockName(securityCode)
 	fmt.Printf("%s(%s) - %s\n", securityName, securityCode, date)
 	ticks, err := D.GetTradeDetails(securityCode, date)

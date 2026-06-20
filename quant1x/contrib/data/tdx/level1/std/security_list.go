@@ -8,51 +8,14 @@ import (
 	"io"
 	"strings"
 
-	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/tdxproto"
+	"github.com/quant1x/quant1x/quant1x/data"
 	"github.com/quant1x/quant1x/quant1x/encoding"
 )
 
 const (
 	SecurityListPerRequestMax = 1600 // 单次请求的最大记录数
 )
-
-type SecurityListContext struct {
-	Market  uint16
-	Start   uint32
-	Count   uint32
-	Unknown uint32
-}
-
-func NewSecurityListRequest(market exchange.Exchange, start, count int) SecurityListContext {
-	if count <= 0 || count > SecurityListPerRequestMax {
-		count = SecurityListPerRequestMax
-	}
-	if start < 0 {
-		start = 0
-	}
-	return SecurityListContext{
-		Market:  uint16(tdx.ExchangeToMarketId(market)),
-		Start:   uint32(start),
-		Count:   uint32(count),
-		Unknown: 0,
-	}
-}
-
-func (r SecurityListContext) Serialize() []byte {
-	payload := &bytes.Buffer{}
-	_ = binary.Write(payload, binary.LittleEndian, r.Market)
-	_ = binary.Write(payload, binary.LittleEndian, r.Start)
-	_ = binary.Write(payload, binary.LittleEndian, r.Count)
-	_ = binary.Write(payload, binary.LittleEndian, r.Unknown)
-	return tdx.BuildRequest(tdx.StdCommandSecurityList, tdx.PacketTypeRequest, payload.Bytes())
-}
-
-func (SecurityListContext) Command() tdx.StdCommand { return tdx.StdCommandSecurityList }
-
-func (r SecurityListContext) String() string {
-	return fmt.Sprintf("SecurityListContext{Market:%d,Start:%d,Count:%d}", r.Market, r.Start, r.Count)
-}
 
 type Security struct {
 	Code         string  // 证券代码
@@ -64,23 +27,56 @@ type Security struct {
 	Reversed3    [4]byte // 保留字段3
 }
 
-type SecurityListResponse struct {
-	tdx.ResponseBase
-	Count uint16
-	List  []Security
+// SecurityListContext 对齐 C++/Rust/Python SecurityListContext, 合并请求和响应.
+type SecurityListContext struct {
+	tdxproto.FrameBase
+	Market uint16
+	Start  uint32
+	Count  uint32
+	Unknown uint32
+	RespCount uint16
+	List    []Security
 }
 
-func (r *SecurityListResponse) Deserialize(body []byte) error {
+// NewSecurityListContext 构造证券列表请求, 对齐 C++/Rust.
+func NewSecurityListContext(exchange data.Exchange, start, count int) *SecurityListContext {
+	if count <= 0 || count > SecurityListPerRequestMax {
+		count = SecurityListPerRequestMax
+	}
+	if start < 0 {
+		start = 0
+	}
+	return &SecurityListContext{
+		FrameBase: tdxproto.NewFrameBase(tdxproto.StdCommandSecurityList, tdxproto.FlagUncompressed, tdxproto.PacketTypeRequest),
+		Market:    uint16(tdxproto.ExchangeToMarketId(exchange)),
+		Start:     uint32(start),
+		Count:     uint32(count),
+		Unknown:   0,
+	}
+}
+
+// SerializeRequestBody 序列化请求体, 对齐 C++/Rust/Python.
+func (s *SecurityListContext) SerializeRequestBody() []byte {
+	payload := &bytes.Buffer{}
+	_ = binary.Write(payload, binary.LittleEndian, s.Market)
+	_ = binary.Write(payload, binary.LittleEndian, s.Start)
+	_ = binary.Write(payload, binary.LittleEndian, s.Count)
+	_ = binary.Write(payload, binary.LittleEndian, s.Unknown)
+	return payload.Bytes()
+}
+
+// DeserializeResponseBody 解析证券列表响应体, 对齐 C++/Rust/Python.
+func (s *SecurityListContext) DeserializeResponseBody(body []byte) error {
 	reader := bytes.NewReader(body)
-	if err := binary.Read(reader, binary.LittleEndian, &r.Count); err != nil {
+	if err := binary.Read(reader, binary.LittleEndian, &s.RespCount); err != nil {
 		return err
 	}
-	if cap(r.List) < int(r.Count) {
-		r.List = make([]Security, 0, int(r.Count))
+	if cap(s.List) < int(s.RespCount) {
+		s.List = make([]Security, 0, int(s.RespCount))
 	} else {
-		r.List = r.List[:0]
+		s.List = s.List[:0]
 	}
-	for i := 0; i < int(r.Count); i++ {
+	for i := 0; i < int(s.RespCount); i++ {
 		var entry Security
 		var codeBytes [6]byte
 		if _, err := io.ReadFull(reader, codeBytes[:]); err != nil {
@@ -117,17 +113,17 @@ func (r *SecurityListResponse) Deserialize(body []byte) error {
 		if err := binary.Read(reader, binary.LittleEndian, &tmp); err != nil {
 			return err
 		}
-		entry.PreClose = IntegerToFloat64(tmp)
+		entry.PreClose = tdxproto.IntegerToFloat64(tmp)
 
 		if _, err := io.ReadFull(reader, entry.Reversed3[:]); err != nil {
 			return err
 		}
 
-		r.List = append(r.List, entry)
+		s.List = append(s.List, entry)
 	}
 	return nil
 }
 
-func (r *SecurityListResponse) String() string {
-	return fmt.Sprintf("SecurityListResponse{count:%d}", r.Count)
+func (s *SecurityListContext) String() string {
+	return fmt.Sprintf("SecurityListContext{Market:%d,Start:%d,Count:%d,RespCount:%d}", s.Market, s.Start, s.Count, s.RespCount)
 }

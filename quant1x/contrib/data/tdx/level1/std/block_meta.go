@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/tdxproto"
 )
 
 const (
@@ -28,45 +28,38 @@ func (meta BlockMeta) String() string {
 		meta.Size, meta.C1, hex.EncodeToString(meta.HashValue[:]), meta.C2)
 }
 
-type BlockFileMetaContext struct {
+// BlockMetaContext 对齐 C++/Rust/Python BlockFileMetaContext, 合并请求和响应.
+type BlockMetaContext struct {
+	tdxproto.FrameBase
 	BlockFilename [40]byte
+	Meta          BlockMeta
 }
 
-func NewBlockMetaRequest(filename string) *BlockFileMetaContext {
-	req := &BlockFileMetaContext{}
-	copy(req.BlockFilename[:], filename)
-	return req
+// NewBlockMetaContext 构造板块元数据请求, 对齐 C++/Rust.
+func NewBlockMetaContext(filename string) *BlockMetaContext {
+	ctx := &BlockMetaContext{
+		FrameBase: tdxproto.NewFrameBase(tdxproto.StdCommandBlockMeta, tdxproto.FlagUncompressed, tdxproto.PacketTypeRequest),
+	}
+	copy(ctx.BlockFilename[:], filename)
+	return ctx
 }
 
-func (req *BlockFileMetaContext) Bytes() []byte {
-	return tdx.BuildRequest(req.Command(), tdx.PacketTypeRequest, req.BlockFilename[:])
-}
+// SerializeRequestBody 序列化请求体, 对齐 C++/Rust/Python.
+func (b *BlockMetaContext) SerializeRequestBody() []byte { return b.BlockFilename[:] }
 
-func (req *BlockFileMetaContext) Command() tdx.StdCommand {
-	return tdx.StdCommandBlockMeta
-}
-
-func (req *BlockFileMetaContext) String() string {
-	filename := string(bytes.TrimRight(req.BlockFilename[:], "\x00"))
-	return fmt.Sprintf("{BlockFilename:%s}", filename)
-}
-
-type BlockMetaResponse struct {
-	tdx.ResponseBase
-	Meta BlockMeta
-}
-
-func (resp *BlockMetaResponse) Deserialize(data []byte) error {
+// DeserializeResponseBody 解析板块元数据响应体, 对齐 C++/Rust/Python.
+func (b *BlockMetaContext) DeserializeResponseBody(data []byte) error {
 	if len(data) < 38 {
 		return nil
 	}
-	resp.Meta.Size = binary.LittleEndian.Uint32(data[0:4])
-	resp.Meta.C1 = data[4]
-	copy(resp.Meta.HashValue[:], data[5:37])
-	resp.Meta.C2 = data[37]
+	b.Meta.Size = binary.LittleEndian.Uint32(data[0:4])
+	b.Meta.C1 = data[4]
+	copy(b.Meta.HashValue[:], data[5:37])
+	b.Meta.C2 = data[37]
 	return nil
 }
 
-func (resp *BlockMetaResponse) String() string {
-	return fmt.Sprintf("{%s}", resp.Meta.String())
+func (b *BlockMetaContext) String() string {
+	filename := string(bytes.TrimRight(b.BlockFilename[:], "\x00"))
+	return fmt.Sprintf("BlockMetaContext{Filename:%s, %s}", filename, b.Meta.String())
 }

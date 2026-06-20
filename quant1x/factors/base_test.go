@@ -7,7 +7,7 @@ import (
 
 	"github.com/quant1x/quant1x/quant1x/config"
 	"github.com/quant1x/quant1x/quant1x/data"
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/data"
 )
 
 func TestGetCrossSectionForwardAdjustedKlines(t *testing.T) {
@@ -59,8 +59,8 @@ func TestCombineAdjustmentsInPeriod(t *testing.T) {
 	}
 
 	// Create test timestamps
-	startDate := exchange.PreMarketTimestamp(2024, 1, 1)
-	endDate := exchange.PreMarketTimestamp(2024, 12, 31)
+	startDate := data.PreMarketTimestamp(2024, 1, 1)
+	endDate := data.PreMarketTimestamp(2024, 12, 31)
 
 	adjustments := CombineAdjustmentsInPeriod(xdxrList, startDate, endDate)
 
@@ -122,7 +122,7 @@ func TestIpoDateFromXdxrs(t *testing.T) {
 }
 
 func TestCumulativeAdjustment(t *testing.T) {
-	ts := exchange.PreMarketTimestamp(2024, 1, 1)
+	ts := data.PreMarketTimestamp(2024, 1, 1)
 	adj := CumulativeAdjustment{
 		Timestamp:            ts,
 		M:                    0.9,

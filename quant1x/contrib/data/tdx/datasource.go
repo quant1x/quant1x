@@ -5,7 +5,6 @@ import (
 
 	"github.com/quant1x/quant1x/quant1x/config"
 	"github.com/quant1x/quant1x/quant1x/data"
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
 	"github.com/quant1x/quant1x/quant1x/data/schema"
 	"github.com/quant1x/quant1x/quant1x/encoding"
 )
@@ -32,8 +31,8 @@ func (p *tdxProvider) GetKLines(instrument string, startDate, endDate string, fr
 		return klines, nil
 	}
 	// 2. 尝试更新缓存
-	sc := exchange.DetectSymbol(instrument)
-	tdxUpdateKLine(sc, exchange.NowTimestamp())
+	sc := data.DetectSymbol(instrument)
+	tdxUpdateKLine(sc, data.NowTimestamp())
 	// 3. 重新读取缓存文件
 	klines = []schema.Bar{}
 	err = encoding.CsvToSlices(cacheFilename, &klines)
@@ -54,8 +53,8 @@ func (p *tdxProvider) GetTradeTicks(instrument string, date string) ([]schema.Tr
 }
 
 func (p *tdxProvider) GetTradeDetails(instrument string, date string) ([]schema.Transaction, error) {
-	sc := exchange.DetectSymbol(instrument)
-	ts, err := exchange.NewTimestampFromString(date)
+	sc := data.DetectSymbol(instrument)
+	ts, err := data.NewTimestampFromString(date)
 	if err != nil {
 		return nil, err
 	}

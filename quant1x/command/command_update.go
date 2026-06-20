@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/quant1x/quant1x/quant1x/data"
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
 	"github.com/quant1x/quant1x/quant1x/data/market"
 	cli "github.com/spf13/cobra"
 )
@@ -32,9 +31,9 @@ func initUpdate() {
 		Long:  updateDescription,
 		Run: func(cmd *cli.Command, args []string) {
 			fmt.Println()
-			now := exchange.NowTimestamp()
-			currentDate := exchange.LastTradingDay(now)
-			tsStart, err := exchange.NewTimestampFromString(flagStartDate.Value)
+			now := data.NowTimestamp()
+			currentDate := data.LastTradingDay(now)
+			tsStart, err := data.NewTimestampFromString(flagStartDate.Value)
 			if err != nil {
 				fmt.Printf("Error: 无效的开始日期: %s\n", flagStartDate.Value)
 				_ = cmd.Usage()
@@ -42,7 +41,7 @@ func initUpdate() {
 			}
 			tsStart = tsStart.PreMarketTime()
 			fmt.Println("开始日期:", tsStart.OnlyDate())
-			tsEnd, err := exchange.NewTimestampFromString(flagEndDate.Value)
+			tsEnd, err := data.NewTimestampFromString(flagEndDate.Value)
 			if err != nil {
 				fmt.Printf("Error: 无效的结束日期: %s\n", flagEndDate.Value)
 				_ = cmd.Usage()
@@ -81,7 +80,7 @@ func initUpdate() {
 				plugins = append(plugins, featurePlugins...)
 			}
 			fmt.Println("plugin num:", len(plugins))
-			ts := exchange.DateRange(tsStart, tsEnd, false)
+			ts := data.DateRange(tsStart, tsEnd, false)
 			fmt.Println(ts)
 			fmt.Println("date count:", len(ts))
 			codes := market.GetCodeList()

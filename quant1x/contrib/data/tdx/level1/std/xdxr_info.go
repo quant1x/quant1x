@@ -7,8 +7,8 @@ import (
 	"io"
 	"math"
 
-	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/tdxproto"
+	"github.com/quant1x/quant1x/quant1x/data"
 )
 
 // XdxrCategory 除权除息类型枚举
@@ -67,29 +67,6 @@ func (c XdxrCategory) ToString() string {
 	}
 }
 
-// XdxrInfoRequest encodes the XDXR_INFO request payload.
-type XdxrInfoRequest struct {
-	//Market uint8
-	//Code   [6]byte
-	Instrument exchange.InstrumentInfo
-}
-
-func (r XdxrInfoRequest) Serialize() []byte {
-	payload := &bytes.Buffer{}
-	padding := []byte{0x01, 0x00}
-	payload.Write(padding)
-	market := uint8(ExchangeToMarketId(r.Instrument.Exchange))
-	payload.WriteByte(market)
-	payload.Write([]byte(r.Instrument.Ticker)[:6])
-	return tdx.BuildRequest(tdx.StdCommandXdxrInfo, tdx.PacketTypeRequest, payload.Bytes())
-}
-
-func (r XdxrInfoRequest) Command() tdx.StdCommand { return tdx.StdCommandXdxrInfo }
-
-func (r XdxrInfoRequest) String() string {
-	return fmt.Sprintf("XdxrInfoRequest{%s}", r.Instrument.Symbol())
-}
-
 // XdxrInfo represents a parsed XDXR event returned by the server.
 type XdxrInfo struct {
 	Date          string  // 日期 YYYY-MM-DD格式
@@ -119,18 +96,9 @@ func (x XdxrInfo) IsAdjust() bool {
 }
 
 // AdjustFactor 计算调整因子m和a
-//
-// 根据股票分红配股等参数计算价格调整因子, 用于复权计算
-//
-// 返回调整因子m和a的元组
-// - m: 价格调整乘数因子
-// - a: 价格调整加数因子
-//
-// 当1+B接近0时, 会返回默认值m=1.0和a=0.0
 func (x XdxrInfo) AdjustFactor() (float64, float64) {
 	var m, a float64
 
-	// 计算货币调整项和股本调整比率(通过独立函数)
 	A := x.ComputeMonetaryAdjustment()
 	B := x.ComputeShareAdjustmentRatio()
 
@@ -148,27 +116,21 @@ func (x XdxrInfo) AdjustFactor() (float64, float64) {
 	return m, a
 }
 
-// ComputeMonetaryAdjustment 计算货币调整项 (monetary adjustment per 10 shares -> per-share adjust after /10)
 func (x XdxrInfo) ComputeMonetaryAdjustment() float64 {
-	// (配股数量 * 配股价 - 分红 + 权证份数 * 行权价格) / 10
 	return (x.PeiGu*x.PeiGuJia - x.FenHong + x.FenShu*x.XingQuanJia) / 10.0
 }
 
-// ComputeShareAdjustmentRatio 计算股本调整比率 (新增股数/送转股/缩股/行权影响) / 10
 func (x XdxrInfo) ComputeShareAdjustmentRatio() float64 {
-	// (送转股 + 配股 - 缩股 + 权证份数) / 10
 	return (x.SongZhuanGu + x.PeiGu - x.SuoGu + x.FenShu) / 10.0
 }
 
-// IsCapitalChange 判断是否是股本变化
-// 返回: true表示是股本变化, false表示不是
 func (x XdxrInfo) IsCapitalChange() bool {
 	switch x.Category {
-	case int(ExDividend), // 除权除息
-		int(StockSplitOrReverseSplit),      // 拆股或合股
-		int(RestrictedSharesConsolidation), // 非流通股缩股
-		int(IssueCallWarrants),             // 送认购权证
-		int(IssuePutWarrants):              // 送认沽权证
+	case int(ExDividend),
+		int(StockSplitOrReverseSplit),
+		int(RestrictedSharesConsolidation),
+		int(IssueCallWarrants),
+		int(IssuePutWarrants):
 		return false
 	default:
 		if x.HouLiuTong > 0 && x.HouZongGuBen > 0 {
@@ -179,7 +141,6 @@ func (x XdxrInfo) IsCapitalChange() bool {
 }
 
 // Adjust 生成复权计算函数
-// 返回: 计算复权价格的函数对象
 func (x XdxrInfo) Adjust() func(float64) float64 {
 	songZhuangu := x.SongZhuanGu
 	peiGu := x.PeiGu
@@ -194,32 +155,50 @@ func (x XdxrInfo) Adjust() func(float64) float64 {
 	}
 }
 
-// String 返回字符串表示
 func (x XdxrInfo) String() string {
 	return fmt.Sprintf("Date: %s Category: %d Name: %s FenHong: %f PeiGuJia: %f SongZhuanGu: %f PeiGu: %f SuoGu: %f QianLiuTong: %f HouLiuTong: %f QianZongGuBen: %f HouZongGuBen: %f FenShu: %f XingQuanJia: %f",
 		x.Date, x.Category, x.Name, x.FenHong, x.PeiGuJia, x.SongZhuanGu, x.PeiGu, x.SuoGu, x.QianLiuTong, x.HouLiuTong, x.QianZongGuBen, x.HouZongGuBen, x.FenShu, x.XingQuanJia)
 }
 
-// XdxrInfoResponse decodes the response body for XDXR_INFO
-type XdxrInfoResponse struct {
-	tdx.ResponseBase
-	Count uint16
-	List  []XdxrInfo
+// XdxrInfoContext 对齐 C++/Rust/Python XdxrInfoContext, 合并请求和响应.
+type XdxrInfoContext struct {
+	tdxproto.FrameBase
+	Instrument data.InstrumentInfo
+	Count      uint16
+	List       []XdxrInfo
 }
 
-func NewXdxrInfoResponse() *XdxrInfoResponse { return &XdxrInfoResponse{} }
+// NewXdxrInfoContext 构造除权除息请求, 对齐 C++/Rust.
+func NewXdxrInfoContext(instrument data.InstrumentInfo) *XdxrInfoContext {
+	return &XdxrInfoContext{
+		FrameBase:  tdxproto.NewFrameBase(tdxproto.StdCommandXdxrInfo, tdxproto.FlagUncompressed, tdxproto.PacketTypeRequest),
+		Instrument: instrument,
+	}
+}
 
-func (r *XdxrInfoResponse) Deserialize(body []byte) error {
+// SerializeRequestBody 序列化请求体, 对齐 C++/Rust/Python.
+func (x *XdxrInfoContext) SerializeRequestBody() []byte {
+	payload := &bytes.Buffer{}
+	padding := []byte{0x01, 0x00}
+	payload.Write(padding)
+	market := uint8(tdxproto.ExchangeToMarketId(x.Instrument.Exchange))
+	payload.WriteByte(market)
+	payload.Write([]byte(x.Instrument.Ticker)[:6])
+	return payload.Bytes()
+}
+
+// DeserializeResponseBody 解析除权除息响应体, 对齐 C++/Rust/Python.
+func (x *XdxrInfoContext) DeserializeResponseBody(body []byte) error {
 	reader := bytes.NewReader(body)
 	// skip 9 bytes as in C++ (Unknown header)
 	if _, err := reader.Seek(9, io.SeekStart); err != nil {
 		return err
 	}
-	if err := binary.Read(reader, binary.LittleEndian, &r.Count); err != nil {
+	if err := binary.Read(reader, binary.LittleEndian, &x.Count); err != nil {
 		return err
 	}
-	r.List = make([]XdxrInfo, 0, int(r.Count))
-	for i := 0; i < int(r.Count); i++ {
+	x.List = make([]XdxrInfo, 0, int(x.Count))
+	for i := 0; i < int(x.Count); i++ {
 		var market uint8
 		if err := binary.Read(reader, binary.LittleEndian, &market); err != nil {
 			return err
@@ -246,7 +225,7 @@ func (r *XdxrInfoResponse) Deserialize(body []byte) error {
 			return err
 		}
 
-		y, m, d, _, _ := GetDatetimeFromUint32(9, dateRaw, 0)
+		y, m, d, _, _ := tdxproto.GetDatetimeFromUint32(9, dateRaw, 0)
 		xi := XdxrInfo{Date: fmt.Sprintf("%04d-%02d-%02d", y, m, d), Category: int(category), Name: XdxrCategory(category).ToString()}
 
 		// parse data per category similar to C++ logic
@@ -263,7 +242,6 @@ func (r *XdxrInfoResponse) Deserialize(body []byte) error {
 			_ = binary.Read(db, binary.LittleEndian, &f32v)
 			xi.PeiGu = float64(f32v)
 		case 11, 12:
-			// skip 8 then suogu float32
 			if _, err := db.Seek(8, io.SeekStart); err == nil {
 				var f32v float32
 				_ = binary.Read(db, binary.LittleEndian, &f32v)
@@ -281,20 +259,20 @@ func (r *XdxrInfoResponse) Deserialize(body []byte) error {
 		default:
 			var v uint32
 			_ = binary.Read(db, binary.LittleEndian, &v)
-			xi.QianLiuTong = IntegerToFloat64(v)
+			xi.QianLiuTong = tdxproto.IntegerToFloat64(v)
 			_ = binary.Read(db, binary.LittleEndian, &v)
-			xi.QianZongGuBen = IntegerToFloat64(v)
+			xi.QianZongGuBen = tdxproto.IntegerToFloat64(v)
 			_ = binary.Read(db, binary.LittleEndian, &v)
-			xi.HouLiuTong = IntegerToFloat64(v)
+			xi.HouLiuTong = tdxproto.IntegerToFloat64(v)
 			_ = binary.Read(db, binary.LittleEndian, &v)
-			xi.HouZongGuBen = IntegerToFloat64(v)
+			xi.HouZongGuBen = tdxproto.IntegerToFloat64(v)
 		}
 
-		r.List = append(r.List, xi)
+		x.List = append(x.List, xi)
 	}
 	return nil
 }
 
-func (r *XdxrInfoResponse) String() string {
-	return fmt.Sprintf("XdxrInfoResponse{Count:%d}", r.Count)
+func (x *XdxrInfoContext) String() string {
+	return fmt.Sprintf("XdxrInfoContext{%s, Count:%d}", x.Instrument.Symbol(), x.Count)
 }

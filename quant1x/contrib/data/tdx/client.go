@@ -10,11 +10,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/level1/std"
 	"github.com/quant1x/quant1x/quant1x/core"
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/data"
 	qio "github.com/quant1x/quant1x/quant1x/io"
 	"github.com/quant1x/quant1x/quant1x/log"
-	"github.com/quant1x/quant1x/quant1x/std"
 	"gopkg.in/yaml.v3"
 )
 
@@ -65,83 +65,73 @@ func NewStandardProtocolHandler(timeout, interval time.Duration) qio.NetworkOper
 func (h *StandardProtocolHandler) Timeout() time.Duration       { return h.timeout }
 func (h *StandardProtocolHandler) CheckInterval() time.Duration { return h.checkInterval }
 
-func (h *StandardProtocolHandler) processRequest(conn *net.TCPConn, req []byte) ([]byte, *ResponseHeader, error) {
+// transact 对齐 C++/Rust/Python transact_message_sync, 使用 BaseFrame 接口.
+func (h *StandardProtocolHandler) transact(conn *net.TCPConn, msg BaseFrame) error {
 	if conn == nil {
-		return nil, nil, errors.New("nil conn")
+		return errors.New("nil conn")
 	}
 	if err := conn.SetDeadline(time.Now().Add(h.timeout)); err != nil {
-		return nil, nil, err
+		return err
 	}
 	defer conn.SetDeadline(time.Time{})
-	if _, err := conn.Write(req); err != nil {
-		return nil, nil, err
+	cmd := CommandToString(msg.Command())
+	payload := SerializeRequest(msg)
+	log.Debugf("[%s] send request bytes: %d", cmd, len(payload))
+	if _, err := conn.Write(payload); err != nil {
+		return err
 	}
 	hdr, err := readResponseHeader(conn)
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
+	msg.SetResponseHeader(hdr)
 	if hdr.BodyWireLen == 0 {
-		return nil, hdr, nil
+		return nil
 	}
 	body := make([]byte, hdr.BodyWireLen)
 	if _, err := stdio.ReadFull(conn, body); err != nil {
-		return nil, hdr, err
+		return err
 	}
 	if hdr.BodyWireLen != hdr.BodyRawLen {
-		un, err := unzipZlib(body)
+		body, err = unzipZlib(body)
 		if err != nil {
-			return nil, hdr, err
+			return err
 		}
-		return un, hdr, nil
 	}
-	return body, hdr, nil
+	if err := msg.DeserializeResponseBody(body); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (h *StandardProtocolHandler) Handshake(conn *net.TCPConn) (bool, error) {
-	req1 := StdLoginContext{}
-	body1, _, err := h.processRequest(conn, req1.Bytes())
-	if err != nil {
+	req1 := std.NewStdLoginContext()
+	if err := h.transact(conn, req1); err != nil {
 		log.Errorf("level1 handshake StdLoginContext failed: %v", err)
 		return false, err
 	}
-	if len(body1) == 0 {
-		return false, errors.New("level1 handshake StdLoginContext empty body")
-	}
-	var resp1 Hello1Response
-	if err := resp1.Deserialize(body1); err != nil {
-		log.Errorf("level1 handshake StdLoginContext validation failed: %v", err)
-		return false, err
+	if req1.Info == "" {
+		return false, errors.New("level1 handshake StdLoginContext empty info")
 	}
 
-	req2 := UpgradeTipContext{}
-	body2, _, err := h.processRequest(conn, req2.Bytes())
-	if err != nil {
+	req2 := std.NewUpgradeTipContext()
+	if err := h.transact(conn, req2); err != nil {
 		log.Errorf("level1 handshake UpgradeTipContext failed: %v", err)
 		return false, err
 	}
-	if len(body2) == 0 {
-		return false, errors.New("level1 handshake UpgradeTipContext empty body")
-	}
-	var resp2 Hello2Response
-	if err := resp2.Deserialize(body2); err != nil {
-		log.Errorf("level1 handshake UpgradeTipContext validation failed: %v", err)
-		return false, err
+	if req2.Info == "" {
+		return false, errors.New("level1 handshake UpgradeTipContext empty info")
 	}
 	return true, nil
 }
 
 func (h *StandardProtocolHandler) Keepalive(conn *net.TCPConn) (bool, error) {
-	body, _, err := h.processRequest(conn, HeartbeatContext{}.Bytes())
-	if err != nil {
+	req := std.NewHeartbeatContext()
+	if err := h.transact(conn, req); err != nil {
 		return false, err
 	}
-	if len(body) == 0 {
-		return false, errors.New("level1 keepalive empty body")
-	}
-	var resp HeartbeatResponse
-	if err := resp.Deserialize(body); err != nil {
-		log.Errorf("level1 keepalive response invalid: %v", err)
-		return false, err
+	if req.Info == "" {
+		return false, errors.New("level1 keepalive empty info")
 	}
 	return true, nil
 }
@@ -176,7 +166,7 @@ func initStandardConnectionPool() (*qio.TcpConnectionPool, error) {
 		needDetect = true
 	} else if shouldRefreshCache(info) {
 		needDetect = true
-	} else if tp := exchange.NewTimestampFromTime(info.ModTime()); err == nil && exchange.CanInitialize(&tp) {
+	} else if tp := data.NewTimestampFromTime(info.ModTime()); err == nil && data.CanInitialize(&tp) {
 		needDetect = true
 	}
 
@@ -287,4 +277,9 @@ func shouldRefreshCache(info os.FileInfo) bool {
 		return true
 	}
 	return time.Since(info.ModTime()) > cacheRefreshInterval
+}
+
+func init() {
+	// 注入连接获取函数到 std 包, 避免 std → tdx 循环导入
+	std.SetConnectionProvider(GetStdConnection)
 }

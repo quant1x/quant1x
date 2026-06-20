@@ -4,9 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"strings"
 
-	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/tdxproto"
 )
 
 const (
@@ -22,59 +21,53 @@ type BlockInfo struct {
 
 func (info BlockInfo) String() string {
 	return fmt.Sprintf("BlockName: %s BlockType: %d StockCount: %d CodeList: [%s]",
-		info.BlockName, info.BlockType, info.StockCount, strings.Join(info.CodeList, ","))
+		info.BlockName, info.BlockType, info.StockCount, "")
 }
 
-type BlockFileContext struct {
+// BlockDataContext 对齐 C++/Rust/Python BlockFileContext, 合并请求和响应.
+type BlockDataContext struct {
+	tdxproto.FrameBase
 	Start         uint32
 	Size          uint32
 	BlockFilename [100]byte
+	DataSize      uint32
+	Data          []byte
 }
 
-func NewBlockInfoRequest(filename string, offset uint32) *BlockFileContext {
-	req := &BlockFileContext{
-		Start: offset,
-		Size:  BlockChunksSize,
+// NewBlockDataContext 构造板块数据请求, 对齐 C++/Rust.
+func NewBlockDataContext(filename string, offset uint32) *BlockDataContext {
+	ctx := &BlockDataContext{
+		FrameBase:     tdxproto.NewFrameBase(tdxproto.StdCommandBlockData, tdxproto.FlagUncompressed, tdxproto.PacketTypeRequest),
+		Start:         offset,
+		Size:          BlockChunksSize,
 	}
-	copy(req.BlockFilename[:], filename)
-	return req
+	copy(ctx.BlockFilename[:], filename)
+	return ctx
 }
 
-func (req *BlockFileContext) Serialize() []byte {
+// SerializeRequestBody 序列化请求体, 对齐 C++/Rust/Python.
+func (b *BlockDataContext) SerializeRequestBody() []byte {
 	buf := new(bytes.Buffer)
-	_ = binary.Write(buf, binary.LittleEndian, req.Start)
-	_ = binary.Write(buf, binary.LittleEndian, req.Size)
-	buf.Write(req.BlockFilename[:])
-	return tdx.BuildRequest(req.Command(), tdx.PacketTypeRequest, buf.Bytes())
+	_ = binary.Write(buf, binary.LittleEndian, b.Start)
+	_ = binary.Write(buf, binary.LittleEndian, b.Size)
+	buf.Write(b.BlockFilename[:])
+	return buf.Bytes()
 }
 
-func (req *BlockFileContext) Command() tdx.StdCommand {
-	return tdx.StdCommandBlockData
-}
-
-func (req *BlockFileContext) String() string {
-	filename := string(bytes.TrimRight(req.BlockFilename[:], "\x00"))
-	return fmt.Sprintf("{Start:%d, Size:%d, BlockFilename:%s}", req.Start, req.Size, filename)
-}
-
-type BlockInfoResponse struct {
-	tdx.ResponseBase
-	Size uint32
-	Data []byte
-}
-
-func (resp *BlockInfoResponse) Deserialize(data []byte) error {
+// DeserializeResponseBody 解析板块数据响应体, 对齐 C++/Rust/Python.
+func (b *BlockDataContext) DeserializeResponseBody(data []byte) error {
 	if len(data) < 4 {
 		return nil
 	}
-	resp.Size = binary.LittleEndian.Uint32(data[:4])
-	if resp.Size > 0 {
-		resp.Data = make([]byte, len(data)-4)
-		copy(resp.Data, data[4:])
+	b.DataSize = binary.LittleEndian.Uint32(data[:4])
+	if b.DataSize > 0 {
+		b.Data = make([]byte, len(data)-4)
+		copy(b.Data, data[4:])
 	}
 	return nil
 }
 
-func (resp *BlockInfoResponse) String() string {
-	return fmt.Sprintf("{Size:%d}", resp.Size)
+func (b *BlockDataContext) String() string {
+	filename := string(bytes.TrimRight(b.BlockFilename[:], "\x00"))
+	return fmt.Sprintf("BlockDataContext{Start:%d, Size:%d, Filename:%s, DataSize:%d}", b.Start, b.Size, filename, b.DataSize)
 }

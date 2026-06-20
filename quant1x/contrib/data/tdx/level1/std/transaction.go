@@ -7,8 +7,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/tdxproto"
+	"github.com/quant1x/quant1x/quant1x/data"
 	"github.com/quant1x/quant1x/quant1x/std"
 )
 
@@ -22,10 +22,7 @@ const (
 	TickTransactionDirectionBuy  = 0 // 买盘
 	TickTransactionDirectionSell = 1 // 卖盘
 	TickTransactionDirectionNone = 2 // 中性盘
-
-	// 明确表示竞价时段
-
-	TickTransactionAuctionClose = 8 // 收盘集合竞价
+	TickTransactionAuctionClose  = 8 // 收盘集合竞价
 )
 
 // TickTransaction mirrors the C++ TickTransaction structure.
@@ -47,15 +44,19 @@ type TransactionReply struct {
 	List  []TickTransaction
 }
 
-// TransactionContext builds a TRANSACTION_DATA request payload.
+// TransactionContext 对齐 C++/Rust/Python TransactionContext, 合并请求和响应.
 type TransactionContext struct {
+	tdxproto.FrameBase
 	Market uint16
 	Code   [6]byte
 	Start  uint16
 	Count  uint16
+	sc     data.InstrumentInfo
+	Reply  TransactionReply
 }
 
-func NewTransactionRequest(instrument exchange.InstrumentInfo, offset, size int) TransactionContext {
+// NewTransactionContext 构造逐笔成交请求, 对齐 C++/Rust.
+func NewTransactionContext(instrument data.InstrumentInfo, offset, size int) *TransactionContext {
 	if size <= 0 || size > TickTransactionPerRequestMax {
 		size = TickTransactionPerRequestMax
 	}
@@ -63,61 +64,47 @@ func NewTransactionRequest(instrument exchange.InstrumentInfo, offset, size int)
 		offset = 0
 	}
 
-	return TransactionContext{
-		Market: uint16(ExchangeToMarketId(instrument.Exchange)),
-		Code:   [6]byte(std.String2Bytes(instrument.Ticker)),
-		Start:  uint16(offset),
-		Count:  uint16(size),
+	return &TransactionContext{
+		FrameBase: tdxproto.NewFrameBase(tdxproto.StdCommandTransactionData, tdxproto.FlagUncompressed, tdxproto.PacketTypeRequest),
+		Market:    uint16(tdxproto.ExchangeToMarketId(instrument.Exchange)),
+		Code:      [6]byte(std.String2Bytes(instrument.Ticker)),
+		Start:     uint16(offset),
+		Count:     uint16(size),
+		sc:        instrument,
 	}
 }
 
-func (r TransactionContext) Serialize() []byte {
+// SerializeRequestBody 序列化请求体, 对齐 C++/Rust/Python.
+func (t *TransactionContext) SerializeRequestBody() []byte {
 	payload := &bytes.Buffer{}
-	_ = binary.Write(payload, binary.LittleEndian, r.Market)
-	payload.Write(r.Code[:])
-	_ = binary.Write(payload, binary.LittleEndian, r.Start)
-	_ = binary.Write(payload, binary.LittleEndian, r.Count)
-	return tdx.BuildRequest(tdx.StdCommandTransactionData, tdx.PacketTypeRequest, payload.Bytes())
+	_ = binary.Write(payload, binary.LittleEndian, t.Market)
+	payload.Write(t.Code[:])
+	_ = binary.Write(payload, binary.LittleEndian, t.Start)
+	_ = binary.Write(payload, binary.LittleEndian, t.Count)
+	return payload.Bytes()
 }
 
-func (TransactionContext) Command() tdx.StdCommand { return tdx.StdCommandTransactionData }
-
-func (r TransactionContext) String() string {
-	code := strings.TrimRight(string(r.Code[:]), "\x00 ")
-	return fmt.Sprintf("TransactionContext{Market:%d,Code:%s,Start:%d,Count:%d}", r.Market, code, r.Start, r.Count)
-}
-
-// TransactionResponse parses TRANSACTION_DATA responses.
-type TransactionResponse struct {
-	tdx.ResponseBase
-	Reply TransactionReply
-	sc    exchange.InstrumentInfo
-}
-
-func NewTransactionResponse(code exchange.InstrumentInfo) *TransactionResponse {
-	return &TransactionResponse{sc: code}
-}
-
-func (r *TransactionResponse) Deserialize(body []byte) error {
+// DeserializeResponseBody 解析逐笔成交响应体, 对齐 C++/Rust/Python.
+func (t *TransactionContext) DeserializeResponseBody(body []byte) error {
 	reader := bytes.NewReader(body)
-	if err := binary.Read(reader, binary.LittleEndian, &r.Reply.Count); err != nil {
+	if err := binary.Read(reader, binary.LittleEndian, &t.Reply.Count); err != nil {
 		return err
 	}
-	if cap(r.Reply.List) < int(r.Reply.Count) {
-		r.Reply.List = make([]TickTransaction, 0, int(r.Reply.Count))
+	if cap(t.Reply.List) < int(t.Reply.Count) {
+		t.Reply.List = make([]TickTransaction, 0, int(t.Reply.Count))
 	} else {
-		r.Reply.List = r.Reply.List[:0]
+		t.Reply.List = t.Reply.List[:0]
 	}
 
-	baseUnit := DefaultBaseUnit(int(ExchangeToMarketId(r.sc.Exchange)), r.sc.Ticker)
-	isIndex := r.sc.Type.IsIndex()
+	baseUnit := tdxproto.DefaultBaseUnit(int(tdxproto.ExchangeToMarketId(t.sc.Exchange)), t.sc.Ticker)
+	isIndex := t.sc.Type.IsIndex()
 	var lastPrice int64 = 0
 
-	for i := 0; i < int(r.Reply.Count); i++ {
+	for i := 0; i < int(t.Reply.Count); i++ {
 		var seconds uint16
 		if err := binary.Read(reader, binary.LittleEndian, &seconds); err != nil {
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
-				r.Reply.Count = uint16(len(r.Reply.List))
+				t.Reply.Count = uint16(len(t.Reply.List))
 				return nil
 			}
 			return err
@@ -128,7 +115,7 @@ func (r *TransactionResponse) Deserialize(body []byte) error {
 		rawPrice, err := varintRead(reader)
 		if err != nil {
 			if err == io.EOF {
-				r.Reply.Count = uint16(len(r.Reply.List))
+				t.Reply.Count = uint16(len(t.Reply.List))
 				return nil
 			}
 			return err
@@ -172,32 +159,37 @@ func (r *TransactionResponse) Deserialize(body []byte) error {
 		// skip reserved varint
 		if _, err := varintRead(reader); err != nil {
 			if err == io.EOF {
-				r.Reply.List = append(r.Reply.List, ele)
-				r.Reply.Count = uint16(len(r.Reply.List))
+				t.Reply.List = append(t.Reply.List, ele)
+				t.Reply.Count = uint16(len(t.Reply.List))
 				return nil
 			}
 			return err
 		}
 
-		r.Reply.List = append(r.Reply.List, ele)
+		t.Reply.List = append(t.Reply.List, ele)
 	}
 	return nil
 }
 
-func (r *TransactionResponse) String() string {
-	return fmt.Sprintf("TransactionResponse{Reply{Count:%d}}", r.Reply.Count)
+func (t *TransactionContext) String() string {
+	code := strings.TrimRight(string(t.Code[:]), "\x00 ")
+	return fmt.Sprintf("TransactionContext{Market:%d,Code:%s,Start:%d,Count:%d,ReplyCount:%d}", t.Market, code, t.Start, t.Count, t.Reply.Count)
 }
 
-// HistoryTransactionRequest mirrors the C++ HistoryTransactionRequest.
-type HistoryTransactionRequest struct {
+// HistoryTransactionContext 对齐 C++/Rust/Python HistoryTransactionContext, 合并请求和响应.
+type HistoryTransactionContext struct {
+	tdxproto.FrameBase
 	Date   uint32
 	Market uint16
 	Code   [6]byte
 	Start  uint16
 	Count  uint16
+	sc     data.InstrumentInfo
+	Reply  TransactionReply
 }
 
-func NewHistoryTransactionRequest(securityCode exchange.InstrumentInfo, date uint32, offset, size int) HistoryTransactionRequest {
+// NewHistoryTransactionContext 构造历史逐笔成交请求, 对齐 C++/Rust.
+func NewHistoryTransactionContext(instrument data.InstrumentInfo, date uint32, offset, size int) *HistoryTransactionContext {
 	if size <= 0 || size > TickTransactionPerRequestMax {
 		size = TickTransactionPerRequestMax
 	}
@@ -205,58 +197,42 @@ func NewHistoryTransactionRequest(securityCode exchange.InstrumentInfo, date uin
 		offset = 0
 	}
 
-	return HistoryTransactionRequest{
-		Date:   date,
-		Market: uint16(ExchangeToMarketId(securityCode.Exchange)),
-		Code:   [6]byte(std.String2Bytes(securityCode.Ticker)),
-		Start:  uint16(offset),
-		Count:  uint16(size),
+	return &HistoryTransactionContext{
+		FrameBase: tdxproto.NewFrameBase(tdxproto.StdCommandHistoryTransactionData, tdxproto.FlagUncompressed, tdxproto.PacketTypeRequest),
+		Date:      date,
+		Market:    uint16(tdxproto.ExchangeToMarketId(instrument.Exchange)),
+		Code:      [6]byte(std.String2Bytes(instrument.Ticker)),
+		Start:     uint16(offset),
+		Count:     uint16(size),
+		sc:        instrument,
 	}
 }
 
-func (r HistoryTransactionRequest) Serialize() []byte {
+// SerializeRequestBody 序列化请求体, 对齐 C++/Rust/Python.
+func (h *HistoryTransactionContext) SerializeRequestBody() []byte {
 	payload := &bytes.Buffer{}
-	_ = binary.Write(payload, binary.LittleEndian, r.Date)
-	_ = binary.Write(payload, binary.LittleEndian, r.Market)
-	payload.Write(r.Code[:])
-	_ = binary.Write(payload, binary.LittleEndian, r.Start)
-	_ = binary.Write(payload, binary.LittleEndian, r.Count)
-	return tdx.BuildRequest(tdx.StdCommandHistoryTransactionData, tdx.PacketTypeRequest, payload.Bytes())
+	_ = binary.Write(payload, binary.LittleEndian, h.Date)
+	_ = binary.Write(payload, binary.LittleEndian, h.Market)
+	payload.Write(h.Code[:])
+	_ = binary.Write(payload, binary.LittleEndian, h.Start)
+	_ = binary.Write(payload, binary.LittleEndian, h.Count)
+	return payload.Bytes()
 }
 
-func (HistoryTransactionRequest) Command() tdx.StdCommand {
-	return tdx.StdCommandHistoryTransactionData
-}
-
-func (r HistoryTransactionRequest) String() string {
-	code := strings.TrimRight(string(r.Code[:]), "\x00 ")
-	return fmt.Sprintf("HistoryTransactionRequest{Date:%d,Market:%d,Code:%s,Start:%d,Count:%d}", r.Date, r.Market, code, r.Start, r.Count)
-}
-
-// HistoryTransactionResponse parses HISTORY_TRANSACTION_DATA responses.
-type HistoryTransactionResponse struct {
-	tdx.ResponseBase
-	Reply TransactionReply
-	code  exchange.InstrumentInfo
-}
-
-func NewHistoryTransactionResponse(code exchange.InstrumentInfo) *HistoryTransactionResponse {
-	return &HistoryTransactionResponse{code: code}
-}
-
-func (r *HistoryTransactionResponse) Deserialize(body []byte) error {
+// DeserializeResponseBody 解析历史逐笔成交响应体, 对齐 C++/Rust/Python.
+func (h *HistoryTransactionContext) DeserializeResponseBody(body []byte) error {
 	reader := bytes.NewReader(body)
-	if err := binary.Read(reader, binary.LittleEndian, &r.Reply.Count); err != nil {
+	if err := binary.Read(reader, binary.LittleEndian, &h.Reply.Count); err != nil {
 		return err
 	}
-	if cap(r.Reply.List) < int(r.Reply.Count) {
-		r.Reply.List = make([]TickTransaction, 0, int(r.Reply.Count))
+	if cap(h.Reply.List) < int(h.Reply.Count) {
+		h.Reply.List = make([]TickTransaction, 0, int(h.Reply.Count))
 	} else {
-		r.Reply.List = r.Reply.List[:0]
+		h.Reply.List = h.Reply.List[:0]
 	}
 
-	baseUnit := DefaultBaseUnit(int(ExchangeToMarketId(r.code.Exchange)), r.code.Ticker)
-	isIndex := r.code.Type.IsIndex()
+	baseUnit := tdxproto.DefaultBaseUnit(tdxproto.ExchangeToMarketId(h.sc.Exchange), h.sc.Ticker)
+	isIndex := h.sc.Type.IsIndex()
 	var lastPrice int64 = 0
 
 	var date uint32
@@ -266,22 +242,22 @@ func (r *HistoryTransactionResponse) Deserialize(body []byte) error {
 		fmt.Printf("data: %d\n", date)
 	}
 
-	for i := 0; i < int(r.Reply.Count); i++ {
+	for i := 0; i < int(h.Reply.Count); i++ {
 		var minutes uint16
 		if err := binary.Read(reader, binary.LittleEndian, &minutes); err != nil {
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
-				r.Reply.Count = uint16(len(r.Reply.List))
+				h.Reply.Count = uint16(len(h.Reply.List))
 				return nil
 			}
 			return err
 		}
-		h := minutes / 60
-		m := minutes % 60
+		hh := minutes / 60
+		mm := minutes % 60
 
 		rawPrice, err := varintRead(reader)
 		if err != nil {
 			if err == io.EOF {
-				r.Reply.Count = uint16(len(r.Reply.List))
+				h.Reply.Count = uint16(len(h.Reply.List))
 				return nil
 			}
 			return err
@@ -292,8 +268,6 @@ func (r *HistoryTransactionResponse) Deserialize(body []byte) error {
 			return err
 		}
 
-		// historical record has no 'num' field
-
 		direction, err := varintRead(reader)
 		if err != nil {
 			return err
@@ -303,7 +277,7 @@ func (r *HistoryTransactionResponse) Deserialize(body []byte) error {
 		price := float64(lastPrice) / baseUnit
 
 		var ele TickTransaction
-		ele.Time = fmt.Sprintf("%02d:%02d", h, m)
+		ele.Time = fmt.Sprintf("%02d:%02d", hh, mm)
 		ele.Price = price
 		ele.Vol = vol
 		ele.Direction = direction
@@ -324,18 +298,30 @@ func (r *HistoryTransactionResponse) Deserialize(body []byte) error {
 		// skip reserved varint
 		if _, err := varintRead(reader); err != nil {
 			if err == io.EOF {
-				r.Reply.List = append(r.Reply.List, ele)
-				r.Reply.Count = uint16(len(r.Reply.List))
+				h.Reply.List = append(h.Reply.List, ele)
+				h.Reply.Count = uint16(len(h.Reply.List))
 				return nil
 			}
 			return err
 		}
 
-		r.Reply.List = append(r.Reply.List, ele)
+		h.Reply.List = append(h.Reply.List, ele)
 	}
 	return nil
 }
 
-func (r *HistoryTransactionResponse) String() string {
-	return fmt.Sprintf("HistoryTransactionResponse{Reply{Count:%d}}", r.Reply.Count)
+func (h *HistoryTransactionContext) String() string {
+	code := strings.TrimRight(string(h.Code[:]), "\x00 ")
+	return fmt.Sprintf("HistoryTransactionContext{Date:%d,Market:%d,Code:%s,Start:%d,Count:%d,ReplyCount:%d}", h.Date, h.Market, code, h.Start, h.Count, h.Reply.Count)
+}
+
+func Reverse(list []TickTransaction) []TickTransaction {
+	if len(list) == 0 {
+		return list
+	}
+	result := make([]TickTransaction, len(list))
+	for i, v := range list {
+		result[len(list)-1-i] = v
+	}
+	return result
 }

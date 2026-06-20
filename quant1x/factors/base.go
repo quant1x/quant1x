@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/quant1x/quant1x/quant1x/data"
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/data"
 )
 
 const DateLayout = "2006-01-02"
 
 type CumulativeAdjustment struct {
-	Timestamp            exchange.Timestamp
+	Timestamp            data.Timestamp
 	M                    float64
 	A                    float64
 	MonetaryAdjustment   float64
@@ -74,7 +74,7 @@ func IpoDateFromXdxrs(xdxrList []data.XdxrInfo) *string {
 	return nil
 }
 
-func CombineAdjustmentsInPeriod(xdxrList []data.XdxrInfo, startDate, endDate exchange.Timestamp) []CumulativeAdjustment {
+func CombineAdjustmentsInPeriod(xdxrList []data.XdxrInfo, startDate, endDate data.Timestamp) []CumulativeAdjustment {
 	result := []CumulativeAdjustment{}
 
 	for _, info := range xdxrList {
@@ -83,7 +83,7 @@ func CombineAdjustmentsInPeriod(xdxrList []data.XdxrInfo, startDate, endDate exc
 		}
 
 		eventDate, _ := time.Parse(DateLayout, info.Date)
-		eventTs := exchange.PreMarketTimestamp(eventDate.Year(), int(eventDate.Month()), eventDate.Day())
+		eventTs := data.PreMarketTimestamp(eventDate.Year(), int(eventDate.Month()), eventDate.Day())
 		if eventTs.Less(startDate) || eventTs.Greater(endDate) {
 			continue
 		}
@@ -122,7 +122,7 @@ func CombineAdjustmentsInPeriod(xdxrList []data.XdxrInfo, startDate, endDate exc
 	return result
 }
 
-func ApplyForwardAdjustmentIncrementally(klines []*data.KLine, xdxrList []data.XdxrInfo, lastAdjustedDate, asOfDate exchange.Timestamp, truncateToAsOfDate bool) {
+func ApplyForwardAdjustmentIncrementally(klines []*data.KLine, xdxrList []data.XdxrInfo, lastAdjustedDate, asOfDate data.Timestamp, truncateToAsOfDate bool) {
 	if len(klines) == 0 {
 		return
 	}
@@ -143,7 +143,7 @@ func ApplyForwardAdjustmentIncrementally(klines []*data.KLine, xdxrList []data.X
 	for idx := 0; idx < klinesCount; idx++ {
 		kline := klines[idx]
 		currentDateDt, _ := time.Parse(DateLayout, kline.Date)
-		currentDate := exchange.PreMarketTimestamp(currentDateDt.Year(), int(currentDateDt.Month()), currentDateDt.Day())
+		currentDate := data.PreMarketTimestamp(currentDateDt.Year(), int(currentDateDt.Month()), currentDateDt.Day())
 
 		if i < factorsCount {
 			factor := factors[i]
@@ -185,8 +185,8 @@ func CalculatePreAdjust(klines []*data.KLine, xdxrList []data.XdxrInfo) {
 
 	startDate, _ := time.Parse(DateLayout, klines[0].Date)
 	endDate, _ := time.Parse(DateLayout, klines[len(klines)-1].Date)
-	startTs := exchange.PreMarketTimestamp(startDate.Year(), int(startDate.Month()), startDate.Day())
-	endTs := exchange.PreMarketTimestamp(endDate.Year(), int(endDate.Month()), endDate.Day())
+	startTs := data.PreMarketTimestamp(startDate.Year(), int(startDate.Month()), startDate.Day())
+	endTs := data.PreMarketTimestamp(endDate.Year(), int(endDate.Month()), endDate.Day())
 	ApplyForwardAdjustmentIncrementally(klines, xdxrList, startTs, endTs, true)
 }
 
@@ -207,8 +207,8 @@ func CalculatePreAdjust(klines []*data.KLine, xdxrList []data.XdxrInfo) {
 //  3. 当存在除权除息数据时, 会对K线进行前复权处理
 //  4. 返回的K线数据按日期升序排列
 func GetCrossSectionForwardAdjustedKlines(securityCode, asOfDate string) []*data.KLine {
-	correctedCode := exchange.CorrectSecurityCode(securityCode)
-	ts, _ := exchange.ParseTimestamp(asOfDate)
+	correctedCode := data.CorrectSecurityCode(securityCode)
+	ts, _ := data.ParseTimestamp(asOfDate)
 	fixedDate := ts.OnlyDate()
 
 	rawKlines, err := data.LoadKlineRaw(correctedCode)
@@ -267,8 +267,8 @@ func GetCrossSectionForwardAdjustedKlines(securityCode, asOfDate string) []*data
 
 	startDate, _ := time.Parse(DateLayout, klines[0].Date)
 	endDate, _ := time.Parse(DateLayout, klines[len(klines)-1].Date)
-	startTs := exchange.PreMarketTimestamp(startDate.Year(), int(startDate.Month()), startDate.Day())
-	endTs := exchange.PreMarketTimestamp(endDate.Year(), int(endDate.Month()), endDate.Day())
+	startTs := data.PreMarketTimestamp(startDate.Year(), int(startDate.Month()), startDate.Day())
+	endTs := data.PreMarketTimestamp(endDate.Year(), int(endDate.Month()), endDate.Day())
 
 	ApplyForwardAdjustmentIncrementally(klines, xdxrList, startTs, endTs, true)
 

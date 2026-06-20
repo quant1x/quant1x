@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/tdxproto"
 	"github.com/quant1x/quant1x/quant1x/data/meta"
 )
 
@@ -58,15 +58,19 @@ type SecurityBar struct {
 	DownCount uint16  // 下跌家数(仅指数K线)
 }
 
-// SecurityBarsContext encodes a SECURITY_BARS command.
+// SecurityBarsContext 对齐 C++/Rust/Python SecurityBarsContext, 合并请求和响应.
 type SecurityBarsContext struct {
-	Param   SecurityBarsParameter
-	Padding []byte
-	IsIndex bool
+	tdxproto.FrameBase
+	Param    SecurityBarsParameter
+	Padding  []byte
+	IsIndex  bool
+	Category uint16 // 保存category用于响应解析
+	Count    uint16
+	List     []SecurityBar
 }
 
-// NewSecurityBarsRequest constructs a request aligned with the C++ structure.
-func NewSecurityBarsRequest(inst meta.Instrument, category KLineType, start, count uint16) SecurityBarsContext {
+// NewSecurityBarsContext 构造K线请求, 对齐 C++/Rust.
+func NewSecurityBarsContext(inst meta.Instrument, category KLineType, start, count uint16) *SecurityBarsContext {
 	if count == 0 || count > SecurityBarsMax {
 		count = SecurityBarsMax
 	}
@@ -75,7 +79,7 @@ func NewSecurityBarsRequest(inst meta.Instrument, category KLineType, start, cou
 	copy(code[:], inst.Ticker)
 
 	param := SecurityBarsParameter{
-		Market:   uint16(tdx.ExchangeToMarketId(inst.Exchange)),
+		Market:   uint16(tdxproto.ExchangeToMarketId(inst.Exchange)),
 		Code:     code,
 		Category: uint16(category),
 		I:        1,
@@ -83,79 +87,56 @@ func NewSecurityBarsRequest(inst meta.Instrument, category KLineType, start, cou
 		Count:    count,
 	}
 
-	req := SecurityBarsContext{
-		Param:   param,
-		Padding: make([]byte, 10),
+	return &SecurityBarsContext{
+		Param:    param,
+		Padding:  make([]byte, 10),
+		IsIndex:  inst.Type.IsIndex(),
+		Category: uint16(category),
 	}
-	req.IsIndex = inst.Type.IsIndex()
-	return req
 }
 
-// Serialize serializes the request payload.
-func (r SecurityBarsContext) Serialize() []byte {
+// SerializeRequestBody 序列化请求体, 对齐 C++/Rust/Python.
+func (s *SecurityBarsContext) SerializeRequestBody() []byte {
 	payload := &bytes.Buffer{}
-	_ = binary.Write(payload, binary.LittleEndian, r.Param.Market)
-	payload.Write(r.Param.Code[:])
-	_ = binary.Write(payload, binary.LittleEndian, r.Param.Category)
-	_ = binary.Write(payload, binary.LittleEndian, r.Param.I)
-	_ = binary.Write(payload, binary.LittleEndian, r.Param.Start)
-	_ = binary.Write(payload, binary.LittleEndian, r.Param.Count)
-	payload.Write(r.Padding)
-	return tdx.BuildRequest(tdx.StdCommandSecurityBars, tdx.PacketTypeRequest, payload.Bytes())
+	_ = binary.Write(payload, binary.LittleEndian, s.Param.Market)
+	payload.Write(s.Param.Code[:])
+	_ = binary.Write(payload, binary.LittleEndian, s.Param.Category)
+	_ = binary.Write(payload, binary.LittleEndian, s.Param.I)
+	_ = binary.Write(payload, binary.LittleEndian, s.Param.Start)
+	_ = binary.Write(payload, binary.LittleEndian, s.Param.Count)
+	payload.Write(s.Padding)
+	return payload.Bytes()
 }
 
-// Command returns the associated StdCommand.
-func (r SecurityBarsContext) Command() tdx.StdCommand { return tdx.StdCommandSecurityBars }
-
-// String provides a readable representation.
-func (r SecurityBarsContext) String() string {
-	code := strings.TrimRight(string(r.Param.Code[:]), "\x00 ")
-	return fmt.Sprintf("SecurityBarsContext{Market:%d,Code:%s,Category:%d,Start:%d,Count:%d}", r.Param.Market, code, r.Param.Category, r.Param.Start, r.Param.Count)
-}
-
-// SecurityBarsResponse captures the parsed response body.
-type SecurityBarsResponse struct {
-	tdx.ResponseBase
-	Count    uint16
-	List     []SecurityBar
-	isIndex  bool
-	category uint16
-}
-
-// NewSecurityBarsResponse prepares a response helper with index/category flags.
-func NewSecurityBarsResponse(isIndex bool, category uint16) *SecurityBarsResponse {
-	return &SecurityBarsResponse{isIndex: isIndex, category: category}
-}
-
-// Deserialize decodes the Level1 response body.
-func (r *SecurityBarsResponse) Deserialize(body []byte) error {
+// DeserializeResponseBody 解析K线响应体, 对齐 C++/Rust/Python.
+func (s *SecurityBarsContext) DeserializeResponseBody(body []byte) error {
 	reader := bytes.NewReader(body)
-	if err := binary.Read(reader, binary.LittleEndian, &r.Count); err != nil {
+	if err := binary.Read(reader, binary.LittleEndian, &s.Count); err != nil {
 		return err
 	}
 
-	if cap(r.List) < int(r.Count) {
-		r.List = make([]SecurityBar, 0, int(r.Count))
+	if cap(s.List) < int(s.Count) {
+		s.List = make([]SecurityBar, 0, int(s.Count))
 	} else {
-		r.List = r.List[:0]
+		s.List = s.List[:0]
 	}
 
 	var preDiffBase int64
-	for i := 0; i < int(r.Count); i++ {
-		bar, err := r.parseBar(reader, &preDiffBase)
+	for i := 0; i < int(s.Count); i++ {
+		bar, err := s.parseBar(reader, &preDiffBase)
 		if err != nil {
 			return err
 		}
-		r.List = append(r.List, bar)
+		s.List = append(s.List, bar)
 	}
 	return nil
 }
 
-func (r *SecurityBarsResponse) parseBar(reader *bytes.Reader, preDiffBase *int64) (SecurityBar, error) {
+func (s *SecurityBarsContext) parseBar(reader *bytes.Reader, preDiffBase *int64) (SecurityBar, error) {
 	var bar SecurityBar
 	var zipday32 uint32
 	var tminutes uint16
-	if r.category < 4 || r.category == 7 || r.category == 8 {
+	if s.Category < 4 || s.Category == 7 || s.Category == 8 {
 		var zipday16 uint16
 		if err := binary.Read(reader, binary.LittleEndian, &zipday16); err != nil {
 			return bar, err
@@ -169,7 +150,7 @@ func (r *SecurityBarsResponse) parseBar(reader *bytes.Reader, preDiffBase *int64
 			return bar, err
 		}
 	}
-	year, month, day, hour, minute := tdx.GetDatetimeFromUint32(int(r.category), zipday32, tminutes)
+	year, month, day, hour, minute := tdxproto.GetDatetimeFromUint32(int(s.Category), zipday32, tminutes)
 	bar.Year, bar.Month, bar.Day, bar.Hour, bar.Minute = year, month, day, hour, minute
 	bar.DateTime = fmt.Sprintf("%04d-%02d-%02d %02d:%02d:00", year, month, day, hour, minute)
 
@@ -194,13 +175,13 @@ func (r *SecurityBarsResponse) parseBar(reader *bytes.Reader, preDiffBase *int64
 	if err := binary.Read(reader, binary.LittleEndian, &volRaw); err != nil {
 		return bar, err
 	}
-	bar.Vol = tdx.IntegerToFloat64(volRaw)
+	bar.Vol = tdxproto.IntegerToFloat64(volRaw)
 
 	var amountRaw uint32
 	if err := binary.Read(reader, binary.LittleEndian, &amountRaw); err != nil {
 		return bar, err
 	}
-	bar.Amount = tdx.IntegerToFloat64(amountRaw)
+	bar.Amount = tdxproto.IntegerToFloat64(amountRaw)
 
 	base := *preDiffBase + openDiff
 	bar.Open = float64(base) / 1000.0
@@ -210,7 +191,7 @@ func (r *SecurityBarsResponse) parseBar(reader *bytes.Reader, preDiffBase *int64
 
 	*preDiffBase = base + closeDiff
 
-	if r.isIndex {
+	if s.IsIndex {
 		if err := binary.Read(reader, binary.LittleEndian, &bar.UpCount); err != nil {
 			return bar, err
 		}
@@ -222,9 +203,10 @@ func (r *SecurityBarsResponse) parseBar(reader *bytes.Reader, preDiffBase *int64
 	return bar, nil
 }
 
-// String summarises the response.
-func (r *SecurityBarsResponse) String() string {
-	return fmt.Sprintf("SecurityBarsResponse{Count:%d}", r.Count)
+func (s *SecurityBarsContext) String() string {
+	code := strings.TrimRight(string(s.Param.Code[:]), "\x00 ")
+	return fmt.Sprintf("SecurityBarsContext{Market:%d,Code:%s,Category:%d,Start:%d,Count:%d,ListLen:%d}",
+		s.Param.Market, code, s.Param.Category, s.Param.Start, s.Param.Count, len(s.List))
 }
 
 func varintRead(reader *bytes.Reader) (int64, error) {
