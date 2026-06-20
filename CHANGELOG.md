@@ -3,9 +3,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.44] - 2026-06-21
+### Changed
+- go: 初步与新的数据框架对齐
+- 修复 buffer.h 的未定义行为及潜在缺陷
+
+- 添加 <limits>/<array>/<string>/<cassert> 头文件，消除隐式依赖
+- push_arithmetic/get_arithmetic 增加 static_assert 阻止 long double（防止栈溢出）
+- get_le 用 memcpy 替代 static_cast 避免有符号转换实现定义行为
+- get_string 用 std::memchr 替代 strnlen（POSIX）解决跨平台问题
+- varint_decode 中 shift 类型改为 uint32_t 避免位宽假设
+- seek/skip 添加 assert 边界检查
+- ensure_capacity 替换为 prepare_write 增加 overflow 检查，防止写入越界
+- 修复 get_array 返回 std::array 时的重载匹配编译错误
+
 ## [0.7.43] - 2026-06-21
 ### Changed
 - 删除过期的演示代码
+- release v0.7.43
 
 ## [0.7.42] - 2026-06-21
 ### Changed
@@ -1964,7 +1979,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.43...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.44...HEAD
+[0.7.44]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.43...v0.7.44
 [0.7.43]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.42...v0.7.43
 [0.7.42]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.41...v0.7.42
 [0.7.41]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.40...v0.7.41
