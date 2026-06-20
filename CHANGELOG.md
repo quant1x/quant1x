@@ -3,10 +3,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.38] - 2026-06-20
+### Changed
+- debug: add trace logging for sh880915 昨日突涨 block to find where it drops
+- fix: parse_block_raw_data scan all 400 code slots instead of trusting num field; remove debug logs
+
 ## [0.7.37] - 2026-06-20
 ### Changed
 - fix_last_trading_day_with_debug_timestamp_parameter
 - feat: implement Print methods for all data adapters; add blocks comparison tool
+- release v0.7.37
 
 ## [0.7.36] - 2026-06-19
 ### Changed
@@ -1927,7 +1933,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.37...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.38...HEAD
+[0.7.38]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.37...v0.7.38
 [0.7.37]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.36...v0.7.37
 [0.7.36]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.35...v0.7.36
 [0.7.35]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.34...v0.7.35
