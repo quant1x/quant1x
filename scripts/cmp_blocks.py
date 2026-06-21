@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 """Compare two block CSV files by name/code fields.
 Usage: python scripts/cmp_blocks.py <file1> <file2>
 """
