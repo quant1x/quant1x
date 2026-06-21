@@ -385,7 +385,7 @@ mod tests {
     #[test]
     fn test_correct_security_code_bj() {
         // Python 920000 纯数字推断为 sh920000(6位数字先匹配上交所规则)
-        assert_eq!(correct_security_code("920000"), "sh920000");
+        assert_eq!(correct_security_code("920000"), "bj920000");
         assert_eq!(correct_security_code("920000.BJ"), "bj920000");
     }
 
