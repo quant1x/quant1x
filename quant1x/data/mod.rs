@@ -4,6 +4,9 @@ pub use meta::*;
 pub mod market;
 pub use market::*;
 
+pub mod storage;
+pub use storage::*;
+
 //pub mod exchange;
 //pub use exchange::*;
 
