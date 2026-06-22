@@ -2,16 +2,19 @@
 #ifndef QUANT1X_FACTOR_F10_H
 #define QUANT1X_FACTOR_F10_H 1
 
-#include "quant1x/data/adapter.h"
+#include <quant1x/data/adapter.h>
 #include <quant1x/data/meta/timestamp.h>
-#include "quant1x/std/numeric.h"
+#include <quant1x/data/meta/calendar.h>
+#include <quant1x/std/numeric.h>
 
 namespace factors {
     namespace risk {
         constexpr const int ReportingRiskPeriod = 3; ///< 预警距离财务报告日期还有多少个交易日, 默认3个交易日
         constexpr const int ReportingWarningDays = ReportingRiskPeriod;
-    } // namespace detail
+    } // namespace risk
 } // namespace factors
+
+using namespace quant1x::data;
 
 struct F10 {
     // 日期
@@ -113,16 +116,16 @@ struct F10 {
     }
 };
 
-class F10Feature : public data::FeatureAdapter {
+class F10Feature : public FeatureAdapter {
 private:
     F10 f10;
 public:
     F10Feature() = default;
     F10Feature(const F10Feature&) = default;
 
-    data::Kind Kind() const override;
+    quant1x::data::Kind Kind() const override;
 
-    std::string Owner() override;
+    std::string Owner() const override;
 
     std::string Key() const override;
 
@@ -133,7 +136,7 @@ public:
     std::vector<std::string> headers() const override;
     std::vector<std::string> values() const override;
 
-    std::unique_ptr<data::FeatureAdapter> clone() const override;
+    std::unique_ptr<FeatureAdapter> clone() const override;
 
     void init(const meta::Timestamp &timestamp) override;
 

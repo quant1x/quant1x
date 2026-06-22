@@ -1,6 +1,6 @@
 #pragma once
-#ifndef QUANT1X_DATASETS_BASE_H
-#define QUANT1X_DATASETS_BASE_H 1
+#ifndef QUANT1X_DATA_BASE_H
+#define QUANT1X_DATA_BASE_H 1
 
 #include "adapter.h"
 #include <quant1x/data/meta/exchange.h>
@@ -26,4 +26,4 @@ namespace quant1x::data {
     inline meta::Timestamp market_first_date = meta::Timestamp::parse(MARKET_CN_FIRST_LISTTIME).pre_market_time();
 }
 
-#endif // QUANT1X_DATASETS_BASE_H
+#endif // QUANT1X_DATA_BASE_H

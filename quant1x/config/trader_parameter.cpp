@@ -1,9 +1,10 @@
 #include <quant1x/config/trader_parameter.h>
 #include <quant1x/data/meta/timestamp.h>
-#include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/meta/calendar.h>
 #include <magic_enum/magic_enum.hpp>
 
 namespace quant1x::config {
+namespace meta = quant1x::data::meta;
 
     // 统计标的总数
     int TraderParameter::TotalNumberOfTargets() const {
@@ -59,12 +60,13 @@ namespace quant1x::config {
 
     // 计算每日无风险利率
     double TraderParameter::DailyRiskFreeRate(const std::string& date) const {
+        (void)date;
         meta::Timestamp ts = date;
         std::string fixedDate = ts.only_date();
         std::string year = fixedDate.substr(0, 4);
         std::string start = year + "-01-01";
         std::string end = year + "-12-31";
-        std::vector<std::string> dates = meta::date_range(start, end);
+        std::vector<std::string> dates = meta::get_date_range(start, end);
         size_t count = dates.size();
         return AnnualInterestRate / count;
     }

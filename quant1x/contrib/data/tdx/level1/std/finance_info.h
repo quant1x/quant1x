@@ -242,6 +242,8 @@ namespace quant1x::contrib::data::tdx {
         u16 Count; //  总数
         FinanceInfo Info;
 
+        FinanceInfoContext() = default;
+
         FinanceInfoContext(const meta::Instrument &inst) : BaseFrame<FinanceInfoContext>() {
             request_header.frame_type = ZlibFlag::Uncompressed;
             request_header.seq_id = get_sequence_id();
@@ -324,6 +326,10 @@ namespace quant1x::contrib::data::tdx {
         }
     };
 
-}
+    // 向后兼容的类型别名
+    using FinanceRequest  = FinanceInfoContext;
+    using FinanceResponse = FinanceInfoContext;
+
+} // namespace quant1x::contrib::data::tdx
 
 #endif // QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_FINANCE_INFO_H

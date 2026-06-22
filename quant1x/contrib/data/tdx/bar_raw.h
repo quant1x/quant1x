@@ -24,7 +24,7 @@ namespace quant1x::contrib::data::tdx {
     class DataKLineRaw : public quant1x::data::DataAdapter {
     public:
         quant1x::data::Kind Kind() const override { return quant1x::data::BaseRawDailyKLine; }
-        std::string Owner() override { return quant1x::data::DefaultDataProvider; }
+        std::string Owner() const override { return quant1x::data::DefaultDataProvider; }
         std::string Key() const override { return "day_raw"; }
         std::string Name() const override { return "日K线RAW"; }
         std::string Usage() const override { return "日K线RAW数据适配器"; }

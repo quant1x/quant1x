@@ -13,7 +13,7 @@ namespace quant1x::contrib::data::tdx {
     class DataXdxr : public quant1x::data::DataAdapter {
     public:
         quant1x::data::Kind Kind() const override { return quant1x::data::BaseXdxr; }
-        std::string Owner() override { return quant1x::data::DefaultDataProvider; }
+        std::string Owner() const override { return quant1x::data::DefaultDataProvider; }
         std::string Key() const override { return "xdxr"; }
         std::string Name() const override { return "除权除息"; }
         std::string Usage() const override { return ""; }

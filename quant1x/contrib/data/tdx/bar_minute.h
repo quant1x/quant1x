@@ -10,7 +10,7 @@ namespace quant1x::contrib::data::tdx {
     class DataMinuteKLine : public quant1x::data::DataAdapter {
     public:
         quant1x::data::Kind Kind() const override { return quant1x::data::BaseMinuteKLine; }
-        std::string Owner() override { return quant1x::data::DefaultDataProvider; }
+        std::string Owner() const override { return quant1x::data::DefaultDataProvider; }
         std::string Key() const override { return "kline_minute"; }
         std::string Name() const override { return "分钟K线"; }
         std::string Usage() const override { return "分钟K线"; }

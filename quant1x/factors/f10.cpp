@@ -1,15 +1,26 @@
 #include <quant1x/encoding/csv.h>
 #include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/meta/calendar.h>
 #include <quant1x/contrib/data/tdx/client.h>
-#include <quant1x/data/xdxr.h>
+#include <quant1x/contrib/data/tdx/xdxr.h>
+#include <quant1x/contrib/data/tdx/instruments.h>
+#include <quant1x/contrib/data/tdx/bar.h>
 #include <quant1x/factors/f10.h>
 #include <quant1x/factors/base_compat.h>
-#include <quant1x/contrib/data/tdx/bar.h>
 #include <quant1x/factors/notice.h>
 #include <quant1x/factors/financial_report.h>
 #include <quant1x/factors/share_holder.h>
 #include <quant1x/factors/safety_score.h>
+#include <quant1x/config/base.h>
+#include <quant1x/std/time.h>
 #include <fmt/format.h>
+
+// 命名空间别名
+namespace tdx = quant1x::contrib::data::tdx;
+namespace instruments = quant1x::contrib::data::tdx::instruments;
+namespace config = quant1x::config;
+namespace data = quant1x::data;
+namespace meta = quant1x::data::meta;
 
 static std::string get_ipo_date(const std::string &security_code, const std::string &feature_date) {
     auto kls = tdx::checkout_klines(security_code, feature_date);
@@ -24,14 +35,14 @@ static std::tuple<f64, f64, std::string, std::string> get_finance_info(const std
                                                                        const std::string &feature_date) {
     f64 capital = 0, totalCapital = 0;
     std::string ipo_date, update_date;
-    u32 base_date = data::market_first_date.yyyymmdd();
+    u32 base_date = quant1x::data::market_first_date.yyyymmdd_u32();
     try {
-        tdx::FinanceRequest request(security_code);
-        tdx::FinanceResponse response{};
+        auto inst = quant1x::data::detect_symbol(security_code);
+        tdx::FinanceInfoContext msg(inst);
         auto conn = tdx::get_std_conn();
-        tdx::transact_message_sync(conn->socket(), request, response);
-        if(response.Count>0) {
-            auto const &info = response.Info;
+        tdx::transact_message_sync(conn->socket(), msg);
+        if(msg.Count>0) {
+            auto const &info = msg.Info;
             if(info.LiuTongGuBen>0 && info.ZongGuBen > 0) {
                 capital = info.LiuTongGuBen;
                 totalCapital = info.ZongGuBen;
@@ -76,7 +87,7 @@ struct f10SecurityInfo {
 
 static f10SecurityInfo checkoutSecurityBasicInfo(const std::string &security_code, const std::string &feature_date) {
     f10SecurityInfo info{};
-    auto list = data::load_xdxr(security_code);
+    auto list = tdx::get_xdxr_list(security_code);
     std::sort(list.begin(), list.end(), [](const tdx::XdxrInfo &a, const tdx::XdxrInfo& b){
         return a.Date > b.Date;
     });
@@ -110,8 +121,8 @@ static f10SecurityInfo checkoutSecurityBasicInfo(const std::string &security_cod
     }
     auto securityInfo = instruments::get_instrument_info(security_code);
     if(securityInfo.has_value()) {
-        info.VolUnit = securityInfo->lotSize;
-        info.DecimalPoint = securityInfo->pricePrecision;
+        info.VolUnit = securityInfo->lot_size;
+        info.DecimalPoint = securityInfo->price_precision;
         info.Name_ = securityInfo->name;
     } else {
         info.VolUnit = 100;
@@ -176,7 +187,7 @@ struct Top10ShareHolder {
 static std::unique_ptr<Top10ShareHolder> checkoutShareHolder(const std::string &securityCode,
                                                              const std::string &featureDate) {
     // 获取除权除息列表并排序
-    auto xdxrs = data::load_xdxr(securityCode);
+    auto xdxrs = tdx::get_xdxr_list(securityCode);
     std::sort(xdxrs.begin(), xdxrs.end(), [](const tdx::XdxrInfo& a, const tdx::XdxrInfo& b) {
         return a.Date > b.Date;
     });
@@ -225,7 +236,7 @@ data::Kind F10Feature::Kind() const {
     return factors::FeatureF10;
 }
 
-std::string F10Feature::Owner() {
+std::string F10Feature::Owner() const {
     return data::DefaultDataProvider;
 }
 

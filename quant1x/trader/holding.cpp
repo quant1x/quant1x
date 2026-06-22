@@ -7,14 +7,22 @@
 #include <functional>
 #include <quant1x/trader/trader.h>
 #include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/market.h>
+#include <quant1x/data/meta/calendar.h>
 #include <quant1x/trader/order_cache.h>
+#include <quant1x/runtime/once.h>
+#include <spdlog/spdlog.h>
+
+namespace config = quant1x::config;
+namespace meta = quant1x::data::meta;
+namespace data = quant1x::data;
 
 namespace trader {
 
     namespace {
         // 全局变量
         static inline std::vector<HoldingPosition> holdingOrders;
-        static inline auto holdingOnce = RollingOnce::create("trader-holding", meta::Timestamp);
+        static inline auto holdingOnce = RollingOnce::create("trader-holding", quant1x::config::GLOBAL_CRON_EXPR_DAILY_INIT);
 
         template<typename T, typename Pred>
         std::vector<T> Filter(const std::vector<T> &input, Pred predicate) {
@@ -52,7 +60,7 @@ namespace trader {
             // 3. 重新评估持仓范围, 有可能存在日期没有成交的可能
             std::string firstDate = dates.front();
             std::string lastTradeDate = meta::last_trading_day().only_date();
-            dates = meta::date_range(firstDate, lastTradeDate);
+            dates = meta::get_date_range(firstDate, lastTradeDate);
 
             // 反转日期切片
             std::reverse(dates.begin(), dates.end());
@@ -130,9 +138,9 @@ namespace trader {
                                   methodName.c_str(), securityCode.c_str());
                 }
 
-                // 计算持股周期
-                std::vector<meta::Timestamp> dateRanges = meta::date_range(earlierDate, lastTradeDate);
-                holdingPeriod = static_cast<int>(dateRanges.size()) - 1;
+        // 计算持股周期
+        auto dateRanges = meta::get_date_range(earlierDate, lastTradeDate);
+        holdingPeriod = static_cast<int>(dateRanges.size()) - 1;
 
                 holding.HoldingPeriod = holdingPeriod;
                 holdingOrders.push_back(holding);

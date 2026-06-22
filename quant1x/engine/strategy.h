@@ -10,10 +10,11 @@
 #include <quant1x/std/except.h>
 #include <quant1x/std/numeric.h>
 #include <quant1x/trader/fee.h>
-#include <quant1x/data/kline.h>
+#include <quant1x/data/schema/bar.h>
+#include <quant1x/config/strategy_parameter.h>
 
 // 前向声明 — 避免引入 level1 整个模块的依赖
-namespace tdx { struct SecurityQuoteContext; }
+namespace quant1x::contrib::data::tdx { struct SecurityQuote; }
 
 // 前向声明
 struct ResultInfo;
@@ -74,13 +75,13 @@ struct ResultInfo {
 class Filterable {
 public:
     virtual ~Filterable() = default;
-    virtual quant1x::error Filter(const config::StrategyParameter &parameter, const Snapshot::Reader &snapshot) const {
+    virtual quant1x::error Filter(const quant1x::config::StrategyParameter &parameter, const Snapshot::Reader &snapshot) const {
         (void)parameter;
         (void)snapshot;
         return quant1x::make_error_code(0, "no problem");
     }
-    virtual quant1x::error Filter(const config::StrategyParameter &parameter,
-                              const tdx::SecurityQuoteContext     &snapshot) const = 0;
+    virtual quant1x::error Filter(const quant1x::config::StrategyParameter &parameter,
+                              const quant1x::contrib::data::tdx::SecurityQuote     &snapshot) const = 0;
 };
 
 /**
@@ -113,7 +114,7 @@ public:
     virtual void Evaluate(const SecurityCode &code, ResultInfo &result) const = 0;
     // 增量计算评估
     virtual void Evaluate(const SecurityCode &code, ResultInfo &result, const Snapshot::Reader &snapshot) const = 0;
-    virtual void Evaluate(const SecurityCode &code, ResultInfo &result, const tdx::SecurityQuoteContext &snapshot) const = 0;
+    virtual void Evaluate(const SecurityCode &code, ResultInfo &result, const quant1x::contrib::data::tdx::SecurityQuote &snapshot) const = 0;
     // 更新指标数据(如均线)
     virtual void updateIndicators(const SecurityCode &code) = 0;
 
@@ -140,17 +141,17 @@ public:
 // ======================
 class StrategyBase : public Filterable, public Sortable, public Evaluatable, public StrategyInfo {
 private:
-    meta::Timestamp timestamp_;
+    quant1x::data::meta::Timestamp timestamp_;
 
 protected:
-    std::vector<data::KLine> market_data_;
+    std::vector<quant1x::data::schema::Bar> market_data_;
 
 public:
-    const std::vector<data::KLine> &market_data() const { return market_data_; }
+    const std::vector<quant1x::data::schema::Bar> &market_data() const { return market_data_; }
 
-    const meta::Timestamp &getTimestamp() const { return timestamp_; }
+    const quant1x::data::meta::Timestamp &getTimestamp() const { return timestamp_; }
 
-    void setTimestamp(const meta::Timestamp &timestamp) { timestamp_ = timestamp.pre_market_time(); }
+    void setTimestamp(const quant1x::data::meta::Timestamp &timestamp) { timestamp_ = timestamp.pre_market_time(); }
 
 public:
     std::string DebugString() const {

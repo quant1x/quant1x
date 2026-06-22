@@ -6,6 +6,9 @@
 #include <quant1x/data/adapter.h>
 #include <quant1x/factors/base_compat.h>
 
+namespace data = quant1x::data;
+namespace meta = quant1x::data::meta;
+
 /// 0号策略特征工程结构体
 /// 0号作为演示策略, 仅供学习和参考, 不作为投资建议, 请勿直接使用
 /// 0号策略: 5日均线向上突破, 且5日均线在10日均线上方, 则买入, 否则卖出
@@ -29,7 +32,7 @@ public:
     DataNo0(const DataNo0 &) = default;
     data::Kind Kind() const override { return factors::FeatureNo0; }
 
-    std::string Owner() override { return data::DefaultDataProvider; }
+    std::string Owner() const override { return data::DefaultDataProvider; }
 
     std::string Key() const override { return "no0"; }
 

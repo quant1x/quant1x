@@ -1,20 +1,31 @@
 #include <quant1x/realtime/snapshot.h>
 #include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/meta/session.h>
+#include <quant1x/data/meta/calendar.h>
+#include <quant1x/data/market.h>
 #include <quant1x/std/filesystem.h>
+#include <quant1x/contrib/data/tdx/client.h>
+#include <quant1x/contrib/data/tdx/instruments.h>
 #include <capnp/serialize.h>
 #include <capnp/message.h>
 #include <mio/mmap.hpp>
 #include <quant1x/proto/data.h>
 #include <quant1x/runtime/scheduler.h>
 
+namespace config = quant1x::config;
+namespace meta = quant1x::data::meta;
+namespace instruments = quant1x::contrib::data::tdx::instruments;
+namespace data = quant1x::data;
+namespace tdx = quant1x::contrib::data::tdx;
+
 namespace realtime {
 
     /**
-     * @brief 从 SecurityQuoteContext 中提取 imbalance 指标
+     * @brief 从 SecurityQuote 中提取 imbalance 指标
      * @param quote 当前行情快照
      * @return ImbalanceResult 包含 imbalance 指标
      */
-    ImbalanceResult calculateImbalance(const tdx::SecurityQuoteContext& quote) {
+    ImbalanceResult calculateImbalance(const tdx::SecurityQuote& quote) {
         // 买盘挂单量
         std::vector<int64_t> bidVolumes = {
             quote.bidVol1, quote.bidVol2, quote.bidVol3,
@@ -116,7 +127,7 @@ namespace realtime {
     }
 
     namespace {
-        inline tsl::robin_map<std::string, tdx::SecurityQuoteContext> mem_snapshots;
+        inline tsl::robin_map<std::string, tdx::SecurityQuote> mem_snapshots;
         inline std::shared_mutex                                  mem_mutex;
     }
 
@@ -151,9 +162,11 @@ namespace realtime {
         auto tp_start = std::chrono::high_resolution_clock::now();
         auto last_trade_day = meta::last_trading_day();
         auto current_day = last_trade_day.only_date();
-        auto [update_in_realTime, status] = false(meta::Timestamp::now());
+        auto rs = meta::check_trading_timestamp();
+        auto update_in_realTime = rs.update_in_real_time;
+        auto status = rs.status;
         try {
-            spdlog::warn("[snapshot] start = {}", meta::Timestamp::now().toString());
+            spdlog::warn("[snapshot] start = {}", meta::Timestamp::now().to_string());
             for (; start < count; start += tdx::security_quotes_max) {
                 std::unique_lock lock(mem_mutex);
                 auto length = count - start;
@@ -161,30 +174,31 @@ namespace realtime {
                     length = tdx::security_quotes_max;
                 }
                 std::vector<std::string> sub_codes(all_codes.begin() + start, all_codes.begin() + start + length);
+                std::vector<meta::Instrument> sub_instruments;
+                sub_instruments.reserve(sub_codes.size());
                 tsl::robin_map<std::string, tdx::StockInfo> maps;
                 maps.clear();
-                size_t i = 0;
-                for (; i < length; i++) {
+                for (size_t i = 0; i < length; i++) {
                     const auto &code = sub_codes[i];
-                    auto [mid, mflag, symbol] = data::detect_symbol(code);
-                    maps[code] = tdx::StockInfo{static_cast<u8>(mid), symbol};
+                    auto inst = data::detect_symbol(code);
+                    maps[code] = tdx::StockInfo{static_cast<u8>(inst.exchange), inst.ticker};
+                    sub_instruments.push_back(inst);
                 }
-                tdx::SecurityQuoteContext request(sub_codes);
-                tdx::SecurityQuoteResponse response;
+                tdx::SecurityQuoteContext request(sub_instruments);
                 auto conn = tdx::get_std_conn();
-                if(conn == nullptr) {
+                if(!conn) {
                     spdlog::error("服务器网络不稳定, 稍后重试");
                     return;
                 }
-                auto err = tdx::transact_message_sync(conn->socket(), request, response);
+                auto err = tdx::transact_message_sync(conn->socket(), request);
                 if (err) {
                     spdlog::error("Process error: {}", err.message());
                     return;
                 }
-                response.verify_delisted_securities(maps);
-                for (int j = 0; j < response.count; ++j) {
-                    const auto &raw = response.list[j];
-                    std::string security_code = data::correct_security_code(static_cast<meta::ExchangeId>(raw.market), raw.code);
+                request.verify_delisted_securities(maps);
+                for (int j = 0; j < int(request.quotes.size()); ++j) {
+                    const auto &raw = request.quotes[j];
+                    std::string security_code = data::correct_security_code(raw.code);
                     mem_snapshots.insert_or_assign(security_code, raw);
                     auto snap = snapshots[uint32_t(start) + j];
                     snap.setDate(current_day);
@@ -198,7 +212,7 @@ namespace realtime {
                     if (update_in_realTime) {
                         exchangeState = ExchangeState::NORMAL;
                     }
-                    if (status == meta::TimeStatus::ExchangeHaltTrading) {
+                    if (status == meta::TS_EXCHANGE_HALT_TRADING) {
                         exchangeState = ExchangeState::NORMAL;
                     }
                     snap.setExchangeState(exchangeState);
@@ -274,7 +288,7 @@ namespace realtime {
             auto tp_end = std::chrono::high_resolution_clock::now();
             auto diff = tp_end - tp_start;
             //std::cout << diff << std::endl;
-            spdlog::warn("[snapshot] stop = {}", meta::Timestamp::now().toString());
+            spdlog::warn("[snapshot] stop = {}", meta::Timestamp::now().to_string());
             spdlog::info("[snapshot] cross time:{}", util::format_duration_auto(diff));
         } catch (const std::exception &e) {  // 其他标准异常
             spdlog::error("[snapshot] - 标准异常: {} (type: {})", e.what(), typeid(e).name());
@@ -287,7 +301,7 @@ namespace realtime {
         }
     }
 
-    std::optional<tdx::SecurityQuoteContext> get_snapshot(const std::string &code) {
+    std::optional<tdx::SecurityQuote> get_snapshot(const std::string &code) {
         std::shared_lock lock(mem_mutex);
         auto it = mem_snapshots.find(code);
         if (it != mem_snapshots.end()) {

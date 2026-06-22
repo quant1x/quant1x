@@ -1,10 +1,14 @@
 #include <cpr/cpr.h>
 #include <quant1x/encoding/json.h>
+#include <quant1x/data/market.h>
 #include <quant1x/data/meta/timestamp.h>
 #include <quant1x/factors/notice.h>
 #include <spdlog/spdlog.h>
 
 #include <nlohmann/json.hpp>
+
+namespace data = quant1x::data;
+namespace meta = quant1x::data::meta;
 
 namespace dfcf {
     namespace {
@@ -183,8 +187,7 @@ namespace dfcf {
                             continue;
                         }
 
-                        auto marketCode = static_cast<meta::ExchangeId>(std::stoll(noticeItem.Codes[0].MarketCode));
-                        std::string securityCode = data::correct_security_code(marketCode, noticeItem.Codes[0].StockCode);
+                        std::string securityCode = data::correct_security_code(noticeItem.Codes[0].StockCode);
                         std::string securityName = noticeItem.Codes[0].ShortName;
 
                         NoticeDetail notice;
@@ -269,8 +272,8 @@ namespace dfcf {
             {"end_time", fixedEndDate},
         };
 
-        auto marketInfo = data::detect_symbol(securityCode);
-        params.Add({"stock_list", std::get<2>(marketInfo)});
+        auto inst = data::detect_symbol(securityCode);
+        params.Add({"stock_list", inst.ticker});
 
         std::string url = urlEastmoneyNotices;
         cpr::Header headers;
@@ -342,9 +345,7 @@ namespace dfcf {
                             continue;
                         }
 
-                        auto marketCode = static_cast<meta::ExchangeId>(std::stoll(noticeItem.Codes[0].MarketCode));
-                        std::string security_code = data::correct_security_code(marketCode,
-                                                                              noticeItem.Codes[0].StockCode);
+                        std::string security_code = data::correct_security_code(noticeItem.Codes[0].StockCode);
                         std::string security_name = noticeItem.Codes[0].ShortName;
 
                         NoticeDetail notice;
@@ -409,13 +410,13 @@ namespace dfcf {
     // StockWarning - 安全版本
     /////////////////////////////////////////////////////////////////////////////
     std::pair<RawWarning, Exception> StockWarning(const std::string &securityCode, int pageNumber) {
-        auto        marketInfo = data::detect_symbol(securityCode);
-        std::string flag       = std::get<1>(marketInfo);
-        flag                   = strings::to_upper(flag);
+        auto inst = data::detect_symbol(securityCode);
+        std::string flag = meta::exchange_identifier(inst.exchange);
+        flag = strings::to_upper(flag);
 
         std::map<std::string, std::string> params = {
             {"type", "RTP_F10_DETAIL"},
-            {"params", std::get<2>(marketInfo) + "." + flag + ",02"},
+            {"params", inst.ticker + "." + flag + ",02"},
             {"p", std::to_string(pageNumber)},
             {"ann_type", "A"},
             {"source", "HSF10"},
@@ -555,9 +556,9 @@ namespace dfcf {
         if (!data::assert_stock_by_security_code(securityCode))
             return notice;
 
-        meta::Timestamp timestamp(currentDate);
-        timestamp                                = timestamp.offset(-24 * 30);
-        const std::string             beginDate  = timestamp.only_date();
+        meta::Timestamp ts(currentDate);
+        ts = ts.offset(-24 * 30);
+        const std::string beginDate = ts.only_date();
         const std::string            &endDate    = currentDate;
         int                           pagesCount = 1;
         std::unique_ptr<NoticeDetail> tmpNotice;

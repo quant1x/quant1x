@@ -1,6 +1,7 @@
 #include <cpr/cpr.h>
 #include <quant1x/encoding/csv.h>
 #include <quant1x/encoding/json.h>
+#include <quant1x/data/market.h>
 #include <quant1x/data/meta/timestamp.h>
 #include <quant1x/factors/share_holder.h>
 #include <quant1x/std/time.h>
@@ -11,8 +12,11 @@
 #include <quant1x/config/base.h>
 #include <quant1x/config/cache.h>
 
-using json   = nlohmann::json;
-namespace fs = std::filesystem;
+using json    = nlohmann::json;
+namespace fs  = std::filesystem;
+namespace data = quant1x::data;
+namespace meta = quant1x::data::meta;
+namespace config = quant1x::config;
 
 namespace dfcf {
 
@@ -146,21 +150,22 @@ namespace dfcf {
     ShareHolder(const std::string &securityCode, const std::string &date, int diff = 0) {
         std::vector<CirculatingShareholder> list;
 
-        auto [x1, x2, code]        = data::detect_symbol(securityCode);
+        auto inst = data::detect_symbol(securityCode);
+        std::string code = inst.ticker;
         std::string quarterEndDate = meta::Timestamp(date).only_date();
 
         auto [y1, y2, qEnd] = api::GetQuarterByDate(date, diff);
         quarterEndDate      = meta::Timestamp(qEnd).only_date();
 
-        cpr::Parameters params{{"sortColumns", "HOLDER_RANK"},
-                               {"sortTypes", "1"},
-                               {"pageSize", "10"},
-                               {"pageNumber", "1"},
-                               {"reportName", "RPT_F10_EH_FREEHOLDERS"},
-                               {"columns", "ALL"},
-                               {"source", "WEB"},
-                               {"client", "WEB"},
-                               {"filter", "(SECURITY_CODE=\"" + code + "\")(END_DATE='" + quarterEndDate + "')"}};
+        cpr::Parameters params{{{"sortColumns", "HOLDER_RANK"},
+                                {"sortTypes", "1"},
+                                {"pageSize", "10"},
+                                {"pageNumber", "1"},
+                                {"reportName", "RPT_F10_EH_FREEHOLDERS"},
+                                {"columns", "ALL"},
+                                {"source", "WEB"},
+                                {"client", "WEB"},
+                                {"filter", "(SECURITY_CODE=\"" + code + "\")(END_DATE='" + quarterEndDate + "')"}}};
 
         std::string url      = urlTop10ShareHolder + "?" + params.GetContent(cpr::CurlHolder());
         auto        response = cpr::Get(cpr::Url{url});
@@ -198,8 +203,8 @@ namespace dfcf {
                 };
 
                 // 修订证券代码
-                auto [_, mflag, mcode]   = data::detect_symbol(shareholder.SecurityCode);
-                shareholder.SecurityCode = mflag + mcode;
+                auto inst = data::detect_symbol(shareholder.SecurityCode);
+                shareholder.SecurityCode = meta::exchange_identifier(inst.exchange) + inst.ticker;
 
                 // HoldChangeState
                 if (v.HOLDNUM_CHANGE_NAME == "新进") {

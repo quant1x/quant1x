@@ -1,10 +1,10 @@
-#include <quant1x/quant1x.h>
+#include <quant1x/app.h>
 #include <sstream>
+#include "quant1x/app.h"
 // TODO: API migration — user strategy files masked
 // #include "user/no0.h"
 // #include "user/strategy-no0.h"
 #include <quant1x/command.h>
-#include <quant1x/datasets.h>
 #include <private/build-info.h>
 #include <quant1x/config/config.h>
 #include <quant1x/cache.h>
@@ -55,43 +55,6 @@ static std::string build_version_info() {
         oss << EXE_LINKER_FLAGS_RELEASE << "\n";
     }
     oss << "Target Compile Options : " << TARGET_COMPILE_OPTIONS << "\n";
-//     // --- mimalloc status (compile-time conservative check) ---
-// #ifdef DEPENDENCY_MIMALLOC
-//     oss << "--------------------------------------------------------------------------------\n";
-//     oss << "        mimalloc dependency: " << DEPENDENCY_MIMALLOC << "\n";
-// #else
-//     oss << "--------------------------------------------------------------------------------\n";
-//     oss << "        mimalloc dependency: (not configured)\n";
-// #endif
-// #if HAVE_MIMALLOC
-//     oss << "        mimalloc mode : " << MIMALLOC_MODE << "\n";
-// #if defined(MI_OVERRIDE)
-//     oss << "  new/delete routed to mimalloc: yes (global override)\n";
-// #elif defined(MI_OVERRIDE_NEW_DELETE)
-//     oss << "  new/delete routed to mimalloc: yes (new/delete override)\n";
-// #else
-//     oss << "  new/delete routed to mimalloc: no (mimalloc present but not configured to override new/delete)\n";
-// #endif
-// #else
-//     oss << "        mimalloc mode : (not enabled)\n";
-//     oss << "  new/delete routed to mimalloc: no\n";
-// #endif
-//     // Runtime proof: print mimalloc stats and exercise operator new/delete.
-// #if HAVE_MIMALLOC
-//     oss << "\n[mimalloc-runtime-check] printing stats (initial) to stdout\n";
-//     mi_stats_print(NULL);
-//     try {
-//         char *p = new char[1 << 20]; // 1 MiB
-//         (void)p[0];
-//         delete [] p;
-//     } catch(...) {
-//         // ignore
-//     }
-//     oss << "[mimalloc-runtime-check] printing stats (after new/delete) to stdout\n";
-//     mi_stats_print(NULL);
-// #else
-//     oss << "[mimalloc-runtime-check] mimalloc not available at build time (HAVE_MIMALLOC=0)\n";
-// #endif
     return oss.str();
 }
 
@@ -130,7 +93,7 @@ int main(const int argc, const char *const argv[]) {
     // 存储子命令名称与对应解析器的映射
     std::map<std::string, argparse::ArgumentParser *> subparser_map;
     runtime::global_init();
-    data::init();
+    quant1x::app::init_datasource();
     {
         auto const &config = quant1x::config::TraderConfig();
         (void)config;
@@ -166,7 +129,7 @@ int main(const int argc, const char *const argv[]) {
     }
     // 设置日志信息
     runtime::logger_set(verbose, debug);
-    quant1x::engine::init([] {
+    quant1x::app::init([] {
         namespace data = quant1x::data;
         namespace tdx = quant1x::contrib::data::tdx;
 
@@ -189,7 +152,7 @@ int main(const int argc, const char *const argv[]) {
     });
 
     if(program.is_subcommand_used("service")) {
-        return quant1x::engine::daemon(service_command);
+        return quant1x::app::daemon(service_command);
     }
 
     // 判断激活的子命令并执行对应逻辑

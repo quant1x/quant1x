@@ -7,13 +7,17 @@
 #include <quant1x/data/meta/timestamp.h>
 #include <quant1x/trader/trader.h>
 
+namespace config = quant1x::config;
+namespace meta = quant1x::data::meta;
+namespace data = quant1x::data;
+
 namespace trader {
 
     // 全局交易参数
     static inline double trader_account_theoretical_fund = 0.0;
     static inline double trader_account_remaining_cash   = 0.0;
 
-    static inline auto account_once = RollingOnce::create("trader-account", meta::Timestamp);
+    static inline auto account_once = RollingOnce::create("trader-account", quant1x::config::GLOBAL_CRON_EXPR_DAILY_INIT);
 
     void lazy_init_fund_pool() {
         calculateTheoreticalFund(&trader_account_theoretical_fund, &trader_account_remaining_cash);

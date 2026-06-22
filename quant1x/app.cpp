@@ -17,8 +17,8 @@
 #include <quant1x/contrib/data/tdx/chips.h>
 #include <quant1x/contrib/data/tdx/trans.h>
 #include <quant1x/contrib/data/tdx/bar_minute.h>
-#include <quant1x/contrib/data/tdx/f10.h>
-#include <quant1x/contrib/data/tdx/history.h>
+#include <quant1x/factors/f10.h>
+#include <quant1x/factors/history.h>
 #include <quant1x/pandas/rule.h>
 
 namespace quant1x::app {
@@ -67,9 +67,9 @@ namespace quant1x::app {
 
         // 特征数据
         // F10
-        data::Register(std::make_unique<tdx::DataF10>());
+        data::Register(std::make_unique<::F10Feature>());
         // 通用历史数据
-        data::Register(std::make_unique<tdx::HistoryFeature>());
+        data::Register(std::make_unique<::HistoryFeature>());
     }
 
     int daemon(const argparse::ArgumentParser& cmd) {

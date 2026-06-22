@@ -53,16 +53,16 @@ struct History {
     friend std::ostream &operator<<(std::ostream &os, const History &history);
 };
 
-class HistoryFeature : public data::FeatureAdapter {
+class HistoryFeature : public quant1x::data::FeatureAdapter {
 private:
     History history;
 
 public:
     HistoryFeature()                       = default;
     HistoryFeature(const HistoryFeature &) = default;
-    data::Kind Kind() const override;
+    quant1x::data::Kind Kind() const override;
 
-    std::string Owner() override;
+    std::string Owner() const override;
 
     std::string Key() const override;
 
@@ -70,11 +70,11 @@ public:
 
     std::string Usage() const override;
 
-    void Print(const meta::Instrument &inst, const meta::Timestamp &date) override;
+    void Print(const quant1x::data::meta::Instrument &inst, const quant1x::data::meta::Timestamp &date) override;
 
-    void Update(const meta::Instrument &inst, const meta::Timestamp &date) override;
+    void Update(const quant1x::data::meta::Instrument &inst, const quant1x::data::meta::Timestamp &date) override;
 
-    void init(const meta::Timestamp &timestamp) override;
+    void init(const quant1x::data::meta::Timestamp &timestamp) override;
 
     std::unique_ptr<FeatureAdapter> clone() const override;
 
@@ -85,7 +85,7 @@ public:
 
 namespace factors {
     /// 获取指定日期的History数据
-    std::optional<History> get_history(const std::string &code, const meta::Timestamp &timestamp);
+    std::optional<History> get_history(const std::string &code, const quant1x::data::meta::Timestamp &timestamp);
 }  // namespace factors
 
 #endif  // QUANT1X_FACTOR_HISTORY_H

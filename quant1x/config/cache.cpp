@@ -1,7 +1,9 @@
 #include <quant1x/config/cache.h>
 #include <quant1x/config/base.h>
+#include <quant1x/data/market.h>
 #include <quant1x/data/meta/timestamp.h>
 #include <quant1x/std/filesystem.h>
+#include <quant1x/std/time.h>
 
 namespace quant1x::config {
     namespace fs = std::filesystem;
@@ -130,8 +132,8 @@ namespace quant1x::config {
     namespace detail {
         // CacheId 通过代码构建目录结构
         std::string CacheId(const std::string &code) {
-            auto [_, marketCode, code_] = data::detect_symbol(code);
-            return marketCode + code_;
+            auto inst = quant1x::data::detect_symbol(code);
+            return quant1x::data::meta::exchange_identifier(inst.exchange) + inst.ticker;
         }
 
         // CacheIdPath code从后保留3位, 市场缩写+从头到倒数第3的代码, 确保每个目录只有000~999个代码

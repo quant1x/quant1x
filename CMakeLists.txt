@@ -433,6 +433,7 @@ set(quant1x-headers
 
     # 配置
     quant1x/config/config.h
+    quant1x/config/cache.h
     quant1x/config/data_cache.h
     quant1x/config/rule_parameter.h
     quant1x/config/strategy_parameter.h
@@ -480,7 +481,7 @@ set(quant1x-headers
     quant1x/data/status.h
 
     # 实时模块 (TODO: API migration pending)
-    # quant1x/realtime/snapshot.h
+    quant1x/realtime/snapshot.h
 
     # 回测 (TODO: API migration pending)
     # quant1x/backtest/backtest.h
@@ -504,9 +505,9 @@ set(quant1x-headers
     # level1
     quant1x/contrib/data/tdx/level1/std/minute_time.h
 
-    # tdx adapters (TODO: xdxr, chips, bar_raw, f10 API migration pending)
+    # tdx adapters
     quant1x/contrib/data/tdx/xdxr.h
-    # quant1x/contrib/data/tdx/bar_raw.h
+    quant1x/contrib/data/tdx/bar_raw.h
     quant1x/contrib/data/tdx/bar.h
     quant1x/contrib/data/tdx/trans.h
     quant1x/contrib/data/tdx/minute.h
@@ -515,8 +516,6 @@ set(quant1x-headers
     quant1x/contrib/data/tdx/instruments.h
     quant1x/contrib/data/tdx/datasource.h
     quant1x/contrib/data/tdx/sector.h
-    # quant1x/contrib/data/tdx/f10.h
-    # quant1x/contrib/data/tdx/history.h
 
     # 引擎
     quant1x/engine/strategy.h
@@ -530,13 +529,13 @@ set(quant1x-headers
     quant1x/plugins/plugin_loader.h
     quant1x/plugins/plugin_api.h
 
-    # 因子 (TODO: API migration — all factor .h files depend on old data:: types)
-    # quant1x/factors/f10.h
-    # quant1x/factors/share_holder.h
-    # quant1x/factors/notice.h
-    # quant1x/factors/financial_report.h
-    # quant1x/factors/safety_score.h
-    # quant1x/factors/history.h
+    # 因子
+    quant1x/factors/f10.h
+    quant1x/factors/share_holder.h
+    quant1x/factors/notice.h
+    quant1x/factors/financial_report.h
+    quant1x/factors/safety_score.h
+    quant1x/factors/history.h
 
     # Technical Analysis Patterns
     quant1x/ta/boll.h
@@ -561,13 +560,13 @@ set(quant1x-headers
     quant1x/trader/order_cache.h
     quant1x/trader/position.h
     quant1x/trader/tracker.h
-    # quant1x/trader/order_state.h (TODO: API migration — depends on config/cache.h, io::write_file, etc.)
+    quant1x/trader/order_state.h
 
     # 内嵌资源文件
     quant1x/resources/meta/blocks.h
 
     # 应用入口
-    quant1x/quant1x.h
+    quant1x/app.h
 
     # 数据处理功能 quant1x/data
     
@@ -620,10 +619,10 @@ set(quant1x-sources
 
     # 配置信息
     quant1x/config/base.cpp
-    #quant1x/config/cache.cpp
+    quant1x/config/cache.cpp
     quant1x/config/trading_session.cpp
-    # quant1x/config/trader_parameter.cpp (TODO: API migration)
-    # quant1x/config/strategy_parameter.cpp (TODO: API migration)
+    quant1x/config/trader_parameter.cpp
+    quant1x/config/strategy_parameter.cpp
 
     quant1x/cache.cpp
     quant1x/command.cpp
@@ -641,68 +640,68 @@ set(quant1x-sources
     quant1x/data/cache.cpp
     quant1x/data/market.cpp
 
-    # tdx adapters (TODO: chips, f10, history API migration pending)
+    # tdx adapters (TODO: chips API migration pending)
     quant1x/contrib/data/tdx/xdxr.cpp
     quant1x/contrib/data/tdx/bar_raw.cpp
     quant1x/contrib/data/tdx/bar.cpp
     quant1x/contrib/data/tdx/trans.cpp
     quant1x/contrib/data/tdx/minute.cpp
-    # quant1x/contrib/data/tdx/chips.cpp
+    quant1x/contrib/data/tdx/chips.cpp
     quant1x/contrib/data/tdx/bar_minute.cpp
     quant1x/contrib/data/tdx/instruments.cpp
     quant1x/contrib/data/tdx/datasource.cpp
     quant1x/contrib/data/tdx/sector.cpp
-    # quant1x/contrib/data/tdx/f10.cpp
-    # quant1x/contrib/data/tdx/history.cpp
-
-    # quant1x/datasets.cpp (TODO: API migration - depends on masked factors)
 
     # 交易所相关 (migrated to quant1x/data/meta/)
     quant1x/data/meta/timestamp.cpp
     quant1x/data/meta/calendar.cpp
     quant1x/data/meta/session.cpp
 
-    # 因子 (TODO: API migration — all factor .cpp files depend on old data:: types)
-    # quant1x/factors/f10.cpp
-    # quant1x/factors/share_holder.cpp
-    # quant1x/factors/history.cpp
-    # quant1x/factors/notice.cpp
-    # quant1x/factors/financial_report.cpp
-    # quant1x/factors/safety_score.cpp
+    # 因子
+    quant1x/factors/f10.cpp
+    quant1x/factors/share_holder.cpp
+    quant1x/factors/history.cpp
+    quant1x/factors/notice.cpp
+    quant1x/factors/financial_report.cpp
+    quant1x/factors/safety_score.cpp
 
     # Technical Analysis Patterns
     quant1x/ta/trend.cpp
     quant1x/ta/waves.cpp
 
     # 实时 (TODO: API migration pending)
-    # quant1x/realtime/snapshot.cpp
+    quant1x/realtime/snapshot.cpp
 
     # 插件
     quant1x/plugins/plugin_loader.cpp
 
-    # 策略 (TODO: API migration - depends on level1::SecurityQuote, masked factor headers)
-    # quant1x/engine/rule_engine.cpp
-    # quant1x/engine/strategy.cpp
+    # 策略
+    quant1x/engine/rule_engine.cpp
+    quant1x/engine/strategy.cpp
 
     # 交易柜台 (TODO: API migration - depends on RollingOnce, date_range(string), cpr::Payload API changes)
-    # quant1x/trader/fee.cpp
-    # quant1x/trader/order.cpp
-    # quant1x/trader/account.cpp
-    # quant1x/trader/trader.cpp
-    # quant1x/trader/holding.cpp
-    # quant1x/trader/order_cache.cpp
-    # quant1x/trader/position.cpp
-    # quant1x/trader/tracker.cpp
-    # quant1x/trader/order_state.cpp
+    quant1x/trader/fee.cpp
+    quant1x/trader/order.cpp
+    quant1x/trader/account.cpp
+    quant1x/trader/trader.cpp
+    quant1x/trader/holding.cpp
+    quant1x/trader/order_cache.cpp
+    quant1x/trader/position.cpp
+    quant1x/trader/tracker.cpp
+    quant1x/trader/order_state.cpp
 
     # 应用入口 (TODO: API migration - depends on masked realtime/snapshot.h, trader/tracker.h)
-    # quant1x/quant1x.cpp
+    quant1x/app.cpp
 
     # 数据处理功能 quant1x/data
     
     # 机器学习
     quant1x/learn/fpgrowth/fp_growth.cpp
     quant1x/learn/fpgrowth/fp_growth_core.cpp
+
+    # protobuf 生成文件
+    quant1x/proto/chips.pb.cc
+    quant1x/proto/xdxr.pb.cc
 )
 
 # If mimalloc is enabled and we're using the C++ new/delete override mode,
@@ -737,11 +736,9 @@ else ()
     message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
 endif ()
 
-# 添加测试策略 (TODO: API migration — depends on masked factor headers)
-# list(APPEND quant1x-headers user/no0.h)
-# list(APPEND quant1x-sources user/no0.cpp)
-# list(APPEND quant1x-headers user/strategy-no0.h)
-# list(APPEND quant1x-sources user/strategy-no0.cpp)
+# 添加测试策略
+list(APPEND quant1x-headers user/strategy-no0.h)
+list(APPEND quant1x-sources user/strategy-no0.cpp)
 
 
 # 检查编译器选项

@@ -1,21 +1,27 @@
 #include <quant1x/factors/history.h>
 #include <quant1x/formula.h>
-#include <quant1x/data/trans.h>
 #include <quant1x/pandas/dataframe.h>
 #include <boost/pfr.hpp>
 #include <quant1x/encoding/csv.h>
+#include <quant1x/data/meta/calendar.h>
+#include <quant1x/contrib/data/tdx/trans.h>
+#include <quant1x/std/time.h>
 #include <fmt/format.h>
+
+namespace tdx = quant1x::contrib::data::tdx;
+namespace meta = quant1x::data::meta;
+namespace data = quant1x::data;
 
 void History::adjust(const factors::CumulativeAdjustment &adj) {
     (void)adj;
 }
 
-data::Kind HistoryFeature::Kind() const {
+quant1x::data::Kind HistoryFeature::Kind() const {
     return factors::FeatureHistory;
 }
 
-std::string HistoryFeature::Owner() {
-    return data::DefaultDataProvider;
+std::string HistoryFeature::Owner() const {
+    return quant1x::data::DefaultDataProvider;
 }
 
 std::string HistoryFeature::Key() const {
@@ -30,7 +36,7 @@ std::string HistoryFeature::Usage() const {
     return "历史数据";
 }
 
-void HistoryFeature::Print(const meta::Instrument &inst, const meta::Timestamp &date) {
+void HistoryFeature::Print(const quant1x::data::meta::Instrument &inst, const quant1x::data::meta::Timestamp &date) {
     (void)date;
     auto h = headers();
     auto v = values();
@@ -48,11 +54,11 @@ void HistoryFeature::Print(const meta::Instrument &inst, const meta::Timestamp &
     }
 }
 
-void HistoryFeature::Update(const meta::Instrument &inst, const meta::Timestamp &date) {
+void HistoryFeature::Update(const quant1x::data::meta::Instrument &inst, const quant1x::data::meta::Timestamp &date) {
     auto code = inst.symbol();
     (void)date;
     std::string feature_date = date.only_date();
-    meta::Timestamp ts_cache = meta::next_trading_day(date);
+    quant1x::data::meta::Timestamp ts_cache = quant1x::data::meta::next_trading_day(date);
     history.Date = ts_cache.only_date();
     history.Code = code;
     auto klines = tdx::klines_forward_adjusted_to_date(code, feature_date);
@@ -153,11 +159,11 @@ void HistoryFeature::Update(const meta::Instrument &inst, const meta::Timestamp 
     history.NewLowN = formula::at(newLowN, -1);
 
     // 成交统计概要数据
-    auto list = data::CheckoutTransactionData(code, date, true);
+    auto list = tdx::CheckoutTransactionData(code, date, true);
     if(list.empty()) {
         spdlog::warn("[HistoryFeature] code={},date={}, 分笔成交数据为空", code, feature_date);
     }
-    auto summary = data::CountInflow(list, code, ts_cache);
+    auto summary = tdx::CountInflow(list, code, ts_cache);
     history.OpenVolume = summary.OpenVolume;
 
     history.UpdateTime = api::get_timestamp();

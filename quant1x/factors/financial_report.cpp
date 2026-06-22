@@ -2,6 +2,7 @@
 #include <cpr/cpr.h>
 #include <quant1x/std/filesystem.h>
 #include <quant1x/std/time.h>
+#include <quant1x/data/market.h>
 #include <quant1x/data/meta/timestamp.h>
 #include <quant1x/encoding/json.h>
 #include <quant1x/encoding/csv.h>
@@ -10,6 +11,10 @@
 #include <algorithm>
 #include <stdexcept>
 #include <quant1x/config/cache.h>
+
+namespace data = quant1x::data;
+namespace meta = quant1x::data::meta;
+namespace config = quant1x::config;
 
 namespace dfcf {
 
@@ -1235,19 +1240,19 @@ namespace dfcf {
         int pageNo)
     {
         (void)diffQuarters;
-        auto [marketType, _, code] = data::detect_symbol(securityCode);
+        auto inst = data::detect_symbol(securityCode);
         std::string quarterEndDate = meta::Timestamp(date).only_date();
 
         // 构建参数
-        cpr::Parameters params = {
+        cpr::Parameters params = {{
             {"sortColumns", "REPORTDATE,SECURITY_CODE"},
             {"sortTypes", "-1,1"},
             {"pageSize", std::to_string(EastmoneyQuarterlyReportAllPageSize)},
             {"pageNumber", std::to_string(pageNo)},
             {"reportName", "RPT_LICO_FN_CPD"},
             {"columns", "ALL"},
-            {"filter", "(SECURITY_CODE=\"" + code + "\")(REPORTDATE='" + quarterEndDate + "')"},
-        };
+            {"filter", "(SECURITY_CODE=\"" + inst.ticker + "\")(REPORTDATE='" + quarterEndDate + "')"},
+        }};
 
         std::string url = urlQuarterlyReportAll;
         cpr::Response response = cpr::Get(
@@ -1343,8 +1348,7 @@ namespace dfcf {
         auto it = mapReports.find(filename);
         if (it == mapReports.end()) {
             // TODO 这里加载需要一个过期淘汰机制
-            auto modified = filesystem::last_modified_time(filename);
-            if (!true(modified)) {
+            if (std::filesystem::exists(filename)) {
                 allReports = encoding::csv::csv_to_slices<QuarterlyReport>(filename);
                 if (!allReports.empty()) {
                     mapReports[filename] = allReports;

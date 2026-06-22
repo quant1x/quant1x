@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <quant1x/config/config.h>
 
+namespace config = quant1x::config;
+
 namespace trader {
 
     /**

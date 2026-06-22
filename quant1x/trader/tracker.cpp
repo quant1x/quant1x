@@ -10,11 +10,19 @@
 #include <quant1x/config/config.h>
 #include <spdlog/spdlog.h>
 #include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/market.h>
 #include <indicators/progress_bar.hpp>
 #include <quant1x/realtime/snapshot.h>
 #include <quant1x/trader/trader.h>
 #include <quant1x/trader/order_state.h>
 #include <quant1x/trader/account.h>
+#include <quant1x/contrib/data/tdx/instruments.h>
+
+namespace config = quant1x::config;
+namespace meta = quant1x::data::meta;
+namespace data = quant1x::data;
+namespace instruments = quant1x::contrib::data::tdx::instruments;
+using namespace quant1x::contrib::data;
 
 namespace trader {
     namespace mpb = ::indicators;

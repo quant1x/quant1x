@@ -10,7 +10,7 @@
 
 namespace factors {
     constexpr int  KLineMin    = 120;
-    constexpr auto baseFeature = data::PluginMaskFeature;
+    constexpr auto baseFeature = quant1x::data::PluginMaskFeature;
 
     constexpr auto FeatureF10                       = baseFeature + 1;
     constexpr auto FeatureHistory                   = baseFeature + 2;
@@ -22,7 +22,7 @@ namespace factors {
     constexpr auto FeatureSecuritiesMarginTrading   = baseFeature + 8;
 
     // Backward-compatible type alias for CumulativeAdjustment
-    using CumulativeAdjustment = meta::schema::CumulativeAdjustment;
+    using CumulativeAdjustment = quant1x::data::schema::CumulativeAdjustment;
 }
 
 #endif // QUANT1X_FACTOR_BASE_COMPAT_H

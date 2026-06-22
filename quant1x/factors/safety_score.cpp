@@ -1,5 +1,7 @@
 #include <cpr/cpr.h>
+#include <quant1x/data/market.h>
 #include <quant1x/data/meta/timestamp.h>
+#include <quant1x/contrib/data/tdx/datasource.h>
 #include <quant1x/factors/safety_score.h>
 
 //#include <iostream>
@@ -10,6 +12,7 @@
 #include <tuple>
 
 using json = nlohmann::json;
+namespace data = quant1x::data;
 
 const std::string urlRiskAssessment            = "http://page3.tdx.com.cn:7615/site/pcwebcall_static/bxb/json/";
 const int         defaultSafetyScore           = 100;
@@ -147,16 +150,16 @@ namespace risks {
             return {defaultSafetyScore, ""};
         }
 
-        if (instruments::IsNeedIgnore(securityCode)) {
+        if (quant1x::contrib::data::tdx::is_need_ignore(securityCode)) {
             return {defaultSafetyScoreOfIgnore, ""};
         }
 
         int         score = defaultSafetyScore;
         std::string detail;
-        auto [marketId, marketCode, pureCode] = data::detect_symbol(securityCode);
+        auto inst = data::detect_symbol(securityCode);
 
-        if (pureCode.length() == 6) {
-            std::string url = urlRiskAssessment + pureCode + ".json";
+        if (inst.ticker.length() == 6) {
+            std::string url = urlRiskAssessment + inst.ticker + ".json";
 
             // 使用cpr发送HTTP GET请求
             cpr::Response response = cpr::Get(cpr::Url{url});

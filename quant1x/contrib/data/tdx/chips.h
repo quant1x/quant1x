@@ -16,7 +16,7 @@ namespace quant1x::contrib::data::tdx {
     class DataChips : public quant1x::data::DataAdapter {
     public:
         quant1x::data::Kind Kind() const override { return quant1x::data::BaseChipDistribution; }
-        std::string Owner() override { return quant1x::data::DefaultDataProvider; }
+        std::string Owner() const  override { return quant1x::data::DefaultDataProvider; }
         std::string Key() const override { return "chips"; }
         std::string Name() const override { return "筹码分布"; }
         std::string Usage() const override { return "筹码分布"; }

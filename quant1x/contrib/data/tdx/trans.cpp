@@ -290,4 +290,64 @@ namespace quant1x::contrib::data::tdx {
         }
     }
 
+    // =============================
+    // 交易分析函数
+    // =============================
+
+    std::vector<quant1x::data::schema::Transaction> CheckoutTransactionData(
+        const std::string& code, const quant1x::data::meta::Timestamp& date, bool /*ignorePreviousData*/) {
+        auto inst = quant1x::data::detect_symbol(code);
+        auto [list, _] = load_transaction_data_from_cache(inst, date.only_date());
+        return list;
+    }
+
+    TurnoverDataSummary CountInflow(
+        const std::vector<quant1x::data::schema::Transaction>& list,
+        const std::string& /*securityCode*/,
+        const quant1x::data::meta::Timestamp& /*featureDate*/) {
+        TurnoverDataSummary summary{};
+        if (list.empty()) return summary;
+
+        // 统计内外盘成交
+        double last_price = list[0].price;
+        for (const auto& v : list) {
+            int direction = v.direction;
+            double price = v.price;
+            int vol = v.volume;
+            double amount = v.amount;
+
+            if (direction == 0) { // 外盘/买盘
+                summary.OuterVolume += vol;
+                summary.OuterAmount += amount;
+            } else if (direction == 1) { // 内盘/卖盘
+                summary.InnerVolume += vol;
+                summary.InnerAmount += amount;
+            } else { // 中性盘, 按价格变化判断
+                if (price > last_price) {
+                    summary.OuterVolume += vol;
+                    summary.OuterAmount += amount;
+                } else if (price < last_price) {
+                    summary.InnerVolume += vol;
+                    summary.InnerAmount += amount;
+                }
+                // 价格不变: 不归类
+            }
+            if (last_price == 0) last_price = price;
+        }
+
+        // 开盘量 (前10笔)
+        size_t open_count = std::min(size_t(10), list.size());
+        for (size_t i = 0; i < open_count; ++i) {
+            summary.OpenVolume += list[i].volume;
+        }
+
+        // 收盘量 (后10笔)
+        size_t close_count = std::min(size_t(10), list.size());
+        for (size_t i = list.size() - close_count; i < list.size(); ++i) {
+            summary.CloseVolume += list[i].volume;
+        }
+
+        return summary;
+    }
+
 } // namespace quant1x::contrib::data::tdx

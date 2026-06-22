@@ -1,6 +1,8 @@
 #include <cpr/cpr.h>
 #include <quant1x/config/config.h>
 #include <quant1x/data/meta/exchange.h>
+#include <quant1x/data/market.h>
+#include <quant1x/std/strings.h>
 #include <quant1x/trader/constants.h>
 #include <quant1x/trader/fee.h>
 #include <quant1x/trader/trader.h>
@@ -11,6 +13,9 @@
 #include <vector>
 
 using json = nlohmann::json;
+
+namespace config = quant1x::config;
+namespace data = quant1x::data;
 
 namespace trader {
 
@@ -162,7 +167,7 @@ namespace trader {
     // 查询当日委托
     std::vector<OrderDetail> QueryOrders(int64_t order_id) {
         cpr::Payload params{
-            {"order_id", std::to_string(order_id)},
+            cpr::Pair{"order_id", std::to_string(order_id)},
         };
         std::string urlPrefixMiniQmtProxy = config::TraderConfig().get()->ProxyUrl;
         std::string urlPrefixForQuery     = urlPrefixMiniQmtProxy + "/query";  // 查询前缀
@@ -192,22 +197,23 @@ namespace trader {
                        int                priceType,
                        double             price,
                        int                volume) {
-        auto [marketId, marketCode, symbol] = data::detect_symbol(securityCode);
-        marketCode                          = strings::to_upper(marketCode);
+        auto inst = data::detect_symbol(securityCode);
+        auto marketCode = strings::to_upper(inst.ticker);
+        auto symbolCode = inst.symbol();
 
         cpr::Payload params{
-            {"direction", to_string(direction)},
-            {"code", symbol + "." + marketCode},
-            {"price_type", std::to_string(priceType)},
-            {"price", std::to_string(price)},
-            {"volume", std::to_string(volume)},
-            {"strategy", strategyName},
-            {"remark", orderRemark},
+            cpr::Pair{"direction", to_string(direction)},
+            cpr::Pair{"code", symbolCode + "." + marketCode},
+            cpr::Pair{"price_type", std::to_string(priceType)},
+            cpr::Pair{"price", std::to_string(price)},
+            cpr::Pair{"volume", std::to_string(volume)},
+            cpr::Pair{"strategy", strategyName},
+            cpr::Pair{"remark", orderRemark},
         };
 
         spdlog::info("trader-order: direction={}, code={}, price_type={}, price={}, volume={}",
                      to_string(direction),
-                     symbol + "." + marketCode,
+                     symbolCode + "." + marketCode,
                      priceType,
                      price,
                      volume);
@@ -248,7 +254,7 @@ namespace trader {
     // 撤单
     int64_t CancelOrder(int64_t orderId) {
         cpr::Payload params{
-            {"order_id", std::to_string(orderId)},
+            cpr::Pair{"order_id", std::to_string(orderId)},
         };
 
         spdlog::info("[trader-cancel] order_id={}", orderId);

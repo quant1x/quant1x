@@ -2,6 +2,8 @@
 #include <quant1x/proto/data.h>
 #include <quant1x/config/base.h>
 #include <quant1x/config/cache.h>
+#include <quant1x/io/csv-reader.h>
+#include <quant1x/contrib/data/tdx/level1/std/transaction.h>
 #include <filesystem>
 #include <fstream>
 #include <spdlog/spdlog.h>
@@ -9,7 +11,6 @@
 #include <tsl/robin_map.h>
 
 namespace config = quant1x::config;
-namespace io = ::io;
 
 namespace quant1x::contrib::data::tdx {
     namespace fs = std::filesystem;

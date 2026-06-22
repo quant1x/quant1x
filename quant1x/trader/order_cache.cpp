@@ -2,7 +2,10 @@
 #include <quant1x/trader/order.h>
 
 #include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/meta/calendar.h>
 #include <quant1x/encoding/csv.h>
+
+namespace meta = quant1x::data::meta;
 
 namespace trader {
 

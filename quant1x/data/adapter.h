@@ -18,14 +18,15 @@ namespace quant1x::data {
     constexpr Kind PluginMaskFeature  = 0x2000000000000000; // 特征数据
     constexpr Kind PluginMaskStrategy = 0x3000000000000000; // 策略
 
-    const std::string DefaultDataProvider = "quant1x";
+    // const char* const：指针本身不可变，指向的内容也不可变
+    inline constexpr const char* const DefaultDataProvider = "quant1x";
 
     // 缓存的概要信息
     class Schema {
     public:
         virtual ~Schema() = default;
         virtual Kind Kind() const = 0; // Kind 数据类型
-        virtual std::string Owner() = 0; // Owner 提供者
+        virtual std::string Owner() const = 0; // Owner 提供者
         virtual std::string Key() const = 0; // Key 数据关键词, key与cache落地强关联
         virtual std::string Name() const = 0; // Name 特性名称
         virtual std::string Usage() const = 0; // Usage 控制台参数提示信息, 数据描述(data description)

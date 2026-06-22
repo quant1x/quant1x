@@ -10,13 +10,14 @@ from typing import Optional, Tuple, List, Dict
 
 import pandas as pd
 import quant1x.contrib.data.tdx.xdxr as xdxr_module
-from quant1x.data.market import detect_symbol, correct_security_code
-from quant1x.factors import share_holder, financial_report, safety_score, notice
-from quant1x.contrib.data.tdx.client import get_std_conn
-from quant1x.contrib.data.tdx.level1 import XdxrInfo, FinanceInfoContext
-from quant1x.contrib.data.tdx.protocol import transact_message_sync
-from quant1x import std
+
 from quant1x.log import logger
+from quant1x.data.market import detect_symbol, correct_security_code
+from quant1x.contrib.data.tdx.client import get_std_conn
+from quant1x.data.schema import XdxrInfo
+from quant1x.contrib.data.tdx.level1 import XdxrInfoContext, FinanceInfoContext
+from quant1x.contrib.data.tdx.protocol import transact_message_sync
+from quant1x.factors import share_holder, financial_report, safety_score, notice
 
 @dataclass
 class F10:
@@ -63,7 +64,7 @@ def get_finance_info(security_code: str, feature_date: str) -> Tuple[float, floa
     try:
         inst = detect_symbol(security_code)
         with get_std_conn() as conn:
-            req = FinanceInfoContext(inst.exchange, inst.ticker)
+            req = FinanceInfoContext(inst)
             transact_message_sync(conn, req)
             
             if req.count > 0:

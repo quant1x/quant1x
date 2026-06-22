@@ -1,8 +1,10 @@
 #include <quant1x/config/strategy_parameter.h>
+#include <quant1x/contrib/data/tdx/instruments.h>
 #include <quant1x/data/meta/timestamp.h>
 #include <quant1x/data/market.h>
 
 namespace quant1x::config {
+namespace instruments = quant1x::contrib::data::tdx::instruments;
 
     // 初始化排除列表
     void StrategyParameter::initExclude() {
@@ -78,7 +80,7 @@ namespace quant1x::config {
         }
 
         if (codes.empty()) {
-            codes = instruments::GetStockCodeList();
+            codes = instruments::get_code_list();
         }
         return Filter(codes);
     }

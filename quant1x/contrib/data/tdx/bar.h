@@ -111,7 +111,7 @@ std::vector<quant1x::data::schema::Bar> get_cross_section_forward_adjusted_kline
 class DataKLine : public quant1x::data::DataAdapter {
 public:
     quant1x::data::Kind Kind() const override { return quant1x::data::BaseKLine; }
-    std::string Owner() override { return quant1x::data::DefaultDataProvider; }
+    std::string Owner() const override { return quant1x::data::DefaultDataProvider; }
     std::string Key() const override { return "day"; }
     std::string Name() const override { return "前复权K线"; }
     std::string Usage() const override { return "前复权K线数据"; }
@@ -119,6 +119,25 @@ public:
     void Print(const quant1x::data::meta::Instrument& inst, const quant1x::data::meta::Timestamp& date) override;
     void Update(const quant1x::data::meta::Instrument& inst, const quant1x::data::meta::Timestamp& date) override;
 };
+
+// =============================
+// 向后兼容的便捷函数
+// =============================
+
+/// 从缓存检出指定日期 K 线 (便捷重载, 自动解析证券代码)
+/// 对齐旧版 checkout_klines(code, date)
+inline std::vector<quant1x::data::schema::Bar> checkout_klines(const std::string& code, const std::string& date) {
+    (void)date;
+    auto inst = quant1x::data::detect_symbol(code);
+    return load_kline(inst);
+}
+
+/// 获取前复权 K 线截至指定日期 (便捷重载, 自动解析证券代码)
+/// 对齐旧版 klines_forward_adjusted_to_date(code, date)
+inline std::vector<quant1x::data::schema::Bar> klines_forward_adjusted_to_date(const std::string& code, const std::string& date) {
+    auto inst = quant1x::data::detect_symbol(code);
+    return get_cross_section_forward_adjusted_klines(inst, date);
+}
 
 } // namespace quant1x::contrib::data::tdx
 

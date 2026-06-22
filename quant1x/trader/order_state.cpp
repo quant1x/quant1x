@@ -3,10 +3,15 @@
 #include <quant1x/std/filesystem.h>
 #include <quant1x/trader/fee.h>
 #include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/market.h>
 #include <quant1x/engine/strategy.h>
 #include <quant1x/trader/order.h>
 #include <quant1x/config/base.h>
 #include <quant1x/config/cache.h>
+
+namespace config = quant1x::config;
+namespace meta = quant1x::data::meta;
+namespace data = quant1x::data;
 
 namespace trader {
     namespace fs = std::filesystem;

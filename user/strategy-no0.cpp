@@ -1,5 +1,8 @@
 #include "strategy-no0.h"
 #include <quant1x/contrib/data/tdx/bar.h>
+#include <quant1x/contrib/data/tdx/level1/std/security_quote.h>
+#include <quant1x/data/market.h>
+#include <quant1x/data/meta/calendar.h>
 #include <quant1x/factors/history.h>
 #include <quant1x/factors/base_compat.h>
 #include <quant1x/formula.h>
@@ -7,6 +10,19 @@
 #include <quant1x/trader/fee.h>
 #include "no0.h"
 #include <iostream>
+
+namespace data = quant1x::data;
+namespace meta = quant1x::data::meta;
+namespace tdx = quant1x::contrib::data::tdx;
+
+// 计算涨停板价格 (A股: 非创业板/科创板10%, 创业板/科创板20%)
+static double calc_limit_up_price(const std::string& securityCode, double prev_close) {
+    bool is_cyb_or_star = (!securityCode.empty() &&
+        (securityCode.find("sz300") == 0 || securityCode.find("sh688") == 0 ||
+         securityCode.find("sz301") == 0 || securityCode.find("sh689") == 0));
+    double rate = is_cyb_or_star ? 0.20 : 0.10;
+    return prev_close * (1.0 + rate);
+}
 
 quant1x::error No0Strategy::Filter(const quant1x::config::StrategyParameter& parameter, const Snapshot::Reader& snapshot) const {
     // 判断价格
@@ -18,7 +34,7 @@ quant1x::error No0Strategy::Filter(const quant1x::config::StrategyParameter& par
     }
     // 判断是否涨停
     double prev_price = snapshot.getLastClose();
-    double up_limit = instruments::calc_limit_up_price(snapshot.getSecurityCode(), prev_price);
+    double up_limit = calc_limit_up_price(snapshot.getSecurityCode(), prev_price);
     if(price == up_limit) {
         return quant1x::make_error_code(0+3, std::format("涨停, 价格{}, 不打板", price));
     }
@@ -26,7 +42,7 @@ quant1x::error No0Strategy::Filter(const quant1x::config::StrategyParameter& par
     return quant1x::make_error_code(0, "no problem");
 }
 
-quant1x::error No0Strategy::Filter(const quant1x::config::StrategyParameter &parameter, const tdx::SecurityQuoteContext &snapshot) const {
+quant1x::error No0Strategy::Filter(const quant1x::config::StrategyParameter &parameter, const quant1x::contrib::data::tdx::SecurityQuote &snapshot) const {
     // 判断价格
     auto price = snapshot.price;
     auto rule_price = parameter.Rules.Price;
@@ -36,8 +52,9 @@ quant1x::error No0Strategy::Filter(const quant1x::config::StrategyParameter &par
     }
     // 判断是否涨停
     double prev_price = snapshot.lastClose;
-    std::string security_code = data::correct_security_code(static_cast<meta::ExchangeId>(snapshot.market), snapshot.code);
-    double up_limit = instruments::calc_limit_up_price(security_code, prev_price);
+    auto inst = data::detect_symbol(snapshot.code);
+    std::string security_code = data::correct_security_code(inst.symbol());
+    double up_limit = calc_limit_up_price(security_code, prev_price);
     if(price == up_limit) {
         return quant1x::make_error_code(0+3, std::format("涨停, 价格{}, 不打板", price));
     }
@@ -64,11 +81,11 @@ void No0Strategy::Evaluate(const SecurityCode &code, ResultInfo &result) const {
         spdlog::warn("[No0Strategy::updateIndicators] {} 日线数据不足: {} < {}", securityCode, klines.size(), factors::KLineMin);
         return;
     }
-    klines = std::vector<data::KLine>(klines.begin(), klines.end() -1);
+    klines = std::vector<data::schema::Bar>(klines.begin(), klines.end() -1);
 
     auto current_price = numeric::decimal(klines[klines.size() -1].close);
     auto prev_close = numeric::decimal(klines[klines.size() - 2].close);
-    auto limit_up_price = instruments::calc_limit_up_price(securityCode, prev_close);
+    auto limit_up_price = calc_limit_up_price(securityCode, prev_close);
     if(limit_up_price == current_price) {
         result.limit_up = true;
         return;
@@ -91,7 +108,7 @@ void No0Strategy::updateIndicators(const SecurityCode &code) {
         return;
     }
     //auto next_close = klines[klines.size() - 1].Close;
-    market_data_ = std::vector<data::KLine>(klines.begin(), klines.end() -1);
+    market_data_ = std::vector<data::schema::Bar>(klines.begin(), klines.end() -1);
 
     // Compute simple moving averages and fill buys_/sells_ for signaling
     size_t n = market_data_.size();
@@ -196,7 +213,7 @@ void No0Strategy::Evaluate(const SecurityCode &code, ResultInfo &result, const S
     result.fee_sell.Price = snapshot.getPrice();
 }
 
-void No0Strategy::Evaluate(const SecurityCode &code, ResultInfo &result, const tdx::SecurityQuoteContext &snapshot) const {
+void No0Strategy::Evaluate(const SecurityCode &code, ResultInfo &result, const quant1x::contrib::data::tdx::SecurityQuote &snapshot) const {
     result.strategy_id = this->Code();
     std::string securityCode = data::correct_security_code(code);
     result.code = securityCode;
