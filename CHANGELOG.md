@@ -3,10 +3,29 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.48] - 2026-06-22
+### Changed
+- 添加许可证头部
+- c++: 调整入口源文件名为app
+- c++: datasets收敛到app
+- fix: API迁移 - 恢复CMakeLists.txt中禁用的源文件并修复旧版API调用
+
+- CMakeLists.txt: 取消注释约12个TODO标记的源文件
+- detect_symbol: 3元组返回值迁移为Instrument结构体
+- correct_security_code: 双参数迁移为单参数
+- date_range -> get_date_range
+- ExchangeId -> Exchange枚举直接使用
+- instruments命名空间函数迁移
+- cpr::Parameters使用双花括号语法
+- 修复缺失的#include和namespace别名
+- 修复Owner()缺少const限定符
+- 清理build临时日志文件
+
 ## [0.7.47] - 2026-06-21
 ### Changed
 - c++: 删除废弃的头文件
 - rust: 清理冗余的依赖库
+- release v0.7.47
 
 ## [0.7.46] - 2026-06-21
 ### Changed
@@ -1995,7 +2014,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.47...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.48...HEAD
+[0.7.48]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.47...v0.7.48
 [0.7.47]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.46...v0.7.47
 [0.7.46]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.45...v0.7.46
 [0.7.45]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.44...v0.7.45
