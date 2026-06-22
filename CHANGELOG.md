@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.50] - 2026-06-22
+### Changed
+- feat(ticker_rules): add Go implementation of all market ticker rules
+
+Implement rule.go (RulePrefix, CodeRule, MatchRule, GlobalRules) and market rules for BSE, SSE, SZSE, HKEX, USA including HK price tick and US code mapping.
+
 ## [0.7.49] - 2026-06-22
 ### Changed
 - feat(storage): add C++, Rust, Go storage implementations based on Python design
@@ -12,6 +18,7 @@ All notable changes to this project will be documented in this file.
 - Add Go FileStorage interface, BasedataFileStorage, MetaFileStorage in storage.go
 - Add storage.md design document
 - Register storage module in data/mod.rs
+- release v0.7.49
 
 ## [0.7.48] - 2026-06-22
 ### Changed
@@ -2025,7 +2032,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.49...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.50...HEAD
+[0.7.50]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.49...v0.7.50
 [0.7.49]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.48...v0.7.49
 [0.7.48]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.47...v0.7.48
 [0.7.47]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.46...v0.7.47
