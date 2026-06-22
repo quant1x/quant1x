@@ -3,6 +3,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.49] - 2026-06-22
+### Changed
+- feat(storage): add C++, Rust, Go storage implementations based on Python design
+
+- Add C++ FileStorage<T>, BasedataFileStorage<T>, MetaFileStorage<T> in storage.h
+- Add Rust FileStorage trait, BasedataFileStorage, MetaFileStorage in storage.rs
+- Add Go FileStorage interface, BasedataFileStorage, MetaFileStorage in storage.go
+- Add storage.md design document
+- Register storage module in data/mod.rs
+
 ## [0.7.48] - 2026-06-22
 ### Changed
 - 添加许可证头部
@@ -20,6 +30,7 @@ All notable changes to this project will be documented in this file.
 - 修复缺失的#include和namespace别名
 - 修复Owner()缺少const限定符
 - 清理build临时日志文件
+- release v0.7.48
 
 ## [0.7.47] - 2026-06-21
 ### Changed
@@ -2014,7 +2025,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.48...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.49...HEAD
+[0.7.49]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.48...v0.7.49
 [0.7.48]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.47...v0.7.48
 [0.7.47]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.46...v0.7.47
 [0.7.46]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.45...v0.7.46
