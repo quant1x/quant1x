@@ -131,7 +131,6 @@ int main(const int argc, const char *const argv[]) {
     runtime::logger_set(verbose, debug);
     quant1x::app::init([] {
         namespace data = quant1x::data;
-        namespace tdx = quant1x::contrib::data::tdx;
 
         std::cout << "这里执行定制的初始化工作" << std::endl;
         // TODO: API migration — user strategy files masked
@@ -142,13 +141,7 @@ int main(const int argc, const char *const argv[]) {
         // StrategyPtr s0 = std::make_shared<No0Strategy>();
         // manager.Register(s0);
 
-        // 注册 TDX 基础数据适配器
-        data::Register(std::make_unique<tdx::DataXdxr>());
-        data::Register(std::make_unique<tdx::DataKLineRaw>());
-        data::Register(std::make_unique<tdx::DataKLine>());
-        data::Register(std::make_unique<tdx::DataTrans>());
-        data::Register(std::make_unique<tdx::DataMinute>());
-        data::Register(std::make_unique<tdx::DataMinuteKLine>());
+        // TDX 基础数据适配器已在 init_datasource() 中统一注册, 此处不再重复注册
     });
 
     if(program.is_subcommand_used("service")) {
