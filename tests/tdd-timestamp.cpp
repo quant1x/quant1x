@@ -1,19 +1,21 @@
 #include <quant1x/test/test.h>
 #include <quant1x/data/meta/timestamp.h>
 
+namespace meta = quant1x::data::meta;
+
 TEST_CASE("parse-datetime", "[chrono]") {
     SECTION("date") {
         std::string test_date1 = "2025-05-29 15:00:01";
         auto ts1 = meta::Timestamp::parse(test_date1);
-        REQUIRE(ts1.toString() == test_date1+".000");
+        REQUIRE(ts1.to_string() == test_date1+".000");
 
         std::string test_date2 = "2025-05-29 15:00:01.123";
         auto ts2 = meta::Timestamp::parse(test_date2);
-        REQUIRE(ts2.toString() == test_date2);
+        REQUIRE(ts2.to_string() == test_date2);
 
         std::string test_date3 = "2025-05-29";
         auto        ts3        = meta::Timestamp::parse(test_date3);
-        REQUIRE(ts3.toString() == test_date3 + " 00:00:00.000");
+        REQUIRE(ts3.to_string() == test_date3 + " 00:00:00.000");
     }
 
     SECTION("time") {
@@ -41,12 +43,12 @@ TEST_CASE("parse-time-hhmmss", "[timestamp]") {
 TEST_CASE("parse-time-hhmmss.sss", "[timestamp]") {
     meta::Timestamp ts;
     ts = meta::Timestamp::parse_time("15:00:01");
-    std::cout << ts.toString() << std::endl;
+    std::cout << ts.to_string() << std::endl;
     ts = meta::Timestamp::parse_time("15:00:00.999");
-    std::cout << ts.toString() << std::endl;
+    std::cout << ts.to_string() << std::endl;
 
     ts = meta::Timestamp::parse("2025-05-29 15:00:01");
-    std::cout << ts.toString() << std::endl;
+    std::cout << ts.to_string() << std::endl;
 }
 
 //#define DATE_USE_FMT  // 必须放在 #include "date/date.h" 前面

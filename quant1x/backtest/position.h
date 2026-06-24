@@ -3,9 +3,11 @@
 #define QUANT1X_BACKTEST_POSITION_H 1
 
 #include <quant1x/backtest/trade.h>
-#include <quant1x/data/kline.h>
+#include <quant1x/data/schema/bar.h>
 
 namespace backtest {
+
+    namespace data = quant1x::data;
 
     // 持仓数据结构
     struct Position {

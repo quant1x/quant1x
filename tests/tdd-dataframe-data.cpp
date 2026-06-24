@@ -1,7 +1,11 @@
 #include <quant1x/test/test.h>
 #include <quant1x/config/base.h>
 #include <quant1x/config/cache.h>
-#include <quant1x/datasets.h>
+// #include <quant1x/datasets.h>  -- header removed in refactoring; test defines own DataFrame/Series
+#include <quant1x/data/schema/bar.h>
+#include <quant1x/config/base.h>
+namespace data = quant1x::data;
+namespace config = quant1x::config;
 #include <iostream>
 #include <vector>
 #include <string>

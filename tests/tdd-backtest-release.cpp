@@ -1,8 +1,11 @@
 #include <fmt/format.h>
 #include <quant1x/backtest/backtest.h>
 #include <quant1x/contrib/data/tdx/bar.h>
+#include <quant1x/contrib/data/tdx/instruments.h>
 #include <user/no0.h>
 #include <user/strategy-no0.h>
+
+namespace instruments = quant1x::contrib::data::tdx::instruments;
 
 #include <indicators/dynamic_progress.hpp>
 #include <indicators/progress_bar.hpp>

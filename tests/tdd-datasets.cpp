@@ -1,10 +1,18 @@
 #include <quant1x/test/test.h>
 #include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/meta/calendar.h>
 #include <quant1x/data/meta/session.h>
 #include <quant1x/proto/data.h>
+#include <quant1x/runtime/core.h>
 #include <random>
 
-#include "quant1x/data/trans.h"
+#include <quant1x/contrib/data/tdx/trans.h>
+#include <quant1x/contrib/data/tdx/instruments.h>
+
+namespace meta = quant1x::data::meta;
+namespace data = quant1x::data;
+namespace tdx = quant1x::contrib::data::tdx;
+namespace instruments = quant1x::contrib::data::tdx::instruments;
 
 TEST_CASE("lower-upper", "[strings]") {
     spdlog::set_level(spdlog::level::debug);
@@ -136,9 +144,8 @@ TEST_CASE("calendar", "[exchange]") {
     runtime::logger_set(true, true);
 
     // 当前交易日
-    std::string a = meta::Timestamp::now;
-    std::string b = meta::Timestamp::now.get().toString();
-    spdlog::debug("current_day={},  ts_today_init={}", a, b);
+    std::string a = meta::Timestamp::now().to_string();
+    spdlog::debug("current_day={},  ts_today_init={}", a, a);
 
     spdlog::debug("------------------------------");
 
@@ -149,37 +156,37 @@ TEST_CASE("calendar", "[exchange]") {
     base = meta::Timestamp(2025,5,19).pre_market_time();
     debug_timestamp = meta::Timestamp(2025,5,20,8,59);
     ts = meta::prev_trading_day(base, debug_timestamp);
-    spdlog::debug("prev_trading_day={}", ts.toString());
+    spdlog::debug("prev_trading_day={}", ts.to_string());
     spdlog::debug("----------");
     base = meta::Timestamp(2025,5,19).pre_market_time();
     debug_timestamp = meta::Timestamp(2025,5,20,9,0);
     ts = meta::prev_trading_day(base, debug_timestamp);
-    spdlog::debug("prev_trading_day={}", ts.toString());
+    spdlog::debug("prev_trading_day={}", ts.to_string());
     spdlog::debug("----------");
     base = meta::Timestamp(2025,5,20).pre_market_time();
     debug_timestamp = meta::Timestamp(2025,5,20,9,0);
     ts = meta::prev_trading_day(base, debug_timestamp);
-    spdlog::debug("prev_trading_day={}", ts.toString());
+    spdlog::debug("prev_trading_day={}", ts.to_string());
     spdlog::debug("----------");
     base = meta::Timestamp(2025,5,20).pre_market_time();
     debug_timestamp = meta::Timestamp(2025,5,20,9,1);
     ts = meta::prev_trading_day(base, debug_timestamp);
-    spdlog::debug("prev_trading_day={}", ts.toString());
+    spdlog::debug("prev_trading_day={}", ts.to_string());
     spdlog::debug("----------");
     base = meta::Timestamp(2025,5,20).pre_market_time();
     debug_timestamp = meta::Timestamp(2025,5,21,8,89);
     ts = meta::prev_trading_day(base, debug_timestamp);
-    spdlog::debug("prev_trading_day={}", ts.toString());
+    spdlog::debug("prev_trading_day={}", ts.to_string());
     spdlog::debug("----------");
     base = meta::Timestamp(2025,5,20).pre_market_time();
     debug_timestamp = meta::Timestamp(2025,5,21,9,0);
     ts = meta::prev_trading_day(base, debug_timestamp);
-    spdlog::debug("prev_trading_day={}", ts.toString());
+    spdlog::debug("prev_trading_day={}", ts.to_string());
     spdlog::debug("----------");
     base = meta::Timestamp(2025,5,20).pre_market_time();
     debug_timestamp = meta::Timestamp(2025,5,21,9,0,1);
     ts = meta::prev_trading_day(base, debug_timestamp);
-    spdlog::debug("prev_trading_day={}", ts.toString());
+    spdlog::debug("prev_trading_day={}", ts.to_string());
 
     spdlog::debug("------------------------------");
 
@@ -187,42 +194,42 @@ TEST_CASE("calendar", "[exchange]") {
     base = meta::Timestamp(2025,5,19).pre_market_time();
     debug_timestamp = meta::Timestamp(2025,5,20,8,59);
     ts = meta::next_trading_day(base, debug_timestamp);
-    spdlog::debug("next_trading_day={}", ts.toString());
+    spdlog::debug("next_trading_day={}", ts.to_string());
     spdlog::debug("----------");
     base = meta::Timestamp(2025,5,20).pre_market_time();
     debug_timestamp = meta::Timestamp(2025,5,20,9,0);
     ts = meta::next_trading_day(base, debug_timestamp);
-    spdlog::debug("next_trading_day={}", ts.toString());
+    spdlog::debug("next_trading_day={}", ts.to_string());
     spdlog::debug("----------");
     base = meta::Timestamp(2025,5,20).pre_market_time();
     debug_timestamp = meta::Timestamp(2025,5,20,9,1);
     ts = meta::next_trading_day(base, debug_timestamp);
-    spdlog::debug("next_trading_day={}", ts.toString());
+    spdlog::debug("next_trading_day={}", ts.to_string());
     spdlog::debug("----------");
     base = meta::Timestamp(2025,5,20).pre_market_time();
     debug_timestamp = meta::Timestamp(2025,5,21,8,59);
     ts = meta::next_trading_day(base, debug_timestamp);
-    spdlog::debug("next_trading_day={}", ts.toString());
+    spdlog::debug("next_trading_day={}", ts.to_string());
     spdlog::debug("----------");
     base = meta::Timestamp(2025,5,20).pre_market_time();
     debug_timestamp = meta::Timestamp(2025,5,21,9,1);
     ts = meta::next_trading_day(base, debug_timestamp);
-    spdlog::debug("next_trading_day={}", ts.toString());
+    spdlog::debug("next_trading_day={}", ts.to_string());
     spdlog::debug("----------");
     base = meta::Timestamp(2025,5,21).pre_market_time();
     debug_timestamp = meta::Timestamp(2025,5,21,8,1);
     ts = meta::next_trading_day(base, debug_timestamp);
-    spdlog::debug("next_trading_day={}", ts.toString());
+    spdlog::debug("next_trading_day={}", ts.to_string());
     spdlog::debug("----------");
     base = meta::Timestamp(2025,5,21).pre_market_time();
     debug_timestamp = meta::Timestamp(2025,5,21,9);
     ts = meta::next_trading_day(base, debug_timestamp);
-    spdlog::debug("next_trading_day={}", ts.toString());
+    spdlog::debug("next_trading_day={}", ts.to_string());
     spdlog::debug("----------");
     base = meta::Timestamp(2025,5,21).pre_market_time();
     debug_timestamp = meta::Timestamp(2025,5,21,9,1);
     ts = meta::next_trading_day(base, debug_timestamp);
-    spdlog::debug("next_trading_day={}", ts.toString());
+    spdlog::debug("next_trading_day={}", ts.to_string());
 }
 
 TEST_CASE("all-codes", "[exchange]") {
@@ -239,8 +246,8 @@ TEST_CASE("all-codes", "[exchange]") {
 
 TEST_CASE("check-realtime", "[exchange]") {
     meta::Timestamp now = meta::Timestamp::now();
-    auto ts = meta::check_trading_timestamp(now);
-    spdlog::info("realtime update: {}", ts.updateInRealTime);
+    auto ts = meta::check_trading_timestamp(meta::Exchange::SSE, now);
+    spdlog::info("realtime update: {}", ts.update_in_real_time);
 }
 
 TEST_CASE("timestamp", "[exchange]") {
@@ -254,7 +261,7 @@ TEST_CASE("year-month-day", "[exchange]") {
     spdlog::debug("------------------------------");
     auto ts = meta::Timestamp::now();
     ts.today();
-    spdlog::debug("timestamp:now = {}, string={}", ts.value(), ts.toString());
+    spdlog::debug("timestamp:now = {}, string={}", ts.value(), ts.to_string());
     auto [year, month, day] = ts.extract();
     spdlog::debug("timestamp: year={}, month={}, day={}", year, month, day);
     spdlog::debug("------------------------------");
@@ -263,23 +270,19 @@ TEST_CASE("year-month-day", "[exchange]") {
 TEST_CASE("base-session", "[exchange]") {
     runtime::logger_set(true, true);
     auto ts = meta::Timestamp::midnight();
-    auto rs = meta::check_trading_timestamp(ts.offset(8));
-    std::cout<< rs << std::endl;
-    rs = meta::check_trading_timestamp(ts.offset(9));
-    std::cout<< rs << std::endl;
-    rs = meta::check_trading_timestamp(ts.offset(9,14,59));
-    std::cout<< rs << std::endl;
-    rs = meta::check_trading_timestamp(ts.offset(9,15,00));
-    std::cout<< rs << std::endl;
+    auto rs = meta::check_trading_timestamp(meta::Exchange::SSE, ts.offset(8));
+    spdlog::info("rs.update_in_real_time={}, rs.status={}", rs.update_in_real_time, static_cast<int>(rs.status));
+    rs = meta::check_trading_timestamp(meta::Exchange::SSE, ts.offset(9));
+    spdlog::info("rs.update_in_real_time={}, rs.status={}", rs.update_in_real_time, static_cast<int>(rs.status));
+    rs = meta::check_trading_timestamp(meta::Exchange::SSE, ts.offset(9,14,59));
+    spdlog::info("rs.update_in_real_time={}, rs.status={}", rs.update_in_real_time, static_cast<int>(rs.status));
+    rs = meta::check_trading_timestamp(meta::Exchange::SSE, ts.offset(9,15,00));
+    spdlog::info("rs.update_in_real_time={}, rs.status={}", rs.update_in_real_time, static_cast<int>(rs.status));
 }
 
 TEST_CASE("trade-session", "[exchange]") {
-    // 构造多个交易时段
-    meta::TradingSession session({
-                                             meta::TimeRange(34209000, 41400000, meta::TimeStatus::ExchangeTrading), // 09:30:00 ~ 11:30:00
-                                             meta::TimeRange(46808000, 54000000, meta::TimeStatus::ExchangeTrading)  // 13:00:00 ~ 15:00:00
-                           });
-    std::cout << session << std::endl;
+    // 构造多个交易时段: 使用字符串构造函数
+    meta::TradingSession session("09:30:00 ~ 11:30:00, 13:00:00 ~ 15:00:00");
 
     // 测试时间点
     meta::Timestamp ts1 = 30000000; // 08:20:00(全天交易未开始)
@@ -287,9 +290,9 @@ TEST_CASE("trade-session", "[exchange]") {
     meta::Timestamp ts3 = 55000000; // 15:16:40(全天交易已结束)
 
     // 测试是否在交易时段内
-    std::cout << "ts1 在交易时段内: " << session.in(ts1) << std::endl;
-    std::cout << "ts2 在交易时段内: " << session.in(ts2) << std::endl;
-    std::cout << "ts3 在交易时段内: " << session.in(ts3) << std::endl;
+    std::cout << "ts1 在交易时段内: " << session.is_trading(ts1) << std::endl;
+    std::cout << "ts2 在交易时段内: " << session.is_trading(ts2) << std::endl;
+    std::cout << "ts3 在交易时段内: " << session.is_trading(ts3) << std::endl;
 
     // 测试全天交易是否未开始
     std::cout << "ts1 全天交易未开始: " << session.is_trading_not_started(ts1) << std::endl;
@@ -305,22 +308,19 @@ TEST_CASE("trade-session", "[exchange]") {
 // 时间解析
 TEST_CASE("timestamp-parse2", "[exchange]") {
     auto tm = meta::Timestamp::parse("2025-04-22");
-    std::cout << "Direct output: " << tm.toString() << std::endl;
+    std::cout << "Direct output: " << tm.to_string() << std::endl;
 }
 
 // 交易时间戳判断
 TEST_CASE("session-check", "[exchange]") {
     spdlog::set_level(spdlog::level::debug);
-    std::cout << meta::Timestamp::now.get() << std::endl;
-    std::cout << meta::Timestamp::now << std::endl;
-    std::cout << meta::TradingSession << std::endl;
     spdlog::debug("------------------------------");
     auto now = meta::Timestamp::now();
-    std::cout << "               now = " << now.toString() << std::endl;
+    std::cout << "               now = " << now.to_string() << std::endl;
     auto modified = now.since(9, 0, 0, 0).offset(0,0,0,-1);
-    std::cout << "          modified = " << modified.toString() << std::endl;
+    std::cout << "          modified = " << modified.to_string() << std::endl;
     spdlog::debug("------------------------------");
-    auto [beforeLastTradeDay, isHoliday, beforeInitTime, cacheAfterInitTime, updateInRealTime, status] = meta::check_trading_timestamp(modified);
+    auto [beforeLastTradeDay, isHoliday, beforeInitTime, cacheAfterInitTime, updateInRealTime, status] = meta::check_trading_timestamp(meta::Exchange::SSE, modified);
     std::cout << "beforeLastTradeDay = " << beforeLastTradeDay << std::endl;
     std::cout << "         isHoliday = " << isHoliday << std::endl;
     std::cout << "    beforeInitTime = " << beforeInitTime << std::endl;
@@ -329,19 +329,19 @@ TEST_CASE("session-check", "[exchange]") {
     std::cout << "            status = " << status << std::endl;
 }
 
-#include <quant1x/data/xdxr.h>
+#include <quant1x/contrib/data/tdx/bar.h>
 
 TEST_CASE("xdxr-factor", "[data]") {
     spdlog::set_level(spdlog::level::debug);
     std::string code = "sz000048";
-    auto list = data::load_xdxr(code);
+    auto list = tdx::get_xdxr_list(code);
     for (auto const & v: list) {
         std::cout << v << std::endl;
     }
 }
 
 #include <filesystem>
-#include <quant1x/data/kline_raw.h>
+
 
 namespace fs = std::filesystem;
 
@@ -381,7 +381,8 @@ void write_file_binary(const std::string& filename, const std::vector<u8> &data)
     out.write(reinterpret_cast<const char *>(data.data()), data.size());
 }
 
-// 拉取数据
+// 拉取数据 (dead code — SecurityBarsContext/SecurityBarsResponse/KLineType may have changed)
+/*
 std::vector<tdx::SecurityBar> fetch(const std::string &code, u16 start, u16 count) {
     try {
         auto conn = tdx::get_std_conn();
@@ -405,6 +406,7 @@ std::vector<tdx::SecurityBar> fetch(const std::string &code, u16 start, u16 coun
     }
     return {};
 }
+*/
 
 // void update_pb(const std::string &code, const std::string &date) {
 //     (void)date;
@@ -728,7 +730,7 @@ TEST_CASE("trans-v1", "[data]") {
     std::string code = "sz300773";
     meta::Timestamp now = meta::last_trading_day();
 
-    const auto adapter = std::make_unique<data::DataTrans>();
+    const auto adapter = std::make_unique<tdx::DataTrans>();
     auto inst = data::detect_symbol(code);
     adapter->Update(inst, now);
 }

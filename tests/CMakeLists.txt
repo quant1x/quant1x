@@ -234,3 +234,61 @@ add_catch2_executable(tdd-backtest-result-compat.cpp)
 # FP growth测试
 add_catch2_executable(test_fp_growth.cpp)
 
+# ================================================
+# 以下为之前被屏蔽、现已打开的测试文件
+# ================================================
+
+# 字符集转换测试
+add_catch2_executable(tdd-charsets.cpp)
+
+# json测试
+add_catch2_executable(tdd-json.cpp)
+
+# 日志测试
+add_catch2_executable(tdd-logger.cpp)
+
+# 字符串测试
+add_catch2_executable(tdd-strings.cpp)
+
+# 文件系统/基础组件测试
+add_catch2_executable(tdd-all.cpp)
+
+# 网络/asio测试
+add_catch2_executable(tdd-asio.cpp)
+
+# 通用工具测试
+add_catch2_executable(tdd-std-util.cpp)
+
+# 历史数据测试
+add_catch2_executable(tdd-history.cpp)
+
+# 快照测试
+add_catch2_executable(tdd-snapshot.cpp)
+
+# 除权除息测试
+add_catch2_executable(tdd-xdxr.cpp)
+
+# 策略测试
+add_catch2_executable(tdd-strategies.cpp)
+
+# 实盘交易测试
+add_catch2_executable(tdd-trader-order.cpp)
+add_catch2_executable(tdd-trader-price.cpp)
+
+# A股回测测试
+add_catch2_executable(tdd-backtest-order.cpp)
+
+# A股回测应用测试 (standalone with main)
+add_app_executable(tdd-backtest-ashare.cpp)
+
+# 其他应用测试
+add_app_executable(debug_snake_case.cpp)
+add_app_executable(mmap-read.cpp)
+add_app_executable(mmap-write.cpp)
+add_app_executable(test-iconv.cpp)
+add_app_executable(test-multibar.cpp)
+add_app_executable(test_go_strings_port.cpp)
+
+# 基准测试
+add_benchmark_executable(test-benchmark.cpp)
+

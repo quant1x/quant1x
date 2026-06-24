@@ -7,10 +7,10 @@ TEST_CASE("endpoint pool", "[net]") {
     EndpointManager manager;
 
     // 添加 endpoint 配置
-    asio::ip::tcp::endpoint ep1(asio::ip::address::from_string("127.0.0.1"), 8080);
+    asio::ip::tcp::endpoint ep1(asio::ip::make_address("127.0.0.1"), 8080);
     manager.addEndpoint(ep1, 2); // 最大2个连接
 
-    asio::ip::tcp::endpoint ep2(asio::ip::address::from_string("192.168.1.1"), 80);
+    asio::ip::tcp::endpoint ep2(asio::ip::make_address("192.168.1.1"), 80);
     manager.addEndpoint(ep2, 3); // 最大3个连接
 
     // 获取 endpoints

@@ -14,6 +14,7 @@
 #include <quant1x/factors/financial_report.h>
 #include <quant1x/factors/notice.h>
 #include <quant1x/encoding/csv.h>
+#include <quant1x/runtime/core.h>
 
 TEST_CASE("notice-basic", "[f10]") {
     std::string code = "600600";

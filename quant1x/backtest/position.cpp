@@ -136,7 +136,7 @@ namespace backtest {
             double current_price = market_data.close;
             pos.unrealized_pnl   = (current_price - pos.avg_price) * pos.quantity *
                                    (pos.direction == TradeDirection::LONG ? 1.0 : -1.0);
-            pos.update_time = market_data.datetime;
+            pos.update_time = market_data.timestamp;
         }
     }
 

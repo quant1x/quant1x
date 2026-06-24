@@ -628,12 +628,12 @@ set(quant1x-sources
     quant1x/command.cpp
     quant1x/formula.cpp
 
-    # 回测 (TODO: API migration pending)
-    # quant1x/backtest/backtest.cpp
-    # quant1x/backtest/position.cpp
-    # quant1x/backtest/order.cpp
-    # quant1x/backtest/stats.cpp
-    # quant1x/backtest/trade.cpp
+    # 回测
+    quant1x/backtest/backtest.cpp
+    quant1x/backtest/position.cpp
+    quant1x/backtest/order.cpp
+    quant1x/backtest/stats.cpp
+    quant1x/backtest/trade.cpp
 
     # 数据
     quant1x/data/adapter.cpp
@@ -737,8 +737,8 @@ else ()
 endif ()
 
 # 添加测试策略
-list(APPEND quant1x-headers user/strategy-no0.h)
-list(APPEND quant1x-sources user/strategy-no0.cpp)
+list(APPEND quant1x-headers user/strategy-no0.h user/no0.h)
+list(APPEND quant1x-sources user/strategy-no0.cpp user/no0.cpp)
 
 
 # 检查编译器选项
@@ -769,6 +769,7 @@ target_include_directories(quant1x
 target_link_libraries(quant1x PUBLIC
     third_libs global_compile_options
 )
+target_compile_definitions(quant1x PUBLIC "HAVE_MIMALLOC=$<BOOL:${ENABLE_MIMALLOC}>")
 
 get_target_property(_libs quant1x INTERFACE_LINK_LIBRARIES)
 message(STATUS "Library 'quant1x' requires: ${_libs}")
@@ -1098,8 +1099,8 @@ install(FILES
 install(TARGETS q1x
     DESTINATION bin)
 # 单元测试 (TODO: migration to new API pending)
-# include(CTest)
-# enable_testing()
-# add_subdirectory(tests)
+include(CTest)
+enable_testing()
+add_subdirectory(tests)
 # 演示代码
 add_subdirectory(examples)

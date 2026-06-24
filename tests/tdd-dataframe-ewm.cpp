@@ -7,6 +7,8 @@
 #include <windows.h>
 #endif
 
+
+
 TEST_CASE("ema-basic", "[dataframe]") {
     std::vector<f64> values = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
     ta::Series<f64> s1(values);

@@ -4,9 +4,11 @@
 #include <vector>
 #include <cmath>
 #include <queue>
-#include <quant1x/contrib/data/tdx/level1/transaction_data.h>
+#include <quant1x/contrib/data/tdx/level1/std/transaction.h>
 #include <quant1x/config/cache.h>
 
+namespace tdx = quant1x::contrib::data::tdx;
+namespace config = quant1x::config;
 using namespace std;
 
 // 定义二维点

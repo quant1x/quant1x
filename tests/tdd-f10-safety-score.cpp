@@ -1,6 +1,8 @@
 #include <quant1x/test/test.h>
 
 #include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/market.h>
+#include <quant1x/std/strings.h>
 #include <iostream>
 #include <string>
 #include <map>
@@ -8,6 +10,8 @@
 #include <memory>
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
+
+namespace data = quant1x::data;
 
 enum class RiskCategoryType {
     Financial,         // 财务类风险
@@ -172,13 +176,10 @@ std::tuple<int, std::string> GetSafetyScore(const std::string& securityCode) {
         return {defaultSafetyScore, ""};
     }
 
-    if (instruments::IsNeedIgnore(securityCode)) {
-        return {defaultSafetyScoreOfIgnore, ""};
-    }
-
     int score = defaultSafetyScore;
     std::string detail;
-    auto [marketId, marketCode, pureCode] = data::detect_symbol(securityCode);
+    auto inst = data::detect_symbol(securityCode);
+    auto pureCode = inst.ticker;
 
     if (pureCode.length() == 6) {
         std::string url = urlRiskAssessment + pureCode + ".json";

@@ -1,6 +1,8 @@
 #include <quant1x/test/test.h>
 #include <quant1x/contrib/data/tdx/helpers.h>
 
+namespace tdx = quant1x::contrib::data::tdx;
+
 // 测试快照时间戳
 TEST_CASE("encoding-format_timestamp_from_i64", "[level1]") {
     int test_cases[] = {

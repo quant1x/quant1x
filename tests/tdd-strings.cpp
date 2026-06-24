@@ -1,7 +1,10 @@
-#include <quant1x/encoding/iconv.h>
+#include <iconv.h>
+#include <quant1x/encoding/charsets.h>
 #include <quant1x/std/strings.h>
 #include <quant1x/std/util.h>
 #include <quant1x/test/test.h>
+
+using namespace charsets;
 
 TEST_CASE("trim-basic", "[strings]") {
     std::string text   = "  hello,  world, c++20,  string_view  ";

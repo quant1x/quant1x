@@ -2,6 +2,8 @@
 #include <quant1x/data/market.h>
 #include <quant1x/runtime/core.h>
 
+namespace data = quant1x::data;
+
 TEST_CASE("check-target-is-margin-trading", "[f10]") {
     runtime::global_init();
     runtime::logger_set(true, true);

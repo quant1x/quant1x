@@ -1,6 +1,10 @@
 #include <quant1x/data/meta/sina/decoder.h>
 #include <quant1x/test/test.h>
 #include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/meta/calendar.h>
+#include <quant1x/runtime/core.h>
+
+namespace meta = quant1x::data::meta;
 
 TEST_CASE("update-calendar", "[calendar]") {
     runtime::global_init();

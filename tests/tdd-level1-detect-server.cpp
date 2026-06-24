@@ -1,7 +1,7 @@
-#include <quant1x/contrib/data/tdx/level1/config.h>
+#include <quant1x/contrib/data/tdx/client.h>
 #include <quant1x/test/test.h>
 
-#include "quant1x/contrib/data/tdx/client.h"
+namespace tdx = quant1x::contrib::data::tdx;
 
 TEST_CASE("detect", "[level1]") {
     auto list = tdx::detect();

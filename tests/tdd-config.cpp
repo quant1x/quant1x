@@ -4,6 +4,8 @@
 #include "quant1x/runtime/core.h"
 #include "quant1x/std/cpu_info.h"
 
+namespace config = quant1x::config;
+
 // 从YAML加载配置
 config::TraderParameter LoadConfigFromYAML(const std::string& filename) {
     config::TraderParameter config;

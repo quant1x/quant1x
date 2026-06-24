@@ -2,6 +2,7 @@
 
 #include <quant1x/std/time.h>
 
+
 TEST_CASE("time-now", "[times]") {
     auto today = api::today();
     std::cout << today << std::endl;

@@ -1,11 +1,14 @@
+#include "no0.h"
+
 #include <quant1x/encoding/csv.h>
 #include <quant1x/formula.h>
-#include <quant1x/pandas/dataframe.h>
 #include <quant1x/factors/factory.h>
 #include <quant1x/contrib/data/tdx/bar.h>
+#include <quant1x/data/meta/calendar.h>
+#include <quant1x/std/time.h>
 #include <fmt/format.h>
 
-#include "no0.h"
+namespace tdx = quant1x::contrib::data::tdx;
 
 void DataNo0::Print(const meta::Instrument &inst, const meta::Timestamp &date) {
     (void)date;
@@ -36,10 +39,13 @@ void DataNo0::Update(const meta::Instrument &inst, const meta::Timestamp &date) 
         spdlog::warn("[DataNo0] code={},date={}, 日线数据不足", code, feature_date);
         return;
     }
-    DataFrame df = DataFrame::from_struct_vector(klines);
-    // 直接获取列
-    auto const            &col_close = df.get<f64>("close");
-    const xt::xarray<f64> &CLOSE     = xt::adapt(col_close);
+    // 提取收盘价序列
+    std::vector<f64> col_close;
+    col_close.reserve(klines.size());
+    for (const auto& bar : klines) {
+        col_close.push_back(bar.close);
+    }
+    const xt::xarray<f64> &CLOSE = xt::adapt(col_close);
 
     // 0号策略补充
     auto ma4     = formula::ma(CLOSE, 4);

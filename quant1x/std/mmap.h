@@ -16,7 +16,9 @@
 #include <unistd.h>
 #endif
 
+#if HAVE_MIMALLOC
 #include <mimalloc-override.h>
+#endif
 
 typedef struct file_mmap {
     const char * filename = nullptr;

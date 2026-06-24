@@ -4,9 +4,10 @@
 #include <iomanip>
 #include <sstream>
 #include <iostream>
-#include <iostream>
 #include <chrono>
 #include <format>
+
+namespace meta = quant1x::data::meta;
 
 TEST_CASE("today", "[exchange]") {
     std::string today = api::today();

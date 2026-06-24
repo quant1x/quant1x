@@ -1,177 +1,177 @@
 #include <quant1x/test/test.h>
-#include <quant1x/strategies/strategy.h>
+#include <quant1x/engine/strategy.h>
 #include <capnp/message.h>
 #include <quant1x/std/numeric.h>
 #include <indicators/dynamic_progress.hpp>
 #include <indicators/progress_bar.hpp>
-#include <users/no1.h>
+// #include <users/no1.h>  // removed in refactor
 
-TEST_CASE("strategy-no0", "[strategies]") {
-    try {
-        StrategyManager& manager = StrategyManager::Instance();
-
-        StrategyPtr s1 = std::make_shared<HousNo1Strategy>();
-        manager.Register(s1);
-
-        std::cout << "已注册策略:\n" << manager.UsageStrategyList() << std::endl;
-
-        auto strategy = manager.GetStrategy(ModelHousNo1);
-        std::cout << strategy->DebugString() << std::endl;
-
-        // 示例调用 Evaluate
-        ResultInfo info{};
-        strategy->Evaluate("SH600000", info);
-
-    } catch (const std::exception& e) {
-        std::cerr << "错误: " << e.what() << std::endl;
-    }
-}
-
-TEST_CASE("strategy-backtest", "[strategies]") {
-    runtime::global_init();
-    try {
-        StrategyManager& manager = StrategyManager::Instance();
-        StrategyPtr s1 = std::make_shared<HousNo1Strategy>();
-        manager.Register(s1);
-
-        std::cout << "已注册策略:\n" << manager.UsageStrategyList() << std::endl;
-
-        auto strategy = manager.GetStrategy(ModelHousNo1);
-        std::cout << strategy->DebugString() << std::endl;
-        auto strategyParameter = config::TraderConfig()->GetStrategyParameterByCode(1);
-
-        auto bt_begin = meta::Timestamp(2024,6,1);
-        auto bt_end = meta::Timestamp(2025,6,9);
-        auto dates = meta::date_range(bt_begin, bt_end);
-        std::cout << "from:" << dates[0].only_date() << ", to:" << dates[dates.size()-1].only_date() << std::endl;
-        // 创建多进度条管理器
-        indicators::DynamicProgress<indicators::ProgressBar> bars;
-
-        // 主进度条为适配器
-        auto date_count = dates.size();
-        indicators::ProgressBar barMain{
-            indicators::option::ForegroundColor{indicators::Color::cyan},
-            indicators::option::MaxProgress{date_count+0}
-        };
-        bars.push_back(barMain);
-        bars[0].set_progress(0);
-        auto all_codes = instruments::get_code_list();
-        auto codeCount = all_codes.size();
-        indicators::ProgressBar barCodes(
-            indicators::option::ForegroundColor{indicators::Color::yellow},
-            indicators::option::PrefixText{": fetching..."},
-            indicators::option::MaxProgress{codeCount+0});
-        bars.push_back(barCodes);
-        tsl::robin_map<std::string, double> account; // 账户, 按天缓存
-        std::vector<ResultInfo> results; // 总记录
-        tsl::robin_map<std::string, ResultInfo> orders; // 缓存订单
-        double total_buys = 0; // 总投入
-        double total_returns = 0; // 总盈亏
-        size_t total_signal = 0; // 信号总数
-        size_t total_win_count = 0; // 统计盈利总数
-        size_t limit_count = 0;
-        for (size_t idx = 0; idx < date_count; ++idx) {
-            auto ts = dates[idx];
-            std::string module_name = std::format("{}({}/{})", ts.only_date(), (idx+1), date_count);
-            bars[0].set_option(indicators::option::PrefixText{module_name + ""});
-            bars[1].set_progress(0);
-            bars[1].mark_as_started();
-            bars[1].set_option(indicators::option::Completed {false});
-            // 示例调用 Evaluate
-            strategy->setTimestamp(ts);
-            std::vector<ResultInfo> result_date;
-            size_t win_count_day = 0;
-            //double return_rate_day = 0;
-            double returns_day = 0;
-            std::atomic<size_t> processed_codes = 0;
-            for (auto const &code: all_codes) {
-                size_t current = ++processed_codes;
-                std::string codePrefix = std::format("{}({}/{})", code, current, codeCount);
-                bars[1].set_option(indicators::option::PrefixText{codePrefix + ""});
-                bars[1].tick();
-                ResultInfo info{};
-                strategy->Evaluate(code, info);
-                if(info.buy) {
-                    // 如果是买入
-                    // 先看订单是否存在
-                    auto it = orders.find(code);
-                    if(it != orders.end()) {
-                        // 如果订单存在, 则忽略, 不加仓
-                    } else {
-                        // 如果订单不存在, 则买入
-                        info.fee_buy = trader::EvaluateFeeForBuy(code, trader::BacktestAccountTheoreticalFund, info.fee_buy.Price);
-                        // 缓存订单
-                        orders.emplace(code, info);
-                        ++total_signal;
-                        total_buys += info.fee_buy.TotalFee;
-                    }
-                } else if(info.sell) {
-                    // 如果是卖出
-                    // 先看订单是否存在
-                    auto it = orders.find(code);
-                    if(it != orders.end()) {
-                        // 如果订单存在, 则卖出
-                        auto order = it->second;
-                        // 计算卖出后的市值
-                        order.fee_sell = trader::EvaluateFeeForSell(code, info.fee_sell.Price, order.fee_buy.Volume);
-                        auto profit_and_loss_amount = order.fee_sell.MarketValue - order.fee_buy.TotalFee;
-                        returns_day += profit_and_loss_amount;
-                        total_returns += profit_and_loss_amount;
-                        if(profit_and_loss_amount > 0) {
-                            ++win_count_day;
-                            ++total_win_count;
-                        }
-                        // 卖出后, 删除订单缓存
-                        orders.erase(code);
-                    } else {
-                        // 不存在订单, 则忽略
-                    }
-                } else {
-                    // 不买也不买, hold持股, 计算当日浮动盈亏
-                    // 先看订单是否存在
-                    auto it = orders.find(code);
-                    if(it != orders.end()) {
-                        // 如果订单存在, 则计算
-                        auto order = it->second;
-                        // 计算假定卖出后的市值
-                        auto fee_sell = trader::EvaluateFeeForSell(code, info.fee_sell.Price, order.fee_buy.Volume);
-                        auto profit_and_loss_amount = fee_sell.MarketValue - order.fee_buy.TotalFee;
-                        returns_day += profit_and_loss_amount;
-                        if(profit_and_loss_amount > 0) {
-                            ++win_count_day;
-                        }
-                        // 卖出后, 删除订单缓存
-                        orders.erase(code);
-                    }
-                }
-
-                results.emplace_back(info);
-                limit_count += (info.limit_up ? 1 : 0);
-            }
-            if(idx+1 == date_count) {
-                // 如果是最后一天, 持仓计入总亏盈
-                total_returns += returns_day;
-                total_win_count+= win_count_day;
-            }
-            // 一天结束后, 缓存盈亏情况
-            {
-                account.emplace(ts.only_date(), returns_day);
-            }
-            bars[1].set_option(indicators::option::PrefixText{module_name + ""});
-            bars[1].mark_as_completed();
-            bars[0].tick();
-        }
-        std::cout << std::fixed << std::setprecision(2);
-        std::cout << "date: " << dates[dates.size()-1].only_date() + ", count signal: " << total_signal << ", win: " << total_win_count << std::endl;
-        std::cout << "       Strategy Win Rate(胜率): " << numeric::ChangeRate(f64(total_signal), f64(total_win_count))*100 << std::endl;
-        std::cout << "                  return_rate: " << total_returns << ", date_count:"<< total_buys<< std::endl;
-        std::cout << "        Return Rate(平均收益率): " << ((total_returns / total_buys) *100)/total_signal << "%" << std::endl;
-        std::cout << "Daily Return Amount(净利润比例): " << (total_returns / total_buys) *100 << "%" << std::endl;
-        std::cout << "                     其中涨停板: " << limit_count << std::endl;
-    } catch (const std::exception& e) {
-        std::cerr << "错误: " << e.what() << std::endl;
-    }
-}
+// TEST_CASE("strategy-no0", "[strategies]") {  // HousNo1Strategy removed in refactor
+//     try {
+//         StrategyManager& manager = StrategyManager::Instance();
+//
+//         StrategyPtr s1 = std::make_shared<HousNo1Strategy>();
+//         manager.Register(s1);
+//
+//         std::cout << "已注册策略:\n" << manager.UsageStrategyList() << std::endl;
+//
+//         auto strategy = manager.GetStrategy(ModelHousNo1);
+//         std::cout << strategy->DebugString() << std::endl;
+//
+//         // 示例调用 Evaluate
+//         ResultInfo info{};
+//         strategy->Evaluate("SH600000", info);
+//
+//     } catch (const std::exception& e) {
+//         std::cerr << "错误: " << e.what() << std::endl;
+//     }
+// }
+//
+// TEST_CASE("strategy-backtest", "[strategies]") {  // HousNo1Strategy removed in refactor
+//     runtime::global_init();
+//     try {
+//         StrategyManager& manager = StrategyManager::Instance();
+//         StrategyPtr s1 = std::make_shared<HousNo1Strategy>();
+//         manager.Register(s1);
+//
+//         std::cout << "已注册策略:\n" << manager.UsageStrategyList() << std::endl;
+//
+//         auto strategy = manager.GetStrategy(ModelHousNo1);
+//         std::cout << strategy->DebugString() << std::endl;
+//         auto strategyParameter = config::TraderConfig()->GetStrategyParameterByCode(1);
+//
+//         auto bt_begin = meta::Timestamp(2024,6,1);
+//         auto bt_end = meta::Timestamp(2025,6,9);
+//         auto dates = meta::date_range(bt_begin, bt_end);
+//         std::cout << "from:" << dates[0].only_date() << ", to:" << dates[dates.size()-1].only_date() << std::endl;
+//         // 创建多进度条管理器
+//         indicators::DynamicProgress<indicators::ProgressBar> bars;
+//
+//         // 主进度条为适配器
+//         auto date_count = dates.size();
+//         indicators::ProgressBar barMain{
+//             indicators::option::ForegroundColor{indicators::Color::cyan},
+//             indicators::option::MaxProgress{date_count+0}
+//         };
+//         bars.push_back(barMain);
+//         bars[0].set_progress(0);
+//         auto all_codes = instruments::get_code_list();
+//         auto codeCount = all_codes.size();
+//         indicators::ProgressBar barCodes(
+//             indicators::option::ForegroundColor{indicators::Color::yellow},
+//             indicators::option::PrefixText{": fetching..."},
+//             indicators::option::MaxProgress{codeCount+0});
+//         bars.push_back(barCodes);
+//         tsl::robin_map<std::string, double> account; // 账户, 按天缓存
+//         std::vector<ResultInfo> results; // 总记录
+//         tsl::robin_map<std::string, ResultInfo> orders; // 缓存订单
+//         double total_buys = 0; // 总投入
+//         double total_returns = 0; // 总盈亏
+//         size_t total_signal = 0; // 信号总数
+//         size_t total_win_count = 0; // 统计盈利总数
+//         size_t limit_count = 0;
+//         for (size_t idx = 0; idx < date_count; ++idx) {
+//             auto ts = dates[idx];
+//             std::string module_name = std::format("{}({}/{})", ts.only_date(), (idx+1), date_count);
+//             bars[0].set_option(indicators::option::PrefixText{module_name + ""});
+//             bars[1].set_progress(0);
+//             bars[1].mark_as_started();
+//             bars[1].set_option(indicators::option::Completed {false});
+//             // 示例调用 Evaluate
+//             strategy->setTimestamp(ts);
+//             std::vector<ResultInfo> result_date;
+//             size_t win_count_day = 0;
+//             //double return_rate_day = 0;
+//             double returns_day = 0;
+//             std::atomic<size_t> processed_codes = 0;
+//             for (auto const &code: all_codes) {
+//                 size_t current = ++processed_codes;
+//                 std::string codePrefix = std::format("{}({}/{})", code, current, codeCount);
+//                 bars[1].set_option(indicators::option::PrefixText{codePrefix + ""});
+//                 bars[1].tick();
+//                 ResultInfo info{};
+//                 strategy->Evaluate(code, info);
+//                 if(info.buy) {
+//                     // 如果是买入
+//                     // 先看订单是否存在
+//                     auto it = orders.find(code);
+//                     if(it != orders.end()) {
+//                         // 如果订单存在, 则忽略, 不加仓
+//                     } else {
+//                         // 如果订单不存在, 则买入
+//                         info.fee_buy = trader::EvaluateFeeForBuy(code, trader::BacktestAccountTheoreticalFund, info.fee_buy.Price);
+//                         // 缓存订单
+//                         orders.emplace(code, info);
+//                         ++total_signal;
+//                         total_buys += info.fee_buy.TotalFee;
+//                     }
+//                 } else if(info.sell) {
+//                     // 如果是卖出
+//                     // 先看订单是否存在
+//                     auto it = orders.find(code);
+//                     if(it != orders.end()) {
+//                         // 如果订单存在, 则卖出
+//                         auto order = it->second;
+//                         // 计算卖出后的市值
+//                         order.fee_sell = trader::EvaluateFeeForSell(code, info.fee_sell.Price, order.fee_buy.Volume);
+//                         auto profit_and_loss_amount = order.fee_sell.MarketValue - order.fee_buy.TotalFee;
+//                         returns_day += profit_and_loss_amount;
+//                         total_returns += profit_and_loss_amount;
+//                         if(profit_and_loss_amount > 0) {
+//                             ++win_count_day;
+//                             ++total_win_count;
+//                         }
+//                         // 卖出后, 删除订单缓存
+//                         orders.erase(code);
+//                     } else {
+//                         // 不存在订单, 则忽略
+//                     }
+//                 } else {
+//                     // 不买也不买, hold持股, 计算当日浮动盈亏
+//                     // 先看订单是否存在
+//                     auto it = orders.find(code);
+//                     if(it != orders.end()) {
+//                         // 如果订单存在, 则计算
+//                         auto order = it->second;
+//                         // 计算假定卖出后的市值
+//                         auto fee_sell = trader::EvaluateFeeForSell(code, info.fee_sell.Price, order.fee_buy.Volume);
+//                         auto profit_and_loss_amount = fee_sell.MarketValue - order.fee_buy.TotalFee;
+//                         returns_day += profit_and_loss_amount;
+//                         if(profit_and_loss_amount > 0) {
+//                             ++win_count_day;
+//                         }
+//                         // 卖出后, 删除订单缓存
+//                         orders.erase(code);
+//                     }
+//                 }
+//
+//                 results.emplace_back(info);
+//                 limit_count += (info.limit_up ? 1 : 0);
+//             }
+//             if(idx+1 == date_count) {
+//                 // 如果是最后一天, 持仓计入总亏盈
+//                 total_returns += returns_day;
+//                 total_win_count+= win_count_day;
+//             }
+//             // 一天结束后, 缓存盈亏情况
+//             {
+//                 account.emplace(ts.only_date(), returns_day);
+//             }
+//             bars[1].set_option(indicators::option::PrefixText{module_name + ""});
+//             bars[1].mark_as_completed();
+//             bars[0].tick();
+//         }
+//         std::cout << std::fixed << std::setprecision(2);
+//         std::cout << "date: " << dates[dates.size()-1].only_date() + ", count signal: " << total_signal << ", win: " << total_win_count << std::endl;
+//         std::cout << "       Strategy Win Rate(胜率): " << numeric::ChangeRate(f64(total_signal), f64(total_win_count))*100 << std::endl;
+//         std::cout << "                  return_rate: " << total_returns << ", date_count:"<< total_buys<< std::endl;
+//         std::cout << "        Return Rate(平均收益率): " << ((total_returns / total_buys) *100)/total_signal << "%" << std::endl;
+//         std::cout << "Daily Return Amount(净利润比例): " << (total_returns / total_buys) *100 << "%" << std::endl;
+//         std::cout << "                     其中涨停板: " << limit_count << std::endl;
+//     } catch (const std::exception& e) {
+//         std::cerr << "错误: " << e.what() << std::endl;
+//     }
+// }
 
 // 使用时间点别名简化代码
 using TimePoint = std::chrono::system_clock::time_point;
@@ -270,6 +270,7 @@ struct BacktestResult {
     int64_t losing_trades;          // 亏损交易次数
     double  avg_profit;             // 平均盈利
     double  avg_loss;               // 平均亏损
+    int64_t trade_events_count = 0; // 总成交事件数
     std::vector<double> equity_curve; // 资金曲线
 };
 

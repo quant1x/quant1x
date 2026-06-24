@@ -82,8 +82,8 @@ namespace backtest {
             order.quantity = getPositionQuantity(code);
         }
         // order.quantity    = calculatePositionSize(bar.Close);
-        order.create_time = bar.datetime;
-        order.update_time = bar.datetime;
+        order.create_time = bar.timestamp;
+        order.update_time = bar.timestamp;
         order.status      = OrderStatus::PENDING;
         return order;
     }
@@ -116,7 +116,7 @@ namespace backtest {
     // 记录每日状态
     void BacktestEngine::recordDailyStatus(const data::KLine &bar) {
         DailyPositionStatus status;
-        status.timestamp = bar.datetime;
+        status.timestamp = bar.timestamp;
 
         //  包含浮动盈亏的账户快照(避免频繁拷贝positions map)
         Account     snap      = backtest_data.account;
@@ -429,7 +429,7 @@ namespace backtest {
             // 生成信号
             TradeDirection signal = strategy_->generateSignal(i);
             if (backtest_data.config.verbose) {
-                spdlog::warn("{} {}, signal:{}", bar.datetime, code, magic_enum::enum_name(signal));
+                spdlog::warn("{} {}, signal:{}", bar.timestamp, code, magic_enum::enum_name(signal));
                 std::cout << "[BacktestEngine::run] " << code << " idx=" << i << " signal=" << static_cast<int>(signal)
                           << "\n";
             }
@@ -442,7 +442,7 @@ namespace backtest {
                     if (!position_manager.hasPosition(code)) {
                         // 没有持仓, 禁止卖出
                         spdlog::warn(
-                            "{} {}, signal:{}, 没有持仓, 禁止卖出", bar.datetime, code, magic_enum::enum_name(signal));
+                            "{} {}, signal:{}, 没有持仓, 禁止卖出", bar.timestamp, code, magic_enum::enum_name(signal));
                         continue;
                     }
                 }
@@ -452,7 +452,7 @@ namespace backtest {
                     spdlog::warn("{} order: {}, message={}", code, order.quantity, order.message);
                 if (order.status == OrderStatus::REJECTED || order.quantity == 0) {
                     if (backtest_data.config.verbose)
-                        spdlog::warn("{} {}, signal:{}, 订单被拒绝", bar.datetime, code, magic_enum::enum_name(signal));
+                        spdlog::warn("{} {}, signal:{}, 订单被拒绝", bar.timestamp, code, magic_enum::enum_name(signal));
                     continue;
                 }
                 backtest_data.orders.push_back(order);

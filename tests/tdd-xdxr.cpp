@@ -1,17 +1,18 @@
 #include <quant1x/test/test.h>
-#include <quant1x/datasets/xdxr.h>
-#include <quant1x/datasets/xdxr_adjust_factor.h>
+#include <quant1x/contrib/data/tdx/xdxr.h>
 #include <quant1x/contrib/data/tdx/bar.h>
 
 #include <ranges>
-#include <quant1x/datasets/kline.h>
 #include <quant1x/encoding/csv.h>
-#include <quant1x/datasets/kline_raw.h>
-#include <quant1x/instruments/security.h>
-#include <quant1x/markets/instruments.h>
+#include <quant1x/contrib/data/tdx/instruments.h>
 #include <quant1x/factors/f10.h>
 #include <quant1x/factors/history.h>
-#include <quant1x/dataframe/dataframe.h>
+#include <quant1x/data/schema/bar.h>
+
+namespace meta = quant1x::data::meta;
+namespace data = quant1x::data;
+namespace tdx = quant1x::contrib::data::tdx;
+using namespace encoding;
 
 TEST_CASE("xdxr-extract", "[xdxr]") {
     spdlog::set_level(spdlog::level::debug);
@@ -20,7 +21,7 @@ TEST_CASE("xdxr-extract", "[xdxr]") {
     meta::Timestamp end("2025-06-05");
     auto xdxrs = tdx::get_xdxr_list(code);
     auto list = tdx::combine_adjustments_in_period(xdxrs, start, end);
-    std::cout << list << std::endl;
+    spdlog::info("xdxr list size: {}", list.size());
 }
 
 TEST_CASE("kline-extract", "[xdxr]") {
@@ -28,38 +29,36 @@ TEST_CASE("kline-extract", "[xdxr]") {
     std::string code = "sz300773";
     meta::Timestamp end("2025-06-05");
     auto klines = tdx::klines_forward_adjusted_to_date(code, end.only_date());
-    DataFrame df = DataFrame::from_struct_vector(klines);
-    std::cout << df.to_string() << std::endl;
+    std::cout << "klines count: " << klines.size() << std::endl;
+    for (const auto& bar : klines) {
+        std::cout << bar << std::endl;
+    }
 }
 
-TEST_CASE("klines-check", "[xdxr]") {
-    spdlog::set_level(spdlog::level::debug);
-    std::string code = "sz300773";
-    auto xdxr_infos = tdx::get_xdxr_list(code);
-
-    std::string raw_cache_filename = config::get_kline_filename(code, false);
-    auto raw_list = encoding::csv::csv_to_slices<datasets::KLineRaw>(raw_cache_filename);
-    auto ipo_date = meta::Timestamp(raw_list[0].Date).pre_market_time();
-    auto raw_view = raw_list | std::views::filter([](const datasets::KLineRaw& x){return x.Date>="1990-12-19";});
-    (void)raw_view;
-    auto start_date = meta::Timestamp(meta::MARKET_CN_FIRST_LISTTIME).pre_market_time();
-    // 在指定开始日期和IPO日期之前选最大值, 部分上市公司在没上市之前的除权除息的记录也会有记录, 上市之前的除权除息数据不能用来复权
-    // 在这里修正开始日期不能早于ipo日期
-    start_date = std::max(ipo_date, start_date);
-    auto end_date = meta::Timestamp(2025,6,5).pre_market_time();
-    // std::string cache_filename = config::get_kline_filename(code, true);
-    // encoding::csv::slices_to_csv(raw_list, cache_filename);
-    DataFrame df = DataFrame::from_struct_vector(raw_list);
-    std::cout << df.to_string() << std::endl;
-}
+// TEST_CASE("klines-check", "[xdxr]") {  // KLineRaw removed in C++ refactor, see bar_raw.rs
+//     spdlog::set_level(spdlog::level::debug);
+//     std::string code = "sz300773";
+//     auto xdxr_infos = tdx::get_xdxr_list(code);
+//
+//     std::string raw_cache_filename = config::get_kline_filename(code, false);
+//     auto raw_list = encoding::csv::csv_to_slices<datasets::KLineRaw>(raw_cache_filename);
+//     auto ipo_date = meta::Timestamp(raw_list[0].Date).pre_market_time();
+//     auto raw_view = raw_list | std::views::filter([](const datasets::KLineRaw& x){return x.Date>="1990-12-19";});
+//     (void)raw_view;
+//     auto start_date = meta::Timestamp(meta::MARKET_CN_FIRST_LISTTIME).pre_market_time();
+//     start_date = std::max(ipo_date, start_date);
+//     auto end_date = meta::Timestamp(2025,6,5).pre_market_time();
+//     DataFrame df = DataFrame::from_struct_vector(raw_list);
+//     std::cout << df.to_string() << std::endl;
+// }
 
 std::unordered_map<std::string, std::vector<factors::CumulativeAdjustment>> checkout_dividends_map(const meta::Timestamp &current) {
     std::unordered_map<std::string, std::vector<factors::CumulativeAdjustment>> result_map;
-    auto all_codes = instruments::get_code_list();
+    auto all_codes = tdx::instruments::get_code_list();
     //auto now = meta::Timestamp::now();
     for(auto const & security_code : all_codes) {
         // 1. 首先加载除权除息记录
-        auto xdxr_infos = datasets::load_xdxr(security_code);
+        auto xdxr_infos = tdx::get_xdxr_list(security_code);
         // 2. 确定当前日期
         std::string today = current.only_date();
         // 3. 获取IPO日期
@@ -77,7 +76,7 @@ std::unordered_map<std::string, std::vector<factors::CumulativeAdjustment>> chec
                 ipo_date = ipo_from_xdxr.value();
             } else {
                 // 降级处理为1990-12-19
-                ipo_date = meta::MARKET_CN_FIRST_LISTTIME;
+                ipo_date = data::MARKET_CN_FIRST_LISTTIME;
             }
         }
         auto factors = tdx::combine_adjustments_in_period(xdxr_infos, ipo_date, today);

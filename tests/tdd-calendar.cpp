@@ -1,5 +1,8 @@
 #include <quant1x/test/test.h>
 #include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/meta/calendar.h>
+
+namespace meta = quant1x::data::meta;
 
 TEST_CASE("date-range-1", "[calendar]") {
     meta::Timestamp begin("2025-07-17");

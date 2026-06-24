@@ -2,7 +2,7 @@
 
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
-#include <quant1x/contrib/data/tdx/level1/encoding.h>
+// #include <quant1x/contrib/data/tdx/level1/encoding.h>  // removed in refactor
 
 #include <stdio.h>
 #include <stdlib.h>

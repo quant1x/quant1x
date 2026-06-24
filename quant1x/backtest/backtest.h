@@ -5,14 +5,18 @@
 #include <quant1x/backtest/order.h>
 #include <quant1x/backtest/position.h>
 #include <quant1x/backtest/trade.h>
-#include <quant1x/data/kline.h>
+#include <quant1x/data/schema/bar.h>
 #include <quant1x/engine/strategy.h>
+#include <quant1x/io/csv-writer.h>
 #include <quant1x/std/api.h>
 
 // 使用时间点别名简化代码
 using TimePoint = std::chrono::system_clock::time_point;
 
 namespace backtest {
+
+    namespace data = quant1x::data;
+    namespace meta = quant1x::data::meta;
 
     // 生成唯一订单ID
     std::string generateOrderId();

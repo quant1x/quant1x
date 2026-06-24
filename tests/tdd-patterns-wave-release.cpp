@@ -21,10 +21,14 @@ TEST_CASE("patterns-wave-v1", "[release]") {
 
 #include <quant1x/factors/base_compat.h>
 #include <quant1x/contrib/data/tdx/bar.h>
-#include <quant1x/pandas/dataframe.h>
+#include <quant1x/contrib/data/tdx/instruments.h>
+#include <quant1x/data/schema/bar.h>
 #include <quant1x/std/format.h>
 #include <span>
 #include <ranges>
+
+namespace tdx = quant1x::contrib::data::tdx;
+namespace data = quant1x::data;
 
 // 线性回归模型
 struct LinearRegressionModel {
@@ -74,12 +78,17 @@ TEST_CASE("patterns-wave-v2", "[release]") {
     std::string date = "2025-07-15";
     int N = 50;
     auto klines = tdx::checkout_klines(code, date);
-    DataFrame df = DataFrame::from_struct_vector(klines);
-    auto const& col_high = df.get<f64>("high");
-    const xt::xarray<f64>& HIGH = xt::adapt(col_high);
+    // 提取high/low序列
+    std::vector<double> col_high, col_low;
+    col_high.reserve(klines.size());
+    col_low.reserve(klines.size());
+    for (const auto& bar : klines) {
+        col_high.push_back(bar.high);
+        col_low.push_back(bar.low);
+    }
+    const xt::xarray<double>& HIGH = xt::adapt(col_high);
     auto high = xt::view(HIGH, xt::range(HIGH.shape()[0] - N, HIGH.shape()[0]), xt::all());
-    auto const& col_low = df.get<f64>("low");
-    const xt::xarray<f64>& LOW = xt::adapt(col_low);
+    const xt::xarray<double>& LOW = xt::adapt(col_low);
     auto low = xt::view(LOW, xt::range(LOW.shape()[0] - N, LOW.shape()[0]), xt::all());
     auto [peaks, valleys] = ta::patterns::peaks_and_valleys(high, low);
     // 输出结果

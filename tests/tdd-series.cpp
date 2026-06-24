@@ -4,6 +4,7 @@
 #include <quant1x/formula.h>
 #include <xtensor/views/xview.hpp>
 
+
 TEST_CASE("base-1", "[series]") {
     std::vector<int> data1 = {1, 2, 3, 4, 5, 6};
     std::vector<int> data2 = {0, 2, 3, 4, 5, 6};

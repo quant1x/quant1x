@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <ostream>
 
 namespace quant1x::data::schema {
 
@@ -79,6 +80,20 @@ struct Bar {
     }
 };
 
+    /// 流输出
+    inline std::ostream& operator<<(std::ostream& os, const Bar& b) {
+        os << "Bar{date=" << b.date
+           << ", o=" << b.open << ", c=" << b.close
+           << ", h=" << b.high << ", l=" << b.low
+           << ", v=" << b.volume << ", amt=" << b.amount << "}";
+        return os;
+    }
+
 } // namespace quant1x::data::schema
+
+namespace quant1x::data {
+    /// @brief Backward-compat alias: KLine → schema::Bar (refactored in "kline-to-bar")
+    using KLine = schema::Bar;
+} // namespace quant1x::data
 
 #endif // QUANT1X_DATA_SCHEMA_BAR_H

@@ -3,7 +3,8 @@
 #include <quant1x/runtime/once.h>
 #include <quant1x/std/time.h>
 #include <quant1x/data/meta/timestamp.h>
-#include <quant1x/data/meta/timestamp.h>
+
+namespace meta = quant1x::data::meta;
 
 static int test_number =0;
 
@@ -74,7 +75,7 @@ public:
             std::lock_guard lock(mutex_);
             if (!done_) {
                 value_.emplace(init_());  // 调用初始化函数
-                spdlog::debug("value = {}", value_.value().toString());
+                spdlog::debug("value = {}", value_.value().to_string());
                 done_.store(true, std::memory_order_release);
             }
         }
@@ -155,7 +156,7 @@ inline meta::Timestamp init_timestamp() {
     spdlog::debug(__FUNCTION__ );
     auto now = meta::Timestamp::now();
     //return now.pre_market_time();
-    spdlog::debug("now={}", now.toString());
+    spdlog::debug("now={}", now.to_string());
     return now;
 }
 
@@ -165,7 +166,7 @@ TEST_CASE("cache1d-cron", "[crontab]") {
     runtime::logger_set(true, true);
     auto ts_today_init = cache1d<meta::Timestamp>(init_timestamp);
     for(int i = 0; i < 5; ++i) {
-        std::cout << meta::Timestamp::now().toString() << ", " << ts_today_init.get() << std::endl;
+        std::cout << meta::Timestamp::now().to_string() << ", " << ts_today_init.get() << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
@@ -173,9 +174,9 @@ TEST_CASE("cache1d-cron", "[crontab]") {
 TEST_CASE("cache1d-release", "[crontab]") {
     runtime::global_init();
     runtime::logger_set(true, true);
-    auto ts_today_init2 = runtime::cache1d<meta::Timestamp>("t2", init_timestamp, "*/1 * * * * *");
+    auto ts_today_init2 = cache1d<meta::Timestamp>(init_timestamp, "*/1 * * * * *");
     for(int i = 0; i < 5; ++i) {
-        std::cout << meta::Timestamp::now().toString() << ", " << ts_today_init2.get() << std::endl;
+        std::cout << meta::Timestamp::now().to_string() << ", " << ts_today_init2.get() << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }

@@ -1,11 +1,12 @@
-#include <quant1x/test/test.h>
 #include <gtest/gtest.h>
-#include <quant1x/contrib/data/tdx/level1/security_quote.h>
+#include <cmath>
+#include <quant1x/contrib/data/tdx/level1/std/security_quote.h>
 
+namespace tdx = quant1x::contrib::data::tdx;
 using namespace tdx;
 
 TEST(SecurityQuoteImplicitSpread, TradePriceAndBidAskPresent) {
-    SecurityQuoteContext q{};
+    SecurityQuote q{};
     q.price = 10.5;
     q.bid1 = 10.4;
     q.ask1 = 10.6;
@@ -16,7 +17,7 @@ TEST(SecurityQuoteImplicitSpread, TradePriceAndBidAskPresent) {
 }
 
 TEST(SecurityQuoteImplicitSpread, TradePriceOffMid) {
-    SecurityQuoteContext q{};
+    SecurityQuote q{};
     q.price = 10.55;
     q.bid1 = 10.4;
     q.ask1 = 10.6;
@@ -27,7 +28,7 @@ TEST(SecurityQuoteImplicitSpread, TradePriceOffMid) {
 }
 
 TEST(SecurityQuoteImplicitSpread, NoTradePriceUseOnbook) {
-    SecurityQuoteContext q{};
+    SecurityQuote q{};
     q.price = 0.0; // invalid
     q.bid1 = 5.0;
     q.ask1 = 5.2;
@@ -38,7 +39,7 @@ TEST(SecurityQuoteImplicitSpread, NoTradePriceUseOnbook) {
 }
 
 TEST(SecurityQuoteImplicitSpread, NoBidAskNoPrice) {
-    SecurityQuoteContext q{};
+    SecurityQuote q{};
     q.price = 0.0;
     q.bid1 = 0.0;
     q.ask1 = 0.0;
@@ -49,7 +50,7 @@ TEST(SecurityQuoteImplicitSpread, NoBidAskNoPrice) {
 }
 
 TEST(SecurityQuoteImplicitSpread, FallbackToLastClosePercent) {
-    SecurityQuoteContext q{};
+    SecurityQuote q{};
     q.price = 0.0;
     q.bid1 = 0.0;
     q.ask1 = 0.0;
@@ -59,11 +60,8 @@ TEST(SecurityQuoteImplicitSpread, FallbackToLastClosePercent) {
     EXPECT_DOUBLE_EQ(q.implicitSpreadPct(), 0.0);
 }
 
-// Add some edge cases with NaN
-#include <cmath>
-
 TEST(SecurityQuoteImplicitSpread, NaNPrice) {
-    SecurityQuoteContext q{};
+    SecurityQuote q{};
     q.price = std::numeric_limits<double>::quiet_NaN();
     q.bid1 = 3.0;
     q.ask1 = 3.5;
