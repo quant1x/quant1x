@@ -1,4 +1,4 @@
-#include <quant1x/engine/rule_engine.h>
+#include "rule_engine.h"
 #include <spdlog/spdlog.h>
 
 namespace engine {
@@ -43,7 +43,7 @@ namespace engine {
             auto it = rules_.find(kind);
             if (it == rules_.end()) {
                 error = RuleError::UNKNOWN_RULE_KIND;
-                spdlog::error("未找到规则类型：" + std::to_string(kind));
+                spdlog::error("未找到规则类型: " + std::to_string(kind));
                 break;
             }
 

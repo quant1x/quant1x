@@ -25,7 +25,7 @@ func TestCacheToSlice(t *testing.T) {
 	//s := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}
 	//a := -1
 	//fmt.Println(s[a])
-	// 创建缓存（100万个数据点）
+	// 创建缓存(100万个数据点)
 	const count = 1_000_000
 	dataSize := int64(unsafe.Sizeof(FinancialData{})) * count
 	_ = dataSize

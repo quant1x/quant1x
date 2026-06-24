@@ -1,0 +1,335 @@
+#pragma once
+#ifndef QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_FINANCE_INFO_H
+#define QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_FINANCE_INFO_H 1
+
+#include <quant1x/contrib/data/tdx/protocol.h>
+#include <quant1x/contrib/data/tdx/helpers.h>
+#include <quant1x/data/meta/instrument.h>
+#include <ostream>
+
+// ==============================
+// 企业财务信息
+// ==============================
+
+namespace quant1x::contrib::data::tdx {
+
+    struct RawFinanceInfo {
+        uint8_t Market;           // 市场
+        char Code[6];             // 股票代码
+        f32 LiuTongGuBen;         // 流通股本
+        u16 Province;             // 所属省份
+        u16 Industry;             // 行业
+        u32 UpdatedDate;          // 更新日期
+        u32 IPODate;              // 上市日期
+        f32 ZongGuBen;            // 总股本
+        f32 GuoJiaGu;             // 国家股
+        f32 FaQiRenFaRenGu;       // 发起人法人股
+        f32 FaRenGu;              // 法人股
+        f32 BGu;                  // B股
+        f32 HGu;                  // H股
+        f32 ZhiGongGu;            // 职工股
+        f32 ZongZiChan;           // 总资产
+        f32 LiuDongZiChan;        // 流动资产
+        f32 GuDingZiChan;         // 固定资产
+        f32 WuXingZiChan;         // 无形资产
+        f32 GuDongRenShu;         // 股东人数
+        f32 LiuDongFuZhai;        // 流动负债
+        f32 ChangQiFuZhai;        // 长期负债
+        f32 ZiBenGongJiJin;       // 资本公积金
+        f32 JingZiChan;           // 净资产
+        f32 ZhuYingShouRu;        // 主营收入
+        f32 ZhuYingLiRun;         // 主营利润
+        f32 YingShouZhangKuan;    // 应收账款
+        f32 YingYeLiRun;          // 营业利润
+        f32 TouZiShouYu;          // 投资收益
+        f32 JingYingXianJinLiu;   // 经营现金流量
+        f32 ZongXianJinLiu;       // 总现金流量
+        f32 CunHuo;               // 存货
+        f32 LiRunZongHe;          // 利润总额
+        f32 ShuiHouLiRun;         // 税后利润
+        f32 JingLiRun;            // 净利润
+        f32 WeiFenLiRun;          // 未分配利润
+        f32 BaoLiu1;              // 保留字段1
+        f32 BaoLiu2;              // 保留字段2
+        // char BaoLiu3[7];         // 保留字段3(可选)
+
+        // 解码方法(成员方法)
+        void decode(BinaryStream &bs) {
+
+            // 1. 读取 Market
+            Market = bs.get_arithmetic<uint8_t>();
+
+            // 2. 读取 Code (固定长度数组)
+            bs.get_array(Code);
+            //bs.get_array(Code);
+            // 3. 读取 LiuTongGuBen
+            LiuTongGuBen = bs.get_arithmetic<float>();
+
+            // 4. 读取 Province
+            Province = bs.get_arithmetic<uint16_t>();
+
+            // 5. 读取 Industry
+            Industry = bs.get_arithmetic<uint16_t>();
+
+            // 6. 读取 UpdatedDate
+            UpdatedDate = bs.get_arithmetic<uint32_t>();
+
+            // 7. 读取 IPODate
+            IPODate = bs.get_arithmetic<uint32_t>();
+
+            // 8. 读取 ZongGuBen
+            ZongGuBen = bs.get_arithmetic<float>();
+
+            // 9. 读取 GuoJiaGu
+            GuoJiaGu = bs.get_arithmetic<float>();
+
+            // 10. 读取 FaQiRenFaRenGu
+            FaQiRenFaRenGu = bs.get_arithmetic<float>();
+
+            // 11. 读取 FaRenGu
+            FaRenGu = bs.get_arithmetic<float>();
+
+            // 12. 读取 BGu
+            BGu = bs.get_arithmetic<float>();
+
+            // 13. 读取 HGu
+            HGu = bs.get_arithmetic<float>();
+
+            // 14. 读取 ZhiGongGu
+            ZhiGongGu = bs.get_arithmetic<float>();
+
+            // 15. 读取 ZongZiChan
+            ZongZiChan = bs.get_arithmetic<float>();
+
+            // 16. 读取 LiuDongZiChan
+            LiuDongZiChan = bs.get_arithmetic<float>();
+
+            // 17. 读取 GuDingZiChan
+            GuDingZiChan = bs.get_arithmetic<float>();
+
+            // 18. 读取 WuXingZiChan
+            WuXingZiChan = bs.get_arithmetic<float>();
+
+            // 19. 读取 GuDongRenShu
+            GuDongRenShu = bs.get_arithmetic<float>();
+
+            // 20. 读取 LiuDongFuZhai
+            LiuDongFuZhai = bs.get_arithmetic<float>();
+
+            // 21. 读取 ChangQiFuZhai
+            ChangQiFuZhai = bs.get_arithmetic<float>();
+
+            // 22. 读取 ZiBenGongJiJin
+            ZiBenGongJiJin = bs.get_arithmetic<float>();
+
+            // 23. 读取 JingZiChan
+            JingZiChan = bs.get_arithmetic<float>();
+
+            // 24. 读取 ZhuYingShouRu
+            ZhuYingShouRu = bs.get_arithmetic<float>();
+
+            // 25. 读取 ZhuYingLiRun
+            ZhuYingLiRun = bs.get_arithmetic<float>();
+
+            // 26. 读取 YingShouZhangKuan
+            YingShouZhangKuan = bs.get_arithmetic<float>();
+
+            // 27. 读取 YingYeLiRun
+            YingYeLiRun = bs.get_arithmetic<float>();
+
+            // 28. 读取 TouZiShouYu
+            TouZiShouYu = bs.get_arithmetic<float>();
+
+            // 29. 读取 JingYingXianJinLiu
+            JingYingXianJinLiu = bs.get_arithmetic<float>();
+
+            // 30. 读取 ZongXianJinLiu
+            ZongXianJinLiu = bs.get_arithmetic<float>();
+
+            // 31. 读取 CunHuo
+            CunHuo = bs.get_arithmetic<float>();
+
+            // 32. 读取 LiRunZongHe
+            LiRunZongHe = bs.get_arithmetic<float>();
+
+            // 33. 读取 ShuiHouLiRun
+            ShuiHouLiRun = bs.get_arithmetic<float>();
+
+            // 34. 读取 JingLiRun
+            JingLiRun = bs.get_arithmetic<float>();
+
+            // 35. 读取 WeiFenLiRun
+            WeiFenLiRun = bs.get_arithmetic<float>();
+
+            // 36. 读取 BaoLiu1
+            BaoLiu1 = bs.get_arithmetic<float>();
+
+            // 37. 读取 BaoLiu2
+            BaoLiu2 = bs.get_arithmetic<float>();
+        }
+    };
+
+    /// 财务数据
+    struct FinanceInfo {
+        std::string Code;             // 股票代码
+        f64 LiuTongGuBen;             // 流通股本
+        u16 Province;                 // 所属省份
+        u16 Industry;                 // 行业
+        u32 UpdatedDate;              // 更新日期
+        u32 IPODate;                  // 上市日期
+        f64 ZongGuBen;                // 总股本
+        f64 GuoJiaGu;                 // 国家股
+        f64 FaQiRenFaRenGu;           // 发起人法人股
+        f64 FaRenGu;                  // 法人股
+        f64 BGu;                      // B股
+        f64 HGu;                      // H股
+        f64 ZhiGongGu;                // 职工股
+        f64 ZongZiChan;               // 总资产
+        f64 LiuDongZiChan;            // 流动资产
+        f64 GuDingZiChan;             // 固定资产
+        f64 WuXingZiChan;             // 无形资产
+        f64 GuDongRenShu;             // 股东人数
+        f64 LiuDongFuZhai;            // 流动负债
+        f64 ChangQiFuZhai;            // 长期负债
+        f64 ZiBenGongJiJin;           // 资本公积金
+        f64 JingZiChan;               // 净资产
+        f64 ZhuYingShouRu;            // 主营收入
+        f64 ZhuYingLiRun;             // 主营利润
+        f64 YingShouZhangKuan;        // 应收账款
+        f64 YingYeLiRun;              // 营业利润
+        f64 TouZiShouYu;              // 投资收益
+        f64 JingYingXianJinLiu;       // 经营现金流量
+        f64 ZongXianJinLiu;           // 总现金流量
+        f64 CunHuo;                   // 存货
+        f64 LiRunZongHe;              // 利润总额
+        f64 ShuiHouLiRun;             // 税后利润
+        f64 JingLiRun;                // 净利润
+        f64 WeiFenLiRun;              // 未分配利润
+        f64 MeiGuJingZiChan;          // 每股净资产
+        f64 BaoLiu2;                  // 保留字段2
+
+        // 是否退市
+        bool isDelisting() const {
+            return IPODate == 0 && ZongGuBen == 0 && LiuTongGuBen == 0;
+        }
+
+        friend std::ostream &operator<<(std::ostream &os, const FinanceInfo &info) {
+            os << "Code: " << info.Code << " LiuTongGuBen: " << info.LiuTongGuBen << " Province: " << info.Province
+               << " Industry: " << info.Industry << " UpdatedDate: " << info.UpdatedDate << " IPODate: " << info.IPODate
+               << " ZongGuBen: " << info.ZongGuBen << " GuoJiaGu: " << info.GuoJiaGu << " FaQiRenFaRenGu: "
+               << info.FaQiRenFaRenGu << " FaRenGu: " << info.FaRenGu << " BGu: " << info.BGu << " HGu: " << info.HGu
+               << " ZhiGongGu: " << info.ZhiGongGu << " ZongZiChan: " << info.ZongZiChan << " LiuDongZiChan: "
+               << info.LiuDongZiChan << " GuDingZiChan: " << info.GuDingZiChan << " WuXingZiChan: " << info.WuXingZiChan
+               << " GuDongRenShu: " << info.GuDongRenShu << " LiuDongFuZhai: " << info.LiuDongFuZhai
+               << " ChangQiFuZhai: " << info.ChangQiFuZhai << " ZiBenGongJiJin: " << info.ZiBenGongJiJin
+               << " JingZiChan: " << info.JingZiChan << " ZhuYingShouRu: " << info.ZhuYingShouRu << " ZhuYingLiRun: "
+               << info.ZhuYingLiRun << " YingShouZhangKuan: " << info.YingShouZhangKuan << " YingYeLiRun: "
+               << info.YingYeLiRun << " TouZiShouYu: " << info.TouZiShouYu << " JingYingXianJinLiu: "
+               << info.JingYingXianJinLiu << " ZongXianJinLiu: " << info.ZongXianJinLiu << " CunHuo: " << info.CunHuo
+               << " LiRunZongHe: " << info.LiRunZongHe << " ShuiHouLiRun: " << info.ShuiHouLiRun << " JingLiRun: "
+               << info.JingLiRun << " WeiFenLiRun: " << info.WeiFenLiRun << " MeiGuJingZiChan: " << info.MeiGuJingZiChan
+               << " BaoLiu2: " << info.BaoLiu2;
+            return os;
+        }
+    };
+
+    // 财务信息请求/响应 (对齐 Python FinanceInfoContext)
+    struct FinanceInfoContext : public BaseFrame<FinanceInfoContext> {
+        u16 ReqCount;         // 请求: 数量
+        u8 Market;            // 请求: 市场
+        char Code[6]{};       // 请求: 证券代码
+
+        u16 Count; //  总数
+        FinanceInfo Info;
+
+        FinanceInfoContext() = default;
+
+        FinanceInfoContext(const meta::Instrument &inst) : BaseFrame<FinanceInfoContext>() {
+            request_header.frame_type = ZlibFlag::Uncompressed;
+            request_header.seq_id = get_sequence_id();
+            request_header.packet_ctrl = 0x01;
+            request_header.cmd_id = StdCommand::FINANCE_INFO;
+            ReqCount = 1;
+            Market = static_cast<u8>(helpers::exchange_to_market(inst.exchange));
+            const char *const tmp = inst.market_ticker().c_str();
+            std::memcpy(Code, tmp, sizeof(Code));
+        }
+
+        // 序列化方法
+        std::vector<u8> serialize_request_body_impl() {
+            BinaryStream stream;
+            stream.push_arithmetic(ReqCount);
+            stream.push_arithmetic(Market);
+            stream.push_array(Code);
+            return stream.data();
+        }
+
+        void deserialize_response_body_impl(const std::vector<u8> &body) {
+            BinaryStream bs(body);
+            Count = bs.get_u16(); // 总数
+            if(Count == 0) {
+                return;
+            }
+            RawFinanceInfo raw{};
+            raw.decode(bs);
+            const static int baseUnit = 10000;
+            auto symbol = strings::from(raw.Code);
+            Info.Code = quant1x::data::correct_security_code(std::string(raw.Code, sizeof(raw.Code)));
+            Info.LiuTongGuBen = helpers::number_to_float64(raw.LiuTongGuBen) * baseUnit;
+            Info.Province = raw.Province;
+            Info.Industry = raw.Industry;
+            Info.UpdatedDate = raw.UpdatedDate;
+            Info.IPODate = raw.IPODate;
+            Info.ZongGuBen = helpers::number_to_float64(raw.ZongGuBen) * baseUnit;
+            Info.GuoJiaGu = helpers::number_to_float64(raw.GuoJiaGu) * baseUnit;
+            Info.FaQiRenFaRenGu = helpers::number_to_float64(raw.FaQiRenFaRenGu) * baseUnit;
+            Info.FaRenGu = helpers::number_to_float64(raw.FaRenGu) * baseUnit;
+            Info.BGu = helpers::number_to_float64(raw.BGu) * baseUnit;
+            Info.HGu = helpers::number_to_float64(raw.HGu) * baseUnit;
+            Info.ZhiGongGu = helpers::number_to_float64(raw.ZhiGongGu) * baseUnit;
+            Info.ZongZiChan = helpers::number_to_float64(raw.ZongZiChan) * baseUnit;
+            Info.LiuDongZiChan = helpers::number_to_float64(raw.LiuDongZiChan) * baseUnit;
+            Info.GuDingZiChan = helpers::number_to_float64(raw.GuDingZiChan) * baseUnit;
+            Info.WuXingZiChan = helpers::number_to_float64(raw.WuXingZiChan) * baseUnit;
+            Info.GuDongRenShu = helpers::number_to_float64(raw.GuDongRenShu);
+            Info.LiuDongFuZhai = helpers::number_to_float64(raw.LiuDongFuZhai) * baseUnit;
+            Info.ChangQiFuZhai = helpers::number_to_float64(raw.ChangQiFuZhai) * baseUnit;
+            Info.ZiBenGongJiJin = helpers::number_to_float64(raw.ZiBenGongJiJin) * baseUnit;
+            Info.JingZiChan = helpers::number_to_float64(raw.JingZiChan) * baseUnit;
+            Info.ZhuYingShouRu = helpers::number_to_float64(raw.ZhuYingShouRu) * baseUnit;
+            Info.ZhuYingLiRun = helpers::number_to_float64(raw.ZhuYingLiRun) * baseUnit;
+            Info.YingShouZhangKuan = helpers::number_to_float64(raw.YingShouZhangKuan) * baseUnit;
+            Info.YingYeLiRun = helpers::number_to_float64(raw.YingYeLiRun) * baseUnit;
+            Info.TouZiShouYu = helpers::number_to_float64(raw.TouZiShouYu) * baseUnit;
+            Info.JingYingXianJinLiu = helpers::number_to_float64(raw.JingYingXianJinLiu) * baseUnit;
+            Info.ZongXianJinLiu = helpers::number_to_float64(raw.ZongXianJinLiu) * baseUnit;
+            Info.CunHuo = helpers::number_to_float64(raw.CunHuo) * baseUnit;
+            Info.LiRunZongHe = helpers::number_to_float64(raw.LiRunZongHe) * baseUnit;
+            Info.ShuiHouLiRun = helpers::number_to_float64(raw.ShuiHouLiRun) * baseUnit;
+            Info.JingLiRun = helpers::number_to_float64(raw.JingLiRun) * baseUnit;
+            Info.WeiFenLiRun = helpers::number_to_float64(raw.WeiFenLiRun) * baseUnit;
+            Info.MeiGuJingZiChan = helpers::number_to_float64(raw.BaoLiu1) * baseUnit;
+            Info.BaoLiu2 = helpers::number_to_float64(raw.BaoLiu2);
+        }
+
+        std::string to_string_impl() const {
+            std::ostringstream out;
+            out << request_header.header_string_impl();
+            out << "{ReqCount:" << ReqCount
+                << ", Market:" << (int)Market
+                << ", Code:" << std::string(Code, sizeof(Code))
+                << "}";
+            out << " {Count:" << Count
+                << ", Info:"<< Info
+                << "}";
+            return out.str();
+        }
+    };
+
+    // 向后兼容的类型别名
+    using FinanceRequest  = FinanceInfoContext;
+    using FinanceResponse = FinanceInfoContext;
+
+} // namespace quant1x::contrib::data::tdx
+
+#endif // QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_FINANCE_INFO_H

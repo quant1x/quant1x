@@ -1,8 +1,9 @@
-#include <quant1x/test/test.h>
 #include <gtest/gtest.h>
-#include <quant1x/level1/security_quote.h>
+#include <cmath>
+#include <quant1x/contrib/data/tdx/level1/std/security_quote.h>
 
-using namespace level1;
+namespace tdx = quant1x::contrib::data::tdx;
+using namespace tdx;
 
 TEST(SecurityQuoteImplicitSpread, TradePriceAndBidAskPresent) {
     SecurityQuote q{};
@@ -58,9 +59,6 @@ TEST(SecurityQuoteImplicitSpread, FallbackToLastClosePercent) {
     EXPECT_DOUBLE_EQ(q.implicitSpread(), 0.0);
     EXPECT_DOUBLE_EQ(q.implicitSpreadPct(), 0.0);
 }
-
-// Add some edge cases with NaN
-#include <cmath>
 
 TEST(SecurityQuoteImplicitSpread, NaNPrice) {
     SecurityQuote q{};

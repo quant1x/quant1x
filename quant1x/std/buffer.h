@@ -3,10 +3,14 @@
 #define QUANT1X_STD_BUFFER_H 1
 
 #include <algorithm>
+#include <array>
+#include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <vector>
 
@@ -18,7 +22,7 @@ private:
     template <typename T>
     void push_le(T value) {
         constexpr size_t size = sizeof(T);
-        ensure_capacity(offset + size);
+        prepare_write(size);
         using Unsigned = std::make_unsigned_t<T>;
         Unsigned u = static_cast<Unsigned>(value);
         for (size_t i = 0; i < size; ++i) {
@@ -36,12 +40,18 @@ private:
         for (size_t i = 0; i < size; ++i) {
             u |= static_cast<Unsigned>(buffer[offset + i]) << (i * 8);
         }
-        T value = static_cast<T>(u);
+        T value;
+        std::memcpy(&value, &u, sizeof(T)); // well-defined for trivially-copyable types
         offset += size;
         return value;
     }
 
-    void ensure_capacity(size_t required) {
+    // 对 offset+size 做溢出安全加法并确保容量
+    void prepare_write(size_t size) {
+        if (offset > SIZE_MAX - size) {
+            throw std::overflow_error("Buffer write would overflow size_t");
+        }
+        size_t required = offset + size;
         if (required > buffer.size()) {
             buffer.resize(required);
         }
@@ -66,13 +76,15 @@ public:
     BinaryStream(const BinaryStream&) = delete;
     BinaryStream& operator=(const BinaryStream&) = delete;
 
-    // 析构函数 - 不需要特殊处理，vector会自动清理
+    // 析构函数 - 不需要特殊处理, vector会自动清理
     ~BinaryStream() = default;
 
     // 通用数值类型写入
     template <typename T>
     void push_arithmetic(T value) {
         if constexpr (std::is_floating_point_v<T>) {
+            static_assert(sizeof(T) == 4 || sizeof(T) == 8,
+                          "Only float (32-bit) and double (64-bit) floating point supported");
             using IntType = std::conditional_t<sizeof(T) == 4, uint32_t, uint64_t>;
             IntType int_val{};
             std::memcpy(&int_val, &value, sizeof(T));
@@ -87,6 +99,8 @@ public:
     template <typename T>
     T get_arithmetic() {
         if constexpr (std::is_floating_point_v<T>) {
+            static_assert(sizeof(T) == 4 || sizeof(T) == 8,
+                          "Only float (32-bit) and double (64-bit) floating point supported");
             using IntType = std::conditional_t<sizeof(T) == 4, uint32_t, uint64_t>;
             IntType int_val = get_le<IntType>();
             T       result{};
@@ -98,7 +112,7 @@ public:
         }
     }
 
-    // 基础类型写入（自动推导）
+    // 基础类型写入(自动推导)
     void push_i8(int8_t value) { push_arithmetic(value); }
     void push_u8(uint8_t value) { push_arithmetic(value); }
     void push_i16(int16_t value) { push_arithmetic(value); }
@@ -125,7 +139,7 @@ public:
     // 字节数组写入
     template <size_t N>
     void push_byte_array(const uint8_t (&data)[N]) {
-        ensure_capacity(offset + N);
+        prepare_write(N);
         std::memcpy(buffer.data() + offset, data, N);
         offset += N;
     }
@@ -136,12 +150,12 @@ public:
     }
 
     void push_byte_array(const uint8_t* data, size_t n) {
-        ensure_capacity(offset + n);
+        prepare_write(n);
         std::memcpy(buffer.data() + offset, data, n);
         offset += n;
     }
 
-    // 非字节数组写入（逐元素小端序）
+    // 非字节数组写入(逐元素小端序)
     template <typename T, size_t N>
     void push_array(const T (&data)[N]) {
         for (const auto& elem : data) {
@@ -177,7 +191,7 @@ public:
         offset += n;
     }
 
-    // 非字节数组读取（逐元素小端序）
+    // 非字节数组读取(逐元素小端序)
     template <typename T, size_t N>
     void get_array(T (&output)[N]) {
         for (auto& elem : output) {
@@ -188,7 +202,9 @@ public:
     template <typename T, size_t N>
     std::array<T, N> get_array() {
         std::array<T, N> arr;
-        get_array(arr);
+        for (auto& elem : arr) {
+            elem = get_arithmetic<T>();
+        }
         return arr;
     }
 
@@ -206,7 +222,7 @@ public:
         return str;
     }
 
-    // 原始字符串处理（无长度前缀）
+    // 原始字符串处理(无长度前缀)
     void push_string(const std::string& str) {
         push_byte_array(reinterpret_cast<const uint8_t*>(str.data()), str.size());
     }
@@ -221,7 +237,9 @@ public:
         check_available(len); // 确保缓冲区有足够的数据
 
         const char* start = reinterpret_cast<const char*>(buffer.data() + offset);
-        size_t actual_len = strnlen(start, len); // 查找第一个 '\0' 或最大长度
+        // 使用 std::memchr 查找第一个 '\0'，避免 strnlen (POSIX) 的可移植性问题
+        const void* null_pos = std::memchr(start, '\0', len);
+        size_t actual_len = null_pos ? static_cast<const char*>(null_pos) - start : len;
 
         std::string str(start, actual_len); // 截断到第一个 '\0'
         offset += len; // 偏移量始终增加 len
@@ -241,7 +259,7 @@ public:
         uint8_t byte = buffer[pos++];
         bool sign = (byte & 0x40) != 0;
         uint64_t data = static_cast<uint64_t>(byte & 0x3F);
-        unsigned shift = 6;
+        uint32_t shift = 6;
 
         while (byte & 0x80) {
             if (pos >= buffer.size()) {
@@ -275,10 +293,12 @@ public:
 
     // 移动光标到指定偏移
     void seek(size_t new_offset) {
+        assert(new_offset <= buffer.size() && "seek beyond buffer size");
         offset = new_offset;
     }
     // 在当前偏移的基础上跳过偏移量
     void skip(size_t skip_offset) {
+        assert(offset + skip_offset >= offset && "skip overflow"); // guard against size_t wrap
         offset += skip_offset;
     }
     [[nodiscard]] const std::vector<uint8_t>& data() const {

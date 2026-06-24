@@ -1,18 +1,18 @@
 //! 异步调度器模块
 //!
-//! 该模块提供一个轻量的 cron 风格调度器 `AsyncScheduler`，用于在运行时调度周期性任务。
+//! 该模块提供一个轻量的 cron 风格调度器 `AsyncScheduler`, 用于在运行时调度周期性任务. 
 //!
-//! 设计要点：
+//! 设计要点: 
 //! - 使用 `tokio` 运行时异步执行调度循环；
-//! - 支持通过 cron 表达式（`cron::Schedule`）注册周期性任务；
-//! - 对于 cron 任务，调度器维护 `cron_running` 标志来避免同一任务的重入；当上一次仍在运行时，调度器会记录 `skipped_running`；
-//! - 提供统计信息 `SchedulerStats`，用于观测调度器的行为（调度次数、执行次数、跳过次数等）。
+//! - 支持通过 cron 表达式(`cron::Schedule`)注册周期性任务；
+//! - 对于 cron 任务, 调度器维护 `cron_running` 标志来避免同一任务的重入；当上一次仍在运行时, 调度器会记录 `skipped_running`；
+//! - 提供统计信息 `SchedulerStats`, 用于观测调度器的行为(调度次数, 执行次数, 跳过次数等). 
 //!
-//! 注意事项：
-//! - 任务回调是同步闭包 `Fn()`，如果回调是长时间运行的阻塞操作，建议在回调内部将真正的工作交给异步任务或线程池处理，以避免阻塞调度循环；
-//! - 测试中为简化逻辑会直接操作内部状态（如将 `cron_running` 标记为 true），但生产代码不应这样做；
+//! 注意事项: 
+//! - 任务回调是同步闭包 `Fn()`, 如果回调是长时间运行的阻塞操作, 建议在回调内部将真正的工作交给异步任务或线程池处理, 以避免阻塞调度循环；
+//! - 测试中为简化逻辑会直接操作内部状态(如将 `cron_running` 标记为 true), 但生产代码不应这样做；
 //!
-//! 示例：
+//! 示例: 
 //! ```no_run
 //! use quant1x::runtime::AsyncScheduler;
 //! use std::sync::Arc;
@@ -102,7 +102,7 @@ impl PartialOrd for ScheduledTask {
 
 impl Ord for ScheduledTask {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        // 反转比较，使最早的任务排在前面（最小堆）
+        // 反转比较, 使最早的任务排在前面(最小堆)
         other
             .next_run
             .cmp(&self.next_run)
@@ -457,7 +457,7 @@ impl Default for AsyncScheduler {
 
 impl Drop for AsyncScheduler {
     fn drop(&mut self) {
-        // 注意：这里不能是 async 的，所以我们只是设置标志
+        // 注意: 这里不能是 async 的, 所以我们只是设置标志
         // 实际的清理应该由用户调用 stop() 来完成
         self.running
             .store(false, std::sync::atomic::Ordering::Relaxed);
@@ -539,8 +539,8 @@ mod tests {
         let scheduler = AsyncScheduler::new();
         let counter = Arc::new(AtomicU32::new(0));
 
-        // 任务运行时间比调度间隔长（1.5s > 1s）。我们在第一个执行把
-        // `cron_running` 置为 true 后注入额外的调度项，这会触发 skipped_running。
+        // 任务运行时间比调度间隔长(1.5s > 1s). 我们在第一个执行把
+        // `cron_running` 置为 true 后注入额外的调度项, 这会触发 skipped_running. 
         let counter_clone = counter.clone();
         let id = scheduler
             .schedule_cron("long_task".to_string(), "* * * * * *", move || {
@@ -550,8 +550,8 @@ mod tests {
             .await
             .unwrap();
 
-        // 直接将 cron_running 标记为 true，模拟正在运行的任务；
-        // 之后注入一个立即运行的调度项，会被 execute_cron_task_internal 发现并计为 skipped_running
+        // 直接将 cron_running 标记为 true, 模拟正在运行的任务；
+        // 之后注入一个立即运行的调度项, 会被 execute_cron_task_internal 发现并计为 skipped_running
         {
             let mut ct = scheduler.cron_tasks.lock().await;
             if let Some(ctask) = ct.get_mut(&id) {
@@ -559,7 +559,7 @@ mod tests {
             }
         }
 
-        // 注入一个立即可运行的调度项，和 cron 任务使用相同的 id，这会触发 skipped_running
+        // 注入一个立即可运行的调度项, 和 cron 任务使用相同的 id, 这会触发 skipped_running
         {
             let now = Utc::now();
             let injected = ScheduledTask::new(now, Arc::new(|| {}), id, "injected".to_string());
@@ -569,7 +569,7 @@ mod tests {
             scheduler.notify.notify_one();
         }
 
-        // 等待足够时间让注入的项被处理，并轮询 stats.skipped_running 直到为正或超时
+        // 等待足够时间让注入的项被处理, 并轮询 stats.skipped_running 直到为正或超时
         let mut waited = 0u64;
         let mut skipped = 0u64;
         while waited < 3000 {

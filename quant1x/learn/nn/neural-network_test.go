@@ -10,7 +10,7 @@ import (
 func Test_Naive(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 
-	// 创建神经网络：2输入，4隐藏，1输出
+	// 创建神经网络: 2输入, 4隐藏, 1输出
 	nn := NewNeuralNetwork(2, 4, 1, 0.1)
 
 	// XOR训练数据

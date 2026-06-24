@@ -1,20 +1,27 @@
 #include <quant1x/factors/history.h>
 #include <quant1x/formula.h>
-#include <quant1x/datasets/trans.h>
 #include <quant1x/pandas/dataframe.h>
 #include <boost/pfr.hpp>
 #include <quant1x/encoding/csv.h>
+#include <quant1x/data/meta/calendar.h>
+#include <quant1x/contrib/data/tdx/trans.h>
+#include <quant1x/std/time.h>
+#include <fmt/format.h>
+
+namespace tdx = quant1x::contrib::data::tdx;
+namespace meta = quant1x::data::meta;
+namespace data = quant1x::data;
 
 void History::adjust(const factors::CumulativeAdjustment &adj) {
     (void)adj;
 }
 
-cache::Kind HistoryFeature::Kind() const {
+quant1x::data::Kind HistoryFeature::Kind() const {
     return factors::FeatureHistory;
 }
 
-std::string HistoryFeature::Owner() {
-    return cache::DefaultDataProvider;
+std::string HistoryFeature::Owner() const {
+    return quant1x::data::DefaultDataProvider;
 }
 
 std::string HistoryFeature::Key() const {
@@ -29,19 +36,32 @@ std::string HistoryFeature::Usage() const {
     return "历史数据";
 }
 
-void HistoryFeature::Print(const std::string &code, const std::vector<exchange::timestamp> &dates) {
-    (void)code;
-    (void)dates;
+void HistoryFeature::Print(const quant1x::data::meta::Instrument &inst, const quant1x::data::meta::Timestamp &date) {
+    (void)date;
+    auto h = headers();
+    auto v = values();
+    fmt::print("\n=== {}: {} ===\n", Name(), inst.symbol());
+    if (h.empty()) {
+        fmt::print("  (no data)\n");
+        return;
+    }
+    size_t max_w = 0;
+    for (auto const& s : h) {
+        if (s.size() > max_w) max_w = s.size();
+    }
+    for (size_t i = 0; i < h.size() && i < v.size(); ++i) {
+        fmt::print("  {:<{}} : {}\n", h[i], max_w + 2, v[i]);
+    }
 }
 
-void HistoryFeature::Update(const std::string &code, const exchange::timestamp &date) {
-    (void)code;
+void HistoryFeature::Update(const quant1x::data::meta::Instrument &inst, const quant1x::data::meta::Timestamp &date) {
+    auto code = inst.symbol();
     (void)date;
     std::string feature_date = date.only_date();
-    exchange::timestamp ts_cache = exchange::next_trading_day(date);
+    quant1x::data::meta::Timestamp ts_cache = quant1x::data::meta::next_trading_day(date);
     history.Date = ts_cache.only_date();
     history.Code = code;
-    auto klines = factors::klines_forward_adjusted_to_date(code, feature_date);
+    auto klines = tdx::klines_forward_adjusted_to_date(code, feature_date);
     if(klines.size() < factors::KLineMin) {
         spdlog::warn("[HistoryFeature] code={},date={}, 日线数据不足", code, feature_date);
         return;
@@ -139,22 +159,22 @@ void HistoryFeature::Update(const std::string &code, const exchange::timestamp &
     history.NewLowN = formula::at(newLowN, -1);
 
     // 成交统计概要数据
-    auto list = datasets::CheckoutTransactionData(code, date, true);
+    auto list = tdx::CheckoutTransactionData(code, date, true);
     if(list.empty()) {
         spdlog::warn("[HistoryFeature] code={},date={}, 分笔成交数据为空", code, feature_date);
     }
-    auto summary = datasets::CountInflow(list, code, ts_cache);
+    auto summary = tdx::CountInflow(list, code, ts_cache);
     history.OpenVolume = summary.OpenVolume;
 
     history.UpdateTime = api::get_timestamp();
     history.State |= factors::FeatureHistory;
 }
 
-void HistoryFeature::init(const exchange::timestamp &timestamp) {
+void HistoryFeature::init(const meta::Timestamp &timestamp) {
     (void)timestamp;
 }
 
-std::unique_ptr<cache::FeatureAdapter> HistoryFeature::clone() const {
+std::unique_ptr<data::FeatureAdapter> HistoryFeature::clone() const {
     return std::make_unique<HistoryFeature>(*this);
 }
 
@@ -195,12 +215,12 @@ namespace factors {
     namespace {
         inline std::mutex g_factor_history_mutex{};
         inline tsl::robin_map<std::string, History> g_factor_history_map{};
-        inline exchange::timestamp                  g_factor_history_date{};
+        inline meta::Timestamp                  g_factor_history_date{};
     }
 
-    static void check_and_update(const exchange::timestamp &timestamp) {
+    static void check_and_update(const meta::Timestamp &timestamp) {
         std::lock_guard<std::mutex> lock{g_factor_history_mutex};
-        exchange::timestamp algin_date = timestamp.pre_market_time();
+        meta::Timestamp algin_date = timestamp.pre_market_time();
         if(g_factor_history_map.empty() || g_factor_history_date != algin_date) {
             g_factor_history_date = algin_date;
             auto adapter = HistoryFeature();
@@ -217,7 +237,7 @@ namespace factors {
     }
 
     /// 获取指定日期的History数据
-    std::optional<History> get_history(const std::string& code, const exchange::timestamp& timestamp) {
+    std::optional<History> get_history(const std::string& code, const meta::Timestamp& timestamp) {
         check_and_update(timestamp);
         auto it = g_factor_history_map.find(code);
         if(it != g_factor_history_map.end()) {

@@ -1,11 +1,15 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 # MyTT 麦语言-通达信-同花顺指标实现     https://github.com/mpquant/MyTT
-# MyTT高级函数验证版本：               https://github.com/mpquant/MyTT/blob/main/MyTT_plus.py
-# Python2老版本pandas特别的MyTT：      https://github.com/mpquant/MyTT/blob/main/MyTT_python2.py 
+# MyTT高级函数验证版本:                https://github.com/mpquant/MyTT/blob/main/MyTT_plus.py
+# Python2老版本pandas特别的MyTT:       https://github.com/mpquant/MyTT/blob/main/MyTT_python2.py 
 # V2.1  2021-6-6   新增 BARSLAST函数 SLOPE,FORCAST线性回归预测函数
 # V2.3  2021-6-13  新增 TRIX,DPO,BRAR,DMA,MTM,MASS,ROC,VR,ASI等指标
 # V2.4  2021-6-27  新增 EXPMA,OBV,MFI指标, 改进SMA核心函数(核心函数彻底无循环)
 # V2.7  2021-11-21 修正 SLOPE,BARSLAST,函数,新加FILTER,LONGCROSS, 感谢qzhjiang对SLOPE,SMA等函数的指正
-# V2.8  2021-11-23 修正 FORCAST,WMA函数,欢迎qzhjiang,stanene,bcq加入社群，一起来完善myTT库
+# V2.8  2021-11-23 修正 FORCAST,WMA函数,欢迎qzhjiang,stanene,bcq加入社群, 一起来完善myTT库
 # V2.9  2021-11-29 新增 HHVBARS,LLVBARS,CONST, VALUEWHEN功能函数
 # V2.92 2021-11-30 新增 BARSSINCEN函数,现在可以 pip install MyTT 完成安装   
 # V3.0  2021-12-04 改进 DMA函数支持序列,新增XS2 薛斯通道II指标
@@ -15,8 +19,8 @@ from typing import Callable, Any
 import numpy as np
 import pandas as pd
 
-# 以下所有函数如无特别说明，输入参数S均为numpy序列或者列表list，N为整型int
-# 应用层1级函数完美兼容通达信或同花顺，具体使用方法请参考通达信
+# 以下所有函数如无特别说明, 输入参数S均为numpy序列或者列表list, N为整型int
+# 应用层1级函数完美兼容通达信或同花顺, 具体使用方法请参考通达信
 
 # ------------------ 初始化  --------------------------------------------
 # 解决 RuntimeWarning: invalid value encountered in true_divide
@@ -24,7 +28,7 @@ import pandas as pd
 np.seterr(divide='ignore', invalid='ignore')
 
 
-# ------------------ 0级：核心工具函数 --------------------------------------------
+# ------------------ 0级: 核心工具函数 --------------------------------------------
 def RD(N, D=3):
     """
     四舍五入取3位小数
@@ -181,12 +185,12 @@ def DIFF(S, N=1):
     :param N:
     :return:
     """
-    return pd.Series(S).diff(N).values  # np.diff(S)直接删除nan，会少一行
+    return pd.Series(S).diff(N).values  # np.diff(S)直接删除nan, 会少一行
 
 
 def STD(S, N):
     """
-    求序列的N日标准差，返回序列
+    求序列的N日标准差, 返回序列
     :param S:
     :param N:
     :return:
@@ -196,7 +200,7 @@ def STD(S, N):
 
 def SUM(S, N):
     """
-    对序列求N天累计和，返回序列    N=0对序列所有依次求和
+    对序列求N天累计和, 返回序列    N=0对序列所有依次求和
     :param S:
     :param N:
     :return:
@@ -279,7 +283,7 @@ def LLVBARS(S, N):
 
 def MA(S, N):
     """
-    求序列的N日简单移动平均值，返回序列
+    求序列的N日简单移动平均值, 返回序列
     :param S:
     :param N:
     :return:
@@ -288,7 +292,7 @@ def MA(S, N):
 
 def V1_MA(S, N):
     """
-    求序列的N日简单移动平均值，返回序列
+    求序列的N日简单移动平均值, 返回序列
     :param S:
     :param N:
     :return:
@@ -329,7 +333,7 @@ def WMA(S, N):
 
 def DMA(S, A):
     """
-    求S的动态移动平均, A作平滑因子,必须 0<A<1 (此为核心函数，非指标）
+    求S的动态移动平均, A作平滑因子,必须 0<A<1 (此为核心函数, 非指标)
     :param S:
     :param A:
     :return:
@@ -458,7 +462,7 @@ def LAST(S, A, B):
     return np.array(pd.Series(S).rolling(A + 1).apply(lambda x: np.all(x[::-1][B:]), raw=True), dtype=bool)
 
 
-# ------------------   1级：应用层函数(通过0级核心函数实现）使用方法请参考通达信--------------------------------
+# ------------------   1级: 应用层函数(通过0级核心函数实现)使用方法请参考通达信--------------------------------
 def COUNT(S, N):
     """
     COUNT(CLOSE>O, N):  最近N天满足S_BOO的天数  True的天数
@@ -488,13 +492,13 @@ def EXIST(S, N):
 
 def FILTER(S, N):
     """
-    FILTER函数，S满足条件后，将其后N周期内的数据置为0, FILTER(C==H,5)
+    FILTER函数, S满足条件后, 将其后N周期内的数据置为0, FILTER(C==H,5)
     :param S:
     :param N:
     :return:
     """
     for i in range(len(S)): S[i + 1:i + 1 + N] = 0 if S[i] else S[i + 1:i + 1 + N]
-    return S  # 例：FILTER(C==H,5) 涨停后，后5天不再发出信号
+    return S  # 例: FILTER(C==H,5) 涨停后, 后5天不再发出信号
 
 
 def BARSLAST(S):
@@ -576,7 +580,7 @@ def VALUEWHEN(S, X):
 
 def BETWEEN(S, A, B):
     """
-    S处于A和B之间时为真。 包括 A<S<B 或 A>S>B
+    S处于A和B之间时为真.  包括 A<S<B 或 A>S>B
     :param S:
     :param A:
     :param B:
@@ -607,10 +611,10 @@ def LOWRANGE(S):
     return rt.astype('int')
 
 
-# ------------------   2级：技术指标函数(全部通过0级，1级函数实现） ------------------------------
+# ------------------   2级: 技术指标函数(全部通过0级, 1级函数实现) ------------------------------
 def MACD(CLOSE, SHORT=12, LONG=26, M=9):
     """
-    EMA的关系，S取120日，和雪球小数点2位相同
+    EMA的关系, S取120日, 和雪球小数点2位相同
     :param CLOSE:
     :param SHORT:
     :param LONG:
@@ -684,7 +688,7 @@ def BIAS(CLOSE, L1=6, L2=12, L3=24):
 
 def BOLL(CLOSE, N=20, P=2):
     """
-    BOLL指标，布林带
+    BOLL指标, 布林带
     :param CLOSE:
     :param N:
     :param P:
@@ -735,7 +739,7 @@ def BBI(CLOSE, M1=3, M2=6, M3=12, M4=20):
 
 def DMI(CLOSE, HIGH, LOW, M1=14, M2=6):
     """
-    动向指标：结果和同花顺，通达信完全一致
+    动向指标: 结果和同花顺, 通达信完全一致
     :param CLOSE:
     :param HIGH:
     :param LOW:
@@ -757,7 +761,7 @@ def DMI(CLOSE, HIGH, LOW, M1=14, M2=6):
 
 def TAQ(HIGH, LOW, N):
     """
-    唐安奇通道(海龟)交易指标，大道至简，能穿越牛熊
+    唐安奇通道(海龟)交易指标, 大道至简, 能穿越牛熊
     :param HIGH:
     :param LOW:
     :param N:
@@ -771,7 +775,7 @@ def TAQ(HIGH, LOW, N):
 
 def KTN(CLOSE, HIGH, LOW, N=20, M=10):
     """
-    肯特纳交易通道, N选20日，ATR选10日
+    肯特纳交易通道, N选20日, ATR选10日
     :param CLOSE:
     :param HIGH:
     :param LOW:

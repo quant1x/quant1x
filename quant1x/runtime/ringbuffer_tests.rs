@@ -1,14 +1,14 @@
 #![cfg(feature = "vyukov")]
 
-// 针对 Vyukov 风格有界 MPMC 队列实现的特性门控测试。
-// 这些测试以 TDD 风格编写：假设将会提供 `crate::ringbuffer::vyukov::Queue<T>`
-// 的实现。除非启用 `vyukov` Cargo 特性，否则这些测试不会被编译/运行。
+// 针对 Vyukov 风格有界 MPMC 队列实现的特性门控测试. 
+// 这些测试以 TDD 风格编写: 假设将会提供 `crate::ringbuffer::vyukov::Queue<T>`
+// 的实现. 除非启用 `vyukov` Cargo 特性, 否则这些测试不会被编译/运行. 
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 use std::thread;
 
-// 注意：期望的 Vyukov 实现 API（将来实现）：
+// 注意: 期望的 Vyukov 实现 API(将来实现): 
 // pub mod vyukov {
 //     pub struct Queue<T> { .. }
 //     impl<T> Queue<T> {
@@ -21,7 +21,7 @@ use std::thread;
 
 #[test]
 fn vyukov_basic() {
-    // 基本功能的冒烟测试（入队/出队顺序）
+    // 基本功能的冒烟测试(入队/出队顺序)
     use crate::ringbuffer::vyukov::Queue as VQueue;
 
     let q = VQueue::<i32>::new(4);

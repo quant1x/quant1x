@@ -9,7 +9,7 @@ TEST_CASE("load-trans", "[chips]") {
 TEST_CASE("load-chips", "[chips]") {
     std::string securityCode = "sh510050";
     std::string factor_date  = "2025-07-17";
-    auto        ofn          = config::get_chip_distribution_filename(securityCode, factor_date);
+    auto        ofn          = quant1x::config::get_chip_distribution_filename(securityCode, factor_date);
     std::cout << ofn << std::endl;
     datasets::Chips chips{};
     std::ifstream   is(ofn, std::ios::binary);
@@ -26,9 +26,14 @@ TEST_CASE("load-chips", "[chips]") {
     std::cout << vol << std::endl;
 }
 
-#include <quant1x/factors/base.h>
+#include <quant1x/factors/base_compat.h>
+#include <quant1x/contrib/data/tdx/bar.h>
+#include <quant1x/data/schema/bar.h>
 #include <quant1x/factors/f10.h>
 #include <quant1x/std/safe.h>
+
+namespace data = quant1x::data;
+namespace tdx = quant1x::contrib::data::tdx;
 
 #include <algorithm>
 #include <cmath>
@@ -97,7 +102,7 @@ std::string TechSignalToString(TechSignal ts) {
 
 // DailyData 日线数据结构
 struct DailyData {
-    datasets::KLine kline;
+    data::KLine kline;
     double          TurnoverRate;
     double          Avg;
 };
@@ -194,7 +199,7 @@ public:
 
     // 加载数据
     bool LoadCSV(const std::string &code, const std::string &date) {
-        auto klines = factors::checkout_klines(code, date);
+        auto klines = tdx::checkout_klines(code, date);
         if (klines.empty()) {
             return false;
         }
@@ -219,26 +224,26 @@ public:
         data_.clear();
         data_.reserve(klines.size());
         for (const auto &record : klines) {
-            if (record.Date < activeDeadline) {
+            if (record.date < activeDeadline) {
                 continue;
             }
             DailyData d;
             d.kline        = record;
-            d.TurnoverRate = 100 * (record.Volume / capital_);  // 换手率计算
-            d.Avg          = record.Amount / record.Volume;     // 平均成交价
-            d.kline.Open   = numerics::decimal(d.kline.Open, digits_);
-            d.kline.Close  = numerics::decimal(d.kline.Close, digits_);
-            d.kline.High   = numerics::decimal(d.kline.High, digits_);
-            d.kline.Low    = numerics::decimal(d.kline.Low, digits_);
-            d.Avg          = numerics::decimal(d.Avg, digits_);  // 平均价四舍五入
-            if (d.kline.High > high) {
-                high = d.kline.High;
+            d.TurnoverRate = 100 * (record.volume / capital_);  // 换手率计算
+            d.Avg          = record.amount / record.volume;     // 平均成交价
+            d.kline.open   = numeric::decimal(d.kline.open, digits_);
+            d.kline.close  = numeric::decimal(d.kline.close, digits_);
+            d.kline.high   = numeric::decimal(d.kline.high, digits_);
+            d.kline.low    = numeric::decimal(d.kline.low, digits_);
+            d.Avg          = numeric::decimal(d.Avg, digits_);  // 平均价四舍五入
+            if (d.kline.high > high) {
+                high = d.kline.high;
             }
-            if (d.kline.Low < low) {
-                low = d.kline.Low;
+            if (d.kline.low < low) {
+                low = d.kline.low;
             }
             data_.push_back(d);
-            lastClose = d.kline.Close;
+            lastClose = d.kline.close;
         }
         data_.shrink_to_fit();
         last_close_ = lastClose;
@@ -266,7 +271,7 @@ public:
         // 创建指向尾部 N 个元素的 span
         std::span<DailyData> lastN = N == 0
                                ? std::span(data_)
-                               : std::span(data_).subspan(0, data_.size() - N);  // 如果 size < N，也可以取全部
+                               : std::span(data_).subspan(0, data_.size() - N);  // 如果 size < N, 也可以取全部
         for (const auto &day : lastN) {
             switch (config_.ModelType) {
                 case 1:
@@ -295,13 +300,13 @@ public:
 private:
     // 处理单一价格日的特殊逻辑
     void handleSinglePriceDay(const DailyData &day) {
-        double singlePrice = numerics::decimal(day.kline.Close, digits_);
+        double singlePrice = numeric::decimal(day.kline.close, digits_);
 
         // 构造全量筹码分布
         std::map<double, double> tmpChip;
-        tmpChip[singlePrice] = day.kline.Volume;
+        tmpChip[singlePrice] = day.kline.volume;
 
-        // 应用衰减合并（需特殊处理衰减率）
+        // 应用衰减合并(需特殊处理衰减率)
         DailyData adjustedDay = day;
         // adjustedDay.TurnoverRate = 100; // 强制全量换手
         applyDecayAndMerge(adjustedDay, tmpChip);
@@ -309,24 +314,24 @@ private:
 
     // 三角形分布计算
     bool calculateTriangular(const DailyData &day) {
-        // 情况1：处理最高价等于最低价的情况（一字涨停/跌停）
-        if (day.kline.High == day.kline.Low) {
+        // 情况1: 处理最高价等于最低价的情况(一字涨停/跌停)
+        if (day.kline.high == day.kline.low) {
             // 直接全部分配到唯一价格点
             handleSinglePriceDay(day);
             return true;
         }
 
-        // 情况2：常规价格区间校验
-        if (day.kline.High < day.kline.Low) {
+        // 情况2: 常规价格区间校验
+        if (day.kline.high < day.kline.low) {
             return false;
         }
 
-        // 生成价格网格（包含容差处理）
-        std::vector<double> priceGrid = generatePriceGrid(day.kline.Low, day.kline.High, config_.PriceStep, digits_);
+        // 生成价格网格(包含容差处理)
+        std::vector<double> priceGrid = generatePriceGrid(day.kline.low, day.kline.high, config_.PriceStep, digits_);
         std::map<double, double> tmpChip;
 
-        // 计算归一化系数（处理可能的零除问题）
-        double priceRange = day.kline.High - day.kline.Low;
+        // 计算归一化系数(处理可能的零除问题)
+        double priceRange = day.kline.high - day.kline.low;
         double h          = 2.0 / priceRange;  // 保证概率密度积分为1
 
         for (double price : priceGrid) {
@@ -336,30 +341,30 @@ private:
 
             // 分情况处理三角形分布
             if (price < day.Avg) {
-                // 左三角形处理（包含Avg=Low的边界情况）
-                double denominator = day.Avg - day.kline.Low;
+                // 左三角形处理(包含Avg=Low的边界情况)
+                double denominator = day.Avg - day.kline.low;
                 if (denominator <= 1e-8) {  // 处理浮点精度误差
                     // 当Avg=Low时退化为矩形分布
                     area = config_.PriceStep * h;
                 } else {
-                    double y1 = h / denominator * (x1 - day.kline.Low);
-                    double y2 = h / denominator * (x2 - day.kline.Low);
+                    double y1 = h / denominator * (x1 - day.kline.low);
+                    double y2 = h / denominator * (x2 - day.kline.low);
                     area      = config_.PriceStep * (y1 + y2) / 2;
                 }
             } else {
-                // 右三角形处理（包含Avg=High的边界情况）
-                double denominator = day.kline.High - day.Avg;
+                // 右三角形处理(包含Avg=High的边界情况)
+                double denominator = day.kline.high - day.Avg;
                 if (denominator <= 1e-8) {
                     // 当Avg=High时退化为矩形分布
                     area = config_.PriceStep * h;
                 } else {
-                    double y1 = h / denominator * (day.kline.High - x1);
-                    double y2 = h / denominator * (day.kline.High - x2);
+                    double y1 = h / denominator * (day.kline.high - x1);
+                    double y2 = h / denominator * (day.kline.high - x2);
                     area      = config_.PriceStep * (y1 + y2) / 2;
                 }
             }
 
-            tmpChip[price] = area * day.kline.Volume;  // 面积映射到实际成交量
+            tmpChip[price] = area * day.kline.volume;  // 面积映射到实际成交量
         }
 
         // 应用衰减和合并
@@ -369,8 +374,8 @@ private:
 
     // 均匀分布计算
     bool calculateUniform(const DailyData &day) {
-        std::vector<double> priceGrid = generatePriceGrid(day.kline.Low, day.kline.High, config_.PriceStep, digits_);
-        double              eachVol   = day.kline.Volume / priceGrid.size();
+        std::vector<double> priceGrid = generatePriceGrid(day.kline.low, day.kline.high, config_.PriceStep, digits_);
+        double              eachVol   = day.kline.volume / priceGrid.size();
         std::map<double, double> tmpChip;
 
         for (double price : priceGrid) {
@@ -428,13 +433,13 @@ private:
         grid.reserve(length);
         for (int priceInt = lowInt; priceInt <= highInt; priceInt += stepInt) {
             double price = static_cast<double>(priceInt) / scale;
-            price        = numerics::decimal(price, digits);  // 确保四舍五入
+            price        = numeric::decimal(price, digits);  // 确保四舍五入
             grid.push_back(price);
         }
         return grid;
     }
 
-    // 辅助函数：查找局部峰值
+    // 辅助函数: 查找局部峰值
     std::vector<double> findLocalPeaks(const std::vector<double> &prices, const std::map<double, double> &data) const {
         std::vector<double> peaks;
         int                 n = int(prices.size());
@@ -587,7 +592,7 @@ private:
 
         if (closestPrice > 0) {
             feature.Closest = closestPrice;
-            // 如果极值未找到，使用最近峰值的量能
+            // 如果极值未找到, 使用最近峰值的量能
             if (feature.PeakVolume == 0) {
                 feature.PeakVolume = chip_data.at(closestPrice);
                 feature.PeakRatio  = feature.PeakVolume / total;
@@ -610,7 +615,7 @@ private:
 TEST_CASE("chips-v2", "[chips]") {
     std::string code          = "000999";
     std::string date          = "2025-09-05";
-    std::string security_code = exchange::CorrectSecurityCode(code);
+    std::string security_code = data::correct_security_code(code);
     std::cout << "当前日期: " << date << ", 证券代码: " << security_code << std::endl;
     ChipDistribution cd(defaultConfig);
     bool             result = cd.LoadCSV(security_code, date);

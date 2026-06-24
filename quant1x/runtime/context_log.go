@@ -1,6 +1,6 @@
 package runtime
 
-// Logger 日志接口，避免循环引用
+// Logger 日志接口, 避免循环引用
 type Logger interface {
 	Debugf(msg string, v ...any)
 	Infof(msg string, v ...any)

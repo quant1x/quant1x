@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"gitee.com/quant1x/num"
+	"github.com/quant1x/num"
 )
 
 // DataExtractor 提取可用于聚类的数值样本集
@@ -49,7 +49,7 @@ func find_4plus1_clusters_basic(X_scaled [][]float64, max_iterations int) (best_
 			n_clusters := len(labelSet)
 			noise_ratio := float64(n_noise) / float64(len(labels))
 
-			// 评分标准：正好4个簇，噪声比例10-30%
+			// 评分标准: 正好4个簇, 噪声比例10-30%
 			if n_clusters == 4 {
 				cluster_quality := 1.0
 				noise_quality := 1.0 - math.Abs(noise_ratio-0.2) // 20%噪声比例理想
@@ -73,8 +73,8 @@ func find_4plus1_clusters_basic(X_scaled [][]float64, max_iterations int) (best_
 	}
 
 	if best_params == nil {
-		fmt.Println("⚠️ 未找到4簇方案，使用最近似方案")
-		// 备用方案：寻找最接近4簇的参数
+		fmt.Println("⚠️ 未找到4簇方案, 使用最近似方案")
+		// 备用方案: 寻找最接近4簇的参数
 		for _, eps := range eps_values {
 			for _, min_samples := range min_samples_values {
 				dbscan := &DBSCAN{
@@ -132,7 +132,7 @@ func find_4plus1_clusters(X_scaled [][]float64, max_iterations int) (best_params
 		params = params[:max_iterations]
 	}
 
-	// 主搜索：寻找正好 4 个簇
+	// 主搜索: 寻找正好 4 个簇
 	for _, p := range params {
 		dbscan := &DBSCAN{
 			Eps:    p.eps,
@@ -169,9 +169,9 @@ func find_4plus1_clusters(X_scaled [][]float64, max_iterations int) (best_params
 		}
 	}
 
-	// 备选：3~5 个簇
+	// 备选: 3~5 个簇
 	if best_params == nil {
-		fmt.Println("⚠️ 未找到4簇方案，使用最近似方案")
+		fmt.Println("⚠️ 未找到4簇方案, 使用最近似方案")
 		for _, p := range params {
 			dbscan := &DBSCAN{
 				Eps:    p.eps,

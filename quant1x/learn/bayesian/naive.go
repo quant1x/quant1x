@@ -27,7 +27,7 @@ func NewNaiveBayes[K comparable, C comparable](smoothing float64) *NaiveBayes[K,
 	}
 }
 
-// Train 训练模型（修复特征计数逻辑）
+// Train 训练模型(修复特征计数逻辑)
 func (nb *NaiveBayes[K, C]) Train(samples []map[K]bool, labels []C) {
 	nb.lock.Lock()
 	defer nb.lock.Unlock()
@@ -51,7 +51,7 @@ func (nb *NaiveBayes[K, C]) Train(samples []map[K]bool, labels []C) {
 	}
 }
 
-// Predict 预测类别（修复概率计算）
+// Predict 预测类别(修复概率计算)
 func (nb *NaiveBayes[K, C]) Predict(features map[K]bool) C {
 	nb.lock.RLock()
 	defer nb.lock.RUnlock()

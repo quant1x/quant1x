@@ -9,7 +9,7 @@ import (
 type NetworkOperationHandler interface {
 	// Timeout 超时时间
 	Timeout() time.Duration
-	// Handshake 执行TCP连接握手验证，返回验证结果和可能的错误
+	// Handshake 执行TCP连接握手验证, 返回验证结果和可能的错误
 	// conn: 要验证的TCP连接
 	// 返回值: (验证是否成功, 错误信息)
 	Handshake(conn *net.TCPConn) (bool, error)

@@ -1,9 +1,9 @@
 #include <quant1x/std/api.h>
 #include <quant1x/std/strings.h>
 #include <quant1x/std/util.h>
-#include <quant1x/std/filepath.h>
+#include <quant1x/std/filesystem.h>
 #include <quant1x/config/base.h>
-#include <quant1x/instruments/markets.h>
+#include <quant1x/data/meta/timestamp.h>
 #include <quant1x/encoding/yaml.h>
 
 #include <algorithm>
@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace config {
+namespace quant1x::config {
     namespace fs = std::filesystem;
 
     // 默认的数据路径
@@ -34,8 +34,8 @@ namespace config {
     // 初始化路径
     static void init_path(const std::string &path) {
         try {
-            std::string expandedPath = filepath::expand_user(path);
-            filepath::mkdirs(expandedPath);
+            std::string expandedPath = filesystem::expand_user(path);
+            filesystem::mkdirs(expandedPath);
             global_config().homeDir = std::move(expandedPath);
         } catch (const std::exception &e) {
             std::cerr << "路径初始化失败: " << e.what() << std::endl;
@@ -44,16 +44,16 @@ namespace config {
     }
 
     /**
-     * @brief 延迟初始化全局配置，仅在第一次调用时执行
+     * @brief 延迟初始化全局配置, 仅在第一次调用时执行
      *
-     * 该函数负责初始化全局配置，包括：
+     * 该函数负责初始化全局配置, 包括：
      * - 设置默认数据路径
      * - 加载并解析YAML配置文件
      * - 初始化日志目录
      * - 设置调试标志
      *
-     * @note 该函数是线程安全的，使用静态局部变量确保只初始化一次
-     * @note 如果配置文件解析失败，会使用默认配置继续运行
+     * @note 该函数是线程安全的, 使用静态局部变量确保只初始化一次
+     * @note 如果配置文件解析失败, 会使用默认配置继续运行
      *
      * @throws std::exception 当YAML文件解析失败时会捕获并打印异常信息
      *
@@ -66,13 +66,13 @@ namespace config {
         static int count = 0;
         spdlog::info("lazy_init called: {}", ++count);
         init_path(defaultQuant1xDataPath);
-        auto config_filename = filepath::expand_user(global_config().homeDir + "/quant1x.yaml");
+        auto config_filename = filesystem::expand_user(global_config().homeDir + "/quant1x.yaml");
         global_config().filename = std::move(config_filename);
         try {
             YAML::Node yaml = YAML::LoadFile(global_config().filename);
             std::string base_dir;
             encoding::safe_yaml::parse_field(yaml, "basedir", base_dir, global_config().homeDir);
-            global_config().cacheDir = filepath::expand_user(base_dir);
+            global_config().cacheDir = filesystem::expand_user(base_dir);
             // 读取配置文件顶层的debug设置, 如果解析异常, 当作false处理
             bool in_debug = false;
             encoding::safe_yaml::parse_field(yaml, "debug", in_debug, false);
@@ -86,7 +86,7 @@ namespace config {
         }
 
         global_config().logsDir = global_config().cacheDir + "/logs";
-        auto err = filepath::mkdirs(global_config().logsDir, true);
+        auto err = filesystem::mkdirs(global_config().logsDir, true);
         err.clear();
 
         std::cerr << "lazy_init config_filename = " << &global_config().filename << ",[" << global_config().filename << "]\n";
@@ -95,12 +95,12 @@ namespace config {
     static inline std::once_flag global_config_once;
     static inline std::shared_ptr<TraderParameter> global_trader_parameter; // 交易配置
 
-    config::TraderParameter load_config_from_yaml(const std::string &filename) {
+    TraderParameter load_config_from_yaml(const std::string &filename) {
         spdlog::info("config file: {}", filename);
-        config::TraderParameter config{};
+        TraderParameter config{};
         try {
             YAML::Node yaml = YAML::LoadFile(filename);
-            config = yaml["trader"].as<config::TraderParameter>();
+            config = yaml["trader"].as<TraderParameter>();
         } catch (const YAML::Exception &e) {
             std::cerr << "YAML解析错误: " << e.what() << std::endl;
             spdlog::error("YAML解析错误: {}", e.what());
@@ -118,7 +118,7 @@ namespace config {
         // 先检查内存
         //check_memory_guard();
         std::cerr << "lazy_load_trader_config config_filename = " << &global_config().filename << ",[" << global_config().filename << "]\n";
-        auto tmp_config_filename = config::config_filename();
+        auto tmp_config_filename = quant1x::config::config_filename();
         auto config = load_config_from_yaml(tmp_config_filename);
         global_trader_parameter = std::make_shared<TraderParameter>(config);
     }
@@ -163,4 +163,4 @@ namespace config {
         p /= "logs";
         return p.string();
     }
-} // namespace config
+} // namespace quant1x::config

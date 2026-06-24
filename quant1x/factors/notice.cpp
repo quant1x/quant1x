@@ -1,10 +1,14 @@
 #include <cpr/cpr.h>
 #include <quant1x/encoding/json.h>
-#include <quant1x/instruments/markets.h>
+#include <quant1x/data/market.h>
+#include <quant1x/data/meta/timestamp.h>
 #include <quant1x/factors/notice.h>
 #include <spdlog/spdlog.h>
 
 #include <nlohmann/json.hpp>
+
+namespace data = quant1x::data;
+namespace meta = quant1x::data::meta;
 
 namespace dfcf {
     namespace {
@@ -97,8 +101,8 @@ namespace dfcf {
     /////////////////////////////////////////////////////////////////////////////
     [[maybe_unused]] std::tuple<std::vector<NoticeDetail>, int, Exception>
     AllNotices(EMNoticeType noticeType, const std::string &date, int pageNumber) {
-        std::string beginDate = exchange::timestamp(date).only_date();
-        std::string endDate   = exchange::timestamp::now().only_date();
+        std::string beginDate = meta::Timestamp(date).only_date();
+        std::string endDate   = meta::Timestamp::now().only_date();
         int         pageSize  = EastmoneyNoticesPageSize;
 
         std::map<std::string, std::string> params = {
@@ -183,8 +187,7 @@ namespace dfcf {
                             continue;
                         }
 
-                        auto marketCode = static_cast<exchange::ExchangeId>(std::stoll(noticeItem.Codes[0].MarketCode));
-                        std::string securityCode = exchange::GetSecurityCode(marketCode, noticeItem.Codes[0].StockCode);
+                        std::string securityCode = data::correct_security_code(noticeItem.Codes[0].StockCode);
                         std::string securityName = noticeItem.Codes[0].ShortName;
 
                         NoticeDetail notice;
@@ -252,9 +255,9 @@ namespace dfcf {
                                                                        const std::string &beginDate,
                                                                        const std::string &endDate,
                                                                        int                pageNumber) {
-        std::string fixedBeginDate = exchange::timestamp(beginDate).only_date();
-        std::string fixedEndDate   = endDate.empty() ? exchange::timestamp::now().only_date()
-                                                     : exchange::timestamp(endDate).only_date();
+        std::string fixedBeginDate = meta::Timestamp(beginDate).only_date();
+        std::string fixedEndDate   = endDate.empty() ? meta::Timestamp::now().only_date()
+                                                     : meta::Timestamp(endDate).only_date();
 
         int             pageSize = EastmoneyNoticesPageSize;
         cpr::Parameters params   = {
@@ -269,8 +272,8 @@ namespace dfcf {
             {"end_time", fixedEndDate},
         };
 
-        auto marketInfo = exchange::DetectMarket(securityCode);
-        params.Add({"stock_list", std::get<2>(marketInfo)});
+        auto inst = data::detect_symbol(securityCode);
+        params.Add({"stock_list", inst.ticker});
 
         std::string url = urlEastmoneyNotices;
         cpr::Header headers;
@@ -342,9 +345,7 @@ namespace dfcf {
                             continue;
                         }
 
-                        auto marketCode = static_cast<exchange::ExchangeId>(std::stoll(noticeItem.Codes[0].MarketCode));
-                        std::string security_code = exchange::GetSecurityCode(marketCode,
-                                                                              noticeItem.Codes[0].StockCode);
+                        std::string security_code = data::correct_security_code(noticeItem.Codes[0].StockCode);
                         std::string security_name = noticeItem.Codes[0].ShortName;
 
                         NoticeDetail notice;
@@ -409,13 +410,13 @@ namespace dfcf {
     // StockWarning - 安全版本
     /////////////////////////////////////////////////////////////////////////////
     std::pair<RawWarning, Exception> StockWarning(const std::string &securityCode, int pageNumber) {
-        auto        marketInfo = exchange::DetectMarket(securityCode);
-        std::string flag       = std::get<1>(marketInfo);
-        flag                   = strings::to_upper(flag);
+        auto inst = data::detect_symbol(securityCode);
+        std::string flag = meta::exchange_identifier(inst.exchange);
+        flag = strings::to_upper(flag);
 
         std::map<std::string, std::string> params = {
             {"type", "RTP_F10_DETAIL"},
-            {"params", std::get<2>(marketInfo) + "." + flag + ",02"},
+            {"params", inst.ticker + "." + flag + ",02"},
             {"p", std::to_string(pageNumber)},
             {"ann_type", "A"},
             {"source", "HSF10"},
@@ -461,7 +462,7 @@ namespace dfcf {
                                 if (content.is_string()) {
                                     warningDetail.Level2Content.push_back(content.get<std::string>());
                                 } else {
-                                    // 可选：记录日志或跳过非字符串元素
+                                    // 可选: 记录日志或跳过非字符串元素
                                     spdlog::warn("LEVEL2_CONTENT 中包含非字符串元素");
                                 }
                             }
@@ -491,7 +492,7 @@ namespace dfcf {
                                                             const std::vector<WarningDetail> &events) {
         std::string annualReportDate, quarterlyReportDate;
         for (const auto &v : events) {
-            std::string date    = exchange::timestamp(v.NoticeDate).only_date();
+            std::string date    = meta::Timestamp(v.NoticeDate).only_date();
             std::string tmpYear = date.substr(0, 4);
             if (v.EventType != "报表披露")
                 continue;
@@ -516,7 +517,7 @@ namespace dfcf {
     // NoticeDateForReport 年报季报披露日期
     /////////////////////////////////////////////////////////////////////////////
     std::tuple<std::string, std::string> NoticeDateForReport(const std::string &code, const std::string &date) {
-        const std::string fixedDate = exchange::timestamp(date).only_date();
+        const std::string fixedDate = meta::Timestamp(date).only_date();
         const std::string year      = fixedDate.substr(0, 4);
         int               pageNo    = 1;
         std::string       annualReportDate, quarterlyReportDate;
@@ -552,12 +553,12 @@ namespace dfcf {
     /////////////////////////////////////////////////////////////////////////////
     CompanyNotice getOneNotice(const std::string &securityCode, const std::string &currentDate) {
         CompanyNotice notice{};
-        if (!exchange::AssertStockBySecurityCode(securityCode))
+        if (!data::assert_stock_by_security_code(securityCode))
             return notice;
 
-        exchange::timestamp timestamp(currentDate);
-        timestamp                                = timestamp.offset(-24 * 30);
-        const std::string             beginDate  = timestamp.only_date();
+        meta::Timestamp ts(currentDate);
+        ts = ts.offset(-24 * 30);
+        const std::string beginDate = ts.only_date();
         const std::string            &endDate    = currentDate;
         int                           pagesCount = 1;
         std::unique_ptr<NoticeDetail> tmpNotice;

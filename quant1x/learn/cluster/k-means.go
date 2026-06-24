@@ -22,7 +22,7 @@ var (
 )
 
 const (
-	// kmeansSeed 用于固定 KMeans 的随机源，确保结果可复现
+	// kmeansSeed 用于固定 KMeans 的随机源, 确保结果可复现
 	// 设为 -1 表示使用时间随机；>=0 表示固定种子
 	kmeansSeed = 89 // 可复现模式
 	// kmeansSeed = -1 // 随机模式
@@ -35,7 +35,7 @@ type KMeans struct {
 	Tolerance     float64     // 收敛阈值
 	Centroids     [][]float64 // 聚类中心
 	Labels        []int       // 每个点的标签
-	Inertia       float64     // 最终 inertia（SSE）, 数据点到其所属聚类中心的距离平方和
+	Inertia       float64     // 最终 inertia(SSE), 数据点到其所属聚类中心的距离平方和
 	nFeatures     int         // 特征维度
 	rng           *rand.Rand  // 使用私有 rng
 }
@@ -65,7 +65,7 @@ func NewKMeans(k int, maxIterations int, tolerance float64) (*KMeans, error) {
 	}, nil
 }
 
-// distanceSquared 计算两点之间的欧氏距离平方（避免开方）
+// distanceSquared 计算两点之间的欧氏距离平方(避免开方)
 func (km *KMeans) distanceSquared(a, b []float64) (float64, error) {
 	if len(a) != len(b) {
 		return 0, ErrInconsistentDim
@@ -87,7 +87,7 @@ func (km *KMeans) distance(a, b []float64) (float64, error) {
 	return math.Sqrt(distSq), nil
 }
 
-// initializeCentroids 初始化聚类中心（K-means++）
+// initializeCentroids 初始化聚类中心(K-means++)
 func (km *KMeans) initializeCentroids(data [][]float64) ([][]float64, error) {
 	n := len(data)
 	if n < km.K {
@@ -185,7 +185,7 @@ func (km *KMeans) updateCentroids(data [][]float64, labels []int, oldCentroids [
 				newCentroids[i][j] = sums[i][j] / float64(counts[i])
 			}
 		} else {
-			// 空簇：随机选择一个点作为新中心
+			// 空簇: 随机选择一个点作为新中心
 			randIdx := km.rng.Intn(len(data))
 			newCentroids[i] = make([]float64, len(data[randIdx]))
 			copy(newCentroids[i], data[randIdx])

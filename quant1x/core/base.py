@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 import os
 import threading
 from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Any, Dict
 import yaml
-from quant1x.std.filepath import expand_user
+from quant1x.std.filesystem import expand_user
 from .defaults import apply_defaults
 
-LANGUAGE = "py"
-DEFAULT_BASE_PATH = f"~/.q1x-{LANGUAGE}"
+DEFAULT_BASEDATA_PATH = f"~/.q1x-py"
 QUANT1X_CONFIG_FILENAME = "quant1x.yaml"
 
 @dataclass
@@ -20,16 +22,16 @@ class BaseConfig:
     filename: str = ""
     config_map: Dict[str, Any] = field(default_factory=dict)
 
-_QUANT1X_BASE_PATH = None
+_QUANT1X_BASEDATA_PATH = None
 
 def get_base_path() -> str:
     """
-    返回默认的基础路径，如果无法展开用户目录则返回默认路径
+    返回默认的基础路径, 如果无法展开用户目录则返回默认路径
     """
-    global _QUANT1X_BASE_PATH
-    if _QUANT1X_BASE_PATH is None:
-        _QUANT1X_BASE_PATH = expand_user(DEFAULT_BASE_PATH)
-    return _QUANT1X_BASE_PATH
+    global _QUANT1X_BASEDATA_PATH
+    if _QUANT1X_BASEDATA_PATH is None:
+        _QUANT1X_BASEDATA_PATH = expand_user(DEFAULT_BASEDATA_PATH)
+    return _QUANT1X_BASEDATA_PATH
 
 def get_meta_path() -> str:
     """
@@ -122,3 +124,13 @@ def get_config_map() -> Dict[str, Any]:
 def get_config_map_ref() -> Dict[str, Any]:
     lazy_init_cache_config()
     return _cache_cfg.config_map
+
+
+if __name__ == "__main__":
+    print("Quant1X Config Test")
+    print("Base Path:", get_base_path())
+    print("Meta Path:", get_meta_path())
+    print("Config File Path:", get_configfile_path())
+    print("Logs Path:", get_logs_path())
+    print("Data Path:", get_data_path())
+    print("Config Map:", get_config_map())

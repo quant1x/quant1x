@@ -1,12 +1,14 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
 
 import os
 import pandas as pd
 import requests
 from typing import List, Dict, Tuple, Optional
 from datetime import datetime
-from quant1x import exchange
-from quant1x.exchange import markets
-from quant1x.config import config
+from quant1x.data.market import detect_symbol, correct_security_code
+from quant1x.config import config, top10_holders_filename
 from quant1x import std
 
 # Constants
@@ -26,7 +28,7 @@ def fetch_share_holder(security_code: str, date_str: str, diff: int = 0) -> pd.D
     """
     Fetch top 10 circulating shareholders from Eastmoney.
     """
-    _, _, code = exchange.detect_market(security_code)
+    inst = detect_symbol(security_code)
     
     # Get quarter end date
     _, _, q_end = std.get_quarter_by_date(date_str, diff)
@@ -42,7 +44,7 @@ def fetch_share_holder(security_code: str, date_str: str, diff: int = 0) -> pd.D
         "columns": "ALL",
         "source": "WEB",
         "client": "WEB",
-        "filter": f'(SECURITY_CODE="{code}")(END_DATE=\'{q_end}\')'
+        "filter": f'(SECURITY_CODE="{inst.market_ticker()}")(END_DATE=\'{q_end}\')'
     }
     
     try:
@@ -73,7 +75,7 @@ def fetch_share_holder(security_code: str, date_str: str, diff: int = 0) -> pd.D
             # In C++: auto [_, mflag, mcode] = exchange::DetectMarket(shareholder.SecurityCode);
             # shareholder.SecurityCode = mflag + mcode;
             raw_code = v.get("SECUCODE", "")
-            normalized_code = exchange.correct_security_code(raw_code)
+            normalized_code = correct_security_code(raw_code)
 
             record = {
                 "SecurityCode": normalized_code,
@@ -110,7 +112,7 @@ def cache_share_holder(security_code: str, date_str: str, diff: int = 1) -> pd.D
     Get share holder data from cache or fetch if missing.
     """
     _, _, last = std.get_quarter_by_date(date_str, diff)
-    filename = config.top10_holders_filename(security_code, last)
+    filename = top10_holders_filename(security_code, last)
     
     if os.path.exists(filename):
         try:
@@ -139,3 +141,7 @@ def get_cache_share_holder(security_code: str, date_str: str, diff: int = 1) -> 
             return df
             
     return pd.DataFrame()
+
+if __name__ == "__main__":
+    df = get_cache_share_holder("sh600000", "2025-06-30", 1)
+    print(df)

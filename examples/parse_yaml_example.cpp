@@ -1,4 +1,4 @@
-// 相对包含路径：从 examples 目录到 header 的相对路径
+// 相对包含路径: 从 examples 目录到 header 的相对路径
 #include "../quant1x/encoding/yaml.h"
 #include "test-config.h"
 #include <fstream> // 添加此头文件
@@ -43,8 +43,8 @@ int main(int argc, char **argv) {
             return 3;
         }
 
-        // 由于编码器现在会将成员名映射到更合理的 YAML 键（例如 is_auto -> "auto"），
-        // 手工补字段已不再需要。下面只处理 runtime.data 等动态键的 map 类型。
+        // 由于编码器现在会将成员名映射到更合理的 YAML 键(例如 is_auto -> "auto"), 
+        // 手工补字段已不再需要. 下面只处理 runtime.data 等动态键的 map 类型. 
 
         // runtime.crontab: 将子节点转换为 map<string, CrontabItem>
         if (root["runtime"] && root["runtime"]["crontab"]) {

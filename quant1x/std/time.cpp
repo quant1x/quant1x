@@ -184,15 +184,15 @@ namespace api {
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch());
         std::chrono::sys_time<std::chrono::milliseconds> milli{ms};
 #if CXX_CHRONO_ZONE_USE_DATE
-        // 转换为 system_clock 的时区时间（zoned_time）
+        // 转换为 system_clock 的时区时间(zoned_time)
         auto zt = date::zoned_time{_local_zone, milli};
         //std::string str = std::format(default_chrono_format, zt);
-        // 格式化为字符串（包含毫秒）
+        // 格式化为字符串(包含毫秒)
         std::string str = date::format(default_chrono_format, zt);
 #else
-        // 转换为 system_clock 的时区时间（zoned_time）
+        // 转换为 system_clock 的时区时间(zoned_time)
         auto zt = std::chrono::zoned_time{_local_zone, milli};
-        // 格式化为字符串（包含毫秒）
+        // 格式化为字符串(包含毫秒)
         std::string str = std::format(default_chrono_format, zt);
 #endif
         return str;
@@ -218,7 +218,7 @@ namespace api {
         size_t               len = std::strftime(buf.data(), buf.size(), format, &local_time);
 
         if (len == 0) {
-            throw std::runtime_error("时间格式化失败：缓冲区不足或格式无效");
+            throw std::runtime_error("时间格式化失败: 缓冲区不足或格式无效");
         }
 
         return std::string(buf.data(), len);
@@ -226,13 +226,13 @@ namespace api {
 
 //    std::time_t from_string(const std::string& tm, const char * const format = layout_only_date) {
 //        std::tm tm_time = {};
-//        // 解析字符串到 tm 结构（C++11 使用 get_time）
+//        // 解析字符串到 tm 结构(C++11 使用 get_time)
 //        std::istringstream ss(tm);
 //        ss >> std::get_time(&tm_time, format);
 //        if (ss.fail()) {
 //            return std::time_t(0);
 //        }
-//        // 转换为 time_t（假设输入为本地时间）
+//        // 转换为 time_t(假设输入为本地时间)
 //        std::time_t time_parsed = std::mktime(&tm_time);
 //        if (time_parsed == -1) {
 //            return std::time_t(0);
@@ -258,7 +258,7 @@ namespace api {
     }
 
     std::pair<std::string, std::string> GetQuarterDay(int months) {
-        // 获取当前时间点，并减去若干个月
+        // 获取当前时间点, 并减去若干个月
         auto now = std::chrono::system_clock::now();
         auto now_time_t = std::chrono::system_clock::to_time_t(now);
         std::tm tm = safe::localtime(now_time_t);
@@ -301,13 +301,13 @@ namespace api {
         return tm;
     }
 
-    // 改进后的 parseTime 函数，支持多种日期格式
+    // 改进后的 parseTime 函数, 支持多种日期格式
     tm parseTime(const std::string& date) {
         // 尝试所有支持的格式
         for (const auto& fmt : layout_supports) {
             auto result = tryParse(date, fmt);
             if (result) {
-                // 确保年份是完整的（如将23转换为2023）
+                // 确保年份是完整的(如将23转换为2023)
                 if (result->tm_year < 100) {
                     result->tm_year += (result->tm_year < 70) ? 2000 : 1900;
                 }

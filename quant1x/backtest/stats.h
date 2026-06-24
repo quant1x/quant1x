@@ -6,7 +6,7 @@
 
 namespace backtest {
 
-// 从 trades 中计算 round-trip 统计并写入 result（FIFO 开仓匹配，处理部分成交）
+// 从 trades 中计算 round-trip 统计并写入 result(FIFO 开仓匹配, 处理部分成交)
 void computeRoundTripStatsFromTrades(const std::vector<Trade> &trades, BacktestResult &result);
 
 } // namespace backtest

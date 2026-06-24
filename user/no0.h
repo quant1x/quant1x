@@ -3,12 +3,15 @@
 #define QUANT1X_FEATURES_NO0_H 1
 
 #include <quant1x/std/base.h>
-#include <quant1x/cache/adapter.h>
-#include <quant1x/factors/base.h>
+#include <quant1x/data/adapter.h>
+#include <quant1x/factors/base_compat.h>
+
+namespace data = quant1x::data;
+namespace meta = quant1x::data::meta;
 
 /// 0号策略特征工程结构体
-/// 0号作为演示策略，仅供学习和参考，不作为投资建议，请勿直接使用
-/// 0号策略: 5日均线向上突破，且5日均线在10日均线上方，则买入，否则卖出
+/// 0号作为演示策略, 仅供学习和参考, 不作为投资建议, 请勿直接使用
+/// 0号策略: 5日均线向上突破, 且5日均线在10日均线上方, 则买入, 否则卖出
 struct No0 {
     std::string Date;        // 日期, 数据落地的日期
     std::string Code;        // 代码
@@ -20,16 +23,16 @@ struct No0 {
     uint64_t    State;       // 样本状态
 };
 
-class DataNo0 : public cache::FeatureAdapter {
+class DataNo0 : public data::FeatureAdapter {
 private:
     No0 feature;
 
 public:
     DataNo0()                   = default;
     DataNo0(const DataNo0 &) = default;
-    cache::Kind Kind() const override { return factors::FeatureNo0; }
+    data::Kind Kind() const override { return factors::FeatureNo0; }
 
-    std::string Owner() override { return cache::DefaultDataProvider; }
+    std::string Owner() const override { return data::DefaultDataProvider; }
 
     std::string Key() const override { return "no0"; }
 
@@ -37,11 +40,11 @@ public:
 
     std::string Usage() const override { return "no0"; }
 
-    void Print(const std::string &code, const std::vector<exchange::timestamp> &dates) override;
+    void Print(const meta::Instrument &inst, const meta::Timestamp &date) override;
 
-    void Update(const std::string &code, const exchange::timestamp &date) override;
+    void Update(const meta::Instrument &inst, const meta::Timestamp &date) override;
 
-    void init(const exchange::timestamp &timestamp) override;
+    void init(const meta::Timestamp &timestamp) override;
 
     std::unique_ptr<FeatureAdapter> clone() const override;
 
@@ -52,7 +55,7 @@ public:
 
 namespace factors {
     /// 获取指定日期的No0数据
-    std::optional<No0> get_no0(const std::string &code, const exchange::timestamp &timestamp);
+    std::optional<No0> get_no0(const std::string &code, const meta::Timestamp &timestamp);
 }  // namespace factors
 
 #endif  // QUANT1X_FEATURES_NO0_H

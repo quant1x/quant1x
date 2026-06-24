@@ -4,9 +4,10 @@
 #include <iomanip>
 #include <sstream>
 #include <iostream>
-#include <iostream>
 #include <chrono>
 #include <format>
+
+namespace meta = quant1x::data::meta;
 
 TEST_CASE("today", "[exchange]") {
     std::string today = api::today();
@@ -14,20 +15,20 @@ TEST_CASE("today", "[exchange]") {
 }
 
 TEST_CASE("check-filelock", "[exchange]") {
-    exchange::timestamp now = exchange::timestamp::now().since(15,10,0,0);
-    auto check = cache::checkUpdateState("2025-05-29", now);
+    meta::Timestamp now = meta::Timestamp::now().since(15,10,0,0);
+    auto check = cache::check_update_state("2025-05-29", now);
     std::cout << check << std::endl;
 }
 
 TEST_CASE("create-filelock", "[exchange]") {
-    exchange::timestamp now = exchange::timestamp::now().since(15,10,0,0);
-    cache::doneUpdate("2025-05-29", now);
+    meta::Timestamp now = meta::Timestamp::now().since(15,10,0,0);
+    cache::done_ipdate("2025-05-29", now);
 }
 
 TEST_CASE("update-all", "[exchange]") {
     cache::update_all();
 }
 
-TEST_CASE("cleanExpiredStateFiles", "[exchange]") {
-    cache::cleanExpiredStateFiles();
+TEST_CASE("clean_expired_state_files", "[exchange]") {
+    cache::clean_expired_state_files();
 }

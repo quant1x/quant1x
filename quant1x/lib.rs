@@ -67,21 +67,15 @@ pub mod config;
 pub mod app;
 pub use crate::app::*;
 
-// Level1 protocol bindings (partial, header-only equivalents)
-mod level1;
-pub use crate::level1::*;
-pub mod exchange;
-pub use crate::exchange::*;
-pub mod instruments;
-pub use crate::instruments::*;
 pub mod factors;
 pub use crate::factors::*;
 // cache adapter module (port of C++ engine::adapter)
-mod cache;
-pub use crate::cache::*;
+pub mod data;
+pub use crate::data::*;
 // datasets adapters (Rust ports)
-pub mod datasets;
-pub use crate::datasets::*;
+// datasets 已并入 data 模块, 移除旧的 datasets 顶级导出
+pub mod contrib;
+pub use crate::contrib::*;
 
 /// Return the filename used for the calendar cache (convenience wrapper around
 /// the internal config helper). This is intentionally a tiny, stable API so
@@ -122,7 +116,7 @@ mod tests {
 
     #[test]
     fn test_timestamp_integration() {
-        let ts = Timestamp::now();
+        let ts = crate::data::meta::Timestamp::now();
         assert!(ts.value() > 0);
 
         let formatted = ts.to_string();

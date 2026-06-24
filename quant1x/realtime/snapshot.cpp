@@ -1,11 +1,22 @@
 #include <quant1x/realtime/snapshot.h>
-#include <quant1x/instruments/markets.h>
-#include <quant1x/std/filepath.h>
+#include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/meta/session.h>
+#include <quant1x/data/meta/calendar.h>
+#include <quant1x/data/market.h>
+#include <quant1x/std/filesystem.h>
+#include <quant1x/contrib/data/tdx/client.h>
+#include <quant1x/contrib/data/tdx/instruments.h>
 #include <capnp/serialize.h>
 #include <capnp/message.h>
 #include <mio/mmap.hpp>
 #include <quant1x/proto/data.h>
 #include <quant1x/runtime/scheduler.h>
+
+namespace config = quant1x::config;
+namespace meta = quant1x::data::meta;
+namespace instruments = quant1x::contrib::data::tdx::instruments;
+namespace data = quant1x::data;
+namespace tdx = quant1x::contrib::data::tdx;
 
 namespace realtime {
 
@@ -14,7 +25,7 @@ namespace realtime {
      * @param quote 当前行情快照
      * @return ImbalanceResult 包含 imbalance 指标
      */
-    ImbalanceResult calculateImbalance(const level1::SecurityQuote& quote) {
+    ImbalanceResult calculateImbalance(const tdx::SecurityQuote& quote) {
         // 买盘挂单量
         std::vector<int64_t> bidVolumes = {
             quote.bidVol1, quote.bidVol2, quote.bidVol3,
@@ -43,7 +54,7 @@ namespace realtime {
         int64_t totalBidVol = 0;
         int64_t totalAskVol = 0;
 
-        // 加权挂单量（price × volume）
+        // 加权挂单量(price × volume)
         double weightedBid = 0.0;
         double weightedAsk = 0.0;
 
@@ -55,7 +66,7 @@ namespace realtime {
             weightedAsk += askPrices[i] * double(askVolumes[i]);
         }
 
-        // 简单 imbalance：(bid - ask) / (bid + ask)
+        // 简单 imbalance: (bid - ask) / (bid + ask)
         double simpleImbalance = 0.0;
         if (totalBidVol + totalAskVol > 0) {
             simpleImbalance = static_cast<double>(totalBidVol - totalAskVol) /
@@ -104,7 +115,7 @@ namespace realtime {
             file.open(path, std::ios::in | std::ios::out | std::ios::binary);
         }
 
-        // 移动指针到指定位置，并写入一个字节触发扩容
+        // 移动指针到指定位置, 并写入一个字节触发扩容
         file.seekp(required_size - 1);
         file.write("\0", 1);
 
@@ -116,14 +127,14 @@ namespace realtime {
     }
 
     namespace {
-        inline tsl::robin_map<std::string, level1::SecurityQuote> mem_snapshots;
+        inline tsl::robin_map<std::string, tdx::SecurityQuote> mem_snapshots;
         inline std::shared_mutex                                  mem_mutex;
     }
 
     void sync_snapshots() {
-        auto all_codes = instruments::GetCodeList();
+        auto all_codes = instruments::get_code_list();
         auto count = all_codes.size();
-        filepath::check_filepath(capnp_cache_filename, true);
+        filesystem::check_filepath(capnp_cache_filename, true);
         // 确保文件存在且大小合适
         ensure_file_size(capnp_cache_filename, capnp_cache_size);
 
@@ -149,65 +160,68 @@ namespace realtime {
         auto snapshots = quoteList.initSnapshots(uint32_t(count));
         size_t start = 0;
         auto tp_start = std::chrono::high_resolution_clock::now();
-        auto last_trade_day = exchange::last_trading_day();
+        auto last_trade_day = meta::last_trading_day();
         auto current_day = last_trade_day.only_date();
-        auto [update_in_realTime, status] = exchange::can_update_in_realtime(exchange::timestamp::now());
+        auto rs = meta::check_trading_timestamp();
+        auto update_in_realTime = rs.update_in_real_time;
+        auto status = rs.status;
         try {
-            spdlog::warn("[snapshot] start = {}", exchange::timestamp::now().toString());
-            for (; start < count; start += level1::security_quotes_max) {
+            spdlog::warn("[snapshot] start = {}", meta::Timestamp::now().to_string());
+            for (; start < count; start += tdx::security_quotes_max) {
                 std::unique_lock lock(mem_mutex);
                 auto length = count - start;
-                if (length > level1::security_quotes_max) {
-                    length = level1::security_quotes_max;
+                if (length > tdx::security_quotes_max) {
+                    length = tdx::security_quotes_max;
                 }
                 std::vector<std::string> sub_codes(all_codes.begin() + start, all_codes.begin() + start + length);
-                tsl::robin_map<std::string, level1::StockInfo> maps;
+                std::vector<meta::Instrument> sub_instruments;
+                sub_instruments.reserve(sub_codes.size());
+                tsl::robin_map<std::string, tdx::StockInfo> maps;
                 maps.clear();
-                size_t i = 0;
-                for (; i < length; i++) {
+                for (size_t i = 0; i < length; i++) {
                     const auto &code = sub_codes[i];
-                    auto [mid, mflag, symbol] = exchange::DetectMarket(code);
-                    maps[code] = level1::StockInfo{static_cast<u8>(mid), symbol};
+                    auto inst = data::detect_symbol(code);
+                    maps[code] = tdx::StockInfo{static_cast<u8>(inst.exchange), inst.ticker};
+                    sub_instruments.push_back(inst);
                 }
-                level1::SecurityQuoteRequest request(sub_codes);
-                level1::SecurityQuoteResponse response;
-                auto conn = level1::get_std_conn();
-                if(conn == nullptr) {
+                tdx::SecurityQuoteContext request(sub_instruments);
+                auto conn = tdx::get_std_conn();
+                if(!conn) {
                     spdlog::error("服务器网络不稳定, 稍后重试");
                     return;
                 }
-                auto err = level1::process(conn->socket(), request, response);
+                auto err = tdx::transact_message_sync(conn->socket(), request);
                 if (err) {
                     spdlog::error("Process error: {}", err.message());
                     return;
                 }
-                response.verify_delisted_securities(maps);
-                for (int j = 0; j < response.count; ++j) {
-                    const auto &raw = response.list[j];
-                    std::string security_code = exchange::GetSecurityCode(static_cast<exchange::ExchangeId>(raw.market), raw.code);
+                request.verify_delisted_securities(maps);
+                for (int j = 0; j < int(request.quotes.size()); ++j) {
+                    const auto &raw = request.quotes[j];
+                    std::string security_code = data::correct_security_code(raw.code);
                     mem_snapshots.insert_or_assign(security_code, raw);
                     auto snap = snapshots[uint32_t(start) + j];
                     snap.setDate(current_day);
                     snap.setSecurityCode(security_code);
                     auto exchangeState = ExchangeState::CLOSING;
-                    if (raw.state == level1::TradeState::DELISTING) {
+                    if (raw.state == tdx::TradeState::DELISTING) {
                         exchangeState = ExchangeState::DELISTING;
-                    } else if (raw.state == level1::TradeState::SUSPEND) {
+                    } else if (raw.state == tdx::TradeState::SUSPEND) {
                         exchangeState = ExchangeState::PAUSE;
                     }
                     if (update_in_realTime) {
                         exchangeState = ExchangeState::NORMAL;
                     }
-                    if (status == exchange::TimeStatus::ExchangeHaltTrading) {
+                    if (status == meta::TS_EXCHANGE_HALT_TRADING) {
                         exchangeState = ExchangeState::NORMAL;
                     }
                     snap.setExchangeState(exchangeState);
                     auto stockState = TradeState::DELISTING;
-                    if(raw.state == level1::TradeState::SUSPEND) {
+                    if(raw.state == tdx::TradeState::SUSPEND) {
                         stockState = TradeState::SUSPEND;
-                    } else if(raw.state == level1::TradeState::NORMAL) {
+                    } else if(raw.state == tdx::TradeState::NORMAL) {
                         stockState = TradeState::NORMAL;
-                    } else if(raw.state == level1::TradeState::IPO) {
+                    } else if(raw.state == tdx::TradeState::IPO) {
                         stockState = TradeState::IPO;
                     }
                     snap.setState(stockState);
@@ -274,7 +288,7 @@ namespace realtime {
             auto tp_end = std::chrono::high_resolution_clock::now();
             auto diff = tp_end - tp_start;
             //std::cout << diff << std::endl;
-            spdlog::warn("[snapshot] stop = {}", exchange::timestamp::now().toString());
+            spdlog::warn("[snapshot] stop = {}", meta::Timestamp::now().to_string());
             spdlog::info("[snapshot] cross time:{}", util::format_duration_auto(diff));
         } catch (const std::exception &e) {  // 其他标准异常
             spdlog::error("[snapshot] - 标准异常: {} (type: {})", e.what(), typeid(e).name());
@@ -287,7 +301,7 @@ namespace realtime {
         }
     }
 
-    std::optional<level1::SecurityQuote> get_snapshot(const std::string &code) {
+    std::optional<tdx::SecurityQuote> get_snapshot(const std::string &code) {
         std::shared_lock lock(mem_mutex);
         auto it = mem_snapshots.find(code);
         if (it != mem_snapshots.end()) {
@@ -322,7 +336,7 @@ namespace realtime {
             auto new_reader = std::make_unique<capnp::FlatArrayMessageReader>(words);
             auto quoteList = new_reader->getRoot<QuoteList>();
 
-            // 4. 更新缓存（加锁）
+            // 4. 更新缓存(加锁)
             {
                 std::lock_guard<std::mutex> lock(cache_mutex);
                 cache_snapshots.clear();

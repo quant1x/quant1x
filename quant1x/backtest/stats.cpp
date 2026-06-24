@@ -90,12 +90,12 @@ void computeRoundTripStatsFromTrades(const std::vector<Trade> &trades, BacktestR
         }
     }
 
-    // 填充结果：已完成的 round-trip 个数
+    // 填充结果: 已完成的 round-trip 个数
     result.closed_trades = closed_roundtrips;
     result.closed_roundtrips = closed_roundtrips;
     // 向后兼容的旧字段
     result.total_trades = closed_roundtrips;
-    // 原子级成交事件数（每笔成交/fill）
+    // 原子级成交事件数(每笔成交/fill)
     result.trade_events_count = trades.size();
     result.winning_trades = winning_roundtrips;
     result.losing_trades = (closed_roundtrips > winning_roundtrips) ? (closed_roundtrips - winning_roundtrips) : 0;

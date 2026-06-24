@@ -1,5 +1,7 @@
 #include <cpr/cpr.h>
-#include <quant1x/instruments/markets.h>
+#include <quant1x/data/market.h>
+#include <quant1x/data/meta/timestamp.h>
+#include <quant1x/contrib/data/tdx/datasource.h>
 #include <quant1x/factors/safety_score.h>
 
 //#include <iostream>
@@ -10,6 +12,7 @@
 #include <tuple>
 
 using json = nlohmann::json;
+namespace data = quant1x::data;
 
 const std::string urlRiskAssessment            = "http://page3.tdx.com.cn:7615/site/pcwebcall_static/bxb/json/";
 const int         defaultSafetyScore           = 100;
@@ -19,7 +22,7 @@ const int         defaultSafetyScoreOfIgnore   = 0;
 namespace risks {
 
     // ========================
-    // 工具函数：安全获取字段（保留默认值）
+    // 工具函数: 安全获取字段(保留默认值)
     // ========================
 
     template <typename T>
@@ -32,7 +35,7 @@ namespace risks {
         }
     }
 
-    // 特化：int 类型
+    // 特化: int 类型
     template <>
     void safe_get<int>(const json &j, const std::string &key, int &value) {
         if (j.contains(key) && j[key].is_number_integer()) {
@@ -43,7 +46,7 @@ namespace risks {
         }
     }
 
-    // 特化：std::string 类型
+    // 特化: std::string 类型
     template <>
     void safe_get<std::string>(const json &j, const std::string &key, std::string &value) {
         if (j.contains(key) && j[key].is_string()) {
@@ -55,13 +58,13 @@ namespace risks {
     }
 
     struct CommonLxId {
-        int         fs    = 0;  // 默认值：0
-        int         level = 0;  // 默认值：0
-        int         trig  = 0;  // 默认值：0
-        int         pos   = 0;  // 默认值：0
-        int         id    = 0;  // 默认值：0
-        std::string lx;         // 默认值：空字符串
-        std::string trigyy;     // 默认值：空字符串
+        int         fs    = 0;  // 默认值: 0
+        int         level = 0;  // 默认值: 0
+        int         trig  = 0;  // 默认值: 0
+        int         pos   = 0;  // 默认值: 0
+        int         id    = 0;  // 默认值: 0
+        std::string lx;         // 默认值: 空字符串
+        std::string trigyy;     // 默认值: 空字符串
 
         friend void from_json(const json &j, CommonLxId &item) {
             safe_get(j, "fs", item.fs);
@@ -143,20 +146,20 @@ namespace risks {
 
     // 获取个股安全分
     std::tuple<int, std::string> GetSafetyScore(const std::string &securityCode) {
-        if (!exchange::AssertStockBySecurityCode(securityCode)) {
+        if (!data::assert_stock_by_security_code(securityCode)) {
             return {defaultSafetyScore, ""};
         }
 
-        if (instruments::IsNeedIgnore(securityCode)) {
+        if (quant1x::contrib::data::tdx::is_need_ignore(securityCode)) {
             return {defaultSafetyScoreOfIgnore, ""};
         }
 
         int         score = defaultSafetyScore;
         std::string detail;
-        auto [marketId, marketCode, pureCode] = exchange::DetectMarket(securityCode);
+        auto inst = data::detect_symbol(securityCode);
 
-        if (pureCode.length() == 6) {
-            std::string url = urlRiskAssessment + pureCode + ".json";
+        if (inst.ticker.length() == 6) {
+            std::string url = urlRiskAssessment + inst.ticker + ".json";
 
             // 使用cpr发送HTTP GET请求
             cpr::Response response = cpr::Get(cpr::Url{url});

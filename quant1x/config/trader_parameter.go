@@ -4,9 +4,8 @@ import (
 	"os"
 	"sync"
 
+	"github.com/quant1x/quant1x/quant1x/core"
 	"gopkg.in/yaml.v3"
-
-	"gitee.com/quant1x/quant1x/quant1x/core"
 )
 
 // TraderParameter mirrors C++ config::TraderParameter (fields only).

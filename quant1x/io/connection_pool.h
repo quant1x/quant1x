@@ -15,7 +15,7 @@
 /**
  * @brief RAII管理的TCP连接包装类
  * @note 生命周期完全由TcpConnectionPool控制
- * @warning 禁止拷贝和移动构造，仅能通过unique
+ * @warning 禁止拷贝和移动构造, 仅能通过unique
  */
 class Connection {
 public:
@@ -57,14 +57,14 @@ public:
 
     /**
      * @brief 显式关闭连接
-     * @note 可重复调用，线程不安全
+     * @note 可重复调用, 线程不安全
      */
     void close() {
         if (isOpen()) {
             asio::error_code ec;
             socket_.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
             socket_.close(ec);
-            // 不抛出异常，允许在析构函数中调用
+            // 不抛出异常, 允许在析构函数中调用
         }
     }
 
@@ -79,7 +79,7 @@ private:
 };
 
 /**
- * @brief TCP连接池实现，管理多个endpoint的连接
+ * @brief TCP连接池实现, 管理多个endpoint的连接
  */
 template <typename Handler>
 class TcpConnectionPool {
@@ -145,7 +145,7 @@ public:
     }
 
     /**
-     * @brief 析构函数，自动停止连接池
+     * @brief 析构函数, 自动停止连接池
      */
     ~TcpConnectionPool() {
         spdlog::warn("正在关闭连接池...");
@@ -190,8 +190,8 @@ public:
      *
      * @param ip_address 端点的IP地址
      * @param port 端点的端口号
-     * @param weight 端点的权重值，默认为0表示使用默认权重
-     * @return bool 添加成功返回true，失败返回false
+     * @param weight 端点的权重值, 默认为0表示使用默认权重
+     * @return bool 添加成功返回true, 失败返回false
      */
     bool add_endpoint(const std::string &ip_address, unsigned short port, size_t weight = 0) {
         return endpoint_manager_->addEndpoint(ip_address, port, weight == 0 ? endpoint_weight_ : weight);
@@ -201,8 +201,8 @@ public:
      * @brief 添加一个TCP端点
      *
      * @param endpoint 要添加的TCP端点
-     * @param weight 端点的权重值，默认为0表示使用默认权重
-     * @return bool 添加成功返回true，失败返回false
+     * @param weight 端点的权重值, 默认为0表示使用默认权重
+     * @return bool 添加成功返回true, 失败返回false
      */
     bool add_endpoint(const asio::ip::tcp::endpoint &endpoint, size_t weight = 0) {
         return endpoint_manager_->addEndpoint(endpoint, weight == 0 ? endpoint_weight_ : weight);
@@ -211,8 +211,8 @@ public:
     /**
      * @brief 从连接池获取一个可用连接或创建新连接
      *
-     * 该方法首先尝试从空闲连接池获取可用连接，如果没有可用连接则创建新连接。
-     * 返回的连接对象使用自定义删除器，当连接不再使用时自动归还到连接池。
+     * 该方法首先尝试从空闲连接池获取可用连接, 如果没有可用连接则创建新连接. 
+     * 返回的连接对象使用自定义删除器, 当连接不再使用时自动归还到连接池. 
      *
      * @return std::unique_ptr<Connection, std::function<void(Connection*)>> 带有自动归还功能的连接指针
      * @throws std::runtime_error 当没有可用端点或连接超时时抛出
@@ -235,7 +235,7 @@ public:
             }
         }
 
-        // 2. 如果没有可用连接，创建新连接
+        // 2. 如果没有可用连接, 创建新连接
         asio::ip::tcp::endpoint endpoint;
         if (!raw_conn) {
             spdlog::debug("Creating new connection...");
@@ -315,15 +315,15 @@ public:
     /**
      * @brief 释放并归还连接对象到连接池
      *
-     * 该函数负责将使用完毕的连接对象归还到空闲连接池中，并更新相关计数器。
-     * 归还前会先将连接对应的Endpoint归还给Endpoint管理器。
+     * 该函数负责将使用完毕的连接对象归还到空闲连接池中, 并更新相关计数器. 
+     * 归还前会先将连接对应的Endpoint归还给Endpoint管理器. 
      *
-     * @param conn 要释放的Connection对象，以unique_ptr形式传递所有权
+     * @param conn 要释放的Connection对象, 以unique_ptr形式传递所有权
      *
-     * @note 该函数是线程安全的，内部会获取连接池的互斥锁
-     * @note 如果传入空指针，函数会直接返回而不执行任何操作
+     * @note 该函数是线程安全的, 内部会获取连接池的互斥锁
+     * @note 如果传入空指针, 函数会直接返回而不执行任何操作
      *
-     * @throws 无显式抛出异常，但Endpoint管理器的releaseEndpoint可能抛出异常
+     * @throws 无显式抛出异常, 但Endpoint管理器的releaseEndpoint可能抛出异常
      */
     void release(std::unique_ptr<Connection> conn) {
         if (!conn) {
@@ -360,13 +360,13 @@ public:
     /**
      * @brief 关闭并释放空闲连接
      *
-     * 该函数负责安全地关闭一个空闲连接，并执行以下操作:
+     * 该函数负责安全地关闭一个空闲连接, 并执行以下操作:
      * 1. 将连接对应的Endpoint归还给管理器
      * 2. 关闭连接本身
      * 3. 减少空闲连接计数器
      *
-     * @param idle_conn 要关闭的空闲连接指针，使用unique_ptr管理
-     * @note 如果传入的连接指针为空，函数将直接返回而不执行任何操作
+     * @param idle_conn 要关闭的空闲连接指针, 使用unique_ptr管理
+     * @note 如果传入的连接指针为空, 函数将直接返回而不执行任何操作
      */
     void closeConnection(const std::unique_ptr<Connection> &idle_conn) {
         if (!idle_conn) {
@@ -386,7 +386,7 @@ public:
     }
 
     /**
-     * @brief 启动连接池，开始心跳检测
+     * @brief 启动连接池, 开始心跳检测
      */
     void start() {
         if (running_) {
@@ -399,12 +399,12 @@ public:
     /**
      * @brief 停止服务运行
      *
-     * 该方法会停止所有活动连接并终止IO上下文的事件循环。
-     * 首先设置运行标志为false，然后取消心跳定时器，
-     * 关闭所有现有连接，最后停止IO上下文。
+     * 该方法会停止所有活动连接并终止IO上下文的事件循环. 
+     * 首先设置运行标志为false, 然后取消心跳定时器, 
+     * 关闭所有现有连接, 最后停止IO上下文. 
      *
      * @note 该方法会确保所有挂起的异步操作被正确处理
-     * @post 调用后所有网络活动将停止，IO上下文不再处理事件
+     * @post 调用后所有网络活动将停止, IO上下文不再处理事件
      */
     void stop() {
         running_ = false;
@@ -414,6 +414,8 @@ public:
         }
 
         closeAllConnections();
+
+        work_guard_.reset();  // 允许 io_context 停止
 
         asio::post(*io_context_, [this]() { asio::dispatch(*io_context_, [this]() { io_context_->poll(); }); });
 
@@ -448,16 +450,16 @@ private:
     std::unique_ptr<asio::steady_timer>                        heartbeat_timer_;   ///< 心跳定时器
 
     /**
-     * @brief 启动心跳定时器，定期检查连接状态
+     * @brief 启动心跳定时器, 定期检查连接状态
      *
-     * 创建一个定时器，在指定的检查间隔后触发回调函数。回调函数会执行以下操作:
+     * 创建一个定时器, 在指定的检查间隔后触发回调函数. 回调函数会执行以下操作:
      * 1. 检查当前是否有错误或服务是否已停止运行
      * 2. 检查所有连接状态
      * 3. 递归调用自身以维持定时循环
      * 4. 尝试创建新的连接
      *
-     * @note 定时器会在每次触发后自动重新启动，形成循环检查机制
-     * @warning 如果定时器回调中发生错误或服务停止，定时器将自动退出
+     * @note 定时器会在每次触发后自动重新启动, 形成循环检查机制
+     * @warning 如果定时器回调中发生错误或服务停止, 定时器将自动退出
      */
     void startHeartbeatTimer() {
         heartbeat_timer_ = std::make_unique<asio::steady_timer>(*io_context_);
@@ -476,11 +478,11 @@ private:
     /**
      * @brief 检查并清理空闲连接池中的无效连接
      *
-     * 遍历空闲连接池中的所有连接，通过keepalive检测连接有效性。
-     * 自动清理空指针和失效的连接，对异常连接执行关闭操作。
+     * 遍历空闲连接池中的所有连接, 通过keepalive检测连接有效性. 
+     * 自动清理空指针和失效的连接, 对异常连接执行关闭操作. 
      *
-     * @note 此函数是线程安全的，内部使用互斥锁保护连接池操作
-     * @throws 无显式抛出异常，但会捕获并处理network_handler_->keepalive()可能抛出的异常
+     * @note 此函数是线程安全的, 内部使用互斥锁保护连接池操作
+     * @throws 无显式抛出异常, 但会捕获并处理network_handler_->keepalive()可能抛出的异常
      */
     void checkConnections() {
         std::lock_guard<std::mutex> lock(connections_mutex_);
@@ -504,10 +506,10 @@ private:
     /**
      * @brief 尝试创建新的连接以维持最小连接数
      *
-     * 当活跃连接数加上空闲连接数小于最小连接数要求时，会尝试创建新的连接。
-     * 最多重试10次，每次重试间隔100毫秒。
+     * 当活跃连接数加上空闲连接数小于最小连接数要求时, 会尝试创建新的连接. 
+     * 最多重试10次, 每次重试间隔100毫秒. 
      *
-     * @note 如果endpoint资源不足或获取连接时发生异常，会提前终止创建过程
+     * @note 如果endpoint资源不足或获取连接时发生异常, 会提前终止创建过程
      * @throws std::exception 当获取新连接失败时抛出异常
      */
     void try_create_connections() {
@@ -537,10 +539,10 @@ private:
     /**
      * @brief 关闭所有空闲连接并清空连接池
      *
-     * 该函数会获取连接池的互斥锁，遍历所有空闲连接并逐个关闭，
-     * 然后清空空闲连接列表并将计数器归零。
+     * 该函数会获取连接池的互斥锁, 遍历所有空闲连接并逐个关闭, 
+     * 然后清空空闲连接列表并将计数器归零. 
      *
-     * @note 此函数是线程安全的，通过互斥锁保护连接池状态
+     * @note 此函数是线程安全的, 通过互斥锁保护连接池状态
      */
     void closeAllConnections() {
         std::lock_guard<std::mutex> lock(connections_mutex_);

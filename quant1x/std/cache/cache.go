@@ -8,7 +8,7 @@ import (
 	"sync"
 	"unsafe"
 
-	"gitee.com/quant1x/quant1x/quant1x/std/mem"
+	"github.com/quant1x/quant1x/quant1x/std/mem"
 )
 
 const (
@@ -47,12 +47,12 @@ type Cache[E any] struct {
 	mu       sync.RWMutex // 读写锁
 	filename string       // 文件路径
 	f        *os.File     // 文件对象
-	userSize int64        // 用户指定的数据区容量（不含header）
+	userSize int64        // 用户指定的数据区容量(不含header)
 	data     MemObject    // 内存映射对象
 	header   *cacheHeader // 头结构指针
 }
 
-// 缓存头结构（16字节对齐）
+// 缓存头结构(16字节对齐)
 type cacheHeader struct {
 	headerSize  uint32 // 头信息长度, 包括headerSize字段
 	magic       uint32 // 魔法数

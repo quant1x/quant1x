@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
 
 import unittest
 import sys
@@ -8,7 +11,7 @@ from datetime import datetime, timedelta
 sys.path.append(os.getcwd())
 
 from quant1x.factors import notice
-from quant1x.exchange import Timestamp
+from quant1x.data.meta import Timestamp
 
 class TestNotice(unittest.TestCase):
     def test_stock_notices(self):

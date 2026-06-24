@@ -1,7 +1,7 @@
 #include <quant1x/test/test.h>
 #include <quant1x/std/strings.h>
 #include <spdlog/sinks/daily_file_sink.h>
-#include <quant1x/io/file.h>
+#include <quant1x/std/filesystem.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 #include "spdlog/spdlog.h"
@@ -19,25 +19,25 @@ auto make_spdlog_sink(const std::string& name) {
 class HybridRouterSink : public spdlog::sinks::base_sink<std::mutex> {
 public:
 
-    // 添加控制台输出（新增）
+    // 添加控制台输出(新增)
     void add_console_sink(std::shared_ptr<spdlog::sinks::sink> console_sink) {
         console_sink_ = console_sink;
     }
 
-    // 添加精确路由规则（仅接受严格等于该级别的日志）
+    // 添加精确路由规则(仅接受严格等于该级别的日志)
     void add_exact_route(spdlog::level::level_enum level,
                          std::shared_ptr<spdlog::sinks::sink> sink) {
         exact_routes_[level] = sink;
     }
 
-    // 设置默认降级目标（必须调用）
+    // 设置默认降级目标(必须调用)
     void set_fallback_sink(std::shared_ptr<spdlog::sinks::sink> sink) {
         fallback_sink_ = sink;
     }
 
 protected:
     void sink_it_(const spdlog::details::log_msg& msg) override {
-        // 0. 始终输出到控制台（新增）
+        // 0. 始终输出到控制台(新增)
         if (console_sink_) {
             console_sink_->log(msg);
         }
@@ -79,7 +79,7 @@ TEST_CASE("logger-filter", "[spdlog]") {
     // 1. 创建混合路由Sink
     auto router = std::make_shared<HybridRouterSink>();
 
-    // 2. 配置精确路由（仅接受严格等于该级别的日志）
+    // 2. 配置精确路由(仅接受严格等于该级别的日志)
     router->add_exact_route(  // info级别严格匹配
         spdlog::level::info,
         make_spdlog_sink("info")
@@ -97,15 +97,15 @@ TEST_CASE("logger-filter", "[spdlog]") {
         std::make_shared<spdlog::sinks::stdout_color_sink_mt>()
     );
 
-    // 3. 设置默认降级目标（未配置的级别都进这里）
+    // 3. 设置默认降级目标(未配置的级别都进这里)
     router->set_fallback_sink(
         make_spdlog_sink("trace")
     );
 
     // 4. 创建Logger并设置全局级别过滤
-    std::string application_name = io::executable_name();
+    std::string application_name = filesystem::executable_name();
     auto logger = std::make_shared<spdlog::logger>(application_name, router);
-    logger->set_level(spdlog::level::trace);  // 原生>=过滤：接收所有级别
+    logger->set_level(spdlog::level::trace);  // 原生>=过滤: 接收所有级别
 
     // 5. 测试日志路由
     logger->trace("1. Trace -> trace.log (fallback)");    // 未配置 → trace.log

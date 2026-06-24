@@ -1,19 +1,31 @@
-#include <quant1x/quant1x.h>
+#include <quant1x/app.h>
 #include <sstream>
-#include "user/no0.h"
-#include "user/strategy-no0.h"
+#include "quant1x/app.h"
+// TODO: API migration — user strategy files masked
+// #include "user/no0.h"
+// #include "user/strategy-no0.h"
 #include <quant1x/command.h>
-#include <quant1x/datasets.h>
 #include <private/build-info.h>
 #include <quant1x/config/config.h>
 #include <quant1x/cache.h>
+#include <quant1x/std/api.h>
+#include <quant1x/std/filesystem.h>
+#include <quant1x/runtime/core.h>
+
+// TDX 数据适配器 — 显式注册以强制 linker 拉入对应目标文件
+#include <quant1x/contrib/data/tdx/bar.h>
+#include <quant1x/contrib/data/tdx/bar_minute.h>
+#include <quant1x/contrib/data/tdx/trans.h>
+#include <quant1x/contrib/data/tdx/minute.h>
+#include <quant1x/contrib/data/tdx/xdxr.h>
+#include <quant1x/contrib/data/tdx/bar_raw.h>
 // #if HAVE_MIMALLOC
 // #include <mimalloc.h>
 // #endif
 
 static std::string build_version_info() {
     std::ostringstream oss;
-    oss << "  quant1x project: "<< io::executable_name() << " - Build Info\n";
+    oss << "  quant1x project: "<< filesystem::executable_name() << " - Build Info\n";
     oss << "--------------------------------------------------------------------------------\n";
     oss << "               Version : " << VERSION_STRING << "\n";
     oss << "                Author : " << GIT_AUTHOR_NAME << " <" << GIT_AUTHOR_EMAIL << ">\n";
@@ -43,52 +55,15 @@ static std::string build_version_info() {
         oss << EXE_LINKER_FLAGS_RELEASE << "\n";
     }
     oss << "Target Compile Options : " << TARGET_COMPILE_OPTIONS << "\n";
-//     // --- mimalloc status (compile-time conservative check) ---
-// #ifdef DEPENDENCY_MIMALLOC
-//     oss << "--------------------------------------------------------------------------------\n";
-//     oss << "        mimalloc dependency: " << DEPENDENCY_MIMALLOC << "\n";
-// #else
-//     oss << "--------------------------------------------------------------------------------\n";
-//     oss << "        mimalloc dependency: (not configured)\n";
-// #endif
-// #if HAVE_MIMALLOC
-//     oss << "        mimalloc mode : " << MIMALLOC_MODE << "\n";
-// #if defined(MI_OVERRIDE)
-//     oss << "  new/delete routed to mimalloc: yes (global override)\n";
-// #elif defined(MI_OVERRIDE_NEW_DELETE)
-//     oss << "  new/delete routed to mimalloc: yes (new/delete override)\n";
-// #else
-//     oss << "  new/delete routed to mimalloc: no (mimalloc present but not configured to override new/delete)\n";
-// #endif
-// #else
-//     oss << "        mimalloc mode : (not enabled)\n";
-//     oss << "  new/delete routed to mimalloc: no\n";
-// #endif
-//     // Runtime proof: print mimalloc stats and exercise operator new/delete.
-// #if HAVE_MIMALLOC
-//     oss << "\n[mimalloc-runtime-check] printing stats (initial) to stdout\n";
-//     mi_stats_print(NULL);
-//     try {
-//         char *p = new char[1 << 20]; // 1 MiB
-//         (void)p[0];
-//         delete [] p;
-//     } catch(...) {
-//         // ignore
-//     }
-//     oss << "[mimalloc-runtime-check] printing stats (after new/delete) to stdout\n";
-//     mi_stats_print(NULL);
-// #else
-//     oss << "[mimalloc-runtime-check] mimalloc not available at build time (HAVE_MIMALLOC=0)\n";
-// #endif
     return oss.str();
 }
 
 // 应用入口
 int main(const int argc, const char *const argv[]) {
     // 提取默认的 program_name
-    std::string program_name = io::executable_name();
+    std::string program_name = filesystem::executable_name();
     std::string program_version = build_version_info();
-    // 创建主解析器，使用动态的 program_name
+    // 创建主解析器, 使用动态的 program_name
     argparse::ArgumentParser program(program_name, program_version);
     bool verbose = false;
     program.add_argument("--verbose")
@@ -112,20 +87,20 @@ int main(const int argc, const char *const argv[]) {
 
     program.add_subparser(service_command);
 
-    // 存储子命令解析器，确保其生命周期与主解析器一致
+    // 存储子命令解析器, 确保其生命周期与主解析器一致
     std::vector<std::unique_ptr<argparse::ArgumentParser>> subparsers;
 
     // 存储子命令名称与对应解析器的映射
     std::map<std::string, argparse::ArgumentParser *> subparser_map;
     runtime::global_init();
-    datasets::init();
+    quant1x::app::init_datasource();
     {
-        auto const &config = config::TraderConfig();
+        auto const &config = quant1x::config::TraderConfig();
         (void)config;
     }
     // 动态注册子命令
     for (auto &subcommand: quant1x::subcommands) {
-        // 创建子命令解析器，并使用 unique_ptr 管理其生命周期
+        // 创建子命令解析器, 并使用 unique_ptr 管理其生命周期
         auto sub_parser = std::make_unique<argparse::ArgumentParser>(subcommand.name);
         sub_parser->add_description(subcommand.help);
         for(auto flag : subcommand.args) {
@@ -139,7 +114,7 @@ int main(const int argc, const char *const argv[]) {
         // 将子命令解析器添加到主解析器中
         program.add_subparser(*sub_parser);
 
-        // 将子解析器存储到容器中，确保其生命周期足够长
+        // 将子解析器存储到容器中, 确保其生命周期足够长
         subparser_map[subcommand.name] = sub_parser.get();  // 保存子命令名称与解析器的映射
         subparsers.push_back(std::move(sub_parser));
     }
@@ -154,19 +129,23 @@ int main(const int argc, const char *const argv[]) {
     }
     // 设置日志信息
     runtime::logger_set(verbose, debug);
-    quant1x::engine::init([] {
+    quant1x::app::init([] {
+        namespace data = quant1x::data;
+
         std::cout << "这里执行定制的初始化工作" << std::endl;
-        // 注册1号特征
-        cache::Register(std::make_unique<DataNo0>());
-        // 注册策略
-        StrategyManager& manager = StrategyManager::Instance();
-        StrategyPtr s0 = std::make_shared<No0Strategy>();
-        manager.Register(s0);
-        
+        // TODO: API migration — user strategy files masked
+        // // 注册1号特征
+        // data::Register(std::make_unique<DataNo0>());
+        // // 注册策略
+        // StrategyManager& manager = StrategyManager::Instance();
+        // StrategyPtr s0 = std::make_shared<No0Strategy>();
+        // manager.Register(s0);
+
+        // TDX 基础数据适配器已在 init_datasource() 中统一注册, 此处不再重复注册
     });
 
     if(program.is_subcommand_used("service")) {
-        return quant1x::engine::daemon(service_command);
+        return quant1x::app::daemon(service_command);
     }
 
     // 判断激活的子命令并执行对应逻辑

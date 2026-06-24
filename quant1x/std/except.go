@@ -28,6 +28,12 @@ func (e Exception) Error() string {
 	return fmt.Sprintf("#%d, message=%s", e.code, e.message)
 }
 
+// Code 返回异常的错误码
 func (e Exception) Code() int {
 	return e.code
+}
+
+// Success 判断异常是否为成功状态(code为0)
+func (e Exception) Success() bool {
+	return e.code == 0
 }

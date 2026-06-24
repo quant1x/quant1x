@@ -15,7 +15,7 @@ int main() {
     runtime::logger_set(true, true);
     crash::InitCrashHandler();
 
-    //spdlog::info("程序启动成功，即将触发崩溃...");
+    //spdlog::info("程序启动成功, 即将触发崩溃...");
 
     foo(); // 触发崩溃
 

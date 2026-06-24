@@ -66,7 +66,7 @@ TEST_CASE("segments", "[waves-struct]") {
 
     auto segments = detect_complete_wave_structure(high_list,low_list);
 
-    std::cout << "完整波浪结构（按层级排序）:\n";
+    std::cout << "完整波浪结构(按层级排序):\n";
     for (const auto& seg : segments) {
         std::string trend = seg.is_rising ? "↑" : "↓";
         std::cout << "  L" << seg.level

@@ -4,14 +4,14 @@
 
 #include <quant1x/std/api.h>
 
-namespace config {
+namespace quant1x::config {
 
     // 价格笼子
     //
     //	价格笼子是买卖股票申报价格限制的一种制度
     //	对于主板, 本次新增2%有效申报价格范围要求, 同时增加10个申报价格最小变动单位的安排
-    //	A股最小交易变动单位是0.01元，10个也就是0.1元
-    //	买入价取两者高值，卖出价取两者低值.
+    //	A股最小交易变动单位是0.01元, 10个也就是0.1元
+    //	买入价取两者高值, 卖出价取两者低值.
     constexpr const double ValidDeclarationPriceRange  = 0.02;  // 价格限制比例, ±2%
     constexpr const double MinimumPriceFluctuationUnit = 0.10;  // 价格浮动最大值, ±0.10
 
@@ -38,6 +38,6 @@ namespace config {
             }
         }
     };
-}  // namespace config
+}  // namespace quant1x::config
 
 #endif  // QUANT1X_CONFIG_DETAIL_PRICE_CAGE_H

@@ -53,8 +53,8 @@ private:
     double param_;         // 参数值
     bool adjust_ = true;     // 默认为真
     bool ignore_na_ = false; // 默认为假
-    int min_periods_ = 0;    // 最小观测数，默认为0
-    int axis_ = 0;           // {0,1}, 默认为0, 0跨行计算, 1跨列计算（未在实现中使用）
+    int min_periods_ = 0;    // 最小观测数, 默认为0
+    int axis_ = 0;           // {0,1}, 默认为0, 0跨行计算, 1跨列计算(未在实现中使用)
     std::function<double(int)> call_back_; // 回调函数
 public:
 

@@ -3,8 +3,9 @@
 #define QUANT1X_FACTOR_HISTORY_H 1
 
 #include <quant1x/std/api.h>
-#include <quant1x/cache/adapter.h>
-#include <quant1x/factors/base.h>
+#include <quant1x/data/adapter.h>
+#include <quant1x/factors/base_compat.h>
+#include <quant1x/contrib/data/tdx/bar.h>
 
 struct History {
     std::string Date;                 // 日期, 数据落地的日期
@@ -37,7 +38,7 @@ struct History {
     int         NewNoLowN;            // 低点提高次数
     int         NewLowN;              // 新低次数
     int64_t     OpenVolume;           // 开盘量
-    int         AdjustmentCount;      // 新增：除权除息次数
+    int         AdjustmentCount;      // 新增: 除权除息次数
     std::string UpdateTime;           // 更新时间
     uint64_t    State;                // 样本状态
 
@@ -52,16 +53,16 @@ struct History {
     friend std::ostream &operator<<(std::ostream &os, const History &history);
 };
 
-class HistoryFeature : public cache::FeatureAdapter {
+class HistoryFeature : public quant1x::data::FeatureAdapter {
 private:
     History history;
 
 public:
     HistoryFeature()                       = default;
     HistoryFeature(const HistoryFeature &) = default;
-    cache::Kind Kind() const override;
+    quant1x::data::Kind Kind() const override;
 
-    std::string Owner() override;
+    std::string Owner() const override;
 
     std::string Key() const override;
 
@@ -69,11 +70,11 @@ public:
 
     std::string Usage() const override;
 
-    void Print(const std::string &code, const std::vector<exchange::timestamp> &dates) override;
+    void Print(const quant1x::data::meta::Instrument &inst, const quant1x::data::meta::Timestamp &date) override;
 
-    void Update(const std::string &code, const exchange::timestamp &date) override;
+    void Update(const quant1x::data::meta::Instrument &inst, const quant1x::data::meta::Timestamp &date) override;
 
-    void init(const exchange::timestamp &timestamp) override;
+    void init(const quant1x::data::meta::Timestamp &timestamp) override;
 
     std::unique_ptr<FeatureAdapter> clone() const override;
 
@@ -84,7 +85,7 @@ public:
 
 namespace factors {
     /// 获取指定日期的History数据
-    std::optional<History> get_history(const std::string &code, const exchange::timestamp &timestamp);
+    std::optional<History> get_history(const std::string &code, const quant1x::data::meta::Timestamp &timestamp);
 }  // namespace factors
 
 #endif  // QUANT1X_FACTOR_HISTORY_H

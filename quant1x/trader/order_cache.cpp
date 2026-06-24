@@ -1,8 +1,11 @@
 #include <quant1x/trader/order_cache.h>
 #include <quant1x/trader/order.h>
 
-#include <quant1x/instruments/markets.h>
+#include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/meta/calendar.h>
 #include <quant1x/encoding/csv.h>
+
+namespace meta = quant1x::data::meta;
 
 namespace trader {
 
@@ -10,9 +13,9 @@ namespace trader {
     std::string GetOrderFilename(const std::string& date /*= ""*/) {
         std::string tradeDate;
         if (!date.empty()) {
-            tradeDate = exchange::timestamp(date).only_date();
+            tradeDate = meta::Timestamp(date).only_date();
         } else {
-            tradeDate = exchange::last_trading_day().only_date();
+            tradeDate = meta::last_trading_day().only_date();
         }
 
         auto path = std::filesystem::path(trader_qmt_order_path()) / ("orders." + tradeDate);

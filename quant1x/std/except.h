@@ -9,7 +9,7 @@
 #include <utility>
 #include <mutex>
 
-// 自定义异常类（继承自 std::exception）
+// 自定义异常类(继承自 std::exception)
 class BaseException : public std::exception {
 private:
     std::string msg_;
@@ -28,7 +28,7 @@ public:
     [[nodiscard]] int getLine() const { return line_; }
 };
 
-// 封装 throw 的宏（自动注入文件名和行号）
+// 封装 throw 的宏(自动注入文件名和行号)
 #define THROW_EXCEPTION(msg) throw BaseException(msg, __FILE__, __LINE__)
 
 namespace quant1x {

@@ -14,16 +14,18 @@
 #include <indicators/dynamic_progress.hpp>
 #include <indicators/progress_bar.hpp>
 
-#include <quant1x/instruments/markets.h>
+#include <quant1x/data/meta/timestamp.h>
 
 namespace quant1x {
 
-    constexpr const char *const default_all       = "all";         ///< 默认值，表示全部数据
-    constexpr const char *const cmd_flag_all      = "--all";       ///< 命令行标志，用于表示全部数据
-    constexpr const char *const cmd_flag_base     = "--base";      ///< 命令行标志，用于表示基础数据
-    constexpr const char *const cmd_flag_features = "--features";  ///< 命令行标志，用于表示特征数据
-    constexpr const char *const cmd_flag_start    = "--start";     ///< 命令行标志，用于表示开始日期
-    constexpr const char *const cmd_flag_end      = "--end";       ///< 命令行标志，用于表示结束日期
+    namespace meta = quant1x::data::meta;
+
+    constexpr const char *const default_all       = "all";         ///< 默认值, 表示全部数据
+    constexpr const char *const cmd_flag_all      = "--all";       ///< 命令行标志, 用于表示全部数据
+    constexpr const char *const cmd_flag_base     = "--base";      ///< 命令行标志, 用于表示基础数据
+    constexpr const char *const cmd_flag_features = "--features";  ///< 命令行标志, 用于表示特征数据
+    constexpr const char *const cmd_flag_start    = "--start";     ///< 命令行标志, 用于表示开始日期
+    constexpr const char *const cmd_flag_end      = "--end";       ///< 命令行标志, 用于表示结束日期
 
     struct cmdFlags {
         std::string use;
@@ -54,11 +56,11 @@ namespace quant1x {
 
     inline cmdFlags updateStartDate = {.use          = cmd_flag_start,
                                        .value        = "",
-                                       .defaultValue = exchange::timestamp::now().only_date(),
+                                       .defaultValue = meta::Timestamp::now().only_date(),
                                        .usage        = "开始日期"};
 
     inline cmdFlags updateEndDate = {
-        .use = cmd_flag_end, .value = "", .defaultValue = exchange::timestamp::now().only_date(), .usage = "结束日期"};
+        .use = cmd_flag_end, .value = "", .defaultValue = meta::Timestamp::now().only_date(), .usage = "结束日期"};
 
     inline std::vector<cmdFlags *> updateFlags = {
         &updateAll,

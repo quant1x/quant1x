@@ -14,7 +14,7 @@ const (
 )
 
 func TestNewNaiveBayes(t *testing.T) {
-	// 初始化分类器（使用字符串作为特征和类别）
+	// 初始化分类器(使用字符串作为特征和类别)
 	nb := NewNaiveBayes[string, string](1.0)
 
 	// 正确的训练数据格式

@@ -66,19 +66,19 @@ TEST_CASE("utf8-to-gbk", "[charsets]") {
 #include <vector>
 
 std::string gbk_to_utf8_iconv(const std::string& in) {
-    // 使用 GB18030 替代 GBK，兼容性更好
+    // 使用 GB18030 替代 GBK, 兼容性更好
     iconv_t cd = iconv_open("UTF-8", "GB18030");
     if (cd == (iconv_t)-1) {
         throw std::runtime_error("iconv_open failed: unsupported encoding");
     }
 
-    // 创建可写副本（iconv 会修改指针）
+    // 创建可写副本(iconv 会修改指针)
     size_t in_bytes = in.size();
     char* in_buf = new char[in_bytes];
     memcpy(in_buf, in.data(), in_bytes);
     char* in_ptr = in_buf;
 
-    // 输出缓冲区（UTF-8 最多是输入长度的 3~4 倍）
+    // 输出缓冲区(UTF-8 最多是输入长度的 3~4 倍)
     size_t out_bytes = in.size() * 3;
     std::vector<char> out_buf(out_bytes + 1);
     char* out_ptr = out_buf.data();

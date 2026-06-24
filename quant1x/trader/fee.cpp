@@ -1,10 +1,12 @@
 #include <quant1x/trader/fee.h>
-#include <quant1x/std/numerics.h>
+#include <quant1x/std/numeric.h>
 #include <iostream>
 #include <string>
 #include <cmath>
 #include <algorithm>
 #include <quant1x/config/config.h>
+
+namespace config = quant1x::config;
 
 namespace trader {
 
@@ -64,7 +66,7 @@ namespace trader {
             price_cage_ratio = strategyParameter.PriceCageRatio;
             minimum_price_fluctuation_unit = strategyParameter.MinimumPriceFluctuationUnit;
         }
-        if(numerics::isEqual(price_cage_ratio, trader::InvalidFee) && numerics::isEqual(minimum_price_fluctuation_unit, trader::InvalidFee)) {
+        if(numeric::isEqual(price_cage_ratio, trader::InvalidFee) && numeric::isEqual(minimum_price_fluctuation_unit, trader::InvalidFee)) {
             // 策略不存在, 或者没有配置价格笼子参数, 从交易参数上参数
             price_cage_ratio = traderParameter->PriceCageRatio;
             minimum_price_fluctuation_unit = traderParameter->MinimumPriceFluctuationUnit;
@@ -81,7 +83,7 @@ namespace trader {
         // 当前价格+0.05
         priceLimit = last_price + 0.05;
         // 最后修订价格
-        priceLimit = numerics::decimal(priceLimit);
+        priceLimit = numeric::decimal(priceLimit);
         return priceLimit;
     }
 
@@ -92,7 +94,7 @@ namespace trader {
         // 当前价格-0.01
         priceLimit = last_price - 0.01;
         // 最后修订价格
-        priceLimit = numerics::decimal(priceLimit);
+        priceLimit = numeric::decimal(priceLimit);
         return priceLimit;
     }
 
@@ -130,19 +132,19 @@ namespace trader {
             return {InvalidFee, 0, 0, 0, 0};
         }
         if (align) {
-            _stamp_duty_fee = numerics::decimal(_stamp_duty_fee);
+            _stamp_duty_fee = numeric::decimal(_stamp_duty_fee);
         }
 
         // 2. 过户费
         double _transfer_fee = vol * traderParameter->TransferRate;
         if (align) {
-            _transfer_fee = numerics::decimal(_transfer_fee);
+            _transfer_fee = numeric::decimal(_transfer_fee);
         }
 
         // 3. 券商佣金
         double _commission_fee = amount * traderParameter->CommissionRate;
         if (align) {
-            _commission_fee = numerics::decimal(_commission_fee);
+            _commission_fee = numeric::decimal(_commission_fee);
         }
         if (align && _commission_fee < traderParameter->CommissionMin) {
             _commission_fee = traderParameter->CommissionMin;
@@ -151,7 +153,7 @@ namespace trader {
         // 4. 股票市值
         double _marketValue = amount;
         if (align) {
-            _marketValue = numerics::decimal(_marketValue);
+            _marketValue = numeric::decimal(_marketValue);
         }
 
         // 5. 计算费用
@@ -296,7 +298,7 @@ namespace trader {
             double marketValue = amount * (1 + fixedYield);
             double totalFee = fee + marketValue;
             double fixedPrice = totalFee / static_cast<double>(volume);
-            f.Price = numerics::decimal(fixedPrice);
+            f.Price = numeric::decimal(fixedPrice);
 
             auto [t, s, tr, c, m] = calculate_transaction_fee(f.Direction, f.Price, f.Volume, true);
             f.TotalFee = t;

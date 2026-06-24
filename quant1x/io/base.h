@@ -18,7 +18,7 @@
 // 自定义格式化器：将 asio::ip::basic_endpoint 转换为字符串
 template <>
 struct fmt::formatter<asio::ip::basic_endpoint<asio::ip::tcp>> {
-    // 解析格式化规则（这里不需要特殊处理，直接返回）
+    // 解析格式化规则(这里不需要特殊处理, 直接返回)
     constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
         return ctx.begin();
     }
@@ -35,7 +35,7 @@ namespace net {
         return fmt::format("{}:{}", ep.address().to_string(), ep.port());
     }
 
-    // Socket RAII包装器，确保正确关闭
+    // Socket RAII包装器, 确保正确关闭
     class SocketGuard {
     public:
         explicit SocketGuard(asio::ip::tcp::socket&& socket) : socket_(std::move(socket)) {}

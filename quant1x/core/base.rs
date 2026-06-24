@@ -1,4 +1,4 @@
-use crate::std::filepath;
+use crate::std::filesystem;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::collections::HashMap;
@@ -6,7 +6,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
-const DEFAULT_BASE_PATH_TEMPLATE: &str = "~/.q1x-rust";
+const DEFAULT_BASE_PATH_TEMPLATE: &str = "~/.q1x-rs";
 const QUANT1X_CONFIG_FILENAME: &str = "quant1x.yaml";
 
 static QUANT1X_BASE_PATH: OnceLock<String> = OnceLock::new();
@@ -31,7 +31,7 @@ impl BaseConfig {
         config.filename = filename.trim().to_string();
         config.config_map = HashMap::new();
 
-        // 若配置文件不存在：使用默认 BaseDir/LogDir，并保留空 map
+        // 若配置文件不存在: 使用默认 BaseDir/LogDir, 并保留空 map
         if !PathBuf::from(filename).exists() {
             config.basedir = Some(get_base_path().to_string());
             config.logdir = Some(format!("{}/logs", config.basedir.as_ref().unwrap()));
@@ -54,7 +54,7 @@ impl BaseConfig {
                 *basedir = get_base_path().to_string();
             } else {
                 // 展开用户目录
-                *basedir = crate::std::filepath::expand_user(basedir).unwrap_or(basedir.clone());
+                *basedir = crate::std::filesystem::expand_user(basedir).unwrap_or(basedir.clone());
             }
         } else {
             typed_config.basedir = Some(get_base_path().to_string());
@@ -68,7 +68,7 @@ impl BaseConfig {
                     Some(format!("{}/logs", typed_config.basedir.as_ref().unwrap()));
             } else {
                 typed_config.logdir =
-                    Some(crate::std::filepath::expand_user(trimmed).unwrap_or(trimmed.to_string()));
+                    Some(crate::std::filesystem::expand_user(trimmed).unwrap_or(trimmed.to_string()));
             }
         } else {
             typed_config.logdir = Some(format!("{}/logs", typed_config.basedir.as_ref().unwrap()));
@@ -97,11 +97,11 @@ impl BaseConfig {
 }
 
 fn lazy_init_base_path() -> String {
-    filepath::expand_user(DEFAULT_BASE_PATH_TEMPLATE)
+    filesystem::expand_user(DEFAULT_BASE_PATH_TEMPLATE)
         .unwrap_or_else(|_| DEFAULT_BASE_PATH_TEMPLATE.to_string())
 }
 
-/// 返回默认的基础路径，如果无法展开用户目录则返回默认路径
+/// 返回默认的基础路径, 如果无法展开用户目录则返回默认路径
 pub fn get_base_path() -> &'static str {
     QUANT1X_BASE_PATH.get_or_init(lazy_init_base_path)
 }
@@ -114,7 +114,7 @@ pub fn get_meta_path() -> PathBuf {
     PathBuf::from(base).join("meta")
 }
 
-// 全局函数，与Go/C++版本保持一致的调用方式
+// 全局函数, 与Go/C++版本保持一致的调用方式
 pub fn get_configfile_path() -> &'static str {
     ensure_initialized();
     CACHE_CFG.get().unwrap().filename.as_str()
@@ -126,7 +126,8 @@ pub fn get_logs_path() -> &'static str {
 }
 
 pub fn get_data_path() -> &'static str {
-    get_base_path()
+    ensure_initialized();
+    CACHE_CFG.get().unwrap().basedir.as_ref().unwrap().as_str()
 }
 
 pub fn get_config_map() -> HashMap<String, serde_yaml::Value> {

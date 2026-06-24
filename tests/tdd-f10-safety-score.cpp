@@ -1,6 +1,8 @@
 #include <quant1x/test/test.h>
 
-#include <quant1x/instruments/markets.h>
+#include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/market.h>
+#include <quant1x/std/strings.h>
 #include <iostream>
 #include <string>
 #include <map>
@@ -8,6 +10,8 @@
 #include <memory>
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
+
+namespace data = quant1x::data;
 
 enum class RiskCategoryType {
     Financial,         // 财务类风险
@@ -47,7 +51,7 @@ const int defaultSafetyScoreOfNotFound = 100;
 const int defaultSafetyScoreOfIgnore = 0;
 
 // ========================
-// 工具函数：安全获取字段（保留默认值）
+// 工具函数: 安全获取字段(保留默认值)
 // ========================
 
 template<typename T>
@@ -59,7 +63,7 @@ void safe_get(const json& j, const std::string& key, T& value) {
     }
 }
 
-// 特化：int 类型
+// 特化: int 类型
 template<>
 void safe_get<int>(const json& j, const std::string& key, int& value) {
     if (j.contains(key) && j[key].is_number_integer()) {
@@ -69,7 +73,7 @@ void safe_get<int>(const json& j, const std::string& key, int& value) {
     }
 }
 
-// 特化：std::string 类型
+// 特化: std::string 类型
 template<>
 void safe_get<std::string>(const json& j, const std::string& key, std::string& value) {
     if (j.contains(key) && j[key].is_string()) {
@@ -80,13 +84,13 @@ void safe_get<std::string>(const json& j, const std::string& key, std::string& v
 }
 
 struct CommonLxId {
-    int fs = 0;           // 默认值：0
-    int level = 0;        // 默认值：0
-    int trig = 0;         // 默认值：0
-    int pos = 0;          // 默认值：0
-    int id = 0;           // 默认值：0
-    std::string lx;       // 默认值：空字符串
-    std::string trigyy;   // 默认值：空字符串
+    int fs = 0;           // 默认值: 0
+    int level = 0;        // 默认值: 0
+    int trig = 0;         // 默认值: 0
+    int pos = 0;          // 默认值: 0
+    int id = 0;           // 默认值: 0
+    std::string lx;       // 默认值: 空字符串
+    std::string trigyy;   // 默认值: 空字符串
 
     friend void from_json(const json& j, CommonLxId& item) {
         safe_get(j, "fs", item.fs);
@@ -168,17 +172,14 @@ std::mutex mapMutex;  // 用于线程安全访问mapSafetyScore
 
 // 获取个股安全分
 std::tuple<int, std::string> GetSafetyScore(const std::string& securityCode) {
-    if (!exchange::AssertStockBySecurityCode(securityCode)) {
+    if (!data::assert_stock_by_security_code(securityCode)) {
         return {defaultSafetyScore, ""};
-    }
-
-    if (instruments::IsNeedIgnore(securityCode)) {
-        return {defaultSafetyScoreOfIgnore, ""};
     }
 
     int score = defaultSafetyScore;
     std::string detail;
-    auto [marketId, marketCode, pureCode] = exchange::DetectMarket(securityCode);
+    auto inst = data::detect_symbol(securityCode);
+    auto pureCode = inst.ticker;
 
     if (pureCode.length() == 6) {
         std::string url = urlRiskAssessment + pureCode + ".json";

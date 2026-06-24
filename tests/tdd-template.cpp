@@ -8,7 +8,7 @@ public:
     }
 
     void toString() {
-        static_cast<Derived*>(this)->toStringImpl();
+        static_cast<Derived*>(this)->to_string_impl();
     }
 };
 
@@ -24,8 +24,8 @@ public:
     }
 
     // 提供基类的toStringImpl实现
-    void toStringImpl() {
-        std::cout << "Request toStringImpl\n";
+    void to_string_impl() {
+        std::cout << "Request to_string_impl\n";
     }
 };
 
@@ -48,10 +48,10 @@ public:
     }
 
     // 覆盖toStringImpl
-    void toStringImpl() {
-        std::cout << "MyRequest toStringImpl\n";
+    void to_string_impl() {
+        std::cout << "MyRequest to_string_impl\n";
         // 调用基类实现
-        //Request<MyRequest>::toStringImpl();
+        //Request<MyRequest>::to_string_impl();
     }
 };
 
@@ -69,12 +69,12 @@ int main() {
 
     std::cout << "1" << std::endl;
     // 调用派生类实现
-    req.toString(); // MyRequest toStringImpl + Request toStringImpl
+    req.toString(); // MyRequest to_string_impl + Request to_string_impl
     std::cout << "2" << std::endl;
     // 显式调用基类实现
-    req.toStringImpl(); // Request toStringImpl
+    req.to_string_impl(); // Request to_string_impl
     std::cout << "3" << std::endl;
-    req.Request::toStringImpl();
+    req.Request::to_string_impl();
     std::cout << "4" << std::endl;
     MyResponse resp;
     resp.execute(); // Response processing

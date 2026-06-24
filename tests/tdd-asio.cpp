@@ -7,10 +7,10 @@ TEST_CASE("endpoint pool", "[net]") {
     EndpointManager manager;
 
     // 添加 endpoint 配置
-    asio::ip::tcp::endpoint ep1(asio::ip::address::from_string("127.0.0.1"), 8080);
+    asio::ip::tcp::endpoint ep1(asio::ip::make_address("127.0.0.1"), 8080);
     manager.addEndpoint(ep1, 2); // 最大2个连接
 
-    asio::ip::tcp::endpoint ep2(asio::ip::address::from_string("192.168.1.1"), 80);
+    asio::ip::tcp::endpoint ep2(asio::ip::make_address("192.168.1.1"), 80);
     manager.addEndpoint(ep2, 3); // 最大3个连接
 
     // 获取 endpoints
@@ -41,7 +41,7 @@ TEST_CASE("endpoint pool", "[net]") {
 #include <quant1x/io/operation_handler.h>
 
 /**
- * @brief 模拟网络操作处理器，用于测试
+ * @brief 模拟网络操作处理器, 用于测试
  */
 class Mock1NetworkHandler : public NetworkOperationHandler<Mock1NetworkHandler> {
 public:
@@ -77,7 +77,7 @@ TEST_CASE("TcpConnectionPool connection failure with message check", "[connectio
 TEST_CASE("TcpConnectionPool basic operations", "[connection_pool]") {
     // 创建模拟网络处理器
     auto handler = std::make_shared<Mock1NetworkHandler>();
-    // 创建连接池实例（最小2连接，最大5连接）
+    // 创建连接池实例(最小2连接, 最大5连接)
     TcpConnectionPool pool(2, 5, handler);
 
     SECTION("Test endpoint adding") {
@@ -86,7 +86,7 @@ TEST_CASE("TcpConnectionPool basic operations", "[connection_pool]") {
         REQUIRE(pool.add_endpoint("192.168.50.158", 7878));
 
         SECTION("Test connection acquisition with no real server") {
-            // 测试从无效endpoint获取连接（应抛出异常）
+            // 测试从无效endpoint获取连接(应抛出异常)
             REQUIRE_THROWS_AS(pool.acquire(), std::runtime_error);
         }
     }
@@ -101,7 +101,7 @@ TEST_CASE("TcpConnectionPool basic operations", "[connection_pool]") {
 /**
  * @brief 默认网络操作处理器实现
  *
- * 提供符合NetworkOperationHandler接口的具体实现，包含：
+ * 提供符合NetworkOperationHandler接口的具体实现, 包含: 
  * 1. 基于"hello"握手的连接协议
  * 2. 基于"PING"的心跳检测机制
  * 3. 30秒操作超时控制
@@ -404,7 +404,7 @@ using namespace std::chrono_literals; // 添加时间字面量支持, 比如 100
 
 class MockNetworkHandler : public NetworkOperationHandler<MockNetworkHandler> {
 public:
-    // 使用统一命名风格（下划线后缀）
+    // 使用统一命名风格(下划线后缀)
     bool handshakeImpl(asio::ip::tcp::socket&)  { return connect_success_; }
     //bool keepalive(asio::ip::tcp::socket&) override { return keepalive_ok_; }
     std::chrono::milliseconds timeout() const  { return std::chrono::milliseconds(100); }
@@ -493,7 +493,7 @@ TEST_CASE("TcpConnectionPool connection lifecycle", "[pool][lifecycle]") {
 //public:
 //    // 通过公有方法间接测试
 //    static void triggerHealthCheck(TcpConnectionPool& pool) {
-//        // 通过start()触发检查（假设start()是公有方法）
+//        // 通过start()触发检查(假设start()是公有方法)
 //        pool.start();
 //        std::this_thread::sleep_for(100ms); // 等待检查完成
 //        pool.stop();
@@ -599,7 +599,7 @@ TEST_CASE("Non-blocking heartbeat test", "[.integration]") {
     TcpConnectionPool pool(3, 5, handler);
     REQUIRE(pool.add_endpoint("127.0.0.1", 54321));
 
-    // 3. 运行测试（10秒演示）
+    // 3. 运行测试(10秒演示)
     pool.start();
     auto test_future = server_stopped.get_future();
     REQUIRE(test_future.wait_for(10s) != std::future_status::ready); // 验证服务器未提前退出
@@ -608,10 +608,10 @@ TEST_CASE("Non-blocking heartbeat test", "[.integration]") {
     io_ctx.stop();
     pool.stop();
 
-    // 5. 非阻塞等待线程结束（最多等待1秒）
+    // 5. 非阻塞等待线程结束(最多等待1秒)
     if (server_thread.joinable()) {
         server_thread.detach(); // 或使用更精细的超时控制
-        // 替代方案：if (server_thread.joinable()) server_thread.join();
+        // 替代方案: if (server_thread.joinable()) server_thread.join();
     }
 }
 

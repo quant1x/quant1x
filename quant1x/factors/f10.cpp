@@ -1,20 +1,33 @@
 #include <quant1x/encoding/csv.h>
-#include <quant1x/instruments/markets.h>
-#include <quant1x/level1/client.h>
-#include <quant1x/datasets/xdxr.h>
+#include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/meta/calendar.h>
+#include <quant1x/contrib/data/tdx/client.h>
+#include <quant1x/contrib/data/tdx/xdxr.h>
+#include <quant1x/contrib/data/tdx/instruments.h>
+#include <quant1x/contrib/data/tdx/bar.h>
 #include <quant1x/factors/f10.h>
-#include <quant1x/factors/base.h>
+#include <quant1x/factors/base_compat.h>
 #include <quant1x/factors/notice.h>
 #include <quant1x/factors/financial_report.h>
 #include <quant1x/factors/share_holder.h>
 #include <quant1x/factors/safety_score.h>
+#include <quant1x/config/base.h>
+#include <quant1x/std/time.h>
+#include <fmt/format.h>
+
+// 命名空间别名
+namespace tdx = quant1x::contrib::data::tdx;
+namespace instruments = quant1x::contrib::data::tdx::instruments;
+namespace config = quant1x::config;
+namespace data = quant1x::data;
+namespace meta = quant1x::data::meta;
 
 static std::string get_ipo_date(const std::string &security_code, const std::string &feature_date) {
-    auto kls = factors::checkout_klines(security_code, feature_date);
+    auto kls = tdx::checkout_klines(security_code, feature_date);
     if(kls.empty()) {
         return "";
     }
-    return kls[0].Date;
+    return kls[0].date;
 }
 
 // 获取财务数据
@@ -22,26 +35,26 @@ static std::tuple<f64, f64, std::string, std::string> get_finance_info(const std
                                                                        const std::string &feature_date) {
     f64 capital = 0, totalCapital = 0;
     std::string ipo_date, update_date;
-    u32 base_date = datasets::market_first_date.yyyymmdd();
+    u32 base_date = quant1x::data::market_first_date.yyyymmdd_u32();
     try {
-        level1::FinanceRequest request(security_code);
-        level1::FinanceResponse response{};
-        auto conn = level1::get_std_conn();
-        level1::process(conn->socket(), request, response);
-        if(response.Count>0) {
-            auto const &info = response.Info;
+        auto inst = quant1x::data::detect_symbol(security_code);
+        tdx::FinanceInfoContext msg(inst);
+        auto conn = tdx::get_std_conn();
+        tdx::transact_message_sync(conn->socket(), msg);
+        if(msg.Count>0) {
+            auto const &info = msg.Info;
             if(info.LiuTongGuBen>0 && info.ZongGuBen > 0) {
                 capital = info.LiuTongGuBen;
                 totalCapital = info.ZongGuBen;
             }
             if(info.IPODate>=base_date) {
-                exchange::timestamp ts(std::to_string(info.IPODate));
+                meta::Timestamp ts(std::to_string(info.IPODate));
                 ipo_date = ts.only_date();
             } else {
                 ipo_date = get_ipo_date(security_code, feature_date);
             }
             if(info.UpdatedDate>=base_date) {
-                exchange::timestamp ts(std::to_string(info.UpdatedDate));
+                meta::Timestamp ts(std::to_string(info.UpdatedDate));
                 update_date = ts.only_date();
             }
         }
@@ -51,7 +64,7 @@ static std::tuple<f64, f64, std::string, std::string> get_finance_info(const std
     return {capital, totalCapital, ipo_date, update_date};
 }
 
-static const level1::XdxrInfo *checkoutCapital(const std::vector<level1::XdxrInfo> &list,
+static const tdx::XdxrInfo *checkoutCapital(const std::vector<tdx::XdxrInfo> &list,
                                         const std::string& date) {
     for (const auto& v : list) {  // 直接遍历已排序的vector
         if (v.IsCapitalChange() && date >= v.Date) {
@@ -74,8 +87,8 @@ struct f10SecurityInfo {
 
 static f10SecurityInfo checkoutSecurityBasicInfo(const std::string &security_code, const std::string &feature_date) {
     f10SecurityInfo info{};
-    auto list = datasets::load_xdxr(security_code);
-    std::sort(list.begin(), list.end(), [](const level1::XdxrInfo &a, const level1::XdxrInfo& b){
+    auto list = tdx::get_xdxr_list(security_code);
+    std::sort(list.begin(), list.end(), [](const tdx::XdxrInfo &a, const tdx::XdxrInfo& b){
         return a.Date > b.Date;
     });
 
@@ -99,17 +112,17 @@ static f10SecurityInfo checkoutSecurityBasicInfo(const std::string &security_cod
     }
     if (!info.IpoDate.empty()) {
         // 计算是否次新股, 线性判断1年内的个股为次新股
-        exchange::timestamp ipo_date(info.IpoDate);
+        meta::Timestamp ipo_date(info.IpoDate);
         auto [y,m,d] = ipo_date.extract();
-        ipo_date = exchange::timestamp(y+1, m, d);
-        exchange::timestamp current(feature_date);
+        ipo_date = meta::Timestamp(y+1, m, d);
+        meta::Timestamp current(feature_date);
 
         info.SubNew = current < ipo_date;
     }
-    auto securityInfo = instruments::get_security_info(security_code);
+    auto securityInfo = instruments::get_instrument_info(security_code);
     if(securityInfo.has_value()) {
-        info.VolUnit = securityInfo->lotSize;
-        info.DecimalPoint = securityInfo->pricePrecision;
+        info.VolUnit = securityInfo->lot_size;
+        info.DecimalPoint = securityInfo->price_precision;
         info.Name_ = securityInfo->name;
     } else {
         info.VolUnit = 100;
@@ -174,14 +187,14 @@ struct Top10ShareHolder {
 static std::unique_ptr<Top10ShareHolder> checkoutShareHolder(const std::string &securityCode,
                                                              const std::string &featureDate) {
     // 获取除权除息列表并排序
-    auto xdxrs = datasets::load_xdxr(securityCode);
-    std::sort(xdxrs.begin(), xdxrs.end(), [](const level1::XdxrInfo& a, const level1::XdxrInfo& b) {
+    auto xdxrs = tdx::get_xdxr_list(securityCode);
+    std::sort(xdxrs.begin(), xdxrs.end(), [](const tdx::XdxrInfo& a, const tdx::XdxrInfo& b) {
         return a.Date > b.Date;
     });
 
     // 检查资本信息
     auto xdxrInfo = checkoutCapital(xdxrs, featureDate);
-    if (xdxrInfo && exchange::AssertStockBySecurityCode(securityCode)) {
+    if (xdxrInfo && data::assert_stock_by_security_code(securityCode)) {
         // 获取股东列表
         auto list = dfcf::GetCacheShareHolder(securityCode, featureDate);
 
@@ -193,7 +206,7 @@ static std::unique_ptr<Top10ShareHolder> checkoutShareHolder(const std::string &
         auto [top10Capital, freeCapital, capitalChanged, increaseRatio, reductionRatio] =
             ComputeFreeCapital(list, capital);
 
-        // 如果自由流通股本为负，使用总股本重新计算
+        // 如果自由流通股本为负, 使用总股本重新计算
         if (freeCapital < 0) {
             std::tie(top10Capital, freeCapital, capitalChanged, increaseRatio, reductionRatio) =
                 ComputeFreeCapital(list, totalCapital);
@@ -219,12 +232,12 @@ static std::unique_ptr<Top10ShareHolder> checkoutShareHolder(const std::string &
     return nullptr;
 }
 
-cache::Kind F10Feature::Kind() const {
+data::Kind F10Feature::Kind() const {
     return factors::FeatureF10;
 }
 
-std::string F10Feature::Owner() {
-    return cache::DefaultDataProvider;
+std::string F10Feature::Owner() const {
+    return data::DefaultDataProvider;
 }
 
 std::string F10Feature::Key() const {
@@ -239,16 +252,30 @@ std::string F10Feature::Usage() const {
     return "F10";
 }
 
-void F10Feature::Print(const std::string &code, const std::vector<exchange::timestamp> &dates) {
-    (void)code;
-    (void)dates;
+void F10Feature::Print(const meta::Instrument &inst, const meta::Timestamp &date) {
+    (void)date;
+    auto h = headers();
+    auto v = values();
+    fmt::print("\n=== {}: {} ===\n", Name(), inst.symbol());
+    if (h.empty()) {
+        fmt::print("  (no data)\n");
+        return;
+    }
+    size_t max_w = 0;
+    for (auto const& s : h) {
+        if (s.size() > max_w) max_w = s.size();
+    }
+    for (size_t i = 0; i < h.size() && i < v.size(); ++i) {
+        fmt::print("  {:<{}} : {}\n", h[i], max_w + 2, v[i]);
+    }
 }
 
-void F10Feature::Update(const std::string &code, const exchange::timestamp &date) {
+void F10Feature::Update(const meta::Instrument &inst, const meta::Timestamp &date) {
+    auto code = inst.symbol();
     f10 = F10{};
     std::string feature_date = date.only_date();
-    f10.Date =  exchange::next_trading_day(date).only_date();;
-    std::string securityCode = exchange::CorrectSecurityCode(code);
+    f10.Date =  meta::next_trading_day(date).only_date();;
+    std::string securityCode = data::correct_security_code(code);
     spdlog::debug("update f10, code={}", securityCode);
     // 1. 基本信息
     f10SecurityInfo securityInfo = checkoutSecurityBasicInfo(securityCode, feature_date);
@@ -262,7 +289,7 @@ void F10Feature::Update(const std::string &code, const exchange::timestamp &date
         f10.IpoDate = securityInfo.IpoDate;
         f10.SubNew = securityInfo.SubNew;
         f10.UpdateDate = securityInfo.UpdateDate;
-        f10.MarginTradingTarget = exchange::IsMarginTradingTarget(securityCode);
+        f10.MarginTradingTarget = data::is_margin_trading_target(securityCode);
     }
 
     // 2. 前十大流通股股东
@@ -315,7 +342,7 @@ void F10Feature::Update(const std::string &code, const exchange::timestamp &date
     spdlog::debug("update f10, code={}, OK", securityCode);
 }
 
-std::unique_ptr<cache::FeatureAdapter> F10Feature::clone() const {
+std::unique_ptr<data::FeatureAdapter> F10Feature::clone() const {
     return std::make_unique<F10Feature>(*this);
 }
 
@@ -338,7 +365,7 @@ std::vector<std::string> F10Feature::values() const {
     return row;
 }
 
-void F10Feature::init(const exchange::timestamp &timestamp) {
+void F10Feature::init(const meta::Timestamp &timestamp) {
     const std::string feature_date = timestamp.only_date();
     dfcf::loadQuarterlyReports(feature_date);
 }
@@ -348,14 +375,14 @@ namespace factors {
     namespace {
         inline std::mutex g_factor_f10_mutex{};
         inline tsl::robin_map<std::string, F10> g_factor_f10_map{};
-        inline exchange::timestamp              g_factor_f10_date{};
+        inline meta::Timestamp              g_factor_f10_date{};
     }
 
     /// 获取指定日期的F10数据
-    std::optional<F10> get_f10(const std::string& code, const exchange::timestamp& timestamp) {
+    std::optional<F10> get_f10(const std::string& code, const meta::Timestamp& timestamp) {
         {
             std::lock_guard<std::mutex> lock{g_factor_f10_mutex};
-            exchange::timestamp algin_date = timestamp.pre_market_time();
+            meta::Timestamp algin_date = timestamp.pre_market_time();
             if(g_factor_f10_map.empty() || g_factor_f10_date != algin_date) {
                 g_factor_f10_date = algin_date;
                 auto adapter = F10Feature();

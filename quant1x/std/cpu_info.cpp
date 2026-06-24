@@ -4,12 +4,12 @@
 
 namespace hw {
     // =============================
-    // 获取 CPU 信息（主函数）
+    // 获取 CPU 信息(主函数)
     // =============================
     cpu_info cpu_detect() {
         cpu_info info;
 
-        // --- 获取逻辑核心数（通用） ---
+        // --- 获取逻辑核心数(通用) ---
         unsigned int lc = std::thread::hardware_concurrency();
         info.logical_cores = (lc == 0) ? 1 : static_cast<int>(lc);
 
@@ -38,11 +38,11 @@ namespace hw {
             }
         }
 
-        // Windows 获取 CPU 厂商和型号（通过 CPUID，简化版）
-        // 更精确需调用 RDTSCP / CPUID 指令，此处使用 WMI 或注册表略复杂
-        // 简化：仅设置常见厂商
+        // Windows 获取 CPU 厂商和型号(通过 CPUID, 简化版)
+        // 更精确需调用 RDTSCP / CPUID 指令, 此处使用 WMI 或注册表略复杂
+        // 简化: 仅设置常见厂商
         info.vendor = "Intel/AMD"; // 实际可通过 WMI 获取详细型号
-        info.model = "Windows CPU"; // 可选：从注册表 HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\CentralProcessor\0 获取
+        info.model = "Windows CPU"; // 可选: 从注册表 HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\CentralProcessor\0 获取
 
 #elif __linux__
         std::ifstream cpuinfo("/proc/cpuinfo");
@@ -73,7 +73,7 @@ namespace hw {
         info.model = model_str;
 
 #elif __APPLE__
-        // macOS：物理核心数
+        // macOS: 物理核心数
         int pc = 0;
         size_t len = sizeof(pc);
         if (sysctlbyname("hw.physicalcpu", &pc, &len, nullptr, 0) == 0) {
@@ -82,7 +82,7 @@ namespace hw {
             info.physical_cores = 1;
         }
 
-        // 获取厂商和型号（Apple Silicon）
+        // 获取厂商和型号(Apple Silicon)
         info.vendor = "Apple";
         char model_buf[256] = {0};
         len = sizeof(model_buf);
@@ -151,7 +151,7 @@ namespace hw {
         // --- 判断是否启用超线程 ---
         info.hyperthreading = (info.logical_cores > info.physical_cores);
 
-        // --- 预留：频率（Linux 可读取 /proc/cpuinfo 中的 cpu MHz，macOS 无标准接口）---
+        // --- 预留: 频率(Linux 可读取 /proc/cpuinfo 中的 cpu MHz, macOS 无标准接口)---
 #ifdef __linux__
         std::ifstream freq_file("/proc/cpuinfo");
         std::string line;

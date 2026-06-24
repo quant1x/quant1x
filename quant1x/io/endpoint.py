@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 """EndpointManager - Python port matching the C++ EndpointManager API.
 
 This module provides EndpointManager with the same semantics as the C++

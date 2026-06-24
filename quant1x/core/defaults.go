@@ -19,15 +19,15 @@ var (
 	durationType        = reflect.TypeOf(time.Duration(0))
 )
 
-// ApplyDefaults 给结构体零值字段填充默认值。
+// ApplyDefaults 给结构体零值字段填充默认值.
 //
-// 规则：
-//   - 仅当字段为零值时才会应用 `default:"..."`。
-//   - 递归处理嵌套结构体；对非 nil 的指针字段递归处理其指向的结构体。
-//   - 支持基础类型(string/bool/int/uint/float)、time.Duration，以及实现 encoding.TextUnmarshaler 的类型(如 time.Time)。
-//   - 支持字段类型实现 DefaultValue：当字段为零值且没有 default tag 时，会用 Default() 返回值赋值(可赋值/可转换时)。
+// 规则:
+//   - 仅当字段为零值时才会应用 `default:"..."`.
+//   - 递归处理嵌套结构体；对非 nil 的指针字段递归处理其指向的结构体.
+//   - 支持基础类型(string/bool/int/uint/float), time.Duration, 以及实现 encoding.TextUnmarshaler 的类型(如 time.Time).
+//   - 支持字段类型实现 DefaultValue: 当字段为零值且没有 default tag 时, 会用 Default() 返回值赋值(可赋值/可转换时).
 //
-// target 必须是可写的指针（通常是 *Struct）。
+// target 必须是可写的指针(通常是 *Struct).
 func ApplyDefaults(target any) error {
 	if target == nil {
 		return fmt.Errorf("ApplyDefaults: target is nil")

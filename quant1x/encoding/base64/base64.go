@@ -6,7 +6,7 @@ import (
 	"slices"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/std"
 )
 
 const (

@@ -8,10 +8,10 @@
 //#include <iostream>
 //#include <cmath>
 //
-//// 一、百分位法（Percentile Method）
-//// 对历史成交量或成交金额进行排序，取其高分位数作为大单阈值。
+//// 一, 百分位法(Percentile cmd_id)
+//// 对历史成交量或成交金额进行排序, 取其高分位数作为大单阈值. 
 //
-//// 计算百分位数（线性插值）
+//// 计算百分位数(线性插值)
 //double percentile(const std::vector<double>& data, double percent) {
 //    if (data.empty()) return 0;
 //
@@ -27,7 +27,7 @@
 //}
 //
 //TEST_CASE("Threshold-Percentile", "[tick-by-tick]") {
-//    // 示例：历史逐笔成交量（单位：股）
+//    // 示例: 历史逐笔成交量(单位: 股)
 //    std::vector<double> volumes = {100, 200, 300, 500, 800, 1000, 1200, 1500, 2000, 2500, 3000};
 //
 //    double threshold_90 = percentile(volumes, 0.90);  // 90%
@@ -37,13 +37,13 @@
 //    std::cout << "95% Percentile Threshold: " << threshold_95 << " 股" << std::endl;
 //}
 //
-//// 二、固定比例法（Fixed Ratio Method）
-//// 根据流通市值或日均成交额设定固定比例，如万分之一或5%。
+//// 二, 固定比例法(Fixed Ratio cmd_id)
+//// 根据流通市值或日均成交额设定固定比例, 如万分之一或5%. 
 //#include <iostream>
 //
 //struct StockInfo {
-//    double circulatingMarketCap; // 流通市值（元）
-//    double dailyAvgAmount;       // 日均成交额（元）
+//    double circulatingMarketCap; // 流通市值(元)
+//    double dailyAvgAmount;       // 日均成交额(元)
 //};
 //
 //// 计算大单金额阈值
@@ -63,8 +63,8 @@
 //    std::cout << "建议的大单金额阈值为: " << threshold << " 元" << std::endl;
 //}
 //
-//// 三、经验法（Empirical Method）
-//// 基于股票类型设定固定的成交量或金额门槛。
+//// 三, 经验法(Empirical cmd_id)
+//// 基于股票类型设定固定的成交量或金额门槛. 
 //
 //#include <iostream>
 //#include <string>
@@ -76,7 +76,7 @@
 //    SciTechOrGEM
 //};
 //
-//// 返回建议的大单成交量阈值（手）
+//// 返回建议的大单成交量阈值(手)
 //int getVolumeThresholdByType(StockType type) {
 //    switch (type) {
 //        case StockType::SmallCap: return 500;     // 小盘股 ≥ 500 手
@@ -116,9 +116,9 @@
 //#include <unordered_map>
 //#include <string>
 //#include <quant1x/runtime/config.h>
-//#include <quant1x/level1/transaction_data.h>
+//#include <quant1x/contrib/data/tdx/level1/transaction_data.h>
 //
-//// ================== 原始 Tick 结构体（来自券商 API，不可修改）==================
+//// ================== 原始 Tick 结构体(来自券商 API, 不可修改)==================
 //struct Tick {
 //    std::string time;
 //    double price;
@@ -162,7 +162,7 @@
 //    return ticks;
 //}
 //
-//// ================== 资金分类枚举（独立封装）==================
+//// ================== 资金分类枚举(独立封装)==================
 //
 //enum class OrderCategory {
 //    Small,
@@ -178,7 +178,7 @@
 //    {OrderCategory::SuperLarge, "超大单"}
 //};
 //
-//// ================== 分类判定函数（纯外部逻辑）==================
+//// ================== 分类判定函数(纯外部逻辑)==================
 //
 //namespace OrderThreshold {
 //    constexpr double SuperLarge = 1'000'000.0; // ≥ 100万
@@ -204,7 +204,7 @@
 //    double sellAmount = 0.0;
 //};
 //
-//// ================== 主程序：统计 + 输出 ==================
+//// ================== 主程序: 统计 + 输出 ==================
 //
 //TEST_CASE("total-v1", "[tick-by-tick]") {
 //    std::string code = "sh600600";
@@ -220,20 +220,20 @@
 //            lastPrice = tick.price;
 //        }
 //        auto direction = tick.buyOrSell;
-////        if(direction != level1::tick_buy && direction != level1::tick_sell) {
+////        if(direction != tdx::tick_buy && direction != tdx::tick_sell) {
 ////            if (tick.price > lastPrice) {
-////                direction = level1::tick_buy;
+////                direction = tdx::tick_buy;
 ////            } else if (tick.price < lastPrice) {
-////                direction = level1::tick_sell;
+////                direction = tdx::tick_sell;
 ////            } else {
-////                direction = level1::tick_neutral;
+////                direction = tdx::tick_neutral;
 ////            }
 ////        }
 //
-//        if (direction == level1::tick_buy) {
+//        if (direction == tdx::tick_buy) {
 //            stats[cat].buyCount++;
 //            stats[cat].buyAmount += tick.amount;
-//        } else if (direction == level1::tick_sell) {
+//        } else if (direction == tdx::tick_sell) {
 //            stats[cat].sellCount++;
 //            stats[cat].sellAmount += tick.amount;
 //        } else {
@@ -260,7 +260,7 @@
 //                  << sellAmtWan << "\n";
 //    }
 //
-//    // 可选：输出到 CSV 文件
+//    // 可选: 输出到 CSV 文件
 //    std::ofstream outFile("output.csv");
 //    outFile << "类别,主动买笔数,主动买金额(万元),主动卖笔数,主动卖金额(万元)\n";
 //
@@ -311,7 +311,7 @@
 //
 //// ================== 是否属于主力资金 ==================
 //bool isMainForce(const Tick& tick) {
-//    return tick.amount >= OrderThreshold::SuperLarge; // 大单及以上（大单+超大单）
+//    return tick.amount >= OrderThreshold::SuperLarge; // 大单及以上(大单+超大单)
 //}
 //
 //TEST_CASE("total-v2", "[tick-by-tick]") {
@@ -336,19 +336,19 @@
 //        double amount = tick.amount;
 //
 //        auto direction = tick.buyOrSell;
-//        if(direction != level1::tick_buy && direction != level1::tick_sell) {
+//        if(direction != tdx::tick_buy && direction != tdx::tick_sell) {
 //            if (tick.price > lastPrice) {
-//                direction = level1::tick_buy;
+//                direction = tdx::tick_buy;
 //            } else if (tick.price < lastPrice) {
-//                direction = level1::tick_sell;
+//                direction = tdx::tick_sell;
 //            } else {
-//                direction = level1::tick_neutral;
+//                direction = tdx::tick_neutral;
 //            }
 //        }
 //
-//        if (direction == level1::tick_buy) {
+//        if (direction == tdx::tick_buy) {
 //            netInflowByWindow[windowRange] += amount;
-//        } else if (direction == level1::tick_sell) {
+//        } else if (direction == tdx::tick_sell) {
 //            netInflowByWindow[windowRange] -= amount;
 //        }
 //    }

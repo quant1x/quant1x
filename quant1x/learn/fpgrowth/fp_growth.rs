@@ -1,17 +1,17 @@
 //! FP-Growth 算法实现
 //!
-//! 纯Rust实现的FP-Growth频繁项集挖掘算法。
-//! 支持事务数据集的频繁模式挖掘。
+//! 纯Rust实现的FP-Growth频繁项集挖掘算法. 
+//! 支持事务数据集的频繁模式挖掘. 
 //!
 //! # 示例
 //!
 //! ```
 //! use quant1x::learn::fpgrowth::FPGrowth;
 //!
-//! // 创建FP-Growth挖掘器，最小支持度为30%
+//! // 创建FP-Growth挖掘器, 最小支持度为30%
 //! let miner = FPGrowth::new(0.3);
 //!
-//! // 示例事务数据集（购物篮数据）
+//! // 示例事务数据集(购物篮数据)
 //! let transactions = vec![
 //!     vec!["牛奶".to_string(), "面包".to_string(), "尿布".to_string()],
 //!     vec!["面包".to_string(), "啤酒".to_string()],
@@ -158,7 +158,7 @@ impl FPTree {
         }
         let suffix_entry = suffix_entry.unwrap();
 
-        // 第一遍扫描：统计条件模式基频率
+        // 第一遍扫描: 统计条件模式基频率
         let mut conditional_counts: HashMap<usize, usize> = HashMap::new();
         let mut current_opt = suffix_entry.head;
 
@@ -213,7 +213,7 @@ impl FPTree {
         // 构建条件树
         let mut conditional_tree = FPTree::new();
 
-        // 第二遍扫描：插入路径
+        // 第二遍扫描: 插入路径
         current_opt = suffix_entry.head;
         while let Some(curr_idx) = current_opt {
             let path_count = self.nodes[curr_idx].count;
@@ -432,7 +432,7 @@ mod tests {
     fn test_basic_frequent_patterns() {
         let miner = FPGrowth::new(0.3);
 
-        // 示例数据集：购物篮分析
+        // 示例数据集: 购物篮分析
         let transactions = vec![
             vec!["牛奶".to_string(), "面包".to_string(), "尿布".to_string()],
             vec!["面包".to_string(), "啤酒".to_string()],
@@ -546,11 +546,11 @@ mod tests {
         // 只有出现在所有事务中的项才会保留
         for (pattern, _) in &patterns {
             if pattern.contains(&"A".to_string()) && pattern.len() == 1 {
-                // A 应该被找到，因为它出现在所有事务中
+                // A 应该被找到, 因为它出现在所有事务中
                 continue;
             }
             if pattern.contains(&"B".to_string()) && pattern.len() == 1 {
-                panic!("B 不应该被找到，因为它没有出现在所有事务中");
+                panic!("B 不应该被找到, 因为它没有出现在所有事务中");
             }
         }
     }

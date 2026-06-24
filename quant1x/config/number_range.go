@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// NumberRange mirrors C++ numerics::number_range<T>
+// NumberRange mirrors C++ numeric::number_range<T>
 // - default construction -> Min = -Inf, Max = +Inf
 // - supports scalar YAML like "0.382~2.800" and map forms {min: x, max: y}
 // - Validate follows C++ semantics: if Min==0 && Max==0 => always true; else v >= Min && v < Max

@@ -2,7 +2,7 @@
 #ifndef API_ALGO_H
 #define API_ALGO_H 1
 
-#include <quant1x/std/numerics.h>
+#include <quant1x/std/numeric.h>
 
 namespace algo {
 
@@ -15,7 +15,7 @@ namespace algo {
             int count = 0;       // 已处理的数据点数量
 
         public:
-            // 更新统计量（添加一个新数据点）
+            // 更新统计量(添加一个新数据点)
             void update(double newValue) {
                 // 1. 更新数据点计数
                 count++;
@@ -24,7 +24,7 @@ namespace algo {
                 //    delta = xₙ - μₙ₋₁
                 double delta = newValue - mean;
 
-                // 3. 更新均值（递推公式）
+                // 3. 更新均值(递推公式)
                 //    μₙ = μₙ₋₁ + (xₙ - μₙ₋₁)/n
                 mean += delta / count;
 
@@ -32,13 +32,13 @@ namespace algo {
                 //    delta2 = xₙ - μₙ
                 double delta2 = newValue - mean;
 
-                // 5. 更新平方和（关键步骤）
+                // 5. 更新平方和(关键步骤)
                 //    M2ₙ = M2ₙ₋₁ + (xₙ - μₙ₋₁)(xₙ - μₙ)
                 M2 += delta * delta2;
 
-                /* 数学解释：
+                /* 数学解释: 
                  * 这里使用 delta * delta2 而不是 delta2² 是为了数值稳定性
-                 * 展开后：
+                 * 展开后: 
                  * (xₙ - μₙ₋₁)(xₙ - μₙ)
                  * = (xₙ - μₙ₋₁)(xₙ - μₙ₋₁ - (μₙ - μₙ₋₁))
                  * = (xₙ - μₙ₋₁)² - (xₙ - μₙ₋₁)(δ/n)
@@ -50,17 +50,17 @@ namespace algo {
 
             // 获取当前均值
             double getMean() const {
-                return (count > 0) ? mean : numerics::NaN; // 返回NaN如果无数据
+                return (count > 0) ? mean : numeric::NaN; // 返回NaN如果无数据
             }
 
             // 获取总体方差
             double getVariancePopulation() const {
-                return (count > 0) ? M2 / count : numerics::NaN;  // NaN如果无数据
+                return (count > 0) ? M2 / count : numeric::NaN;  // NaN如果无数据
             }
 
-            // 获取样本方差（无偏估计）
+            // 获取样本方差(无偏估计)
             double getVarianceSample() const {
-                return (count > 1) ? M2 / (count - 1) : numerics::NaN;  // NaN如果数据不足
+                return (count > 1) ? M2 / (count - 1) : numeric::NaN;  // NaN如果数据不足
             }
 
             // 获取总体标准差
@@ -73,7 +73,7 @@ namespace algo {
                 return std::sqrt(getVarianceSample());
             }
 
-            // 合并两个独立计算的统计量（用于并行计算）
+            // 合并两个独立计算的统计量(用于并行计算)
             void combine(const WelfordStdDev& other) {
                 if (other.count == 0) return;
 
@@ -87,7 +87,7 @@ namespace algo {
                 // μ_new = (n₁μ₁ + n₂μ₂)/(n₁+n₂)
                 double new_mean = mean + delta * other.count / new_count;
 
-                // 计算合并后的M2（关键步骤）
+                // 计算合并后的M2(关键步骤)
                 // M2_new = M2₁ + M2₂ + δ²n₁n₂/(n₁+n₂)
                 double new_M2 = M2 + other.M2 +
                                 delta * delta * count * other.count / new_count;
@@ -97,8 +97,8 @@ namespace algo {
                 mean = new_mean;
                 M2 = new_M2;
 
-                /* 数学解释：
-                 * 合并公式来源于：
+                /* 数学解释: 
+                 * 合并公式来源于: 
                  * 总平方和 = Σ(x - μ_new)²
                  *          = Σ₁(x - μ₁ + μ₁ - μ_new)² + Σ₂(x - μ₂ + μ₂ - μ_new)²
                  *          = [M2₁ + n₁(μ₁ - μ_new)²] + [M2₂ + n₂(μ₂ - μ_new)²]

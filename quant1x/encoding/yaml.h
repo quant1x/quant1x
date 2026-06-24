@@ -14,7 +14,7 @@
 
 namespace encoding {
     namespace safe_yaml {
-        // 模式1：安全解析（带默认值）——保持原有逻辑
+        // 模式1: 安全解析(带默认值)——保持原有逻辑
         template <typename T>
         inline void parse_field(const YAML::Node &node, const char *key, T &target, const T &default_val) {
             if (node[key]) {
@@ -28,7 +28,7 @@ namespace encoding {
             }
         }
 
-        // 模式2：严格解析（无默认值）→ 返回是否成功
+        // 模式2: 严格解析(无默认值)→ 返回是否成功
         template <typename T>
         inline bool try_parse_field(const YAML::Node &node, const char *key, T &target) {
             if (!node[key])
@@ -63,7 +63,7 @@ namespace encoding {
         template <typename T>
         struct is_vector : std::false_type {};
 
-        // ========== 类型特征：enum ==========
+        // ========== 类型特征: enum ==========
         template <typename T>
         struct is_enum : std::is_enum<T> {};
         template <typename T>
@@ -75,7 +75,7 @@ namespace encoding {
         template <typename T>
         constexpr bool is_vector_v = is_vector<T>::value;
 
-        // ========== 类型特征：检测是否为 std::map ==========
+        // ========== 类型特征: 检测是否为 std::map ==========
         template <typename T>
         struct is_map : std::false_type {};
 
@@ -85,7 +85,7 @@ namespace encoding {
         template <typename T>
         constexpr bool is_map_v = is_map<T>::value;
 
-        // ========== 类型特征：optional ==========
+        // ========== 类型特征: optional ==========
         template <typename T>
         struct is_optional : std::false_type {};
         template <typename T>
@@ -423,7 +423,7 @@ namespace encoding {
             }
         }
 
-        // 反序列化：YAML → struct
+        // 反序列化: YAML → struct
         template <typename T>
         inline T deserialize(const YAML::Node &node) {
             T obj{};
@@ -431,7 +431,7 @@ namespace encoding {
             return obj;
         }
 
-        // 序列化：struct → YAML
+        // 序列化: struct → YAML
         template <typename T>
         inline YAML::Node serialize(const T &obj) {
             return serialize_to_node(obj);

@@ -7,10 +7,10 @@
 #include <ostream>
 #include <variant>
 
-namespace config {
+namespace quant1x::config {
     using ConfigValue = std::variant<std::nullptr_t, // 对应 YAML 的 null
         bool, // 布尔类型
-        int64_t, // 整数（推荐 int64_t，兼容 long 和 int）
+        int64_t, // 整数(推荐 int64_t, 兼容 long 和 int)
         double, // 浮点数
         std::string // 字符串
     >;
@@ -60,5 +60,5 @@ namespace config {
             return os;
         }
     };
-} // namespace config
+} // namespace quant1x::config
 #endif  // QUANT1X_CONFIG_DATA_CACHE_H

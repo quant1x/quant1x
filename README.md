@@ -1,9 +1,11 @@
-# Quant1X 量化交易实验室
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+<img src="logo.png" alt="Quant1X Logo" width="36%" height="36%">
+
+# Quant1X 量化交易实验室
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://isocpp.org/)
-[![Go](https://img.shields.io/badge/Go-1.25-blue.svg)](https://golang.org/)
-[![Rust](https://img.shields.io/badge/Rust-1.90+-orange.svg)](https://www.rust-lang.org/)
+[![Go](https://img.shields.io/badge/Go-1.26-blue.svg)](https://golang.org/)
+[![Rust](https://img.shields.io/badge/Rust-1.96+-orange.svg)](https://www.rust-lang.org/)
 [![Python](https://img.shields.io/badge/Python-3.12+-yellow.svg)](https://www.python.org/)
 [![CMake](https://img.shields.io/badge/CMake-3.30+-green.svg)](https://cmake.org/)
 ![tag](https://img.shields.io/github/tag/quant1x/quant1x.svg?style=flat)
@@ -13,7 +15,7 @@ Quant1X 是一个多语言量化交易框架，支持 C++、Go、Rust、Python�
 
 ## ✨ 特性
 
-- **多语言支持**：C++20、Go 1.25、Rust 1.90+、Python 3.12+
+- **多语言支持**：C++20、Go 1.26+、Rust 1.96+、Python 3.12+
 - **高性能**：优化的算法和数据结构，支持 SIMD 指令集
 - **模块化设计**：可插拔的组件架构，易于扩展
 - **实时数据**：支持 Level1 市场数据
@@ -34,8 +36,8 @@ Quant1X 是一个多语言量化交易框架，支持 C++、Go、Rust、Python�
 | 语言 | 版本要求 | 推荐版本 |
 |------|----------|----------|
 | Python | 3.12+ | 3.12.x |
-| Go | 1.25+ | 1.25.x |
-| Rust | 1.88+ | 1.90+ (2021) |
+| Go | 1.26+ | 1.26.x |
+| Rust | 1.96+ | 1.96+ (2024) |
 | C++ | C++20 | GCC 13+/Clang 17+/MSVC 14.3+ |
 
 ## 🚀 快速开始
@@ -45,7 +47,7 @@ Quant1X 是一个多语言量化交易框架，支持 C++、Go、Rust、Python�
 ## 1.1 默认均为64位操作系统
 | python | golang | rust       | c++                         |
 |:-------|:-------|:-----------|:----------------------------|
-| 3.12.x | 1.25.x | 1.90+/2021 | gcc13+/clang17+/msvc14.3+ |
+| 3.12.x | 1.26.x | 1.96+/2024 | gcc13+/clang17+/msvc14.3+ |
 
 ## 1.2 环境安装推荐使用brew
 安装brew时需要注意避免使用root权限
@@ -470,6 +472,76 @@ ctest --test-dir cmake-build-debug --output-on-failure
 ./cmake-build-debug/bin/q1x --help
 ```
 
+## 📊 获取K线数据示例
+
+### Python
+
+```python
+from quant1x.factors.base import get_cross_section_forward_adjusted_klines
+
+# 获取前复权K线数据
+code = "sh600000"
+as_of_date = "2024-12-26"
+klines = get_cross_section_forward_adjusted_klines(code, as_of_date)
+print(f"Loaded {len(klines)} adjusted kline records for {code}")
+
+# 显示最近5条记录
+for kline in klines[-5:]:
+    print(f"Date: {kline.date}, Open: {kline.open:.2f}, Close: {kline.close:.2f}")
+```
+
+### Go
+
+```go
+package main
+
+import (
+    "fmt"
+    "gitee.com/quant1x/quant1x/quant1x/factors"
+)
+
+func main() {
+    code := "sh600000"
+    asOfDate := "2024-12-26"
+    
+    // 获取前复权K线数据
+    klines := factors.GetCrossSectionForwardAdjustedKlines(code, asOfDate)
+    
+    fmt.Printf("Loaded %d adjusted kline records for %s\n", len(klines), code)
+    
+    // 显示最近5条记录
+    start := len(klines) - 5
+    if start < 0 {
+        start = 0
+    }
+    for _, kline := range klines[start:] {
+        fmt.Printf("Date: %s, Open: %.2f, Close: %.2f\n", kline.Date, kline.Open, kline.Close)
+    }
+}
+```
+### Rust
+
+```rust
+use quant1x::factors::base::get_cross_section_forward_adjusted_klines;
+
+fn main() {
+    let code = "sh600000";
+    let as_of_date = "2024-12-26";
+    
+    // 获取前复权K线数据
+    let klines = get_cross_section_forward_adjusted_klines(code, as_of_date);
+    
+    println!("Loaded {} adjusted kline records for {}", klines.len(), code);
+    
+    // 显示最近5条记录
+    let start = if klines.len() > 5 { klines.len() - 5 } else { 0 };
+    for kline in &klines[start..] {
+        println!("Date: {}, Open: {:.2}, Close: {:.2}", 
+                kline.date, kline.open, kline.close);
+    }
+}
+```
+
 ## 🤝 贡献
 
 欢迎贡献代码！请遵循以下步骤：
@@ -489,7 +561,7 @@ ctest --test-dir cmake-build-debug --output-on-failure
 
 ## 📄 许可证
 
-本项目采用 Apache 2.0 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
 
 ## 📚 相关链接
 
@@ -500,4 +572,4 @@ ctest --test-dir cmake-build-debug --output-on-failure
 
 ---
 
-**注意**: 本项目仅用于学习和研究目的，不构成投资建议。在实际交易前，请充分了解风险并咨询专业人士。
+**注意**: 本项目仅用于学习和研究目的，不构成投资建议。在实际交易前，请充分了解和评估各种风险并咨询专业人士。

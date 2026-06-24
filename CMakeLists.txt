@@ -394,12 +394,12 @@ set(quant1x-headers
     quant1x/std/api.h
     quant1x/std/base.h
     quant1x/std/buffer.h
-    quant1x/std/filepath.h
+    quant1x/std/filesystem.h
     quant1x/std/strings.h
     quant1x/std/util.h
     quant1x/std/format.h
     quant1x/std/feature_detection.h
-    quant1x/std/numerics.h
+    quant1x/std/numeric.h
     quant1x/std/safe.h
     quant1x/std/simd.h
     quant1x/std/cpu_info.h
@@ -420,11 +420,10 @@ set(quant1x-headers
     # i/o 相关
     quant1x/io/csv-reader.h
     quant1x/io/csv-writer.h
-    quant1x/io/file.h
     quant1x/io/http.h
-    quant1x/logger/logger.h
-    quant1x/logger/router_sink.h
-    quant1x/logger/lazy_daily_sink.h
+    quant1x/log/logger.h
+    quant1x/log/router_sink.h
+    quant1x/log/lazy_daily_sink.h
 
     # 编码相关
     quant1x/encoding/charsets.h
@@ -433,15 +432,13 @@ set(quant1x-headers
     quant1x/encoding/yaml.h
 
     # 配置
-    quant1x/config/base.h
+    quant1x/config/config.h
+    quant1x/config/cache.h
     quant1x/config/data_cache.h
     quant1x/config/rule_parameter.h
     quant1x/config/strategy_parameter.h
     quant1x/config/trader_parameter.h
     quant1x/config/trading_session.h
-
-    # 缓存
-    quant1x/cache/adapter.h
 
     # 网络相关
     quant1x/io/base.h
@@ -458,11 +455,11 @@ set(quant1x-headers
     # 数据协议
     quant1x/proto/data.h
     quant1x/proto/chips.pb.h
-    quant1x/proto/chips.pb.cc
+    # quant1x/proto/chips.pb.cc (TODO: MinGW TLS issue - moved to sources)
     quant1x/proto/snapshot.capnp.h
     quant1x/proto/snapshot.capnp.c++
     quant1x/proto/xdxr.pb.h
-    quant1x/proto/xdxr.pb.cc
+    # quant1x/proto/xdxr.pb.cc (TODO: MinGW TLS issue - moved to sources)
 
     # 技术分析
     quant1x/ta/boll.h
@@ -476,41 +473,49 @@ set(quant1x-headers
     quant1x/ta/type_default.h
     quant1x/ta/sma.h
 
-    # 数据集
-    quant1x/datasets/base.h
-    quant1x/datasets/xdxr.h
-    quant1x/datasets/kline_raw.h
-    quant1x/datasets/kline.h
-    quant1x/datasets/trans.h
-    quant1x/datasets/minute.h
-    quant1x/datasets/chips.h
-    quant1x/datasets/kline_minute.h
+    # 数据
+    quant1x/data/adapter.h
+    quant1x/data/base.h
+    quant1x/data/cache.h
+    quant1x/data/market.h
+    quant1x/data/status.h
 
-    # 实时模块
+    # 实时模块 (TODO: API migration pending)
     quant1x/realtime/snapshot.h
 
-    # 回测
-    quant1x/backtest/backtest.h
-    quant1x/backtest/order.h
-    quant1x/backtest/trade.h
-    quant1x/backtest/position.h
+    # 回测 (TODO: API migration pending)
+    # quant1x/backtest/backtest.h
+    # quant1x/backtest/order.h
+    # quant1x/backtest/trade.h
+    # quant1x/backtest/position.h
 
-    # 交易所相关
-    quant1x/instruments/markets.h
-    quant1x/instruments/blocks.h
-    quant1x/instruments/security.h
-    quant1x/exchange/calendar.h
-    quant1x/exchange/code.h
-    quant1x/exchange/rule.h
-    quant1x/exchange/margin_trading.h
-    quant1x/exchange/session.h
-    quant1x/exchange/timestamp.h
+    # 交易所相关 (migrated to quant1x/data/meta/)
+    quant1x/data/meta/calendar.h
+    quant1x/data/meta/timestamp.h
+    quant1x/data/meta/session.h
 
+    # 数据客户端
+    quant1x/contrib/data/tdx/client.h
+    
+    # tdx (moved from level1 to align with Rust/Python)
+    quant1x/contrib/data/tdx/protocol.h
+    quant1x/contrib/data/tdx/helpers.h
+    quant1x/contrib/data/tdx/config.h
+    
     # level1
-    quant1x/level1/config.h
-    quant1x/level1/minute_time.h
-    quant1x/level1/client.h
-    quant1x/level1/protocol.h
+    quant1x/contrib/data/tdx/level1/std/minute_time.h
+
+    # tdx adapters
+    quant1x/contrib/data/tdx/xdxr.h
+    quant1x/contrib/data/tdx/bar_raw.h
+    quant1x/contrib/data/tdx/bar.h
+    quant1x/contrib/data/tdx/trans.h
+    quant1x/contrib/data/tdx/minute.h
+    quant1x/contrib/data/tdx/chips.h
+    quant1x/contrib/data/tdx/bar_minute.h
+    quant1x/contrib/data/tdx/instruments.h
+    quant1x/contrib/data/tdx/datasource.h
+    quant1x/contrib/data/tdx/sector.h
 
     # 引擎
     quant1x/engine/strategy.h
@@ -527,7 +532,6 @@ set(quant1x-headers
     # 因子
     quant1x/factors/f10.h
     quant1x/factors/share_holder.h
-    quant1x/factors/base.h
     quant1x/factors/notice.h
     quant1x/factors/financial_report.h
     quant1x/factors/safety_score.h
@@ -562,7 +566,7 @@ set(quant1x-headers
     quant1x/resources/meta/blocks.h
 
     # 应用入口
-    quant1x/quant1x.h
+    quant1x/app.h
 
     # 数据处理功能 quant1x/data
     
@@ -575,9 +579,9 @@ set(quant1x-sources
     # 标准库兼容
     quant1x/std/strings.cpp
     quant1x/std/time.cpp
-    quant1x/std/filepath.cpp
+    quant1x/std/filesystem.cpp
     quant1x/std/util.cpp
-    quant1x/std/numerics.cpp
+    quant1x/std/numeric.cpp
     quant1x/std/safe.cpp
     quant1x/std/simd.cpp
     quant1x/std/cpu_info.cpp
@@ -592,10 +596,9 @@ set(quant1x-sources
     quant1x/runtime/scheduler.cpp
 
     # i/o 相关
-    quant1x/io/file.cpp
     quant1x/io/http.cpp
-    quant1x/logger/router_sink.cpp
-    quant1x/logger/lazy_daily_sink.cpp
+    quant1x/log/router_sink.cpp
+    quant1x/log/lazy_daily_sink.cpp
 
     # 编码相关
     quant1x/encoding/charsets.cpp
@@ -606,12 +609,13 @@ set(quant1x-sources
 
     # 引擎
     
+    # 数据客户端
+    quant1x/contrib/data/tdx/client.cpp
+    
+    quant1x/contrib/data/tdx/config.cpp
+    quant1x/contrib/data/tdx/protocol.cpp
 
     # level1
-    quant1x/level1/config.cpp
-    quant1x/level1/client.cpp
-    quant1x/level1/protocol.cpp
-
 
     # 配置信息
     quant1x/config/base.cpp
@@ -624,9 +628,6 @@ set(quant1x-sources
     quant1x/command.cpp
     quant1x/formula.cpp
 
-    # 缓存
-    quant1x/cache/adapter.cpp
-
     # 回测
     quant1x/backtest/backtest.cpp
     quant1x/backtest/position.cpp
@@ -634,29 +635,29 @@ set(quant1x-sources
     quant1x/backtest/stats.cpp
     quant1x/backtest/trade.cpp
 
-    # 数据集
-    quant1x/datasets/xdxr.cpp
-    quant1x/datasets/kline.cpp
-    quant1x/datasets/kline_raw.cpp
-    quant1x/datasets/minute.cpp
-    quant1x/datasets/trans.cpp
-    quant1x/datasets/chips.cpp
-    quant1x/datasets/kline_minute.cpp
-    quant1x/datasets.cpp
+    # 数据
+    quant1x/data/adapter.cpp
+    quant1x/data/cache.cpp
+    quant1x/data/market.cpp
 
-    # 交易所相关
-    quant1x/instruments/markets.cpp
-    quant1x/instruments/blocks.cpp
-    quant1x/instruments/security.cpp
-    quant1x/exchange/code.cpp
-    quant1x/exchange/rule.cpp
-    quant1x/exchange/calendar.cpp
-    quant1x/exchange/session.cpp
-    quant1x/exchange/timestamp.cpp
-    quant1x/exchange/margin_trading.cpp
+    # tdx adapters (TODO: chips API migration pending)
+    quant1x/contrib/data/tdx/xdxr.cpp
+    quant1x/contrib/data/tdx/bar_raw.cpp
+    quant1x/contrib/data/tdx/bar.cpp
+    quant1x/contrib/data/tdx/trans.cpp
+    quant1x/contrib/data/tdx/minute.cpp
+    quant1x/contrib/data/tdx/chips.cpp
+    quant1x/contrib/data/tdx/bar_minute.cpp
+    quant1x/contrib/data/tdx/instruments.cpp
+    quant1x/contrib/data/tdx/datasource.cpp
+    quant1x/contrib/data/tdx/sector.cpp
+
+    # 交易所相关 (migrated to quant1x/data/meta/)
+    quant1x/data/meta/timestamp.cpp
+    quant1x/data/meta/calendar.cpp
+    quant1x/data/meta/session.cpp
 
     # 因子
-    quant1x/factors/base.cpp
     quant1x/factors/f10.cpp
     quant1x/factors/share_holder.cpp
     quant1x/factors/history.cpp
@@ -668,7 +669,7 @@ set(quant1x-sources
     quant1x/ta/trend.cpp
     quant1x/ta/waves.cpp
 
-    # 实时
+    # 实时 (TODO: API migration pending)
     quant1x/realtime/snapshot.cpp
 
     # 插件
@@ -678,7 +679,7 @@ set(quant1x-sources
     quant1x/engine/rule_engine.cpp
     quant1x/engine/strategy.cpp
 
-    # 交易柜台
+    # 交易柜台 (TODO: API migration - depends on RollingOnce, date_range(string), cpr::Payload API changes)
     quant1x/trader/fee.cpp
     quant1x/trader/order.cpp
     quant1x/trader/account.cpp
@@ -689,14 +690,18 @@ set(quant1x-sources
     quant1x/trader/tracker.cpp
     quant1x/trader/order_state.cpp
 
-    # 应用入口
-    quant1x/quant1x.cpp
+    # 应用入口 (TODO: API migration - depends on masked realtime/snapshot.h, trader/tracker.h)
+    quant1x/app.cpp
 
     # 数据处理功能 quant1x/data
     
     # 机器学习
     quant1x/learn/fpgrowth/fp_growth.cpp
     quant1x/learn/fpgrowth/fp_growth_core.cpp
+
+    # protobuf 生成文件
+    quant1x/proto/chips.pb.cc
+    quant1x/proto/xdxr.pb.cc
 )
 
 # If mimalloc is enabled and we're using the C++ new/delete override mode,
@@ -732,10 +737,8 @@ else ()
 endif ()
 
 # 添加测试策略
-list(APPEND quant1x-headers user/no0.h)
-list(APPEND quant1x-sources user/no0.cpp)
-list(APPEND quant1x-headers user/strategy-no0.h)
-list(APPEND quant1x-sources user/strategy-no0.cpp)
+list(APPEND quant1x-headers user/strategy-no0.h user/no0.h)
+list(APPEND quant1x-sources user/strategy-no0.cpp user/no0.cpp)
 
 
 # 检查编译器选项
@@ -766,6 +769,7 @@ target_include_directories(quant1x
 target_link_libraries(quant1x PUBLIC
     third_libs global_compile_options
 )
+target_compile_definitions(quant1x PUBLIC "HAVE_MIMALLOC=$<BOOL:${ENABLE_MIMALLOC}>")
 
 get_target_property(_libs quant1x INTERFACE_LINK_LIBRARIES)
 message(STATUS "Library 'quant1x' requires: ${_libs}")
@@ -1094,13 +1098,9 @@ install(FILES
 
 install(TARGETS q1x
     DESTINATION bin)
-# 单元测试
-# Ensure testing is enabled at the top-level so that add_test calls in
-# subdirectories (e.g. `tests/`) are properly registered with CTest and
-# a top-level CTestTestfile.cmake is generated.
+# 单元测试 (TODO: migration to new API pending)
 include(CTest)
 enable_testing()
-
 add_subdirectory(tests)
 # 演示代码
 add_subdirectory(examples)

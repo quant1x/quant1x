@@ -1,8 +1,10 @@
 #include <quant1x/config/strategy_parameter.h>
-#include <quant1x/instruments/markets.h>
-#include <quant1x/exchange/margin_trading.h>
+#include <quant1x/contrib/data/tdx/instruments.h>
+#include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/market.h>
 
-namespace config {
+namespace quant1x::config {
+namespace instruments = quant1x::contrib::data::tdx::instruments;
 
     // 初始化排除列表
     void StrategyParameter::initExclude() {
@@ -15,7 +17,7 @@ namespace config {
             std::string sectorCode = strings::trim(v);
             if (sectorCode.starts_with(sectorIgnorePrefix)) {
                 sectorCode = strings::trim(sectorCode.substr(sectorPrefixLength));
-                auto blockInfo = exchange::get_sector_info(sectorCode);
+                auto blockInfo = data::get_sector_info(sectorCode);
                 if (blockInfo.has_value()) {
                     tempExcludeCodes.insert(tempExcludeCodes.end(),
                                             blockInfo->ConstituentStocks.begin(),
@@ -49,7 +51,7 @@ namespace config {
 
         if (IgnoreMarginTrading) {
             // 过滤两融
-            auto marginTradingList = exchange::MarginTradingList();
+            auto marginTradingList = data::margin_trading_list();
             std::unordered_set<std::string> marginSet(marginTradingList.begin(), marginTradingList.end());
 
             std::vector<std::string> filteredList;
@@ -68,7 +70,7 @@ namespace config {
         for (const auto& v : Sectors) {
             std::string sectorCode = strings::trim(v);
             if (!sectorCode.starts_with(sectorIgnorePrefix)) {
-                auto blockInfo = exchange::get_sector_info(sectorCode);
+                auto blockInfo = data::get_sector_info(sectorCode);
                 if (blockInfo.has_value()) {
                     codes.insert(codes.end(),
                                  blockInfo->ConstituentStocks.begin(),
@@ -78,7 +80,7 @@ namespace config {
         }
 
         if (codes.empty()) {
-            codes = instruments::GetStockCodeList();
+            codes = instruments::get_code_list();
         }
         return Filter(codes);
     }
@@ -109,4 +111,4 @@ namespace config {
            << "}";
         return os;
     }
-}
+} // namespace quant1x::config

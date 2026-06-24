@@ -42,4 +42,7 @@ target/
 
 # vscode
 .vscode/launch.json
-quant1x/_version.py
+.codebuddy/
+
+# setuptools_scm generated version file
+_version.py

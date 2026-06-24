@@ -2,16 +2,19 @@
 #ifndef QUANT1X_FACTOR_F10_H
 #define QUANT1X_FACTOR_F10_H 1
 
-#include "quant1x/cache/adapter.h"
-#include "quant1x/exchange/calendar.h"
-#include "quant1x/std/numerics.h"
+#include <quant1x/data/adapter.h>
+#include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/meta/calendar.h>
+#include <quant1x/std/numeric.h>
 
 namespace factors {
     namespace risk {
         constexpr const int ReportingRiskPeriod = 3; ///< 预警距离财务报告日期还有多少个交易日, 默认3个交易日
         constexpr const int ReportingWarningDays = ReportingRiskPeriod;
-    } // namespace detail
+    } // namespace risk
 } // namespace factors
+
+using namespace quant1x::data;
 
 struct F10 {
     // 日期
@@ -88,9 +91,9 @@ struct F10 {
         if(std::fabs(freeCapital) < std::numeric_limits<double>::epsilon()) {
             return 0.00;
         }
-        auto turnoverRateZ = numerics::ChangeRate(freeCapital, v);
+        auto turnoverRateZ = numeric::ChangeRate(freeCapital, v);
         turnoverRateZ *= 10000;
-        turnoverRateZ = numerics::decimal(turnoverRateZ);
+        turnoverRateZ = numeric::decimal(turnoverRateZ);
         return turnoverRateZ;
     }
 
@@ -101,10 +104,10 @@ struct F10 {
             // 这种情况有可能是次新股的保护期
             return false;
         }
-        auto current_date = exchange::timestamp(Date);
-        auto ys = exchange::date_range(current_date, AnnualReportDate);
+        auto current_date = meta::Timestamp(Date);
+        auto ys = meta::date_range(current_date, AnnualReportDate);
         auto ly = ys.size();
-        auto qs = exchange::date_range(current_date, QuarterlyReportDate);
+        auto qs = meta::date_range(current_date, QuarterlyReportDate);
         auto lq = qs.size();
         if((ly > 0 && ly < factors::risk::ReportingWarningDays) || (lq > 0 && lq < factors::risk::ReportingWarningDays)) {
             return true;
@@ -113,16 +116,16 @@ struct F10 {
     }
 };
 
-class F10Feature : public cache::FeatureAdapter {
+class F10Feature : public FeatureAdapter {
 private:
     F10 f10;
 public:
     F10Feature() = default;
     F10Feature(const F10Feature&) = default;
 
-    cache::Kind Kind() const override;
+    quant1x::data::Kind Kind() const override;
 
-    std::string Owner() override;
+    std::string Owner() const override;
 
     std::string Key() const override;
 
@@ -133,19 +136,19 @@ public:
     std::vector<std::string> headers() const override;
     std::vector<std::string> values() const override;
 
-    std::unique_ptr<cache::FeatureAdapter> clone() const override;
+    std::unique_ptr<FeatureAdapter> clone() const override;
 
-    void init(const exchange::timestamp &timestamp) override;
+    void init(const meta::Timestamp &timestamp) override;
 
-    void Print(const std::string &code, const std::vector<exchange::timestamp> &dates) override;
+    void Print(const meta::Instrument &inst, const meta::Timestamp &date) override;
 
-    void Update(const std::string &code, const exchange::timestamp &date) override;
+    void Update(const meta::Instrument &inst, const meta::Timestamp &date) override;
 };
 
 
 namespace factors {
     /// 获取指定日期的F10数据
-    std::optional<F10> get_f10(const std::string& code, const exchange::timestamp& timestamp);
+    std::optional<F10> get_f10(const std::string& code, const meta::Timestamp& timestamp);
 }
 
 #endif //QUANT1X_FACTOR_F10_H

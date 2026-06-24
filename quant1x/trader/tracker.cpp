@@ -9,12 +9,20 @@
 #include <quant1x/trader/tracker.h>
 #include <quant1x/config/config.h>
 #include <spdlog/spdlog.h>
-#include <quant1x/instruments/markets.h>
+#include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/market.h>
 #include <indicators/progress_bar.hpp>
 #include <quant1x/realtime/snapshot.h>
 #include <quant1x/trader/trader.h>
 #include <quant1x/trader/order_state.h>
 #include <quant1x/trader/account.h>
+#include <quant1x/contrib/data/tdx/instruments.h>
+
+namespace config = quant1x::config;
+namespace meta = quant1x::data::meta;
+namespace data = quant1x::data;
+namespace instruments = quant1x::contrib::data::tdx::instruments;
+using namespace quant1x::contrib::data;
 
 namespace trader {
     namespace mpb = ::indicators;
@@ -44,7 +52,7 @@ namespace trader {
         spdlog::warn("[tracker] {}号策略, 交易流程, 开始", strategy_id);
         // 加载快照
         realtime::load_snapshots();
-        auto all_codes = instruments::GetCodeList();
+        auto all_codes = instruments::get_code_list();
         auto codeCount = all_codes.size();
         {
             mpb::ProgressBar bar{
@@ -63,7 +71,7 @@ namespace trader {
                 mpb::option::MaxProgress{codeCount + 0},
             };
             int processed_codes = 0;
-            auto timestamp = exchange::timestamp::now();
+            auto timestamp = meta::Timestamp::now();
             strategy->setTimestamp(timestamp);
             auto date = timestamp.only_date();
             std::vector<ResultInfo> result_buys;
@@ -74,17 +82,17 @@ namespace trader {
                 std::string codePrefix = std::format("{}({}/{})", code, current, codeCount);
                 bar.set_option(mpb::option::PrefixText{codePrefix + ""});
                 // 4. 运行回测
-                std::string securityCode = exchange::CorrectSecurityCode(code);
+                std::string securityCode = data::correct_security_code(code);
                 // result.date = feature_date;
-                if (exchange::AssertStockBySecurityCode(securityCode)) {
+                if (data::assert_stock_by_security_code(securityCode)) {
                     auto snapshot = realtime::get_snapshot(securityCode);
                     if(snapshot.has_value()) {
                         auto stock_state = snapshot->state;
-                        if(stock_state == level1::TradeState::SUSPEND) {
+                        if(stock_state == tdx::TradeState::SUSPEND) {
                             spdlog::warn("[tracker] code={}, 停牌", securityCode);
-                        } else if(stock_state == level1::TradeState::DELISTING) {
+                        } else if(stock_state == tdx::TradeState::DELISTING) {
                             spdlog::warn("[tracker] code={}, 已退市", securityCode);
-                        } else if(stock_state == level1::TradeState::IPO) {
+                        } else if(stock_state == tdx::TradeState::IPO) {
                             spdlog::warn("[tracker] code={}, IPO排队上市, 不能在二级市场交易", securityCode);
                         } else {
                             auto ec = strategy->Filter(strategyParameter, *snapshot);
@@ -174,7 +182,7 @@ namespace trader {
                 if(v.CanUseVolume < 1) {
                     continue;
                 }
-                std::string security_code = exchange::CorrectSecurityCode(v.StockCode);
+                std::string security_code = data::correct_security_code(v.StockCode);
                 mapHolding.emplace(std::move(security_code), std::move(v));
             }
 

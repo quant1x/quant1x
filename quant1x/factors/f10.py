@@ -1,24 +1,23 @@
 # -*- coding: UTF-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
 
 from __future__ import annotations
 
-import logging
 import struct
 from dataclasses import dataclass
 from typing import Optional, Tuple, List, Dict
 
 import pandas as pd
-from quant1x.datasets import xdxr
-from quant1x.exchange import detect_market, correct_security_code, is_margin_trading_target
-from quant1x.exchange.security import get_security_info
-from quant1x.factors import share_holder, financial_report, safety_score, notice
-from quant1x.level1.client import client
-from quant1x.level1.finance_info import FinanceRequest, FinanceResponse
-from quant1x.level1.protocol import process
-from quant1x import std
-from quant1x.level1.xdxr_info import XdxrInfo
+import quant1x.contrib.data.tdx.xdxr as xdxr_module
 
-logger = logging.getLogger(__name__)
+from quant1x.log import logger
+from quant1x.data.market import detect_symbol, correct_security_code
+from quant1x.contrib.data.tdx.client import get_std_conn
+from quant1x.data.schema import XdxrInfo
+from quant1x.contrib.data.tdx.level1 import XdxrInfoContext, FinanceInfoContext
+from quant1x.contrib.data.tdx.protocol import transact_message_sync
+from quant1x.factors import share_holder, financial_report, safety_score, notice
 
 @dataclass
 class F10:
@@ -63,13 +62,13 @@ def get_finance_info(security_code: str, feature_date: str) -> Tuple[float, floa
     base_date = 19900101
 
     try:
-        with client() as conn:
-            req = FinanceRequest(security_code)
-            resp = FinanceResponse()
-            process(conn.socket, req, resp)
+        inst = detect_symbol(security_code)
+        with get_std_conn() as conn:
+            req = FinanceInfoContext(inst)
+            transact_message_sync(conn, req)
             
-            if resp.count > 0:
-                info = resp.info
+            if req.count > 0:
+                info = req.info
                 if info.liu_tong_gu_ben > 0 and info.zong_gu_ben > 0:
                     capital = info.liu_tong_gu_ben
                     total_capital = info.zong_gu_ben
@@ -106,7 +105,7 @@ def checkout_security_basic_info(security_code: str, feature_date: str) -> dict:
         "UpdateDate": ""
     }
     
-    xdxr_list = xdxr.load_xdxr(security_code)
+    xdxr_list = xdxr_module.load_xdxr(detect_symbol(security_code))
     # Sort descending by Date
     xdxr_list.sort(key=lambda x: x.Date, reverse=True)
     
@@ -138,11 +137,11 @@ def checkout_security_basic_info(security_code: str, feature_date: str) -> dict:
         except Exception:
             pass
             
-    sec_info = get_security_info(security_code)
-    if sec_info:
-        info["VolUnit"] = sec_info.lot_size
-        info["DecimalPoint"] = sec_info.price_precision
-        info["Name"] = sec_info.name
+    inst = detect_symbol(security_code)
+    if inst.is_valid():
+        info["VolUnit"] = inst.lot_size
+        info["DecimalPoint"] = inst.price_precision
+        info["Name"] = inst.name
         
     return info
 
@@ -191,7 +190,7 @@ def compute_free_capital(holder_list: pd.DataFrame, capital: float) -> Tuple[flo
     return top10_capital, free_capital, capital_changed, increase_ratio, reduction_ratio
 
 def checkout_share_holder(security_code: str, feature_date: str) -> Optional[dict]:
-    xdxr_list = xdxr.load_xdxr(security_code)
+    xdxr_list = xdxr_module.load_xdxr(detect_symbol(security_code))
     xdxr_list.sort(key=lambda x: x.Date, reverse=True)
     
     xdxr_info_obj = checkout_capital(xdxr_list, feature_date)
@@ -243,6 +242,7 @@ def get_f10(code: str, date: str) -> F10:
     f10.ipo_date = sec_info["IpoDate"]
     f10.sub_new = sec_info["SubNew"]
     f10.update_date = sec_info["UpdateDate"]
+    from quant1x.data.margin_trading import is_margin_trading_target
     f10.margin_trading_target = is_margin_trading_target(security_code)
     
     # 2. Share Holder
@@ -299,3 +299,26 @@ def get_f10(code: str, date: str) -> F10:
     f10.update_time = int(pd.Timestamp.now().timestamp())
     
     return f10
+
+
+if __name__ == "__main__":
+    # 测试获取F10数据
+    code = "sh600000"
+    date = "2025-06-09"
+    print(f"=== 测试 get_f10({code}, {date}) ===")
+    try:
+        f10 = get_f10(code, date)
+        print(f"  code: {f10.code}")
+        print(f"  name: {f10.security_name}")
+        print(f"  ipo_date: {f10.ipo_date}")
+        print(f"  total_capital: {f10.total_capital}")
+        print(f"  capital: {f10.capital}")
+        print(f"  free_capital: {f10.free_capital}")
+        print(f"  basic_eps: {f10.basic_eps}")
+        print(f"  bps: {f10.bps}")
+        print(f"  safety_score: {f10.safety_score}")
+        print(f"  margin_trading_target: {f10.margin_trading_target}")
+        print(f"  sub_new: {f10.sub_new}")
+        print(f"  risk_keywords: {f10.risk_keywords[:100] if f10.risk_keywords else '无'}")
+    except Exception as e:
+        print(f"  错误: {e}")

@@ -82,7 +82,7 @@ namespace service {
             return false;
         }
 
-        // 获取令牌信息（检查管理员组）
+        // 获取令牌信息(检查管理员组)
         DWORD dwSize = 0;
         if (!GetTokenInformation(hToken, TokenGroups, nullptr, 0, &dwSize) &&
             GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
@@ -176,14 +176,14 @@ namespace service {
             std::cout << "[+] 管理员权限操作, 结束." << std::endl;
         }
 
-        return false;  // 当前进程退出，由新管理员进程接管
+        return false;  // 当前进程退出, 由新管理员进程接管
     }
 
     // 安装服务
     void install() {
         // 自动提权逻辑
         if (!require_admin_and_do("install")) {
-            return;  // 当前进程退出，由提权后的新进程继续运行
+            return;  // 当前进程退出, 由提权后的新进程继续运行
         }
 
         // 正常流程
@@ -248,7 +248,7 @@ namespace service {
     void uninstall() {
         // 自动提权逻辑
         if (!require_admin_and_do("uninstall")) {
-            return;  // 当前进程退出，由提权后的新进程继续运行
+            return;  // 当前进程退出, 由提权后的新进程继续运行
         }
 
         // 正常流程
@@ -281,7 +281,7 @@ namespace service {
     void start() {
         // 自动提权逻辑
         if (!require_admin_and_do("start")) {
-            return;  // 当前进程退出，由提权后的新进程继续运行
+            return;  // 当前进程退出, 由提权后的新进程继续运行
         }
 
         SC_HANDLE schSCManager = OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);
@@ -312,7 +312,7 @@ namespace service {
     void stop() {
         // 自动提权逻辑
         if (!require_admin_and_do("stop")) {
-            return;  // 当前进程退出，由提权后的新进程继续运行
+            return;  // 当前进程退出, 由提权后的新进程继续运行
         }
 
         SC_HANDLE schSCManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_CONNECT);
@@ -467,7 +467,7 @@ namespace service {
             spdlog::error("{}: ServiceMain: SetServiceStatus returned error", g_api_service_config.service_name);
         }
 
-        // 模拟初始化工作（实际应用中替换为你的初始化代码）
+        // 模拟初始化工作(实际应用中替换为你的初始化代码)
         Sleep(1000);  // 模拟耗时操作
 
         // 更新状态为运行中
@@ -481,7 +481,7 @@ namespace service {
 
         // 主服务循环
         while (true) {
-            // 等待停止事件或超时（实际应用中替换为你的服务逻辑）
+            // 等待停止事件或超时(实际应用中替换为你的服务逻辑)
             WaitForSingleObject(g_ServiceStopEvent, 3000);
 
             // 检查是否收到停止事件
@@ -511,7 +511,7 @@ namespace service {
 
     void run_daemon() {
         spdlog::info("[*] 守护进程已启动");
-        runtime::logger_set(false, config::is_debug());
+        runtime::logger_set(false, quant1x::config::is_debug());
         // std::wstring serviceNameW = utf8_to_utf16(g_api_service_config.service_name);
         // SetThreadName(GetCurrentThreadId(), g_api_service_config.service_name.c_str());;
         //  服务分派表

@@ -1,11 +1,17 @@
 #include <quant1x/trader/order_state.h>
 #include <spdlog/spdlog.h>
+#include <quant1x/std/filesystem.h>
 #include <quant1x/trader/fee.h>
-#include <quant1x/instruments/markets.h>
+#include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/market.h>
 #include <quant1x/engine/strategy.h>
 #include <quant1x/trader/order.h>
 #include <quant1x/config/base.h>
 #include <quant1x/config/cache.h>
+
+namespace config = quant1x::config;
+namespace meta = quant1x::data::meta;
+namespace data = quant1x::data;
 
 namespace trader {
     namespace fs = std::filesystem;
@@ -34,7 +40,7 @@ namespace trader {
     std::pair<std::string, std::string> order_state_fields(const std::string& date,
                                                            const std::string& quantStrategyName,
                                                            Direction direction) {
-        std::string stateDate = exchange::timestamp(date).cache_date();
+        std::string stateDate = meta::Timestamp(date).cache_date();
         std::string flagPath = state_file_path(stateDate);
         std::string filenamePrefix = state_file_prefix(stateDate, quantStrategyName, direction);
         return {flagPath, filenamePrefix};
@@ -54,7 +60,7 @@ namespace trader {
                                      Direction direction,
                                      const std::string& code) {
         auto [orderFlagPath, filenamePrefix] = order_state_fields_from_strategy(date, model, direction);
-        std::string securityCode = exchange::CorrectSecurityCode(code);
+        std::string securityCode = data::correct_security_code(code);
         std::string filename = filenamePrefix + "-" + securityCode + orderStateFileExtension;
         fs::path state_filename = fs::path(orderFlagPath) / filename;
         return state_filename.string();
@@ -75,7 +81,7 @@ namespace trader {
                         const std::string& code,
                         trader::Direction direction) {
         std::string filename = order_state_filename(date, model, direction, code);
-        return io::write_file(filename);
+        return filesystem::write_file(filename);
     }
 
     // 捡出策略订单状态文件列表
@@ -156,9 +162,9 @@ namespace trader {
             for (const auto& entry : fs::directory_iterator(orderFlagPath)) {
                 std::string filename = entry.path().string();
 
-                // 4. 严格按pattern的三个部分进行匹配：
+                // 4. 严格按pattern的三个部分进行匹配: 
                 //    a) 前缀路径 + 策略名前缀 + "-"
-                //    b) 中间任意字符（*通配符）
+                //    b) 中间任意字符(*通配符)
                 //    c) 固定扩展名
                 if (filename.rfind(prefixPath.string(), 0) == 0 && // 匹配前缀部分
                     filename.size() > prefixPath.string().size() && // 确保有中间部分

@@ -6,6 +6,7 @@
 #include "quant1x/engine/rule-engine.h"
 #include "quant1x/engine/rule-error.h"
 
+
 engine::RuleError ExampleBaseRule(const engine::RuleContext& ctx) {
     if (ctx.snapshot->getPrice() > 100.0) {
         return engine::RuleError::INVALID_PRICE;
@@ -36,7 +37,7 @@ TEST_CASE("rule-test", "[rules]") {
     if (err == engine::RuleError::OK) {
         std::cout << "通过的规则数: " << passed.size() << std::endl;
     } else {
-        std::cerr << "规则失败，错误码: " << engine::to_string(err) << std::endl;
+        std::cerr << "规则失败, 错误码: " << engine::to_string(err) << std::endl;
     }
 
     // 打印规则列表

@@ -1,13 +1,16 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
 
 import requests
 import pandas as pd
 import os
 from typing import List, Tuple, Optional, Dict
 from dataclasses import dataclass, field
-from quant1x import exchange
-from quant1x.exchange import Timestamp
+from quant1x.data.market import detect_symbol, correct_security_code, assert_index_by_security_code
+from quant1x.data.meta.timestamp import Timestamp
 from quant1x import std
-from quant1x.config import config
+from quant1x.config import config, reports_filename
 
 # Constants
 URL_QUARTERLY_REPORT_ALL = "https://datacenter-web.eastmoney.com/api/data/v1/get"
@@ -138,7 +141,7 @@ def quarterly_reports(feature_date: str, page_no: int = 1) -> Tuple[List[Quarter
             report.PUBLISHNAME = v.get("PUBLISHNAME", "")
             report.ZXGXL = float(v.get("ZXGXL") or 0.0)
             
-            report.SecurityCode = exchange.correct_security_code(report.SecuCode)
+            report.SecurityCode = correct_security_code(report.SecuCode)
             reports.append(report)
             
         return reports, pages, None
@@ -147,7 +150,8 @@ def quarterly_reports(feature_date: str, page_no: int = 1) -> Tuple[List[Quarter
         return [], 0, FinancialReportException(-1, f"JSON解析错误: {str(e)}")
 
 def quarterly_reports_by_security_code(security_code: str, date: str, diff_quarters: int, page_no: int = 1) -> Tuple[List[QuarterlyReport], int, Optional[FinancialReportException]]:
-    _, _, code = exchange.detect_market(security_code)
+    inst = detect_symbol(security_code)
+    code = inst.ticker
     quarter_end_date = Timestamp.parse(date).only_date()
     
     params = {
@@ -210,7 +214,7 @@ def quarterly_reports_by_security_code(security_code: str, date: str, diff_quart
             report.PUBLISHNAME = v.get("PUBLISHNAME", "")
             report.ZXGXL = float(v.get("ZXGXL") or 0.0)
             
-            report.SecurityCode = exchange.correct_security_code(report.SecuCode)
+            report.SecurityCode = correct_security_code(report.SecuCode)
             reports.append(report)
             
         return reports, pages, None
@@ -221,42 +225,57 @@ def quarterly_reports_by_security_code(security_code: str, date: str, diff_quart
 # Cache
 _map_reports: Dict[str, List[QuarterlyReport]] = {}
 
+def _quarter_str(date: str) -> str:
+    """获取 date 对应的季度字符串, 如 2026Q1"""
+    quarter, _, _ = std.get_quarter_by_date(date)
+    return quarter
+
 def cache_quarterly_reports_by_security_code(date: str, diff_quarters: int = 1) -> Tuple[List[QuarterlyReport], int, Optional[FinancialReportException]]:
     _, _, last = std.get_quarter_by_date(date, diff_quarters)
-    filename = config.reports_filename(last)
+    filename = reports_filename(last)
+    expected_quarter = _quarter_str(last)
     
     # Check memory cache
     if filename in _map_reports:
         return _map_reports[filename], 0, None
         
     # Check file cache
-    # TODO: Implement expiration check like C++ exchange::can_initialize(modified)
     if os.path.exists(filename):
         try:
             df = pd.read_csv(filename)
+            # Validate cache: first row's QDATE must match expected quarter
+            if len(df) > 0 and "QDATE" in df.columns:
+                cached_qdate = str(df["QDATE"].iloc[0])
+                if cached_qdate != expected_quarter:
+                    # Stale cache, delete and re-fetch
+                    os.remove(filename)
+                    df = None
             # Convert DataFrame to List[QuarterlyReport]
-            reports = []
-            for _, row in df.iterrows():
-                r = QuarterlyReport()
-                for field_name in r.__dataclass_fields__:
-                    if field_name in row:
-                        val = row[field_name]
-                        # Handle NaN
-                        if pd.isna(val):
-                            if isinstance(getattr(r, field_name), (int, float)):
-                                val = 0.0
-                            else:
-                                val = ""
-                        setattr(r, field_name, val)
-                reports.append(r)
-            
-            if reports:
-                _map_reports[filename] = reports
-                return reports, 0, None
+            if df is not None:
+                reports = []
+                for _, row in df.iterrows():
+                    r = QuarterlyReport()
+                    for field_name in r.__dataclass_fields__:
+                        if field_name in row:
+                            val = row[field_name]
+                            # Handle NaN
+                            if pd.isna(val):
+                                if isinstance(getattr(r, field_name), (int, float)):
+                                    val = 0.0
+                                else:
+                                    val = ""
+                            setattr(r, field_name, val)
+                    reports.append(r)
+                
+                if reports:
+                    _map_reports[filename] = reports
+                    return reports, 0, None
         except Exception as e:
             print(f"Read CSV error: {e}")
             
     # Fetch from network
+    # quarterly_reports internally applies diff_quarters=1 offset,
+    # so we pass 'date' directly and use 'last' for cache path/validation.
     qdate = date
     if diff_quarters > 1:
         _, _, tmp_date = std.get_quarter_by_date(date, diff_quarters - 1)
@@ -303,11 +322,17 @@ _g_map_quarterly_reports: Dict[str, QuarterlyReport] = {}
 
 def load_quarterly_reports(date: str):
     _, _, last = std.get_quarter_by_date(date, 1)
-    filename = config.reports_filename(last)
+    filename = reports_filename(last)
+    expected_quarter = _quarter_str(last)
     
     if os.path.exists(filename):
         try:
             df = pd.read_csv(filename)
+            # Validate cache freshness
+            if len(df) > 0 and "QDATE" in df.columns:
+                if str(df["QDATE"].iloc[0]) != expected_quarter:
+                    os.remove(filename)
+                    return
             for _, row in df.iterrows():
                 r = QuarterlyReport()
                 for field_name in r.__dataclass_fields__:
@@ -326,7 +351,7 @@ def load_quarterly_reports(date: str):
 def get_quarterly_report_summary(security_code: str, date: str) -> QuarterlyReportSummary:
     summary = QuarterlyReportSummary()
     
-    if exchange.assert_index_by_security_code(security_code):
+    if assert_index_by_security_code(security_code):
         return summary
         
     if security_code in _g_map_quarterly_reports:
@@ -338,3 +363,28 @@ def get_quarterly_report_summary(security_code: str, date: str) -> QuarterlyRepo
         summary.assign(q)
         
     return summary
+
+
+if __name__ == "__main__":
+    # 测试获取季度财报
+    code = "sh600000"
+    date = "2026-03-31"
+    print(f"=== 测试 quarterly_reports({date}) ===")
+    reports, pages, err = quarterly_reports(date, page_no=1)
+    if err:
+        print(f"  错误: {err.message}")
+    else:
+        print(f"  共 {len(reports)} 条, {pages} 页")
+        for r in reports[:3]:
+            print(f"  [{r.SecurityCode}] {r.QDATE} BPS={r.BPS:.2f} EPS={r.BasicEPS:.4f}")
+
+    print(f"\n=== 测试 get_quarterly_report_summary({code}, {date}) ===")
+    try:
+        summary = get_quarterly_report_summary(code, date)
+        print(f"  QDate: {summary.QDate}")
+        print(f"  BPS: {summary.BPS}")
+        print(f"  BasicEPS: {summary.BasicEPS}")
+        print(f"  TotalOperateIncome: {summary.TotalOperateIncome}")
+        print(f"  DeductBasicEPS: {summary.DeductBasicEPS}")
+    except Exception as e:
+        print(f"  错误: {e}")

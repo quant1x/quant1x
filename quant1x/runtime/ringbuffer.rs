@@ -1,4 +1,4 @@
-// 独立的 Vyukov 有界 MPMC 队列（库变体 - 无 main），带对齐和退避策略
+// 独立的 Vyukov 有界 MPMC 队列(库变体 - 无 main), 带对齐和退避策略
 use std::cell::UnsafeCell;
 use std::hint;
 use std::mem::MaybeUninit;
@@ -7,21 +7,21 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-/// 单个槽位（缓存行对齐）
+/// 单个槽位(缓存行对齐)
 ///
-/// `Slot` 包含序列号用于确认读写阶段，以及一个未初始化的数据存储区。
+/// `Slot` 包含序列号用于确认读写阶段, 以及一个未初始化的数据存储区. 
 #[repr(align(64))]
 struct Slot<T> {
-    /// 序列号，用于判断该槽位处于可读/可写的哪个阶段
+    /// 序列号, 用于判断该槽位处于可读/可写的哪个阶段
     seq: AtomicUsize,
-    /// 数据存储（未初始化），通过 UnsafeCell 包装以支持无锁写入/读取
+    /// 数据存储(未初始化), 通过 UnsafeCell 包装以支持无锁写入/读取
     data: UnsafeCell<MaybeUninit<T>>,
 }
 
 unsafe impl<T: Send> Send for Slot<T> {}
 unsafe impl<T: Send> Sync for Slot<T> {}
 
-/// 对齐包装的 AtomicUsize，避免不同原子变量因伪共享导致性能下降
+/// 对齐包装的 AtomicUsize, 避免不同原子变量因伪共享导致性能下降
 #[repr(align(64))]
 struct AlignedAtomicUsize(AtomicUsize);
 
@@ -30,15 +30,15 @@ impl AlignedAtomicUsize {
     fn new(v: usize) -> Self {
         AlignedAtomicUsize(AtomicUsize::new(v))
     }
-    /// 读取原子值（使用给定的内存顺序）
+    /// 读取原子值(使用给定的内存顺序)
     fn load(&self, o: Ordering) -> usize {
         self.0.load(o)
     }
-    /// 存储原子值（使用给定的内存顺序）
+    /// 存储原子值(使用给定的内存顺序)
     fn store(&self, v: usize, o: Ordering) {
         self.0.store(v, o)
     }
-    /// CAS 操作（比较并交换）
+    /// CAS 操作(比较并交换)
     fn compare_exchange(
         &self,
         a: usize,
@@ -50,19 +50,19 @@ impl AlignedAtomicUsize {
     }
 }
 
-/// Vyukov 有界 MPMC 队列（多生产者，多消费者），容量为 2 的幂
+/// Vyukov 有界 MPMC 队列(多生产者, 多消费者), 容量为 2 的幂
 ///
-/// 该实现基于无锁算法，使用槽位序号做状态管理以支持并发推入/弹出。
+/// 该实现基于无锁算法, 使用槽位序号做状态管理以支持并发推入/弹出. 
 pub struct Queue<T> {
-    /// 槽位数组，长度为 capacity（向上取整到 2 的幂）
+    /// 槽位数组, 长度为 capacity(向上取整到 2 的幂)
     buffer: Vec<Slot<T>>,
-    /// 用于将序号映射到槽位索引的掩码（mask = capacity - 1）
+    /// 用于将序号映射到槽位索引的掩码(mask = capacity - 1)
     mask: usize,
-    /// 下一个待写入的位置（生产者索引）
+    /// 下一个待写入的位置(生产者索引)
     enqueue_pos: AlignedAtomicUsize,
-    /// 下一个待读取的位置（消费者索引）
+    /// 下一个待读取的位置(消费者索引)
     dequeue_pos: AlignedAtomicUsize,
-    /// 关闭标志（非 0 表示队列已关闭）
+    /// 关闭标志(非 0 表示队列已关闭)
     closed: AtomicUsize,
 }
 
@@ -70,10 +70,10 @@ unsafe impl<T: Send> Send for Queue<T> {}
 unsafe impl<T: Send> Sync for Queue<T> {}
 
 impl<T> Queue<T> {
-    /// 创建一个新的环形缓冲区实例，容量会被调整为不小于指定容量的最小2的幂次方
+    /// 创建一个新的环形缓冲区实例, 容量会被调整为不小于指定容量的最小2的幂次方
     ///
     /// # Arguments
-    /// * `capacity` - 期望的缓冲区容量，实际容量会是大于等于该值的最小2的幂次方
+    /// * `capacity` - 期望的缓冲区容量, 实际容量会是大于等于该值的最小2的幂次方
     ///
     /// # Examples
     /// ```
@@ -101,7 +101,7 @@ impl<T> Queue<T> {
         }
     }
 
-    /// 自旋退避策略：根据重试次数选择不同的退避方式以减少忙等开销
+    /// 自旋退避策略: 根据重试次数选择不同的退避方式以减少忙等开销
     /// - 早期采用 CPU spin-loop
     /// - 中期 yield 给线程调度器
     /// - 后期短暂 sleep
@@ -117,9 +117,9 @@ impl<T> Queue<T> {
         *iter = iter.saturating_add(1);
     }
 
-    /// 向队列推入一个元素，成功返回 Ok，队列已满返回 Err
+    /// 向队列推入一个元素, 成功返回 Ok, 队列已满返回 Err
     ///
-    /// 该操作为无锁设计：通过比较序号判断槽位是否空闲，再通过 CAS 争夺写入权限。
+    /// 该操作为无锁设计: 通过比较序号判断槽位是否空闲, 再通过 CAS 争夺写入权限. 
     pub fn push(&self, value: T) -> Result<(), ()> {
         let mut backoff = 0u32;
         loop {
@@ -133,7 +133,7 @@ impl<T> Queue<T> {
                     .compare_exchange(pos, pos + 1, Ordering::SeqCst, Ordering::Relaxed)
                     .is_ok()
                 {
-                    // 将值写入槽位（直接写入未初始化的内存），随后更新序列号为可读状态
+                    // 将值写入槽位(直接写入未初始化的内存), 随后更新序列号为可读状态
                     unsafe {
                         (*slot.data.get()).write(value);
                     }
@@ -144,7 +144,7 @@ impl<T> Queue<T> {
                     continue;
                 }
             } else if seq < pos {
-                // 当槽位序列号小于期望序号，说明该槽位尚未被消费者重置，队列被判定为已满
+                // 当槽位序列号小于期望序号, 说明该槽位尚未被消费者重置, 队列被判定为已满
                 return Err(());
             } else {
                 Self::backoff_spin(&mut backoff);
@@ -153,9 +153,9 @@ impl<T> Queue<T> {
         }
     }
 
-    /// 从队列弹出一个元素，成功返回 Ok(value)，当队列关闭且无数据时返回 Err
+    /// 从队列弹出一个元素, 成功返回 Ok(value), 当队列关闭且无数据时返回 Err
     ///
-    /// 该操作为无锁设计：通过比较序号判断槽位是否可读，再通过 CAS 争夺读取权限。
+    /// 该操作为无锁设计: 通过比较序号判断槽位是否可读, 再通过 CAS 争夺读取权限. 
     pub fn pop(&self) -> Result<T, ()> {
         let mut backoff = 0u32;
         loop {
@@ -177,8 +177,8 @@ impl<T> Queue<T> {
                     continue;
                 }
             } else if seq < pos + 1 {
-                // 如果序号落后，说明当前没有可读数据。
-                // 若队列已被关闭，则返回 Err 表示没有更多元素可读。
+                // 如果序号落后, 说明当前没有可读数据. 
+                // 若队列已被关闭, 则返回 Err 表示没有更多元素可读. 
                 if self.closed.load(Ordering::Acquire) != 0 {
                     return Err(());
                 }
@@ -193,7 +193,7 @@ impl<T> Queue<T> {
 
     pub fn close(&self) {
         // 将 closed 标志置位以表明队列已关闭
-        // 关闭后，生产者应停止推入新数据，消费者在耗尽现有数据后会收到 Err
+        // 关闭后, 生产者应停止推入新数据, 消费者在耗尽现有数据后会收到 Err
         self.closed.store(1, Ordering::Release);
     }
 }

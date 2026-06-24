@@ -1,4 +1,4 @@
-use crate::exchange;
+use crate::data::market::detect_symbol;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -100,7 +100,8 @@ static MAP_SAFETY_SCORE: Lazy<Mutex<HashMap<String, i32>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
 pub fn get_safety_score(security_code: &str) -> (i32, String) {
-    if !exchange::assert_stock_by_security_code(security_code) {
+    let inst = detect_symbol(security_code);
+    if !inst.instrument_type.is_stock() {
         return (DEFAULT_SAFETY_SCORE, "".to_string());
     }
     // TODO: Implement exchange::is_need_ignore

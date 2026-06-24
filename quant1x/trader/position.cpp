@@ -1,12 +1,25 @@
 #include <quant1x/trader/position.h>
-#include <quant1x/instruments/markets.h>
+#include <quant1x/data/meta/timestamp.h>
+#include <quant1x/data/market.h>
+#include <quant1x/data/meta/calendar.h>
 #include <quant1x/encoding/csv.h>
+#include <quant1x/runtime/once.h>
+#include <quant1x/config/base.h>
+#include <quant1x/config/cache.h>
+#include <quant1x/contrib/data/tdx/client.h>
+#include <quant1x/contrib/data/tdx/level1/std/security_quote.h>
+#include <spdlog/spdlog.h>
+
+namespace config = quant1x::config;
+namespace meta = quant1x::data::meta;
+namespace data = quant1x::data;
+namespace tdx = quant1x::contrib::data::tdx;
 
 namespace trader {
 
     static inline std::unordered_map<std::string, Position> mapPositions;
     static inline std::mutex                                positionsMutex;
-    static inline auto positionOnce = RollingOnce::create("trader-position", exchange::cron_expr_daily_9am);
+    static inline auto positionOnce = RollingOnce::create("trader-position", quant1x::config::GLOBAL_CRON_EXPR_DAILY_INIT);
 
     const std::string qmtPositionsPath = "qmt";           // 持仓缓存路径
     const std::string qmtPositionsFilename = "positions.csv"; // 持仓数据文件名
@@ -33,7 +46,7 @@ namespace trader {
     bool Position::Sync(const PositionDetail& other) {
         this->AccountType = other.AccountType;
         this->AccountId = other.AccountId;
-        this->SecurityCode = exchange::CorrectSecurityCode(other.StockCode);
+        this->SecurityCode = data::correct_security_code(other.StockCode);
         this->Volume = other.Volume;
         this->CanUseVolume = other.CanUseVolume;
         this->OpenPrice = other.OpenPrice;
@@ -44,7 +57,7 @@ namespace trader {
         this->AvgPrice = other.AvgPrice;
 
         if (this->CreateTime.empty() && other.YesterdayVolume > 0) {
-            exchange::timestamp ts = exchange::prev_trading_day();
+            meta::Timestamp ts = meta::prev_trading_day();
             std::string frontDate = ts.only_date() + " 00:00:00";
             this->CreateTime = frontDate;
         }
@@ -112,7 +125,7 @@ namespace trader {
         std::lock_guard<std::mutex> lock(positionsMutex);
 
         for (const auto& v : list) {
-            std::string code = exchange::CorrectSecurityCode(v.StockCode);
+            std::string code = data::correct_security_code(v.StockCode);
             auto [it, inserted] = mapPositions.try_emplace(code);
             Position& position = it->second;
             position.Sync(v);
@@ -129,26 +142,32 @@ namespace trader {
         std::lock_guard<std::mutex> lock(positionsMutex);
 
         for (const auto& v : list) {
-            std::string code = exchange::CorrectSecurityCode(v.StockCode);
+            std::string code = data::correct_security_code(v.StockCode);
             auto [it, inserted] = mapPositions.try_emplace(code);
             Position& position = it->second;
 
             double price = 0.00;
             try {
-                auto [mid, mflag, symbol] = exchange::DetectMarket(code);
-                tsl::robin_map<std::string, level1::StockInfo> maps;
-                maps[code] = level1::StockInfo{static_cast<u8>(mid), symbol};
-                std::vector<std::string> codes={code};
-                level1::SecurityQuoteRequest request(codes);
-                level1::SecurityQuoteResponse response;
-                auto conn = level1::get_std_conn();
-                auto err = level1::process(conn->socket(), request, response);
+                auto inst = data::detect_symbol(code);
+                tsl::robin_map<std::string, tdx::StockInfo> maps;
+                maps[code] = tdx::StockInfo{static_cast<u8>(inst.exchange), inst.ticker};
+                std::vector<meta::Instrument> codes = {inst};
+                tdx::SecurityQuoteContext request(codes);
+                auto conn = tdx::get_std_conn();
+                if(!conn) {
+                    spdlog::error("服务器网络不稳定");
+                    continue;
+                }
+                auto err = tdx::transact_message_sync(conn->socket(), request);
                 if (err) {
                     spdlog::error("Process error: {}", err.message());
                     err.clear();
                     continue;
                 }
-                response.verify_delisted_securities(maps);
+                request.verify_delisted_securities(maps);
+                if(!request.quotes.empty()) {
+                    price = request.quotes[0].price;
+                }
             } catch (...) {
                 //
             }

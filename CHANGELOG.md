@@ -3,6 +3,749 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.50] - 2026-06-22
+### Changed
+- feat(ticker_rules): add Go implementation of all market ticker rules
+
+Implement rule.go (RulePrefix, CodeRule, MatchRule, GlobalRules) and market rules for BSE, SSE, SZSE, HKEX, USA including HK price tick and US code mapping.
+
+## [0.7.49] - 2026-06-22
+### Changed
+- feat(storage): add C++, Rust, Go storage implementations based on Python design
+
+- Add C++ FileStorage<T>, BasedataFileStorage<T>, MetaFileStorage<T> in storage.h
+- Add Rust FileStorage trait, BasedataFileStorage, MetaFileStorage in storage.rs
+- Add Go FileStorage interface, BasedataFileStorage, MetaFileStorage in storage.go
+- Add storage.md design document
+- Register storage module in data/mod.rs
+- release v0.7.49
+
+## [0.7.48] - 2026-06-22
+### Changed
+- 添加许可证头部
+- c++: 调整入口源文件名为app
+- c++: datasets收敛到app
+- fix: API迁移 - 恢复CMakeLists.txt中禁用的源文件并修复旧版API调用
+
+- CMakeLists.txt: 取消注释约12个TODO标记的源文件
+- detect_symbol: 3元组返回值迁移为Instrument结构体
+- correct_security_code: 双参数迁移为单参数
+- date_range -> get_date_range
+- ExchangeId -> Exchange枚举直接使用
+- instruments命名空间函数迁移
+- cpr::Parameters使用双花括号语法
+- 修复缺失的#include和namespace别名
+- 修复Owner()缺少const限定符
+- 清理build临时日志文件
+- release v0.7.48
+
+## [0.7.47] - 2026-06-21
+### Changed
+- c++: 删除废弃的头文件
+- rust: 清理冗余的依赖库
+- release v0.7.47
+
+## [0.7.46] - 2026-06-21
+### Changed
+- python: 更新测试笔记
+- release v0.7.46
+
+## [0.7.45] - 2026-06-21
+### Changed
+- c++: 删除废弃的示例代码
+- release v0.7.45
+
+## [0.7.44] - 2026-06-21
+### Changed
+- go: 初步与新的数据框架对齐
+- 修复 buffer.h 的未定义行为及潜在缺陷
+
+- 添加 <limits>/<array>/<string>/<cassert> 头文件，消除隐式依赖
+- push_arithmetic/get_arithmetic 增加 static_assert 阻止 long double（防止栈溢出）
+- get_le 用 memcpy 替代 static_cast 避免有符号转换实现定义行为
+- get_string 用 std::memchr 替代 strnlen（POSIX）解决跨平台问题
+- varint_decode 中 shift 类型改为 uint32_t 避免位宽假设
+- seek/skip 添加 assert 边界检查
+- ensure_capacity 替换为 prepare_write 增加 overflow 检查，防止写入越界
+- 修复 get_array 返回 std::array 时的重载匹配编译错误
+- release v0.7.44
+
+## [0.7.43] - 2026-06-21
+### Changed
+- 删除过期的演示代码
+- release v0.7.43
+
+## [0.7.42] - 2026-06-21
+### Changed
+- 补充开发规范缺失的目录结构示意图
+- release v0.7.42
+
+## [0.7.41] - 2026-06-20
+### Changed
+- fix: 修复 security_list_test 编译和链接错误
+
+- data.ExchangeBSE -> data.BSE (修正不存在常量)
+- 移除 _ = data.DataHandler() (go:linkname 依赖 tdx 包导致链接失败)
+- bar.go: 移除 gitee.com 外部依赖, exchange.Timestamp -> data.Timestamp
+- 测试改为自包含连接提供者, 直接拨号+握手, 不依赖 tdx 包 init()
+- release v0.7.41
+
+## [0.7.40] - 2026-06-20
+### Changed
+- 统一调整KLine命名为Bar
+- 新增开发规范
+- release v0.7.40
+
+## [0.7.39] - 2026-06-20
+### Changed
+- c++: 剔除对旧版本kline的依赖
+- release v0.7.39
+
+## [0.7.38] - 2026-06-20
+### Changed
+- debug: add trace logging for sh880915 昨日突涨 block to find where it drops
+- fix: parse_block_raw_data scan all 400 code slots instead of trusting num field; remove debug logs
+- release v0.7.38
+
+## [0.7.37] - 2026-06-20
+### Changed
+- fix_last_trading_day_with_debug_timestamp_parameter
+- feat: implement Print methods for all data adapters; add blocks comparison tool
+- release v0.7.37
+
+## [0.7.36] - 2026-06-19
+### Changed
+- c++修订注释
+- 统一消息名称签名格式
+- release v0.7.36
+
+## [0.7.35] - 2026-06-18
+### Changed
+- 修复漏掉的rust版本说明
+- release v0.7.35
+
+## [0.7.34] - 2026-06-18
+### Changed
+- 更新rust最低版本的说明, 确定1.96+
+- release v0.7.34
+
+## [0.7.33] - 2026-06-18
+### Changed
+- 修复autochangelog不能通过不更新cargo.lock的问题
+- release v0.7.33
+
+## [0.7.32] - 2026-06-18
+### Changed
+- fix: align publish.sh with publish.ps1 and fix bash regex version extraction
+
+- 统一构建工具: python setup.py → python -m build
+- 版本号从构建产物文件名解析，修正贪婪 (.+) → ([^-]+) 避免 PEP 427 wheel 文件名误匹配
+- 参数对齐: 移除 --dry-run/--repository，新增 --no-rich/--allow-existing
+- 版本重复检查改为阻断型 (exit 2)，--allow-existing 可强制继续
+- 新增 PYTHONIOENCODING/TWINE_NON_INTERACTIVE 环境变量
+- 新增 build 模块预检
+- release v0.7.32
+
+## [0.7.31] - 2026-06-18
+### Changed
+- refactor: rename namespace config to quant1x::config
+
+- 将所有 quant1x/config/ 目录下的 namespace config 改为 namespace quant1x::config
+- 更新所有外部文件的 namespace 别名: namespace config = ::config; -> namespace config = quant1x::config;
+- 更新 YAML convert 模板特化中的 config:: 引用
+- 涉及 33 个文件，编译通过
+- release v0.7.31
+
+## [0.7.30] - 2026-06-18
+### Changed
+- refactor(calendar): align lazy_load_calendar with Python impl - check marker file expiry before update
+- 调整消息头字段名
+- fix: namespace resolution and compilation errors across tdx modules
+- release v0.7.30
+
+## [0.7.29] - 2026-06-17
+### Changed
+- 调整全角符号为半角, 调整io部分文件类功能归于std模块
+- release v0.7.29
+
+## [0.7.28] - 2026-06-17
+### Changed
+- refactor(cpp): align cache paths with Rust/Python, add network fetch for stub adapters
+
+- Use inst.cache_dir() (e.g. sse/szse) in cache paths for kline_raw, xdxr, kline, trans, minute, kline_minute
+- kline_raw: day_raw/{cache_dir}/{symbol}.raw
+- xdxr: xdxr/{cache_dir}/{symbol}.csv
+- kline: day/{cache_dir}/{symbol}.csv
+- trans: trans/{cache_dir}/{year}/{yyyymmdd}/{symbol}.csv
+- minute: minute/{cache_dir}/{symbol}.csv
+- kline_minute: kline_minute/{cache_dir}/{symbol}.csv
+- Implement actual network fetch + save logic for kline, trans, minute, kline_minute adapters
+- refactor(cpp): move protocol.h/cpp and helpers.h from level1/ to tdx/ to align with Rust/Python
+
+- Moved quant1x/contrib/data/tdx/level1/{protocol.h, protocol.cpp, helpers.h} -> quant1x/contrib/data/tdx/
+- Updated all 19 include references across client.h, instruments.cpp, tests, and 16 level1 headers
+- Fixed double-slash paths in xdxr_info.h, transaction_data.h
+- Updated CMakeLists.txt source paths and added helpers.h to header list
+- Updated helpers.rs comment to reflect new path
+- refactor(cpp): move forward-adjustment logic from factors/ into tdx/kline, align DataKLine::Update with Python
+
+kline.h/cpp:
+- Full DataKLine::Update() flow matching Python: cache load -> date range -> batch fetch -> merge -> adjust -> save
+- apply_forward_adjustment_for_event() for incremental updates
+- apply_forward_adjustments_once() / calculate_pre_adjust() for general use
+- combine_adjustments_in_period() using meta::schema::CumulativeAdjustment
+- CSV I/O: read_kline_from_csv, save_kline, load_kline, get_kline_filename
+- get_xdxr_list / ipo_date_from_xdxrs reading from xdxr cache
+
+factors/base.h/cpp:
+- Remove all adjustment types/functions (moved to tdx::kline)
+- checkout_klines / klines_forward_adjusted_to_date now delegate to tdx:: functions
+- Keep feature constants and backward-compatible wrapper API
+- refactor(cpp): align kline_raw with Python semantics, add ext protocol support, remove old base factors
+
+- kline_raw: fetch_kline_raw returns domain Bar (not protocol SecurityBar), internal SecurityBar->Bar conversion
+- level1: add ext_sync.h (ExtSynchronize, cmd 0x2454) and instrument_bars.h (InstrumentBars, cmd 0x23FF) for ext K-line protocol
+- client: add ExtensionProtocolHandler with get_ext_conn() for ext connection pool
+- fetch_kline_raw_from_ext: replace TODO stub with full ext protocol implementation
+- kline: remove redundant SecurityBar->Bar conversion, directly consume domain Bar
+- factors: delete old base.cpp/h, update base_compat.h/f10.cpp/history.cpp
+- tests: update tdd-* tests, user: update no0/strategy-no0
+- gitignore: add build_output.txt
+- 删除cmake构建临时文件
+- release v0.7.28
+
+## [0.7.27] - 2026-06-16
+### Changed
+- python: 删除旧版本的代码检测
+- release v0.7.27
+
+## [0.7.26] - 2026-06-16
+### Changed
+- fix: compile error in connection_pool and varint_decode bug, ignore env-dependent tests
+- git仓库忽略codebuddy的临时目录
+- refactor: migrate exchange namespace to meta, adapter Update/Print to Instrument ref
+
+- Move exchange-related types under data::meta namespace
+- Change DataAdapter/FeatureAdapter Update/Print from string code to Instrument& inst
+- Update all 12 adapter subclasses, extract code via inst.symbol() internally
+- Fix callers (cache.cpp, tests) to pass Instrument via data::detect_symbol()
+- Update CMakeLists.txt source paths accordingly
+- release v0.7.26
+
+## [0.7.25] - 2026-06-15
+### Changed
+- refactor: align RequestHeader/ResponseHeader field names with Python base message
+
+- zip_flag -> frame_type (align with Python RequestHeader.frame_type)
+
+- packet_type -> packet_flag (align with Python ResponseHeader.packet_flag)
+
+- update all submodule references in heartbeat/minute_time/security_bars/finance_info
+- release v0.7.25
+
+## [0.7.24] - 2026-06-15
+### Changed
+- fix: extension server probe now uses ExtensionProtocolHandler handshake
+- release v0.7.24
+
+## [0.7.23] - 2026-06-15
+### Changed
+- refactor: 合并 handshake/handshake_std 为统一的 handshake 方法
+- release v0.7.23
+
+## [0.7.22] - 2026-06-15
+### Changed
+- feat(tdx): 实现板块文件下载与解析功能，添加测试
+
+- 新增 block.rs: BlockInfo 消息 (STD_BLOCK_DATA 0x06b9)，支持分块下载板块原始数据
+- 扩展 sector.rs: 实现 sync_block_files() 完整下载流程
+  - 从 level1 分块下载原始板块文件
+  - 解析二进制板块文件 (384字节头 + 2813字节记录)
+  - 解压 zhb.zip 提取配置文件
+  - 加载行业配置并生成CSV缓存
+  - get_sector_list() 首次调用自动触发同步
+- 添加 9 个测试用例 (6个单元测试 + 3个集成测试标记ignore)
+- release v0.7.22
+
+## [0.7.21] - 2026-06-15
+### Changed
+- python: 修订项目主页url
+- python: 测试代码恢复k线测试
+- 调整资源配置文件
+- python: 拆分常量
+- 对齐rust和python的部分消息结构
+- python: 删除cli包
+- rust: 修复协议握手没实现的bug
+- release v0.7.21
+
+## [0.7.20] - 2026-06-12
+### Changed
+- go: 统一调整仓库地址为github
+- go: 切换go基础库代码仓库到github
+- update changelog
+
+## [0.7.19] - 2026-06-12
+### Changed
+- 缓存代码
+- update changelog
+
+## [0.7.18] - 2026-06-11
+### Changed
+- python: 恢复港股F10的接口
+- 调整包路径
+- update changelog
+
+## [0.7.17] - 2026-06-09
+### Changed
+- python: 删除废弃的market代码
+- refactor: restructure data/meta module with exchange, instrument, region, ticker_rules and timestamp
+- update changelog
+
+## [0.7.16] - 2026-06-09
+### Changed
+- feat: migrate F10 data modules to contrib layer, add financial_report/share_holder/notice
+
+- Add financial_report.py: quarterly report fetching from EastMoney API
+  with full-market cache + single-stock fallback
+- Add share_holder.py: top10 shareholders data from TDX F10
+- Add notice.py: annual/quarterly report disclosure dates
+- Add f10.py: unified F10 data aggregation
+- Add fund.py: fund flow data placeholder in level1
+- Add reports_filename/top10_holders_filename to config module
+- Fix quarterly cache path: avoid double-offset bug (2026Q1 -> 2025Q4)
+- Fix SecurityCode comparison with correct_security_code normalization
+- Upgrade exception logging from debug to warning with traceback
+- Move f10.py from level1/ to tdx/ parent directory
+- Update level1 imports and command routing
+- python: 保存python测试数据
+- python: 调整命令字包路径
+- python: 调整辅助函数的包路径
+- python: 调整包路径
+- python: 调整协议字段名
+- python: 修复当日分笔成交记录的日期
+- update changelog
+
+## [0.7.15] - 2026-06-08
+### Changed
+- refactor: 优化run_module.py，package_name改为从LICENSE父目录自动获取，找不到则抛异常
+- update changelog
+
+## [0.7.14] - 2026-06-07
+### Changed
+- python: 新增集合竞价命令字
+- update changelog
+
+## [0.7.13] - 2026-06-07
+### Changed
+- python: improve version detection flow and ignore _version.py
+- python: configure setuptools_scm write_to and fallback_version
+- update changelog
+
+## [0.7.12] - 2026-06-05
+### Changed
+- python: rename XdxrInfoList to XdxrEntry
+- python: update xdxr caller and instrument default
+- update changelog
+
+## [0.7.11] - 2026-06-05
+### Changed
+- python: 标准协议统一处理流程
+- update changelog
+
+## [0.7.10] - 2026-06-05
+### Changed
+- python: 统一网络协议处理为process_level1_new，删除旧版process/process_level1及Serializable/Request/Response等废弃类
+- update changelog
+
+## [0.7.9] - 2026-06-03
+### Changed
+- Tighten Python package discovery and update publish scripts for pyproject build
+- Refine MANIFEST.in: separate C/C++ exclusion block and include CMake rules
+- update changelog
+
+## [0.7.8] - 2026-06-03
+### Changed
+- chore: 统一换行符为LF
+- fix: fix_header.py统一输出LF换行符，避免Windows下产生CRLF
+- chore: .gitattributes强制所有源码文件使用LF换行符
+- chore: .gitattributes移除json和capnp的LF约束
+- Update publish scripts for pyproject build and exclude third_party
+- update changelog
+
+## [0.7.7] - 2026-06-03
+### Changed
+
+## [0.7.6.1] - 2026-06-17
+### Changed
+- refactor: 移除ThrottledMultiProgress，使用Rich原生refresh_per_second节流；优化main.py多级进度条
+- fix: CTRL+C无法终止运行，添加signal中断处理
+- update changelog
+- chore: 统一换行符为LF
+- fix: fix_header.py统一输出LF换行符，避免Windows下产生CRLF
+- chore: .gitattributes强制所有源码文件使用LF换行符
+- chore: .gitattributes移除json和capnp的LF约束
+- Update publish scripts for pyproject build and exclude third_party
+- update changelog
+- Tighten Python package discovery and update publish scripts for pyproject build
+- Refine MANIFEST.in: separate C/C++ exclusion block and include CMake rules
+- update changelog
+- python: 统一网络协议处理为process_level1_new，删除旧版process/process_level1及Serializable/Request/Response等废弃类
+- update changelog
+- python: 标准协议统一处理流程
+- update changelog
+- python: rename XdxrInfoList to XdxrEntry
+- python: update xdxr caller and instrument default
+- update changelog
+- python: improve version detection flow and ignore _version.py
+- python: configure setuptools_scm write_to and fallback_version
+- update changelog
+- python: 新增集合竞价命令字
+- update changelog
+- refactor: 优化run_module.py，package_name改为从LICENSE父目录自动获取，找不到则抛异常
+- update changelog
+- feat: migrate F10 data modules to contrib layer, add financial_report/share_holder/notice
+
+- Add financial_report.py: quarterly report fetching from EastMoney API
+  with full-market cache + single-stock fallback
+- Add share_holder.py: top10 shareholders data from TDX F10
+- Add notice.py: annual/quarterly report disclosure dates
+- Add f10.py: unified F10 data aggregation
+- Add fund.py: fund flow data placeholder in level1
+- Add reports_filename/top10_holders_filename to config module
+- Fix quarterly cache path: avoid double-offset bug (2026Q1 -> 2025Q4)
+- Fix SecurityCode comparison with correct_security_code normalization
+- Upgrade exception logging from debug to warning with traceback
+- Move f10.py from level1/ to tdx/ parent directory
+- Update level1 imports and command routing
+- python: 保存python测试数据
+- python: 调整命令字包路径
+- python: 调整辅助函数的包路径
+- python: 调整包路径
+- python: 调整协议字段名
+- python: 修复当日分笔成交记录的日期
+- update changelog
+- python: 删除废弃的market代码
+- refactor: restructure data/meta module with exchange, instrument, region, ticker_rules and timestamp
+- update changelog
+- python: 恢复港股F10的接口
+- 调整包路径
+- update changelog
+- 缓存代码
+- update changelog
+- go: 统一调整仓库地址为github
+- go: 切换go基础库代码仓库到github
+- update changelog
+- python: 修订项目主页url
+- python: 测试代码恢复k线测试
+- 调整资源配置文件
+- python: 拆分常量
+- 对齐rust和python的部分消息结构
+- python: 删除cli包
+- rust: 修复协议握手没实现的bug
+- release v0.7.21
+- feat(tdx): 实现板块文件下载与解析功能，添加测试
+
+- 新增 block.rs: BlockInfo 消息 (STD_BLOCK_DATA 0x06b9)，支持分块下载板块原始数据
+- 扩展 sector.rs: 实现 sync_block_files() 完整下载流程
+  - 从 level1 分块下载原始板块文件
+  - 解析二进制板块文件 (384字节头 + 2813字节记录)
+  - 解压 zhb.zip 提取配置文件
+  - 加载行业配置并生成CSV缓存
+  - get_sector_list() 首次调用自动触发同步
+- 添加 9 个测试用例 (6个单元测试 + 3个集成测试标记ignore)
+- release v0.7.22
+- refactor: 合并 handshake/handshake_std 为统一的 handshake 方法
+- release v0.7.23
+- fix: extension server probe now uses ExtensionProtocolHandler handshake
+- release v0.7.24
+- refactor: align RequestHeader/ResponseHeader field names with Python base message
+
+- zip_flag -> frame_type (align with Python RequestHeader.frame_type)
+
+- packet_type -> packet_flag (align with Python ResponseHeader.packet_flag)
+
+- update all submodule references in heartbeat/minute_time/security_bars/finance_info
+- release v0.7.25
+- fix: compile error in connection_pool and varint_decode bug, ignore env-dependent tests
+- git仓库忽略codebuddy的临时目录
+- refactor: migrate exchange namespace to meta, adapter Update/Print to Instrument ref
+
+- Move exchange-related types under data::meta namespace
+- Change DataAdapter/FeatureAdapter Update/Print from string code to Instrument& inst
+- Update all 12 adapter subclasses, extract code via inst.symbol() internally
+- Fix callers (cache.cpp, tests) to pass Instrument via data::detect_symbol()
+- Update CMakeLists.txt source paths accordingly
+- release v0.7.26
+- python: 删除旧版本的代码检测
+- release v0.7.27
+- refactor(cpp): align cache paths with Rust/Python, add network fetch for stub adapters
+
+- Use inst.cache_dir() (e.g. sse/szse) in cache paths for kline_raw, xdxr, kline, trans, minute, kline_minute
+- kline_raw: day_raw/{cache_dir}/{symbol}.raw
+- xdxr: xdxr/{cache_dir}/{symbol}.csv
+- kline: day/{cache_dir}/{symbol}.csv
+- trans: trans/{cache_dir}/{year}/{yyyymmdd}/{symbol}.csv
+- minute: minute/{cache_dir}/{symbol}.csv
+- kline_minute: kline_minute/{cache_dir}/{symbol}.csv
+- Implement actual network fetch + save logic for kline, trans, minute, kline_minute adapters
+- refactor(cpp): move protocol.h/cpp and helpers.h from level1/ to tdx/ to align with Rust/Python
+
+- Moved quant1x/contrib/data/tdx/level1/{protocol.h, protocol.cpp, helpers.h} -> quant1x/contrib/data/tdx/
+- Updated all 19 include references across client.h, instruments.cpp, tests, and 16 level1 headers
+- Fixed double-slash paths in xdxr_info.h, transaction_data.h
+- Updated CMakeLists.txt source paths and added helpers.h to header list
+- Updated helpers.rs comment to reflect new path
+- refactor(cpp): move forward-adjustment logic from factors/ into tdx/kline, align DataKLine::Update with Python
+
+kline.h/cpp:
+- Full DataKLine::Update() flow matching Python: cache load -> date range -> batch fetch -> merge -> adjust -> save
+- apply_forward_adjustment_for_event() for incremental updates
+- apply_forward_adjustments_once() / calculate_pre_adjust() for general use
+- combine_adjustments_in_period() using meta::schema::CumulativeAdjustment
+- CSV I/O: read_kline_from_csv, save_kline, load_kline, get_kline_filename
+- get_xdxr_list / ipo_date_from_xdxrs reading from xdxr cache
+
+factors/base.h/cpp:
+- Remove all adjustment types/functions (moved to tdx::kline)
+- checkout_klines / klines_forward_adjusted_to_date now delegate to tdx:: functions
+- Keep feature constants and backward-compatible wrapper API
+- refactor(cpp): align kline_raw with Python semantics, add ext protocol support, remove old base factors
+
+- kline_raw: fetch_kline_raw returns domain Bar (not protocol SecurityBar), internal SecurityBar->Bar conversion
+- level1: add ext_sync.h (ExtSynchronize, cmd 0x2454) and instrument_bars.h (InstrumentBars, cmd 0x23FF) for ext K-line protocol
+- client: add ExtensionProtocolHandler with get_ext_conn() for ext connection pool
+- fetch_kline_raw_from_ext: replace TODO stub with full ext protocol implementation
+- kline: remove redundant SecurityBar->Bar conversion, directly consume domain Bar
+- factors: delete old base.cpp/h, update base_compat.h/f10.cpp/history.cpp
+- tests: update tdd-* tests, user: update no0/strategy-no0
+- gitignore: add build_output.txt
+- 删除cmake构建临时文件
+- release v0.7.28
+- 调整全角符号为半角, 调整io部分文件类功能归于std模块
+- release v0.7.29
+
+## [0.7.6] - 2026-06-02
+### Changed
+- c++: 修复logger路径
+- python: 梳理依赖库
+- c++: 调整头文件宏
+- c++: 优化因子工厂
+- 调整vscode配置文件
+- c++: 调整配置功能函数的路径
+- go: 简化net/http代码
+- c++: 删除废弃的交易配置函数
+- go: 调整日志记录器
+- c++: 补充croncpp库LICENSE
+- go: 基础功能, 新增cron表达式
+- go: 优化调度器
+- go: 去掉cron的独立包路径, 并入base
+- c++: 调整结构体
+- go: 将cron归于std
+- go: 修复homedir测试的错误
+- 将net并入io
+- rust: cargo fmt
+- rust: 修复测试中路径的兼容问题
+- c++: 删除废弃的代码
+- c++: 调整注释格式
+- go: 拆分config中对exchange依赖的函数
+- go: 去掉标准库net的别名stdNet
+- c++: 取消safe的q1x上层命名空间
+- go: 统一季度函数
+- go: 对齐c++的日期格式的常量
+- c++: 补充config初始化函数注释
+- go: 去掉config重复的子目录函数
+- go: 修复logger包路径
+- rust: 当下的连接池作为调整为标准协议的连接池
+- rust: 补充关键函数注释
+- rust: 修订config测试代码中路径的错误设定
+- python: 修订函数注释
+- go: 调整测试代码
+- go: 补充context注释
+- 分离缓存路径，meta作为core的一部分
+- 对齐expanduser函数的路径拼接细节
+- go: c++版本的argparse.hpp迁移
+- go: 补充argparse文档
+- rust: 调整cache模块, 新设置adapter单元
+- rust: 修复单次拉取证券列表的最大条数的常量
+- 配置参数对齐
+- 优化证券代码的检测规则
+- rust: 调整缓存适配器
+- 调整证券代码的规则
+- go: 新增同步板块流程
+- go: 删除从gox复制的字符集工具
+- c++: 补充Fast C++ CSV Parser许可证及文档
+- 完善证券代码规则
+- go: 压缩工具源文件名改为compress
+- go: 抽象本地缓存的是否可更新功能
+- go: 新增上市公司财务信息接口
+- go: 优化缓存证券代码的处理流程
+- 屏蔽深圳市场首位大于3的代码规则
+- c++: 修复时区大小写的bug,
+- c++: 修复crashwindows下不记录日志的问题
+- c++: 修复交易标的的头文件路径
+- go: 删除保留字段
+- go: 交易标的的基本面
+- c++: 将adapter调整到cache
+- go: 构建更新数据流程
+- git仓库删除launch.json
+- c++: crash增加SA_SIGINFO
+- c++: 修复global_terminate_handler可能存在的遗漏异常信息的问题
+- c++: 加固更新流程
+- go: 调整fs的目录检测函数名
+- 新增主要交易所的交易时段文档
+- go: 将缓存可更新状态归于exchange
+- 统一成份股字段名为蛇形命名规则
+- rust: 按交易日期保存板块数据
+- go: 添加部分基础数据
+- python: 打包增加changelog
+- rust: 下一个版本0.7.6
+- csv字段名改成蛇形命名规则
+- python: 调整前复权函数签名
+- 增加示例代码
+- c++: 收敛配置文件名常量到cpp
+- go: 修订基础配置结构体
+- go: 设计数据接口
+- go: 调整累计复权因子
+- vscode修复go插件的异常配置告警
+- go: 代码暂存
+- python: 实现status缓存可更新状态
+- go: 调整获取文件状态的函数
+- rust: 实现缓存更新状态检测功能
+- python: 完善缓存更新状态
+- c++: 实现缓存文件更新检测功能
+- 暂存代码
+- 合并dataset和data
+- 暂存代码
+- go: 修订mic包描述
+- go: 调整RollingOnce函数签名
+- 修订session
+- go: 调整测试文件路径
+- 调整session的rust和python实现
+- 调整calendar更新流程，增加marker状态时间戳
+- c++: 优化调度器销毁流程
+- go: 收敛k线时间的处理函数
+- go: 新增即时行情
+- 修订基础数据适配器的注释，明确是基础数据
+- c++: 优化线程池退出机制
+- go: 成交数据的请求参数证券代码给用exchange.SecurityCode
+- go: 优化成交数据接口
+- 调整的部分代码
+- go: 添加应用退出前的现场清理
+- go: ExchangeId新增mic函数
+- 暂存代码
+- go: 更新go版本到1.26如此
+- go: 分笔成交数据修订集合竞价收盘常量
+- go: 调整证券信息结构
+- go: 优化命令行参数
+- go: 修正服务器列表缓存机制
+- 调整日志模块路径为log
+- rust: 调整edition版本为2024, 调整工具链版本1.93.0
+- python: 新增修复源文件头部信息
+- python: 优化模块运行脚本支持包路径映射
+- vscode新增以模块方式运行python源代码的配置
+- 修改开源协议为MIT
+- 调整模块路径
+- python: 新增AKShare实验代码
+- python: 新增Qlib实验代码
+- python: 禁止APScheduler的logging日志并组织传播
+- python: 优化csv和切片互转函数
+- python: 文件存储抽象类
+- python: 导出dataclass的字段名工具函数
+- python: 线程安全的单例模式
+- python: 剔除演示代码和优化装饰器
+- python: 完成KLine复权中下一个交易日获取方法的todo
+- python: 优化交易日历
+- python: 新增基础数据存储抽象类
+- python: k线周期增加全局常量
+- python: 调整获取证券信息函数签名
+- python: 数据接口新增证券信息、K线和成交数据
+- python: 优化证券列表的组成部分的描述信息
+- python: 调整包路径，添加许可证头部
+- python: 取消开发模式安装包时对quant1x/version.py的依赖，`pip install -e .` 开发模式会安装失败
+- python: 新增quant1x实验笔记
+- python: 格式化常量
+- python: 与pyproject.toml对齐依赖项
+- python: 统一项目的配置
+- python: 调整引入包顺序
+- python: 调整实现K线的源文件名
+- python: 调整全局配置导出
+- python: 新增RFC1123的转换函数
+- python: 扩展行情7727和7721的区别是7721没有期货，属于券商版本，7727是通达信官方扩展双线服务器
+- python: 新增NumberRange
+- python: 优化香港市场的证券代码规则
+- python: 优化NumberRange, 支持字符串范围
+- python: 调整时段权限掩码
+- python: 修订分钟数的计算方法
+- 调整文档, 增加logo
+- 新增港交所代码分配规则
+- 新增上交所2025第5次代码分配规则
+- go: 升级go版本最低1.26.0
+- 明确go版本为1.26+
+- python: 调整美股盘前、收盘以及盘后交易时段
+- python: 增加区域region
+- 新增港交所的价位表
+- 调整交易所规则文件名
+- python: 调整实验性代码
+- python: 删除测试代码
+- python: 删除测试代码
+- python: 调整测试代码
+- python: 调整测试代码
+- python: 新增计算目标时区与本地时区的时间差
+- python: 调整日志记录器
+- python: 新增python以-m 模块方式运行时定位入口模块名的功能
+- python: 新增多进度条封装
+- python: 新增cli模块
+- python: 新增交易代码规则模块
+- python: 调整level1的业务指令类名
+- python: 剔除配置
+- python: 新增bar、trade的数据结构
+- python: 新增资产类型
+- python: 交易日历归属于meta
+- python: 交易所归于meta
+- python: meta数据增加基金fund
+- python: meta新增合约结构
+- python: 新增存储抽象类
+- python: 调整基础数据的关键词, 从base改为basedata
+- python: 确定对外研究接口为DataHandler, 证券代码的参数统一为字符串symbol, 而内部统一使用Instrument合约, Instrument可以转成symbol，而symbol需要通过查询，获得Instrument对象
+- python: 调整关键词base为basedata
+- python: 调整引入代码规则包路径
+- python: 新增初级演示的主应用程序入口
+- python: 删除冗余的引用
+- python: 屏蔽7721的服务器资源
+- python: 调整缓存路径为2级，数据类型和交易所缩写，原需要年份和日期拆分的子目录不变
+- python: 调整测试代码
+- 修订文档中关于项目风险的强调
+- python: 删除顶层的系统功能
+- c++: 调整文件系统命名空间
+- python: 通过配置调整日志级别
+- go: 调整数据源的包路径
+- python: 将默认的开始日期改成1900年1月1日以支持港股和美股
+- go: 新增时区差
+- go: 调整时间戳
+- go: 调整session支持国际化
+- python: k线支持港股和美股
+- python: 补充k线周期转换
+- python: 调整对象设置属性的方法
+- python: 调整服务器配置检测方式
+- python: 优化ext握手协议
+- python: Command允许自定义枚举
+- python: 调整关键日志为warning
+- python: 新增测试代码
+- python: 增加部分协议debug日志
+- python: 支持k线支持港股、美股
+- python: 调整扩展行情代码
+- python: 元数据增加汇率
+- python: 暂时保存解码分红派息
+- python: 新增独立的解析派息方案
+- python: 调整汇率部分代码
+- python: 优化分红多币种的处理方式
+- python: 优化分红派送方案, 00008.hk 2020-09-03的分红方案原数据的分红金额缺少实物分配的货币替代派息方案
+- python: 扩展行情增加分笔成交数据
+- python: 缓存东方财富的港股分红派息接口
+- python: 优化扩展行情的K线分红派息等权益数据
+- python: 新增yyyymmdd格式的整型日期
+- update changelog
+
 ## [0.7.5] - 2025-12-05
 ### Changed
 - rust: 下一个版本号0.7.5
@@ -12,6 +755,7 @@ All notable changes to this project will be documented in this file.
 - python: 补充level1的协议实现
 - python: 调整transaction测试代码
 - rust: 补全f10信息, 附带完全了相关的level1的协议以及标准函数库的支持
+- update changelog
 
 ## [0.7.4] - 2025-12-03
 ### Changed
@@ -1288,7 +2032,53 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.5...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.50...HEAD
+[0.7.50]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.49...v0.7.50
+[0.7.49]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.48...v0.7.49
+[0.7.48]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.47...v0.7.48
+[0.7.47]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.46...v0.7.47
+[0.7.46]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.45...v0.7.46
+[0.7.45]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.44...v0.7.45
+[0.7.44]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.43...v0.7.44
+[0.7.43]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.42...v0.7.43
+[0.7.42]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.41...v0.7.42
+[0.7.41]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.40...v0.7.41
+[0.7.40]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.39...v0.7.40
+[0.7.39]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.38...v0.7.39
+[0.7.38]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.37...v0.7.38
+[0.7.37]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.36...v0.7.37
+[0.7.36]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.35...v0.7.36
+[0.7.35]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.34...v0.7.35
+[0.7.34]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.33...v0.7.34
+[0.7.33]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.32...v0.7.33
+[0.7.32]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.31...v0.7.32
+[0.7.31]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.30...v0.7.31
+[0.7.30]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.29...v0.7.30
+[0.7.29]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.28...v0.7.29
+[0.7.28]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.27...v0.7.28
+[0.7.27]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.26...v0.7.27
+[0.7.26]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.25...v0.7.26
+[0.7.25]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.24...v0.7.25
+[0.7.24]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.23...v0.7.24
+[0.7.23]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.22...v0.7.23
+[0.7.22]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.21...v0.7.22
+[0.7.21]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.20...v0.7.21
+[0.7.20]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.19...v0.7.20
+[0.7.19]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.18...v0.7.19
+[0.7.18]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.17...v0.7.18
+[0.7.17]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.16...v0.7.17
+[0.7.16]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.15...v0.7.16
+[0.7.15]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.14...v0.7.15
+[0.7.14]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.13...v0.7.14
+[0.7.13]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.12...v0.7.13
+[0.7.12]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.11...v0.7.12
+[0.7.11]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.10...v0.7.11
+[0.7.10]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.9...v0.7.10
+[0.7.9]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.8...v0.7.9
+[0.7.8]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.7...v0.7.8
+[0.7.7]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.6.1...v0.7.7
+[0.7.6.1]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.6...v0.7.6.1
+[0.7.6]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.5...v0.7.6
 [0.7.5]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.4...v0.7.5
 [0.7.4]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.3...v0.7.4
 [0.7.3]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.2...v0.7.3

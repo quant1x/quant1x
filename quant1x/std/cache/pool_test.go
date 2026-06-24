@@ -11,13 +11,13 @@ func TestCachePool(t *testing.T) {
 	}
 	pool := Pool[MyObject]{}
 
-	// 获取对象（自动初始化为零值）
+	// 获取对象(自动初始化为零值)
 	obj := pool.Acquire()
 
 	// 使用对象
 	obj.Data = make([]byte, 1024)
 
-	// 释放对象（自动重置）
+	// 释放对象(自动重置)
 	pool.Release(obj)
 }
 

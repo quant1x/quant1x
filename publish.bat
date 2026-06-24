@@ -7,8 +7,7 @@ REM  Features:
 REM    * Build sdist + wheel
 REM    * Upload via twine
 REM    * Optional skip clean (--skip-clean)
-REM    * Basic dependency checks (python, twine)
-REM    * Show version (python setup.py --version)
+REM    * Basic dependency checks (python, twine, build)
 REM    * Proper error handling (non-zero exit aborts)
 REM ==============================================================
 
@@ -21,11 +20,7 @@ for %%A in (%*) do (
 REM ---- Dependency Check ------------------------------------------
 where python >nul 2>&1 || (echo [FAIL] python not found & exit /b 1)
 where twine  >nul 2>&1 || (echo [FAIL] twine  not found & exit /b 1)
-
-REM ---- Read Version ----------------------------------------------
-for /f "usebackq delims=" %%V in (`python setup.py --version 2^>nul`) do set PKG_VERSION=%%V
-if not defined PKG_VERSION (echo [FAIL] cannot read version & exit /b 1)
-echo [INFO] Version: %PKG_VERSION%
+python -c "import build" >nul 2>&1 || (echo [FAIL] Python module 'build' not found & exit /b 1)
 
 REM ---- Clean old artifacts (pre) ---------------------------------
 if exist dist  (rmdir /S /Q dist)
@@ -35,8 +30,13 @@ if exist .eggs (rmdir /S /Q .eggs)
 
 REM ---- Build ------------------------------------------------------
 echo [INFO] Building sdist + wheel...
-python setup.py sdist bdist_wheel || (echo [FAIL] build failed & exit /b 1)
+python -m build --sdist --wheel || (echo [FAIL] build failed & exit /b 1)
 echo [ OK ] Build done
+
+REM ---- Read Version ------------------------------------------------
+for /f "usebackq delims=" %%V in (`python -c "import os,re,sys; d='dist'; files=os.listdir(d) if os.path.isdir(d) else []; m=next((re.match(r'^quant1x-([^-]+(?:[-+][^-]+)*)\.(?:tar\.gz|zip|whl)$', fn) for fn in files), None); sys.stdout.write(m.group(1) if m else ''); sys.exit(0 if m else 1)"`) do set PKG_VERSION=%%V
+if not defined PKG_VERSION (echo [FAIL] cannot determine version from dist artifacts & exit /b 1)
+echo [INFO] Version: %PKG_VERSION%
 
 REM ---- Upload -----------------------------------------------------
 echo [INFO] Uploading to PyPI...

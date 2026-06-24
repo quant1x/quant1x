@@ -4,9 +4,11 @@
 #include <vector>
 #include <cmath>
 #include <queue>
-#include <quant1x/level1/transaction_data.h>
+#include <quant1x/contrib/data/tdx/level1/std/transaction.h>
 #include <quant1x/config/cache.h>
 
+namespace tdx = quant1x::contrib::data::tdx;
+namespace config = quant1x::config;
 using namespace std;
 
 // 定义二维点
@@ -124,15 +126,15 @@ TEST_CASE("dbscan-v1", "[ta]") {
 
     int numClusters = dbscan.run();
 
-    cout << "找到 " << numClusters << " 个簇：" << endl;
+    cout << "找到 " << numClusters << " 个簇: " << endl;
     for (size_t i = 0; i < dbscan.points.size(); ++i) {
         cout << "点 (" << dbscan.points[i].x << ", " << dbscan.points[i].y
              << ") 属于簇: " << dbscan.points[i].cluster << endl;
     }
 }
 
-vector<level1::TickTransaction> readCSV(const string &filename) {
-    vector<level1::TickTransaction> ticks;
+vector<tdx::TickTransaction> readCSV(const string &filename) {
+    vector<tdx::TickTransaction> ticks;
     ifstream file(filename);
     string line;
 
@@ -147,7 +149,7 @@ vector<level1::TickTransaction> readCSV(const string &filename) {
     while (getline(file, line)) {
         stringstream ss(line);
         string token;
-        level1::TickTransaction t;
+        tdx::TickTransaction t;
 
         getline(ss, token, ','); t.time = token;
         getline(ss, token, ','); t.price = stod(token);
@@ -168,7 +170,7 @@ struct Point2 {
     int cluster; // -1 = noise, 0 = unvisited, >0 = cluster id
 };
 
-vector<Point2> extractFeatures(const vector<level1::TickTransaction>& ticks) {
+vector<Point2> extractFeatures(const vector<tdx::TickTransaction>& ticks) {
     vector<Point2> points;
 
     for (size_t i = 0; i < ticks.size(); ++i) {
@@ -261,7 +263,7 @@ public:
     }
 };
 
-void saveClusteredData(const vector<level1::TickTransaction>& ticks, const vector<Point2>& points, const string& outputFile) {
+void saveClusteredData(const vector<tdx::TickTransaction>& ticks, const vector<Point2>& points, const string& outputFile) {
     ofstream out(outputFile);
     out << "time,price,vol,num,amount,buyOrSell,cluster\n";
 

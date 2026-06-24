@@ -32,7 +32,7 @@ namespace api {
     // 获得当前季度的初始和结束日期, months为偏移的月数
     std::pair<std::string, std::string> GetQuarterDay(int months = 0);
 
-    // 通过给定的日期 获得日期所在财报的季度、初始以及结束日期
+    // 通过给定的日期 获得日期所在财报的季度, 初始以及结束日期
     //
     // diff 季度偏移数, 大于0前移diff个季度, 小于0后移diff个季度, 默认为当前季度
     std::tuple<std::string, std::string, std::string> GetQuarterByDate(const std::string& date, int diff = 0);

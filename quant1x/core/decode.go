@@ -8,9 +8,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// DecodeTo 将 src（通常是 map[string]any / []any / 基础类型）解码到 dst（通常是 *Struct）。
+// DecodeTo 将 src(通常是 map[string]any / []any / 基础类型)解码到 dst(通常是 *Struct).
 //
-// 采用 yaml 的 marshal/unmarshal 作为桥接，适合从动态 map 转成强类型结构体。
+// 采用 yaml 的 marshal/unmarshal 作为桥接, 适合从动态 map 转成强类型结构体.
 func DecodeTo(dst any, src any) error {
 	if dst == nil {
 		return fmt.Errorf("DecodeTo: dst is nil")
@@ -20,7 +20,7 @@ func DecodeTo(dst any, src any) error {
 		return fmt.Errorf("DecodeTo: dst must be non-nil pointer")
 	}
 
-	// 直接赋值：src 是基础类型，dst 也是指向基础类型的指针
+	// 直接赋值: src 是基础类型, dst 也是指向基础类型的指针
 	dstElem := dstVal.Elem()
 	srcVal := reflect.ValueOf(src)
 	if isBasicKind(dstElem.Kind()) && isBasicKind(srcVal.Kind()) {
@@ -35,7 +35,7 @@ func DecodeTo(dst any, src any) error {
 		return fmt.Errorf("DecodeTo: cannot assign %v to %v", srcVal.Type(), dstElem.Type())
 	}
 
-	// 其它情况仍走 marshal/unmarshal，但先剔除 src 中的显式 null，以免覆盖默认值
+	// 其它情况仍走 marshal/unmarshal, 但先剔除 src 中的显式 null, 以免覆盖默认值
 	cleaned := pruneNil(src)
 	data, err := yaml.Marshal(cleaned)
 	if err != nil {
@@ -94,9 +94,9 @@ func pruneNil(v any) any {
 	}
 }
 
-// LookupConfig 从 GetConfigMapRef() 中按路径查找值。
+// LookupConfig 从 GetConfigMapRef() 中按路径查找值.
 //
-// path 支持用 '.' 分隔的多级 key，例如："engine.mysql"。
+// path 支持用 '.' 分隔的多级 key, 例如: "engine.mysql".
 func LookupConfig(path string) (any, bool) {
 	m := GetConfigMapRef()
 	if path == "" {
@@ -132,10 +132,10 @@ func LookupConfig(path string) (any, bool) {
 	return current, true
 }
 
-// DecodeConfig 按 path 查找配置段，并解码到 dst。
+// DecodeConfig 按 path 查找配置段, 并解码到 dst.
 //
-// - 如果目标结构体字段带有 `default:"..."`，会在解码后调用 ApplyDefaults(dst) 填充零值默认值。
-// - 如果配置文件中配置项存在且有效，则覆盖默认值；如果不存在，则仅使用默认值。
+// - 如果目标结构体字段带有 `default:"..."`, 会在解码后调用 ApplyDefaults(dst) 填充零值默认值.
+// - 如果配置文件中配置项存在且有效, 则覆盖默认值；如果不存在, 则仅使用默认值.
 func DecodeConfig(path string, dst any) error {
 	// Apply defaults first so target has defaults even if path is missing.
 	if err := ApplyDefaults(dst); err != nil {

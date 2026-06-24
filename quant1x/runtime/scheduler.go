@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/std"
 )
 
 // AsyncScheduler provides asynchronous task scheduling with cron support.

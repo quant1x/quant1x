@@ -6,7 +6,7 @@ namespace formula {
      * @brief 使用xtensor实现通达信VALUEWHEN函数
      * @param condition 条件数组
      * @param value 取值数组
-     * @return 返回结果数组，形状与输入相同
+     * @return 返回结果数组, 形状与输入相同
      */
     xt::xarray<double> value_when(const xt::xarray<bool>& condition, const xt::xarray<double>& value) {
         // 检查输入形状是否相同
@@ -29,7 +29,7 @@ namespace formula {
                 if (lastValidValue.has_value()) {
                     result.flat(i) = lastValidValue.value();
                 } else {
-                    // 如果之前没有满足条件的值，返回NaN
+                    // 如果之前没有满足条件的值, 返回NaN
                     result.flat(i) = std::numeric_limits<double>::quiet_NaN();
                 }
             }

@@ -56,7 +56,7 @@ namespace service {
         return getuid() == 0;
     }
 
-    // 请求提权并重启（使用 sudo）
+    // 请求提权并重启(使用 sudo)
     bool require_root_and_relaunch(const std::string &choice) {
         if (is_root()) {
             return true;
@@ -78,11 +78,11 @@ namespace service {
 
         execvp("sudo", c_args.data());
 
-        spdlog::error("[-] 提权失败，请手动使用 sudo 执行");
+        spdlog::error("[-] 提权失败, 请手动使用 sudo 执行");
         return false;
     }
 
-    // 安装服务（创建 .service 文件）
+    // 安装服务(创建 .service 文件)
     void install() {
         if (!require_root_and_relaunch("install")) {
             return;
@@ -115,7 +115,7 @@ namespace service {
              << "Restart=always\n"
              << "User=" << user << "\n";  // 👈 以当前用户运行
 
-        // 如果服务需要访问 GUI/X11，可以启用下面这行
+        // 如果服务需要访问 GUI/X11, 可以启用下面这行
         // file << "Environment=\"DISPLAY=:0\" \"XAUTHORITY=/home/" << user << "/.Xauthority\"\n";
 
         file << "\n[Install]\n"
@@ -128,7 +128,7 @@ namespace service {
         system("systemctl daemon-reexec");
         std::string enable_cmd = "systemctl enable " + service_name + ".service";
         system(enable_cmd.c_str());
-        spdlog::info("[+] 服务安装完成，并设置为开机自启");
+        spdlog::info("[+] 服务安装完成, 并设置为开机自启");
     }
 
     // 卸载服务
@@ -188,9 +188,9 @@ namespace service {
         system(cmd.c_str());
     }
 
-    // 守护进程主逻辑（带日志）
+    // 守护进程主逻辑(带日志)
     void run_daemon() {
-        //        // 第一次 fork：创建子进程，父进程退出
+        //        // 第一次 fork: 创建子进程, 父进程退出
         //        pid_t pid = fork();
         //        if (pid < 0) {
         //            std::cerr << "[-] 第一次 fork 失败" << std::endl;
@@ -211,7 +211,7 @@ namespace service {
         //        signal(SIGCHLD, SIG_IGN);
         //        signal(SIGHUP, SIG_IGN);
         //
-        //        // 第二次 fork：确保不会重新获得控制终端
+        //        // 第二次 fork: 确保不会重新获得控制终端
         //        pid = fork();
         //        if (pid < 0) {
         //            std::cerr << "[-] 第二次 fork 失败" << std::endl;
@@ -241,26 +241,26 @@ namespace service {
         //            close(dev_null_fd);
         //        }
 
-        // 获取当前用户名（用于日志路径）
+        // 获取当前用户名(用于日志路径)
         uid_t          uid      = getuid();
         struct passwd *pw       = getpwuid(uid);
         std::string    username = pw ? pw->pw_name : "unknown";
 
-        // 日志路径：放在用户目录下，避免权限问题
+        // 日志路径: 放在用户目录下, 避免权限问题
         std::string log_path = "/home/" + username + "/logs/q1x/";
 
-        // 创建日志目录（如果不存在）
+        // 创建日志目录(如果不存在)
         struct stat st{};
         if (stat(log_path.c_str(), &st) == -1) {
             mkdir(log_path.c_str(), 0755);
         }
 
-        // 初始化日志系统（文件日志）
+        // 初始化日志系统(文件日志)
         auto file_logger = spdlog::basic_logger_mt("file_logger", log_path + "q1x.log");
         file_logger->set_level(spdlog::level::debug);
-        file_logger->flush_on(spdlog::level::debug);  // 每次都刷新，避免缓冲区延迟
+        file_logger->flush_on(spdlog::level::debug);  // 每次都刷新, 避免缓冲区延迟
 
-        // （可选）初始化控制台日志（仅用于调试时查看输出）
+        // (可选)初始化控制台日志(仅用于调试时查看输出)
         // auto console_logger = spdlog::stdout_color_mt("console");
         // console_logger->set_level(spdlog::level::info);
 

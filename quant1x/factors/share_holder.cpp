@@ -1,7 +1,8 @@
 #include <cpr/cpr.h>
 #include <quant1x/encoding/csv.h>
 #include <quant1x/encoding/json.h>
-#include <quant1x/instruments/markets.h>
+#include <quant1x/data/market.h>
+#include <quant1x/data/meta/timestamp.h>
 #include <quant1x/factors/share_holder.h>
 #include <quant1x/std/time.h>
 
@@ -11,8 +12,11 @@
 #include <quant1x/config/base.h>
 #include <quant1x/config/cache.h>
 
-using json   = nlohmann::json;
-namespace fs = std::filesystem;
+using json    = nlohmann::json;
+namespace fs  = std::filesystem;
+namespace data = quant1x::data;
+namespace meta = quant1x::data::meta;
+namespace config = quant1x::config;
 
 namespace dfcf {
 
@@ -72,7 +76,7 @@ namespace dfcf {
 
     // JSON 反序列化
     void from_json(const json &j, RawStockHolder::Result::Data &d) {
-        // 字符串类型（自动处理null）
+        // 字符串类型(自动处理null)
         encoding::unsafe_json::get_string(j, "SECUCODE", d.SECUCODE);
         encoding::unsafe_json::get_string(j, "SECURITY_CODE", d.SECURITY_CODE);
         encoding::unsafe_json::get_string(j, "ORG_CODE", d.ORG_CODE);
@@ -101,7 +105,7 @@ namespace dfcf {
         encoding::unsafe_json::get_string(j, "LISTING_STATE", d.LISTING_STATE);
         encoding::unsafe_json::get_string(j, "NEW_CHANGE_RATIO", d.NEW_CHANGE_RATIO);
 
-        // 数值类型（带默认值和类型检查）
+        // 数值类型(带默认值和类型检查)
         encoding::unsafe_json::get_number(j, "HOLD_NUM", d.HOLD_NUM, int64_t(0));
         encoding::unsafe_json::get_number(j, "FREE_HOLDNUM_RATIO", d.FREE_HOLDNUM_RATIO, 0.0);
         encoding::unsafe_json::get_number(j, "CHANGE_RATIO", d.CHANGE_RATIO, 0.0);
@@ -111,7 +115,7 @@ namespace dfcf {
         encoding::unsafe_json::get_number(j, "HOLD_RATIO_CHANGE", d.HOLD_RATIO_CHANGE, 0.0);
         encoding::unsafe_json::get_number(j, "XZCHANGE", d.XZCHANGE, int64_t(0));
 
-        // 布尔类型（特殊处理字符串/数字/布尔混合情况）
+        // 布尔类型(特殊处理字符串/数字/布尔混合情况)
         encoding::unsafe_json::get_string(j, "IS_HOLDORG", d.IS_HOLDORG, "");
     }
 
@@ -146,21 +150,22 @@ namespace dfcf {
     ShareHolder(const std::string &securityCode, const std::string &date, int diff = 0) {
         std::vector<CirculatingShareholder> list;
 
-        auto [x1, x2, code]        = exchange::DetectMarket(securityCode);
-        std::string quarterEndDate = exchange::timestamp(date).only_date();
+        auto inst = data::detect_symbol(securityCode);
+        std::string code = inst.ticker;
+        std::string quarterEndDate = meta::Timestamp(date).only_date();
 
         auto [y1, y2, qEnd] = api::GetQuarterByDate(date, diff);
-        quarterEndDate      = exchange::timestamp(qEnd).only_date();
+        quarterEndDate      = meta::Timestamp(qEnd).only_date();
 
-        cpr::Parameters params{{"sortColumns", "HOLDER_RANK"},
-                               {"sortTypes", "1"},
-                               {"pageSize", "10"},
-                               {"pageNumber", "1"},
-                               {"reportName", "RPT_F10_EH_FREEHOLDERS"},
-                               {"columns", "ALL"},
-                               {"source", "WEB"},
-                               {"client", "WEB"},
-                               {"filter", "(SECURITY_CODE=\"" + code + "\")(END_DATE='" + quarterEndDate + "')"}};
+        cpr::Parameters params{{{"sortColumns", "HOLDER_RANK"},
+                                {"sortTypes", "1"},
+                                {"pageSize", "10"},
+                                {"pageNumber", "1"},
+                                {"reportName", "RPT_F10_EH_FREEHOLDERS"},
+                                {"columns", "ALL"},
+                                {"source", "WEB"},
+                                {"client", "WEB"},
+                                {"filter", "(SECURITY_CODE=\"" + code + "\")(END_DATE='" + quarterEndDate + "')"}}};
 
         std::string url      = urlTop10ShareHolder + "?" + params.GetContent(cpr::CurlHolder());
         auto        response = cpr::Get(cpr::Url{url});
@@ -181,8 +186,8 @@ namespace dfcf {
                 CirculatingShareholder shareholder{
                     v.SECUCODE,                                      // SecurityCode
                     v.SECURITY_NAME_ABBR,                            // SecurityName
-                    exchange::timestamp(v.END_DATE).only_date(),     // EndDate
-                    exchange::timestamp(v.UPDATE_DATE).only_date(),  // UpdateDate
+                    meta::Timestamp(v.END_DATE).only_date(),     // EndDate
+                    meta::Timestamp(v.UPDATE_DATE).only_date(),  // UpdateDate
                     v.HOLDER_NEWTYPE,                                // HolderType
                     v.HOLDER_NAME,                                   // HolderName
                     v.IS_HOLDORG,                                    // IsHoldOrg
@@ -198,8 +203,8 @@ namespace dfcf {
                 };
 
                 // 修订证券代码
-                auto [_, mflag, mcode]   = exchange::DetectMarket(shareholder.SecurityCode);
-                shareholder.SecurityCode = mflag + mcode;
+                auto inst = data::detect_symbol(shareholder.SecurityCode);
+                shareholder.SecurityCode = meta::exchange_identifier(inst.exchange) + inst.ticker;
 
                 // HoldChangeState
                 if (v.HOLDNUM_CHANGE_NAME == "新进") {

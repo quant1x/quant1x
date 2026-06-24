@@ -2,7 +2,7 @@
 
 static thread_local AsyncScheduler* current_scheduler_ptr = nullptr;
 
-AsyncScheduler::AsyncScheduler(size_t thread_count) : pool_(thread_count), running_(true), next_id_(1) {
+AsyncScheduler::AsyncScheduler(size_t thread_count) : pool_(std::max(thread_count, size_t(1))), running_(true), next_id_(1) {
     spdlog::info("start scheduler...");
     scheduler_thread_ = std::thread([this] { scheduler_loop(); });
     spdlog::info("start scheduler...OK");
@@ -40,7 +40,7 @@ void AsyncScheduler::cancel(runtime::task_id id) {
     std::lock_guard lock(mutex_);
     auto            it = cron_tasks_.find(id);
     if (it != cron_tasks_.end()) {
-        it->second.canceled = true;  // 软取消，避免执行路径崩溃
+        it->second.canceled = true;  // 软取消, 避免执行路径崩溃
         ++st_canceled_;
     }
     condition_.notify_all();
@@ -53,17 +53,34 @@ void AsyncScheduler::scheduler_loop() {
 
         if (task_queue_.empty()) {
             condition_.wait(lock, [this] { return !task_queue_.empty() || !running_; });
-            if (!running_)
+            if (!running_) {
                 break;
+            }
             continue;
         }
 
         const auto &top_task = task_queue_.top();
         auto        now      = Clock::now();
         if (now < top_task.next_run) {
-            condition_.wait_until(lock, top_task.next_run, [this] { return !running_; });
-            if (!running_)
+            // 由于 macOS libc++ 的 std::condition_variable::wait_until bug, 
+            // 当 running_ 变为 false 时, notify_all 可能无法提前唤醒 wait_until. 
+            // 因此使用循环 wait_for 来检查 running_. 
+            auto remaining = top_task.next_run - now;
+            while (remaining > std::chrono::milliseconds(0) && running_) {
+                auto wait_time = std::min(remaining, std::chrono::duration_cast<decltype(remaining)>(std::chrono::milliseconds(100)));
+                condition_.wait_for(lock, wait_time, [this] { return !running_; });
+                if (!running_) {
+                    break;
+                }
+                remaining -= wait_time;
+                now = Clock::now();
+                if (now >= top_task.next_run) {
+                    break;
+                }
+            }
+            if (!running_) {
                 break;
+            }
             continue;
         }
 
@@ -71,8 +88,9 @@ void AsyncScheduler::scheduler_loop() {
         task_queue_.pop();
         lock.unlock();
 
-        if (!running_)
+        if (!running_) {
             break;
+        }
         // 如果是 cron 任务且已经标记取消, 不执行
         if (auto it = cron_tasks_.find(task_to_run.id); it != cron_tasks_.end() && it->second.canceled) {
             spdlog::debug("跳过取消任务 id={}, name={}", task_to_run.id, task_to_run.name);
@@ -99,9 +117,12 @@ void AsyncScheduler::scheduler_loop() {
 
 void AsyncScheduler::reschedule_cron(runtime::task_id id, const std::string &name, const cron::cronexpr &cron) {
     std::lock_guard lock(mutex_);
-    if (auto it = cron_tasks_.find(id); it == cron_tasks_.end() || it->second.canceled)
+    if (!running_) {
+        return;
+    }
+    if (auto it = cron_tasks_.find(id); it == cron_tasks_.end() || it->second.canceled) {
         return;  // 已删除或已取消
-
+    }
     try {
         const auto next_time = cron::cron_next(cron, Clock::now());
         enqueue_task(ScheduledTask{next_time, [this, id, name] { execute_cron_task(id, name); }, id, name});
@@ -113,18 +134,25 @@ void AsyncScheduler::reschedule_cron(runtime::task_id id, const std::string &nam
 }
 
 void AsyncScheduler::stop() {
+    spdlog::warn("stop() called");
     if (!running_.exchange(false)) {
+        spdlog::warn("stop() already called, returning");
         return;  // 确保只执行一次关闭
     }
-    // 1. 唤醒调度线程使其尽快退出（不急于清容器，避免执行路径访问已清空结构）
+    spdlog::warn("stop() setting running_ to false done");
+
+    // 1. 唤醒调度线程使其尽快退出(不急于清容器, 避免执行路径访问已清空结构)
     condition_.notify_all();
+    spdlog::warn("stop() notify_all done");
 
     // 2. 等待调度器线程结束
     if (scheduler_thread_.joinable()) {
-        // 如果 stop() 在调度线程自身被调用，不能 join 当前线程 —— 会抛出或死锁。
-        // 在此情形下跳过 join（调度线程会在 running_ == false 后自行退出）并记录日志。
+        // 如果 stop() 在调度线程自身被调用, 不能 join 当前线程 —— 会抛出或死锁. 
+        // 在此情形下跳过 join(调度线程会在 running_ == false 后自行退出)并记录日志. 
         if (scheduler_thread_.get_id() != std::this_thread::get_id()) {
+            spdlog::warn("stop() joining scheduler_thread");
             scheduler_thread_.join();
+            spdlog::warn("stop() scheduler_thread joined");
         } else {
             spdlog::warn("stop() called from scheduler thread; skipping join() to avoid self-join");
         }
@@ -132,18 +160,24 @@ void AsyncScheduler::stop() {
 
     // 3. 等待线程池中已经派发的任务完成
     if (current_scheduler_ptr != this) {
+        spdlog::warn("stop() waiting for pool");
         pool_.wait();
+        spdlog::warn("stop() pool wait done");
     } else {
         spdlog::warn("stop() called from worker thread; skipping pool_.wait() to avoid deadlock");
     }
 
-    // 4. 现在没有并发访问了，安全清理容器
+    // 4. 现在没有并发访问了, 安全清理容器
     {
         std::lock_guard lock(mutex_);
+        spdlog::warn("stop() clearing containers");
         cron_tasks_.clear();
-        while (!task_queue_.empty())
+        while (!task_queue_.empty()) {
             task_queue_.pop();
+        }
+        spdlog::warn("stop() containers cleared");
     }
+    spdlog::warn("stop() completed");
 }
 
 void AsyncScheduler::execute_cron_task(runtime::task_id id, const std::string &name) {
@@ -154,11 +188,13 @@ void AsyncScheduler::execute_cron_task(runtime::task_id id, const std::string &n
     {
         std::lock_guard lock(mutex_);
         auto            it = cron_tasks_.find(id);
-        if (it == cron_tasks_.end())
+        if (it == cron_tasks_.end()) {
             return;  // 已被stop清理或不存在
+        }
         auto &ct = it->second;
-        if (ct.canceled)
+        if (ct.canceled) {
             return;  // 已取消
+        }
         if (ct.cron_running) {
             spdlog::warn("Task {} skipped: previous execution still running", id);
             ++st_skipped_running_;
@@ -167,7 +203,7 @@ void AsyncScheduler::execute_cron_task(runtime::task_id id, const std::string &n
         ct.cron_running = true;
         task            = ct.task;
         expr            = ct.expr;
-        need_reschedule = true;  // 先假定要重排，再根据后续状态确认
+        need_reschedule = true;  // 先假定要重排, 再根据后续状态确认
     }
 
     try {

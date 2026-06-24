@@ -5,7 +5,7 @@ import (
 	"sort"
 )
 
-// FPGrowthCore 核心实现，处理 int 类型的频繁项集挖掘
+// FPGrowthCore 核心实现, 处理 int 类型的频繁项集挖掘
 type FPGrowthCore struct {
 	minSupport        float64
 	minSupportCount   int
@@ -20,7 +20,7 @@ type FrequentPattern struct {
 	Support Support
 }
 
-// internalFrequentPattern 用于内部计算，存储计数
+// internalFrequentPattern 用于内部计算, 存储计数
 type internalFrequentPattern struct {
 	Items []int
 	Count int

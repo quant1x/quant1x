@@ -4,7 +4,7 @@
 #include <malloc.h>
 #include <stdio.h>
 #include <windows.h>
-#include <quant1x/ta/simd.h>
+// #include <quant1x/ta/simd.h>  -- header moved to quant1x/std/simd.h, vector_type/mean() API removed in refactoring
 
 int code_convert(const char *from_charset, const char *to_charset, char *inbuf, size_t inlen,
                  char *outbuf, size_t outlen) {
@@ -101,11 +101,13 @@ int main() {
 
     printf("origin string: %s\n", teststr.c_str());
     std::cout << "origin string: " << teststr.c_str() << std::endl;
-    std::cout << "UTF8 => GBK ：" << UTFtoGBK(teststr.c_str()).c_str() << std::endl;
-    std::cout << "UTF8 => GBK ：" << GBKToUTF8(teststr.c_str()).c_str() << std::endl;
-    std::cout << " GBK => UTF8：" << GBKToUTF8(UTFtoGBK(teststr.c_str()).c_str()).c_str() << std::endl;
-    //std::cout << " GBK => UTF8：" << UTFtoGBK(GBKToUTF8(teststr.c_str()).c_str()).c_str() << std::endl;
+    std::cout << "UTF8 => GBK : " << UTFtoGBK(teststr.c_str()).c_str() << std::endl;
+    std::cout << "UTF8 => GBK : " << GBKToUTF8(teststr.c_str()).c_str() << std::endl;
+    std::cout << " GBK => UTF8: " << GBKToUTF8(UTFtoGBK(teststr.c_str()).c_str()).c_str() << std::endl;
+    //std::cout << " GBK => UTF8: " << UTFtoGBK(GBKToUTF8(teststr.c_str()).c_str()).c_str() << std::endl;
     //getchar();
+    // SIMD test code commented out: vector_type/mean() API removed in refactoring
+#if 0
     std::cout << "simd\n";
     vector_type a,b,c;
     int count = 1000;
@@ -114,9 +116,7 @@ int main() {
         b.push_back(i);
     }
     c.resize(count);
-    //vector_type  *c = new vector_type(count)
     mean(a,b,c);
-    // 使用范围基 for 循环遍历 vector 并输出每个元素
     int k = 0;
     const int max_line = 10;
     for (const auto& element : c) {
@@ -133,9 +133,10 @@ int main() {
     }
     std::cout << std::endl;
 
-    int n = 8; // 小数位数为 8
-    int result = (3 << n) >> 1; // 左移 8 位 → 右移 1 位
-    float final = (float)result / (1 << n); // 解释为浮点数（仅用于验证）
-    printf("%f\n", final); // 输出 1.5
+    int n = 8;
+    int result = (3 << n) >> 1;
+    float final = (float)result / (1 << n);
+    printf("%f\n", final);
+#endif
     return 0;
 }

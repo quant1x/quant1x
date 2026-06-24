@@ -1,0 +1,111 @@
+#pragma once
+#ifndef QUANT1X_CONTRB_DATA_TDX_CLIENT_H
+#define QUANT1X_CONTRB_DATA_TDX_CLIENT_H 1
+
+#include <quant1x/io/connection_pool.h>
+#include <quant1x/std/util.h>
+#include <quant1x/std/api.h>
+#include <quant1x/encoding/charsets.h>
+#include <quant1x/std/buffer.h>
+
+#include <quant1x/data/meta/exchange.h>
+#include <quant1x/data/meta/session.h>
+#include <quant1x/contrib/data/tdx/protocol.h>
+#include <quant1x/contrib/data/tdx/helpers.h>
+#include <quant1x/contrib/data/tdx/level1/std/hello.h>
+#include <quant1x/contrib/data/tdx/level1/std/heartbeat.h>
+#include <quant1x/contrib/data/tdx/level1/std/xdxr_info.h>
+#include <quant1x/contrib/data/tdx/level1/std/finance_info.h>
+#include <quant1x/contrib/data/tdx/level1/std/security_count.h>
+#include <quant1x/contrib/data/tdx/level1/std/security_list.h>
+#include <quant1x/contrib/data/tdx/level1/std/security_quote.h>
+#include <quant1x/contrib/data/tdx/level1/std/security_bars.h>
+#include <quant1x/contrib/data/tdx/level1/std/transaction.h>
+#include <quant1x/contrib/data/tdx/level1/std/block_meta.h>
+#include <quant1x/contrib/data/tdx/level1/std/block.h>
+#include <quant1x/contrib/data/tdx/level1/std/minute_time.h>
+#include <quant1x/contrib/data/tdx/level1/ext/ext_sync.h>
+#include <quant1x/contrib/data/tdx/config.h>
+
+namespace quant1x::contrib::data::tdx {
+
+    /// 网络协议
+    #pragma pack(push, 1)  // 确保1字节对齐
+
+    #pragma pack(pop)  // 恢复默认对齐方式
+
+    class StandardProtocolHandler : public NetworkOperationHandler<StandardProtocolHandler> {
+    public:
+        bool handshakeImpl(asio::ip::tcp::socket &socket) {
+            try {
+                // 第一次协议握手
+                StdLoginContext hello1;
+                transact_message_sync(socket, hello1);
+                // 第二次协议握手
+                UpgradeTipContext hello2;
+                transact_message_sync(socket, hello2);
+                return true;
+            } catch (const std::bad_cast& e) {
+                spdlog::error("Cannot cast: {}", e.what());
+                return false;
+            } catch (...) {
+                return false;
+            }
+        }
+
+        bool keepaliveImpl(asio::ip::tcp::socket &socket) {
+            try {
+                // 心跳检测
+                HeartbeatContext hb;
+                transact_message_sync(socket, hb);
+                return true;
+            } catch (...) {
+                return false;
+            }
+        }
+    };
+
+    /**
+     * @brief 获取标准连接对象
+     *
+     * 返回一个智能指针管理的标准连接对象, 该指针会在销毁时自动调用指定的删除器函数
+     *
+     * @return std::unique_ptr<Connection, std::function<void(Connection *)>> 包含标准连接对象的智能指针, 
+     *         使用自定义删除器管理连接生命周期
+     */
+    std::unique_ptr<Connection, std::function<void(Connection *)>> get_std_conn();
+
+    // ============================================================
+    // 扩展行情连接 (对应 Python client.py get_ext_conn / Rust client.rs get_ext_conn)
+    // ============================================================
+
+    class ExtensionProtocolHandler : public NetworkOperationHandler<ExtensionProtocolHandler> {
+    public:
+        bool handshakeImpl(asio::ip::tcp::socket &socket) {
+            try {
+                // 扩展行情同步握手 (对齐 Python SynchronizeContext / Rust ExtSynchronizeRequest)
+                ExtSync sync;
+                transact_message_sync(socket, sync);
+                return sync.success;
+            } catch (...) {
+                return false;
+            }
+        }
+
+        bool keepaliveImpl(asio::ip::tcp::socket &socket) {
+            // 扩展行情心跳: 暂用同步消息保持连接 (对齐 Rust: InstrumentCountRequest 保持心跳)
+            try {
+                ExtSync sync;
+                transact_message_sync(socket, sync);
+                return true;
+            } catch (...) {
+                return false;
+            }
+        }
+    };
+
+    std::unique_ptr<Connection, std::function<void(Connection *)>> get_ext_conn();
+
+}  // namespace quant1x::contrib::data::tdx
+
+#endif //QUANT1X_CONTRB_DATA_TDX_CLIENT_H

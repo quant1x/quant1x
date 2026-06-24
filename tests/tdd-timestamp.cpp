@@ -1,52 +1,54 @@
 #include <quant1x/test/test.h>
-#include <quant1x/instruments/markets.h>
+#include <quant1x/data/meta/timestamp.h>
+
+namespace meta = quant1x::data::meta;
 
 TEST_CASE("parse-datetime", "[chrono]") {
     SECTION("date") {
         std::string test_date1 = "2025-05-29 15:00:01";
-        auto ts1 = exchange::timestamp::parse(test_date1);
-        REQUIRE(ts1.toString() == test_date1+".000");
+        auto ts1 = meta::Timestamp::parse(test_date1);
+        REQUIRE(ts1.to_string() == test_date1+".000");
 
         std::string test_date2 = "2025-05-29 15:00:01.123";
-        auto ts2 = exchange::timestamp::parse(test_date2);
-        REQUIRE(ts2.toString() == test_date2);
+        auto ts2 = meta::Timestamp::parse(test_date2);
+        REQUIRE(ts2.to_string() == test_date2);
 
         std::string test_date3 = "2025-05-29";
-        auto        ts3        = exchange::timestamp::parse(test_date3);
-        REQUIRE(ts3.toString() == test_date3 + " 00:00:00.000");
+        auto        ts3        = meta::Timestamp::parse(test_date3);
+        REQUIRE(ts3.to_string() == test_date3 + " 00:00:00.000");
     }
 
     SECTION("time") {
         std::string test_date1 = "2025-05-29 15:00:01";
-        auto ts1 = exchange::timestamp::parse(test_date1);
+        auto ts1 = meta::Timestamp::parse(test_date1);
         REQUIRE(ts1.only_time() == "15:00:01");
 
         std::string test_date2 = "2025-05-29 15:00:01.123";
-        auto ts2 = exchange::timestamp::parse(test_date2);
+        auto ts2 = meta::Timestamp::parse(test_date2);
         REQUIRE(ts2.only_time() == "15:00:01");
     }
 }
 
 TEST_CASE("parse-time-hhmmss", "[timestamp]") {
-    exchange::timestamp ts;
-    ts = exchange::timestamp::parse_time("15:00:01");
+    meta::Timestamp ts;
+    ts = meta::Timestamp::parse_time("15:00:01");
     std::cout << ts.only_time() << std::endl;
-    ts = exchange::timestamp::parse_time("15:00:00.999");
+    ts = meta::Timestamp::parse_time("15:00:00.999");
     std::cout << ts.only_time() << std::endl;
 
-    ts = exchange::timestamp::parse("2025-05-29 15:00:01");
+    ts = meta::Timestamp::parse("2025-05-29 15:00:01");
     std::cout << ts.only_time() << std::endl;
 }
 
 TEST_CASE("parse-time-hhmmss.sss", "[timestamp]") {
-    exchange::timestamp ts;
-    ts = exchange::timestamp::parse_time("15:00:01");
-    std::cout << ts.toString() << std::endl;
-    ts = exchange::timestamp::parse_time("15:00:00.999");
-    std::cout << ts.toString() << std::endl;
+    meta::Timestamp ts;
+    ts = meta::Timestamp::parse_time("15:00:01");
+    std::cout << ts.to_string() << std::endl;
+    ts = meta::Timestamp::parse_time("15:00:00.999");
+    std::cout << ts.to_string() << std::endl;
 
-    ts = exchange::timestamp::parse("2025-05-29 15:00:01");
-    std::cout << ts.toString() << std::endl;
+    ts = meta::Timestamp::parse("2025-05-29 15:00:01");
+    std::cout << ts.to_string() << std::endl;
 }
 
 //#define DATE_USE_FMT  // 必须放在 #include "date/date.h" 前面
@@ -131,13 +133,13 @@ parse_time(const std::string& input) {
 //    std::tm local_tm = *std::localtime(&now); // 本地时间 struct tm
 //    std::tm utc_tm = *std::gmtime(&now);      // UTC 时间 struct tm
 //
-//    // 计算两个时间点之间的差值（秒）
+//    // 计算两个时间点之间的差值(秒)
 //    std::time_t local = std::mktime(&local_tm);
 //    std::time_t utc = std::mktime(&utc_tm);
 //
 //    auto offset_ms =  (local - utc) * 1000LL;  // 秒转毫秒
 //
-//    std::cout << "当前时区偏移（毫秒）: " << offset_ms << " ms\n";
+//    std::cout << "当前时区偏移(毫秒): " << offset_ms << " ms\n";
 //}
 
 TEST_CASE("parse_datetime-v1", "[chrono]") {
@@ -145,7 +147,7 @@ TEST_CASE("parse_datetime-v1", "[chrono]") {
     auto t1 = parse_datetime("2025-04-05 12:30:45");
     CHECK(t1.time_since_epoch().count() == 1743856245000);
 
-    // 格式化回字符串（当作 UTC 时间输出）
+    // 格式化回字符串(当作 UTC 时间输出)
     std::string output1 = date::format("%Y-%m-%d %H:%M:%S", t1);
     CHECK(output1 == "2025-04-05 12:30:45.000");
 

@@ -79,7 +79,7 @@ namespace backtest {
     }
 
     void PositionManager::reducePosition(Position &pos, const Trade &trade)  {
-        // 仅允许平仓或减仓，禁止反向开仓
+        // 仅允许平仓或减仓, 禁止反向开仓
         if (trade.quantity >= pos.quantity) {
             closePosition(pos, trade);
         } else {
@@ -127,16 +127,16 @@ namespace backtest {
     }
 
     // 更新持仓市值
-    void PositionManager::updatePositions(const std::string &code, const datasets::KLine &market_data) {
+    void PositionManager::updatePositions(const std::string &code, const data::KLine &market_data) {
         for (auto &[symbol, pos] : positions_) {
             // 找到对应标的的市场数据
             if (symbol != code) {
                 continue;
             }
-            double current_price = market_data.Close;
+            double current_price = market_data.close;
             pos.unrealized_pnl   = (current_price - pos.avg_price) * pos.quantity *
                                    (pos.direction == TradeDirection::LONG ? 1.0 : -1.0);
-            pos.update_time = market_data.Datetime;
+            pos.update_time = market_data.timestamp;
         }
     }
 
@@ -145,7 +145,7 @@ namespace backtest {
         if(trade.direction == TradeDirection::HOLD) {
             return;
         }
-        // 双重保险：再次验证卖空合法性
+        // 双重保险: 再次验证卖空合法性
         if (trade.direction == TradeDirection::SHORT && !hasPosition(trade.symbol)) {
             spdlog::error("非法卖空交易被拦截: {}", trade.symbol);
             return;
@@ -187,7 +187,7 @@ namespace backtest {
                 addToPosition(it->second, trade);
             }
         }
-        // 调试：打印持仓变化
+        // 调试: 打印持仓变化
         //spdlog::warn("持仓更新: {} 方向:{} 数量:{} 均价:{}", trade.symbol, (trade.direction == TradeDirection::LONG ? "多头" : "空头"), pos.quantity, pos.avg_price);
         // 更新账户信息
         updateAccount();

@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/logger"
-	"gitee.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/log"
+	"github.com/quant1x/quant1x/quant1x/std"
 )
 
 const (
@@ -49,11 +49,11 @@ var DefaultRoundTripper stdNetHttp.RoundTripper = &stdNetHttp.Transport{
 		Timeout:   30 * time.Second, // 限制建立TCP连接的时间
 		KeepAlive: 30 * time.Second, // 保持连接的超时时间
 	}).DialContext,
-	IdleConnTimeout:       30 * time.Second,      // 空闲（keep-alive）连接在关闭之前保持空闲的时长
+	IdleConnTimeout:       30 * time.Second,      // 空闲(keep-alive)连接在关闭之前保持空闲的时长
 	TLSHandshakeTimeout:   10 * time.Second,      // 限制 TLS握手的时间
 	ResponseHeaderTimeout: 10 * time.Second,      // 限制读取response header的时间,默认 timeout + 5*time.Second
-	ExpectContinueTimeout: 1 * time.Second,       // 限制client在发送包含 Expect: 100-continue的header到收到继续发送body的response之间的时间等待。
-	MaxIdleConns:          100,                   // 所有host的连接池最大连接数量，默认无穷大
+	ExpectContinueTimeout: 1 * time.Second,       // 限制client在发送包含 Expect: 100-continue的header到收到继续发送body的response之间的时间等待.
+	MaxIdleConns:          100,                   // 所有host的连接池最大连接数量, 默认无穷大
 	MaxIdleConnsPerHost:   DefaultConnections,    // 每个host的连接池最大空闲连接数,默认2
 	MaxConnsPerHost:       DefaultMaxConnections, // 每个host的最大连接数量
 	//ForceAttemptHTTP2:     true,
@@ -215,7 +215,7 @@ func Request(url string, method string, content string, header ...map[string]any
 		case "gzip":
 			reader, err = gzip.NewReader(bytes.NewBuffer(body))
 			if err != nil {
-				logger.Error(err)
+				log.Error(err)
 				reader = nil
 			}
 		case "deflate":

@@ -2,7 +2,7 @@
 
 namespace encoding {
     namespace unsafe_json {
-        // 安全解析字符串（处理null和缺失字段）
+        // 安全解析字符串(处理null和缺失字段)
         void get_string(const nlohmann::json &j, const char *key,
                                std::string &target,
                                const std::string& default_val) {

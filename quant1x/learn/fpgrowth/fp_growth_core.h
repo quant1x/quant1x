@@ -10,8 +10,8 @@ namespace quant1x {
 /**
  * @brief FP Growth算法核心实现 (PIMPL模式)
  * 
- * 负责处理 size_t 类型的频繁项集挖掘。
- * 内部实现细节（FPNode, FPTree等）已隐藏。
+ * 负责处理 size_t 类型的频繁项集挖掘. 
+ * 内部实现细节(FPNode, FPTree等)已隐藏. 
  */
 class FPGrowthCore {
 public:

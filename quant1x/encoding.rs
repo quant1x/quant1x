@@ -1,7 +1,7 @@
 use encoding_rs::GBK;
 
-/// 将原始字节行解码为 UTF-8 Rust String。
-/// 启发式方案：先尝试 UTF-8，再尝试 GBK（使用 encoding_rs）；选择包含更多汉字的解码结果。
+/// 将原始字节行解码为 UTF-8 Rust String. 
+/// 启发式方案: 先尝试 UTF-8, 再尝试 GBK(使用 encoding_rs)；选择包含更多汉字的解码结果. 
 pub fn decode_line_bytes(raw: &[u8]) -> String {
     let mut line = raw.to_vec();
     if let Some(last) = line.last() {

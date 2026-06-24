@@ -3,8 +3,11 @@
 #define QUANT1X_BACKTEST_POSITION_H 1
 
 #include <quant1x/backtest/trade.h>
+#include <quant1x/data/schema/bar.h>
 
 namespace backtest {
+
+    namespace data = quant1x::data;
 
     // 持仓数据结构
     struct Position {
@@ -46,7 +49,7 @@ namespace backtest {
     // 每日持仓状态
     struct DailyPositionStatus {
         std::string                     timestamp;
-        // 为了减少拷贝开销，日结只保留持仓摘要而非整张持仓表
+        // 为了减少拷贝开销, 日结只保留持仓摘要而非整张持仓表
         struct PositionSummary {
             std::string    symbol;
             TradeDirection direction;
@@ -94,7 +97,7 @@ namespace backtest {
         // 获取特定标的的持仓数量
         double getPositionQuantity(const std::string &symbol) const;
 
-        void updatePositions(const std::string &code, const datasets::KLine &market_data);
+        void updatePositions(const std::string &code, const data::KLine &market_data);
 
         void processTrade(const Trade &trade);
 

@@ -6,7 +6,7 @@
 namespace quant1x {
 namespace core {
 
-// 辅助函数：递归查找map中的路径
+// 辅助函数: 递归查找map中的路径
 YAML::Node lookup_map(const YAML::Node& node, const std::string& path) {
     std::istringstream iss(path);
     std::string token;
@@ -31,12 +31,12 @@ std::any lookup_config(const std::string& path) {
     }
     YAML::Node result = lookup_map(root, path);
     if (result.IsDefined()) {
-        // 转换为std::any，这里简化，返回YAML::Node的字符串表示或其他
-        // 实际上，需要根据类型转换
+        // 转换为std::any, 这里简化, 返回YAML::Node的字符串表示或其他
+        // 实际上, 需要根据类型转换
         if (result.IsScalar()) {
             return result.as<std::string>();
         } else if (result.IsMap()) {
-            // 返回整个子map，但这里简化
+            // 返回整个子map, 但这里简化
             return result;
         }
         // 其他类型类似
@@ -46,15 +46,15 @@ std::any lookup_config(const std::string& path) {
 
 // DecodeTo 将源数据解码到目标结构体
 bool decode_to(void* dst, const std::any& src) {
-    // 这里简化实现，假设src是YAML::Node或string
+    // 这里简化实现, 假设src是YAML::Node或string
     // 实际需要根据dst类型进行反序列化
     // 使用yaml-cpp进行转换
     try {
         if (src.type() == typeid(YAML::Node)) {
             YAML::Node node = std::any_cast<YAML::Node>(src);
             // 假设dst是指向BaseConfig或其他结构体的指针
-            // 这里需要模板或类型检查，但C++没有反射
-            // 简化：假设是BaseConfig
+            // 这里需要模板或类型检查, 但C++没有反射
+            // 简化: 假设是BaseConfig
             BaseConfig* config = static_cast<BaseConfig*>(dst);
             *config = node.as<BaseConfig>();
             return true;

@@ -1,17 +1,21 @@
 #include <quant1x/test/test.h>
 #include <quant1x/factors/history.h>
-#include <quant1x/factors/base.h>
-#include <quant1x/dataframe/dataframe.h>
+#include <quant1x/contrib/data/tdx/bar.h>
 #include <quant1x/formula.h>
-#include <quant1x/datasets/trans.h>
+#include <quant1x/contrib/data/tdx/trans.h>
+#include <quant1x/std/time.h>
+
+namespace meta = quant1x::data::meta;
+namespace tdx = quant1x::contrib::data::tdx;
+namespace data = quant1x::data;
 
 // 测试获取指定日期的历史成交数据
 TEST_CASE("history-trans", "[features]") {
     std::string code = "600600";
     std::string date = "2025-05-29";
-    exchange::timestamp ts = exchange::timestamp::parse(date);
-    auto list = datasets::CheckoutTransactionData(code, ts, true);
-    auto summary = datasets::CountInflow(list, code, ts);
+    meta::Timestamp ts = meta::Timestamp::parse(date);
+    auto list = tdx::CheckoutTransactionData(code, ts, true);
+    auto summary = tdx::CountInflow(list, code, ts);
     std::cout << summary << std::endl;
 }
 
@@ -19,15 +23,15 @@ TEST_CASE("history-basic-base", "[features]") {
     //using namespace formula;
     std::string code = "600600";
     std::string date = "2025-05-29";
-    auto klines = factors::checkout_klines(code, date);
+    auto klines = tdx::checkout_klines(code, date);
     std::cout << klines.size() << std::endl;
-    DataFrame df = DataFrame::from_struct_vector(klines);
-    std::cout << df.to_string() << std::endl;
-    // 直接获取列
-    const auto& col_close = df["close"];
-    // 使用std::get获取具体vector
-    const auto& close_ = std::get<std::vector<double>>(col_close);
-    auto CLOSE = xt::adapt(close_);
+    // 提取收盘价序列
+    std::vector<double> close_vec;
+    close_vec.reserve(klines.size());
+    for (const auto& bar : klines) {
+        close_vec.push_back(bar.close);
+    }
+    auto CLOSE = xt::adapt(close_vec);
     auto ref1 = formula::ref(CLOSE,1);
     for (const auto& price : ref1) {
         std::cout << price << " ";
@@ -41,24 +45,30 @@ TEST_CASE("history-basic-auto", "[features]") {
     //using namespace formula;
     std::string code = "600600";
     std::string date = "2025-05-29";
-    auto klines = factors::checkout_klines(code, date);
+    auto klines = tdx::checkout_klines(code, date);
     std::cout << klines.size() << std::endl;
-    DataFrame df = DataFrame::from_struct_vector(klines);
-    std::cout << df.to_string() << std::endl;
-    // 直接获取列
-    auto const& col_open = df.get<f64>("open");
-    const xt::xarray<f64>& OPEN = xt::adapt(col_open);
-    auto const& col_close = df.get<f64>("close");
-    const xt::xarray<f64>& CLOSE = xt::adapt(col_close);
-    auto const& col_high = df.get<f64>("high");
-    const xt::xarray<f64>& HIGH = xt::adapt(col_high);
-    auto const& col_low = df.get<f64>("low");
-    const xt::xarray<f64>& LOW = xt::adapt(col_low);
-
-    auto const& col_vol = df.get<f64>("volume");
-    const xt::xarray<f64>& VOL = xt::adapt(col_vol);
-    auto const& col_amount = df.get<f64>("amount");
-    const xt::xarray<f64>& AMOUNT = xt::adapt(col_amount);
+    // 提取各列序列
+    std::vector<f64> open_vec, close_vec, high_vec, low_vec, vol_vec, amount_vec;
+    open_vec.reserve(klines.size());
+    close_vec.reserve(klines.size());
+    high_vec.reserve(klines.size());
+    low_vec.reserve(klines.size());
+    vol_vec.reserve(klines.size());
+    amount_vec.reserve(klines.size());
+    for (const auto& bar : klines) {
+        open_vec.push_back(bar.open);
+        close_vec.push_back(bar.close);
+        high_vec.push_back(bar.high);
+        low_vec.push_back(bar.low);
+        vol_vec.push_back(bar.volume);
+        amount_vec.push_back(bar.amount);
+    }
+    const xt::xarray<f64>& OPEN = xt::adapt(open_vec);
+    const xt::xarray<f64>& CLOSE = xt::adapt(close_vec);
+    const xt::xarray<f64>& HIGH = xt::adapt(high_vec);
+    const xt::xarray<f64>& LOW = xt::adapt(low_vec);
+    const xt::xarray<f64>& VOL = xt::adapt(vol_vec);
+    const xt::xarray<f64>& AMOUNT = xt::adapt(amount_vec);
 
     auto r1Close = formula::ref(CLOSE,1);
     for (const auto& price : r1Close) {
@@ -141,9 +151,9 @@ TEST_CASE("history-basic-auto", "[features]") {
     info.NewLowN = formula::at(newLowN, -1);
 
     // 成交统计概要数据
-    exchange::timestamp ts = exchange::timestamp::parse(date);
-    auto list = datasets::CheckoutTransactionData(code, ts, true);
-    auto summary = datasets::CountInflow(list, code, ts);
+    meta::Timestamp ts = meta::Timestamp::parse(date);
+    auto list = tdx::CheckoutTransactionData(code, ts, true);
+    auto summary = tdx::CountInflow(list, code, ts);
     info.OpenVolume = summary.OpenVolume;
 
     info.UpdateTime = api::get_timestamp();
@@ -156,6 +166,7 @@ TEST_CASE("history-release", "[factors]") {
     std::string code = "sh600600";
     std::string date = "2025-06-24";
     HistoryFeature adapter;
-    exchange::timestamp feature_date = exchange::timestamp(date);
-    adapter.Update(code, feature_date);
+    meta::Timestamp feature_date = meta::Timestamp(date);
+    auto inst = data::detect_symbol(code);
+    adapter.Update(inst, feature_date);
 }

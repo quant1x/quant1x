@@ -167,7 +167,7 @@ namespace encoding {
         template <typename T>
         constexpr bool is_enum_v = is_enum<T>::value;
 
-        // 获取字段名（借用 yaml.h 风格）
+        // 获取字段名(借用 yaml.h 风格)
         template <typename T>
         inline std::string_view get_field_name(std::size_t idx) {
             return boost::pfr::names_as_array<T>()[idx];

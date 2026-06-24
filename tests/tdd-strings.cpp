@@ -1,7 +1,10 @@
-#include <quant1x/encoding/iconv.h>
+#include <iconv.h>
+#include <quant1x/encoding/charsets.h>
 #include <quant1x/std/strings.h>
 #include <quant1x/std/util.h>
 #include <quant1x/test/test.h>
+
+using namespace charsets;
 
 TEST_CASE("trim-basic", "[strings]") {
     std::string text   = "  hello,  world, c++20,  string_view  ";
@@ -139,8 +142,8 @@ TEST_CASE("to_lower function works correctly", "[to_lower]") {
     }
 
 //    SECTION("Unicode UTF-8 safe (ASCII only in this function)") {
-//        // 注意：此 to_lower 只支持 ASCII 字符
+//        // 注意: 此 to_lower 只支持 ASCII 字符
 //        REQUIRE(strings::to_lower("ÄÖÜ") == "äöü");      // 如果你的系统 locale 是 UTF-8 可能不生效
-//        REQUIRE(strings::to_lower("Élève") == "élève");  // 同上，只转换 ASCII 大写字母
+//        REQUIRE(strings::to_lower("Élève") == "élève");  // 同上, 只转换 ASCII 大写字母
 //    }
 }

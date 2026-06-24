@@ -5,14 +5,12 @@ import (
 
 	"time"
 
-	"gitee.com/quant1x/quant1x/quant1x/command"
-	"gitee.com/quant1x/quant1x/quant1x/runtime"
-	"gitee.com/quant1x/quant1x/quant1x/util"
+	"github.com/quant1x/quant1x/quant1x/command"
+	"github.com/quant1x/quant1x/quant1x/runtime"
+	"github.com/quant1x/quant1x/quant1x/util"
 
-	//_ "gitee.com/quant1x/labs/qlab/factors"
-	//_ "gitee.com/quant1x/labs/services"
-	//_ "gitee.com/quant1x/labs/strategies"
-	_ "gitee.com/quant1x/quant1x/quant1x/instruments" // for go:linkname GetCodeList
+	_ "github.com/quant1x/quant1x/quant1x/contrib/data/tdx" // for data provider plugins
+	_ "github.com/quant1x/quant1x/quant1x/data/market"      // for go:linkname GetCodeList
 )
 
 var (
@@ -31,6 +29,7 @@ func main() {
 	mainStart := time.Now()
 	resetVersions()
 	defer func() {
+		runtime.WaitForShutdown(1) // 等待最多1秒钟,以完成优雅退出
 		runtime.CatchPanic("")
 		elapsedTime := time.Since(mainStart) / time.Millisecond
 		fmt.Printf("\n总耗时: %.3fs\n", float64(elapsedTime)/1000)

@@ -11,7 +11,7 @@ namespace engine {
         RULE_F10_BASE = 1000,
         RULE_BASE_BASE = 2000,
 
-        // 示例：基础规则错误码
+        // 示例: 基础规则错误码
         INVALID_PRICE = RULE_BASE_BASE + 1,
         INVALID_VOLUME,
         UNKNOWN_RULE_KIND,

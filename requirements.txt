@@ -1,7 +1,7 @@
 # 1. project build tools: setuptools, twine, wheel
-setuptools~=78.0.0
-twine~=6.1.0
-wheel~=0.45.1
+#setuptools~=78.0.0
+#twine~=6.1.0
+#wheel~=0.45.1
 requests-toolbelt~=1.0.0
 # 2. logger
 loguru~=0.7.3
@@ -19,7 +19,7 @@ python-dateutil~=2.9.0.post0
 matplotlib~=3.10.5
 
 # AKShare
-akshare~=1.17.38
+akshare~=1.18.21
 mootdx~=0.11.7
 
 findpeaks~=2.7.4

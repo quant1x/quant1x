@@ -5,7 +5,7 @@
 #include <quant1x/std/simd.h>
 #include "ewm.h"
 
-// 前置声明EWM（避免循环引用）
+// 前置声明EWM(避免循环引用)
 //struct EW;
 //class ExponentialMovingWindow;
 
@@ -22,7 +22,7 @@ namespace ta {
         // 手动实现拷贝构造函数
         Series(const Series& other) : data_(other.data_) {}
 
-        //=== 禁止拷贝（避免意外的数据共享）===//
+        //=== 禁止拷贝(避免意外的数据共享)===//
         //Series(const Series&) = delete;
         //Series& operator=(const Series&) = delete;
 
@@ -56,10 +56,10 @@ namespace ta {
 
         Series<T> align(size_t target_size, T fill_value=T{}) const {
             if (data_.size() >= target_size) {
-                // 裁剪模式：只保留前 target_size 个元素
+                // 裁剪模式: 只保留前 target_size 个元素
                 return Series<T>(std::vector<T>(data_.data(), data_.data() + target_size));
             } else {
-                // 扩展模式：复制原数据，并用 fill_value 填充剩余部分
+                // 扩展模式: 复制原数据, 并用 fill_value 填充剩余部分
                 std::vector<T> new_data(data_.begin(), data_.end());
                 new_data.insert(new_data.end(), target_size - data_.size(), fill_value);
                 return Series<T>(new_data);

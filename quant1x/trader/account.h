@@ -15,7 +15,7 @@ namespace trader {
 
     double CalculateAvailableFundsForSingleTarget(int quantityQuota, double weight, double feeMax, double feeMin);
 
-    double CalculateAvailableFund(const std::shared_ptr<config::StrategyParameter> &strategyParameter);
+    double CalculateAvailableFund(const std::shared_ptr<quant1x::config::StrategyParameter> &strategyParameter);
 
 } // namespace trader
 

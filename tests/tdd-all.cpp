@@ -2,7 +2,7 @@
 
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
-#include <quant1x/level1/encoding.h>
+// #include <quant1x/contrib/data/tdx/level1/encoding.h>  // removed in refactor
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,14 +11,14 @@
 #include <iostream>
 #include <quant1x/std/time.h>
 #include <quant1x/runtime/core.h>
-#include <quant1x/io/file.h>
+#include <quant1x/std/filesystem.h>
 
 TEST_CASE("stem", "[filesystem]") {
     std::string fn = "c:\\abc\\e.exe.zip";
-    std::cout<<io::remove_extension(fn)<< std::endl;
+    std::cout<<filesystem::remove_extension(fn)<< std::endl;
 
     std::string fn1 = "e.exe.zip";
-    std::cout<<io::remove_extension(fn1)<< std::endl;
+    std::cout<<filesystem::remove_extension(fn1)<< std::endl;
 }
 
 TEST_CASE("from-1", "[strings]") {
@@ -277,7 +277,7 @@ double v2Decimal(double value, int digits = 2) {
 }
 
 double v3Decimal(double value, int digits = 2) {
-    digits = std::clamp(digits, 0, 9); // 无分支（视编译器实现而定）
+    digits = std::clamp(digits, 0, 9); // 无分支(视编译器实现而定)
 
     static constexpr double kPowersOf10[] = {
         1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9

@@ -53,7 +53,7 @@ namespace service {
         return getuid() == 0;
     }
 
-    // 请求提权并重启（使用 sudo）
+    // 请求提权并重启(使用 sudo)
     bool require_root_and_relaunch(const std::string &choice) {
         if (is_root()) {
             return true;
@@ -75,7 +75,7 @@ namespace service {
 
         execvp("sudo", c_args.data());
 
-        spdlog::error("[-] 提权失败，请手动使用 sudo 执行");
+        spdlog::error("[-] 提权失败, 请手动使用 sudo 执行");
         return false;
     }
 
@@ -108,7 +108,7 @@ namespace service {
         spdlog::set_default_logger(logger);
     }
 
-    // 安装服务（创建 .plist 文件）
+    // 安装服务(创建 .plist 文件)
     void install() {
         // if (!require_root_and_relaunch("install")) {
         //     return;
@@ -232,7 +232,7 @@ namespace service {
 
     // 检查 launchd 服务是否正在运行
     std::pair<std::string, bool> check_service_running(const std::string &service_name) {
-        // 构建命令：launchctl list com.quant1x.q1x.service
+        // 构建命令: launchctl list com.quant1x.q1x.service
         std::string cmd = "launchctl list " + service_name;
 
         // 使用 popen 执行命令并读取输出
@@ -254,13 +254,13 @@ namespace service {
             return {"Service is stopped", false};
         }
 
-        // 检查输出中是否包含服务名称（PID 存在说明运行中）
+        // 检查输出中是否包含服务名称(PID 存在说明运行中)
         std::regex service_regex(service_name);
         if (!std::regex_search(result, service_regex)) {
             return {"Service is stopped", false};
         }
 
-        // 提取 PID（格式如 "PID" = 1234;）
+        // 提取 PID(格式如 "PID" = 1234;)
         std::regex  pid_regex(R"(\"PID\" = ([0-9]+);)");
         std::smatch match;
         if (std::regex_search(result, match, pid_regex) && match.size() > 1) {
@@ -283,7 +283,7 @@ namespace service {
         std::cout << status << std::endl;
     }
 
-    // 守护进程主逻辑（被 launchd 管理时无需 fork）
+    // 守护进程主逻辑(被 launchd 管理时无需 fork)
     void run_daemon() {
         // 初始化日志系统
         init_logger();

@@ -1,4 +1,4 @@
-#include <quant1x/io/file.h>
+#include <quant1x/std/filesystem.h>
 #include <quant1x/runtime/crash.h>
 #include <spdlog/sinks/daily_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -14,7 +14,7 @@ namespace crash {
     namespace detail {
 
         static std::string application_name() {
-            static std::string app_name = io::executable_absolute_path();
+            static std::string app_name = filesystem::executable_absolute_path();
             return app_name;
         }
 
@@ -38,13 +38,13 @@ namespace crash {
                 std::error_code ec;
                 std::filesystem::create_directories(log_dir, ec);
                 if (ec) {
-                    // 目录创建失败：记录并继续（将使用控制台回退）
+                    // 目录创建失败: 记录并继续(将使用控制台回退)
                     std::string msg = std::string("create_directories failed: ") + ec.message();
                     spdlog::warn("[crash] {}", msg);
                     std::cerr << "[crash] " << msg << std::endl;
                 }
 
-                // 创建 sinks，可能会抛异常（例如路径/权限问题或 A/BOM 导致的打开失败）
+                // 创建 sinks, 可能会抛异常(例如路径/权限问题或 A/BOM 导致的打开失败)
                 auto file_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>(filelog_name, 0, 0, false);
                 auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 
@@ -52,7 +52,7 @@ namespace crash {
                 auto logger = std::make_shared<spdlog::logger>(crash_logger_name, sinks.begin(), sinks.end());
                 logger->set_level(spdlog::level::debug);
 
-                // 注册自定义 logger（如果已存在，先移除）
+                // 注册自定义 logger(如果已存在, 先移除)
                 if (spdlog::get(crash_logger_name)) {
                     spdlog::drop(crash_logger_name);
                 }
@@ -60,17 +60,17 @@ namespace crash {
 
                 spdlog::info("初始化crash日志...OK");
             } catch (const std::exception& e) {
-                // 初始化文件 sink 失败：回退到仅控制台 logger 并把错误写到 cerr
+                // 初始化文件 sink 失败: 回退到仅控制台 logger 并把错误写到 cerr
                 std::string err = std::string("init_logger failed: ") + e.what();
                 std::cerr << "[crash] " << err << std::endl;
                 spdlog::warn("[crash] {}", err);
 
-                // 确保至少有一个控制台 logger（名字为 crash_logger_name）
+                // 确保至少有一个控制台 logger(名字为 crash_logger_name)
                 if (!spdlog::get(crash_logger_name)) {
                     try {
                         spdlog::stdout_color_mt(crash_logger_name);
                     } catch (...) {
-                        // 严重失败：直接输出到 cerr
+                        // 严重失败: 直接输出到 cerr
                         std::cerr << "[crash] failed to create console logger" << std::endl;
                     }
                 }
@@ -90,12 +90,12 @@ namespace crash {
             std::call_once(once_crash_logger, [&]() { detail::init_logger(); });
             auto logger = spdlog::get(crash_logger_name);
             if (!logger) {
-                // 如果仍然没有，确保我们至少有一个控制台 logger（并把失败写到 cerr）
+                // 如果仍然没有, 确保我们至少有一个控制台 logger(并把失败写到 cerr)
                 try {
                     logger = spdlog::stdout_color_mt(crash_logger_name);
                 } catch (const std::exception& e) {
                     std::cerr << "[crash] get_logger failed creating fallback console logger: " << e.what() << std::endl;
-                    // 最后手段：返回 nullptr（调用者需小心）
+                    // 最后手段: 返回 nullptr(调用者需小心)
                     return nullptr;
                 }
             }
@@ -111,9 +111,9 @@ namespace crash {
 // #define BACKWARD_HAS_DWARF 1
 #elif OS_IS_WINDOWS
 #if TARGET_COMPILER_IS_MSVC
-// #define BACKWARD_HAS_DWARF 0             // 禁用 DWARF（MinGW 可能不支持）
+// #define BACKWARD_HAS_DWARF 0             // 禁用 DWARF(MinGW 可能不支持)
 // #define BACKWARD_HAS_LIBUNWIND 0         // 禁用 libunwind
-// #define BACKWARD_HAS_BACKTRACE 0         // 禁用 backtrace（MinGW 可能不支持）
+// #define BACKWARD_HAS_BACKTRACE 0         // 禁用 backtrace(MinGW 可能不支持)
 // #define BACKWARD_HAS_BACKTRACE_SYMBOL 0  // 禁用 backtrace_symbols
 #endif  // TARGET_COMPILER_IS_MSVC
 #elif OS_IS_LINUX
@@ -135,7 +135,7 @@ namespace crash {
 namespace crash {
 
     [[maybe_unused]] constexpr int MAX_FRAMES = 64;
-    // 全局变量：启用 backward-cpp 的信号处理
+    // 全局变量: 启用 backward-cpp 的信号处理
     static backward::SignalHandling sh{};
 
     namespace detail {
@@ -145,7 +145,7 @@ namespace crash {
             p.address = true;
             p.object  = true;
             p.print(st, oss);
-            get_logger()->error("调用栈：\n{}", oss.str());
+            get_logger()->error("调用栈: \n{}", oss.str());
             get_logger()->flush();
         }
     }  // namespace detail
@@ -207,7 +207,7 @@ namespace crash {
             SymSetOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS | SYMOPT_LOAD_LINES);
             SymInitialize(GetCurrentProcess(), nullptr, TRUE);
 
-            // 打印调用栈（尽量显示用户代码帧，而不是运行时内部帧）
+            // 打印调用栈(尽量显示用户代码帧, 而不是运行时内部帧)
             backward::StackTrace st;
 #ifdef TARGET_COMPILER_IS_CLANG
             st.set_thread_handle(GetCurrentThread());
@@ -215,7 +215,7 @@ namespace crash {
             st.skip_n_firsts(signal_skip_recs);
 #else
             st.load_from(pExceptionInfo, MAX_FRAMES);
-            // 动态检测并跳过系统/运行时模块帧，避免硬编码跳过帧数
+            // 动态检测并跳过系统/运行时模块帧, 避免硬编码跳过帧数
             try {
                 backward::TraceResolver resolver;
                 resolver.load_stacktrace(st);
@@ -259,7 +259,7 @@ namespace crash {
 #endif
 
 #if !OS_IS_WINDOWS
-        // Unix 信号处理函数（Linux/macOS）
+        // Unix 信号处理函数(Linux/macOS)
         void posix_signal_handler(int sig) {
             detail::get_logger()->error("[CRASH] Signal {} ({}) 被捕获", strsignal(sig), sig);
             switch (sig) {
@@ -273,16 +273,16 @@ namespace crash {
                     detail::get_logger()->error("[CRASH] SIGABRT: 程序中止");
                     break;
                 case SIGFPE:
-                    detail::get_logger()->error("[CRASH] SIGFPE: 浮点运算异常（如除以零）");
+                    detail::get_logger()->error("[CRASH] SIGFPE: 浮点运算异常(如除以零)");
                     break;
                 case SIGILL:
-                    detail::get_logger()->error("[CRASH] SIGILL: 非法指令（执行了非法操作码）");
+                    detail::get_logger()->error("[CRASH] SIGILL: 非法指令(执行了非法操作码)");
                     break;
                 default:
                     detail::get_logger()->error("[CRASH] 未知信号被捕获[{}]", sig);
             }
 
-            // 打印调用栈（函数名 + 行号）
+            // 打印调用栈(函数名 + 行号)
             backward::StackTrace st;
             st.load_here(MAX_FRAMES);
             detail::LogStackTrace(st);

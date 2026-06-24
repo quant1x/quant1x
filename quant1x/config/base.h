@@ -8,11 +8,13 @@
 #include <mutex>
 
 // 全部的配置信息
-namespace config {
+namespace quant1x::config {
     constexpr const int cn_pre_market_hour   = 9;  ///< 盘前9点
     constexpr const int cn_pre_market_minute = 0;  ///< 盘点9点0分
     constexpr const int cn_pre_market_second = 0;  ///< 盘点9点0分0秒
-
+    // 每天9点整
+    inline std::string GLOBAL_CRON_EXPR_DAILY_INIT = std::format("{} {} {} * * *", cn_pre_market_second, cn_pre_market_minute, cn_pre_market_hour);
+    
     constexpr const char *const cache_filename_date_layout = "{:%Y%m%d}";  ///< 缓存路径的日期格式
 
     constexpr const int64_t TenThousand = 10000;              // 万
@@ -56,6 +58,6 @@ namespace config {
 
     // 获取日志路径
     std::string get_logs_path();                                                              
-}  // namespace config
+}  // namespace quant1x::config
 
 #endif // QUANT1X_CONFIG_BASE_H

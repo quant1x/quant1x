@@ -14,12 +14,12 @@ public:
     explicit LinearRegression(double lr = 0.01, int iters = 1000)
         : w(0.0), b(0.0), learning_rate(lr), iterations(iters) {}
 
-    // 前向传播，预测 y
+    // 前向传播, 预测 y
     double predict(double x) const {
         return w * x + b;
     }
 
-    // 损失函数（均方误差）
+    // 损失函数(均方误差)
     double compute_loss(const vector<double>& X, const vector<double>& Y) const {
         double loss = 0.0;
         for (size_t i = 0; i < X.size(); ++i) {
@@ -70,10 +70,10 @@ TEST_CASE("v1", "[linear-regression]") {
     model.fit(X, Y);
 
     auto [w, b] = model.get_params();
-    cout << "训练完成，模型参数: " << endl;
+    cout << "训练完成, 模型参数: " << endl;
     cout << "w = " << w << ", b = " << b << endl;
 
     // 测试预测
     double x_test = 6;
-    cout << "预测值（x=" << x_test << "）: " << model.predict(x_test) << endl;
+    cout << "预测值(x=" << x_test << "): " << model.predict(x_test) << endl;
 }

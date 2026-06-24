@@ -4,6 +4,7 @@
 #include <quant1x/formula.h>
 #include <xtensor/views/xview.hpp>
 
+
 TEST_CASE("base-1", "[series]") {
     std::vector<int> data1 = {1, 2, 3, 4, 5, 6};
     std::vector<int> data2 = {0, 2, 3, 4, 5, 6};
@@ -81,7 +82,7 @@ TEST_CASE("ma", "[formula]") {
     std::cout << "MA(CLOSE," << period << "):   " << values << std::endl;
 }
 
-// 分块大小（根据CPU缓存调整）
+// 分块大小(根据CPU缓存调整)
 constexpr size_t BLOCK_SIZE = 256;
 
 xt::xarray<double> ema_optimized(const xt::xarray<double>& input, int period) {
@@ -91,7 +92,7 @@ xt::xarray<double> ema_optimized(const xt::xarray<double>& input, int period) {
     xt::xarray<double> output = xt::empty<double>(input.shape());
     output[0] = input[0];
 
-    // 分块处理（减少缓存未命中）
+    // 分块处理(减少缓存未命中)
     for (size_t block_start = 1; block_start < input.size(); block_start += BLOCK_SIZE) {
         const size_t block_end = std::min(block_start + BLOCK_SIZE, input.size());
 
@@ -116,7 +117,7 @@ xt::xarray<double> ema_optimized(const xt::xarray<double>& input, int period) {
                               (1 - alpha) * output[block_start + i - 1];
         }
 
-        // 强制求值并写回内存（利用xtensor的惰性求值优化）
+        // 强制求值并写回内存(利用xtensor的惰性求值优化)
         xt::eval(output_block);
     }
 
@@ -141,7 +142,7 @@ TEST_CASE("ema_optimized", "[formula]") {
 
 
 TEST_CASE("EMA Benchmark Comparison", "[bench]") {
-    // 生成测试数据（10万条随机K线）
+    // 生成测试数据(10万条随机K线)
     constexpr size_t data_size = 100'000;
     xt::xarray<double> close = xt::random::rand<double>({data_size}, 0.0, 100.0);
     constexpr int N = 5;
@@ -168,7 +169,7 @@ TEST_CASE("sma-std", "[formula]") {
     std::cout << "CLOSE: " << close << std::endl;
     auto values = formula::sma_standard(close,period, m);
     std::cout << "SMA(CLOSE," << period << "," << m << "): " << values << std::endl;
-    // 输出示例（N=4）: [NaN, NaN, NaN, 2.5]
+    // 输出示例(N=4): [NaN, NaN, NaN, 2.5]
 }
 
 
@@ -188,15 +189,15 @@ xt::xarray<double> sma_optimized(const xt::xarray<double>& S, int N, int M) {
         return xt::xarray<double>(S.shape(), std::numeric_limits<double>::quiet_NaN());
     }
 
-    // 2. 预分配内存（避免动态扩容）
+    // 2. 预分配内存(避免动态扩容)
     xt::xarray<double> sma = xt::empty<double>(S.shape());
     sma[0] = S[0];
 
-    // 3. 预计算权重系数（减少重复除法）
+    // 3. 预计算权重系数(减少重复除法)
     const double weight_current = static_cast<double>(M) / N;
     const double weight_prev = static_cast<double>(N - M) / N;
 
-    // 4. 循环展开优化（手动展开2次）
+    // 4. 循环展开优化(手动展开2次)
     size_t i = 1;
     for (; i + 1 < S.size(); i += 2) {
         sma[i] = S[i] * weight_current + sma[i-1] * weight_prev;
@@ -222,7 +223,7 @@ TEST_CASE("sma-tdx-optimized", "[formula]") {
 }
 
 TEST_CASE("SMA Benchmark Comparison", "[bench]") {
-    // 生成测试数据（10万条随机K线）
+    // 生成测试数据(10万条随机K线)
     constexpr size_t data_size = 100'000;
     xt::xarray<double> close = xt::random::rand<double>({data_size}, 0.0, 100.0);
     constexpr int N = 12, M = 1;
@@ -242,7 +243,7 @@ TEST_CASE("SMA Benchmark Comparison", "[bench]") {
                                              };
 }
 
-// 类型特征：检查是否为 xtensor 布尔表达式
+// 类型特征: 检查是否为 xtensor 布尔表达式
 template <typename T>
 struct is_xtensor_bool : std::false_type {};
 
@@ -291,7 +292,7 @@ TEST_CASE("IFF Function Test", "[formula]") {
         REQUIRE(xt::allclose(IFF(cond, t, f), expected));
     }
 
-        // 混合类型测试（需隐式转换）
+        // 混合类型测试(需隐式转换)
     SECTION("Mixed Type") {
         xt::xarray<bool> cond = {true, false};
         auto res = IFF(cond, 3.14, xt::xarray<int>{2}); // 返回 double 类型
@@ -300,13 +301,13 @@ TEST_CASE("IFF Function Test", "[formula]") {
     }
 }
 
-// 标量版本：如果条件为 FALSE 返回 true_expr，否则返回 false_expr
+// 标量版本: 如果条件为 FALSE 返回 true_expr, 否则返回 false_expr
 template <typename T, typename F>
 auto IFN(bool condition, T&& true_expr, F&& false_expr) {
     return !condition ? std::forward<T>(true_expr) : std::forward<F>(false_expr);
 }
 
-// xtensor 版本：对条件取反后调用 where
+// xtensor 版本: 对条件取反后调用 where
 template <typename Cond, typename T, typename F,
     typename = std::enable_if_t<xt::is_xexpression<std::decay_t<Cond>>::value>>
 auto IFN(Cond&& condition, T&& true_expr, F&& false_expr) {
@@ -315,7 +316,7 @@ auto IFN(Cond&& condition, T&& true_expr, F&& false_expr) {
         "Condition must be a boolean xtensor expression"
     );
     return xt::where(
-        !std::forward<Cond>(condition),  // 关键区别：对条件取反
+        !std::forward<Cond>(condition),  // 关键区别: 对条件取反
         std::forward<T>(true_expr),
         std::forward<F>(false_expr)
     );
@@ -327,7 +328,7 @@ TEST_CASE("IFN Function", "[formula]") {
         REQUIRE(IFN(true, 1.0, 0.0) == 0.0);
         REQUIRE(IFN(false, 3.14, 6.28) == 3.14);
 
-        // 字符串测试（明确类型）
+        // 字符串测试(明确类型)
         REQUIRE(IFN(false, std::string("A"), std::string("B")) == "A");
     }
 
@@ -339,7 +340,7 @@ TEST_CASE("IFN Function", "[formula]") {
     }
 }
 
-// 类型特征：支持数值和字符串
+// 类型特征: 支持数值和字符串
 template <typename T>
 using is_supported_type = std::disjunction<
     std::is_arithmetic<T>,
@@ -389,17 +390,17 @@ xt::xarray<T> HHV(const xt::xarray<T>& data, int period) {
 TEST_CASE("hhv", "[formula]") {
     // 数值类型测试
     xt::xarray<double> prices = {10.5, 11.2, 12.3, 11.8, 10.9};
-    auto hhv_num = HHV(prices, 3); // 正确：调用数值版本
+    auto hhv_num = HHV(prices, 3); // 正确: 调用数值版本
     std::cout << "Numeric HHV: " << hhv_num << std::endl;
 
     // 字符串测试
     xt::xarray<std::string> texts = {"A", "C", "B", "D", "A"};
-    auto hhv_str = HHV(texts, 2); // 正确：调用特化版本
+    auto hhv_str = HHV(texts, 2); // 正确: 调用特化版本
     std::cout << "String HHV: " << hhv_str << std::endl;
 
-    // 非法类型（编译时报错）
+    // 非法类型(编译时报错)
     // xt::xarray<bool> flags = {true, false};
-    // auto err = HHV(flags, 2); // 错误：static_assert触发
+    // auto err = HHV(flags, 2); // 错误: static_assert触发
 }
 
 // 统一的LLV实现
@@ -537,18 +538,18 @@ TEST_CASE("llv-v1", "[formula]") {
     // 数值类型测试
     xt::xarray<double> prices = {10.5, 11.2, 12.3, 11.8, 10.9};
     std::cout << "origin:" << prices << std::endl;
-    auto hhv_num = v1LLV(prices, 3); // 正确：调用数值版本
+    auto hhv_num = v1LLV(prices, 3); // 正确: 调用数值版本
     std::cout << "Numeric LLV: " << hhv_num << std::endl;
 
     // 字符串测试
     xt::xarray<std::string> texts = {"A", "C", "B", "D", "A"};
     std::cout << "origin:" << texts << std::endl;
-    auto hhv_str = v1LLV(texts, 2); // 正确：调用特化版本
+    auto hhv_str = v1LLV(texts, 2); // 正确: 调用特化版本
     std::cout << "String LLV: " << hhv_str << std::endl;
 
-    // 非法类型（编译时报错）
+    // 非法类型(编译时报错)
     // xt::xarray<bool> flags = {true, false};
-    // auto err = HHV(flags, 2); // 错误：static_assert触发
+    // auto err = HHV(flags, 2); // 错误: static_assert触发
 }
 
 template <typename T>
@@ -566,7 +567,7 @@ xt::xarray<T> LLV_simd(const xt::xarray<T>& data, size_t period) {
             continue;
         }
 
-        // 关键修正：正确计算滑动窗口范围
+        // 关键修正: 正确计算滑动窗口范围
         auto window = xt::view(data, xt::range(i - (period - 1), i + 1));
 
         if constexpr (std::is_arithmetic_v<T>) {
@@ -586,18 +587,18 @@ TEST_CASE("llv-simd", "[formula]") {
     // 数值类型测试
     xt::xarray<double> prices = {10.5, 11.2, 12.3, 11.8, 10.9};
     std::cout << "origin:" << prices << std::endl;
-    auto hhv_num = LLV_simd(prices, 3); // 正确：调用数值版本
+    auto hhv_num = LLV_simd(prices, 3); // 正确: 调用数值版本
     std::cout << "Numeric LLV: " << hhv_num << std::endl;
 
     // 字符串测试
     xt::xarray<std::string> texts = {"A", "C", "B", "D", "A"};
     std::cout << "origin:" << texts << std::endl;
-    auto hhv_str = LLV_simd(texts, 2); // 正确：调用特化版本
+    auto hhv_str = LLV_simd(texts, 2); // 正确: 调用特化版本
     std::cout << "String LLV: " << hhv_str << std::endl;
 
-    // 非法类型（编译时报错）
+    // 非法类型(编译时报错)
     // xt::xarray<bool> flags = {true, false};
-    // auto err = HHV(flags, 2); // 错误：static_assert触发
+    // auto err = HHV(flags, 2); // 错误: static_assert触发
 }
 
 // 实现LLV函数 - 计算N周期内最低值
@@ -667,16 +668,16 @@ TEST_CASE("llv-xtensor", "[formula]") {
     // 数值类型测试
     xt::xarray<double> prices = {10.5, 11.2, 12.3, 11.8, 10.9};
     std::cout << "origin:" << prices << std::endl;
-    auto hhv_num = LLV(prices, 3); // 正确：调用数值版本
+    auto hhv_num = LLV(prices, 3); // 正确: 调用数值版本
     std::cout << "Numeric LLV: " << hhv_num << std::endl;
 
     // 字符串测试
     xt::xarray<std::string> texts = {"A", "C", "B", "D", "A"};
     std::cout << "origin:" << texts << std::endl;
-    auto hhv_str = LLV(texts, 2); // 正确：调用特化版本
+    auto hhv_str = LLV(texts, 2); // 正确: 调用特化版本
     std::cout << "String LLV: " << hhv_str << std::endl;
 
-    // 非法类型（编译时报错）
+    // 非法类型(编译时报错)
     // xt::xarray<bool> flags = {true, false};
-    // auto err = HHV(flags, 2); // 错误：static_assert触发
+    // auto err = HHV(flags, 2); // 错误: static_assert触发
 }

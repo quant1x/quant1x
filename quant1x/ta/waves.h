@@ -27,7 +27,7 @@ namespace ta::patterns {
      * @brief 检测波峰波谷
      * @param high 高点序列
      * @param low 低点序列
-     * @return 包含波峰和波谷索引的pair, 波峰基于高价序列，波谷基于低价序列
+     * @return 包含波峰和波谷索引的pair, 波峰基于高价序列, 波谷基于低价序列
      * @remark 如果只检测一个序列, 比如收盘价, high和low可以传入相同的close序列
      */
     template <typename T>
@@ -37,13 +37,13 @@ namespace ta::patterns {
         std::vector<int> diff_high(n, 0);  // 高价差分序列
         std::vector<int> diff_low(n, 0);   // 低价差分序列
 
-        // 第一步：计算一阶差分
+        // 第一步: 计算一阶差分
         for (size_t i = 0; i < n - 1; ++i) {
             diff_high[i] = compare(high[i + 1], high[i]);
             diff_low[i]  = compare(low[i + 1], low[i]);
         }
 
-        // 第二步：处理平台区域（差分为0的情况）
+        // 第二步: 处理平台区域(差分为0的情况)
         for (size_t i = 0; i < n - 1; ++i) {
             // 处理高价序列的平台
             if (diff_high[i] == 0) {
@@ -78,7 +78,7 @@ namespace ta::patterns {
             }
         }
 
-        // 第三步：识别波峰和波谷
+        // 第三步: 识别波峰和波谷
         std::vector<int> peaks;    // 波峰索引
         std::vector<int> valleys;  // 波谷索引
 
@@ -87,10 +87,10 @@ namespace ta::patterns {
             int d_low  = diff_low[i + 1] - diff_low[i];
 
             int index = int(i) + 1;  // 波峰和波谷的索引是i+1
-            if (d_high == -2) {      // 高价序列由上升到下降，形成波峰
+            if (d_high == -2) {      // 高价序列由上升到下降, 形成波峰
                 peaks.push_back(index);
             }
-            if (d_low == 2) {  // 低价序列由下降到上升，形成波谷
+            if (d_low == 2) {  // 低价序列由下降到上升, 形成波谷
                 valleys.push_back(index);
             }
         }
@@ -102,7 +102,7 @@ namespace ta::patterns {
      * @brief 检测波峰波谷
      * @param high 高点序列
      * @param low 低点序列
-     * @return 包含波峰和波谷索引的pair, 波峰基于高价序列，波谷基于低价序列
+     * @return 包含波峰和波谷索引的pair, 波峰基于高价序列, 波谷基于低价序列
      * @remark 如果只检测一个序列, 比如收盘价, high和low可以传入相同的close序列
      */
     std::pair<std::vector<point>, std::vector<point>> peaks_and_valleys(const xt::xarray<double> &high,
@@ -111,7 +111,7 @@ namespace ta::patterns {
 }  // namespace ta::patterns
 
 namespace ta::waves {
-    // 约束：T 必须是算术类型（int, float, double 等）
+    // 约束: T 必须是算术类型(int, float, double 等)
     template <typename T>
     concept Arithmetic = std::is_arithmetic_v<T>;
 
@@ -522,7 +522,7 @@ namespace ta::waves {
             }
         }
 
-        // 递归检测次级波（最多到 level 2）
+        // 递归检测次级波(最多到 level 2)
         if (level < 2) {
             for (const auto &[local_start, local_end, is_rising] : segments) {
                 int seg_global_start = start_idx + local_start;
@@ -545,10 +545,10 @@ namespace ta::waves {
             return {};
         }
 
-        // 第一阶段：检测主波峰波谷
+        // 第一阶段: 检测主波峰波谷
         auto [peaks, valleys] = detect_peaks_and_valleys(high_list, low_list);
 
-        // 构建主波段（Level 0）
+        // 构建主波段(Level 0)
         auto main_segments = build_wave_segments(high_list, low_list, peaks, valleys);
 
         std::vector<WaveSegment> all_segments;
@@ -558,7 +558,7 @@ namespace ta::waves {
             }
         }
 
-        // 第二阶段：递归检测次级波
+        // 第二阶段: 递归检测次级波
         for (const auto &[start, end, is_rising] : main_segments) {
             if (end - start >= 3) {
                 auto sub_waves = detect_wave_recursive(high_list, low_list, start, end, 1);
@@ -566,7 +566,7 @@ namespace ta::waves {
             }
         }
 
-        // 排序：先按 level，再按 start
+        // 排序: 先按 level, 再按 start
         std::sort(all_segments.begin(), all_segments.end());
 
         return all_segments;

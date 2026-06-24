@@ -9,7 +9,7 @@
 // CPU亲和性相关接口
 namespace affinity {
 
-    // 绑定当前线程到最优CPU（循环分配避免热点）
+    // 绑定当前线程到最优CPU(循环分配避免热点)
     bool bind_current_thread_to_optimal_cpu(std::error_code &ec);
 
     // 绑定当前线程到指定CPU

@@ -3,7 +3,7 @@
 #define QUANT1X_ENCODING_CSV_H 1
 
 #include <quant1x/std/api.h>
-#include <quant1x/std/filepath.h>
+#include <quant1x/std/filesystem.h>
 #include <csv2/reader.hpp>
 #include <csv2/writer.hpp>
 #include <boost/pfr.hpp>
@@ -111,7 +111,7 @@ namespace encoding {
         }
 
         namespace detail {
-            // 辅助函数：将任意类型转换为字符串并处理CSV转义
+            // 辅助函数: 将任意类型转换为字符串并处理CSV转义
             template<typename T>
             std::string v1_to_csv_string(const T &value) {
                 std::ostringstream oss;
@@ -173,7 +173,7 @@ namespace encoding {
         // 将结构体vector写入CSV文件
         template <typename T>
         bool slices_to_csv(const std::vector<T>& data, const std::string& filename) {
-            filepath::check_filepath(filename, true);
+            filesystem::check_filepath(filename, true);
             std::ofstream out_file(filename, std::ios::binary|std::ios::out | std::ios::trunc); // 必须以二进制方式写文件
             if (!out_file.is_open()) {
                 spdlog::error("Failed to open file: {}", filename);
@@ -182,7 +182,7 @@ namespace encoding {
 
             csv2::Writer<csv2::delimiter<','>> writer(out_file);
 
-            // 1. 写入表头（使用结构体字段名）
+            // 1. 写入表头(使用结构体字段名)
             std::vector<std::string> header;
             boost::pfr::for_each_field(T{}, [&](auto& field, auto idx) {
                 (void)field;

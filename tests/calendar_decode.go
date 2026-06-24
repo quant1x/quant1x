@@ -243,7 +243,7 @@ func (d *CalendarDecoder) _() []map[string]string {
 	if d.s > 2 {
 		return result
 	}
-	// 移植自 JS 实现的分时解码逻辑（做了类型适配，将数值统一格式化为字符串）
+	// 移植自 JS 实现的分时解码逻辑(做了类型适配, 将数值统一格式化为字符串)
 	c := make([]map[string]string, 0)
 	// 初始化
 	d.r["d"] = int(d.w([]int{18}, []int{1}, nil)[0]) - 1
@@ -341,7 +341,7 @@ func (d *CalendarDecoder) T() []map[string]string {
 	if d.s >= 1 {
 		return result
 	}
-	// 移植自 JS 的 T() 实现（K 线解码），此处做近似移植并保持返回类型一致
+	// 移植自 JS 的 T() 实现(K 线解码), 此处做近似移植并保持返回类型一致
 	res := make([]map[string]string, 0)
 	d.r["lv"] = 0
 	d.r["ld"] = 0

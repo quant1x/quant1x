@@ -28,7 +28,7 @@ type RingBuffer[T any] struct {
 	producerPos uint32    // 全局生产者位置
 	consumerPos uint32    // 全局消费者位置
 	closed      uint32    // 关闭标记
-	pool        sync.Pool // 对象池，用于复用 T 的包装对象
+	pool        sync.Pool // 对象池, 用于复用 T 的包装对象
 }
 
 // New 创建并返回一个新的 MPMC 环形缓冲区
@@ -53,7 +53,7 @@ func New[T any](size uint32) (*RingBuffer[T], error) {
 	return rb, nil
 }
 
-// spinWait 自旋等待，使用指数退避以减少忙等带来的开销
+// spinWait 自旋等待, 使用指数退避以减少忙等带来的开销
 func spinWait(retries *int32) {
 	r := atomic.AddInt32(retries, 1)
 	switch {
@@ -67,10 +67,10 @@ func spinWait(retries *int32) {
 	}
 }
 
-// Write 由生产者向环形缓冲区写入数据。
+// Write 由生产者向环形缓冲区写入数据.
 //
-// 为确保写入的数据指针在堆上有效，该实现将值装箱（在对象池中获取对象并写入），
-// 避免依赖编译器的逃逸分析带来的不确定性。
+// 为确保写入的数据指针在堆上有效, 该实现将值装箱(在对象池中获取对象并写入),
+// 避免依赖编译器的逃逸分析带来的不确定性.
 func (rb *RingBuffer[T]) Write(value T) error {
 	if atomic.LoadUint32(&rb.closed) == 1 {
 		return errors.New("queue closed")
@@ -102,7 +102,7 @@ func (rb *RingBuffer[T]) Write(value T) error {
 			continue
 		}
 
-		// 写入数据：使用对象池复用，避免频繁分配
+		// 写入数据: 使用对象池复用, 避免频繁分配
 		boxed := rb.pool.Get().(*T)
 		*boxed = value
 		atomic.StorePointer(&slot.data, unsafe.Pointer(boxed))
@@ -113,7 +113,7 @@ func (rb *RingBuffer[T]) Write(value T) error {
 			return nil
 		}
 
-		// 如果更新失败，回滚槽位状态
+		// 如果更新失败, 回滚槽位状态
 		atomic.StoreUint32(&slot.flag, 0)
 		spinWait(&retries)
 	}
@@ -167,7 +167,7 @@ func (rb *RingBuffer[T]) Read() (T, error) {
 			return val, nil
 		}
 
-		// 如果更新失败，回滚槽位状态
+		// 如果更新失败, 回滚槽位状态
 		atomic.StoreUint32(&slot.flag, 2)
 		spinWait(&retries)
 	}
@@ -195,7 +195,7 @@ func (rb *RingBuffer[T]) IsFull() bool {
 	return rb.Len() == int(rb.size)
 }
 
-// Close 关闭环形缓冲区（设置关闭标志），写入方将被拒绝写入
+// Close 关闭环形缓冲区(设置关闭标志), 写入方将被拒绝写入
 func (rb *RingBuffer[T]) Close() {
 	atomic.StoreUint32(&rb.closed, 1)
 }

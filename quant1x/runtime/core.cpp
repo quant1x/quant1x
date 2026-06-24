@@ -3,6 +3,7 @@
 #include <atomic>
 #include <csignal>
 #include <iostream>
+#include <cstdlib>
 #include <mutex>
 #include <utility>
 
@@ -12,16 +13,17 @@
 #include <signal.h>
 #endif
 
-#include <quant1x/io/file.h>
+#include <filesystem>
+
+#include <quant1x/std/filesystem.h>
 #include <quant1x/runtime/crash.h>
 #include <quant1x/runtime/scheduler.h>
 #include <quant1x/std/except.h>
 // router sink for per-level file routing
-#include <quant1x/logger/router_sink.h>
+#include <quant1x/log/router_sink.h>
 // lazy daily sink wrapper (creates files on first write)
-#include <quant1x/logger/lazy_daily_sink.h>
+#include <quant1x/log/lazy_daily_sink.h>
 
-#include <filesystem>
 // rotating file sink
 #include <spdlog/sinks/rotating_file_sink.h>
 // daily file sink
@@ -42,27 +44,27 @@ namespace runtime {
     BOOL WINAPI ConsoleHandler(DWORD event) {
         BOOL result = FALSE;
         switch (event) {
-            case CTRL_C_EVENT:  // 必选事件：用户按下 Ctrl+C。
+            case CTRL_C_EVENT:  // 必选事件: 用户按下 Ctrl+C. 
                 spdlog::info("signal> Ctrl+C pressed. Exiting...");
                 global_quit_flag = true;
                 result           = TRUE;
                 break;
-            case CTRL_CLOSE_EVENT:  // 必选事件：用户点击控制台窗口的关闭按钮（❌）
+            case CTRL_CLOSE_EVENT:  // 必选事件: 用户点击控制台窗口的关闭按钮(❌)
                 spdlog::info("signal> Console closed. Saving state...");
                 global_quit_flag = true;
                 result           = TRUE;
                 break;
-            case CTRL_SHUTDOWN_EVENT:  // 必选事件：系统即将关机或重启
+            case CTRL_SHUTDOWN_EVENT:  // 必选事件: 系统即将关机或重启
                 spdlog::info("signal> System shutting down. Cleaning up...");
                 global_quit_flag = true;
                 result           = TRUE;
                 break;
-            case CTRL_BREAK_EVENT:  // 可选事件：用户按下 Ctrl+Break（或程序调用 GenerateConsoleCtrlEvent）
+            case CTRL_BREAK_EVENT:  // 可选事件: 用户按下 Ctrl+Break(或程序调用 GenerateConsoleCtrlEvent)
                 spdlog::info("signal> Ctrl+Break pressed.");
                 global_quit_flag = true;
-                result           = TRUE;  // 不退出，仅记录
+                result           = TRUE;  // 不退出, 仅记录
                 break;
-            case CTRL_LOGOFF_EVENT:  // 可选事件：用户注销（Logoff）或切换账户
+            case CTRL_LOGOFF_EVENT:  // 可选事件: 用户注销(Logoff)或切换账户
                 spdlog::info("signal> User logging off.");
                 global_quit_flag = true;
                 result           = TRUE;
@@ -98,31 +100,96 @@ namespace runtime {
         sa.sa_handler = SignalHandler;
         sigemptyset(&sa.sa_mask);
         sa.sa_flags = 0;
-        // 注册SIGINT（Ctrl+C）和SIGTERM（kill默认信号）
+        // 注册SIGINT(Ctrl+C)和SIGTERM(kill默认信号)
         sigaction(SIGINT, &sa, nullptr);
         sigaction(SIGTERM, &sa, nullptr);
         sigaction(SIGHUP, &sa, nullptr);
 #endif
     }
 
-    static void global_terminate_handler() {
-        if (auto ex = std::current_exception()) {
+    // 防止在 terminate 处理器中递归/重入, 同时尽可能在不可恢复的上下文中
+    // 做最小且不抛异常的日志 flush 与退出. 
+    static std::atomic_flag terminate_in_progress = ATOMIC_FLAG_INIT;
+
+    // 最小化, 安全的清理: 尽力刷新并关闭 spdlog, 但不调用可能抛或阻塞的高层代码. 
+    static void safe_flush_and_exit(int exit_code) noexcept {
+        // best-effort: flush default logger
+        try {
+            if (spdlog::default_logger()) {
+                spdlog::default_logger()->flush();
+            }
+        } catch (...) {
+            // 忽略所有错误(terminate 上下文不能抛)
+        }
+        // best-effort: shutdown spdlog resources
+        try {
+            spdlog::shutdown();
+        } catch (...) {
+        }
+        std::_Exit(exit_code);
+    }
+
+    static void global_terminate_handler() noexcept {
+        // 如果已在处理 terminate, 则直接快速退出, 避免死循环
+        if (terminate_in_progress.test_and_set()) {
+            std::fprintf(stderr, "terminate called recursively, aborting\n");
+            std::_Exit(EXIT_FAILURE);
+        }
+
+        auto ex = std::current_exception();
+        if (ex) {
             try {
                 std::rethrow_exception(ex);
-            } catch (const BaseException &e) {  // 捕获自定义异常
-                spdlog::error("全局捕获 - 文件:{} 行号:{} 错误:{}", e.getFile(), e.getLine(), e.what());
-            } catch (const std::exception &e) {  // 其他标准异常
-                spdlog::error("全局捕获 - 标准异常: {} (type: {})", e.what(), typeid(e).name());
-                // 对于system_error可以记录更多信息
-                if (auto se = dynamic_cast<const std::system_error *>(&e)) {
-                    spdlog::error(
-                        "全局捕获 - Error code: {}, category: {}", se->code().value(), se->code().category().name());
+            } catch (const BaseException &e) {
+                try {
+                    if (spdlog::default_logger()) {
+                        spdlog::error("Uncaught BaseException: file={} line={} msg={}",
+                                      e.getFile(), e.getLine(), e.what());
+                    } else {
+                        std::fprintf(stderr,
+                                     "Uncaught BaseException: file=%s line=%d msg=%s\n",
+                                     e.getFile().c_str(), e.getLine(), e.what());
+                    }
+                } catch (...) {
+                    std::fprintf(stderr,
+                                 "Uncaught BaseException: file=%s line=%d msg=%s\n",
+                                 e.getFile().c_str(), e.getLine(), e.what());
                 }
-            } catch (...) {  // 未知异常;
-                spdlog::error("全局捕获 - 未知异常");
+            } catch (const std::exception &e) {
+                try {
+                    if (spdlog::default_logger()) {
+                        spdlog::error("Uncaught std::exception: {}", e.what());
+                    } else {
+                        std::fprintf(stderr, "Uncaught std::exception: %s\n", e.what());
+                    }
+                } catch (...) {
+                    std::fprintf(stderr, "Uncaught std::exception: %s\n", e.what());
+                }
+            } catch (...) {
+                try {
+                    if (spdlog::default_logger()) {
+                        spdlog::error("Uncaught unknown exception");
+                    } else {
+                        std::fprintf(stderr, "Uncaught unknown exception\n");
+                    }
+                } catch (...) {
+                    std::fprintf(stderr, "Uncaught unknown exception\n");
+                }
+            }
+        } else {
+            try {
+                if (spdlog::default_logger()) {
+                    spdlog::error("terminate called without active exception");
+                } else {
+                    std::fprintf(stderr, "terminate called without active exception\n");
+                }
+            } catch (...) {
+                std::fprintf(stderr, "terminate called without active exception\n");
             }
         }
-        shutdown();
+
+        // 尽力把日志写入磁盘并退出；使用非零退出码表示异常终止
+        safe_flush_and_exit(EXIT_FAILURE);
     }
 
     /// 隐藏全局初始化函数
@@ -138,7 +205,7 @@ namespace runtime {
         void init_all_components() {
             // make sure logs directory exists
             try {
-                std::filesystem::create_directories(config::get_logs_path());
+                std::filesystem::create_directories(quant1x::config::get_logs_path());
             } catch (...) {
                 // best-effort; fall back to letting spdlog fail if path unusable
             }
@@ -148,12 +215,12 @@ namespace runtime {
 
             // use lazy daily files (rotate every day) — keep false for truncate=false
             using quant1x::log::make_lazy_daily_sink;
-            auto info_sink = make_lazy_daily_sink(config::get_logs_path() + "/info.log", 0, 0, false);
-            auto debug_sink = make_lazy_daily_sink(config::get_logs_path() + "/debug.log", 0, 0, false);
-            auto warn_sink = make_lazy_daily_sink(config::get_logs_path() + "/warn.log", 0, 0, false);
-            auto err_sink = make_lazy_daily_sink(config::get_logs_path() + "/error.log", 0, 0, false);
-            auto critical_sink = make_lazy_daily_sink(config::get_logs_path() + "/critical.log", 0, 0, false);
-            auto trace_sink = make_lazy_daily_sink(config::get_logs_path() + "/trace.log", 0, 0, false);
+            auto info_sink = make_lazy_daily_sink(quant1x::config::get_logs_path() + "/info.log", 0, 0, false);
+            auto debug_sink = make_lazy_daily_sink(quant1x::config::get_logs_path() + "/debug.log", 0, 0, false);
+            auto warn_sink = make_lazy_daily_sink(quant1x::config::get_logs_path() + "/warn.log", 0, 0, false);
+            auto err_sink = make_lazy_daily_sink(quant1x::config::get_logs_path() + "/error.log", 0, 0, false);
+            auto critical_sink = make_lazy_daily_sink(quant1x::config::get_logs_path() + "/critical.log", 0, 0, false);
+            auto trace_sink = make_lazy_daily_sink(quant1x::config::get_logs_path() + "/trace.log", 0, 0, false);
 
             router->add_exact_route(spdlog::level::info, info_sink);
             router->add_exact_route(spdlog::level::debug, debug_sink);
@@ -162,7 +229,7 @@ namespace runtime {
             router->add_exact_route(spdlog::level::critical, critical_sink);
             router->set_fallback_sink(trace_sink);
 
-            std::string application_name = io::executable_name();
+            std::string application_name = filesystem::executable_name();
             auto        combined_logger  = std::make_shared<spdlog::logger>(application_name, router);
             // default to INFO level; logger_set(debug=true) will raise it to DEBUG
             combined_logger->set_level(spdlog::level::info);
@@ -173,7 +240,7 @@ namespace runtime {
             spdlog::info("quant1x init");
             std::atexit(shutdown);
             std::set_terminate(global_terminate_handler);
-            // 每3秒自动刷新一次（单位：秒）
+            // 每3秒自动刷新一次(单位: 秒)
             spdlog::flush_every(std::chrono::seconds(3));
             console_set_utf8();
             SetupSignalHandlers();

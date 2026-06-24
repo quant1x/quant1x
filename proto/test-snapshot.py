@@ -1,9 +1,13 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 import capnp
 
-# 加载 .capnp schema（不需要编译）
+# 加载 .capnp schema(不需要编译)
 schema = capnp.load('snapshot.capnp')
 
-# 获取结构体类型（假设根结构是 QuoteList）
+# 获取结构体类型(假设根结构是 QuoteList)
 QuoteList = schema.QuoteList
 
 # 打开 C++ 写入的二进制文件

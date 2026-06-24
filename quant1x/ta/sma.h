@@ -10,7 +10,7 @@
 
 namespace ta {
 
-    // 中国式 SMA：Y = (X*M + Y_prev*(N-M))/N
+    // 中国式 SMA: Y = (X*M + Y_prev*(N-M))/N
     template<typename T>
     class SMA : public ITechnicalIndicator<T> {
     public:
@@ -48,7 +48,7 @@ namespace ta {
                 return current_sma;
             };
 
-            // ✅ 使用 this 捕获，并且返回当前值作为默认值
+            // ✅ 使用 this 捕获, 并且返回当前值作为默认值
             return rolling.template apply<T>(
                 sma_func,
                 [this](){ return this->prev_sma_; }); // ✅ 正确捕获类成员

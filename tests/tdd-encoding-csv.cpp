@@ -132,7 +132,7 @@ TEST_CASE("csv-read-slices", "[encoding]") {
     }
 }
 
-// 辅助函数：将任意类型转换为字符串并处理CSV转义
+// 辅助函数: 将任意类型转换为字符串并处理CSV转义
 template <typename T>
 std::string to_csv_string(const T& value) {
     std::ostringstream oss;
@@ -168,7 +168,7 @@ std::string to_csv_string(const T& value) {
     return oss.str();
 }
 
-// 主函数：将结构体vector写入CSV文件
+// 主函数: 将结构体vector写入CSV文件
 template <typename T>
 bool write_csv_file(const std::vector<T>& data, const std::string& filename) {
     std::ofstream out_file(filename);
@@ -179,7 +179,7 @@ bool write_csv_file(const std::vector<T>& data, const std::string& filename) {
 
     csv2::Writer<csv2::delimiter<','>> writer(out_file);
 
-    // 1. 写入表头（使用结构体字段名）
+    // 1. 写入表头(使用结构体字段名)
     std::vector<std::string> header;
     boost::pfr::for_each_field(T{}, [&](auto& field, auto idx) {
         (void)field;

@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 """Operation handler interface ported from C++ NetworkOperationHandlerr.
 
 Provides a base class that matches the C++ semantics: default timeouts
