@@ -339,7 +339,7 @@ namespace quant1x::contrib::data::tdx {
 
         /// 生成并返回一个全局唯一的序列ID
         /// 每次调用时, 序列ID会递增1, 并保证在32位无符号整数范围内循环(0xFFFFFFFF)
-        inline uint32_t msg_sequence_id() {
+        inline uint32_t get_sequence_id() {
             static std::atomic<uint32_t> seq_id{0};
             return seq_id.fetch_add(1, std::memory_order_relaxed) + 1;
         }

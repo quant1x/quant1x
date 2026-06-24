@@ -11,7 +11,7 @@ use encoding_rs::GBK;
 use super::super::command::{EXT_INSTRUMENT_COUNT, EXT_INSTRUMENT_INFO, EXT_SYNCHRONIZE, FLAG_GENERIC};
 use super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 use super::super::market::find_exchange_by_market_and_category;
-use super::super::helpers::msg_sequence_id;
+use super::super::helpers::get_sequence_id;
 
 // ============================================================
 // SynchronizeContext — 扩展行情握手请求
@@ -156,7 +156,7 @@ pub struct InstrumentInfoRequest {
 impl InstrumentInfoRequest {
     pub fn new(start: u32, count: u16) -> Self {
         let mut header = RequestHeader::new(EXT_INSTRUMENT_INFO, 0x01);
-        header.sequence_id = msg_sequence_id();
+        header.sequence_id = get_sequence_id();
         Self {
             req_header: header,
             resp_header: ResponseHeader::new(),

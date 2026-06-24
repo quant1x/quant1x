@@ -8,7 +8,7 @@ import zlib
 
 from quant1x.net.conn import ConnectionHandle
 from quant1x.log import logger
-from .helpers import msg_sequence_id
+from .helpers import get_sequence_id
 from .command import FLAG_GENERIC, FLAG_UNCOMPRESSED
 from .command import Command
 
@@ -44,7 +44,7 @@ class RequestHeader(Stringable, Sizeable, abc.ABC):
 
     def __init__(self, command: Command, frame_type: int = FLAG_UNCOMPRESSED, packet_ctrl: int = 0x01):
         self.frame_type = frame_type & 0xFF
-        self.sequence_id = msg_sequence_id()
+        self.sequence_id = get_sequence_id()
         self.packet_ctrl = packet_ctrl & 0xFF
         self.body_wire_len = 0
         self.body_raw_len = 0

@@ -13,7 +13,7 @@ use crate::data::meta::instrument::Instrument;
 use crate::data::meta::Timestamp;
 use crate::data::{BaseRawDailyKLine};
 use super::command::{EXT_INSTRUMENT_BARS, FLAG_GENERIC};
-use super::helpers::msg_sequence_id;
+use super::helpers::get_sequence_id;
 use super::level1::std::security_bars::{SecurityBarsContext, SecurityBar as StdSecurityBar};
 use super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 use crate::std::BinaryStream;

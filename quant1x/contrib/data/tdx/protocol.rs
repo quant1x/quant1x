@@ -10,7 +10,7 @@ use flate2::read::ZlibDecoder;
 use std::io::{Read, Write};
 
 use super::command::{Command, FLAG_UNCOMPRESSED};
-use super::helpers::msg_sequence_id;
+use super::helpers::get_sequence_id;
 
 // ============================================================
 // 请求头 (12 字节)
@@ -34,7 +34,7 @@ impl RequestHeader {
     pub fn new(cmd: Command, frame_type: u8) -> Self {
         Self {
             frame_type,
-            sequence_id: msg_sequence_id(),
+            sequence_id: get_sequence_id(),
             packet_ctrl: 0x01,
             body_wire_len: 0,
             body_raw_len: 0,

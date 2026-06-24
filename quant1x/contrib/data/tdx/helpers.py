@@ -11,7 +11,7 @@ _seq_lock = threading.Lock()
 _seq_id = 0
 
 
-def msg_sequence_id() -> int:
+def get_sequence_id() -> int:
     """
     生成并返回一个全局唯一的序列ID
     

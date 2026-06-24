@@ -7,7 +7,7 @@
 use crate::std::BinaryStream;
 
 use super::super::super::command::*;
-use super::super::super::helpers::msg_sequence_id;
+use super::super::super::helpers::get_sequence_id;
 use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 
 #[derive(Debug, Clone)]
@@ -37,7 +37,7 @@ impl BaseFrame for HeartbeatContext {
 impl HeartbeatContext {
     pub fn new() -> Self {
         let mut header = RequestHeader::new(STD_HEARTBEAT, FLAG_UNCOMPRESSED);
-        header.sequence_id = msg_sequence_id();
+        header.sequence_id = get_sequence_id();
         header.packet_ctrl = 0x02;
         Self {
             req_header: header,

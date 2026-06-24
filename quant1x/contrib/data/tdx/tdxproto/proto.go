@@ -73,7 +73,7 @@ const (
 )
 
 // ============================================================
-// sequence_id — 对齐 C++ get_sequence_id / Python msg_sequence_id
+// sequence_id — 对齐 C++ get_sequence_id / Python get_sequence_id
 // ============================================================
 
 var seqId uint32
@@ -240,8 +240,8 @@ func NewFrameBase(cmd StdCommand, frameType uint8, packetCtrl uint8) FrameBase {
 
 func (f *FrameBase) RequestHeader() *RequestHeader       { return &f.ReqHeader }
 func (f *FrameBase) SetRequestHeader(h *RequestHeader)   { f.ReqHeader = *h }
-func (f *FrameBase) ResponseHeader() *ResponseHeader      { return &f.RespHeader }
-func (f *FrameBase) SetResponseHeader(h *ResponseHeader)  { f.RespHeader = *h }
+func (f *FrameBase) ResponseHeader() *ResponseHeader     { return &f.RespHeader }
+func (f *FrameBase) SetResponseHeader(h *ResponseHeader) { f.RespHeader = *h }
 
 // Command 从请求头获取命令字, 对齐 C++/Rust BaseFrame::command()
 func (f *FrameBase) Command() StdCommand { return StdCommand(f.ReqHeader.Method) }

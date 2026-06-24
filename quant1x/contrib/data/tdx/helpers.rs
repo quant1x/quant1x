@@ -17,7 +17,7 @@ static SEQ_ID: AtomicU32 = AtomicU32::new(0);
 /// 生成并返回一个全局唯一的序列ID. 
 ///
 /// 每次调用时, 序列ID会递增1, 并保证在32位无符号整数范围内循环(0xFFFFFFFF). 
-pub fn msg_sequence_id() -> u32 {
+pub fn get_sequence_id() -> u32 {
     SEQ_ID.fetch_add(1, Ordering::SeqCst).wrapping_add(1)
 }
 
@@ -260,8 +260,8 @@ mod tests {
 
     #[test]
     fn test_msg_sequence_id() {
-        let a = msg_sequence_id();
-        let b = msg_sequence_id();
+        let a = get_sequence_id();
+        let b = get_sequence_id();
         assert!(a > 0);
         assert!(b > a);
     }
