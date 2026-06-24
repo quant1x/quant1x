@@ -42,7 +42,6 @@ target/
 
 # vscode
 .vscode/launch.json
-.codebuddy/
 
 # setuptools_scm generated version file
 _version.py
