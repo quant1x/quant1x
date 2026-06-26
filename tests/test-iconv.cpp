@@ -72,7 +72,8 @@ std::string UTFtoGBK(const char *utf8) {
     }
 }
 
-// Function to convert UTF-8 string to GBK
+// Function to convert UTF-8 string to GBK (Windows only)
+#ifdef _WIN32
 char* utf8_to_gbk(const char* utf8_str) {
     int len_utf8 = MultiByteToWideChar(CP_UTF8, 0, utf8_str, -1, NULL, 0);
     wchar_t* wide_str = (wchar_t*)malloc(len_utf8 * sizeof(wchar_t));
@@ -85,14 +86,18 @@ char* utf8_to_gbk(const char* utf8_str) {
     free(wide_str);
     return gbk_str;
 }
+#endif
 
 int main() {
+#ifdef _WIN32
     // Set the console code page to GBK
     //SetConsoleOutputCP(936);
     SetConsoleOutputCP(CP_UTF8);
+#endif
     std::string teststr = "测试字符串";
     printf("%s\n", teststr.c_str());
     // Convert UTF-8 string to GBK
+#ifdef _WIN32
     char* gbk_str = utf8_to_gbk(teststr.c_str());
 
     // Print the GBK encoded string
@@ -100,6 +105,7 @@ int main() {
 
     // Free allocated memory
     free(gbk_str);
+#endif
 
     printf("origin string: %s\n", teststr.c_str());
     std::cout << "origin string: " << teststr.c_str() << std::endl;
