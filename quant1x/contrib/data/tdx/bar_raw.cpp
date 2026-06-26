@@ -16,7 +16,7 @@
 
 namespace config = quant1x::config;
 namespace data = quant1x::data;
-namespace io = ::io;
+namespace csvio = ::io;
 namespace meta = quant1x::data;
 using quant1x::contrib::data::tdx::KLineType;
 using quant1x::contrib::data::tdx::SecurityBarsContext;
@@ -82,7 +82,7 @@ static void save_kline_raw(const std::string& filename, const std::vector<BarRaw
     auto dir = std::filesystem::path(filename).parent_path().string();
     std::filesystem::create_directories(dir);
 
-    io::CSVWriter writer(filename);
+    csvio::CSVWriter writer(filename);
     writer.write_row("date", "open", "close", "high", "low", "volume", "amount", "up", "down", "timestamp");
     for (const auto& v : values) {
         writer.write_row(v.date, v.open, v.close, v.high, v.low,
@@ -93,8 +93,8 @@ static void save_kline_raw(const std::string& filename, const std::vector<BarRaw
 static std::vector<BarRaw> read_kline_raw_from_csv(const std::string& filename) {
     std::vector<BarRaw> klines;
     try {
-        io::CSVReader<10> in(filename);
-        in.read_header(io::ignore_extra_column, "date", "open", "close", "high", "low",
+        csvio::CSVReader<10> in(filename);
+        in.read_header(csvio::ignore_extra_column, "date", "open", "close", "high", "low",
                        "volume", "amount", "up", "down", "timestamp");
         BarRaw row = {};
         while (in.read_row(row.date, row.open, row.close, row.high, row.low,
@@ -286,15 +286,10 @@ void DataKLineRaw::Update(const meta::Instrument& inst, const meta::Timestamp& d
     int step = kSecurityBarsPreRequestMax;
     int start = 0;
     std::vector<std::vector<schema::Bar>> batches;
-    size_t element_count = 0;
-
     while (true) {
         int count = step;
         auto reply = fetch_kline_raw(inst, start, count, static_cast<u16>(KLineType::DAILY));
         if (reply.empty()) break;
-
-        auto reply_size = reply.size();
-        element_count += reply_size;
 
         // 对齐 Python: last_bar = reply[-1]; last_bar_date = Timestamp.parse(last_bar.date).get_pre_market_time()
         auto& last_bar = reply.back();
@@ -303,7 +298,7 @@ void DataKLineRaw::Update(const meta::Instrument& inst, const meta::Timestamp& d
         batches.push_back(std::move(reply));
 
         if (last_bar_date < current_start_date) break;
-        if (reply_size < static_cast<size_t>(count)) break;
+        if (reply.size() < static_cast<size_t>(count)) break;
         start += count;
     }
 

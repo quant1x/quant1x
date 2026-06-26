@@ -6,6 +6,8 @@
 // 替换 st_mtim
 #define st_mtim st_mtimespec
 
+#include <chrono>
+
 // 自定义 clock_cast 替代
 template<typename ToClock, typename Rep, typename Period>
 auto manual_clock_cast(const std::chrono::time_point<std::chrono::system_clock, std::chrono::duration<Rep, Period>>& tp)

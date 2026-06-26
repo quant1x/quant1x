@@ -162,7 +162,7 @@ namespace quant1x::contrib::data::tdx::sector {
             std::string XBlock; // x行业代码
             std::string XBlock5; // x二级行业代码
 
-            friend std::ostream &operator<<(std::ostream &os, const IndustryInfo &info) {
+            [[maybe_unused]] friend std::ostream &operator<<(std::ostream &os, const IndustryInfo &info) {
                 os << "MarketId: " << info.MarketId << " Code: " << info.Code << " Block: " << info.Block << " Block5: "
                    << info.Block5 << " XBlock: " << info.XBlock << " XBlock5: " << info.XBlock5;
                 return os;

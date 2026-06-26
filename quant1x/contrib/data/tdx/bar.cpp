@@ -493,15 +493,10 @@ void DataKLine::Update(const quant1x::data::meta::Instrument& inst, const quant1
     int32_t step = security_bars_max;
     int32_t start = 0;
     std::vector<std::vector<quant1x::data::schema::Bar>> batches;
-    size_t element_count = 0;
-
     while (true) {
         int32_t count = step;
         auto reply = fetch_kline_raw(inst, start, count, static_cast<u16>(KLineType::DAILY));
         if (reply.empty()) break;
-
-        auto reply_size = reply.size();
-        element_count += reply_size;
 
         // 记录最后一根bar的日期用于判断循环终止 (对齐 Python: last_bar = reply[-1]; last_bar_date = Timestamp.parse(last_bar.date).get_pre_market_time())
         auto& last_bar = reply.back();
@@ -510,7 +505,7 @@ void DataKLine::Update(const quant1x::data::meta::Instrument& inst, const quant1
         batches.push_back(std::move(reply));
 
         if (last_bar_date < current_start_date) break;
-        if (reply_size < static_cast<size_t>(count)) break;
+        if (reply.size() < static_cast<size_t>(count)) break;
 
         start += count;
     }
