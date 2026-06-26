@@ -3,11 +3,45 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.51] - 2026-06-26
+### Changed
+- 统一消息序列号函数签名
+- refactor: remove data/kline.h, merge into schema/bar.h
+
+- Delete quant1x/data/kline.h
+- Move operator<<(ostream&, const Bar&) and KLine alias into schema/bar.h
+- Keep backward-compat alias quant1x::data::KLine → schema::Bar
+- Update all #include references from kline.h to schema/bar.h
+- Affected files: backtest.h, position.h, tdd-chips, tdd-dataframe-data, tdd-xdxr, tdd-patterns-wave-release
+- fix: 修复 init lambda 重复注册 TDX 适配器导致崩溃
+
+- 移除 main.cpp init lambda 中重复的 data::Register() 调用
+- init_datasource() 已统一注册 DataXdxr、DataKLineRaw、DataKLine、DataTrans、DataMinute、DataMinuteKLine
+- 重复注册触发 adapter::Register() 的 ErrAlreadyExists 异常, 导致未捕获崩溃
+- Merge branch 'fix-package' into 0.7.x
+- 调整git仓库忽略项设置
+- fix: 修复C++编译错误
+
+- filesystem.cpp: 在manual_clock_cast前添加<chrono> include，公共区域也添加<chrono>
+- bar_raw.cpp: 解决namespace io重定义冲突(重命名为csvio)，删除未使用的element_count/reply_size变量
+- bar.cpp: 删除未使用的element_count/reply_size变量
+- sector.cpp: 为未使用的operator<<添加[[maybe_unused]]属性
+- fix: 为未使用的const变量添加[[maybe_unused]]属性
+
+- tdd-f10-safety-score.cpp: defaultSafetyScoreOfIgnore
+- tdd-snapshot.cpp: tdd_capnp_cache_size
+- fix: 修复test-iconv.cpp在macOS上的编译错误
+
+- <malloc.h> -> <stdlib.h> (macOS无此头文件)
+- <windows.h> 用 #ifdef _WIN32 包裹
+- fix: test-iconv.cpp中Windows API调用用#ifdef _WIN32包裹
+
 ## [0.7.50] - 2026-06-22
 ### Changed
 - feat(ticker_rules): add Go implementation of all market ticker rules
 
 Implement rule.go (RulePrefix, CodeRule, MatchRule, GlobalRules) and market rules for BSE, SSE, SZSE, HKEX, USA including HK price tick and US code mapping.
+- release v0.7.50
 
 ## [0.7.49] - 2026-06-22
 ### Changed
@@ -288,6 +322,7 @@ factors/base.h/cpp:
 ### Changed
 - 缓存代码
 - update changelog
+- python: git仓库忽略打包时自动生成的_version.py
 
 ## [0.7.18] - 2026-06-11
 ### Changed
@@ -523,72 +558,10 @@ factors/base.h/cpp:
 - release v0.7.28
 - 调整全角符号为半角, 调整io部分文件类功能归于std模块
 - release v0.7.29
+- python: git仓库忽略打包时自动生成的_version.py
 
 ## [0.7.6] - 2026-06-02
 ### Changed
-- c++: 修复logger路径
-- python: 梳理依赖库
-- c++: 调整头文件宏
-- c++: 优化因子工厂
-- 调整vscode配置文件
-- c++: 调整配置功能函数的路径
-- go: 简化net/http代码
-- c++: 删除废弃的交易配置函数
-- go: 调整日志记录器
-- c++: 补充croncpp库LICENSE
-- go: 基础功能, 新增cron表达式
-- go: 优化调度器
-- go: 去掉cron的独立包路径, 并入base
-- c++: 调整结构体
-- go: 将cron归于std
-- go: 修复homedir测试的错误
-- 将net并入io
-- rust: cargo fmt
-- rust: 修复测试中路径的兼容问题
-- c++: 删除废弃的代码
-- c++: 调整注释格式
-- go: 拆分config中对exchange依赖的函数
-- go: 去掉标准库net的别名stdNet
-- c++: 取消safe的q1x上层命名空间
-- go: 统一季度函数
-- go: 对齐c++的日期格式的常量
-- c++: 补充config初始化函数注释
-- go: 去掉config重复的子目录函数
-- go: 修复logger包路径
-- rust: 当下的连接池作为调整为标准协议的连接池
-- rust: 补充关键函数注释
-- rust: 修订config测试代码中路径的错误设定
-- python: 修订函数注释
-- go: 调整测试代码
-- go: 补充context注释
-- 分离缓存路径，meta作为core的一部分
-- 对齐expanduser函数的路径拼接细节
-- go: c++版本的argparse.hpp迁移
-- go: 补充argparse文档
-- rust: 调整cache模块, 新设置adapter单元
-- rust: 修复单次拉取证券列表的最大条数的常量
-- 配置参数对齐
-- 优化证券代码的检测规则
-- rust: 调整缓存适配器
-- 调整证券代码的规则
-- go: 新增同步板块流程
-- go: 删除从gox复制的字符集工具
-- c++: 补充Fast C++ CSV Parser许可证及文档
-- 完善证券代码规则
-- go: 压缩工具源文件名改为compress
-- go: 抽象本地缓存的是否可更新功能
-- go: 新增上市公司财务信息接口
-- go: 优化缓存证券代码的处理流程
-- 屏蔽深圳市场首位大于3的代码规则
-- c++: 修复时区大小写的bug,
-- c++: 修复crashwindows下不记录日志的问题
-- c++: 修复交易标的的头文件路径
-- go: 删除保留字段
-- go: 交易标的的基本面
-- c++: 将adapter调整到cache
-- go: 构建更新数据流程
-- git仓库删除launch.json
-- c++: crash增加SA_SIGINFO
 - c++: 修复global_terminate_handler可能存在的遗漏异常信息的问题
 - c++: 加固更新流程
 - go: 调整fs的目录检测函数名
@@ -745,6 +718,69 @@ factors/base.h/cpp:
 - python: 优化扩展行情的K线分红派息等权益数据
 - python: 新增yyyymmdd格式的整型日期
 - update changelog
+- c++: 修复logger路径
+- python: 梳理依赖库
+- c++: 调整头文件宏
+- c++: 优化因子工厂
+- 调整vscode配置文件
+- c++: 调整配置功能函数的路径
+- go: 简化net/http代码
+- c++: 删除废弃的交易配置函数
+- go: 调整日志记录器
+- c++: 补充croncpp库LICENSE
+- go: 基础功能, 新增cron表达式
+- go: 优化调度器
+- go: 去掉cron的独立包路径, 并入base
+- c++: 调整结构体
+- go: 将cron归于std
+- go: 修复homedir测试的错误
+- 将net并入io
+- rust: cargo fmt
+- rust: 修复测试中路径的兼容问题
+- c++: 删除废弃的代码
+- c++: 调整注释格式
+- go: 拆分config中对exchange依赖的函数
+- go: 去掉标准库net的别名stdNet
+- c++: 取消safe的q1x上层命名空间
+- go: 统一季度函数
+- go: 对齐c++的日期格式的常量
+- c++: 补充config初始化函数注释
+- go: 去掉config重复的子目录函数
+- go: 修复logger包路径
+- rust: 当下的连接池作为调整为标准协议的连接池
+- rust: 补充关键函数注释
+- rust: 修订config测试代码中路径的错误设定
+- python: 修订函数注释
+- go: 调整测试代码
+- go: 补充context注释
+- 分离缓存路径，meta作为core的一部分
+- 对齐expanduser函数的路径拼接细节
+- go: c++版本的argparse.hpp迁移
+- go: 补充argparse文档
+- rust: 调整cache模块, 新设置adapter单元
+- rust: 修复单次拉取证券列表的最大条数的常量
+- 配置参数对齐
+- 优化证券代码的检测规则
+- rust: 调整缓存适配器
+- 调整证券代码的规则
+- go: 新增同步板块流程
+- go: 删除从gox复制的字符集工具
+- c++: 补充Fast C++ CSV Parser许可证及文档
+- 完善证券代码规则
+- go: 压缩工具源文件名改为compress
+- go: 抽象本地缓存的是否可更新功能
+- go: 新增上市公司财务信息接口
+- go: 优化缓存证券代码的处理流程
+- 屏蔽深圳市场首位大于3的代码规则
+- c++: 修复时区大小写的bug,
+- c++: 修复crashwindows下不记录日志的问题
+- c++: 修复交易标的的头文件路径
+- go: 删除保留字段
+- go: 交易标的的基本面
+- c++: 将adapter调整到cache
+- go: 构建更新数据流程
+- git仓库删除launch.json
+- c++: crash增加SA_SIGINFO
 
 ## [0.7.5] - 2025-12-05
 ### Changed
@@ -2032,7 +2068,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.50...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.51...HEAD
+[0.7.51]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.50...v0.7.51
 [0.7.50]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.49...v0.7.50
 [0.7.49]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.48...v0.7.49
 [0.7.48]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.47...v0.7.48
