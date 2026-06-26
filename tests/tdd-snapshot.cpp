@@ -129,7 +129,7 @@ kj::Array<capnp::word> readFromFile(const std::string& filename) {
 }
 
 constexpr const char * const tdd_capnp_cache_filename = "quote_list.capnp";
-constexpr size_t tdd_capnp_cache_size = 64 * 1024 * 1024; // 64MB
+[[maybe_unused]] constexpr size_t tdd_capnp_cache_size = 64 * 1024 * 1024; // 64MB
 namespace fs = std::filesystem;
 
 #include <mio/mmap.hpp>
