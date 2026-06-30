@@ -176,6 +176,18 @@ type Bar struct {
 - 若发现 Python / C++ / Rust / Go 行为不一致，立即指出
 - **不擅自改变架构约定**，即使"看起来更优雅"
 
-## 九、一句话总结（给 AI 的记忆锚点）
+## 九、版本与发布规则（AI 禁止触碰）
+
+- 版本号由 Git Tag（`vMAJOR.MINOR.PATCH`）唯一决定。
+- Rust / Python / Go / C++ 四种语言必须共享同一版本号，不可各自独立。
+- `autochangelog` 是唯一合法的版本发布入口。
+- **AI Agent 严禁以下行为**：
+  - ❌ 修改任何文件中的版本号字符串
+  - ❌ 创建、修改或删除 Git Tag
+  - ❌ 调用 `autochangelog` 或任何发布脚本
+  - ❌ 在代码或提交信息中自行推断版本号
+  - ❌ 修改 `CHANGELOG.md`、`pyproject.toml`、`Cargo.toml` 中的 `version` 字段
+
+## 十、一句话总结（给 AI 的记忆锚点）
 
 > Quant1X 是多语言语义同构系统，Python 是 Spec，C++ 是 Truth，Rust / Go 是对齐实现，I/O 边界死守 `snake_case`。
