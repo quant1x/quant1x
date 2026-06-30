@@ -16,13 +16,13 @@ from quant1x.data.schema import Bar
 from quant1x.data import adapter, MaxCachedDaysToDropOnIncrementalUpdate
 from . import protocol
 from .client import get_std_conn, get_ext_conn
-from .level1 import SecurityBarsContext, KLineType, SECURITY_BARS_PRE_REQUEST_MAX
+from .level1 import SecurityBarsContext, BarFreq, SECURITY_BARS_PRE_REQUEST_MAX
 from quant1x.data.adapter import DataAdapter, PLUGIN_MASK_BASEDATA, register, DEFAULT_DATA_PROVIDER
 from quant1x.data.base import BASEDATA_RAW_DAILY_KLINE, GLOBAL_DEFAULT_START_DATE, MarketCnFirstListTime
 from quant1x.data.meta import Instrument, Frequency, TimeUnit, FREQ_DAILY
 from quant1x.data.market import detect_symbol
 
-def frequency_to_kline_type(freq: Frequency) -> KLineType:
+def frequency_to_kline_type(freq: Frequency) -> BarFreq:
     """
     将时间频率转换为对应的K线类型
     
@@ -30,36 +30,36 @@ def frequency_to_kline_type(freq: Frequency) -> KLineType:
         freq (Frequency): 时间频率对象, 包含单位和数值
     
     Returns:
-        KLineType: 对应的K线类型枚举值
+        BarFreq: 对应的K线类型枚举值
     
     Raises:
         ValueError: 当传入不支持的频率时抛出
     """
     if freq.unit == TimeUnit.MINUTE:
         if freq.num == 1:
-            return KLineType._1MIN
+            return BarFreq.Freq1Min
         elif freq.num == 5:
-            return KLineType._5MIN
+            return BarFreq.Freq5Min
         elif freq.num == 15:
-            return KLineType._15MIN
+            return BarFreq.Freq15Min
         elif freq.num == 30:
-            return KLineType._30MIN
+            return BarFreq.Freq30Min
     elif freq.unit == TimeUnit.HOUR:
         if freq.num == 1:
-            return KLineType._1HOUR
+            return BarFreq.Freq1Hour
     elif freq.unit == TimeUnit.DAY:
         if freq.num == 1:
-            return KLineType.DAILY
+            return BarFreq.FreqDaily
     elif freq.unit == TimeUnit.WEEK:
         if freq.num == 1:
-            return KLineType.WEEKLY
+            return BarFreq.FreqWeekly
     elif freq.unit == TimeUnit.MONTH:
         if freq.num == 1:
-            return KLineType.MONTHLY
+            return BarFreq.FreqMonthly
         elif freq.num == 3:
-            return KLineType._3MONTH
+            return BarFreq.Freq3Month
         elif freq.num == 12:
-            return KLineType.YEARLY
+            return BarFreq.FreqYearly
 
     raise ValueError(f"unsupported frequency: {freq}")
 

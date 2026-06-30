@@ -15,47 +15,47 @@ namespace quant1x::contrib::data::tdx {
 
     constexpr int32_t security_bars_max = 800; // 单次最大获取800条K线数据
     // K线类型 (使用带底层类型的枚举)
-    enum KLineType : u8 {
-        _5MIN     = 0,   // 5分钟K线
-        _15MIN    = 1,   // 15分钟K线
-        _30MIN    = 2,   // 30分钟K线
-        _1HOUR    = 3,   // 1小时K线
-        DAILY     = 4,   // 日K线
-        WEEKLY    = 5,   // 周K线
-        MONTHLY   = 6,   // 月K线
-        EXHQ_1MIN = 7,   // 扩展市场1分钟
-        _1MIN     = 8,   // 普通1分钟K线
-        RI_K      = 9,   // 日K线(同DAILY)
-        _3MONTH   = 10,  // 季K线
-        YEARLY    = 11   // 年K线
+    enum BarFreq : u8 {
+        Freq5Min     = 0,   // 5分钟K线
+        Freq15Min    = 1,   // 15分钟K线
+        Freq30Min    = 2,   // 30分钟K线
+        Freq1Hour    = 3,   // 1小时K线
+        FreqDaily    = 4,   // 日K线
+        FreqWeekly   = 5,   // 周K线
+        FreqMonthly  = 6,   // 月K线
+        FreqExHQ1Min = 7,   // 扩展市场1分钟
+        Freq1Min     = 8,   // 普通1分钟K线
+        FreqRIK      = 9,   // 日K线(同DAILY)
+        Freq3Month   = 10,  // 季K线
+        FreqYearly   = 11   // 年K线
     };
 
     // K线类型转字符串
-    inline const char *klineTypeToString(KLineType type) {
+    inline const char *klineTypeToString(BarFreq type) {
         switch (type) {
-            case KLineType::_5MIN:
+            case BarFreq::Freq5Min:
                 return "5MIN";
-            case KLineType::_15MIN:
+            case BarFreq::Freq15Min:
                 return "15MIN";
-            case KLineType::_30MIN:
+            case BarFreq::Freq30Min:
                 return "30MIN";
-            case KLineType::_1HOUR:
+            case BarFreq::Freq1Hour:
                 return "1HOUR";
-            case KLineType::DAILY:
+            case BarFreq::FreqDaily:
                 return "DAILY";
-            case KLineType::WEEKLY:
+            case BarFreq::FreqWeekly:
                 return "WEEKLY";
-            case KLineType::MONTHLY:
+            case BarFreq::FreqMonthly:
                 return "MONTHLY";
-            case KLineType::EXHQ_1MIN:
+            case BarFreq::FreqExHQ1Min:
                 return "EXHQ_1MIN";
-            case KLineType::_1MIN:
+            case BarFreq::Freq1Min:
                 return "1MIN";
-            case KLineType::RI_K:
+            case BarFreq::FreqRIK:
                 return "RI_K";
-            case KLineType::_3MONTH:
+            case BarFreq::Freq3Month:
                 return "3MONTH";
-            case KLineType::YEARLY:
+            case BarFreq::FreqYearly:
                 return "YEARLY";
             default:
                 return "UNKNOWN_KLINE";
@@ -206,7 +206,7 @@ namespace quant1x::contrib::data::tdx {
             oss << request_header.header_string_impl();
             oss << "{Market:" << int(param.Market)
                 << ", Code:" << strings::from(param.Code)
-                << ", Category:" << klineTypeToString(static_cast<KLineType>(param.Category))
+                << ", Category:" << klineTypeToString(static_cast<BarFreq>(param.Category))
                 << ", I:" << int(param.I)
                 << ", Start:" << int(param.Start)
                 << ", Count:" << int(param.Count)

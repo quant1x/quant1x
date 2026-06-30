@@ -12,7 +12,7 @@ import (
 )
 
 // tdxFetchRawSecurityBars 执行底层 level1 SecurityBarsContext 请求并返回原始响应列表(未转换).
-func tdxFetchRawSecurityBars(securityCode data.InstrumentInfo, category std.KLineType, start, count uint16) ([]std.SecurityBar, error) {
+func tdxFetchRawSecurityBars(securityCode data.InstrumentInfo, category std.BarFreq, start, count uint16) ([]std.SecurityBar, error) {
 	conn, release, err := GetStdConnection()
 	if err != nil {
 		return nil, fmt.Errorf("level1 client acquire failed: %w", err)
@@ -113,7 +113,7 @@ func tdxUpdateKLine(symbol data.InstrumentInfo, _date data.Timestamp) {
 		if count == 0 {
 			break
 		}
-		reply, err := tdxFetchRawSecurityBars(symbol, std.KLineDaily, start, count)
+		reply, err := tdxFetchRawSecurityBars(symbol, std.FreqDaily, start, count)
 		if err != nil {
 			logger.Debugf("[DataKLine] fetch error for %s start=%d count=%d: %v", symbol.Symbol(), start, count, err)
 			break

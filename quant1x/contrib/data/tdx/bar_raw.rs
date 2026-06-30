@@ -63,41 +63,40 @@ impl SecurityBarsResponse {
 }
 
 // ============================================================
-// KLineType — 本地定义, 不依赖 crate::contrib::data::tdx::standard
+// BarFreq — 本地定义, 不依赖 crate::contrib::data::tdx::standard
 // ============================================================
 
-/// K线类型, 与 Python level1/__init__.py 的 KLineType 对齐
+/// K线类型, 与 Python level1/__init__.py 的 BarFreq 对齐
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[allow(non_camel_case_types)]
-pub enum KLineType {
-    _1Min,
-    _5Min,
-    _15Min,
-    _30Min,
-    _1Hour,
-    Daily,
-    Weekly,
-    Monthly,
-    _3Month,
-    Yearly,
-    Exhq1Min,
-    RiK,
+pub enum BarFreq {
+    Freq1Min,
+    Freq5Min,
+    Freq15Min,
+    Freq30Min,
+    Freq1Hour,
+    FreqDaily,
+    FreqWeekly,
+    FreqMonthly,
+    Freq3Month,
+    FreqYearly,
+    FreqExHQ1Min,
+    FreqRIK,
 }
 
-/// 将 KLineType 转换为频率值(用于 InstrumentBars)
-fn kline_type_to_value(kline_type: KLineType) -> u16 {
+/// 将 BarFreq 转换为频率值(用于 InstrumentBars)
+fn kline_type_to_value(kline_type: BarFreq) -> u16 {
     match kline_type {
-        KLineType::_1Min => 8,
-        KLineType::_5Min => 0,
-        KLineType::_15Min => 1,
-        KLineType::_30Min => 2,
-        KLineType::_1Hour => 3,
-        KLineType::Daily | KLineType::RiK => 4,
-        KLineType::Weekly => 5,
-        KLineType::Monthly => 6,
-        KLineType::_3Month => 10,
-        KLineType::Yearly => 11,
-        KLineType::Exhq1Min => 7,
+        BarFreq::Freq1Min => 8,
+        BarFreq::Freq5Min => 0,
+        BarFreq::Freq15Min => 1,
+        BarFreq::Freq30Min => 2,
+        BarFreq::Freq1Hour => 3,
+        BarFreq::FreqDaily | BarFreq::FreqRIK => 4,
+        BarFreq::FreqWeekly => 5,
+        BarFreq::FreqMonthly => 6,
+        BarFreq::Freq3Month => 10,
+        BarFreq::FreqYearly => 11,
+        BarFreq::FreqExHQ1Min => 7,
     }
 }
 
@@ -396,7 +395,7 @@ fn fetch_kline_raw_from_std(
 ) -> Option<SecurityBarsResponse> {
     let code = inst.market_ticker();
     let ticker = code.to_uppercase();
-    let category = kline_type_to_value(KLineType::Daily);
+    let category = kline_type_to_value(BarFreq::FreqDaily);
 
     match super::client::get_std_conn() {
         Ok(mut conn) => {
@@ -457,7 +456,7 @@ fn fetch_kline_raw_from_ext(
 ) -> Option<SecurityBarsResponse> {
     let code = inst.market_ticker();
     let ticker = code.to_uppercase();
-    let category = kline_type_to_value(KLineType::Daily);
+    let category = kline_type_to_value(BarFreq::FreqDaily);
 
     match super::client::get_ext_conn() {
         Ok(mut conn) => {

@@ -16,7 +16,7 @@ namespace quant1x::contrib::data::tdx {
     /// @param inst 证券信息
     /// @param start 起始偏移
     /// @param count 请求数量
-    /// @param category K线类型 (如 KLineType::DAILY)
+    /// @param category K线类型 (如 BarFreq::FreqDaily)
     /// @return Bar列表 (domain schema Bar), 失败时返回空
     std::vector<schema::Bar> fetch_kline_raw(const meta::Instrument& inst, int start, int count, u16 category);
 

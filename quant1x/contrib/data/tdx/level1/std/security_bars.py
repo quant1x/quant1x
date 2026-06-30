@@ -15,30 +15,30 @@ from quant1x.contrib.data.tdx import helpers, protocol
 SECURITY_BARS_PRE_REQUEST_MAX = 700  # 800
 
 
-class KLineType(Enum):
+class BarFreq(Enum):
     """K线类型"""
-    _5MIN = 0
-    _15MIN = 1
-    _30MIN = 2
-    _1HOUR = 3
-    DAILY = 4
-    WEEKLY = 5
-    MONTHLY = 6
-    EXHQ_1MIN = 7
-    _1MIN = 8
-    RI_K = 9
-    _3MONTH = 10
-    YEARLY = 11
-    FundFlow = 22
+    Freq5Min = 0
+    Freq15Min = 1
+    Freq30Min = 2
+    Freq1Hour = 3
+    FreqDaily = 4
+    FreqWeekly = 5
+    FreqMonthly = 6
+    FreqExHQ1Min = 7
+    Freq1Min = 8
+    FreqRIK = 9
+    Freq3Month = 10
+    FreqYearly = 11
+    FreqFundFlow = 22
 
     @staticmethod
-    def to_string(ktype: 'KLineType') -> str:
+    def to_string(ktype: 'BarFreq') -> str:
         return ktype.name
 
 
 class SecurityBarsContext(protocol.BaseFrame):
     """K线数据"""
-    def __init__(self, inst: Instrument, category: KLineType, start: int, count: int, is_index: bool = False):
+    def __init__(self, inst: Instrument, category: BarFreq, start: int, count: int, is_index: bool = False):
         super().__init__(Command.STD_SECURITY_BARS)
         self.request_header.packet_ctrl = 0x00
         self._category = category

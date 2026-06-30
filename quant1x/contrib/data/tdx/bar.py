@@ -17,7 +17,7 @@ from quant1x.data import MaxCachedDaysToDropOnIncrementalUpdate
 from quant1x.data.schema import Bar, CumulativeAdjustment, XdxrInfo
 from .client import get_std_conn
 from . import protocol
-from .level1 import KLineType, SECURITY_BARS_PRE_REQUEST_MAX
+from .level1 import BarFreq, SECURITY_BARS_PRE_REQUEST_MAX
 import pandas as pd
 from quant1x.log import logger
 from .bar_raw import BarRaw, checkout_kline_raw, fetch_kline_raw

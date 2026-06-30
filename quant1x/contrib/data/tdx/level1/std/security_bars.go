@@ -10,21 +10,21 @@ import (
 	"github.com/quant1x/quant1x/quant1x/data/meta"
 )
 
-type KLineType uint8
+type BarFreq uint8
 
 const (
-	KLine5Min KLineType = iota
-	KLine15Min
-	KLine30Min
-	KLine1Hour
-	KLineDaily
-	KLineWeekly
-	KLineMonthly
-	KLineExHQ1Min
-	KLine1Min
-	KLineRIK
-	KLine3Month
-	KLineYearly
+	Freq5Min BarFreq = iota
+	Freq15Min
+	Freq30Min
+	Freq1Hour
+	FreqDaily
+	FreqWeekly
+	FreqMonthly
+	FreqExHQ1Min
+	Freq1Min
+	FreqRIK
+	Freq3Month
+	FreqYearly
 )
 
 // SecurityBarsMax defines the maximum number of bars retrievable in one request.
@@ -70,7 +70,7 @@ type SecurityBarsContext struct {
 }
 
 // NewSecurityBarsContext 构造K线请求, 对齐 C++/Rust.
-func NewSecurityBarsContext(inst meta.Instrument, category KLineType, start, count uint16) *SecurityBarsContext {
+func NewSecurityBarsContext(inst meta.Instrument, category BarFreq, start, count uint16) *SecurityBarsContext {
 	if count == 0 || count > SecurityBarsMax {
 		count = SecurityBarsMax
 	}
@@ -235,31 +235,31 @@ func varintRead(reader *bytes.Reader) (int64, error) {
 }
 
 // klineTypeToString assists debugging and mirrors the C++ helper.
-func klineTypeToString(t KLineType) string {
+func klineTypeToString(t BarFreq) string {
 	switch t {
-	case KLine5Min:
+	case Freq5Min:
 		return "5MIN"
-	case KLine15Min:
+	case Freq15Min:
 		return "15MIN"
-	case KLine30Min:
+	case Freq30Min:
 		return "30MIN"
-	case KLine1Hour:
+	case Freq1Hour:
 		return "1HOUR"
-	case KLineDaily:
+	case FreqDaily:
 		return "DAILY"
-	case KLineWeekly:
+	case FreqWeekly:
 		return "WEEKLY"
-	case KLineMonthly:
+	case FreqMonthly:
 		return "MONTHLY"
-	case KLineExHQ1Min:
+	case FreqExHQ1Min:
 		return "EXHQ_1MIN"
-	case KLine1Min:
+	case Freq1Min:
 		return "1MIN"
-	case KLineRIK:
+	case FreqRIK:
 		return "RI_K"
-	case KLine3Month:
+	case Freq3Month:
 		return "3MONTH"
-	case KLineYearly:
+	case FreqYearly:
 		return "YEARLY"
 	default:
 		return "UNKNOWN_KLINE"

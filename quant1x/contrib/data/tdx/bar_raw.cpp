@@ -18,7 +18,7 @@ namespace config = quant1x::config;
 namespace data = quant1x::data;
 namespace csvio = ::io;
 namespace meta = quant1x::data;
-using quant1x::contrib::data::tdx::KLineType;
+using quant1x::contrib::data::tdx::BarFreq;
 using quant1x::contrib::data::tdx::SecurityBarsContext;
 
 namespace quant1x::contrib::data::tdx {
@@ -288,7 +288,7 @@ void DataKLineRaw::Update(const meta::Instrument& inst, const meta::Timestamp& d
     std::vector<std::vector<schema::Bar>> batches;
     while (true) {
         int count = step;
-        auto reply = fetch_kline_raw(inst, start, count, static_cast<u16>(KLineType::DAILY));
+        auto reply = fetch_kline_raw(inst, start, count, static_cast<u16>(BarFreq::FreqDaily));
         if (reply.empty()) break;
 
         // 对齐 Python: last_bar = reply[-1]; last_bar_date = Timestamp.parse(last_bar.date).get_pre_market_time()

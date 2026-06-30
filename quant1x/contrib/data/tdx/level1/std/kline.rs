@@ -6,17 +6,17 @@
 
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum KLineType {
-    _5Min = 0,
-    _15Min = 1,
-    _30Min = 2,
-    _1Hour = 3,
-    Daily = 4,
-    Weekly = 5,
-    Monthly = 6,
-    Exhq1Min = 7,
-    _1Min = 8,
-    RiK = 9,
-    _3Month = 10,
-    Yearly = 11,
+pub enum BarFreq {
+    Freq5Min = 0,
+    Freq15Min = 1,
+    Freq30Min = 2,
+    Freq1Hour = 3,
+    FreqDaily = 4,
+    FreqWeekly = 5,
+    FreqMonthly = 6,
+    FreqExHQ1Min = 7,
+    Freq1Min = 8,
+    FreqRIK = 9,
+    Freq3Month = 10,
+    FreqYearly = 11,
 }

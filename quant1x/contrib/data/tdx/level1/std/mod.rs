@@ -22,7 +22,7 @@ pub mod xdxr_info;
 // 重新导出常用类型
 pub use hello::{StdLoginContext, UpgradeTipContext};
 pub use heartbeat::HeartbeatContext;
-pub use kline::KLineType;
+pub use kline::BarFreq;
 pub use security_count::{SecurityCountContext, fetch_security_count};
 pub use security_list::{SecurityListContext, Security, PRE_REQUEST_MAX as SECURITY_LIST_PRE_REQUEST_MAX, fetch_security_list};
 pub use block::{BlockFileContext, BLOCK_CHUNKS_SIZE};

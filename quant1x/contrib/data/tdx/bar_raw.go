@@ -6,9 +6,9 @@ import (
 	"os"
 	"strconv"
 
+	"gitee.com/quant1x/quant1x/quant1x/data/exchange"
 	"github.com/quant1x/quant1x/quant1x/config"
 	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/level1/std"
-	"github.com/quant1x/quant1x/quant1x/data"
 	"github.com/quant1x/quant1x/quant1x/data"
 	"github.com/quant1x/quant1x/quant1x/data/schema"
 	"github.com/quant1x/quant1x/quant1x/encoding"
@@ -65,7 +65,7 @@ func (d *DataBarRaw) Update(code data.InstrumentInfo, _date data.Timestamp) {
 
 	for {
 		count := step
-		reply, err := tdxFetchRawSecurityBars(code, std.KLineDaily, start, count)
+		reply, err := tdxFetchRawSecurityBars(code, std.FreqDaily, start, count)
 		if err != nil || len(reply) == 0 {
 			break
 		}

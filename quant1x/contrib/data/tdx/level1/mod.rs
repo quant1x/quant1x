@@ -2,7 +2,7 @@
 pub mod ext;
 pub mod std;
 
-pub use std::KLineType;
+pub use std::BarFreq;
 pub use std::FinanceInfoContext;
 pub use std::SecurityBarsContext;
 pub use std::SecurityBar;

@@ -1,19 +1,19 @@
-// K线类型 (mimicking Python KLineType)
+// K线类型 (mimicking Python BarFreq)
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum KLineType {
-    _5Min = 0,    // 5分钟K线
-    _15Min = 1,   // 15分钟K线
-    _30Min = 2,   // 30分钟K线
-    _1Hour = 3,   // 1小时K线
-    Daily = 4,    // 日K线
-    Weekly = 5,   // 周K线
-    Monthly = 6,  // 月K线
-    Exhq1Min = 7, // 扩展市场1分钟
-    _1Min = 8,    // 普通1分钟K线
-    RiK = 9,      // 日K线(同DAILY)
-    _3Month = 10, // 季K线
-    Yearly = 11,  // 年K线
+pub enum BarFreq {
+    Freq5Min = 0,    // 5分钟K线
+    Freq15Min = 1,   // 15分钟K线
+    Freq30Min = 2,   // 30分钟K线
+    Freq1Hour = 3,   // 1小时K线
+    FreqDaily = 4,    // 日K线
+    FreqWeekly = 5,   // 周K线
+    FreqMonthly = 6,  // 月K线
+    FreqExHQ1Min = 7, // 扩展市场1分钟
+    Freq1Min = 8,    // 普通1分钟K线
+    FreqRIK = 9,      // 日K线(同DAILY)
+    Freq3Month = 10, // 季K线
+    FreqYearly = 11,  // 年K线
 }
 
 use super::super::super::command::*;
@@ -325,7 +325,7 @@ mod tests {
     fn deserialize_sample_matches_cpp_output() {
         let hex_data = "05002bff3401a52910134982d4834e07eb2f4f2eff340102060e4a8a70db4dca40934e2fff3401440a0f4aef5a734e3b6c234f30ff340141191f515cd8094f6d64ba4f31ff34014d102c4398098b4e44b03c4f";
         let buf = hex::decode(hex_data).unwrap();
-        // 对应 Python: SecurityBarsContext(exchange, "sh000001", KLineType.RI_K, 0, 800, is_index=True)
+        // 对应 Python: SecurityBarsContext(exchange, "sh000001", BarFreq.FreqRIK, 0, 800, is_index=True)
         let mut req = SecurityBarsContext::with_is_index("sh000001", 9, 0, 800, true);
         let _ = req.deserialize_response_body(&buf);
         assert_eq!(req.count as usize, req.list.len());

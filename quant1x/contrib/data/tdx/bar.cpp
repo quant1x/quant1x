@@ -495,7 +495,7 @@ void DataKLine::Update(const quant1x::data::meta::Instrument& inst, const quant1
     std::vector<std::vector<quant1x::data::schema::Bar>> batches;
     while (true) {
         int32_t count = step;
-        auto reply = fetch_kline_raw(inst, start, count, static_cast<u16>(KLineType::DAILY));
+        auto reply = fetch_kline_raw(inst, start, count, static_cast<u16>(BarFreq::FreqDaily));
         if (reply.empty()) break;
 
         // 记录最后一根bar的日期用于判断循环终止 (对齐 Python: last_bar = reply[-1]; last_bar_date = Timestamp.parse(last_bar.date).get_pre_market_time())

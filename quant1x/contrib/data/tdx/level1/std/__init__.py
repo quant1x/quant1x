@@ -8,7 +8,7 @@ from .hello import StdLoginContext, UpgradeTipContext
 from .heartbeat import HeartbeatContext
 from .security_list import SecurityListContext, SECURITY_LIST_PRE_REQUEST_MAX
 from .security_count import SecurityCountContext
-from .security_bars import SecurityBarsContext, KLineType, SECURITY_BARS_PRE_REQUEST_MAX
+from .security_bars import SecurityBarsContext, BarFreq, SECURITY_BARS_PRE_REQUEST_MAX
 from .transaction import (
     TransactionContext, HistoricalTransactionContext,
     TICK_BUY, TICK_SELL, TICK_NEUTRAL, TICK_UNKNOWN,
@@ -26,7 +26,7 @@ __all__ = [
     'HeartbeatContext',
     'SecurityCountContext',
     'SecurityListContext', 'SECURITY_LIST_PRE_REQUEST_MAX',
-    'SecurityBarsContext', 'KLineType', 'SECURITY_BARS_PRE_REQUEST_MAX',
+    'SecurityBarsContext', 'BarFreq', 'SECURITY_BARS_PRE_REQUEST_MAX',
     'TransactionContext', 'HistoricalTransactionContext',
     'TICK_BUY', 'TICK_SELL', 'TICK_NEUTRAL', 'TICK_UNKNOWN',
     'TICK_TRANSACTION_PER_REQUEST_MAX',

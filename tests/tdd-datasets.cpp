@@ -381,12 +381,12 @@ void write_file_binary(const std::string& filename, const std::vector<u8> &data)
     out.write(reinterpret_cast<const char *>(data.data()), data.size());
 }
 
-// 拉取数据 (dead code — SecurityBarsContext/SecurityBarsResponse/KLineType may have changed)
+// 拉取数据 (dead code — SecurityBarsContext/SecurityBarsResponse/BarFreq may have changed)
 /*
 std::vector<tdx::SecurityBar> fetch(const std::string &code, u16 start, u16 count) {
     try {
         auto conn = tdx::get_std_conn();
-        auto category = tdx::KLineType::RI_K;
+        auto category = tdx::BarFreq::FreqRIK;
         tdx::SecurityBarsContext request(code, category, start, count);
         tdx::SecurityBarsResponse response(request.isIndex, category);
         auto err = tdx::transact_message_sync(conn->socket(), request, response);
