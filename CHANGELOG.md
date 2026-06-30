@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.52] - 2026-06-30
+### Changed
+- docs: 在 CONTRIBUTING.md 和 AGENTS.md 中增加版本与发布规则
+
+- CONTRIBUTING.md 新增第 7 节：版本号由 Git Tag 唯一决定，四种语言共享
+- AGENTS.md 新增第九节：AI Agent 严禁触碰版本号、Git Tag、CHANGELOG、发布脚本
+- autochangelog 是唯一合法发布入口
+
 ## [0.7.51] - 2026-06-30
 ### Changed
 - 统一消息序列号函数签名
@@ -45,6 +53,7 @@ All notable changes to this project will be documented in this file.
 - 新增命名验收标准三步校验
 - 补充文件命名规则：data/schema/ 下以领域概念命名
 - 修正 §3.2 示例从 Tick 改为 Bar
+- release v0.7.51
 
 ## [0.7.50] - 2026-06-22
 ### Changed
@@ -2078,7 +2087,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.51...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.52...HEAD
+[0.7.52]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.51...v0.7.52
 [0.7.51]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.50...v0.7.51
 [0.7.50]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.49...v0.7.50
 [0.7.49]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.48...v0.7.49
