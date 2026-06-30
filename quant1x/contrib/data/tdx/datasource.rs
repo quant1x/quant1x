@@ -10,7 +10,7 @@ use crate::data::meta::instrument::Instrument;
 use crate::data::schema::{Bar, Sector, Transaction};
 
 use super::instruments::get_instrument_info;
-use super::bar::get_cross_section_forward_adjusted_klines;
+use super::bar::get_cross_section_forward_adjusted_bars;
 use super::bar::resolve_as_of_date;
 use super::sector::get_sector_list as get_tdx_sector_list;
 use super::trans::checkout_transaction_data;

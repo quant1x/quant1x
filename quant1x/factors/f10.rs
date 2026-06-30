@@ -139,11 +139,11 @@ impl F10 {
 fn get_ipo_date(security_code: &str, _feature_date: &str) -> String {
     // Use load_bar from tdx::bar
     let inst = detect_symbol(security_code);
-    let kls = crate::contrib::data::tdx::bar::load_kline(&inst);
-    if kls.is_empty() {
+    let bars = crate::contrib::data::tdx::bar::load_bar(&inst);
+    if bars.is_empty() {
         return String::new();
     }
-    kls[0].date.clone()
+    bars[0].date.clone()
 }
 
 fn get_finance_info(security_code: &str, feature_date: &str) -> (f64, f64, String, String) {
