@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [0.7.51] - 2026-06-26
+## [0.7.51] - 2026-06-30
 ### Changed
 - 统一消息序列号函数签名
 - refactor: remove data/kline.h, merge into schema/bar.h
@@ -35,6 +35,16 @@ All notable changes to this project will be documented in this file.
 - <malloc.h> -> <stdlib.h> (macOS无此头文件)
 - <windows.h> 用 #ifdef _WIN32 包裹
 - fix: test-iconv.cpp中Windows API调用用#ifdef _WIN32包裹
+- release v0.7.51
+- docs: 细化 AGENTS.md 命名规范，新增国际量化金融标准术语参考体系
+
+- 新增 §3.0 命名参考体系（Type Vocabulary）：13 项核心类型标准名称表
+- 明确命名以 Bloomberg/QuantLib/Backtrader 等国际平台术语为基准
+- 拒绝拼音、音译、本地化翻译（如 KLine → Bar）
+- 详解 Bar vs KLine：Bar 是国际标准，KLine 是中文音译遗留
+- 新增命名验收标准三步校验
+- 补充文件命名规则：data/schema/ 下以领域概念命名
+- 修正 §3.2 示例从 Tick 改为 Bar
 
 ## [0.7.50] - 2026-06-22
 ### Changed
