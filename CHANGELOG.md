@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.55] - 2026-06-30
+### Changed
+- fix(rust): fix remaining kline->bar renames in datasource.rs and f10.rs
+
 ## [0.7.54] - 2026-06-30
 ### Changed
 - refactor: rename kline to bar across all languages (C++, Rust, Go, Python)
@@ -11,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Update fetch_kline_raw -> fetch_bar_raw in bar.cpp
 - Fix type names, function names, comments, and documentation
 - All four languages share the same Bar/BarRaw nomenclature
+- release v0.7.54
 
 ## [0.7.53] - 2026-06-30
 ### Changed
@@ -2102,7 +2107,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.54...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.55...HEAD
+[0.7.55]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.54...v0.7.55
 [0.7.54]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.53...v0.7.54
 [0.7.53]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.52...v0.7.53
 [0.7.52]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.51...v0.7.52
