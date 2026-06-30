@@ -9,9 +9,9 @@ import (
 func TestTdxProvider(t *testing.T) {
 	code := "sh510050"
 	api := GetTdxProvider()
-	klines, err := api.GetKLines(code, "", "", "1d", data.AdjustForward)
+	bars, err := api.GetBars(code, "", "", "1d", data.AdjustForward)
 	if err != nil {
-		t.Errorf("Failed to get KLines: %v", err)
+		t.Errorf("Failed to get bars: %v", err)
 	}
-	t.Logf("KLines: %v", klines)
+	t.Logf("Bars: %v", bars)
 }

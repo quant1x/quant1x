@@ -70,7 +70,7 @@ namespace quant1x::config {
     }
 
     // 通用K线文件路径
-    std::string get_kline_path(const std::string &freq) {
+    std::string get_bar_path(const std::string &freq) {
         return default_cache_path() + "/" + freq;
     }
 
@@ -98,7 +98,7 @@ namespace quant1x::config {
         return normalized.generic_string();
     }
 
-    std::string get_kline_filename(const std::string &code, bool forward) {
+    std::string get_bar_filename(const std::string &code, bool forward) {
         ASSERT(code.length() == 8, INVALID_SECURITY_CODE_MSG);
         auto sub = subpath(code);
         auto path = fs::path(get_day_path()) / sub;
@@ -107,10 +107,10 @@ namespace quant1x::config {
         return normalized.generic_string();
     }
 
-    std::string get_kline_filename_ex(const std::string &code, const std::string &freq) {
+    std::string get_bar_filename_ex(const std::string &code, const std::string &freq) {
         ASSERT(code.length() == 8, INVALID_SECURITY_CODE_MSG);
         auto sub = subpath(code);
-        auto path = fs::path(get_kline_path(freq)) / sub;
+        auto path = fs::path(get_bar_path(freq)) / sub;
         path /= (code + ".csv");
         auto normalized = path.lexically_normal();
         return normalized.generic_string();

@@ -88,7 +88,7 @@ pub fn get_day_path() -> String {
     p.to_string_lossy().to_string()
 }
 
-pub fn get_kline_path(freq: &str) -> String {
+pub fn get_bar_path(freq: &str) -> String {
     let mut p = std::path::PathBuf::from(default_cache_path());
     p.push(freq);
     p.to_string_lossy().to_string()
@@ -146,10 +146,10 @@ pub fn get_xdxr_filename(code: &str) -> String {
     path.to_string_lossy().to_string()
 }
 
-/// Return the full filename for a day KLine cache file for `code`.
-/// DEPRECATED: Use the Instrument-based path generation in kline.rs instead.
+/// Return the full filename for a day bar cache file for `code`.
+/// DEPRECATED: Use the Instrument-based path generation in bar.rs instead.
 /// Kept for backward compatibility with old callers.
-pub fn get_kline_filename(code: &str, forward: bool) -> String {
+pub fn get_bar_filename(code: &str, forward: bool) -> String {
     // 兼容旧格式: code 如 "sh600000" (长度可能不是8)
     // 对于 Instrument 格式, 使用 detect_symbol 解析后按新规则生成路径
     let inst = crate::data::market::detect_symbol(code);
@@ -175,9 +175,9 @@ pub fn get_kline_filename(code: &str, forward: bool) -> String {
     path.to_string_lossy().to_string()
 }
 
-/// Return the full filename for a kline cache file for a specific frequency.
-/// DEPRECATED: Use the Instrument-based path generation in kline_minute.rs instead.
-pub fn get_kline_filename_ex(code: &str, freq: &str) -> String {
+/// Return the full filename for a bar cache file for a specific frequency.
+/// DEPRECATED: Use the Instrument-based path generation in bar_minute.rs instead.
+pub fn get_bar_filename_ex(code: &str, freq: &str) -> String {
     let inst = crate::data::market::detect_symbol(code);
     if !inst.can_construct_symbol() {
         // 回退到旧逻辑
@@ -185,7 +185,7 @@ pub fn get_kline_filename_ex(code: &str, freq: &str) -> String {
             log::error!("invalid security code: {}", code);
             return String::new();
         }
-        let mut path = std::path::PathBuf::from(get_kline_path(freq));
+        let mut path = std::path::PathBuf::from(get_bar_path(freq));
         let sub = &code[..code.len() - 3];
         path.push(sub);
         path.push(format!("{}.csv", code));
@@ -242,9 +242,9 @@ impl Default for MinuteKLineConfig {
     }
 }
 
-/// Read minute kline configuration from global yaml data (data.cache.kline)
-/// Mirrors C++ datasets::get_minute_kline_config which requires exactly one entry
-pub fn get_minute_kline_config() -> MinuteKLineConfig {
+/// Read minute bar configuration from global yaml data (data.cache.kline)
+/// Mirrors C++ datasets::get_minute_bar_config which requires exactly one entry
+pub fn get_minute_bar_config() -> MinuteKLineConfig {
     let mut cfg = MinuteKLineConfig::default();
     // Prefer typed config (parsed at startup). This makes config handling
     // single-entry and less error-prone. If typed config is present, use
@@ -435,13 +435,13 @@ mod tests {
 
     #[test]
     #[ignore = "requires config file"]
-    fn test_get_kline_filename() {
-        let filename = get_kline_filename("sh600000", true);
+    fn test_get_bar_filename() {
+        let filename = get_bar_filename("sh600000", true);
         assert!(filename
             .replace('\\', "/")
             .ends_with("day/sh600/sh600000.csv"));
 
-        let filename_raw = get_kline_filename("sh600000", false);
+        let filename_raw = get_bar_filename("sh600000", false);
         assert!(filename_raw
             .replace('\\', "/")
             .ends_with("day/sh600/sh600000.raw"));

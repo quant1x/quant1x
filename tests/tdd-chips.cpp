@@ -199,8 +199,8 @@ public:
 
     // 加载数据
     bool LoadCSV(const std::string &code, const std::string &date) {
-        auto klines = tdx::checkout_klines(code, date);
-        if (klines.empty()) {
+        auto bars = tdx::checkout_bars(code, date);
+        if (bars.empty()) {
             return false;
         }
         auto f10 = factors::get_f10(code, date);
@@ -222,8 +222,8 @@ public:
 
         // 预分配切片容量
         data_.clear();
-        data_.reserve(klines.size());
-        for (const auto &record : klines) {
+        data_.reserve(bars.size());
+        for (const auto &record : bars) {
             if (record.date < activeDeadline) {
                 continue;
             }

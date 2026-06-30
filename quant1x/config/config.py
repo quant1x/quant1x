@@ -206,7 +206,7 @@ class Quant1XConfig:
         self.log_path = fs.expand_user(self.log_path)
         
         # 数据路径
-        self.kline_path = os.path.join(self.data_path, 'day')
+        self.bar_path = os.path.join(self.data_path, 'day')
         """str: K线路径 """
         
         # 如果配置文件不存在, 则回写一个默认的 yaml 配置文件, 并添加注释

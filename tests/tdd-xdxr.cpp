@@ -24,13 +24,13 @@ TEST_CASE("xdxr-extract", "[xdxr]") {
     spdlog::info("xdxr list size: {}", list.size());
 }
 
-TEST_CASE("kline-extract", "[xdxr]") {
+TEST_CASE("bar-extract", "[xdxr]") {
     spdlog::set_level(spdlog::level::debug);
     std::string code = "sz300773";
     meta::Timestamp end("2025-06-05");
-    auto klines = tdx::klines_forward_adjusted_to_date(code, end.only_date());
-    std::cout << "klines count: " << klines.size() << std::endl;
-    for (const auto& bar : klines) {
+    auto bars = tdx::bars_forward_adjusted_to_date(code, end.only_date());
+    std::cout << "bars count: " << bars.size() << std::endl;
+    for (const auto& bar : bars) {
         std::cout << bar << std::endl;
     }
 }
@@ -40,7 +40,7 @@ TEST_CASE("kline-extract", "[xdxr]") {
 //     std::string code = "sz300773";
 //     auto xdxr_infos = tdx::get_xdxr_list(code);
 //
-//     std::string raw_cache_filename = config::get_kline_filename(code, false);
+//     std::string raw_cache_filename = config::get_bar_filename(code, false);
 //     auto raw_list = encoding::csv::csv_to_slices<datasets::KLineRaw>(raw_cache_filename);
 //     auto ipo_date = meta::Timestamp(raw_list[0].Date).pre_market_time();
 //     auto raw_view = raw_list | std::views::filter([](const datasets::KLineRaw& x){return x.Date>="1990-12-19";});

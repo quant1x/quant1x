@@ -20,18 +20,18 @@ from . import protocol
 from .level1 import BarFreq, SECURITY_BARS_PRE_REQUEST_MAX
 import pandas as pd
 from quant1x.log import logger
-from .bar_raw import BarRaw, checkout_kline_raw, fetch_kline_raw
+from .bar_raw import BarRaw, checkout_bar_raw, fetch_bar_raw
 from .instruments import get_instrument_info
 
 
-def apply_forward_adjustment_for_event(klines: List[Bar], 
+def apply_forward_adjustment_for_event(bars: List[Bar], 
                                        current_start_date: Timestamp, 
                                        dividends: List[XdxrInfo]):
-    if not klines:
+    if not bars:
         return
         
     # 最后一根K线的日期
-    last_day = klines[-1].date
+    last_day = bars[-1].date
     # 转成时间戳且对齐时间
     ts_last_day = Timestamp.parse(last_day).get_pre_market_time()
     # 计算最后一根K线的下一个交易日的日期
@@ -59,27 +59,27 @@ def apply_forward_adjustment_for_event(klines: List[Bar],
             m, a = info.adjust_factor()
             share_ratio = info.compute_share_adjustment_ratio()
             
-            for kline in klines:
-                if kline.date >= info.Date:
+            for bar in bars:
+                if bar.date >= info.Date:
                     break
                 
-                if kline.date < info.Date:
-                    kline.open = kline.open * m + a
-                    kline.close = kline.close * m + a
-                    kline.high = kline.high * m + a
-                    kline.low = kline.low * m + a
+                if bar.date < info.Date:
+                    bar.open = bar.open * m + a
+                    bar.close = bar.close * m + a
+                    bar.high = bar.high * m + a
+                    bar.low = bar.low * m + a
                     
-                    if kline.volume != 0:
-                        ap = kline.amount / kline.volume
+                    if bar.volume != 0:
+                        ap = bar.amount / bar.volume
                         ap_adjusted = ap * m + a
-                        kline.volume *= (1 + share_ratio)
-                        kline.amount = kline.volume * ap_adjusted
+                        bar.volume *= (1 + share_ratio)
+                        bar.amount = bar.volume * ap_adjusted
                     
-                    kline.adjustment_count += 1
+                    bar.adjustment_count += 1
         times -= 1
 
 
-def save_kline(filename: str, values: List[Bar]):
+def save_bar(filename: str, values: List[Bar]):
     if not values:
         return
         
@@ -107,20 +107,20 @@ def save_kline(filename: str, values: List[Bar]):
     df = pd.DataFrame(data, columns=Bar.headers())
     df.to_csv(filename, index=False)
 
-def read_kline_from_csv(filename: str) -> List[Bar]:
-    klines = []
+def read_bar_from_csv(filename: str) -> List[Bar]:
+    bars = []
     if not os.path.exists(filename):
-        return klines
+        return bars
         
     try:
         df = pd.read_csv(filename)
         # Ensure columns exist
         required_cols = Bar.headers()
         if not all(col in df.columns for col in required_cols):
-            return klines
+            return bars
             
         for _, row in df.iterrows():
-            kline = Bar(
+            bar = Bar(
                 date=str(row['date']),
                 open=float(row['open']),
                 close=float(row['close']),
@@ -133,22 +133,22 @@ def read_kline_from_csv(filename: str) -> List[Bar]:
                 timestamp=str(row['timestamp']),
                 adjustment_count=int(row['adjustment_count'])
             )
-            klines.append(kline)
+            bars.append(bar)
     except Exception as e:
-        logger.error(f"Failed to read kline csv {filename}: {e}")
+        logger.error(f"Failed to read bar csv {filename}: {e}")
     
-    return klines
+    return bars
 
-def get_kline_filename(inst: Instrument, freq: Frequency=FREQ_DAILY) -> str:
+def get_bar_filename(inst: Instrument, freq: Frequency=FREQ_DAILY) -> str:
     module_name = freq.cache_key()
     symbol = inst.symbol()
     sub=f"{module_name}/{inst.cache_dir()}"
     return f'{config.data_path}/{sub}/{symbol}.csv' 
     
-def load_kline(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[Bar]:
-    filename = get_kline_filename(inst, freq)
-    logger.debug(f"[dataset::Bar] kline file: {filename}")
-    return read_kline_from_csv(filename)
+def load_bar(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[Bar]:
+    filename = get_bar_filename(inst, freq)
+    logger.debug(f"[dataset::Bar] bar file: {filename}")
+    return read_bar_from_csv(filename)
 
 
 from .xdxr import get_xdxr_list
@@ -176,20 +176,20 @@ class DataKLine(adapter.DataAdapter):
         # 1. Determine start date from local cache
         current_start_date = Timestamp.parse(MarketCnFirstListTime) # market_first_date
         freq = Frequency(num=1, unit=TimeUnit.DAY)
-        cache_filename = get_kline_filename(inst, freq)
-        cache_klines = read_kline_from_csv(cache_filename)
+        cache_filename = get_bar_filename(inst, freq)
+        cache_bars = read_bar_from_csv(cache_filename)
         
-        klines_length = len(cache_klines)
-        klines_offset_days = MaxCachedDaysToDropOnIncrementalUpdate
+        bars_length = len(cache_bars)
+        bars_offset_days = MaxCachedDaysToDropOnIncrementalUpdate
         adjust_times = 0
         
-        if klines_length > 0:
-            if klines_offset_days > klines_length:
-                klines_offset_days = klines_length
+        if bars_length > 0:
+            if bars_offset_days > bars_length:
+                bars_offset_days = bars_length
             
-            kline = cache_klines[klines_length - klines_offset_days]
-            current_start_date = Timestamp.parse(kline.date)
-            adjust_times = kline.adjustment_count
+            bar = cache_bars[bars_length - bars_offset_days]
+            current_start_date = Timestamp.parse(bar.date)
+            adjust_times = bar.adjustment_count
             
         # 2. Determine end date
         current_end_date = Timestamp.now().get_pre_market_time()
@@ -202,7 +202,7 @@ class DataKLine(adapter.DataAdapter):
         
         while True:
             count = step
-            reply = fetch_kline_raw(inst, start, count, freq)
+            reply = fetch_bar_raw(inst, start, count, freq)
             if not reply:
                 break
                 
@@ -222,7 +222,7 @@ class DataKLine(adapter.DataAdapter):
             
         hs.reverse()
         
-        incremental_klines: List[Bar] = []
+        incremental_bars: List[Bar] = []
         
         for vec in hs:
             for row in vec:
@@ -243,40 +243,40 @@ class DataKLine(adapter.DataAdapter):
                     timestamp=row.timestamp,
                     adjustment_count=0
                 )
-                incremental_klines.append(kx)
+                incremental_bars.append(kx)
                 
         # 6. Adjustment logic
         is_fresh_fetch_require_adjustment = (adjust_times == 1)
         dividends = get_xdxr_list(inst)
         
         if is_fresh_fetch_require_adjustment:
-            apply_forward_adjustment_for_event(incremental_klines, current_start_date, dividends)
+            apply_forward_adjustment_for_event(incremental_bars, current_start_date, dividends)
             
         # 7. Merge
-        klines = []
-        if klines_length > klines_offset_days:
-            klines.extend(cache_klines[:klines_length - klines_offset_days])
+        bars = []
+        if bars_length > bars_offset_days:
+            bars.extend(cache_bars[:bars_length - bars_offset_days])
             
-        klines.extend(incremental_klines)
+        bars.extend(incremental_bars)
         
         # 8. Forward adjust
         if not is_fresh_fetch_require_adjustment:
-            apply_forward_adjustment_for_event(klines, current_start_date, dividends)
+            apply_forward_adjustment_for_event(bars, current_start_date, dividends)
             
         # 9. Save
-        save_kline(cache_filename, klines)
+        save_bar(cache_filename, bars)
 
 
 # 注册插件
 _data_kline_plugin = adapter.register(DataKLine)
     
 
-def check_kline_offset(klines: List[Any], as_of_date: str, freq: Frequency=FREQ_DAILY) -> int:
+def check_bar_offset(bars: List[Any], as_of_date: str, freq: Frequency=FREQ_DAILY) -> int:
     """
     检查给定日期在K线数据中的偏移位置
     
     Args:
-        klines (List[Any]): K线数据列表, 每个元素应包含date字段, 元素类型是鸭子类型, 可以是KLine, BarRaw, SecurityBar
+        bars (List[Any]): K线数据列表, 每个元素应包含date字段, 元素类型是鸭子类型, 可以是Bar, BarRaw, SecurityBar
         as_of_date (str): 要查找的目标日期
         freq (Frequency): K线频率, 默认为日线
     
@@ -284,13 +284,13 @@ def check_kline_offset(klines: List[Any], as_of_date: str, freq: Frequency=FREQ_
         int: 目标日期在K线中的偏移量(从最新数据开始计数), 
              如果未找到或日期早于最早数据则返回-1
     """
-    rows = len(klines)
+    rows = len(bars)
     offset = 0
     for i in range(rows):
-        kline_date = klines[rows - 1 - i].date
-        if kline_date < as_of_date:
+        bar_date = bars[rows - 1 - i].date
+        if bar_date < as_of_date:
             return -1
-        elif kline_date == as_of_date:
+        elif bar_date == as_of_date:
             break
         else:
             offset += 1
@@ -365,7 +365,7 @@ def combine_adjustments_in_period(xdxr_list: List[XdxrInfo],
     return result
 
 
-def apply_forward_adjustment_incrementally(klines: List[Bar],
+def apply_forward_adjustment_incrementally(bars: List[Bar],
                                            xdxr_list: List[XdxrInfo],
                                            last_adjusted_date: Timestamp,
                                            as_of_date: Timestamp,
@@ -374,7 +374,7 @@ def apply_forward_adjustment_incrementally(klines: List[Bar],
     对K线数据进行增量式前复权处理, 按时间顺序逐步应用复权因子. 
     
     Args:
-        klines (List[Any]): 待复权的K线数据列表, 会被原地修改
+        bars (List[Any]): 待复权的K线数据列表, 会被原地修改
         xdxr_list (List[XdxrInfo]): 除权除息信息列表
         last_adjusted_date (Timestamp): 复权开始时间
         as_of_date (Timestamp): 复权结束时间
@@ -383,10 +383,10 @@ def apply_forward_adjustment_incrementally(klines: List[Bar],
     Note:
         1. 会自动将时间统一转换为盘前时间
         2. 当遇到不再需要复权的数据且truncate_to_as_of_date为False时会提前终止循环
-        3. 会原地修改klines列表中的数据
+        3. 会原地修改bars列表中的数据
         4. 如果时间范围内没有需要处理的除权记录, 则直接返回
     """
-    if not klines:
+    if not bars:
         return
 
     # 强制统一为盘前时间
@@ -403,11 +403,11 @@ def apply_forward_adjustment_incrementally(klines: List[Bar],
     factors_count = len(factors)
     i = 0  # 除权因子从第一个记录开始
     rows = 0
-    klines_count = len(klines)
+    bars_count = len(bars)
     
-    for idx in range(klines_count):
-        kline = klines[idx]
-        current_date_dt = datetime.strptime(kline.date, '%Y-%m-%d')
+    for idx in range(bars_count):
+        bar = bars[idx]
+        current_date_dt = datetime.strptime(bar.date, '%Y-%m-%d')
         current_date = Timestamp.pre_market_time(current_date_dt.year, current_date_dt.month, current_date_dt.day)
         
         if i < factors_count:
@@ -422,36 +422,36 @@ def apply_forward_adjustment_incrementally(klines: List[Bar],
                 factor = factors[i]
                 
             if current_date < factor.timestamp:
-                # Assuming kline has an adjust method or we modify it directly
-                # In C++, kline->adjust(factor) is called.
+                # Assuming bar has an adjust method or we modify it directly
+                # In C++, bar->adjust(factor) is called.
                 # We need to ensure the Bar object has this method.
-                if hasattr(kline, 'adjust'):
-                    kline.adjust(factor)
+                if hasattr(bar, 'adjust'):
+                    bar.adjust(factor)
             elif not truncate_to_as_of_date:
-                # 如果不截断数据, 那么, 对于已经没有需要复权的因子来说, 后面的klines数据就没必要继续循环了
+                # 如果不截断数据, 那么, 对于已经没有需要复权的因子来说, 后面的bars数据就没必要继续循环了
                 break
         
         rows += 1
 
     if truncate_to_as_of_date:
-        del klines[rows:]
+        del bars[rows:]
 
-def calculate_pre_adjust(klines: List[Bar], xdxr_list: List[XdxrInfo]):
+def calculate_pre_adjust(bars: List[Bar], xdxr_list: List[XdxrInfo]):
     """
     对K线数据进行前复权计算
     """
-    if not klines:
+    if not bars:
         return
         
     # 使用apply_forward_adjustments_once进行前复权
-    start_date = datetime.strptime(klines[0].date, '%Y-%m-%d')
-    end_date = datetime.strptime(klines[-1].date, '%Y-%m-%d')
+    start_date = datetime.strptime(bars[0].date, '%Y-%m-%d')
+    end_date = datetime.strptime(bars[-1].date, '%Y-%m-%d')
     start_ts = Timestamp.pre_market_time(start_date.year, start_date.month, start_date.day)
     end_ts = Timestamp.pre_market_time(end_date.year, end_date.month, end_date.day)
-    apply_forward_adjustment_incrementally(klines, xdxr_list, start_ts, end_ts, True)
+    apply_forward_adjustment_incrementally(bars, xdxr_list, start_ts, end_ts, True)
 
 
-def get_cross_section_forward_adjusted_klines(inst: Instrument, as_of_date: str) -> List[Any]:
+def get_cross_section_forward_adjusted_bars(inst: Instrument, as_of_date: str) -> List[Any]:
     """
     获取指定证券代码截至指定日期的前复权K线数据
     
@@ -468,7 +468,7 @@ def get_cross_section_forward_adjusted_klines(inst: Instrument, as_of_date: str)
         3. 会应用前复权计算调整价格数据
     """
     #inst = detect_symbol(code)
-    logger.debug(f"Getting forward adjusted klines for instrument: {inst} as of {as_of_date}")
+    logger.debug(f"Getting forward adjusted bars for instrument: {inst} as of {as_of_date}")
     if inst is None:
         logger.error(f"Instrument not found for code: {inst}")
         return []
@@ -476,60 +476,60 @@ def get_cross_section_forward_adjusted_klines(inst: Instrument, as_of_date: str)
     fixed_date = ts.only_date()
     
     # 获取所有原始K线数据
-    raw_klines = checkout_kline_raw(inst)
-    if not raw_klines:
+    raw_bars = checkout_bar_raw(inst)
+    if not raw_bars:
         return []
     
     # 检查是否最新数据
-    last_kline = raw_klines[-1]
-    if last_kline.date < fixed_date:
-        # 数据太旧, 重新加载 (但checkout_kline_raw应该已经处理)
-        raw_klines = checkout_kline_raw(inst)
+    last_bar = raw_bars[-1]
+    if last_bar.date < fixed_date:
+        # 数据太旧, 重新加载 (但checkout_bar_raw应该已经处理)
+        raw_bars = checkout_bar_raw(inst)
     
     # 对齐数据缓存的日期, 过滤可能存在停牌没有数据的情况
-    offset = check_kline_offset(raw_klines, fixed_date)
+    offset = check_bar_offset(raw_bars, fixed_date)
     if offset < 0 and inst.exchange in(Exchange.SSE, Exchange.SZSE, Exchange.BSE):
         # 非A的获取全部数据
         return []
     logger.debug(f'offset={offset}')
     
-    fixed_count = len(raw_klines) - offset
-    filtered_klines = raw_klines[:fixed_count]
+    fixed_count = len(raw_bars) - offset
+    filtered_bars = raw_bars[:fixed_count]
     
-    if not filtered_klines:
+    if not filtered_bars:
         return []
     
-    # 将KLineRaw转换为KLine
-    klines = []
-    for raw_kline in filtered_klines:
-        kline = Bar(
-            date=raw_kline.date,
-            open=raw_kline.open,
-            close=raw_kline.close,
-            high=raw_kline.high,
-            low=raw_kline.low,
-            volume=raw_kline.volume,
-            amount=raw_kline.amount,
-            up=raw_kline.up,
-            down=raw_kline.down,
-            timestamp=raw_kline.timestamp,
+    # 将BarRaw转换为Bar
+    bars = []
+    for raw_bar in filtered_bars:
+        bar = Bar(
+            date=raw_bar.date,
+            open=raw_bar.open,
+            close=raw_bar.close,
+            high=raw_bar.high,
+            low=raw_bar.low,
+            volume=raw_bar.volume,
+            amount=raw_bar.amount,
+            up=raw_bar.up,
+            down=raw_bar.down,
+            timestamp=raw_bar.timestamp,
             adjustment_count=0
         )
-        klines.append(kline)
+        bars.append(bar)
     
     # 获取XDXR数据
     xdxr_list = get_xdxr_list(inst)
     
     # 确定前复权的时间范围
-    start_date = datetime.strptime(klines[0].date, '%Y-%m-%d')
-    end_date = datetime.strptime(klines[-1].date, '%Y-%m-%d')
+    start_date = datetime.strptime(bars[0].date, '%Y-%m-%d')
+    end_date = datetime.strptime(bars[-1].date, '%Y-%m-%d')
     start_ts = Timestamp.pre_market_time(start_date.year, start_date.month, start_date.day)
     end_ts = Timestamp.pre_market_time(end_date.year, end_date.month, end_date.day)
     
     # 应用前复权
-    apply_forward_adjustment_incrementally(klines, xdxr_list, start_ts, end_ts, True)
+    apply_forward_adjustment_incrementally(bars, xdxr_list, start_ts, end_ts, True)
     
-    return klines
+    return bars
 
 
 if __name__ == "__main__":
@@ -544,15 +544,15 @@ if __name__ == "__main__":
     cache.update(inst)
     symbol = inst.symbol()
     
-    raw_klines = checkout_kline_raw(inst)
-    klines = [Bar(
+    raw_bars = checkout_bar_raw(inst)
+    bars = [Bar(
         date=k.date, open=k.open, close=k.close, high=k.high, low=k.low,
         volume=k.volume, amount=k.amount, up=k.up, down=k.down, timestamp=k.timestamp, adjustment_count=0
-    ) for k in raw_klines]
-    print(f"Loaded {len(klines)} raw kline records for {code}")
+    ) for k in raw_bars]
+    print(f"Loaded {len(bars)} raw bar records for {code}")
 
-    if not klines:
-        print("No kline data available")
+    if not bars:
+        print("No bar data available")
         exit(1)
 
     # 获取除权除息数据
@@ -560,20 +560,20 @@ if __name__ == "__main__":
     print(f"Loaded {len(xdxr_list)} xdxr records for {symbol}")
 
     # 创建原始数据的副本用于对比
-    original_klines = [Bar(
+    original_bars = [Bar(
         date=k.date, open=k.open, close=k.close, high=k.high, low=k.low,
         volume=k.volume, amount=k.amount, up=k.up, down=k.down, timestamp=k.timestamp
-    ) for k in klines]
+    ) for k in bars]
 
     # 进行前复权
-    calculate_pre_adjust(klines, xdxr_list)
+    calculate_pre_adjust(bars, xdxr_list)
 
-    print(f"After adjustment: {len(klines)} klines")
+    print(f"After adjustment: {len(bars)} bars")
 
     # 转换为pandas DataFrame进行显示
-    def klines_to_dataframe(kline_list, prefix=""):
+    def bars_to_dataframe(bar_list, prefix=""):
         data = []
-        for k in kline_list:
+        for k in bar_list:
             data.append({
                 f"{prefix}date": k.date,
                 f"{prefix}open": k.open,
@@ -588,8 +588,8 @@ if __name__ == "__main__":
         return pd.DataFrame(data)
 
     # 创建DataFrame
-    original_df = klines_to_dataframe(original_klines[-20:], "raw_")  # 显示最近20条
-    adjusted_df = klines_to_dataframe(klines[-20:], "adj_")  # 显示最近20条
+    original_df = bars_to_dataframe(original_bars[-20:], "raw_")  # 显示最近20条
+    adjusted_df = bars_to_dataframe(bars[-20:], "adj_")  # 显示最近20条
 
     # 合并显示
     comparison_df = pd.concat([original_df, adjusted_df], axis=1)
@@ -597,15 +597,15 @@ if __name__ == "__main__":
     print("\n=== 复权前后对比 (2024年样本数据) ===")
     # 查找2024年的数据进行对比
     sample_indices = []
-    for i, kline in enumerate(original_klines):
-        if kline.date.startswith('2024'):
+    for i, bar in enumerate(original_bars):
+        if bar.date.startswith('2024'):
             sample_indices.append(i)
         if len(sample_indices) >= 5:  # 收集5个样本
             break
     
     for idx in sample_indices:
-        orig = original_klines[idx]
-        adj = klines[idx]
+        orig = original_bars[idx]
+        adj = bars[idx]
         print(f"日期: {orig.date}")
         print(f"  原始: 开={orig.open:.2f}, 高={orig.high:.2f}, 低={orig.low:.2f}, 收={orig.close:.2f}")
         print(f"  复权: 开={adj.open:.2f}, 高={adj.high:.2f}, 低={adj.low:.2f}, 收={adj.close:.2f}")
@@ -630,39 +630,39 @@ if __name__ == "__main__":
             for xdxr in records[-2:]:  # 每类显示最近2条
                 print(f"  日期: {xdxr.Date}, 分红:{xdxr.FenHong}, 送转:{xdxr.SongZhuanGu}, 配股:{xdxr.PeiGu}")
 
-    # 对比 get_cross_section_forward_adjusted_klines 与 datasets.kline 缓存
-    print(f"\n=== 对比 get_cross_section_forward_adjusted_klines 与 datasets.kline 缓存 ===")
+    # 对比 get_cross_section_forward_adjusted_bars 与 datasets.bar 缓存
+    print(f"\n=== 对比 get_cross_section_forward_adjusted_bars 与 datasets.bar 缓存 ===")
     
-    # 获取 datasets.kline 缓存数据
-    #from data.kline import load_kline
-    cached_klines = load_kline(inst)
+    # 获取 datasets.bar 缓存数据
+    #from data.bar import load_bar
+    cached_bars = load_bar(inst)
     
-    if cached_klines:
-        first_cached_date = cached_klines[0].date
-        last_cached_date = cached_klines[-1].date
-        print(f"datasets.kline 缓存日期范围: {first_cached_date} 到 {last_cached_date}")
+    if cached_bars:
+        first_cached_date = cached_bars[0].date
+        last_cached_date = cached_bars[-1].date
+        print(f"datasets.bar 缓存日期范围: {first_cached_date} 到 {last_cached_date}")
         
-        # 使用 get_cross_section_forward_adjusted_klines 获取相同日期范围的复权数据
+        # 使用 get_cross_section_forward_adjusted_bars 获取相同日期范围的复权数据
         # 使用最后一条数据的日期作为截止日期
-        adjusted_klines = get_cross_section_forward_adjusted_klines(inst, last_cached_date)
+        adjusted_bars = get_cross_section_forward_adjusted_bars(inst, last_cached_date)
         
-        if adjusted_klines and len(adjusted_klines) > 0:
+        if adjusted_bars and len(adjusted_bars) > 0:
             # 找到相同日期的第一条数据进行对比
             first_adjusted = None
-            first_cached = cached_klines[0]
+            first_cached = cached_bars[0]
             
-            for kline in adjusted_klines:
-                if kline.date == first_cached.date:
-                    first_adjusted = kline
+            for bar in adjusted_bars:
+                if bar.date == first_cached.date:
+                    first_adjusted = bar
                     break
             
             if first_adjusted:
                 print(f"\n在 {first_cached.date} 的数据对比:")
-                print(f"get_cross_section_forward_adjusted_klines:")
+                print(f"get_cross_section_forward_adjusted_bars:")
                 print(f"  开盘: {first_adjusted.open:.4f}, 最高: {first_adjusted.high:.4f}, 最低: {first_adjusted.low:.4f}, 收盘: {first_adjusted.close:.4f}")
                 print(f"  成交量: {first_adjusted.volume:.0f}, 成交额: {first_adjusted.amount:.0f}")
                 
-                print(f"datasets.kline 缓存:")
+                print(f"datasets.bar 缓存:")
                 print(f"  开盘: {first_cached.open:.4f}, 最高: {first_cached.high:.4f}, 最低: {first_cached.low:.4f}, 收盘: {first_cached.close:.4f}")
                 print(f"  成交量: {first_cached.volume:.0f}, 成交额: {first_cached.amount:.0f}")
                 
@@ -689,14 +689,14 @@ if __name__ == "__main__":
                     
                     # 检查调整次数
                     print(f"调整次数对比:")
-                    print(f"  get_cross_section_forward_adjusted_klines: {getattr(first_adjusted, 'adjustment_count', 'N/A')}")
-                    print(f"  datasets.kline: {getattr(first_cached, 'adjustment_count', 'N/A')}")
+                    print(f"  get_cross_section_forward_adjusted_bars: {getattr(first_adjusted, 'adjustment_count', 'N/A')}")
+                    print(f"  datasets.bar: {getattr(first_cached, 'adjustment_count', 'N/A')}")
             else:
-                print(f"get_cross_section_forward_adjusted_klines 中找不到日期 {first_cached.date} 的数据")
-                print(f"adjusted_klines 长度: {len(adjusted_klines)}")
-                if len(adjusted_klines) > 0:
-                    print(f"第一条: {adjusted_klines[0].date}, 最后一条: {adjusted_klines[-1].date}")
+                print(f"get_cross_section_forward_adjusted_bars 中找不到日期 {first_cached.date} 的数据")
+                print(f"adjusted_bars 长度: {len(adjusted_bars)}")
+                if len(adjusted_bars) > 0:
+                    print(f"第一条: {adjusted_bars[0].date}, 最后一条: {adjusted_bars[-1].date}")
         else:
-            print("get_cross_section_forward_adjusted_klines 返回空数据")
+            print("get_cross_section_forward_adjusted_bars 返回空数据")
     else:
-        print("datasets.kline 缓存为空")
+        print("datasets.bar 缓存为空")

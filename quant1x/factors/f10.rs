@@ -137,7 +137,7 @@ impl F10 {
 }
 
 fn get_ipo_date(security_code: &str, _feature_date: &str) -> String {
-    // Use load_kline from tdx::kline
+    // Use load_bar from tdx::bar
     let inst = detect_symbol(security_code);
     let kls = crate::contrib::data::tdx::bar::load_kline(&inst);
     if kls.is_empty() {

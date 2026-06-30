@@ -30,18 +30,18 @@ pub mod status;
 pub use status::*;
 
 // Reusable macro: apply_forward_adjustment_for_event!
-// This macro implements the forward-adjustment algorithm used by both day KLine and minute KLine
+// This macro implements the forward-adjustment algorithm used by both day bar and minute bar
 // datasets. It operates on a mutable collection (slice or Vec) whose elements expose the same
 // fields: `date`, `open`, `close`, `high`, `low`, `volume`, `amount`, `adjustment_count`.
 // Usage (examples):
-// apply_forward_adjustment_for_event!(klines_slice, start_date, &dividends);
+// apply_forward_adjustment_for_event!(bar_slice, start_date, &dividends);
 #[macro_export]
 macro_rules! apply_forward_adjustment_for_event {
-    ($klines:expr, $start_date:expr, $dividends:expr) => {{
-        if $klines.is_empty() {
+    ($bars:expr, $start_date:expr, $dividends:expr) => {{
+        if $bars.is_empty() {
             // nothing to do
         } else {
-            let last_day = $klines.last().unwrap().date.clone();
+            let last_day = $bars.last().unwrap().date.clone();
             let ts_last_day = crate::data::meta::Timestamp::parse(&last_day).unwrap_or(crate::data::meta::Timestamp::now());
             let ts_last_day =
                 crate::data::meta::Timestamp::pre_market_time_from_current(&ts_last_day).unwrap_or(ts_last_day);
@@ -68,25 +68,25 @@ macro_rules! apply_forward_adjustment_for_event {
                 } else {
                     let (m, a) = info.adjust_factor();
                     let share_ratio = info.share_ratio_factor();
-                    let klines_size = $klines.len();
-                    for i in 0..klines_size {
-                        if $klines[i].date >= info.date {
+                    let bars_size = $bars.len();
+                    for i in 0..bars_size {
+                        if $bars[i].date >= info.date {
                             break;
                         }
-                        $klines[i].open = $klines[i].open * m + a;
-                        $klines[i].close = $klines[i].close * m + a;
-                        $klines[i].high = $klines[i].high * m + a;
-                        $klines[i].low = $klines[i].low * m + a;
+                        $bars[i].open = $bars[i].open * m + a;
+                        $bars[i].close = $bars[i].close * m + a;
+                        $bars[i].high = $bars[i].high * m + a;
+                        $bars[i].low = $bars[i].low * m + a;
 
-                        let ap = if $klines[i].volume != 0.0 {
-                            $klines[i].amount / $klines[i].volume
+                        let ap = if $bars[i].volume != 0.0 {
+                            $bars[i].amount / $bars[i].volume
                         } else {
                             0.0
                         };
                         let ap_adjusted = ap * m + a;
-                        $klines[i].volume *= 1.0 + share_ratio;
-                        $klines[i].amount = $klines[i].volume * ap_adjusted;
-                        $klines[i].adjustment_count += 1;
+                        $bars[i].volume *= 1.0 + share_ratio;
+                        $bars[i].amount = $bars[i].volume * ap_adjusted;
+                        $bars[i].adjustment_count += 1;
                     }
                 }
                 _times -= 1;
@@ -99,7 +99,7 @@ macro_rules! apply_forward_adjustment_for_event {
 // `datasets::init()` entrypoint — call `crate::data::init()` to register
 // data adapters implemented in submodules.
 pub fn init() {
-    // register xdxr, day kline, minute kline, transaction adapters
+    // register xdxr, day bar, minute bar, transaction adapters
     // ignore failures — each sub-init handles its own logging
     crate::contrib::data::tdx::xdxr::init();
     crate::contrib::data::tdx::bar::init();

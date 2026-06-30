@@ -34,15 +34,15 @@ void DataNo0::Update(const meta::Instrument &inst, const meta::Timestamp &date) 
     meta::Timestamp ts_cache     = meta::next_trading_day(date);
     feature.Date                     = ts_cache.only_date();
     feature.Code                     = code;
-    auto klines                      = tdx::klines_forward_adjusted_to_date(code, feature_date);
-    if (klines.size() < factors::KLineMin) {
+    auto bars                      = tdx::bars_forward_adjusted_to_date(code, feature_date);
+    if (bars.size() < factors::KLineMin) {
         spdlog::warn("[DataNo0] code={},date={}, 日线数据不足", code, feature_date);
         return;
     }
     // 提取收盘价序列
     std::vector<f64> col_close;
-    col_close.reserve(klines.size());
-    for (const auto& bar : klines) {
+    col_close.reserve(bars.size());
+    for (const auto& bar : bars) {
         col_close.push_back(bar.close);
     }
     const xt::xarray<f64> &CLOSE = xt::adapt(col_close);

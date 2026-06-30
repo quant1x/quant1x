@@ -85,7 +85,7 @@ func GetDayPath() string {
 	return filepath.Join(core.DefaultCachePath(), "day")
 }
 
-func GetKlinePath(freq string) string {
+func GetBarPath(freq string) string {
 	return filepath.Join(core.DefaultCachePath(), freq)
 }
 

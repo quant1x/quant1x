@@ -1,7 +1,7 @@
 // Copyright (c) Quant1X <wangfengxy@sina.cn>.
 // Licensed under the MIT License.
 //
-// kline — 前复权K线数据缓存读取, 与 Python contrib/data/tdx/kline.py 对齐
+// bar — 前复权K线数据缓存读取, 与 Python contrib/data/tdx/bar.py 对齐
 // 作为 datasource 的本地代理, 仅从本地缓存CSV文件读取数据, 不依赖 level1 协议
 
 use std::sync::Arc;
@@ -24,12 +24,12 @@ const SECURITY_BARS_PRE_REQUEST_MAX: usize = 700;
 const MAX_CACHED_DAYS_TO_DROP: usize = 1;
 
 /// 获取前复权K线缓存文件路径
-/// 与 Python get_kline_filename(inst, freq=FREQ_DAILY) 对齐:
+/// 与 Python get_bar_filename(inst, freq=FREQ_DAILY) 对齐:
 ///   module_name = freq.cache_key()  # "day"
 ///   symbol = inst.symbol()
 ///   sub = f"{module_name}/{inst.cache_dir()}"
 ///   return f'{config.data_path}/{sub}/{symbol}.csv'
-fn get_kline_filename(inst: &Instrument) -> String {
+fn get_bar_filename(inst: &Instrument) -> String {
     let symbol = inst.symbol();
     let sub = format!("day/{}", inst.cache_dir());
     format!(
@@ -41,15 +41,15 @@ fn get_kline_filename(inst: &Instrument) -> String {
 }
 
 /// 从CSV缓存文件加载前复权K线数据
-/// 与 Python read_kline_from_csv(filename) 对齐
-fn read_kline_from_csv(filename: &str) -> Vec<Bar> {
-    let mut klines: Vec<Bar> = Vec::new();
+/// 与 Python read_bar_from_csv(filename) 对齐
+fn read_bar_from_csv(filename: &str) -> Vec<Bar> {
+    let mut bars: Vec<Bar> = Vec::new();
     match std::fs::File::open(filename) {
         Ok(f) => {
             let mut rdr = csv::ReaderBuilder::new().has_headers(true).from_reader(f);
             for result in rdr.records() {
                 if let Ok(rec) = result {
-                    klines.push(Bar {
+                    bars.push(Bar {
                         date: rec.get(0).unwrap_or("").to_string(),
                         open: rec.get(1).and_then(|s| s.parse().ok()).unwrap_or(0.0),
                         close: rec.get(2).and_then(|s| s.parse().ok()).unwrap_or(0.0),
@@ -67,26 +67,26 @@ fn read_kline_from_csv(filename: &str) -> Vec<Bar> {
         }
         Err(_) => { /* 文件不存在, 返回空列表 */ }
     }
-    klines
+    bars
 }
 
 /// 从缓存文件加载前复权K线数据
-/// 与 Python load_kline(inst, freq=FREQ_DAILY) 对齐
-pub fn load_kline(inst: &Instrument) -> Vec<Bar> {
-    let filename = get_kline_filename(inst);
-    log::debug!("[kline] kline file: {}", filename);
-    read_kline_from_csv(&filename)
+/// 与 Python load_bar(inst, freq=FREQ_DAILY) 对齐
+pub fn load_bar(inst: &Instrument) -> Vec<Bar> {
+    let filename = get_bar_filename(inst);
+    log::debug!("[bar] bar file: {}", filename);
+    read_bar_from_csv(&filename)
 }
 
 /// 保存前复权K线数据到CSV文件
-/// 与 Python save_kline(filename, values) 对齐
-fn save_kline(filename: &str, values: &[Bar]) {
+/// 与 Python save_bar(filename, values) 对齐
+fn save_bar(filename: &str, values: &[Bar]) {
     if values.is_empty() {
         return;
     }
     if let Some(parent) = std::path::Path::new(filename).parent() {
         if let Err(e) = std::fs::create_dir_all(parent) {
-            log::error!("[kline] create_dir_all failed for {:?}: {}", parent, e);
+            log::error!("[bar] create_dir_all failed for {:?}: {}", parent, e);
             return;
         }
     }
@@ -95,7 +95,7 @@ fn save_kline(filename: &str, values: &[Bar]) {
         Ok(f) => {
             let mut w = csv::Writer::from_writer(f);
             if let Err(e) = w.write_record(Bar::headers()) {
-                log::error!("[kline] write header failed: {}", e);
+                log::error!("[bar] write header failed: {}", e);
             }
             for row in values.iter() {
                 let rec: Vec<String> = vec![
@@ -112,35 +112,35 @@ fn save_kline(filename: &str, values: &[Bar]) {
                     row.adjustment_count.to_string(),
                 ];
                 if let Err(e) = w.write_record(rec) {
-                    log::error!("[kline] write row failed: {}", e);
+                    log::error!("[bar] write row failed: {}", e);
                 }
             }
             let _ = w.flush();
             if let Err(e) = std::fs::rename(&tmp, filename) {
-                log::error!("[kline] rename failed {} -> {}: {}", tmp, filename, e);
+                log::error!("[bar] rename failed {} -> {}: {}", tmp, filename, e);
             }
         }
-        Err(e) => log::error!("[kline] create tmp {} failed: {}", tmp, e),
+        Err(e) => log::error!("[bar] create tmp {} failed: {}", tmp, e),
     }
 }
 
 // ============================================================
-// 前复权逻辑 — 与 Python kline.py 对齐
+// 前复权逻辑 — 与 Python bar.py 对齐
 // ============================================================
 
 /// 对K线数据进行前复权处理(事件驱动模式)
-/// 与 Python apply_forward_adjustment_for_event(klines, current_start_date, dividends) 对齐
+/// 与 Python apply_forward_adjustment_for_event(bars, current_start_date, dividends) 对齐
 fn apply_forward_adjustment_for_event(
-    klines: &mut [Bar],
+    bars: &mut [Bar],
     current_start_date: &Timestamp,
     dividends: &[XdxrInfo],
 ) {
-    if klines.is_empty() {
+    if bars.is_empty() {
         return;
     }
 
     // 最后一根K线的日期
-    let last_day = &klines[klines.len() - 1].date;
+    let last_day = &bars[bars.len() - 1].date;
     let ts_last_day = match Timestamp::parse(last_day) {
         Ok(ts) => match ts.pre_market_time_from_current() {
             Some(t) => t,
@@ -168,32 +168,32 @@ fn apply_forward_adjustment_for_event(
         let (m, a) = info.adjust_factor();
         let share_ratio = info.compute_share_adjustment_ratio();
 
-        for kline in klines.iter_mut() {
-            if kline.date >= info.date {
+        for bar in bars.iter_mut() {
+            if bar.date >= info.date {
                 break;
             }
 
-            kline.open = kline.open * m + a;
-            kline.close = kline.close * m + a;
-            kline.high = kline.high * m + a;
-            kline.low = kline.low * m + a;
+            bar.open = bar.open * m + a;
+            bar.close = bar.close * m + a;
+            bar.high = bar.high * m + a;
+            bar.low = bar.low * m + a;
 
-            if kline.volume != 0.0 {
-                let ap = kline.amount / kline.volume;
+            if bar.volume != 0.0 {
+                let ap = bar.amount / bar.volume;
                 let ap_adjusted = ap * m + a;
-                kline.volume *= 1.0 + share_ratio;
-                kline.amount = kline.volume * ap_adjusted;
+                bar.volume *= 1.0 + share_ratio;
+                bar.amount = bar.volume * ap_adjusted;
             }
 
-            kline.adjustment_count += 1;
+            bar.adjustment_count += 1;
         }
     }
 }
 
 /// 从原始K线响应转换为 Bar 列表
-/// 对应 Python 中 fetch_kline_raw 返回 List[Bar] 后的转换逻辑
-fn fetch_kline_raw_as_bars(inst: &Instrument, start: u32, count: u16) -> Vec<Bar> {
-    let resp = match super::bar_raw::fetch_kline_raw(inst, start, count) {
+/// 对应 Python 中 fetch_bar_raw 返回 List[Bar] 后的转换逻辑
+fn fetch_bar_raw_as_bars(inst: &Instrument, start: u32, count: u16) -> Vec<Bar> {
+    let resp = match super::bar_raw::fetch_bar_raw(inst, start, count) {
         Some(r) => r,
         None => return Vec::new(),
     };
@@ -264,24 +264,24 @@ impl DataAdapter for DataKLine {
             .unwrap_or_else(|_| Timestamp::zero())
             .pre_market_time_from_current()
             .unwrap_or_else(Timestamp::zero);
-        let cache_filename = get_kline_filename(inst);
-        let cache_klines = read_kline_from_csv(&cache_filename);
+        let cache_filename = get_bar_filename(inst);
+        let cache_bars = read_bar_from_csv(&cache_filename);
 
-        let klines_length = cache_klines.len();
-        let mut klines_offset_days = MAX_CACHED_DAYS_TO_DROP;
+        let bars_length = cache_bars.len();
+        let mut bars_offset_days = MAX_CACHED_DAYS_TO_DROP;
         let mut adjust_times = 0i32;
 
-        if klines_length > 0 {
-            if klines_offset_days > klines_length {
-                klines_offset_days = klines_length;
+        if bars_length > 0 {
+            if bars_offset_days > bars_length {
+                bars_offset_days = bars_length;
             }
-            let kline = &cache_klines[klines_length - klines_offset_days];
-            if let Ok(ts) = Timestamp::parse(&kline.date) {
+            let bar = &cache_bars[bars_length - bars_offset_days];
+            if let Ok(ts) = Timestamp::parse(&bar.date) {
                 if let Some(pt) = ts.pre_market_time_from_current() {
                     current_start_date = pt;
                 }
             }
-            adjust_times = kline.adjustment_count;
+            adjust_times = bar.adjustment_count;
         }
 
         // 2. 确定结束日期
@@ -304,12 +304,12 @@ impl DataAdapter for DataKLine {
 
         loop {
             let count = std::cmp::min(step, u16::MAX as usize) as u16;
-            let reply = fetch_kline_raw_as_bars(inst, start, count);
+            let reply = fetch_bar_raw_as_bars(inst, start, count);
             if reply.is_empty() {
                 if start == 0 {
                     fetch_failed = true;
                     log::warn!(
-                        "[DataKLine] [{}] fetch_kline_raw returned empty (start={}, count={}) — server may be unreachable",
+                        "[DataKLine] [{}] fetch_bar_raw returned empty (start={}, count={}) — server may be unreachable",
                         inst.symbol(),
                         start,
                         count
@@ -342,7 +342,7 @@ impl DataAdapter for DataKLine {
         hs.reverse();
 
         // 5. 构建增量K线列表
-        let mut incremental_klines: Vec<Bar> = Vec::new();
+        let mut incremental_bars: Vec<Bar> = Vec::new();
         for page in hs.iter() {
             for row in page.iter() {
                 let date_time = match Timestamp::parse(&row.date) {
@@ -355,7 +355,7 @@ impl DataAdapter for DataKLine {
                 if date_time < current_start_date || date_time > current_end_date {
                     continue;
                 }
-                let kx = Bar {
+                let bx = Bar {
                     date: date_time.only_date(),
                     open: row.open,
                     close: row.close,
@@ -368,7 +368,7 @@ impl DataAdapter for DataKLine {
                     timestamp: row.timestamp.clone(),
                     adjustment_count: 0,
                 };
-                incremental_klines.push(kx);
+                incremental_bars.push(bx);
             }
         }
 
@@ -378,34 +378,34 @@ impl DataAdapter for DataKLine {
 
         if is_fresh_fetch_require_adjustment {
             apply_forward_adjustment_for_event(
-                &mut incremental_klines,
+                &mut incremental_bars,
                 &current_start_date,
                 &dividends,
             );
         }
 
         // 7. 合并缓存和增量数据
-        let mut klines: Vec<Bar> = Vec::new();
-        if klines_length > klines_offset_days {
-            klines.extend_from_slice(&cache_klines[..(klines_length - klines_offset_days)]);
+        let mut bars: Vec<Bar> = Vec::new();
+        if bars_length > bars_offset_days {
+            bars.extend_from_slice(&cache_bars[..(bars_length - bars_offset_days)]);
         }
         // 如果拉取失败且没有缓存数据, 不要写入空文件
-        if fetch_failed && klines.is_empty() && incremental_klines.is_empty() {
+        if fetch_failed && bars.is_empty() && incremental_bars.is_empty() {
             log::warn!(
                 "[DataKLine] [{}] no data fetched and no cache — skipping save",
                 inst.symbol()
             );
             return;
         }
-        klines.extend(incremental_klines);
+        bars.extend(incremental_bars);
 
         // 8. 对新合并的数据再复权(非首次拉取的情况)
         if !is_fresh_fetch_require_adjustment {
-            apply_forward_adjustment_for_event(&mut klines, &current_start_date, &dividends);
+            apply_forward_adjustment_for_event(&mut bars, &current_start_date, &dividends);
         }
 
         // 9. 保存
-        save_kline(&cache_filename, &klines);
+        save_bar(&cache_filename, &bars);
     }
 }
 
@@ -417,16 +417,16 @@ pub fn init() {
 }
 
 /// 获取指定证券代码截至指定日期的前复权K线数据
-/// 与 Python get_cross_section_forward_adjusted_klines(inst, as_of_date) 对齐:
-///   - Python 先调用 checkout_kline_raw(inst) 获取原始数据并复权
+/// 与 Python get_cross_section_forward_adjusted_bars(inst, as_of_date) 对齐:
+///   - Python 先调用 checkout_bar_raw(inst) 获取原始数据并复权
 ///   - Rust 版本通过 DataKLine adapter 确保缓存存在后再加载
-pub fn get_cross_section_forward_adjusted_klines(
+pub fn get_cross_section_forward_adjusted_bars(
     inst: &Instrument,
     as_of_date: &str,
 ) -> Vec<Bar> {
-    let filename = get_kline_filename(inst);
+    let filename = get_bar_filename(inst);
     log::debug!(
-        "[kline] loading forward adjusted klines for {} from {}",
+        "[bar] loading forward adjusted bars for {} from {}",
         inst.symbol(),
         filename
     );
@@ -434,27 +434,27 @@ pub fn get_cross_section_forward_adjusted_klines(
     // 如果缓存文件不存在, 先通过 DataKLine adapter 从服务器拉取数据并生成缓存
     if !std::path::Path::new(&filename).exists() {
         log::info!(
-            "[kline] cache not found for {}, triggering DataKLine update",
+            "[bar] cache not found for {}, triggering DataKLine update",
             inst.symbol()
         );
         let adapter = DataKLine;
         adapter.update(inst, Timestamp::now());
     }
 
-    let all_klines = read_kline_from_csv(&filename);
-    if all_klines.is_empty() {
+    let all_bars = read_bar_from_csv(&filename);
+    if all_bars.is_empty() {
         return Vec::new();
     }
 
     // 过滤出 as_of_date 及之前的K线
-    all_klines
+    all_bars
         .into_iter()
         .filter(|k| k.date.as_str() <= as_of_date)
         .collect()
 }
 
-/// 确定 klines 查询的截止时间戳
-/// 与 Python datasource.py klines() 中的逻辑对齐:
+/// 确定 bars 查询的截止时间戳
+/// 与 Python datasource.py bars() 中的逻辑对齐:
 ///   if end_date is None:
 ///       as_of_ts = last_trading_day() if A股 else Timestamp.now().offset(hour=-24)
 ///   else:
@@ -499,12 +499,12 @@ mod tests {
 
     #[test]
     #[ignore = "requires config file"]
-    fn test_get_kline_filename() {
+    fn test_get_bar_filename() {
         let inst = make_test_instrument();
-        let filename = get_kline_filename(&inst);
+        let filename = get_bar_filename(&inst);
         assert!(filename.contains("day/"));
         assert!(filename.ends_with(".csv"));
-        println!("kline filename: {}", filename);
+        println!("bar filename: {}", filename);
     }
 
     #[test]

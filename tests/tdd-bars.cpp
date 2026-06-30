@@ -12,7 +12,7 @@ namespace data = quant1x::data;
 namespace meta = quant1x::data::meta;
 namespace tdx = quant1x::contrib::data::tdx;
 
-TEST_CASE("download-kline-raw", "[data]") {
+TEST_CASE("download-bar-raw", "[data]") {
     std::string code = "sz300773";
     meta::Timestamp now = meta::last_trading_day();
     const auto adapter = std::make_unique<tdx::DataKLineRaw>();
@@ -20,7 +20,7 @@ TEST_CASE("download-kline-raw", "[data]") {
     adapter->Update(inst, now);
 }
 
-TEST_CASE("daily-kline", "[data]") {
+TEST_CASE("daily-bar", "[data]") {
     runtime::global_init();
     std::string code = "sz002350";
     meta::Timestamp now = meta::last_trading_day();
@@ -30,7 +30,7 @@ TEST_CASE("daily-kline", "[data]") {
     adapter->Update(inst, now);
 }
 
-TEST_CASE("daily-kline-xdxr", "[data]") {
+TEST_CASE("daily-bar-xdxr", "[data]") {
     runtime::global_init();
     std::string code = "sz300773";
     meta::Timestamp now = meta::Timestamp::pre_market_time(2025, 10, 24);
@@ -42,7 +42,7 @@ TEST_CASE("daily-kline-xdxr", "[data]") {
 
 #include <quant1x/contrib/data/tdx/bar_minute.h>
 
-TEST_CASE("minute-kline", "[data]") {
+TEST_CASE("minute-bar", "[data]") {
     runtime::global_init();
     std::string code = "sh510050";
     meta::Timestamp now = meta::last_trading_day();
@@ -54,21 +54,21 @@ TEST_CASE("minute-kline", "[data]") {
 
 #if 0
 // DataFrame class (pandas/dataframe.h) removed in refactoring
-TEST_CASE("checkout-klines", "[data]") {
+TEST_CASE("checkout-bars", "[data]") {
     std::string code = "300773";
     std::string date = "2025-05-29";
-    auto klines = tdx::checkout_klines(code, date);
-    std::cout << klines.size() << std::endl;
-    DataFrame df = DataFrame::from_struct_vector(klines);
+    auto bars = tdx::checkout_bars(code, date);
+    std::cout << bars.size() << std::endl;
+    DataFrame df = DataFrame::from_struct_vector(bars);
     std::cout << df.to_string() << std::endl;
 }
 
-TEST_CASE("klines_forward_adjusted_to_date", "[data]") {
+TEST_CASE("bars_forward_adjusted_to_date", "[data]") {
     std::string code = "300773";
     std::string date = "2025-10-24";
-    auto klines = tdx::klines_forward_adjusted_to_date(code, date);
-    std::cout << klines.size() << std::endl;
-    DataFrame df = DataFrame::from_struct_vector(klines);
+    auto bars = tdx::bars_forward_adjusted_to_date(code, date);
+    std::cout << bars.size() << std::endl;
+    DataFrame df = DataFrame::from_struct_vector(bars);
     std::cout << df.to_string() << std::endl;
 }
 #endif

@@ -767,7 +767,7 @@ pub fn try_run_subcommand(
         }
     }
 
-    // Feature data updates (example keys: "kline", etc.).
+    // Feature data updates (example keys: "bar", etc.).
     // If the user supplied --features keys, update those; if no keys were supplied
     // and no other flags were given, default is to update all feature data.
     let want_features = if all || (!all && base_keys.is_empty() && features_keys.is_empty()) {

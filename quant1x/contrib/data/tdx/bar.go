@@ -33,7 +33,7 @@ func tdxFetchRawSecurityBars(securityCode data.InstrumentInfo, category std.BarF
 
 // Update 对应 C++ DataKLine::Update 的行为: 读取本地缓存, 确定时间窗口, 分页拉取 level1 数据,
 // 反转与合并结果, 在适当时机应用前复权, 并写回缓存文件.
-func tdxUpdateKLine(symbol data.InstrumentInfo, _date data.Timestamp) {
+func tdxUpdateBar(symbol data.InstrumentInfo, _date data.Timestamp) {
 	_ = _date
 	if symbol.Type == data.SecurityTypeUnknown {
 		logger.Debugf("[DataKLine] unknown security type for code %s", symbol.Symbol())
@@ -41,46 +41,46 @@ func tdxUpdateKLine(symbol data.InstrumentInfo, _date data.Timestamp) {
 	}
 
 	// 1. 确定缓存文件并读取本地缓存
-	cacheFilename := config.GetKlineFilename(symbol.Symbol(), true)
-	var cacheKLines []data.KLine
-	err := encoding.CsvToSlices(cacheFilename, &cacheKLines)
+	cacheFilename := config.GetBarFilename(symbol.Symbol(), true)
+	var cacheBars []data.KLine
+	err := encoding.CsvToSlices(cacheFilename, &cacheBars)
 	if err != nil {
 		logger.Debugf("[DataKLine] load cache failed for %s: %v", symbol.Symbol(), err)
 		// 继续更新
 	}
-	klinesLength := len(cacheKLines)
-	klinesOffsetDays := data.MaxCachedDaysToDropOnIncrementalUpdate
+	barsLength := len(cacheBars)
+	barsOffsetDays := data.MaxCachedDaysToDropOnIncrementalUpdate
 	adjustTimes := 0
 
 	// 默认起始日期(使用 datasets.MarketFirstDate, 与 C++ 的 market_first_date 等价)
 	currentStartDate := data.GetFirstMarketDate(symbol.Exchange)
-	if klinesLength > 0 {
-		if klinesOffsetDays > klinesLength {
-			klinesOffsetDays = klinesLength
+	if barsLength > 0 {
+		if barsOffsetDays > barsLength {
+			barsOffsetDays = barsLength
 		}
-		// use the cached kline at offset as the start date
-		idx := klinesLength - klinesOffsetDays
-		if idx >= 0 && idx < klinesLength {
-			if ts, err := data.ParseTimestamp(cacheKLines[idx].Date); err == nil {
+		// use the cached bar at offset as the start date
+		idx := barsLength - barsOffsetDays
+		if idx >= 0 && idx < barsLength {
+			if ts, err := data.ParseTimestamp(cacheBars[idx].Date); err == nil {
 				currentStartDate = ts.PreMarketTime()
 			}
 		}
 		// 查找第一个未复权的 K 线记录, 以决定是否需要复权
 		firstNotAdjustedIdx := -1
-		for i := klinesLength - 1; i >= 0; i-- {
-			if cacheKLines[i].AdjustmentCount == 0 {
+		for i := barsLength - 1; i >= 0; i-- {
+			if cacheBars[i].AdjustmentCount == 0 {
 				firstNotAdjustedIdx = i
 			} else {
 				break
 			}
 		}
 		if firstNotAdjustedIdx < 0 {
-			firstNotAdjustedIdx = klinesLength - klinesOffsetDays
+			firstNotAdjustedIdx = barsLength - barsOffsetDays
 		}
-		firstNotAdjustedBar := cacheKLines[firstNotAdjustedIdx]
+		firstNotAdjustedBar := cacheBars[firstNotAdjustedIdx]
 		adjustTimes = firstNotAdjustedBar.AdjustmentCount
 		currentStartDate, _ = data.ParseTimestamp(firstNotAdjustedBar.Date)
-		logger.Debugf("[DataKLine] [%s]: cached klines=%d, adjustTimes=%d, start from %s", symbol.Symbol(), klinesLength, adjustTimes, currentStartDate.OnlyDate())
+		logger.Debugf("[DataKLine] [%s]: cached bars=%d, adjustTimes=%d, start from %s", symbol.Symbol(), barsLength, adjustTimes, currentStartDate.OnlyDate())
 	}
 
 	// 2. 确定结束日期
@@ -138,14 +138,14 @@ func tdxUpdateKLine(symbol data.InstrumentInfo, _date data.Timestamp) {
 	}
 
 	// 5. 转换为增量 K 线并调整单位(成交量单位从手转为股)
-	incremental := make([]data.KLine, 0, elementCount)
+	incrementalBars := make([]data.KLine, 0, elementCount)
 	for _, vec := range hs {
 		for _, row := range vec {
 			dts := data.PreMarketTimestamp(row.Year, row.Month, row.Day)
 			if dts.Less(startT) || dts.Greater(endT) {
 				continue
 			}
-			kx := data.KLine{
+			bx := data.KLine{
 				Date:            dts.OnlyDate(),
 				Open:            row.Open,
 				Close:           row.Close,
@@ -158,7 +158,7 @@ func tdxUpdateKLine(symbol data.InstrumentInfo, _date data.Timestamp) {
 				Datetime:        row.DateTime,
 				AdjustmentCount: 0,
 			}
-			incremental = append(incremental, kx)
+			incrementalBars = append(incrementalBars, bx)
 		}
 	}
 
@@ -166,27 +166,27 @@ func tdxUpdateKLine(symbol data.InstrumentInfo, _date data.Timestamp) {
 	isFreshFetchRequireAdjustment := adjustTimes == 1
 	dividends, _ := tdxGetXdxrList(symbol)
 	if isFreshFetchRequireAdjustment {
-		data.ApplyForwardAdjustmentForEvent(incremental, currentStartDate.OnlyDate(), dividends)
+		data.ApplyForwardAdjustmentForEvent(incrementalBars, currentStartDate.OnlyDate(), dividends)
 	}
 
 	// 7. 合并本地缓存与增量数据
-	var klines []data.KLine
-	if klinesLength > klinesOffsetDays {
-		klines = append(klines, cacheKLines[:klinesLength-klinesOffsetDays]...)
+	var bars []data.KLine
+	if barsLength > barsOffsetDays {
+		bars = append(bars, cacheBars[:barsLength-barsOffsetDays]...)
 	}
-	if len(klines) == 0 {
-		klines = incremental
+	if len(bars) == 0 {
+		bars = incrementalBars
 	} else {
-		klines = append(klines, incremental...)
+		bars = append(bars, incrementalBars...)
 	}
 
 	// 8. 若不是仅更新最新记录, 则对全量数据做前复权处理
 	if !isFreshFetchRequireAdjustment {
-		data.ApplyForwardAdjustmentForEvent(klines, currentStartDate.OnlyDate(), dividends)
+		data.ApplyForwardAdjustmentForEvent(bars, currentStartDate.OnlyDate(), dividends)
 	}
 
 	// 9. 保存缓存(确保父目录存在)
-	encoding.SlicesToCsv(cacheFilename, klines, true)
+	encoding.SlicesToCsv(cacheFilename, bars, true)
 }
 
 // DataKLine implements the cache adapter style updater similar to C++ DataKLine
@@ -209,7 +209,7 @@ func (d *DataKLine) Print(code data.InstrumentInfo, dates ...data.Timestamp) {
 // date window, page-fetch from level1, reverse/merge results, apply forward
 // adjustments when appropriate, and save back the cache file.
 func (d *DataKLine) Update(code data.InstrumentInfo, _date data.Timestamp) {
-	tdxUpdateKLine(code, _date)
+	tdxUpdateBar(code, _date)
 }
 
 func init() {

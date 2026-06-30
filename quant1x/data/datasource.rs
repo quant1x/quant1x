@@ -91,10 +91,10 @@ pub trait DataHandler: Send + Sync {
 
     /// 获取指定证券代码的K线数据
     ///
-    /// 对应 Python `klines(self, symbol: str, start_date: str | None = None, end_date: str | None = None, freq: str | None = None)`
+    /// 对应 Python `bars(self, symbol: str, start_date: str | None = None, end_date: str | None = None, freq: str | None = None)`
     ///
     /// Python 版本返回 DataFrame, Rust 版本返回 Vec<Bar>
-    fn klines(
+    fn bars(
         &self,
         symbol: &str,
         start_date: Option<&str>,

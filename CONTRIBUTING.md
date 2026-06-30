@@ -57,7 +57,7 @@ data/
 
 Go 代码示例：
 ```go
-type KLine struct {
+type Bar struct {
     Open  float64 `json:"open" csv:"open"`
     High  float64 `json:"high" csv:"high"`
     Low   float64 `json:"low" csv:"low"`

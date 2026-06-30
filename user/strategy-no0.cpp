@@ -73,24 +73,24 @@ void No0Strategy::Evaluate(const SecurityCode &code, ResultInfo &result) const {
     if(!data::assert_stock_by_security_code(securityCode)) {
         return;
     }
-    auto klines = tdx::checkout_klines(securityCode, feature_date);
-    // Log klines count for debugging
-    spdlog::warn("[No0Strategy::updateIndicators] {} fetched klines: {} (min required {})", securityCode, klines.size(), factors::KLineMin);
-    std::cout << "[No0Strategy::updateIndicators] " << securityCode << " fetched klines: " << klines.size() << "\n";
-    if (klines.size() < factors::KLineMin) {
-        spdlog::warn("[No0Strategy::updateIndicators] {} 日线数据不足: {} < {}", securityCode, klines.size(), factors::KLineMin);
+    auto bars = tdx::checkout_bars(securityCode, feature_date);
+    // Log bars count for debugging
+    spdlog::warn("[No0Strategy::updateIndicators] {} fetched bars: {} (min required {})", securityCode, bars.size(), factors::KLineMin);
+    std::cout << "[No0Strategy::updateIndicators] " << securityCode << " fetched bars: " << bars.size() << "\n";
+    if (bars.size() < factors::KLineMin) {
+        spdlog::warn("[No0Strategy::updateIndicators] {} 日线数据不足: {} < {}", securityCode, bars.size(), factors::KLineMin);
         return;
     }
-    klines = std::vector<data::schema::Bar>(klines.begin(), klines.end() -1);
+    bars = std::vector<data::schema::Bar>(bars.begin(), bars.end() -1);
 
-    auto current_price = numeric::decimal(klines[klines.size() -1].close);
-    auto prev_close = numeric::decimal(klines[klines.size() - 2].close);
+    auto current_price = numeric::decimal(bars[bars.size() -1].close);
+    auto prev_close = numeric::decimal(bars[bars.size() - 2].close);
     auto limit_up_price = calc_limit_up_price(securityCode, prev_close);
     if(limit_up_price == current_price) {
         result.limit_up = true;
         return;
     }
-    DataFrame df = DataFrame::from_struct_vector(klines);
+    DataFrame df = DataFrame::from_struct_vector(bars);
     
     (void)df;
 }
@@ -103,12 +103,12 @@ void No0Strategy::updateIndicators(const SecurityCode &code) {
     if(!data::assert_stock_by_security_code(securityCode)) {
         return;
     }
-    auto klines = tdx::checkout_klines(securityCode, feature_date);
-    if (klines.size() < factors::KLineMin) {
+    auto bars = tdx::checkout_bars(securityCode, feature_date);
+    if (bars.size() < factors::KLineMin) {
         return;
     }
-    //auto next_close = klines[klines.size() - 1].Close;
-    market_data_ = std::vector<data::schema::Bar>(klines.begin(), klines.end() -1);
+    //auto next_close = bars[bars.size() - 1].Close;
+    market_data_ = std::vector<data::schema::Bar>(bars.begin(), bars.end() -1);
 
     // Compute simple moving averages and fill buys_/sells_ for signaling
     size_t n = market_data_.size();

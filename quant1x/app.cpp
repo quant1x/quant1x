@@ -24,7 +24,7 @@
 namespace quant1x::app {
     using namespace quant1x::data;
     
-    quant1x::config::MinuteKLineConfig get_minute_kline_config() {
+    quant1x::config::MinuteKLineConfig get_minute_bar_config() {
         quant1x::config::MinuteKLineConfig config{};
         auto const &local_cfg = config::global_config().data.cache.kline;
         if (local_cfg.size() > 1) {
@@ -33,9 +33,9 @@ namespace quant1x::app {
         if (local_cfg.empty()) {
             return config;
         }
-        const auto minute_kline_config = local_cfg.begin();
-        const auto key = minute_kline_config->first;
-        const auto value = minute_kline_config->second;
+        const auto minute_bar_config = local_cfg.begin();
+        const auto key = minute_bar_config->first;
+        const auto value = minute_bar_config->second;
         const auto d = pandas::parse_time_rule(key);
         const auto minutes = std::chrono::duration_cast<std::chrono::minutes>(d);
         config.minutes = minutes.count();
@@ -60,7 +60,7 @@ namespace quant1x::app {
         // 筹码分布
         data::Register(std::make_unique<tdx::DataChips>());
         // 分钟级别K线
-        auto const &mkc = get_minute_kline_config();
+        auto const &mkc = get_minute_bar_config();
         if (mkc.enabled) {
             data::Register(std::make_unique<tdx::DataMinuteKLine>());
         }

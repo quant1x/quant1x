@@ -61,12 +61,12 @@ void HistoryFeature::Update(const quant1x::data::meta::Instrument &inst, const q
     quant1x::data::meta::Timestamp ts_cache = quant1x::data::meta::next_trading_day(date);
     history.Date = ts_cache.only_date();
     history.Code = code;
-    auto klines = tdx::klines_forward_adjusted_to_date(code, feature_date);
-    if(klines.size() < factors::KLineMin) {
+    auto bars = tdx::bars_forward_adjusted_to_date(code, feature_date);
+    if(bars.size() < factors::KLineMin) {
         spdlog::warn("[HistoryFeature] code={},date={}, 日线数据不足", code, feature_date);
         return;
     }
-    DataFrame df = DataFrame::from_struct_vector(klines);
+    DataFrame df = DataFrame::from_struct_vector(bars);
     // 直接获取列
     auto const& col_open = df.get<f64>("open");
     const xt::xarray<f64>& OPEN = xt::adapt(col_open);

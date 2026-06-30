@@ -56,12 +56,12 @@ def get_period_name(period: str = _default_bar_period) -> str:
     period = period.upper()
     return period_names.get(period, period)
 
-def convert_klines_trading(klines, period='D'):
+def convert_bars_trading(bars, period='D'):
     """
     基于实际交易日的K线转换函数
 
     Parameters:
-    klines (pd.DataFrame): 日线数据
+    bars (pd.DataFrame): 日线数据
     period (str): 目标周期
         'W' - 周线
         'M' - 月线
@@ -71,10 +71,10 @@ def convert_klines_trading(klines, period='D'):
     Returns:
     pd.DataFrame: 转换后的K线数据, date字段表示实际交易日
     """
-    if klines.empty:
-        return klines.copy()
+    if bars.empty:
+        return bars.copy()
 
-    df = klines.copy()
+    df = bars.copy()
     df['date'] = pd.to_datetime(df['date'])
     df = df.sort_values('date').reset_index(drop=True)
 

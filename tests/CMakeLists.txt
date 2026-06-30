@@ -204,7 +204,7 @@ add_catch2_executable(tdd-filelock.cpp)
 
 # 基础数据测试
 add_catch2_executable(tdd-datasets.cpp)
-add_catch2_executable(tdd-klines.cpp)
+add_catch2_executable(tdd-bars.cpp)
 
 # f10
 add_catch2_executable(tdd-f10-notices.cpp)

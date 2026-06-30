@@ -35,21 +35,21 @@ func (d *DataBarRaw) Print(code data.InstrumentInfo, dates ...exchange.Timestamp
 // 反转与合并结果, 并写回缓存文件.
 func (d *DataBarRaw) Update(code data.InstrumentInfo, _date data.Timestamp) {
 	// 1. 确定缓存文件并读取本地缓存
-	cacheFilename := config.GetKlineFilename(code.Symbol(), false)
-	var cacheKLines []BarRaw
-	encoding.CsvToSlices(cacheFilename, &cacheKLines)
+	cacheFilename := config.GetBarFilename(code.Symbol(), false)
+	var cacheBars []BarRaw
+	encoding.CsvToSlices(cacheFilename, &cacheBars)
 
-	klinesLength := len(cacheKLines)
-	klinesOffsetDays := schema.MaxCachedDaysToDropOnIncrementalUpdate
+	barsLength := len(cacheBars)
+	barsOffsetDays := schema.MaxCachedDaysToDropOnIncrementalUpdate
 
 	// 默认起始日期(使用 datasets.MarketFirstDate, 与 C++ 的 market_first_date 等价)
 	currentStartDate := data.GetFirstMarketDate(code.Exchange)
-	if klinesLength > 0 {
-		if klinesOffsetDays > klinesLength {
-			klinesOffsetDays = klinesLength
+	if barsLength > 0 {
+		if barsOffsetDays > barsLength {
+			barsOffsetDays = barsLength
 		}
-		kline := cacheKLines[klinesLength-klinesOffsetDays]
-		if ts, err := data.ParseTimestamp(kline.Date); err == nil {
+		bar := cacheBars[barsLength-barsOffsetDays]
+		if ts, err := data.ParseTimestamp(bar.Date); err == nil {
 			currentStartDate = ts
 		}
 	}
@@ -92,7 +92,7 @@ func (d *DataBarRaw) Update(code data.InstrumentInfo, _date data.Timestamp) {
 		hs[i], hs[j] = hs[j], hs[i]
 	}
 
-	incrementalKLines := make([]BarRaw, 0)
+	incrementalBars := make([]BarRaw, 0)
 
 	for _, vec := range hs {
 		for _, row := range vec {
@@ -102,7 +102,7 @@ func (d *DataBarRaw) Update(code data.InstrumentInfo, _date data.Timestamp) {
 				continue
 			}
 
-			kx := BarRaw{
+			bx := BarRaw{
 				Date:     dateTime.OnlyDate(),
 				Open:     row.Open,
 				Close:    row.Close,
@@ -114,19 +114,19 @@ func (d *DataBarRaw) Update(code data.InstrumentInfo, _date data.Timestamp) {
 				Down:     int(row.DownCount),
 				Datetime: row.DateTime,
 			}
-			incrementalKLines = append(incrementalKLines, kx)
+			incrementalBars = append(incrementalBars, bx)
 		}
 	}
 
 	// 7. 合并
-	klines := make([]BarRaw, 0)
-	if klinesLength > klinesOffsetDays {
-		klines = append(klines, cacheKLines[:klinesLength-klinesOffsetDays]...)
+	bars := make([]BarRaw, 0)
+	if barsLength > barsOffsetDays {
+		bars = append(bars, cacheBars[:barsLength-barsOffsetDays]...)
 	}
-	klines = append(klines, incrementalKLines...)
+	bars = append(bars, incrementalBars...)
 
 	// 9. 保存
-	if err := saveBarRaw(cacheFilename, klines); err != nil {
+	if err := saveBarRaw(cacheFilename, bars); err != nil {
 		logger.Errorf("[dataset::BarRaw] save error: %v", err)
 	}
 }
@@ -238,7 +238,7 @@ func ReadBarRawFromCSV(filename string) ([]BarRaw, error) {
 
 // LoadBarRaw 从缓存文件加载原始K线数据.
 func LoadBarRaw(code string) ([]BarRaw, error) {
-	filename := config.GetKlineFilename(code, false)
-	logger.Debugf("[data::BarRaw] kline file: %s", filename)
+	filename := config.GetBarFilename(code, false)
+	logger.Debugf("[data::BarRaw] bar file: %s", filename)
 	return ReadBarRawFromCSV(filename)
 }

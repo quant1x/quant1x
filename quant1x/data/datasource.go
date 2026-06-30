@@ -38,13 +38,13 @@ var (
 type DataSource interface {
 	// GetF10 获取指定证券的 F10 信息
 	GetF10(instrument string) (F10, error)
-	// GetKLines 获取指定范围K线数据
+	// GetBars 获取指定范围K线数据
 	//
 	//  instrument 证券代码, 支持多种格式, 详见 DataSource 接口说明
 	//  startDate 和 endDate 格式为 "YYYY-MM-DD"
 	//  frequency 格式为 "<n>min", "1d", "1w", "1m" 等
 	//  adjust 参数可选, 默认为前复权
-	GetKLines(instrument string, startDate, endDate string, frequency string, adjust ...AdjustmentType) ([]schema.Bar, error)
+	GetBars(instrument string, startDate, endDate string, frequency string, adjust ...AdjustmentType) ([]schema.Bar, error)
 
 	// GetTransactions 获取指定交易日的成交数据.
 	GetTransactions(instrument string, date string) ([]schema.Transaction, error)

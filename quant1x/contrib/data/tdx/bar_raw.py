@@ -22,7 +22,7 @@ from quant1x.data.base import BASEDATA_RAW_DAILY_KLINE, GLOBAL_DEFAULT_START_DAT
 from quant1x.data.meta import Instrument, Frequency, TimeUnit, FREQ_DAILY
 from quant1x.data.market import detect_symbol
 
-def frequency_to_kline_type(freq: Frequency) -> BarFreq:
+def frequency_to_bar_type(freq: Frequency) -> BarFreq:
     """
     将时间频率转换为对应的K线类型
     
@@ -150,7 +150,7 @@ class BarRaw:
             self.high = self.high * factor.m + factor.a
             self.low = self.low * factor.m + factor.a
 
-def save_kline_raw(filename: str, values: List[BarRaw]):
+def save_bar_raw(filename: str, values: List[BarRaw]):
     if not values:
         return
         
@@ -177,13 +177,13 @@ def save_kline_raw(filename: str, values: List[BarRaw]):
     df = pd.DataFrame(data, columns=BarRaw.headers())
     df.to_csv(filename, index=False)
 
-def read_kline_raw_from_csv(filename: str) -> List[BarRaw]:
+def read_bar_raw_from_csv(filename: str) -> List[BarRaw]:
     """
     从CSV文件读取K线原始数据, 包含完整的列名验证
     """
-    klines = []
+    bars = []
     if not os.path.exists(filename):
-        return klines
+        return bars
 
     try:
         df = pd.read_csv(filename)
@@ -191,7 +191,7 @@ def read_kline_raw_from_csv(filename: str) -> List[BarRaw]:
         # 使用通用列名验证函数, 默认保持原始格式
         required_cols = BarRaw.headers()
         if not validate_csv_columns(df, required_cols, filename, strict_order=True):
-            return klines
+            return bars
 
         # 可选: 如果需要处理列名问题, 可以启用清理
         # df = clean_column_names(df)
@@ -199,7 +199,7 @@ def read_kline_raw_from_csv(filename: str) -> List[BarRaw]:
         # 数据类型验证和转换
         for _, row in df.iterrows():
             try:
-                kline = BarRaw(
+                bar = BarRaw(
                     date=str(row['date']),
                     open=float(row['open']),
                     close=float(row['close']),
@@ -211,22 +211,22 @@ def read_kline_raw_from_csv(filename: str) -> List[BarRaw]:
                     down=int(row['down']),
                     timestamp=str(row['timestamp'])
                 )
-                klines.append(kline)
+                bars.append(bar)
             except (ValueError, TypeError) as e:
                 logger.warning(f"跳过无效数据行: {e}")
 
     except Exception as e:
         logger.error(f"读取K线原始数据CSV文件失败 {filename}: {e}")
 
-    return klines
+    return bars
 
-def get_kline_raw_filename(inst: Instrument, freq: Frequency=FREQ_DAILY) -> str:
+def get_bar_raw_filename(inst: Instrument, freq: Frequency=FREQ_DAILY) -> str:
     module_name = freq.cache_key()
     symbol = inst.symbol()
     sub=f"{module_name}/{inst.cache_dir()}"
     return f'{config.data_path}/{sub}/{symbol}.raw' 
     
-def load_kline_raw(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[BarRaw]:
+def load_bar_raw(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[BarRaw]:
     """
     从缓存文件加载指定证券代码的K线原始数据
     
@@ -236,10 +236,10 @@ def load_kline_raw(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[BarRaw]
     Returns:
         List[BarRaw]: K线原始数据列表
     """
-    cache_filename = get_kline_raw_filename(inst, freq)
-    return read_kline_raw_from_csv(cache_filename)
+    cache_filename = get_bar_raw_filename(inst, freq)
+    return read_bar_raw_from_csv(cache_filename)
 
-def ensure_kline_raw_updated(inst: Instrument, freq: Frequency=FREQ_DAILY):
+def ensure_bar_raw_updated(inst: Instrument, freq: Frequency=FREQ_DAILY):
     """
     确保指定证券代码的K线原始数据是最新的
     
@@ -250,7 +250,7 @@ def ensure_kline_raw_updated(inst: Instrument, freq: Frequency=FREQ_DAILY):
     data_adapter = DataKLineRaw()
     data_adapter.update(inst)
 
-def checkout_kline_raw(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[BarRaw]:
+def checkout_bar_raw(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[BarRaw]:
     """
     获取指定证券的未复权K线数据, 如果数据不存在则下载
     
@@ -261,38 +261,38 @@ def checkout_kline_raw(inst: Instrument, freq: Frequency=FREQ_DAILY) -> List[Bar
         List[BarRaw]: 未复权K线数据列表
     """
     # 确保数据是最新的
-    ensure_kline_raw_updated(inst, freq)
+    ensure_bar_raw_updated(inst, freq)
     # 从缓存加载数据
-    return load_kline_raw(inst, freq)
+    return load_bar_raw(inst, freq)
 
-def fetch_kline_raw_from_std(inst: Instrument, start: int, count: int, freq: Frequency) -> List[Bar]:
+def fetch_bar_raw_from_std(inst: Instrument, start: int, count: int, freq: Frequency) -> List[Bar]:
     try:
-        kline_type = frequency_to_kline_type(freq)
+        bar_type = frequency_to_bar_type(freq)
         with get_std_conn() as conn:
-            msg = SecurityBarsContext(inst.exchange, inst.ticker, kline_type, start, count, inst.type.is_index())
+            msg = SecurityBarsContext(inst.exchange, inst.ticker, bar_type, start, count, inst.type.is_index())
             protocol.transact_message_sync(conn, msg)
             return msg.list
     except Exception as e:
-        logger.error(f"[basedata::KLine] fetch_kline_raw error: {e}")
+        logger.error(f"[basedata::Bar] fetch_bar_raw error: {e}")
         return []
     
-def fetch_kline_raw_from_ext(inst: Instrument, start: int, count: int, freq: Frequency) -> List[Bar]:
+def fetch_bar_raw_from_ext(inst: Instrument, start: int, count: int, freq: Frequency) -> List[Bar]:
     try:
-        kline_type = frequency_to_kline_type(freq)
+        bar_type = frequency_to_bar_type(freq)
         with get_ext_conn() as conn:
             code = inst.ticker if inst.alias_ticker=='' else inst.alias_ticker
-            bars = InstrumentBars(kline_type.value, inst.ext_market, ticker=code.upper(), start=start, count=count)
+            bars = InstrumentBars(bar_type.value, inst.ext_market, ticker=code.upper(), start=start, count=count)
             protocol.transact_message_sync(conn, bars)
             return bars.reply
     except Exception as e:
-        logger.error(f"[basedata::KLine] fetch_kline_raw error: {e}")
+        logger.error(f"[basedata::Bar] fetch_bar_raw error: {e}")
         return []
 
-def fetch_kline_raw(inst: Instrument, start: int, count: int, freq: Frequency) -> List[Bar]:
+def fetch_bar_raw(inst: Instrument, start: int, count: int, freq: Frequency) -> List[Bar]:
     if inst.exchange.is_std_quote():
-        return fetch_kline_raw_from_std(inst, start, count, freq)
+        return fetch_bar_raw_from_std(inst, start, count, freq)
     elif inst.exchange.is_ext_quote():
-        return fetch_kline_raw_from_ext(inst, start, count, freq)
+        return fetch_bar_raw_from_ext(inst, start, count, freq)
     return []
 
 class DataKLineRaw(DataAdapter):
@@ -313,14 +313,14 @@ class DataKLineRaw(DataAdapter):
 
     def print(self, inst: Instrument, date: Optional[Timestamp] = None) -> None:
         """控制台打印K线数据"""
-        klines = checkout_kline_raw(inst)
-        if not klines:
-            print(f"No kline data found for {code}")
+        bars = checkout_bar_raw(inst)
+        if not bars:
+            print(f"No bar data found for {code}")
             return
             
         print(f"K线数据 for {code}:")
-        for kline in klines[-10:]:  # 显示最近10条
-            print(f"  {kline.date}: O:{kline.open:.2f} H:{kline.high:.2f} L:{kline.low:.2f} C:{kline.close:.2f} V:{kline.volume:.0f}")
+        for bar in bars[-10:]:  # 显示最近10条
+            print(f"  {bar.date}: O:{bar.open:.2f} H:{bar.high:.2f} L:{bar.low:.2f} C:{bar.close:.2f} V:{bar.volume:.0f}")
 
     def update(self, inst: Instrument, date: Optional[Timestamp] = None) -> None:
         symbol = inst.symbol()
@@ -328,19 +328,19 @@ class DataKLineRaw(DataAdapter):
         #current_start_date = Timestamp.parse(MarketCnFirstListTime)  # market_first_date
         current_start_date = Timestamp.parse(GLOBAL_DEFAULT_START_DATE)  # fallback to a very early date
         freq = Frequency(num=1, unit=TimeUnit.DAY)
-        cache_filename = get_kline_raw_filename(inst, freq)
-        #print(f"Updating KLineRaw for {symbol}, cache file: {cache_filename}")
-        cache_klines = read_kline_raw_from_csv(cache_filename)
+        cache_filename = get_bar_raw_filename(inst, freq)
+        #print(f"Updating BarRaw for {symbol}, cache file: {cache_filename}")
+        cache_bars = read_bar_raw_from_csv(cache_filename)
         
-        klines_length = len(cache_klines)
-        klines_offset_days = MaxCachedDaysToDropOnIncrementalUpdate
+        bars_length = len(cache_bars)
+        bars_offset_days = MaxCachedDaysToDropOnIncrementalUpdate
         
-        if klines_length > 0:
-            if klines_offset_days > klines_length:
-                klines_offset_days = klines_length
+        if bars_length > 0:
+            if bars_offset_days > bars_length:
+                bars_offset_days = bars_length
             
-            kline = cache_klines[klines_length - klines_offset_days]
-            current_start_date = Timestamp.parse(kline.date)
+            bar = cache_bars[bars_length - bars_offset_days]
+            current_start_date = Timestamp.parse(bar.date)
         
         # 2. Determine end date
         current_end_date = Timestamp.now().get_pre_market_time()
@@ -353,7 +353,7 @@ class DataKLineRaw(DataAdapter):
         
         while True:
             count = step
-            reply = fetch_kline_raw(inst, start, count, freq)
+            reply = fetch_bar_raw(inst, start, count, freq)
             if not reply:
                 break
                 
@@ -373,7 +373,7 @@ class DataKLineRaw(DataAdapter):
             
         hs.reverse()
         
-        incremental_klines: List[BarRaw] = []
+        incremental_bars: List[BarRaw] = []
         
         for vec in hs:
             for row in vec:
@@ -393,17 +393,17 @@ class DataKLineRaw(DataAdapter):
                     down=row.down,
                     timestamp=row.timestamp
                 )
-                incremental_klines.append(kx)
+                incremental_bars.append(kx)
                 
         # 7. Merge
-        klines = []
-        if klines_length > klines_offset_days:
-            klines.extend(cache_klines[:klines_length - klines_offset_days])
+        bars = []
+        if bars_length > bars_offset_days:
+            bars.extend(cache_bars[:bars_length - bars_offset_days])
             
-        klines.extend(incremental_klines)
+        bars.extend(incremental_bars)
         
         # 9. Save
-        save_kline_raw(cache_filename, klines)
+        save_bar_raw(cache_filename, bars)
 
 
 # 自动注册DataKLineRaw插件
@@ -421,10 +421,10 @@ if __name__ == "__main__":
     symbol = inst.symbol()
     inst = get_instrument_info(symbol)
     print(inst)
-    klines = checkout_kline_raw(inst)
-    print(f"Loaded {len(klines)} kline records for {code}")
-    if klines:
+    bars = checkout_bar_raw(inst)
+    print(f"Loaded {len(bars)} bar records for {code}")
+    if bars:
         # 显示最近5条记录
         print("Recent 5 records:")
-        for kline in klines[-5:]:
-            print(f"  {kline.date}: O:{kline.open:.2f} H:{kline.high:.2f} L:{kline.low:.2f} C:{kline.close:.2f} V:{kline.volume:.0f}")
+        for bar in bars[-5:]:
+            print(f"  {bar.date}: O:{bar.open:.2f} H:{bar.high:.2f} L:{bar.low:.2f} C:{bar.close:.2f} V:{bar.volume:.0f}")

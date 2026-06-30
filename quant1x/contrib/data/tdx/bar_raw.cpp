@@ -24,7 +24,7 @@ using quant1x::contrib::data::tdx::SecurityBarsContext;
 namespace quant1x::contrib::data::tdx {
 
 // =============================
-// 常量 (对齐 Python kline_raw.py)
+// 常量 (对齐 Python bar_raw.py)
 // =============================
 
 /// 每页请求的最大K线数量 (对齐 Python SECURITY_BARS_PRE_REQUEST_MAX)
@@ -37,7 +37,7 @@ constexpr int kMaxCachedDaysToDrop = 1;
 constexpr const char* kGlobalDefaultStartDate = "1990-12-19";
 
 // =============================
-// BarRaw — 缓存格式 (对齐 Python kline_raw.py BarRaw)
+// BarRaw — 缓存格式 (对齐 Python bar_raw.py BarRaw)
 // =============================
 
 struct BarRaw {
@@ -70,14 +70,14 @@ struct BarRaw {
 };
 
 // =============================
-// Raw K线缓存 I/O — BarRaw 格式 (对齐 Python kline_raw.py save_kline_raw / read_kline_raw_from_csv)
+// Raw K线缓存 I/O — BarRaw 格式 (对齐 Python bar_raw.py save_bar_raw / read_bar_raw_from_csv)
 // =============================
 
-static std::string get_kline_raw_filename(const meta::Instrument& inst) {
+static std::string get_bar_raw_filename(const meta::Instrument& inst) {
     return config::default_cache_path() + "/day_raw/" + inst.cache_dir() + "/" + inst.symbol() + ".raw";
 }
 
-static void save_kline_raw(const std::string& filename, const std::vector<BarRaw>& values) {
+static void save_bar_raw(const std::string& filename, const std::vector<BarRaw>& values) {
     if (values.empty()) return;
     auto dir = std::filesystem::path(filename).parent_path().string();
     std::filesystem::create_directories(dir);
@@ -90,8 +90,8 @@ static void save_kline_raw(const std::string& filename, const std::vector<BarRaw
     }
 }
 
-static std::vector<BarRaw> read_kline_raw_from_csv(const std::string& filename) {
-    std::vector<BarRaw> klines;
+static std::vector<BarRaw> read_bar_raw_from_csv(const std::string& filename) {
+    std::vector<BarRaw> bars;
     try {
         csvio::CSVReader<10> in(filename);
         in.read_header(csvio::ignore_extra_column, "date", "open", "close", "high", "low",
@@ -99,24 +99,24 @@ static std::vector<BarRaw> read_kline_raw_from_csv(const std::string& filename) 
         BarRaw row = {};
         while (in.read_row(row.date, row.open, row.close, row.high, row.low,
                            row.volume, row.amount, row.up, row.down, row.timestamp)) {
-            klines.emplace_back(std::move(row));
+            bars.emplace_back(std::move(row));
         }
     } catch (const std::exception& e) {
-        spdlog::warn("[kline_raw] read_kline_raw_from_csv error: {}", e.what());
+        spdlog::warn("[bar_raw] read_bar_raw_from_csv error: {}", e.what());
     }
-    return klines;
+    return bars;
 }
 
 // =============================
-// fetch_kline_raw (对应 Python fetch_kline_raw — 返回 domain schema Bar)
+// fetch_bar_raw (对应 Python fetch_bar_raw — 返回 domain schema Bar)
 // =============================
 
-/// fetch_kline_raw_from_std — 从标准行情获取原始K线, 转换为 domain Bar
-/// 对应 Python kline_raw.py fetch_kline_raw_from_std:
-///   msg = SecurityBarsContext(inst.exchange, inst.ticker, kline_type, start, count, inst.type.is_index())
+/// fetch_bar_raw_from_std — 从标准行情获取原始K线, 转换为 domain Bar
+/// 对应 Python bar_raw.py fetch_bar_raw_from_std:
+///   msg = SecurityBarsContext(inst.exchange, inst.ticker, bar_type, start, count, inst.type.is_index())
 ///   protocol.transact_message_sync(conn, msg)
 ///   return msg.list  # msg.list 已经是 List[Bar]
-static std::vector<schema::Bar> fetch_kline_raw_from_std(
+static std::vector<schema::Bar> fetch_bar_raw_from_std(
         const meta::Instrument& inst, int start, int count, u16 category) {
     try {
         auto conn = get_std_conn();
@@ -142,28 +142,28 @@ static std::vector<schema::Bar> fetch_kline_raw_from_std(
             result.push_back(std::move(bar));
         }
 
-        spdlog::debug("[kline_raw] fetch_kline_raw_from_std: {} bars for {}",
+        spdlog::debug("[bar_raw] fetch_bar_raw_from_std: {} bars for {}",
                       result.size(), inst.symbol());
         return result;
     } catch (const std::exception& e) {
-        spdlog::error("[kline_raw] fetch_kline_raw_from_std error for {}: {}",
+        spdlog::error("[bar_raw] fetch_bar_raw_from_std error for {}: {}",
                       inst.symbol(), e.what());
         return {};
     }
 }
 
-/// fetch_kline_raw_from_ext — 从扩展行情获取原始K线, 转换为 domain Bar (港股/美股等)
-/// 对应 Python kline_raw.py fetch_kline_raw_from_ext:
+/// fetch_bar_raw_from_ext — 从扩展行情获取原始K线, 转换为 domain Bar (港股/美股等)
+/// 对应 Python bar_raw.py fetch_bar_raw_from_ext:
 ///   with get_ext_conn() as conn:
-///       bars = InstrumentBars(kline_type.value, inst.ext_market, ticker=code.upper(), start=start, count=count)
+///       bars = InstrumentBars(bar_type.value, inst.ext_market, ticker=code.upper(), start=start, count=count)
 ///       protocol.transact_message_sync(conn, bars)
 ///       return bars.reply  # bars.reply 已经是 List[Bar]
-static std::vector<schema::Bar> fetch_kline_raw_from_ext(
+static std::vector<schema::Bar> fetch_bar_raw_from_ext(
         const meta::Instrument& inst, int start, int count, u16 category) {
     try {
         auto conn = get_ext_conn();
         if (!conn) {
-            spdlog::warn("[kline_raw] fetch_kline_raw_from_ext: no ext connection for {}", inst.symbol());
+            spdlog::warn("[bar_raw] fetch_bar_raw_from_ext: no ext connection for {}", inst.symbol());
             return {};
         }
 
@@ -186,22 +186,22 @@ static std::vector<schema::Bar> fetch_kline_raw_from_ext(
 
         transact_message_sync(conn->socket(), bars);
 
-        spdlog::debug("[kline_raw] fetch_kline_raw_from_ext: {} bars for {}",
+        spdlog::debug("[bar_raw] fetch_bar_raw_from_ext: {} bars for {}",
                       bars.reply.size(), inst.symbol());
         return std::move(bars.reply);
     } catch (const std::exception& e) {
-        spdlog::error("[kline_raw] fetch_kline_raw_from_ext error for {}: {}",
+        spdlog::error("[bar_raw] fetch_bar_raw_from_ext error for {}: {}",
                       inst.symbol(), e.what());
         return {};
     }
 }
 
-std::vector<schema::Bar> fetch_kline_raw(
+std::vector<schema::Bar> fetch_bar_raw(
         const meta::Instrument& inst, int start, int count, u16 category) {
     if (exchange_is_std_quote(inst.exchange)) {
-        return fetch_kline_raw_from_std(inst, start, count, category);
+        return fetch_bar_raw_from_std(inst, start, count, category);
     } else if (exchange_is_ext_quote(inst.exchange)) {
-        return fetch_kline_raw_from_ext(inst, start, count, category);
+        return fetch_bar_raw_from_ext(inst, start, count, category);
     }
     return {};
 }
@@ -212,40 +212,40 @@ std::vector<schema::Bar> fetch_kline_raw(
 // =============================
 
 void DataKLineRaw::Print(const meta::Instrument& inst, const meta::Timestamp& date) {
-    auto filename = get_kline_raw_filename(inst);
-    auto klines = read_kline_raw_from_csv(filename);
-    if (klines.empty()) {
+    auto filename = get_bar_raw_filename(inst);
+    auto bars = read_bar_raw_from_csv(filename);
+    if (bars.empty()) {
         fmt::print("\n=== {}: {} ===\n  (no data)\n", Name(), inst.symbol());
         return;
     }
     if (!date.empty()) {
         std::string date_str = date.only_date();
-        klines.erase(std::remove_if(klines.begin(), klines.end(),
-            [&](auto const& b) { return b.date > date_str; }), klines.end());
+        bars.erase(std::remove_if(bars.begin(), bars.end(),
+            [&](auto const& b) { return b.date > date_str; }), bars.end());
     }
-    fmt::print("\n=== {}: {} ({} rows) ===\n", Name(), inst.symbol(), klines.size());
+    fmt::print("\n=== {}: {} ({} rows) ===\n", Name(), inst.symbol(), bars.size());
     fmt::print("{:<12} {:>8} {:>8} {:>8} {:>8} {:>12} {:>14} {:>4} {:>4}\n",
                "date", "open", "close", "high", "low", "volume", "amount", "up", "dn");
     fmt::print("{:-<82}\n", "");
-    size_t head = std::min<size_t>(klines.size(), 10);
+    size_t head = std::min<size_t>(bars.size(), 10);
     for (size_t i = 0; i < head; ++i) {
-        auto const& b = klines[i];
+        auto const& b = bars[i];
         fmt::print("{:<12} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>12.0f} {:>14.0f} {:>4} {:>4}\n",
                    b.date, b.open, b.close, b.high, b.low,
                    b.volume, b.amount, b.up, b.down);
     }
-    if (klines.size() > 20) {
-        fmt::print("  ... {} rows omitted ...\n", klines.size() - 20);
-        head = std::min<size_t>(10, klines.size());
-        for (size_t i = klines.size() - head; i < klines.size(); ++i) {
-            auto const& b = klines[i];
+    if (bars.size() > 20) {
+        fmt::print("  ... {} rows omitted ...\n", bars.size() - 20);
+        head = std::min<size_t>(10, bars.size());
+        for (size_t i = bars.size() - head; i < bars.size(); ++i) {
+            auto const& b = bars[i];
             fmt::print("{:<12} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>12.0f} {:>14.0f} {:>4} {:>4}\n",
                        b.date, b.open, b.close, b.high, b.low,
                        b.volume, b.amount, b.up, b.down);
         }
-    } else if (klines.size() > 10) {
-        for (size_t i = 10; i < klines.size(); ++i) {
-            auto const& b = klines[i];
+    } else if (bars.size() > 10) {
+        for (size_t i = 10; i < bars.size(); ++i) {
+            auto const& b = bars[i];
             fmt::print("{:<12} {:>8.2f} {:>8.2f} {:>8.2f} {:>8.2f} {:>12.0f} {:>14.0f} {:>4} {:>4}\n",
                        b.date, b.open, b.close, b.high, b.low,
                        b.volume, b.amount, b.up, b.down);
@@ -260,21 +260,21 @@ void DataKLineRaw::Update(const meta::Instrument& inst, const meta::Timestamp& d
     // 1. 从本地缓存确定起始日期
     // 对齐 Python: current_start_date = Timestamp.parse(GLOBAL_DEFAULT_START_DATE)
     meta::Timestamp current_start_date = meta::Timestamp::parse(kGlobalDefaultStartDate);
-    auto cache_filename = get_kline_raw_filename(inst);
+    auto cache_filename = get_bar_raw_filename(inst);
 
-    // 对齐 Python: cache_klines = read_kline_raw_from_csv(cache_filename)
-    auto cache_klines = read_kline_raw_from_csv(cache_filename);
+    // 对齐 Python: cache_bars = read_bar_raw_from_csv(cache_filename)
+    auto cache_bars = read_bar_raw_from_csv(cache_filename);
 
-    size_t klines_length = cache_klines.size();
-    size_t klines_offset_days = kMaxCachedDaysToDrop;
+    size_t bars_length = cache_bars.size();
+    size_t bars_offset_days = kMaxCachedDaysToDrop;
 
-    if (klines_length > 0) {
-        if (klines_offset_days > klines_length) {
-            klines_offset_days = klines_length;
+    if (bars_length > 0) {
+        if (bars_offset_days > bars_length) {
+            bars_offset_days = bars_length;
         }
-        // 对齐 Python: kline = cache_klines[klines_length - klines_offset_days]; current_start_date = Timestamp.parse(kline.date)
-        auto& kline = cache_klines[klines_length - klines_offset_days];
-        current_start_date = meta::Timestamp::parse(kline.date);
+        // 对齐 Python: bar = cache_bars[bars_length - bars_offset_days]; current_start_date = Timestamp.parse(bar.date)
+        auto& bar = cache_bars[bars_length - bars_offset_days];
+        current_start_date = meta::Timestamp::parse(bar.date);
     }
 
     // 2. 确定结束日期
@@ -282,13 +282,13 @@ void DataKLineRaw::Update(const meta::Instrument& inst, const meta::Timestamp& d
     spdlog::debug("[DataKLineRaw] [{}]: from {} to {}",
                   symbol, current_start_date.only_date(), current_end_date.only_date());
 
-    // 3. 分页拉取原始K线 — fetch_kline_raw 返回 domain Bar (对齐 Python: reply = fetch_kline_raw(inst, start, count, freq))
+    // 3. 分页拉取原始K线 — fetch_bar_raw 返回 domain Bar (对齐 Python: reply = fetch_bar_raw(inst, start, count, freq))
     int step = kSecurityBarsPreRequestMax;
     int start = 0;
     std::vector<std::vector<schema::Bar>> batches;
     while (true) {
         int count = step;
-        auto reply = fetch_kline_raw(inst, start, count, static_cast<u16>(BarFreq::FreqDaily));
+        auto reply = fetch_bar_raw(inst, start, count, static_cast<u16>(BarFreq::FreqDaily));
         if (reply.empty()) break;
 
         // 对齐 Python: last_bar = reply[-1]; last_bar_date = Timestamp.parse(last_bar.date).get_pre_market_time()
@@ -307,13 +307,13 @@ void DataKLineRaw::Update(const meta::Instrument& inst, const meta::Timestamp& d
 
     // 5. 构建增量K线并过滤日期范围, 转为 BarRaw 缓存格式
     // 对齐 Python: for vec in reversed(hs): for row in vec: filter by date, create BarRaw(...)
-    std::vector<BarRaw> incremental_klines;
+    std::vector<BarRaw> incremental_bars;
     for (auto& batch : batches) {
         for (auto& bar : batch) {
             auto date_time = meta::Timestamp::parse(bar.date).pre_market_time();
             if (date_time < current_start_date || date_time > current_end_date) continue;
 
-            // 对齐 Python: kx = BarRaw(date=date_time.only_date(), open=row.open, ..., volume=row.volume * 100, ...)
+            // 对齐 Python: bx = BarRaw(date=date_time.only_date(), open=row.open, ..., volume=row.volume * 100, ...)
             BarRaw bx{
                 date_time.only_date(),
                 bar.open,
@@ -326,30 +326,30 @@ void DataKLineRaw::Update(const meta::Instrument& inst, const meta::Timestamp& d
                 bar.down,
                 bar.timestamp
             };
-            incremental_klines.push_back(std::move(bx));
+            incremental_bars.push_back(std::move(bx));
         }
     }
 
-    if (incremental_klines.empty()) {
+    if (incremental_bars.empty()) {
         spdlog::debug("[DataKLineRaw] no new data for {}", symbol);
         return;
     }
 
     // 6. 合并旧缓存和新数据
-    // 对齐 Python: klines = []; if klines_length > klines_offset_days: klines.extend(cache_klines[:...]); klines.extend(incremental_klines)
-    std::vector<BarRaw> klines;
-    if (klines_length > klines_offset_days) {
-        klines.insert(klines.end(),
-                      cache_klines.begin(),
-                      cache_klines.begin() + (klines_length - klines_offset_days));
+    // 对齐 Python: bars = []; if bars_length > bars_offset_days: bars.extend(cache_bars[:...]); bars.extend(incremental_bars)
+    std::vector<BarRaw> bars;
+    if (bars_length > bars_offset_days) {
+        bars.insert(bars.end(),
+                      cache_bars.begin(),
+                      cache_bars.begin() + (bars_length - bars_offset_days));
     }
-    klines.insert(klines.end(), incremental_klines.begin(), incremental_klines.end());
+    bars.insert(bars.end(), incremental_bars.begin(), incremental_bars.end());
 
-    // 7. 保存到缓存文件 (对齐 Python: save_kline_raw(cache_filename, klines))
-    save_kline_raw(cache_filename, klines);
+    // 7. 保存到缓存文件 (对齐 Python: save_bar_raw(cache_filename, bars))
+    save_bar_raw(cache_filename, bars);
 
     spdlog::info("[DataKLineRaw] updated {} ({} bars) -> {}",
-                 symbol, klines.size(), cache_filename);
+                 symbol, bars.size(), cache_filename);
 }
 
 } // namespace quant1x::contrib::data::tdx

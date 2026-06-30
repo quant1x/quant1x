@@ -11,16 +11,16 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from quant1x import config
 from quant1x.data import (
-    klines, stock_name, securities, block_list, sector_filename,
+    bars, stock_name, securities, block_list, sector_filename,
     get_sector_constituents, get_minutes_data, get_tick_transaction, get_f10
 )
 
 def test_cache_functions():
     print(config.get_quant1x_config_filename())
     print('data_path', config.data_path)
-    print('kline_path', config.kline_path)
+    print('bar_path', config.bar_path)
     code = '600600'
-    df = klines(code)
+    df = bars(code)
     print(df)
     stock_name_val = stock_name(code)
     print(stock_name_val)

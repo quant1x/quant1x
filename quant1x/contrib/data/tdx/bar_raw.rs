@@ -1,7 +1,7 @@
 // Copyright (c) Quant1X <wangfengxy@sina.cn>.
 // Licensed under the MIT License.
 //
-// kline_raw — 未复权K线数据适配器, 与 Python contrib/data/tdx/bar_raw.py 对齐
+// bar_raw — 未复权K线数据适配器, 与 Python contrib/data/tdx/bar_raw.py 对齐
 //
 // 不依赖 crate::contrib::data::tdx::standard, 所有类型均使用 tdx/ 本地模块定义. 
 
@@ -84,8 +84,8 @@ pub enum BarFreq {
 }
 
 /// 将 BarFreq 转换为频率值(用于 InstrumentBars)
-fn kline_type_to_value(kline_type: BarFreq) -> u16 {
-    match kline_type {
+fn bar_type_to_value(bar_type: BarFreq) -> u16 {
+    match bar_type {
         BarFreq::Freq1Min => 8,
         BarFreq::Freq5Min => 0,
         BarFreq::Freq15Min => 1,
@@ -285,50 +285,50 @@ impl KLineRaw {
     }
 }
 
-/// 生成原始K线缓存文件路径, 与 Python get_kline_raw_filename 对齐
-pub fn get_kline_raw_filename(inst: &Instrument) -> String {
+/// 生成原始K线缓存文件路径, 与 Python get_bar_raw_filename 对齐
+pub fn get_bar_raw_filename(inst: &Instrument) -> String {
     let symbol = inst.symbol();
     let sub = format!("day_raw/{}", inst.cache_dir());
     format!("{}/{}/{}.raw", crate::config::default_cache_path(), sub, symbol)
 }
 
 /// 从缓存文件加载原始K线数据
-pub fn load_kline_raw(inst: &Instrument) -> Vec<KLineRaw> {
-    let cache_filename = get_kline_raw_filename(inst);
-    let mut klines: Vec<KLineRaw> = Vec::new();
+pub fn load_bar_raw(inst: &Instrument) -> Vec<KLineRaw> {
+    let cache_filename = get_bar_raw_filename(inst);
+    let mut bars: Vec<KLineRaw> = Vec::new();
     match std::fs::File::open(&cache_filename) {
         Ok(f) => {
             let mut rdr = csv::ReaderBuilder::new().has_headers(true).from_reader(f);
             match rdr.deserialize::<KLineRaw>().collect::<Result<Vec<KLineRaw>, csv::Error>>() {
-                Ok(v) => klines = v,
-                Err(e) => log::error!("[kline_raw] failed to deserialize {}: {}", cache_filename, e),
+                Ok(v) => bars = v,
+                Err(e) => log::error!("[bar_raw] failed to deserialize {}: {}", cache_filename, e),
             }
         }
         Err(_) => {}
     }
-    klines
+    bars
 }
 
 /// 确保原始K线数据已更新
-pub fn ensure_kline_raw_updated(inst: &Instrument) {
+pub fn ensure_bar_raw_updated(inst: &Instrument) {
     let adapter = DataKLineRaw;
     adapter.update(inst, Timestamp::now());
 }
 
 /// 获取未复权K线数据, 如果缓存不存在或过期则先更新
-pub fn checkout_kline_raw(inst: &Instrument) -> Vec<KLineRaw> {
-    ensure_kline_raw_updated(inst);
-    load_kline_raw(inst)
+pub fn checkout_bar_raw(inst: &Instrument) -> Vec<KLineRaw> {
+    ensure_bar_raw_updated(inst);
+    load_bar_raw(inst)
 }
 
 /// 保存原始K线数据到CSV文件
-fn save_kline_raw(filename: &str, values: &[KLineRaw]) {
+fn save_bar_raw(filename: &str, values: &[KLineRaw]) {
     if values.is_empty() {
         return;
     }
     if let Some(parent) = std::path::Path::new(filename).parent() {
         if let Err(e) = std::fs::create_dir_all(parent) {
-            log::error!("[kline_raw] create_dir_all failed for {:?}: {}", parent, e);
+            log::error!("[bar_raw] create_dir_all failed for {:?}: {}", parent, e);
             return;
         }
     }
@@ -337,7 +337,7 @@ fn save_kline_raw(filename: &str, values: &[KLineRaw]) {
         Ok(f) => {
             let mut w = csv::Writer::from_writer(f);
             if let Err(e) = w.write_record(KLineRaw::headers()) {
-                log::error!("[kline_raw] write header failed: {}", e);
+                log::error!("[bar_raw] write header failed: {}", e);
             }
             for row in values.iter() {
                 let rec: Vec<String> = vec![
@@ -352,32 +352,32 @@ fn save_kline_raw(filename: &str, values: &[KLineRaw]) {
                     row.down.to_string(),
                     row.datetime.clone(),
                 ];
-                if let Err(e) = w.write_record(rec) { log::error!("[kline_raw] write row failed: {}", e); }
+                if let Err(e) = w.write_record(rec) { log::error!("[bar_raw] write row failed: {}", e); }
             }
             let _ = w.flush();
             if let Err(e) = std::fs::rename(&tmp, filename) {
-                log::error!("[kline_raw] rename failed {} -> {}: {}", tmp, filename, e);
+                log::error!("[bar_raw] rename failed {} -> {}: {}", tmp, filename, e);
             }
         }
-        Err(e) => log::error!("[kline_raw] create tmp {} failed: {}", tmp, e),
+        Err(e) => log::error!("[bar_raw] create tmp {} failed: {}", tmp, e),
     }
 }
 
 // ============================================================
-// fetch_kline_raw — 根据交易所类型分发
+// fetch_bar_raw — 根据交易所类型分发
 // ============================================================
 
 /// 根据交易所类型分发到标准行情或扩展行情获取原始K线
-/// 对应 Python fetch_kline_raw(inst, start, count, freq)
-pub fn fetch_kline_raw(
+/// 对应 Python fetch_bar_raw(inst, start, count, freq)
+pub fn fetch_bar_raw(
     inst: &Instrument,
     start: u32,
     count: u16,
 ) -> Option<SecurityBarsResponse> {
     if inst.exchange.is_std_quote() {
-        fetch_kline_raw_from_std(inst, start, count)
+        fetch_bar_raw_from_std(inst, start, count)
     } else if inst.exchange.is_ext_quote() {
-        fetch_kline_raw_from_ext(inst, start, count)
+        fetch_bar_raw_from_ext(inst, start, count)
     } else {
         None
     }
@@ -385,17 +385,17 @@ pub fn fetch_kline_raw(
 
 
 /// 从标准行情获取原始K线
-/// 对应 Python kline_raw.py fetch_kline_raw_from_std:
-///   msg = SecurityBarsContext(inst.exchange, inst.ticker, kline_type, start, count, inst.type.is_index())
+/// 对应 Python bar_raw.py fetch_bar_raw_from_std:
+///   msg = SecurityBarsContext(inst.exchange, inst.ticker, bar_type, start, count, inst.type.is_index())
 /// 使用 STD_SECURITY_BARS (0x052d) 命令, 通过标准行情连接获取
-fn fetch_kline_raw_from_std(
+fn fetch_bar_raw_from_std(
     inst: &Instrument,
     start: u32,
     count: u16,
 ) -> Option<SecurityBarsResponse> {
     let code = inst.market_ticker();
     let ticker = code.to_uppercase();
-    let category = kline_type_to_value(BarFreq::FreqDaily);
+    let category = bar_type_to_value(BarFreq::FreqDaily);
 
     match super::client::get_std_conn() {
         Ok(mut conn) => {
@@ -410,7 +410,7 @@ fn fetch_kline_raw_from_std(
             );
             match super::protocol::transact_message_sync(conn.stream(), &mut bars) {
                 Ok(()) => {
-                    log::debug!("[kline_raw] fetch_kline_raw_from_std: {} bars for {}", bars.list.len(), inst.symbol());
+                        log::debug!("[bar_raw] fetch_bar_raw_from_std: {} bars for {}", bars.list.len(), inst.symbol());
                     let list: Vec<SecurityBar> = bars.list.into_iter().map(|b| SecurityBar {
                         open: b.open,
                         close: b.close,
@@ -435,13 +435,13 @@ fn fetch_kline_raw_from_std(
                     })
                 }
                 Err(e) => {
-                    log::error!("[kline_raw] fetch_kline_raw_from_std failed for {}: {}", inst.symbol(), e);
+                    log::error!("[bar_raw] fetch_bar_raw_from_std failed for {}: {}", inst.symbol(), e);
                     None
                 }
             }
         }
         Err(e) => {
-            log::error!("[kline_raw] get_std_conn failed: {}", e);
+            log::error!("[bar_raw] get_std_conn failed: {}", e);
             None
         }
     }
@@ -449,21 +449,21 @@ fn fetch_kline_raw_from_std(
 
 /// 从扩展行情获取原始K线(港股/美股等)
 /// 复用 client::get_ext_conn() 连接池
-fn fetch_kline_raw_from_ext(
+fn fetch_bar_raw_from_ext(
     inst: &Instrument,
     start: u32,
     count: u16,
 ) -> Option<SecurityBarsResponse> {
     let code = inst.market_ticker();
     let ticker = code.to_uppercase();
-    let category = kline_type_to_value(BarFreq::FreqDaily);
+    let category = bar_type_to_value(BarFreq::FreqDaily);
 
     match super::client::get_ext_conn() {
         Ok(mut conn) => {
             let mut bars = InstrumentBars::new(inst.ext_market as u8, &ticker, category, start, count);
             match super::protocol::transact_message_sync(conn.stream(), &mut bars) {
                 Ok(()) => {
-                    log::debug!("[kline_raw] fetch_kline_raw_from_ext: {} bars for {}", bars.reply.len(), inst.symbol());
+                    log::debug!("[bar_raw] fetch_bar_raw_from_ext: {} bars for {}", bars.reply.len(), inst.symbol());
                     Some(SecurityBarsResponse {
                         count: bars.reply.len() as u16,
                         list: bars.reply,
@@ -472,13 +472,13 @@ fn fetch_kline_raw_from_ext(
                     })
                 }
                 Err(e) => {
-                    log::error!("[kline_raw] fetch_kline_raw_from_ext failed for {}: {}", inst.symbol(), e);
+                    log::error!("[bar_raw] fetch_bar_raw_from_ext failed for {}: {}", inst.symbol(), e);
                     None
                 }
             }
         }
         Err(e) => {
-            log::error!("[kline_raw] get_ext_conn failed: {}", e);
+            log::error!("[bar_raw] get_ext_conn failed: {}", e);
             None
         }
     }
@@ -506,20 +506,20 @@ impl DataAdapter for DataKLineRaw {
         let symbol = inst.symbol();
 
         // 1. 从本地缓存确定起始日期
-        let cache_filename = get_kline_raw_filename(inst);
-        let cache_klines = load_kline_raw(inst);
+        let cache_filename = get_bar_raw_filename(inst);
+        let cache_bars = load_bar_raw(inst);
 
-        let klines_length = cache_klines.len();
-        let mut klines_offset_days = MAX_CACHED_DAYS_TO_DROP;
+        let bars_length = cache_bars.len();
+        let mut bars_offset_days = MAX_CACHED_DAYS_TO_DROP;
         let mut current_start_date =
             Timestamp::pre_market_time(1990, 12, 19).unwrap_or(Timestamp::zero());
 
-        if klines_length > 0 {
-            if klines_offset_days > klines_length {
-                klines_offset_days = klines_length;
+        if bars_length > 0 {
+            if bars_offset_days > bars_length {
+                bars_offset_days = bars_length;
             }
-            let kline = &cache_klines[klines_length - klines_offset_days];
-            if let Ok(ts) = Timestamp::parse(&kline.date) {
+            let bar = &cache_bars[bars_length - bars_offset_days];
+            if let Ok(ts) = Timestamp::parse(&bar.date) {
                 current_start_date = ts;
             }
         }
@@ -542,9 +542,9 @@ impl DataAdapter for DataKLineRaw {
             let count = std::cmp::min(step, u16::MAX as usize) as u16;
 
             let reply = if inst.exchange.is_std_quote() {
-                fetch_kline_raw_from_std(inst, start, count)
+                fetch_bar_raw_from_std(inst, start, count)
             } else if inst.exchange.is_ext_quote() {
-                fetch_kline_raw_from_ext(inst, start, count)
+                fetch_bar_raw_from_ext(inst, start, count)
             } else {
                 None
             };
@@ -570,14 +570,14 @@ impl DataAdapter for DataKLineRaw {
         hs.reverse();
 
         // 5. 构建增量K线列表
-        let mut incremental_klines: Vec<KLineRaw> = Vec::new();
+        let mut incremental_bars: Vec<KLineRaw> = Vec::new();
         for page in hs.iter() {
             for row in page.iter() {
                 if let Some(date_time) = Timestamp::pre_market_time(row.year, row.month as u32, row.day as u32) {
                     if date_time < current_start_date || date_time > current_end_date {
                         continue;
                     }
-                    let kx = KLineRaw {
+                    let bx = KLineRaw {
                         date: date_time.only_date(),
                         open: row.open,
                         close: row.close,
@@ -589,20 +589,20 @@ impl DataAdapter for DataKLineRaw {
                         down: row.down_count,
                         datetime: row.datetime.clone(),
                     };
-                    incremental_klines.push(kx);
+                    incremental_bars.push(bx);
                 }
             }
         }
 
         // 6. 合并缓存和增量数据
-        let mut klines: Vec<KLineRaw> = Vec::new();
-        if klines_length > klines_offset_days {
-            klines.extend_from_slice(&cache_klines[..(klines_length - klines_offset_days)]);
+        let mut bars: Vec<KLineRaw> = Vec::new();
+        if bars_length > bars_offset_days {
+            bars.extend_from_slice(&cache_bars[..(bars_length - bars_offset_days)]);
         }
-        klines.extend(incremental_klines);
+        bars.extend(incremental_bars);
 
         // 7. 保存
-        save_kline_raw(&cache_filename, &klines);
+        save_bar_raw(&cache_filename, &bars);
     }
 }
 
@@ -619,7 +619,7 @@ mod tests {
 
     #[test]
     #[ignore = "requires config file and network"]
-    fn test_kline_raw_update() {
+    fn test_bar_raw_update() {
         let adapter = DataKLineRaw;
         let code = "sh600000";
         let inst = detect_symbol(code);
@@ -629,7 +629,7 @@ mod tests {
 
     #[test]
     #[ignore = "requires config file and network"]
-    fn test_kline_raw_update_hk() {
+    fn test_bar_raw_update_hk() {
         let adapter = DataKLineRaw;
         let code = "00700.hk";
         let inst = detect_symbol(code);

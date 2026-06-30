@@ -33,24 +33,24 @@ func (c CumulativeAdjustment) Inverse(adjustedPrice float64) float64 {
 	return (adjustedPrice - c.A) / c.M
 }
 
-// CheckKlineOffset 检查K线数据中指定日期的偏移量
+// CheckBarOffset 检查K线数据中指定日期的偏移量
 // 参数:
 //
-//	klines: K线数据数组
+//	bars: K线数据数组
 //	date: 要查找的目标日期字符串
 //
 // 返回值:
 //
 //	如果找到目标日期, 返回其在数组中的偏移量(从末尾开始计数)
 //	如果目标日期不存在或比所有K线日期都早, 返回-1
-func CheckKlineOffset(klines []data.KLineRaw, date string) int {
-	rows := len(klines)
+func CheckBarOffset(bars []data.KLineRaw, date string) int {
+	rows := len(bars)
 	offset := 0
 	for i := 0; i < rows; i++ {
-		klineDate := klines[rows-1-i].Date
-		if klineDate < date {
+		barDate := bars[rows-1-i].Date
+		if barDate < date {
 			return -1
-		} else if klineDate == date {
+		} else if barDate == date {
 			break
 		} else {
 			offset++
@@ -122,8 +122,8 @@ func CombineAdjustmentsInPeriod(xdxrList []data.XdxrInfo, startDate, endDate dat
 	return result
 }
 
-func ApplyForwardAdjustmentIncrementally(klines []*data.KLine, xdxrList []data.XdxrInfo, lastAdjustedDate, asOfDate data.Timestamp, truncateToAsOfDate bool) {
-	if len(klines) == 0 {
+func ApplyForwardAdjustmentIncrementally(bars []*data.KLine, xdxrList []data.XdxrInfo, lastAdjustedDate, asOfDate data.Timestamp, truncateToAsOfDate bool) {
+	if len(bars) == 0 {
 		return
 	}
 
@@ -138,11 +138,11 @@ func ApplyForwardAdjustmentIncrementally(klines []*data.KLine, xdxrList []data.X
 	factorsCount := len(factors)
 	i := 0
 	rows := 0
-	klinesCount := len(klines)
+	barsCount := len(bars)
 
-	for idx := 0; idx < klinesCount; idx++ {
-		kline := klines[idx]
-		currentDateDt, _ := time.Parse(DateLayout, kline.Date)
+	for idx := 0; idx < barsCount; idx++ {
+		bar := bars[idx]
+		currentDateDt, _ := time.Parse(DateLayout, bar.Date)
 		currentDate := data.PreMarketTimestamp(currentDateDt.Year(), int(currentDateDt.Month()), currentDateDt.Day())
 
 		if i < factorsCount {
@@ -164,7 +164,7 @@ func ApplyForwardAdjustmentIncrementally(klines []*data.KLine, xdxrList []data.X
 					ShareAdjustmentRatio: factor.ShareAdjustmentRatio,
 					No:                   factor.No,
 				}
-				kline.Adjust(adj)
+				bar.Adjust(adj)
 			} else if !truncateToAsOfDate {
 				break
 			}
@@ -174,23 +174,23 @@ func ApplyForwardAdjustmentIncrementally(klines []*data.KLine, xdxrList []data.X
 	}
 
 	if truncateToAsOfDate {
-		klines = klines[:rows]
+		bars = bars[:rows]
 	}
 }
 
-func CalculatePreAdjust(klines []*data.KLine, xdxrList []data.XdxrInfo) {
-	if len(klines) == 0 {
+func CalculatePreAdjust(bars []*data.KLine, xdxrList []data.XdxrInfo) {
+	if len(bars) == 0 {
 		return
 	}
 
-	startDate, _ := time.Parse(DateLayout, klines[0].Date)
-	endDate, _ := time.Parse(DateLayout, klines[len(klines)-1].Date)
+	startDate, _ := time.Parse(DateLayout, bars[0].Date)
+	endDate, _ := time.Parse(DateLayout, bars[len(bars)-1].Date)
 	startTs := data.PreMarketTimestamp(startDate.Year(), int(startDate.Month()), startDate.Day())
 	endTs := data.PreMarketTimestamp(endDate.Year(), int(endDate.Month()), endDate.Day())
-	ApplyForwardAdjustmentIncrementally(klines, xdxrList, startTs, endTs, true)
+	ApplyForwardAdjustmentIncrementally(bars, xdxrList, startTs, endTs, true)
 }
 
-// GetCrossSectionForwardAdjustedKlines 获取指定证券代码在指定日期前的K线数据, 并进行前复权处理
+// GetCrossSectionForwardAdjustedBars 获取指定证券代码在指定日期前的K线数据, 并进行前复权处理
 //
 // 参数:
 //
@@ -206,57 +206,57 @@ func CalculatePreAdjust(klines []*data.KLine, xdxrList []data.XdxrInfo) {
 //  2. 如果找不到对应日期数据, 返回空切片
 //  3. 当存在除权除息数据时, 会对K线进行前复权处理
 //  4. 返回的K线数据按日期升序排列
-func GetCrossSectionForwardAdjustedKlines(securityCode, asOfDate string) []*data.KLine {
+func GetCrossSectionForwardAdjustedBars(securityCode, asOfDate string) []*data.KLine {
 	correctedCode := data.CorrectSecurityCode(securityCode)
 	ts, _ := data.ParseTimestamp(asOfDate)
 	fixedDate := ts.OnlyDate()
 
-	rawKlines, err := data.LoadKlineRaw(correctedCode)
-	if err != nil || len(rawKlines) == 0 {
+	rawBars, err := data.LoadBarRaw(correctedCode)
+	if err != nil || len(rawBars) == 0 {
 		return []*data.KLine{}
 	}
 
-	lastKline := rawKlines[len(rawKlines)-1]
-	if lastKline.Date < fixedDate {
-		rawKlines, err = data.LoadKlineRaw(correctedCode)
+	lastBar := rawBars[len(rawBars)-1]
+	if lastBar.Date < fixedDate {
+		rawBars, err = data.LoadBarRaw(correctedCode)
 		if err != nil {
 			return []*data.KLine{}
 		}
 	}
 
-	offset := CheckKlineOffset(rawKlines, fixedDate)
+	offset := CheckBarOffset(rawBars, fixedDate)
 	if offset < 0 {
 		return []*data.KLine{}
 	}
 
-	fixedCount := len(rawKlines) - offset
-	filteredKlines := rawKlines[:fixedCount]
+	fixedCount := len(rawBars) - offset
+	filteredBars := rawBars[:fixedCount]
 
-	if len(filteredKlines) == 0 {
+	if len(filteredBars) == 0 {
 		return []*data.KLine{}
 	}
 
-	klines := []*data.KLine{}
-	for _, rawKline := range filteredKlines {
-		kline := &data.KLine{
-			Date:            rawKline.Date,
-			Open:            rawKline.Open,
-			Close:           rawKline.Close,
-			High:            rawKline.High,
-			Low:             rawKline.Low,
-			Volume:          rawKline.Volume,
-			Amount:          rawKline.Amount,
-			Up:              rawKline.Up,
-			Down:            rawKline.Down,
-			Datetime:        rawKline.Datetime,
+	bars := []*data.KLine{}
+	for _, rawBar := range filteredBars {
+		bar := &data.KLine{
+			Date:            rawBar.Date,
+			Open:            rawBar.Open,
+			Close:           rawBar.Close,
+			High:            rawBar.High,
+			Low:             rawBar.Low,
+			Volume:          rawBar.Volume,
+			Amount:          rawBar.Amount,
+			Up:              rawBar.Up,
+			Down:            rawBar.Down,
+			Datetime:        rawBar.Datetime,
 			AdjustmentCount: 0,
 		}
-		klines = append(klines, kline)
+		bars = append(bars, bar)
 	}
 
 	xdxrList, err := data.LoadXdxr(correctedCode)
 	if err != nil {
-		return klines // return unadjusted if no xdxr
+		return bars // return unadjusted if no xdxr
 	}
 
 	sort.Slice(xdxrList, func(i, j int) bool {
@@ -265,12 +265,12 @@ func GetCrossSectionForwardAdjustedKlines(securityCode, asOfDate string) []*data
 		return dateI.Before(dateJ)
 	})
 
-	startDate, _ := time.Parse(DateLayout, klines[0].Date)
-	endDate, _ := time.Parse(DateLayout, klines[len(klines)-1].Date)
+	startDate, _ := time.Parse(DateLayout, bars[0].Date)
+	endDate, _ := time.Parse(DateLayout, bars[len(bars)-1].Date)
 	startTs := data.PreMarketTimestamp(startDate.Year(), int(startDate.Month()), startDate.Day())
 	endTs := data.PreMarketTimestamp(endDate.Year(), int(endDate.Month()), endDate.Day())
 
-	ApplyForwardAdjustmentIncrementally(klines, xdxrList, startTs, endTs, true)
+	ApplyForwardAdjustmentIncrementally(bars, xdxrList, startTs, endTs, true)
 
-	return klines
+	return bars
 }

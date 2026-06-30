@@ -3,11 +3,11 @@
 # Licensed under the MIT License.
 
 import unittest
-from quant1x.data import kline
+from quant1x.data import bar
 from quant1x.level1.client import init_std_pool
 from quant1x.level1.security_bars import BarFreq
 
-class TestRealKLine(unittest.TestCase):
+class TestRealBar(unittest.TestCase):
     def setUp(self):
         # 为了完全模拟真实环境, 我们不写入任何预设的缓存文件. 
         # 相反, 我们尝试删除现有的缓存文件, 强制触发 client.init_pool() 中的服务器探测逻辑. 
@@ -26,15 +26,15 @@ class TestRealKLine(unittest.TestCase):
         # 注意: 这取决于网络状况, 可能会耗时几秒钟
         init_std_pool()
 
-    def test_fetch_real_kline(self):
+    def test_fetch_real_bar(self):
         code = "SH600000" # 浦发银行
         start = 0
         count = 10 # 获取最近10根K线
         
         print(f"\n正在从真实服务器获取 {code} 的最近 {count} 根日线数据...")
         
-        # 调用真实的 fetch_kline
-        bars = kline.fetch_kline(code, start, count, BarFreq.FreqDaily)
+        # 调用真实的 fetch_bar
+        bars = bar.fetch_bar(code, start, count, BarFreq.FreqDaily)
         
         self.assertTrue(len(bars) > 0, "未能获取到任何K线数据")
         self.assertEqual(len(bars), count, f"请求{count}根, 实际获取{len(bars)}根")

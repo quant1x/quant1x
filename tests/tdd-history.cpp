@@ -23,12 +23,12 @@ TEST_CASE("history-basic-base", "[features]") {
     //using namespace formula;
     std::string code = "600600";
     std::string date = "2025-05-29";
-    auto klines = tdx::checkout_klines(code, date);
-    std::cout << klines.size() << std::endl;
+    auto bars = tdx::checkout_bars(code, date);
+    std::cout << bars.size() << std::endl;
     // 提取收盘价序列
     std::vector<double> close_vec;
-    close_vec.reserve(klines.size());
-    for (const auto& bar : klines) {
+    close_vec.reserve(bars.size());
+    for (const auto& bar : bars) {
         close_vec.push_back(bar.close);
     }
     auto CLOSE = xt::adapt(close_vec);
@@ -45,17 +45,17 @@ TEST_CASE("history-basic-auto", "[features]") {
     //using namespace formula;
     std::string code = "600600";
     std::string date = "2025-05-29";
-    auto klines = tdx::checkout_klines(code, date);
-    std::cout << klines.size() << std::endl;
+    auto bars = tdx::checkout_bars(code, date);
+    std::cout << bars.size() << std::endl;
     // 提取各列序列
     std::vector<f64> open_vec, close_vec, high_vec, low_vec, vol_vec, amount_vec;
-    open_vec.reserve(klines.size());
-    close_vec.reserve(klines.size());
-    high_vec.reserve(klines.size());
-    low_vec.reserve(klines.size());
-    vol_vec.reserve(klines.size());
-    amount_vec.reserve(klines.size());
-    for (const auto& bar : klines) {
+    open_vec.reserve(bars.size());
+    close_vec.reserve(bars.size());
+    high_vec.reserve(bars.size());
+    low_vec.reserve(bars.size());
+    vol_vec.reserve(bars.size());
+    amount_vec.reserve(bars.size());
+    for (const auto& bar : bars) {
         open_vec.push_back(bar.open);
         close_vec.push_back(bar.close);
         high_vec.push_back(bar.high);

@@ -361,24 +361,24 @@ namespace tdx = quant1x::contrib::data::tdx;
 
 TEST_CASE("v2_struct-to-dataframe-print", "[dataframe]") {
     std::string code = "sh603338";
-    std::string cache_filename = config::get_kline_filename(code);
-    auto klines = tdx::read_kline_from_csv(cache_filename);
+    std::string cache_filename = config::get_bar_filename(code);
+    auto bars = tdx::read_bar_from_csv(cache_filename);
 
-    DataFrame df = DataFrame::from_struct_vector(klines);
+    DataFrame df = DataFrame::from_struct_vector(bars);
     std::cout << df.to_string() << std::endl;
 }
 
 TEST_CASE("v3_struct-to-dataframe-print", "[dataframe]") {
     std::string code = "sh603338";
-    std::string cache_filename = config::get_kline_filename(code);
-    auto klines = tdx::read_kline_from_csv(cache_filename);
+    std::string cache_filename = config::get_bar_filename(code);
+    auto bars = tdx::read_bar_from_csv(cache_filename);
 
     // 1. 验证原始数据
-    REQUIRE_FALSE(klines.empty());
-    std::cout << "原始数据验证 - 第一条记录的close值: " << klines[0].close << "\n";
+    REQUIRE_FALSE(bars.empty());
+    std::cout << "原始数据验证 - 第一条记录的close值: " << bars[0].close << "\n";
 
     // 2. 转换为DataFrame
-    DataFrame df = DataFrame::from_struct_vector(klines);
+    DataFrame df = DataFrame::from_struct_vector(bars);
 
     // 3. 打印调试信息
     df.debug_print_columns();

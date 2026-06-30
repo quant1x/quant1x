@@ -23,11 +23,11 @@ namespace data = quant1x::data;
 namespace meta = quant1x::data::meta;
 
 static std::string get_ipo_date(const std::string &security_code, const std::string &feature_date) {
-    auto kls = tdx::checkout_klines(security_code, feature_date);
-    if(kls.empty()) {
+    auto bars = tdx::checkout_bars(security_code, feature_date);
+    if(bars.empty()) {
         return "";
     }
-    return kls[0].date;
+    return bars[0].date;
 }
 
 // 获取财务数据

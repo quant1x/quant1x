@@ -77,12 +77,12 @@ TEST_CASE("patterns-wave-v2", "[release]") {
     std::string code = "sz300773";
     std::string date = "2025-07-15";
     int N = 50;
-    auto klines = tdx::checkout_klines(code, date);
+    auto bars = tdx::checkout_bars(code, date);
     // 提取high/low序列
     std::vector<double> col_high, col_low;
-    col_high.reserve(klines.size());
-    col_low.reserve(klines.size());
-    for (const auto& bar : klines) {
+    col_high.reserve(bars.size());
+    col_low.reserve(bars.size());
+    for (const auto& bar : bars) {
         col_high.push_back(bar.high);
         col_low.push_back(bar.low);
     }

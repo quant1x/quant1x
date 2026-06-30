@@ -120,7 +120,7 @@ class DataHandler(ABC):
         raise NotImplementedError("Subclass of DataHandler must implement `get_instrument` method")
     
     @abstractmethod
-    def klines(self, symbol: str, start_date: str | None = None, end_date: str | None = None, freq: str | None = None):
+    def bars(self, symbol: str, start_date: str | None = None, end_date: str | None = None, freq: str | None = None):
         """
         获取指定证券代码的K线数据
         
@@ -136,7 +136,7 @@ class DataHandler(ABC):
         Raises:
             NotImplementedError: 如果子类未实现此方法
         """
-        raise NotImplementedError("Subclass of DataHandler must implement `klines` method")
+        raise NotImplementedError("Subclass of DataHandler must implement `bars` method")
     
     @abstractmethod
     def transactions(self, symbol: str, date: str | None = None):

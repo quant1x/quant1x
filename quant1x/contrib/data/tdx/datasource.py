@@ -14,7 +14,7 @@ from quant1x.data.schema import Sector, Bar, Transaction, Direction
 from quant1x.log import logger
 from . import sector
 from .instruments import get_instrument_info
-from .bar import get_cross_section_forward_adjusted_klines
+from .bar import get_cross_section_forward_adjusted_bars
 from .trans import checkout_transaction_data
 from ._constants import ALL_INDEX_LIST
 
@@ -182,7 +182,7 @@ class TdxDataSource(DataHandler):
             return inst
         raise ValueError(f"Instrument not found: {symbol}")
     
-    def klines(self, symbol: str, start_date: str | None = None, end_date: str | None = None, freq: str | None = None):
+    def bars(self, symbol: str, start_date: str | None = None, end_date: str | None = None, freq: str | None = None):
         """
         获取指定日期范围的K线数据.
         """
@@ -195,10 +195,10 @@ class TdxDataSource(DataHandler):
         else:
             as_of_ts = Timestamp.parse(end_date)
         as_of_date = as_of_ts.only_date()
-        logger.debug(f"Getting klines for {symbol} as of {as_of_date}")
-        list = get_cross_section_forward_adjusted_klines(inst, as_of_date)
+        logger.debug(f"Getting bars for {symbol} as of {as_of_date}")
+        list = get_cross_section_forward_adjusted_bars(inst, as_of_date)
         df = pd.DataFrame([bar.to_dict() for bar in list], columns=Bar.headers())
-        logger.debug(f"Klines DataFrame shape: {df.shape}")
+        logger.debug(f"Bars DataFrame shape: {df.shape}")
         return df
 
     def transactions(self, symbol: str, date: str | None = None):
@@ -233,7 +233,7 @@ if __name__ == "__main__":
     date = '2026-02-06'
     inst = D.get_instrument(code)
     print(inst)
-    df = D.klines(code)
+    df = D.bars(code)
     #df = df[df['date'] >= '2020-09-02']
     print(df)
     # trans = D.transactions(code, date)

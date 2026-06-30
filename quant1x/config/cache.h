@@ -32,8 +32,8 @@ namespace quant1x::config {
     // 日K线文件路径
     std::string get_day_path();
 
-    // 日K线文件路径
-    std::string get_kline_path(const std::string &freq = "day");
+    // 通用K线文件路径
+    std::string get_bar_path(const std::string &freq = "day");
 
     // 除权除息文件名
     std::string get_xdxr_filename(const std::string &code);
@@ -44,10 +44,10 @@ namespace quant1x::config {
      * @param forward 是否前复权, 后复权不考虑
      * @return 前复权返回文件名后缀是csv, 不复权是raw
      */
-    std::string get_kline_filename(const std::string &code, bool forward = true);
+    std::string get_bar_filename(const std::string &code, bool forward = true);
 
     // 通用K线文件名
-    std::string get_kline_filename_ex(const std::string &code, const std::string &freq);
+    std::string get_bar_filename_ex(const std::string &code, const std::string &freq);
 
     // 分时数据文件名
     std::string get_minute_filename(const std::string &code, const std::string &cache_date);

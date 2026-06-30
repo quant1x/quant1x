@@ -149,10 +149,10 @@ impl DataHandler for TdxDataSource {
     }
 
     /// 获取指定证券代码的K线数据
-    /// 与 Python klines(symbol, start_date, end_date, freq) 对齐:
+    /// 与 Python bars(symbol, start_date, end_date, freq) 对齐:
     ///   - end_date=None → 取最近交易日
     ///   - 返回前复权日K线
-    fn klines(
+    fn bars(
         &self,
         symbol: &str,
         _start_date: Option<&str>,
@@ -163,15 +163,15 @@ impl DataHandler for TdxDataSource {
 
         let as_of_date = resolve_as_of_date(&inst, end_date);
         log::debug!(
-            "[tdx/datasource] Getting klines for {} as of {}",
+            "[tdx/datasource] Getting bars for {} as of {}",
             symbol,
             as_of_date
         );
 
-        let bars = get_cross_section_forward_adjusted_klines(&inst, &as_of_date);
+        let bars = get_cross_section_forward_adjusted_bars(&inst, &as_of_date);
 
         log::debug!(
-            "[tdx/datasource] Klines for {}: {} bars",
+            "[tdx/datasource] Bars for {}: {} bars",
             symbol,
             bars.len()
         );
@@ -288,7 +288,7 @@ mod tests {
     /// Python __main__ 实际执行的代码(未注释部分):
     ///   1. code = '00077.hk'
     ///   2. inst = D.get_instrument(code); print(inst)
-    ///   3. df = D.klines(code); print(df)
+    ///   3. df = D.bars(code); print(df)
     ///
     /// 已注释掉的部分(get_sector_list / get_index_list / get_stock_list / list_instruments / transactions)
     /// Rust 测试同样注释掉, 只保留 Python 实际执行的部分. 
@@ -304,7 +304,7 @@ mod tests {
 
         let ds = TdxDataSource::new();
 
-        // ---- 对齐 Python __main__: get_instrument + klines ----
+        // ---- 对齐 Python __main__: get_instrument + bars ----
         // Python: code = 'sh562500' → code = 'hsi.hk' → code = 'ixic.us' → code = '00077.hk'
         let code = "00077.hk";
         let inst = ds.get_instrument(code);
@@ -319,16 +319,16 @@ mod tests {
             inst.instrument_type
         );
 
-        // Python: df = D.klines(code); print(df)
-        let bars = ds.klines(code, None, None, None);
+        // Python: df = D.bars(code); print(df)
+        let bars = ds.bars(code, None, None, None);
         log::info!(
-            "[tdx/datasource test] klines for {}: {} bars",
+            "[tdx/datasource test] bars for {}: {} bars",
             code,
             bars.as_ref().map_or(0, |v| v.len())
         );
-        assert!(bars.is_some(), "klines should return data for {}", code);
+        assert!(bars.is_some(), "bars should return data for {}", code);
         let bars = bars.unwrap();
-        assert!(!bars.is_empty(), "klines should have at least one bar");
+        assert!(!bars.is_empty(), "bars should have at least one bar");
 
         // 验证 Bar 字段
         let first = &bars[0];

@@ -413,7 +413,7 @@ std::vector<tdx::SecurityBar> fetch(const std::string &code, u16 start, u16 coun
 //     // 1. 确定本地有效数据最后1条数据作为拉取数据的开始日期
 //     auto startDate = data::market_first_date;
 //     try {
-//         std::string cache_filename = config::get_kline_filename(code) + ".pb";
+//         std::string cache_filename = config::get_bar_filename(code) + ".pb";
 //         KLine cacheKLines = {};
 //         {
 //             std::ifstream input(cache_filename, std::ios::in | std::ios::binary);

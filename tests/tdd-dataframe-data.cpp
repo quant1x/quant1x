@@ -322,7 +322,7 @@ void print_with_names(const T& value) {
 
 TEST_CASE("xtensor-load-csv", "[dataframe]") {
     std::string code = "sh603338";
-    std::string cache_filename = config::get_kline_filename(code);
+    std::string cache_filename = config::get_bar_filename(code);
     std::cout << "code=" << code << ", cache=" << cache_filename << std::endl;
 
     DataFrame df;
@@ -351,7 +351,7 @@ TEST_CASE("xtensor-load-csv", "[dataframe]") {
 
 TEST_CASE("csv2-load-csv", "[dataframe]") {
     std::string code = "sh603338";
-    std::string cache_filename = config::get_kline_filename(code);
+    std::string cache_filename = config::get_bar_filename(code);
     std::cout << "code=" << code << ", cache=" << cache_filename << std::endl;
     csv2::Reader<csv2::delimiter<','>,
     csv2::quote_character<'"'>,
@@ -442,7 +442,7 @@ TEST_CASE("csv2-load-csv", "[dataframe]") {
 //
 //TEST_CASE("dataframe-load-csv", "[dataframe]") {
 //    std::string code = "sh603338";
-//    std::string cache_filename = config::get_kline_filename("sh603338");
+//    std::string cache_filename = config::get_bar_filename("sh603338");
 //    std::cout << "code=" << code << ", cache=" << cache_filename << std::endl;
 //
 //    // 创建一个DataFrame对象
@@ -609,7 +609,7 @@ void process_csv(const std::string& filename) {
 
 TEST_CASE("struct-load-csv", "[dataframe]") {
     std::string code = "sh603338";
-    std::string cache_filename = config::get_kline_filename(code);
+    std::string cache_filename = config::get_bar_filename(code);
     std::cout << "code=" << code << ", cache=" << cache_filename << std::endl;
     // b. 初始化mapper(全局唯一)
     using Mapper = AutoCSVMapper<data::KLine>;
@@ -721,7 +721,7 @@ std::vector<std::string> csv_row_to_vector(const auto& row) {
 
 TEST_CASE("rows-load-csv", "[dataframe]") {
     std::string code = "sh603338";
-    std::string cache_filename = config::get_kline_filename(code);
+    std::string cache_filename = config::get_bar_filename(code);
     std::cout << "code=" << code << ", cache=" << cache_filename << std::endl;
 
     // 1. 初始化CSV读取器
@@ -922,7 +922,7 @@ ColumnMap load_csv_to_columns(
 
 TEST_CASE("load-csv-to-columns") {
     std::string code = "sh603338";
-    std::string cache_filename = config::get_kline_filename(code);
+    std::string cache_filename = config::get_bar_filename(code);
     std::cout << "code=" << code << ", cache=" << cache_filename << std::endl;
     csv2::Reader<csv2::delimiter<','>> reader;
     if (!reader.mmap(cache_filename)) return;
@@ -973,7 +973,7 @@ using CaseInsensitiveMap2 = std::unordered_map<
 
 TEST_CASE("Case-insensitive CSV loading") {
     std::string code = "sh603338";
-    std::string cache_filename = config::get_kline_filename(code);
+    std::string cache_filename = config::get_bar_filename(code);
     std::cout << "code=" << code << ", cache=" << cache_filename << std::endl;
     // 1. 准备测试数据
     std::vector<std::string> headers = {"Date", "Open", "Close"};

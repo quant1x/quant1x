@@ -92,7 +92,7 @@ def _signal_handler(signum, frame):
     "--base",
     default=None,
     callback=parse_comma_separated,
-    help="Comma-separated base names to update (e.g., 'xdxr,kline').",
+    help="Comma-separated base names to update (e.g., 'xdxr,bar').",
 )
 @click.option(
     "--feature",

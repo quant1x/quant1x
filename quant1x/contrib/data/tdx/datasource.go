@@ -22,22 +22,22 @@ func (p *tdxProvider) GetF10(instrument string) (data.F10, error) {
 	return data.F10{}, data.ErrNotImplemented
 }
 
-func (p *tdxProvider) GetKLines(instrument string, startDate, endDate string, frequency string, adjust ...data.AdjustmentType) ([]data.KLine, error) {
+func (p *tdxProvider) GetBars(instrument string, startDate, endDate string, frequency string, adjust ...data.AdjustmentType) ([]schema.Bar, error) {
 	// 1. 确定缓存文件并读取本地缓存
-	cacheFilename := config.GetKlineFilename(instrument, true)
-	klines := []schema.Bar{}
-	err := encoding.CsvToSlices(cacheFilename, &klines)
-	if err == nil && len(klines) > 0 {
-		return klines, nil
+	cacheFilename := config.GetBarFilename(instrument, true)
+	bars := []schema.Bar{}
+	err := encoding.CsvToSlices(cacheFilename, &bars)
+	if err == nil && len(bars) > 0 {
+		return bars, nil
 	}
 	// 2. 尝试更新缓存
 	sc := data.DetectSymbol(instrument)
-	tdxUpdateKLine(sc, data.NowTimestamp())
+	tdxUpdateBar(sc, data.NowTimestamp())
 	// 3. 重新读取缓存文件
-	klines = []schema.Bar{}
-	err = encoding.CsvToSlices(cacheFilename, &klines)
-	if err == nil && len(klines) > 0 {
-		return klines, nil
+	bars = []schema.Bar{}
+	err = encoding.CsvToSlices(cacheFilename, &bars)
+	if err == nil && len(bars) > 0 {
+		return bars, nil
 	}
 
 	// 3. 缓存不存在则返回未实现错误

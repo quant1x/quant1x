@@ -10,33 +10,33 @@ import (
 	"github.com/quant1x/quant1x/quant1x/data"
 )
 
-func TestGetCrossSectionForwardAdjustedKlines(t *testing.T) {
+func TestGetCrossSectionForwardAdjustedBars(t *testing.T) {
 	code := "sh600000"
 	asOfDate := "2024-12-26"
 
-	klines := GetCrossSectionForwardAdjustedKlines(code, asOfDate)
+	bars := GetCrossSectionForwardAdjustedBars(code, asOfDate)
 
-	if len(klines) == 0 {
-		t.Errorf("No klines returned for %s as of %s", code, asOfDate)
+	if len(bars) == 0 {
+		t.Errorf("No bars returned for %s as of %s", code, asOfDate)
 		return
 	}
 
-	fmt.Printf("Loaded %d adjusted kline records for %s\n", len(klines), code)
+	fmt.Printf("Loaded %d adjusted bar records for %s\n", len(bars), code)
 
 	// Check some basic properties
-	for i, kline := range klines {
-		if kline.Date == "" {
-			t.Errorf("Kline %d has empty date", i)
+	for i, bar := range bars {
+		if bar.Date == "" {
+			t.Errorf("Bar %d has empty date", i)
 		}
 	}
 
 	// Display sample data (similar to Python __main__)
 	fmt.Println("\n=== 复权前后对比 (2024年样本数据) ===")
 	sampleCount := 0
-	for _, kline := range klines {
-		if len(kline.Date) >= 4 && kline.Date[:4] == "2024" {
-			fmt.Printf("日期: %s\n", kline.Date)
-			fmt.Printf("  复权: 开=%.2f, 高=%.2f, 低=%.2f, 收=%.2f\n", kline.Open, kline.High, kline.Low, kline.Close)
+	for _, bar := range bars {
+		if len(bar.Date) >= 4 && bar.Date[:4] == "2024" {
+			fmt.Printf("日期: %s\n", bar.Date)
+			fmt.Printf("  复权: 开=%.2f, 高=%.2f, 低=%.2f, 收=%.2f\n", bar.Open, bar.High, bar.Low, bar.Close)
 			sampleCount++
 			if sampleCount >= 5 {
 				break
@@ -77,9 +77,9 @@ func TestCombineAdjustmentsInPeriod(t *testing.T) {
 	}
 }
 
-func TestCheckKlineOffset(t *testing.T) {
-	// Create mock kline data
-	klines := []data.KLineRaw{
+func TestCheckBarOffset(t *testing.T) {
+	// Create mock bar data
+	bars := []data.KLineRaw{
 		{Date: "2024-01-01"},
 		{Date: "2024-01-02"},
 		{Date: "2024-01-03"},
@@ -87,21 +87,21 @@ func TestCheckKlineOffset(t *testing.T) {
 		{Date: "2024-01-05"},
 	}
 
-	offset := CheckKlineOffset(klines, "2024-01-03")
+	offset := CheckBarOffset(bars, "2024-01-03")
 	expected := 2
 	if offset != expected {
-		t.Errorf("CheckKlineOffset returned %d, expected %d", offset, expected)
+		t.Errorf("CheckBarOffset returned %d, expected %d", offset, expected)
 	}
 
 	// Test edge cases
-	offset = CheckKlineOffset(klines, "2024-01-01")
+	offset = CheckBarOffset(bars, "2024-01-01")
 	if offset != 4 {
-		t.Errorf("CheckKlineOffset for first date returned %d, expected 4", offset)
+		t.Errorf("CheckBarOffset for first date returned %d, expected 4", offset)
 	}
 
-	offset = CheckKlineOffset(klines, "2025-01-01")
+	offset = CheckBarOffset(bars, "2025-01-01")
 	if offset != -1 {
-		t.Errorf("CheckKlineOffset for future date returned %d, expected -1", offset)
+		t.Errorf("CheckBarOffset for future date returned %d, expected -1", offset)
 	}
 }
 
@@ -154,55 +154,55 @@ func TestCumulativeAdjustment(t *testing.T) {
 	}
 }
 
-func TestCompareWithCachedKlines(t *testing.T) {
+func TestCompareWithCachedBars(t *testing.T) {
 	code := "sh600000"
 
-	// Load cached kline data
-	cacheFilename := config.GetKlineFilename(code, true)
-	cachedKlines, err := data.ReadKlineFromCSV(cacheFilename)
-	if err != nil || len(cachedKlines) == 0 {
-		t.Skipf("Skipping test due to missing cached kline data: %v", err)
+	// Load cached bar data
+	cacheFilename := config.GetBarFilename(code, true)
+	cachedBars, err := data.ReadBarFromCSV(cacheFilename)
+	if err != nil || len(cachedBars) == 0 {
+		t.Skipf("Skipping test due to missing cached bar data: %v", err)
 		return
 	}
 
-	firstCachedDate := cachedKlines[0].Date
-	lastCachedDate := cachedKlines[len(cachedKlines)-1].Date
-	fmt.Printf("data.kline cache date range: %s to %s\n", firstCachedDate, lastCachedDate)
+	firstCachedDate := cachedBars[0].Date
+	lastCachedDate := cachedBars[len(cachedBars)-1].Date
+	fmt.Printf("data.bar cache date range: %s to %s\n", firstCachedDate, lastCachedDate)
 
-	// Use GetCrossSectionForwardAdjustedKlines to get adjusted data for the same date range
-	adjustedKlines := GetCrossSectionForwardAdjustedKlines(code, lastCachedDate)
+	// Use GetCrossSectionForwardAdjustedBars to get adjusted data for the same date range
+	adjustedBars := GetCrossSectionForwardAdjustedBars(code, lastCachedDate)
 
-	if len(adjustedKlines) == 0 {
-		t.Errorf("GetCrossSectionForwardAdjustedKlines returned empty data")
+	if len(adjustedBars) == 0 {
+		t.Errorf("GetCrossSectionForwardAdjustedBars returned empty data")
 		return
 	}
 
 	// Find the first data with the same date
 	var firstAdjusted *data.KLine
-	firstCached := cachedKlines[0]
+	firstCached := cachedBars[0]
 
-	for i := range adjustedKlines {
-		if adjustedKlines[i].Date == firstCached.Date {
-			firstAdjusted = adjustedKlines[i]
+	for i := range adjustedBars {
+		if adjustedBars[i].Date == firstCached.Date {
+			firstAdjusted = adjustedBars[i]
 			break
 		}
 	}
 
 	if firstAdjusted == nil {
-		t.Errorf("GetCrossSectionForwardAdjustedKlines does not contain date %s", firstCached.Date)
-		fmt.Printf("adjusted_klines length: %d\n", len(adjustedKlines))
-		if len(adjustedKlines) > 0 {
-			fmt.Printf("first: %s, last: %s\n", adjustedKlines[0].Date, adjustedKlines[len(adjustedKlines)-1].Date)
+		t.Errorf("GetCrossSectionForwardAdjustedBars does not contain date %s", firstCached.Date)
+		fmt.Printf("adjusted_bars length: %d\n", len(adjustedBars))
+		if len(adjustedBars) > 0 {
+			fmt.Printf("first: %s, last: %s\n", adjustedBars[0].Date, adjustedBars[len(adjustedBars)-1].Date)
 		}
 		return
 	}
 
 	fmt.Printf("\nData comparison on %s:\n", firstCached.Date)
-	fmt.Printf("GetCrossSectionForwardAdjustedKlines:\n")
+	fmt.Printf("GetCrossSectionForwardAdjustedBars:\n")
 	fmt.Printf("  Open: %.4f, High: %.4f, Low: %.4f, Close: %.4f\n", firstAdjusted.Open, firstAdjusted.High, firstAdjusted.Low, firstAdjusted.Close)
 	fmt.Printf("  Volume: %.0f, Amount: %.0f\n", firstAdjusted.Volume, firstAdjusted.Amount)
 
-	fmt.Printf("data.kline cache:\n")
+	fmt.Printf("data.bar cache:\n")
 	fmt.Printf("  Open: %.4f, High: %.4f, Low: %.4f, Close: %.4f\n", firstCached.Open, firstCached.High, firstCached.Low, firstCached.Close)
 	fmt.Printf("  Volume: %.0f, Amount: %.0f\n", firstCached.Volume, firstCached.Amount)
 
@@ -227,7 +227,7 @@ func TestCompareWithCachedKlines(t *testing.T) {
 
 		// Check adjustment count
 		fmt.Printf("Adjustment count comparison:\n")
-		fmt.Printf("  GetCrossSectionForwardAdjustedKlines: %d\n", firstAdjusted.AdjustmentCount)
-		fmt.Printf("  data.kline: %d\n", firstCached.AdjustmentCount)
+		fmt.Printf("  GetCrossSectionForwardAdjustedBars: %d\n", firstAdjusted.AdjustmentCount)
+		fmt.Printf("  data.bar: %d\n", firstCached.AdjustmentCount)
 	}
 }

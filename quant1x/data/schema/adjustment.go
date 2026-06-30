@@ -16,13 +16,13 @@ type CumulativeAdjustment struct {
 // ApplyForwardAdjustmentForEvent 使用提供的除权除息事件对 K 线执行前复权处理.
 //
 //	eventStartDate 是用于过滤 IPO 早期事件的起始日期(格式 YYYY-MM-DD).
-func ApplyForwardAdjustmentForEvent(klines []Bar, eventStartDate string, dividends []XdxrInfo) {
-	if len(klines) == 0 || len(dividends) == 0 {
+func ApplyForwardAdjustmentForEvent(bars []Bar, eventStartDate string, dividends []XdxrInfo) {
+	if len(bars) == 0 || len(dividends) == 0 {
 		return
 	}
-	latestKLineDate := klines[len(klines)-1].Date
+	latestBarDate := bars[len(bars)-1].Date
 	// compute next day (approximate next trading day)
-	d, err := time.Parse(LayoutTradeDate, latestKLineDate)
+	d, err := time.Parse(LayoutTradeDate, latestBarDate)
 	if err != nil {
 		return
 	}
@@ -45,13 +45,13 @@ func ApplyForwardAdjustmentForEvent(klines []Bar, eventStartDate string, dividen
 			continue
 		}
 		adj := info.AdjustFactor()
-		for i := range klines {
-			if klines[i].Date >= info.Date {
+		for i := range bars {
+			if bars[i].Date >= info.Date {
 				break
 			}
 			// 填充调整序号(No)
-			adj.No = klines[i].AdjustmentCount + 1
-			klines[i].Adjust(adj)
+			adj.No = bars[i].AdjustmentCount + 1
+			bars[i].Adjust(adj)
 		}
 	}
 }
