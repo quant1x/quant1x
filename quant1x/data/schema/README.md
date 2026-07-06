@@ -4,14 +4,14 @@
 
 ## 模块索引
 
-| 模块 | 说明 | 文档 | Python | Rust | Go | C++ |
+| 模块 | 说明 | 文档 | Python | C++ | Rust | Go |
 |---|---|---|---|---|---|---|
-| adjustment | 除权除息数据结构 | [adjustment.md](adjustment.md) | ✅ | ✅ | ❌ | ❌ |
-| bar | K线数据结构 | [bar.md](bar.md) | ✅ | ✅ | ❌ | ❌ |
-| company | 公司信息数据结构 | [company.md](company.md) | ✅ | ✅ | ❌ | ❌ |
-| dividend | 分红除权除息数据结构 | [dividend.md](dividend.md) | ✅ | ✅ | ❌ | ❌ |
-| sector | 板块信息数据结构 | [sector.md](sector.md) | ✅ | ✅ | ❌ | ❌ |
-| trade | 逐笔交易数据结构 | [trade.md](trade.md) | ✅ | ✅ | ❌ | ❌ |
+| adjustment | 除权除息数据结构 | [adjustment.md](adjustment.md) | ✅ | ✅ | ✅ | ❌ |
+| bar | K线数据结构 | [bar.md](bar.md) | ✅ | ✅ | ✅ | ❌ |
+| company | 公司信息数据结构 | [company.md](company.md) | ✅ | ✅ | ✅ | ❌ |
+| dividend | 分红除权除息数据结构 | [dividend.md](dividend.md) | ✅ | ✅ | ✅ | ❌ |
+| sector | 板块信息数据结构 | [sector.md](sector.md) | ✅ | ✅ | ✅ | ❌ |
+| trade | 逐笔交易数据结构 | [trade.md](trade.md) | ✅ | ✅ | ✅ | ❌ |
 
 ## 导出类型
 
