@@ -1,4 +1,4 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
+﻿// Copyright (c) Quant1X <wangfengxy@sina.cn>.
 // Licensed under the MIT License.
 //
 // market — 市场/证券代码识别与纠正, 与 Python data/market.py 对齐
@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/quant1x/quant1x/quant1x/data/meta"
-	"github.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/base"
 )
 
 // ============================================================

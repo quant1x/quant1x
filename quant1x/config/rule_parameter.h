@@ -1,10 +1,10 @@
-#pragma once
+﻿#pragma once
 #ifndef QUANT1X_CONFIG_DETAIL_RULE_PARAMETER_H
 #define QUANT1X_CONFIG_DETAIL_RULE_PARAMETER_H 1
 
 #include <quant1x/encoding/yaml.h>
-#include <quant1x/std/strings.h>
-#include <quant1x/std/numeric.h>
+#include <quant1x/base/strings.h>
+#include <quant1x/base/numeric.h>
 
 namespace quant1x::config {
 

@@ -1,8 +1,8 @@
-#include <cpr/cpr.h>
+﻿#include <cpr/cpr.h>
 #include <quant1x/config/config.h>
 #include <quant1x/data/meta/exchange.h>
 #include <quant1x/data/market.h>
-#include <quant1x/std/strings.h>
+#include <quant1x/base/strings.h>
 #include <quant1x/trader/constants.h>
 #include <quant1x/trader/fee.h>
 #include <quant1x/trader/trader.h>

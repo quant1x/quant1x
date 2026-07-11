@@ -1,7 +1,7 @@
-#ifndef QUANT1X_TEST_MMAP_H
+﻿#ifndef QUANT1X_TEST_MMAP_H
 #define QUANT1X_TEST_MMAP_H
 
-#include <quant1x/std/object.h>
+#include <quant1x/base/object.h>
 
 #pragma pack(push, 1)  // 确保1字节对齐
 struct Market {

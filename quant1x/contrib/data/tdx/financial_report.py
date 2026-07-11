@@ -130,7 +130,7 @@ def _parse_quarterly_report_item(v: dict) -> QuarterlyReport:
 
 def quarterly_reports(feature_date: str, page_no: int = 1) -> Tuple[List[QuarterlyReport], int, Optional[FinancialReportException]]:
     """Fetch quarterly reports for a given date."""
-    from quant1x.std.time import get_quarter_by_date
+    from quant1x.base.time import get_quarter_by_date
 
     _, q_begin, q_end = get_quarter_by_date(feature_date, 1)
     quarter_end_date = Timestamp.parse(q_end).only_date()
@@ -207,7 +207,7 @@ _map_reports: Dict[str, List[QuarterlyReport]] = {}
 
 def cache_quarterly_reports_by_security_code(date: str, diff_quarters: int = 1) -> Tuple[List[QuarterlyReport], int, Optional[FinancialReportException]]:
     """Get quarterly reports from cache or fetch."""
-    from quant1x.std.time import get_quarter_by_date
+    from quant1x.base.time import get_quarter_by_date
 
     _, _, last = get_quarter_by_date(date, diff_quarters)
     filename = reports_filename(last)
@@ -287,7 +287,7 @@ def get_cache_quarterly_reports_by_security_code(security_code: str, date: str, 
 
     # 2. 尝试从全量缓存查找 (内存 + 文件)
     for diff in range(diff_quarters, 5):
-        from quant1x.std.time import get_quarter_by_date
+        from quant1x.base.time import get_quarter_by_date
         _, _, last = get_quarter_by_date(date, diff)
         filename = reports_filename(last)
 
@@ -334,7 +334,7 @@ def get_cache_quarterly_reports_by_security_code(security_code: str, date: str, 
     # 4. 兜底: 单股票 API 直接查询
     # quarterly_reports_by_security_code 的 diff_quarters 参数未被使用, 直接用原始 date
     for diff in range(diff_quarters, 5):
-        from quant1x.std.time import get_quarter_by_date
+        from quant1x.base.time import get_quarter_by_date
         _, _, qdate = get_quarter_by_date(date, diff)
         reports, pages, err = quarterly_reports_by_security_code(security_code, qdate, 0)
         if not err and reports:
@@ -351,7 +351,7 @@ _g_map_quarterly_reports: Dict[str, QuarterlyReport] = {}
 
 def load_quarterly_reports(date: str):
     """Load all quarterly reports for a date into memory cache."""
-    from quant1x.std.time import get_quarter_by_date
+    from quant1x.base.time import get_quarter_by_date
 
     _, _, last = get_quarter_by_date(date, 1)
     filename = reports_filename(last)

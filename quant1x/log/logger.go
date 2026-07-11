@@ -1,4 +1,4 @@
-package log
+﻿package log
 
 import (
 	"compress/gzip"
@@ -8,7 +8,7 @@ import (
 	"time"
 
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
-	"github.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/base"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

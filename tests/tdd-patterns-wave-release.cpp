@@ -1,4 +1,4 @@
-#include <quant1x/ta/waves.h>
+﻿#include <quant1x/ta/waves.h>
 #include <quant1x/test/test.h>
 
 TEST_CASE("patterns-wave-v1", "[release]") {
@@ -23,7 +23,7 @@ TEST_CASE("patterns-wave-v1", "[release]") {
 #include <quant1x/contrib/data/tdx/bar.h>
 #include <quant1x/contrib/data/tdx/instruments.h>
 #include <quant1x/data/schema/bar.h>
-#include <quant1x/std/format.h>
+#include <quant1x/base/format.h>
 #include <span>
 #include <ranges>
 

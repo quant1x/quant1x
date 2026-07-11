@@ -16,7 +16,7 @@ use super::command::{EXT_INSTRUMENT_BARS, FLAG_GENERIC};
 use super::helpers::get_sequence_id;
 use super::level1::std::security_bars::{SecurityBarsContext, SecurityBar as StdSecurityBar};
 use super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
-use crate::std::BinaryStream;
+use crate::base::BinaryStream;
 
 /// 日线增量更新时丢弃的缓存天数, 与 Python MaxCachedDaysToDropOnIncrementalUpdate 对齐
 const MAX_CACHED_DAYS_TO_DROP: usize = 1;
@@ -151,7 +151,7 @@ impl BaseFrame for InstrumentBars {
         bs.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         // 与 Python InstrumentBars.deserialize_response_body 对齐:
         //   body = data[14:]  # 跳过前14字节
         //   start, count = struct.unpack("<IH", body[:6])

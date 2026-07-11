@@ -1,4 +1,4 @@
-package util
+﻿package util
 
 import (
 	"archive/zip"
@@ -11,7 +11,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/base"
 )
 
 // ZlibCompress 进行zlib压缩

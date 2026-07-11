@@ -1,8 +1,8 @@
-#include <quant1x/test/test.h>
+﻿#include <quant1x/test/test.h>
 
 #include <quant1x/data/meta/timestamp.h>
 #include <quant1x/data/market.h>
-#include <quant1x/std/strings.h>
+#include <quant1x/base/strings.h>
 #include <iostream>
 #include <string>
 #include <map>

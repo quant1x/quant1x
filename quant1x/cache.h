@@ -1,8 +1,8 @@
-#pragma once
+﻿#pragma once
 #ifndef QUANT1X_CACHE_H
 #define QUANT1X_CACHE_H 1
 
-#include <quant1x/std/api.h>
+#include <quant1x/base/api.h>
 #include <quant1x/proto/data.h>
 #include <quant1x/data/adapter.h>
 #include <quant1x/config/config.h>

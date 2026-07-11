@@ -9,7 +9,7 @@ import dotenv
 import logging
 from datetime import datetime
 
-from quant1x.std import filesystem as fs, system as sys, strings
+from quant1x.base import filesystem as fs, system as sys, strings
 # 加载环境变量
 dotenv.load_dotenv()
 
@@ -267,7 +267,7 @@ def _cache_id_path(code: str) -> str:
 
 def top10_holders_filename(code: str, date: str) -> str:
     """前十大流通股股东缓存文件名 (模块级函数, 供 contrib 层使用)"""
-    from quant1x.std.time import get_quarter_by_date
+    from quant1x.base.time import get_quarter_by_date
     id_path = _cache_id_path(code)
     quarter_str, _, _ = get_quarter_by_date(date)
     holding_path = os.path.join(base_config.data_path, "holding")
@@ -278,7 +278,7 @@ def top10_holders_filename(code: str, date: str) -> str:
 
 def reports_filename(date: str) -> str:
     """季报缓存文件名 (模块级函数, 供 contrib 层使用)"""
-    from quant1x.std.time import get_quarter_by_date
+    from quant1x.base.time import get_quarter_by_date
     quarter_str, _, _ = get_quarter_by_date(date)
     path = os.path.join(base_config.data_path, "infoq", quarter_str)
     os.makedirs(path, exist_ok=True)

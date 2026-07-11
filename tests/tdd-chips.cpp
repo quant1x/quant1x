@@ -1,4 +1,4 @@
-#include <quant1x/proto/data.h>
+﻿#include <quant1x/proto/data.h>
 #include <quant1x/config/base.h>
 #include <quant1x/config/cache.h>
 #include <quant1x/test/test.h>
@@ -30,7 +30,7 @@ TEST_CASE("load-chips", "[chips]") {
 #include <quant1x/contrib/data/tdx/bar.h>
 #include <quant1x/data/schema/bar.h>
 #include <quant1x/factors/f10.h>
-#include <quant1x/std/safe.h>
+#include <quant1x/base/safe.h>
 
 namespace data = quant1x::data;
 namespace tdx = quant1x::contrib::data::tdx;

@@ -4,7 +4,7 @@
 //
 // block_meta — 板块元数据 (STD_BLOCK_META, 0x02c5)
 
-use crate::std::BinaryStream;
+use crate::base::BinaryStream;
 
 use super::super::super::command::*;
 use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
@@ -69,7 +69,7 @@ impl BaseFrame for BlockFileMetaContext {
         buf.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         // Size(4) + C1(1) + HashValue(32) + C2(1) = 38 bytes
         if data.len() < 38 {
             return Ok(());

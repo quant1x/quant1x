@@ -6,7 +6,7 @@ use crate::factors::notice;
 use crate::factors::safety_score;
 use crate::factors::share_holder;
 use crate::contrib::data::tdx::level1;
-use crate::std::numeric;
+use crate::base::numeric;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

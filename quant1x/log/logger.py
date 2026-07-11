@@ -8,7 +8,7 @@ import sys
 from loguru import logger as __logger
 
 from quant1x.config.config import base_config as config
-from quant1x.std import filesystem as fs, system
+from quant1x.base import filesystem as fs, system
 
 # ========== 防护: 仅当未配置时执行 ==========
 if not getattr(__logger, "_quant1x_configured", False):

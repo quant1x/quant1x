@@ -66,7 +66,7 @@ impl BaseFrame for BlockFileContext {
         buf
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         self.data.clear();
         if data.len() < 4 {
             self.size = 0;

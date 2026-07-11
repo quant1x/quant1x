@@ -1,8 +1,8 @@
-#include <quant1x/test/test.h>
+﻿#include <quant1x/test/test.h>
 
 #include <iconv.h>
 #include <quant1x/encoding/charsets.h>
-#include <quant1x/std/util.h>
+#include <quant1x/base/util.h>
 
 TEST_CASE("raw-gbk-to-utf8", "[charsets]") {
     iconv_t cd = iconv_open("UTF-8", "GBK");

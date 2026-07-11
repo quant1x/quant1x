@@ -1,5 +1,5 @@
-#include <iostream>
-#include <quant1x/std/strings.h>
+﻿#include <iostream>
+#include <quant1x/base/strings.h>
 
 int main() {
     std::string test = "XMLHttpRequest";

@@ -1,5 +1,5 @@
-#include <quant1x/test/test.h>
-#include <quant1x/std/strings.h>
+﻿#include <quant1x/test/test.h>
+#include <quant1x/base/strings.h>
 #include <spdlog/sinks/daily_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/dist_sink.h>

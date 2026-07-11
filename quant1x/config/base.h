@@ -1,8 +1,8 @@
-#pragma once
+﻿#pragma once
 #ifndef QUANT1X_CONFIG_BASE_H
 #define QUANT1X_CONFIG_BASE_H 1
 
-#include <quant1x/std/api.h>
+#include <quant1x/base/api.h>
 #include <quant1x/config/data_cache.h>
 #include <quant1x/config/trader_parameter.h>
 #include <mutex>

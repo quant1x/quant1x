@@ -1,4 +1,4 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
+﻿// Copyright (c) Quant1X <wangfengxy@sina.cn>.
 // Licensed under the MIT License.
 
 package meta
@@ -10,7 +10,7 @@ import (
 
 	"github.com/quant1x/quant1x/quant1x/config"
 	"github.com/quant1x/quant1x/quant1x/runtime"
-	"github.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/base"
 )
 
 // TODO: https://www.tradinghours.com/markets

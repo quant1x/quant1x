@@ -1,4 +1,4 @@
-package core
+﻿package core
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/base"
 	"gopkg.in/yaml.v3"
 )
 

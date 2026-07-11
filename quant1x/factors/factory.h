@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #ifndef QUANT1X_FACTORS_FACTORY_H
 #define QUANT1X_FACTORS_FACTORY_H 1
 
@@ -14,7 +14,7 @@
 #include <quant1x/encoding/csv.h>
 #include <quant1x/data/adapter.h>
 #include <quant1x/runtime/once.h>
-#include <quant1x/std/atomic.h>
+#include <quant1x/base/atomic.h>
 
 namespace factors {
 

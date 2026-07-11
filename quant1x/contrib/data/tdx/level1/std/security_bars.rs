@@ -20,7 +20,7 @@ use super::super::super::command::*;
 use super::super::super::helpers::{get_datetime_from_u32, int_to_float64};
 use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 use crate::helpers;
-use crate::std::BinaryStream;
+use crate::base::BinaryStream;
 
 /// SECURITY_BARS_PRE_REQUEST_MAX = 700
 pub const SECURITY_BARS_PRE_REQUEST_MAX: usize = 700;
@@ -168,7 +168,7 @@ impl BaseFrame for SecurityBarsContext {
         payload.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         self.list.clear();
         self.count = 0;
 

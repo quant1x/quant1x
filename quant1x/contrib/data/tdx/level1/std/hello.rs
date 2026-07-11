@@ -31,7 +31,7 @@ impl BaseFrame for StdLoginContext {
         padding
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         let offset = 68usize;
         if data.len() >= offset {
             let info_bytes = &data[offset..];
@@ -74,7 +74,7 @@ impl BaseFrame for UpgradeTipContext {
             .unwrap_or_default()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         let offset = 58usize;
         if data.len() >= offset {
             let (cow, _, _) = GBK.decode(&data[offset..]);

@@ -2,7 +2,7 @@
 
 use super::super::super::command::*;
 use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
-use crate::std::BinaryStream;
+use crate::base::BinaryStream;
 use encoding_rs::GBK;
 
 #[derive(Debug, Clone)]
@@ -53,7 +53,7 @@ impl BaseFrame for FinanceInfoContext {
         buf.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         let mut bs = BinaryStream::from_vec(data.to_vec());
         self.count = bs.get_u16()?;
         if self.count == 0 {
@@ -227,7 +227,7 @@ struct RawFinanceInfo {
     bao_liu2: f32,
 }
 impl RawFinanceInfo {
-    fn decode(bs: &mut BinaryStream) -> Result<Self, crate::std::DeserializeError> {
+    fn decode(bs: &mut BinaryStream) -> Result<Self, crate::base::DeserializeError> {
         let market = bs.get_u8()?;
         let mut code = [0u8; 6];
         bs.get_byte_array(&mut code)?;

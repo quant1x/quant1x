@@ -40,8 +40,8 @@ pub mod learn;
 // network module (mio-based connection pool)
 mod io;
 pub use crate::io::*;
-mod std;
-pub use crate::std::*;
+mod base;
+pub use crate::base::*;
 
 // core module
 pub mod core;

@@ -1,8 +1,8 @@
-#pragma once
+﻿#pragma once
 #ifndef QUANT1X_FACTOR_F10_SHARE_HOLDER_H
 #define QUANT1X_FACTOR_F10_SHARE_HOLDER_H 1
 
-#include <quant1x/std/api.h>
+#include <quant1x/base/api.h>
 
 namespace dfcf {
 

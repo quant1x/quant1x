@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.30)
+﻿cmake_minimum_required(VERSION 3.30)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 # 加载基础 CMake 配置
 include(cmake/base.cmake)
@@ -390,19 +390,19 @@ set(DEPENDENCY_CATCH2 "v${Catch2_VERSION}")
 
 set(quant1x-headers
     # 标准库
-    quant1x/std/affinity.h
-    quant1x/std/api.h
-    quant1x/std/base.h
-    quant1x/std/buffer.h
-    quant1x/std/filesystem.h
-    quant1x/std/strings.h
-    quant1x/std/util.h
-    quant1x/std/format.h
-    quant1x/std/feature_detection.h
-    quant1x/std/numeric.h
-    quant1x/std/safe.h
-    quant1x/std/simd.h
-    quant1x/std/cpu_info.h
+    quant1x/base/affinity.h
+    quant1x/base/api.h
+    quant1x/base/common.h
+    quant1x/base/buffer.h
+    quant1x/base/filesystem.h
+    quant1x/base/strings.h
+    quant1x/base/util.h
+    quant1x/base/format.h
+    quant1x/base/feature_detection.h
+    quant1x/base/numeric.h
+    quant1x/base/safe.h
+    quant1x/base/simd.h
+    quant1x/base/cpu_info.h
 
     # 核心库
     quant1x/core/base.h
@@ -577,15 +577,15 @@ set(quant1x-headers
 
 set(quant1x-sources
     # 标准库兼容
-    quant1x/std/strings.cpp
-    quant1x/std/time.cpp
-    quant1x/std/filesystem.cpp
-    quant1x/std/util.cpp
-    quant1x/std/numeric.cpp
-    quant1x/std/safe.cpp
-    quant1x/std/simd.cpp
-    quant1x/std/cpu_info.cpp
-    quant1x/std/affinity.cpp
+    quant1x/base/strings.cpp
+    quant1x/base/time.cpp
+    quant1x/base/filesystem.cpp
+    quant1x/base/util.cpp
+    quant1x/base/numeric.cpp
+    quant1x/base/safe.cpp
+    quant1x/base/simd.cpp
+    quant1x/base/cpu_info.cpp
+    quant1x/base/affinity.cpp
     
     # 核心库
     quant1x/core/base.cpp
@@ -713,7 +713,7 @@ if(ENABLE_MIMALLOC)
     # <mimalloc-new-delete.h> when the corresponding compile-time macros
     # are defined. This guarantees the anchor symbol
     # `quant1x_mimalloc_force_symbol` exists for link-time forcing.
-    list(APPEND quant1x-sources quant1x/std/mimalloc_force.cpp)
+    list(APPEND quant1x-sources quant1x/base/mimalloc_force.cpp)
 endif()
 
 if (WIN32)

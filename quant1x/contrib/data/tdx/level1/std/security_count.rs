@@ -4,7 +4,7 @@
 //
 // security_count — 证券数量 (STD_SECURITY_COUNT, 0x044e)
 
-use crate::std::BinaryStream;
+use crate::base::BinaryStream;
 
 use super::super::super::command::*;
 use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
@@ -41,7 +41,7 @@ impl BaseFrame for SecurityCountContext {
         buf.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         if data.len() < 2 {
             return Ok(());
         }

@@ -1,4 +1,4 @@
-use crate::std::filesystem;
+use crate::base::filesystem;
 use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::collections::HashMap;
@@ -54,7 +54,7 @@ impl BaseConfig {
                 *basedir = get_base_path().to_string();
             } else {
                 // 展开用户目录
-                *basedir = crate::std::filesystem::expand_user(basedir).unwrap_or(basedir.clone());
+                *basedir = crate::base::filesystem::expand_user(basedir).unwrap_or(basedir.clone());
             }
         } else {
             typed_config.basedir = Some(get_base_path().to_string());
@@ -68,7 +68,7 @@ impl BaseConfig {
                     Some(format!("{}/logs", typed_config.basedir.as_ref().unwrap()));
             } else {
                 typed_config.logdir =
-                    Some(crate::std::filesystem::expand_user(trimmed).unwrap_or(trimmed.to_string()));
+                    Some(crate::base::filesystem::expand_user(trimmed).unwrap_or(trimmed.to_string()));
             }
         } else {
             typed_config.logdir = Some(format!("{}/logs", typed_config.basedir.as_ref().unwrap()));

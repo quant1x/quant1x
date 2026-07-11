@@ -1,11 +1,11 @@
-#pragma once
+﻿#pragma once
 #ifndef QUANT1X_FACTOR_F10_H
 #define QUANT1X_FACTOR_F10_H 1
 
 #include <quant1x/data/adapter.h>
 #include <quant1x/data/meta/timestamp.h>
 #include <quant1x/data/meta/calendar.h>
-#include <quant1x/std/numeric.h>
+#include <quant1x/base/numeric.h>
 
 namespace factors {
     namespace risk {

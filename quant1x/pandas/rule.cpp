@@ -1,5 +1,5 @@
-#include <quant1x/pandas/rule.h>
-#include <quant1x/std/strings.h>
+﻿#include <quant1x/pandas/rule.h>
+#include <quant1x/base/strings.h>
 
 #include <vector>
 #include <string>

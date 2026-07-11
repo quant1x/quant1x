@@ -4,7 +4,7 @@
 //
 // heartbeat — 心跳维持 (STD_HEARTBEAT, 0x0004)
 
-use crate::std::BinaryStream;
+use crate::base::BinaryStream;
 
 use super::super::super::command::*;
 use super::super::super::helpers::get_sequence_id;
@@ -27,7 +27,7 @@ impl BaseFrame for HeartbeatContext {
         Vec::new()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         let mut bs = BinaryStream::from_vec(data.to_vec());
         self.info = bs.get_string(10)?;
         Ok(())

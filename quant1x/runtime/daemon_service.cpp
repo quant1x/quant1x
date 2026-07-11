@@ -1,6 +1,6 @@
-#include <quant1x/runtime/core.h>
+﻿#include <quant1x/runtime/core.h>
 #include <quant1x/runtime/service.h>
-#include <quant1x/std/api.h>
+#include <quant1x/base/api.h>
 #include <shellapi.h>
 #include <spdlog/spdlog.h>
 #include <windows.h>

@@ -1,10 +1,10 @@
-package data
+﻿package data
 
 import (
 	_ "unsafe" // for go:linkname
 
 	"github.com/quant1x/quant1x/quant1x/data/schema"
-	"github.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/base"
 )
 
 type AdjustmentType string

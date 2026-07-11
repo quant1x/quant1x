@@ -1,4 +1,4 @@
-package main
+﻿package main
 
 import (
 	"bufio"
@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/quant1x/pkg/tools/tail"
-	"github.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/base"
 	cli "github.com/spf13/cobra"
 )
 

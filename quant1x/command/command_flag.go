@@ -1,4 +1,4 @@
-package command
+﻿package command
 
 import (
 	"strings"
@@ -7,7 +7,7 @@ import (
 	"github.com/quant1x/pkg/tablewriter"
 	"github.com/quant1x/quant1x/quant1x/data"
 	"github.com/quant1x/quant1x/quant1x/data"
-	"github.com/quant1x/quant1x/quant1x/std/meta"
+	"github.com/quant1x/quant1x/quant1x/base/meta"
 	cli "github.com/spf13/cobra"
 )
 

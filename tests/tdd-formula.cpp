@@ -1,6 +1,6 @@
-#include <quant1x/test/test.h>
+﻿#include <quant1x/test/test.h>
 #include <quant1x/formula.h>
-#include <quant1x/std/algo.h>
+#include <quant1x/base/algo.h>
 #ifdef _WIN32
 #include <windows.h>
 #endif

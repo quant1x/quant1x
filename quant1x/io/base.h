@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #ifndef QUANT1X_NETWORK_IO_BASE_H
 #define QUANT1X_NETWORK_IO_BASE_H 1
 
@@ -13,7 +13,7 @@
 
 //#define ASIO_HEADER_ONLY
 #include <asio.hpp>
-#include <quant1x/std/api.h>
+#include <quant1x/base/api.h>
 
 // 自定义格式化器：将 asio::ip::basic_endpoint 转换为字符串
 template <>

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #ifndef QUANT1X_COMMAND_H
 #define QUANT1X_COMMAND_H 1
 
@@ -6,7 +6,7 @@
 // quant1x命令字                                             //
 //============================================================
 
-#include <quant1x/std/api.h>
+#include <quant1x/base/api.h>
 
 #include <argparse/argparse.hpp>
 #include <boost/pfr/core.hpp>

@@ -1,7 +1,7 @@
-#include <iostream>
+﻿#include <iostream>
 #include <vector>
 #include <cassert>
-#include <quant1x/std/strings.h>
+#include <quant1x/base/strings.h>
 
 void test_basic_char_functions() {
     std::cout << "=== 测试基础字符函数 ===" << std::endl;

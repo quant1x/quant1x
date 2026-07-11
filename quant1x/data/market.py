@@ -5,7 +5,7 @@
 from typing import List
 
 from quant1x.log import logger
-from quant1x.std.numeric import NumberRange
+from quant1x.base.numeric import NumberRange
 
 from .meta.exchange import Exchange
 from .meta.instrument import Instrument, InstrumentType

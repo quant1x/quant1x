@@ -1,11 +1,11 @@
-package config
+﻿package config
 
 import (
 	"path/filepath"
 	"strings"
 
 	"github.com/quant1x/quant1x/quant1x/core"
-	"github.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/base"
 )
 
 // price cage defaults from C++ config/price_cage.h

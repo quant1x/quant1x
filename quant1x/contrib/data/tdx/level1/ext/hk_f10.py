@@ -11,7 +11,7 @@ from datetime import date, datetime
 
 import scipy as sp
 
-from quant1x.std.numeric import float_round
+from quant1x.base.numeric import float_round
 from quant1x.data.meta.instrument import Instrument
 from quant1x.data.schema.adjustment import XdxrInfo
 from quant1x.data.meta.forex import ExchangeRateCache

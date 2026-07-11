@@ -1,5 +1,5 @@
-#include <quant1x/test/test.h>
-#include <quant1x/std/numeric.h>
+﻿#include <quant1x/test/test.h>
+#include <quant1x/base/numeric.h>
 
 TEST_CASE("numeric::number_range<T> default constructor works", "[numerics]") {
     numeric::number_range<int> r;

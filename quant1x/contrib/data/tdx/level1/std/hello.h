@@ -1,9 +1,9 @@
-#pragma once
+﻿#pragma once
 #ifndef QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_HELLO_H
 #define QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_HELLO_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
-#include <quant1x/std/util.h>
+#include <quant1x/base/util.h>
 
 // ==============================
 // 标准行情 - 协议握手

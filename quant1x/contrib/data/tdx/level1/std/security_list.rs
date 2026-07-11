@@ -8,7 +8,7 @@
 use encoding::{DecoderTrap, Encoding};
 use encoding::all::GBK;
 
-use crate::std::BinaryStream;
+use crate::base::BinaryStream;
 
 use super::super::super::command::*;
 use super::super::super::helpers::int_to_float64;
@@ -66,7 +66,7 @@ impl BaseFrame for SecurityListContext {
         bs.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         self.list.clear();
         if data.is_empty() {
             return Ok(());

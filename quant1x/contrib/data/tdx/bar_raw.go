@@ -6,10 +6,10 @@ import (
 	"os"
 	"strconv"
 
-	"gitee.com/quant1x/quant1x/quant1x/data/exchange"
 	"github.com/quant1x/quant1x/quant1x/config"
 	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/level1/std"
 	"github.com/quant1x/quant1x/quant1x/data"
+	"github.com/quant1x/quant1x/quant1x/data/exchange"
 	"github.com/quant1x/quant1x/quant1x/data/schema"
 	"github.com/quant1x/quant1x/quant1x/encoding"
 	logger "github.com/quant1x/quant1x/quant1x/log"

@@ -5,7 +5,7 @@
 // 对应 Python contrib/data/tdx/level1/ext.py
 
 use crate::data::meta::instrument::{Instrument, InstrumentType};
-use crate::std::BinaryStream;
+use crate::base::BinaryStream;
 use encoding_rs::GBK;
 
 use super::super::command::{EXT_INSTRUMENT_COUNT, EXT_INSTRUMENT_INFO, EXT_SYNCHRONIZE, FLAG_GENERIC};
@@ -58,7 +58,7 @@ impl BaseFrame for ExtSynchronizeRequest {
         padding
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         // SynchronizeContext.deserialize_response_body:
         //   第一个字节是 result_code
         if data.is_empty() {
@@ -122,7 +122,7 @@ impl BaseFrame for InstrumentCountRequest {
         Vec::new()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         // InstrumentCountContext.deserialize_response_body:
         //   (name, reversed1, reversed2, num, reversed3, reversed4) = struct.unpack("<11s5I", data[:31])
         //   self.reply = {"source": name, "count": num}
@@ -201,7 +201,7 @@ impl BaseFrame for InstrumentInfoRequest {
     fn deserialize_response_body(
         &mut self,
         data: &[u8],
-    ) -> Result<(), crate::std::DeserializeError> {
+    ) -> Result<(), crate::base::DeserializeError> {
         self.list.clear();
         let mut bs = BinaryStream::from_vec(data.to_vec());
 

@@ -1,11 +1,11 @@
-package runtime
+﻿package runtime
 
 import (
 	"context"
 	"sync"
 	"time"
 
-	"github.com/quant1x/quant1x/quant1x/std/signal"
+	"github.com/quant1x/quant1x/quant1x/base/signal"
 )
 
 var (

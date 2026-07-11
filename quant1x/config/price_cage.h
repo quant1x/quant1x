@@ -1,8 +1,8 @@
-#pragma once
+﻿#pragma once
 #ifndef QUANT1X_CONFIG_DETAIL_PRICE_CAGE_H
 #define QUANT1X_CONFIG_DETAIL_PRICE_CAGE_H 1
 
-#include <quant1x/std/api.h>
+#include <quant1x/base/api.h>
 
 namespace quant1x::config {
 

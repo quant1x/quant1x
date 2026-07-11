@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #ifndef QUANT1X_ENGINE_STRATEGY_H
 #define QUANT1X_ENGINE_STRATEGY_H 1
 
@@ -7,8 +7,8 @@
 #include <quant1x/data/meta/timestamp.h>
 #include <quant1x/proto/data.h>
 #include <quant1x/proto/snapshot.capnp.h>
-#include <quant1x/std/except.h>
-#include <quant1x/std/numeric.h>
+#include <quant1x/base/except.h>
+#include <quant1x/base/numeric.h>
 #include <quant1x/trader/fee.h>
 #include <quant1x/data/schema/bar.h>
 #include <quant1x/config/strategy_parameter.h>

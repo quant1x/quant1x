@@ -5,7 +5,7 @@
 // TDX protocol — 协议头与消息基类
 // 对应 Python quant1x/contrib/data/tdx/protocol.py
 
-use crate::std::BinaryStream;
+use crate::base::BinaryStream;
 use flate2::read::ZlibDecoder;
 use std::io::{Read, Write};
 
@@ -104,7 +104,7 @@ impl ResponseHeader {
     }
 
     /// 从 16 字节数据反序列化
-    pub fn deserialize(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    pub fn deserialize(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         let mut bs = BinaryStream::from_vec(data.to_vec());
         self.magic_number = bs.get_u32()?;
         self.frame_type = bs.get_u8()?;
@@ -150,7 +150,7 @@ pub trait BaseFrame {
     fn serialize_request_body(&mut self) -> Vec<u8>;
 
     /// 反序列化响应体
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError>;
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError>;
 
     /// 完整序列化请求(头 + 体)
     fn serialize_request(&mut self) -> Vec<u8> {
@@ -165,7 +165,7 @@ pub trait BaseFrame {
     }
 
     /// 反序列化响应头
-    fn deserialize_response_header(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_header(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         self.response_header_mut().deserialize(data)
     }
 
@@ -236,7 +236,7 @@ pub fn process_level1<M: BaseFrame, R: Read>(
     reader: &mut R,
     writer: &mut dyn std::io::Write,
     msg: &mut M,
-) -> Result<(), crate::std::DeserializeError> {
+) -> Result<(), crate::base::DeserializeError> {
     process_level1_impl(reader, writer, msg)
 }
 
@@ -245,7 +245,7 @@ pub fn process_level1<M: BaseFrame, R: Read>(
 pub fn transact_message_sync<M: BaseFrame, T: Read + Write>(
     stream: &mut T,
     msg: &mut M,
-) -> Result<(), crate::std::DeserializeError> {
+) -> Result<(), crate::base::DeserializeError> {
     let cmd_value = msg.request_header().command.value;
     let cmd_desc = msg.request_header().command.desc;
 
@@ -255,12 +255,12 @@ pub fn transact_message_sync<M: BaseFrame, T: Read + Write>(
     log::debug!("transact_message_sync: req_buf hex={}", hex::encode(&req_buf));
     stream
         .write_all(&req_buf)
-        .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
+        .map_err(|e| crate::base::DeserializeError::Other(e.to_string()))?;
 
     // 2. 读取 16 字节响应头
     let resp_header_len = msg.response_header().byte_size();
     let resp_header_bytes = recv_exact(stream, resp_header_len)
-        .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
+        .map_err(|e| crate::base::DeserializeError::Other(e.to_string()))?;
 
     // 3. 反序列化响应头
     msg.deserialize_response_header(&resp_header_bytes)?;
@@ -274,19 +274,19 @@ pub fn transact_message_sync<M: BaseFrame, T: Read + Write>(
 
     // 5. 读取响应体
     let resp_body_bytes = recv_exact(stream, msg.response_zip_size())
-        .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
+        .map_err(|e| crate::base::DeserializeError::Other(e.to_string()))?;
 
     // 6. 如果压缩长度 != 解压长度, zlib 解压
     let final_body = if msg.response_zip_size() != msg.response_unzip_size() {
         unzip(resp_body_bytes, msg.response_unzip_size())
-            .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?
+            .map_err(|e| crate::base::DeserializeError::Other(e.to_string()))?
     } else {
         resp_body_bytes
     };
 
     // 7. 反序列化响应体
     msg.deserialize_response_body(&final_body).map_err(|e| {
-        crate::std::DeserializeError::Other(format!(
+        crate::base::DeserializeError::Other(format!(
             "response body deserialize error for {} (0x{:04x}): {}",
             cmd_desc, cmd_value, e
         ))
@@ -299,7 +299,7 @@ fn process_level1_impl<M: BaseFrame, R: Read>(
     reader: &mut R,
     writer: &mut dyn std::io::Write,
     msg: &mut M,
-) -> Result<(), crate::std::DeserializeError> {
+) -> Result<(), crate::base::DeserializeError> {
     let cmd_value = msg.request_header().command.value;
     let cmd_desc = msg.request_header().command.desc;
 
@@ -309,13 +309,13 @@ fn process_level1_impl<M: BaseFrame, R: Read>(
     log::debug!("process_level1: req_buf hex={}", hex::encode(&req_buf));
     writer
         .write_all(&req_buf)
-        .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
+        .map_err(|e| crate::base::DeserializeError::Other(e.to_string()))?;
 
     // 2. 读取 16 字节响应头
     let resp_header_len = msg.response_header().byte_size();
     log::debug!("process_level1: response_header.byte_size={}", resp_header_len);
     let resp_header_bytes = recv_exact(reader, resp_header_len)
-        .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
+        .map_err(|e| crate::base::DeserializeError::Other(e.to_string()))?;
 
     // 3. 反序列化响应头
     msg.deserialize_response_header(&resp_header_bytes)?;
@@ -329,19 +329,19 @@ fn process_level1_impl<M: BaseFrame, R: Read>(
 
     // 5. 读取响应体
     let resp_body_bytes = recv_exact(reader, msg.response_zip_size())
-        .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?;
+        .map_err(|e| crate::base::DeserializeError::Other(e.to_string()))?;
 
     // 6. 如果压缩长度 != 解压长度, zlib 解压
     let final_body = if msg.response_zip_size() != msg.response_unzip_size() {
         unzip(resp_body_bytes, msg.response_unzip_size())
-            .map_err(|e| crate::std::DeserializeError::Other(e.to_string()))?
+            .map_err(|e| crate::base::DeserializeError::Other(e.to_string()))?
     } else {
         resp_body_bytes
     };
 
     // 7. 反序列化响应体
     msg.deserialize_response_body(&final_body).map_err(|e| {
-        crate::std::DeserializeError::Other(format!(
+        crate::base::DeserializeError::Other(format!(
             "response body deserialize error for {} (0x{:04x}): {}",
             cmd_desc, cmd_value, e
         ))

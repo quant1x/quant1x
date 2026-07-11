@@ -1,8 +1,8 @@
-#pragma once
+﻿#pragma once
 #ifndef QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_SECURITY_LIST_H
 #define QUANT1X_CONTRIB_DATA_TDX_LEVEL1_STD_SECURITY_LIST_H 1
 
-#include <quant1x/std/base.h>
+#include <quant1x/base/common.h>
 #include <quant1x/contrib/data/tdx/helpers.h>
 #include <quant1x/contrib/data/tdx/protocol.h>
 

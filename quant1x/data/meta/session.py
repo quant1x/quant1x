@@ -10,7 +10,7 @@ from typing import List, Optional, Union
 from datetime import datetime
 
 from quant1x.runtime.once import RollingOnce
-from quant1x.std.time import get_timezone_offset_standard
+from quant1x.base.time import get_timezone_offset_standard
 from quant1x.log import logger
 from quant1x.config import config, GLOBAL_CRON_EXPR_DAILY_INIT
 

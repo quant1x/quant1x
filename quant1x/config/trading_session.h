@@ -1,9 +1,9 @@
-#pragma once
+﻿#pragma once
 #ifndef QUANT1X_CONFIG_DETAIL_TRADING_SESSION_H
 #define QUANT1X_CONFIG_DETAIL_TRADING_SESSION_H 1
 
-#include <quant1x/std/strings.h>
-#include <quant1x/std/safe.h>
+#include <quant1x/base/strings.h>
+#include <quant1x/base/safe.h>
 #include <algorithm>
 #include <chrono>
 #include <ctime>

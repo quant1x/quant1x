@@ -4,7 +4,7 @@
 //
 // company — 公司信息分类/内容 (STD_COMPANY_CATEGORY, STD_COMPANY_CONTENT)
 
-use crate::std::BinaryStream;
+use crate::base::BinaryStream;
 
 use super::super::super::command::*;
 use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
@@ -40,7 +40,7 @@ impl BaseFrame for CompanyCategoryRequest {
         Vec::new()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         self.content = String::from_utf8_lossy(data).into_owned();
         Ok(())
     }
@@ -77,7 +77,7 @@ impl BaseFrame for CompanyInfoContext {
         Vec::new()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         self.content = String::from_utf8_lossy(data).into_owned();
         Ok(())
     }

@@ -1,10 +1,10 @@
-#pragma once
+﻿#pragma once
 #include <cmath>
 #ifndef QUANT1X_CONTRIB_DATA_TDX_HELPERS_H
 #define QUANT1X_CONTRIB_DATA_TDX_HELPERS_H 1
 
-#include <quant1x/std/api.h>
-#include <quant1x/std/feature_detection.h>
+#include <quant1x/base/api.h>
+#include <quant1x/base/feature_detection.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>

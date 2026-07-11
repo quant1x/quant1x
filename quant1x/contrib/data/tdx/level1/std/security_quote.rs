@@ -5,7 +5,7 @@
 // security_quote — 行情快照 (STD_SECURITY_QUOTES_OLD, 0x053e)
 
 use crate::market;
-use crate::std::BinaryStream;
+use crate::base::BinaryStream;
 
 use super::super::super::command::*;
 use super::super::super::helpers;
@@ -158,7 +158,7 @@ impl BaseFrame for SecurityQuoteContext {
         buf.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         self.quotes.clear();
         self.count = 0;
         let mut bs = BinaryStream::from_vec(data.to_vec());

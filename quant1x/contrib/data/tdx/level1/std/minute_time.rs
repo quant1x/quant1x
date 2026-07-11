@@ -4,7 +4,7 @@
 //
 // minute_time — 历史分时数据 (STD_HISTORY_MINUTE_DATA, 0x0fb4)
 
-use crate::std::BinaryStream;
+use crate::base::BinaryStream;
 
 use super::super::super::command::*;
 use super::super::super::helpers;
@@ -72,7 +72,7 @@ impl BaseFrame for HistoryMinuteTimeRequest {
         buf.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         self.list.clear();
         if data.len() < 2 {
             return Ok(());

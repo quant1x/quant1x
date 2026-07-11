@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List, Type, Union, get_type_hints
 from dataclasses import dataclass, fields, is_dataclass
 from quant1x.types import T
-from quant1x.std import get_field_names, strings
+from quant1x.base import get_field_names, strings
 
 
 def csv_to_slice(filepath: Union[str, Path], cls: Type[T]) -> List[T]:

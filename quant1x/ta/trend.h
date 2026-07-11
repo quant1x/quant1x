@@ -1,8 +1,8 @@
-#pragma once
+﻿#pragma once
 #ifndef QUANT1X_TECHNICAL_ANALYSIS_TREND_H
 #define QUANT1X_TECHNICAL_ANALYSIS_TREND_H 1
 
-#include <quant1x/std/api.h>
+#include <quant1x/base/api.h>
 #include <cmath>    // for atan2, abs, M_PI
 #include <numbers>
 

@@ -1,9 +1,9 @@
-#pragma once
+﻿#pragma once
 #ifndef QUANT1X_CONTRB_DATA_TDX_EXT_SYNC_H
 #define QUANT1X_CONTRB_DATA_TDX_EXT_SYNC_H 1
 
 #include <quant1x/contrib/data/tdx/protocol.h>
-#include <quant1x/std/util.h>
+#include <quant1x/base/util.h>
 
 namespace quant1x::contrib::data::tdx {
 

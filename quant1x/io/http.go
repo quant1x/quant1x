@@ -1,4 +1,4 @@
-package io
+﻿package io
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/quant1x/quant1x/quant1x/log"
-	"github.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/base"
 )
 
 const (

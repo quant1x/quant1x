@@ -1,4 +1,4 @@
-package base64
+﻿package base64
 
 import (
 	"encoding/base64"
@@ -6,7 +6,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/base"
 )
 
 const (

@@ -1,8 +1,8 @@
-#pragma once
+﻿#pragma once
 #ifndef QUANT1X_PANDAS_SERIES_H
 #define QUANT1X_PANDAS_SERIES_H 1
 
-#include <quant1x/std/simd.h>
+#include <quant1x/base/simd.h>
 #include "ewm.h"
 
 // 前置声明EWM(避免循环引用)

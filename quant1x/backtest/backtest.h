@@ -1,6 +1,6 @@
-#pragma once
-#ifndef QUANT1X_BACKTEST_H
-#define QUANT1X_BACKTEST_H 1
+﻿#pragma once
+#ifndef QUANT1X_BACKTEST_BACKTEST_H
+#define QUANT1X_BACKTEST_BACKTEST_H 1
 
 #include <quant1x/backtest/order.h>
 #include <quant1x/backtest/position.h>
@@ -8,7 +8,7 @@
 #include <quant1x/data/schema/bar.h>
 #include <quant1x/engine/strategy.h>
 #include <quant1x/io/csv-writer.h>
-#include <quant1x/std/api.h>
+#include <quant1x/base/api.h>
 
 // 使用时间点别名简化代码
 using TimePoint = std::chrono::system_clock::time_point;
@@ -127,4 +127,4 @@ namespace backtest {
 
 }  // namespace backtest
 
-#endif  // QUANT1X_BACKTEST_H
+#endif  // QUANT1X_BACKTEST_BACKTEST_H

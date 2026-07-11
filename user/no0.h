@@ -1,8 +1,8 @@
-#pragma once
+﻿#pragma once
 #ifndef QUANT1X_FEATURES_NO0_H
 #define QUANT1X_FEATURES_NO0_H 1
 
-#include <quant1x/std/base.h>
+#include <quant1x/base/common.h>
 #include <quant1x/data/adapter.h>
 #include <quant1x/factors/base_compat.h>
 

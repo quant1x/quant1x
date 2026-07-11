@@ -6,7 +6,7 @@
 // 对应 Python level1/std/xdxr.py
 // 对应 C++   level1/xdxr_info.h
 
-use crate::std::BinaryStream;
+use crate::base::BinaryStream;
 use crate::data::schema::{XdxrInfo, XdxrEntry};
 use crate::data::meta::Exchange;
 
@@ -72,7 +72,7 @@ impl BaseFrame for XdxrInfoContext {
         bs.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         self.list.clear();
         if data.len() < 11 {
             // 9 bytes unknown + 2 bytes count = 11 minimum
@@ -238,7 +238,7 @@ impl BaseFrame for XdxrBatchRequest {
         bs.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::std::DeserializeError> {
+    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
         self.list.clear();
         if data.len() < 2 {
             return Ok(());

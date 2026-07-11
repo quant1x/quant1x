@@ -3,7 +3,7 @@
 # Licensed under the MIT License.
 
 from dataclasses import dataclass
-from quant1x.std.numeric import NumberRange
+from quant1x.base.numeric import NumberRange
 from ..exchange import Exchange
 from ..instrument import InstrumentType
 

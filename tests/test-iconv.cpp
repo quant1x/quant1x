@@ -1,4 +1,4 @@
-#include <iconv.h>
+﻿#include <iconv.h>
 #include <iostream>
 #include <string.h>
 #include <stdlib.h>
@@ -6,7 +6,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
-// #include <quant1x/ta/simd.h>  -- header moved to quant1x/std/simd.h, vector_type/mean() API removed in refactoring
+// #include <quant1x/ta/simd.h>  -- header moved to quant1x/base/simd.h, vector_type/mean() API removed in refactoring
 
 int code_convert(const char *from_charset, const char *to_charset, char *inbuf, size_t inlen,
                  char *outbuf, size_t outlen) {

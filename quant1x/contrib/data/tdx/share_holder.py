@@ -34,7 +34,7 @@ HOLD_NUM_UNKNOWN_CHANGES = -9 # 未知变化
 
 def fetch_share_holder(security_code: str, date_str: str, diff: int = 0) -> pd.DataFrame:
     """Fetch top 10 circulating shareholders from Eastmoney."""
-    from quant1x.std.time import get_quarter_by_date
+    from quant1x.base.time import get_quarter_by_date
 
     inst = detect_symbol(security_code)
     code = inst.ticker
@@ -116,7 +116,7 @@ def fetch_share_holder(security_code: str, date_str: str, diff: int = 0) -> pd.D
 
 def cache_share_holder(security_code: str, date_str: str, diff: int = 1) -> pd.DataFrame:
     """Get share holder data from cache or fetch if missing."""
-    from quant1x.std.time import get_quarter_by_date
+    from quant1x.base.time import get_quarter_by_date
 
     _, _, last = get_quarter_by_date(date_str, diff)
     filename = top10_holders_filename(security_code, last)

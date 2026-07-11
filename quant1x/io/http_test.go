@@ -1,11 +1,11 @@
-package io
+﻿package io
 
 import (
 	"fmt"
 	"testing"
 	"time"
 
-	"github.com/quant1x/quant1x/quant1x/std"
+	"github.com/quant1x/quant1x/quant1x/base"
 )
 
 func TestHttpGet(t *testing.T) {
