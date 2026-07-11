@@ -3,9 +3,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.56] - 2026-07-11
+### Changed
+- 更新schema文档
+- refactor: rename std to base across all four languages
+
+- C++: rename base.h -> common.h, update all include directives
+- Go: rename package std -> package base (12 files)
+- Rust: rename crate::std:: -> crate::base:: (18 files)
+- Python: rename from quant1x.std -> from quant1x.base (16 files)
+- CMakeLists.txt: update precompiled header path to common.h
+
 ## [0.7.55] - 2026-06-30
 ### Changed
 - fix(rust): fix remaining kline->bar renames in datasource.rs and f10.rs
+- release v0.7.55
 
 ## [0.7.54] - 2026-06-30
 ### Changed
@@ -2107,7 +2119,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.55...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.56...HEAD
+[0.7.56]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.55...v0.7.56
 [0.7.55]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.54...v0.7.55
 [0.7.54]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.53...v0.7.54
 [0.7.53]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.52...v0.7.53
