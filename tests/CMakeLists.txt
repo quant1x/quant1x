@@ -159,6 +159,7 @@ add_catch2_executable(tdd-http.cpp)
 
 # 基础组件测试
 add_app_executable(test-ringbuffer.cpp)
+add_app_executable(test-highest_one_bit.cpp)
 
 # 编解码测试
 add_catch2_executable(tdd-encoding-csv.cpp)

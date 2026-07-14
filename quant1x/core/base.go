@@ -37,7 +37,7 @@ var (
 
 // lazyInitBasePath 初始化基础路径, 如果扩展用户路径失败则使用默认路径
 func lazyInitBasePath() {
-	path, err := std.ExpandUser(defaultBasePath)
+	path, err := base.ExpandUser(defaultBasePath)
 	if err != nil {
 		quant1xBasePath = defaultBasePath
 	} else {
@@ -74,7 +74,7 @@ func parseYamlConfig(filename string, config *BaseConfig) error {
 	config.ConfigMap = map[string]any{}
 
 	// 若配置文件不存在: 使用默认 BaseDir/LogDir, 并保留空 map
-	if !std.FileExist(filename) {
+	if !base.FileExist(filename) {
 		config.BaseDir = GetBasePath()
 		config.LogDir = filepath.Join(config.BaseDir, "logs")
 		return nil
@@ -101,14 +101,14 @@ func parseYamlConfig(filename string, config *BaseConfig) error {
 	// 如果配置文件中没有basedir, 则使用默认的basedir
 	if len(config.BaseDir) > 0 {
 		// 展开用户目录
-		basedir, _ := std.ExpandUser(config.BaseDir)
+		basedir, _ := base.ExpandUser(config.BaseDir)
 		config.BaseDir = basedir
 	} else {
 		config.BaseDir = GetBasePath()
 	}
 	// 设置日志目录
 	if len(strings.TrimSpace(config.LogDir)) > 0 {
-		logdir, _ := std.ExpandUser(strings.TrimSpace(config.LogDir))
+		logdir, _ := base.ExpandUser(strings.TrimSpace(config.LogDir))
 		config.LogDir = logdir
 	} else {
 		config.LogDir = filepath.Join(config.BaseDir, "logs")
