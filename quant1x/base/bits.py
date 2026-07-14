@@ -26,6 +26,10 @@ def round_up_to_power_of_two(x: int, max_bits: int = MAX_BITS) -> int:
     :param max_bits: 限制的最大位宽，默认为 64 (对齐 uint64_t)
     :return: 对齐后的 2 的幂。如果超出 max_bits，则退化为 1 << (max_bits - 1)
     """
+    # 类型检查：要求 x 必须为 Python 的 int（避免 float 或其它数值类型被隐式接受）
+    if not isinstance(x, int):
+        raise TypeError("x must be int")
+
     if x <= 0:
         return 1
     
@@ -37,7 +41,8 @@ def round_up_to_power_of_two(x: int, max_bits: int = MAX_BITS) -> int:
     # 【核心防护】：跨语言行为一致性截断
     # 如果目标位宽超过了系统支持的最大位宽（例如算出了 65 位），
     # 则退化为该位宽能表示的最大 2 的幂 (即 max_bits - 1)
-    if target_bits > max_bits:
+    # 如果目标位宽大于或等于限制位宽，则退化为该位宽能表示的最大 2 的幂
+    if target_bits >= max_bits:
         return 1 << (max_bits - 1)
         
     return 1 << target_bits
