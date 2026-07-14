@@ -22,6 +22,11 @@ class TestBitsPy(unittest.TestCase):
             round_up_to_power_of_two(3.5)
         with self.assertRaises(TypeError):
             round_up_to_power_of_two("8")
+        # bool 是 int 的子类，但应被拒绝
+        with self.assertRaises(TypeError):
+            round_up_to_power_of_two(True)
+        with self.assertRaises(TypeError):
+            round_up_to_power_of_two(False)
 
 if __name__ == '__main__':
     unittest.main()

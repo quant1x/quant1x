@@ -27,6 +27,9 @@ def round_up_to_power_of_two(x: int, max_bits: int = MAX_BITS) -> int:
     :return: 对齐后的 2 的幂。如果超出 max_bits，则退化为 1 << (max_bits - 1)
     """
     # 类型检查：要求 x 必须为 Python 的 int（避免 float 或其它数值类型被隐式接受）
+    # 注意：在 Python 中 `bool` 是 `int` 的子类，但我们不接受布尔值作为有效输入
+    if isinstance(x, bool):
+        raise TypeError("x must be int, not bool")
     if not isinstance(x, int):
         raise TypeError("x must be int")
 
