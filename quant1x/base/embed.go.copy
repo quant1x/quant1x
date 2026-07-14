@@ -33,7 +33,7 @@ func OpenEmbed(resources embed.FS, filename string) (fs.File, error) {
 //  1. 从嵌入式文件系统打开源文件
 //  2. 创建目标文件
 //  3. 复制文件内容
-//  4. 保持原始文件的修改时间，若不可用则使用当前时间
+//  4. 保持原始文件的修改时间, 若不可用则使用当前时间
 func Export(resources embed.FS, source, target string) error {
 	src, err := OpenEmbed(resources, source)
 	if err != nil {

@@ -2,7 +2,7 @@ package base
 
 import "testing"
 
-func TestHighestOneBit(t *testing.T) {
+func TestRoundUpToPowerOfTwo(t *testing.T) {
 	type args struct {
 		x uint64
 	}
@@ -16,7 +16,7 @@ func TestHighestOneBit(t *testing.T) {
 			args: args{
 				x: 0,
 			},
-			want: 1 << 63,
+			want: 1,
 		},
 		{
 			name: "1",
@@ -63,14 +63,14 @@ func TestHighestOneBit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := HighestOneBit(tt.args.x); got != tt.want {
-				t.Errorf("HighestOneBit() = %v, want %v", got, tt.want)
+			if got := RoundUpToPowerOfTwo(tt.args.x); got != tt.want {
+				t.Errorf("RoundUpToPowerOfTwo() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_highestOneBit(t *testing.T) {
+func TestRoundUpToPowerOfTwo_Alternate(t *testing.T) {
 	type args struct {
 		x uint64
 	}
@@ -84,7 +84,7 @@ func Test_highestOneBit(t *testing.T) {
 			args: args{
 				x: 0,
 			},
-			want: 1 << 63,
+			want: 1,
 		},
 		{
 			name: "1",
@@ -131,8 +131,8 @@ func Test_highestOneBit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := highestOneBit(tt.args.x); got != tt.want {
-				t.Errorf("highestOneBit() = %v, want %v", got, tt.want)
+			if got := RoundUpToPowerOfTwo(tt.args.x); got != tt.want {
+				t.Errorf("roundUpToPowerOfTwo() = %v, want %v", got, tt.want)
 			}
 		})
 	}

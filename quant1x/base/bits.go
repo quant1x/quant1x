@@ -4,48 +4,39 @@ const (
 	MaxPower2 uint64 = 1 << (64 - 1)
 )
 
-// HighestOneBit 返回大于等于 x 的最小 2 的幂次方.
+// RoundUpToPowerOfTwo 返回大于等于 x 的最小 2 的幂次方（驼峰命名，供 Go 使用）.
 // 特殊情况:
+//   - x = 0 -> 返回 1（在 ring buffer 场景更合理）
+//   - 如果 x 已经是 2 的幂，直接返回 x
 //
-//	x = 0 → 返回 1<<63(可根据需求调整)
-//	x 是 2 的幂 → 直接返回 x
+// 实现：使用可扩展的位传播循环，支持任意无符号宽度。
 //
 //go:noinline
-func HighestOneBit(x uint64) uint64 {
-	return nativeHighestOneBit(x)
+func RoundUpToPowerOfTwo(x uint64) uint64 {
+	// 使用纯 Go 实现
+	return nativeRoundUpToPowerOfTwo(x)
 }
 
+// nativeRoundUpToPowerOfTwo: 实际实现（可被其他 wrapper 调用）
+//
 //go:noinline
-func nativeHighestOneBit(x uint64) uint64 {
-	origin := x
-	// 判断 x 是否为 2 的幂
-	isPower2 := ((origin & (origin - 1)) == 0) && (origin != 0)
-	if isPower2 {
-		return origin // 快速路径: x 是 2 的幂
-	}
-	// 位展开: 将最高位后的所有位置 1
-	// HD, Figure 3-1
-	x |= x >> 1
-	x |= x >> 2
-	x |= x >> 4
-	x |= x >> 8
-	x |= x >> 16
-	x |= x >> 32
-	//x |= (x >> 64)
-	//x = x - (x >> 1)
-	// 提取最高位
-	x = x & ^(x >> 1)
-	// 若结果小于原值, 左移一位(确保结果 ≥ 原值)
-	if x < origin {
-		x <<= 1
-	}
-	// 处理 x = 0 的特殊情况(输入为 0 时)
+func nativeRoundUpToPowerOfTwo(x uint64) uint64 {
 	if x == 0 {
-		x = MaxPower2
+		return 1
 	}
-	return x
+	// 如果已经是 2 的幂，直接返回
+	if (x & (x - 1)) == 0 {
+		return x
+	}
+	v := x - 1
+	const bits = 64
+	for shift := 1; shift < bits; shift <<= 1 {
+		v |= v >> shift
+	}
+	v++
+	// 溢出防护：如果 v+1 回绕为 0，说明超出该类型能表示的最大 2 的幂，退化到 1 << (bits-1)
+	if v == 0 {
+		return uint64(1) << (bits - 1)
+	}
+	return v
 }
-
-//go:noinline
-//go:noescape
-func highestOneBit(x uint64) uint64

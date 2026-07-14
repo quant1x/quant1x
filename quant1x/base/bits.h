@@ -1,31 +1,51 @@
-// bits.h
-// 实现：highestOneBit（属于 base 的 bits 模块）
-// 说明：返回输入无符号整数中最高位的掩码（仅保留最高位为1，其余位为0）。
-//       如果输入为0，则返回0。
-// 注释：constexpr 模板，支持任意无符号整数类型（如 uint32_t / uint64_t）。
-//       使用移位传播技术把低位全部置1，随后减去右移一位得到仅最高位为1的值。
+#pragma once
 #ifndef QUANT1X_BASE_BITS_H
-#define QUANT1X_BASE_BITS_H
+#define QUANT1X_BASE_BITS_H 1
 
+// bits.h
+// 实现：round_up_to_power_of_two（属于 base 的 bits 模块）
+// 说明：将输入无符号整数向上舍入到最小的 2 的幂。
+// - 当输入为 0 时返回 1（用于 ring buffer 容量对齐契约）。
+// - 如果计算结果对目标类型发生溢出，则退化为该类型能表示的最大 2 的幂。
+// 实现：constexpr 模板，使用位传播（bit-propagation）技术，支持任意无符号整数类型。
 #include <type_traits>
 #include <cstdint>
+#include <cstddef>
+#include <climits>
 
 namespace quant1x {
 namespace bits {
 
-// highestOneBit: 返回仅包含最高位的掩码
-// 模板要求：T 必须为无符号整数类型
+// round_up_to_power_of_two: 向上舍入到最小的 2 的 N 次幂
+// 专用于 RingBuffer 容量对齐，以便使用 (index & (capacity - 1)) 替代取模。
+// 跨语言契约 (与 Go/Rust 严格一致):
+//  - 当输入为 0 时返回 1。
+//  - 如果结果超出类型可表示范围（发生加法溢出），安全退化为该类型能表示的最大 2 的幂。
 template <typename T>
-constexpr T highestOneBit(T v) noexcept {
-    static_assert(std::is_unsigned<T>::value, "highestOneBit requires unsigned integer type");
-    if (v == 0) return 0;
+constexpr T round_up_to_power_of_two(T v) noexcept {
+    static_assert(std::is_unsigned<T>::value, "requires unsigned integer type");
+    
+    // 1. 减法下溢防御
+    if (v == 0) return 1; 
 
-    T x = v;
-    const unsigned int bits = sizeof(T) * 8;
-    for (unsigned int shift = 1; shift < bits; shift <<= 1) {
-        x |= (x >> shift);
+    // 2. 核心位传播逻辑
+    v -= 1;
+    constexpr std::size_t bits = sizeof(T) * CHAR_BIT;
+
+    // 循环条件 shift < bits 天然避免了 C++ 中的移位 UB (Undefined Behavior)
+    for (std::size_t shift = 1; shift < bits; shift <<= 1) {
+        v |= (v >> shift);
     }
-    return x - (x >> 1);
+    
+    // 3. 加法溢出防御 (关键修复)
+    v += 1;
+    // 如果 v+1 发生无符号溢出，结果会回绕变成 0。
+    // 此时说明原值超出了该类型能表示的最大 2 的幂，安全退化为 1 << (bits - 1)
+    if (v == 0) {
+        v = T(1) << (bits - 1);
+    }
+    
+    return v;
 }
 
 } // namespace bits
