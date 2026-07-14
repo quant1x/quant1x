@@ -26,10 +26,10 @@ def round_up_to_power_of_two(x: int, max_bits: int = MAX_BITS) -> int:
     :param max_bits: 限制的最大位宽，默认为 64 (对齐 uint64_t)
     :return: 对齐后的 2 的幂。如果超出 max_bits，则退化为 1 << (max_bits - 1)
     """
-    # 类型检查：要求 x 必须为 Python 的 int（避免 float 或其它数值类型被隐式接受）
-    # 注意：在 Python 中 `bool` 是 `int` 的子类，但我们不接受布尔值作为有效输入
+    # 类型检查：严格排除 bool (Python 中 bool 是 int 的子类)
     if isinstance(x, bool):
         raise TypeError("x must be int, not bool")
+    # 通用类型检查：拦截 float, str 等其他非整数类型
     if not isinstance(x, int):
         raise TypeError("x must be int")
 
@@ -42,8 +42,6 @@ def round_up_to_power_of_two(x: int, max_bits: int = MAX_BITS) -> int:
     target_bits = (x - 1).bit_length()
     
     # 【核心防护】：跨语言行为一致性截断
-    # 如果目标位宽超过了系统支持的最大位宽（例如算出了 65 位），
-    # 则退化为该位宽能表示的最大 2 的幂 (即 max_bits - 1)
     # 如果目标位宽大于或等于限制位宽，则退化为该位宽能表示的最大 2 的幂
     if target_bits >= max_bits:
         return 1 << (max_bits - 1)
@@ -52,7 +50,7 @@ def round_up_to_power_of_two(x: int, max_bits: int = MAX_BITS) -> int:
 
 
 if __name__ == "__main__":
-    # 全面自测，重点验证跨语言边界行为
+    # 全面自测，重点验证跨语言边界行为与类型检查
     test_values = [
         0,                  # 边界：0 -> 1
         1,                  # 边界：1 -> 1
@@ -60,8 +58,8 @@ if __name__ == "__main__":
         3,                  # 普通：3 -> 4
         1023,               # 普通：1023 -> 1024
         1 << 63,            # 64位边界：2^63 -> 2^63
-        (1 << 63) + 1,      # 【关键测试】超出 64 位无符号整数范围
-        1 << 100,           # 【关键测试】超大整数
+        (1 << 63) + 1,      # 【关键测试】超出 64 位无符号整数范围 -> 退化到 2^63
+        1 << 100,           # 【关键测试】超大整数 -> 退化到 2^63
     ]
     
     print(f"{'Input':<30} | {'Output':<30} | {'Match C++/Rust?'}")
@@ -82,3 +80,11 @@ if __name__ == "__main__":
         t_str = f"{t} (0x{t:x})" if t > 1000 else str(t)
         res_str = f"{res} (0x{res:x})" if res > 1000 else str(res)
         print(f"{t_str:<30} | {res_str:<30} | {match}")
+        
+    # 验证类型检查的 Fail-Fast 机制
+    print("\n--- 类型检查验证 ---")
+    for bad_input in [True, False, 3.14, "10"]:
+        try:
+            round_up_to_power_of_two(bad_input)
+        except TypeError as e:
+            print(f"✅ 成功拦截非法输入 {repr(bad_input):<6} -> {e}")
