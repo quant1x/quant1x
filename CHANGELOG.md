@@ -3,6 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.57] - 2026-07-14
+### Changed
+- 提交：base(bits)：添加 bits.h 及最高位函数测试；更新 tests/CMakeLists
+- bits - 统一为原生实现，跨语言语义对齐，更新测试
+- python: 调整round_up_to_power_of_two代码
+- bits(Python)：使用 bit_length 优化，添加类型检查与单元测试
+- bits(Python)：拒绝 bool 输入，完善类型检查测试
+- bits(python): 优化部分注释
+
 ## [0.7.56] - 2026-07-11
 ### Changed
 - 更新schema文档
@@ -13,6 +22,7 @@ All notable changes to this project will be documented in this file.
 - Rust: rename crate::std:: -> crate::base:: (18 files)
 - Python: rename from quant1x.std -> from quant1x.base (16 files)
 - CMakeLists.txt: update precompiled header path to common.h
+- release v0.7.56
 
 ## [0.7.55] - 2026-06-30
 ### Changed
@@ -2119,7 +2129,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.56...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.57...HEAD
+[0.7.57]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.56...v0.7.57
 [0.7.56]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.55...v0.7.56
 [0.7.55]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.54...v0.7.55
 [0.7.54]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.53...v0.7.54
