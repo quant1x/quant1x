@@ -278,19 +278,19 @@ pub fn last_trading_day(date: Timestamp, debug_timestamp: Option<Timestamp>) -> 
             return Timestamp::pre_market_time_from_current(&current)
                 .unwrap_or(current);
         }
-        // find upper_bound
-        match tss.binary_search(&date) {
-            Ok(idx) => tss[idx],
-            Err(pos) => {
-                let mut it = if pos == 0 { 0 } else { pos - 1 };
-                // if current < last_timestamp (pre-market), move back
-                let last_ts = tss[it];
-                if current < last_ts && it > 0 {
-                    it -= 1;
-                }
-                tss[it]
-            }
+        // Use upper_bound semantics (aligned with C++ std::upper_bound):
+        // find first element > date, then step back to the last <= date.
+        let pos = match tss.binary_search(&date) {
+            Ok(idx) => idx + 1, // exact match → first > date is the next entry
+            Err(pos) => pos,    // insertion point = first > date
+        };
+        let mut it = if pos == 0 { 0 } else { pos - 1 };
+        // if current < last_timestamp (pre-market), move back
+        let last_ts = tss[it];
+        if current < last_ts && it > 0 {
+            it -= 1;
         }
+        tss[it]
     }
 }
 
@@ -387,28 +387,12 @@ mod tests {
 
     #[test]
     fn test_lazy_load_calendar_from_file() {
-        use std::env;
+        // Create a temp calendar file and directly test load_calendar_from_file.
+        // IMPORTANT: do NOT mutate process-global env vars (HOME / QUANT1X_HOME etc.);
+        // Rust tests run in parallel and env var changes cause race conditions
+        // in other tests (test_expand_user, test_last_trading_day).
         let td = tempdir().unwrap();
-        let home = td.path().to_path_buf();
-        // ensure dirs::home_dir() will return our tempdir on Windows and Unix
-        unsafe {
-            env::set_var("HOME", &home);
-            env::set_var("USERPROFILE", &home);
-        }
-
-        // make the crate config point to our tempdir by ensuring the default home expands
-        // The config module uses lazy init; to force it to use our tempdir, set QUANT1X_HOME
-        // which the crate homedir helper checks first.
-        unsafe {
-            env::set_var("QUANT1X_HOME", &home);
-        }
-
-        // get the calendar path from crate config
-        let cal_path = crate::config::get_calendar_filename();
-        let cal = PathBuf::from(cal_path.clone());
-        if let Some(parent) = cal.parent() {
-            std::fs::create_dir_all(parent).unwrap();
-        }
+        let cal = td.path().join("calendar.csv");
 
         let mut f = File::create(&cal).unwrap();
         writeln!(f, "date,source").unwrap();
@@ -416,10 +400,22 @@ mod tests {
         writeln!(f, "2025-09-11,sina").unwrap();
 
         // directly load from the file we created, then read from global in-memory list
-        load_calendar_from_file(cal.clone()).unwrap();
+        load_calendar_from_file(cal).unwrap();
         let list = GLOBAL_CALENDAR_STRINGS.lock().unwrap().clone();
         assert!(list.contains(&"2025-09-10".to_string()));
         assert!(list.contains(&"2025-09-11".to_string()));
+
+        // cleanup: reset global state to avoid polluting subsequent tests
+        {
+            let mut gs = GLOBAL_CALENDAR_STRINGS.lock().unwrap();
+            let mut gts = GLOBAL_CALENDAR_TS.lock().unwrap();
+            gs.clear();
+            gts.clear();
+        }
+        {
+            let mut ld = LAST_LOADED_DATE.lock().unwrap();
+            *ld = None;
+        }
     }
 
     #[test]
@@ -525,23 +521,46 @@ mod tests {
     fn test_last_trading_day() -> Result<(), Box<dyn std::error::Error>> {
         // Use 2024 dates to stay within ANY cached calendar range (oldest cache still has 2024).
         // 2024-06-17 is a Monday; the previous Friday is 2024-06-14.
-        let debug_ts = crate::data::meta::timestamp::Timestamp::from_date(2024, 6, 17, 10, 0, 0, 0).unwrap();
-        let mut date =
+
+        // Test 1: date is pre-market (08:59:59.999), current is after market open (10:00:00)
+        // → expected last trading day = previous Friday 2024-06-14
+        let debug_ts =
+            crate::data::meta::timestamp::Timestamp::from_date(2024, 6, 17, 10, 0, 0, 0).unwrap();
+        let date_pre_market =
             crate::data::meta::timestamp::Timestamp::from_date(2024, 6, 17, 8, 59, 59, 999).unwrap();
-        let mut last = last_trading_day(date, Some(debug_ts));
+        let last = last_trading_day(date_pre_market, Some(debug_ts));
         println!(
             "last trading day before {:?} is {:?}",
-            date.only_date(),
+            date_pre_market.only_date(),
             last.only_date()
         );
-        // Assert the expected last trading day is 2024-06-14 (previous Friday)
-        let mut expected =
+        let expected_friday =
             crate::data::meta::timestamp::Timestamp::from_date(2024, 6, 14, 9, 0, 0, 0).unwrap();
-        assert_eq!(last.only_date(), expected.only_date());
-        date = crate::data::meta::timestamp::Timestamp::from_date(2024, 6, 17, 9, 0, 0, 1).unwrap();
-        last = last_trading_day(date, Some(debug_ts));
-        expected = crate::data::meta::timestamp::Timestamp::from_date(2024, 6, 17, 9, 0, 0, 0).unwrap();
-        assert_eq!(last.only_date(), expected.only_date());
+        assert_eq!(last.only_date(), expected_friday.only_date());
+
+        // Test 2: date is after market open (09:00:00.001), current is after market open (10:00:00)
+        // → expected last trading day = today 2024-06-17
+        let date_post_open =
+            crate::data::meta::timestamp::Timestamp::from_date(2024, 6, 17, 9, 0, 0, 1).unwrap();
+        let last = last_trading_day(date_post_open, Some(debug_ts));
+        let expected_today =
+            crate::data::meta::timestamp::Timestamp::from_date(2024, 6, 17, 9, 0, 0, 0).unwrap();
+        assert_eq!(last.only_date(), expected_today.only_date());
+
+        // Test 3: date exactly matches calendar entry (09:00:00.000), current is pre-market (08:30:00)
+        // → expected last trading day = previous Friday 2024-06-14
+        let debug_pre_market =
+            crate::data::meta::timestamp::Timestamp::from_date(2024, 6, 17, 8, 30, 0, 0).unwrap();
+        let date_exact =
+            crate::data::meta::timestamp::Timestamp::from_date(2024, 6, 17, 9, 0, 0, 0).unwrap();
+        let last = last_trading_day(date_exact, Some(debug_pre_market));
+        println!(
+            "last trading day for exact match {:?} (pre-market current) is {:?}",
+            date_exact.only_date(),
+            last.only_date()
+        );
+        assert_eq!(last.only_date(), expected_friday.only_date());
+
         Ok(())
     }
 }
