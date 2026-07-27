@@ -3,6 +3,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.58] - 2026-07-27
+### Changed
+- 新增主要交易所的公开授权费用表
+- 调整go版本
+- rust: 调整默认元数据路径
+- fix(calendar): 修复 last_trading_day upper_bound 语义及测试环境变量污染
+
+- last_trading_day 对齐 C++ std::upper_bound: Ok(idx) 不再直接返回,
+  统一走 idx+1 路径确保盘前判断始终生效
+- 新增 Test 3: exact match + 盘前 current 边界用例
+- test_lazy_load_calendar_from_file 不再修改 HOME/QUANT1X_HOME
+  进程环境变量, 避免并行测试竞态污染 test_expand_user / test_last_trading_day
+
 ## [0.7.57] - 2026-07-14
 ### Changed
 - 提交：base(bits)：添加 bits.h 及最高位函数测试；更新 tests/CMakeLists
@@ -11,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - bits(Python)：使用 bit_length 优化，添加类型检查与单元测试
 - bits(Python)：拒绝 bool 输入，完善类型检查测试
 - bits(python): 优化部分注释
+- release v0.7.57
 
 ## [0.7.56] - 2026-07-11
 ### Changed
@@ -2129,7 +2143,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.57...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.58...HEAD
+[0.7.58]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.57...v0.7.58
 [0.7.57]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.56...v0.7.57
 [0.7.56]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.55...v0.7.56
 [0.7.55]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.54...v0.7.55
