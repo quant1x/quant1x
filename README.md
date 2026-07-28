@@ -114,22 +114,10 @@ pyenv install 3.12.9
 |pipreqs| 项目/类库交叉依赖检测                  |
 
 ### 2.1.6 pip 源配置
-windows
+使用 pip config 命令配置清华镜像源：
 ```shell
-cd ~\AppData\Roaming\pip
-notepad.exe pip.ini
-```
-*nix
-```shell
-cd ~/.pip
-vim pip.conf
-```
-输入以下内容
-```text
-[global]
-index-url = https://pypi.tuna.tsinghua.edu.cn/simple
-[install]
-trusted-host = https://pypi.tuna.tsinghua.edu.cn
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+pip config set install.trusted-host https://pypi.tuna.tsinghua.edu.cn
 ```
 
 ## 2.2 依赖库
