@@ -42,57 +42,57 @@ Quant1X 是一个多语言量化交易框架，支持 C++、Go、Rust、Python�
 
 ## 🚀 快速开始
 
-# 1. 环境配置
+## 1. 环境配置
 
-## 1.1 默认均为64位操作系统
+### 1.1 默认均为64位操作系统
 
 | python | golang | rust       | c++                         |
 |:-------|:-------|:-----------|:----------------------------|
 | 3.12.x | 1.27.x | 1.96+/2024 | gcc13+/clang17+/msvc14.3+ |
 
-## 1.2 环境安装推荐使用brew
+### 1.2 环境安装推荐使用brew
 
 安装brew时需要注意避免使用root权限
 
-## 1.3 安装quant1x配置文件
+### 1.3 安装quant1x配置文件
 
 - 示例的配置文件路径 examples/quant1x.yaml, 需要将配置文件拷贝到用户目录下
 - 配置信息分交易、策略和数据三个部分，可以自定义缓存路径
 
-### 1.3.1 go语言版本是目前比较稳定的生产版本, 配置文件目录名因为历史原因使用了全拼接的quant1x路径, 支持~/runtime/etc/quant1x.yaml
+#### 1.3.1 go语言版本是目前比较稳定的生产版本, 配置文件目录名因为历史原因使用了全拼接的quant1x路径, 支持~/runtime/etc/quant1x.yaml
 
 ```shell
 cp examples/quant1x.yaml ~/.quant1x/quant1x.yaml
 ```
 
-### 1.3.2 c++语言版本是具备跨平台的生产能力, 目录名为~/.q1x/
+#### 1.3.2 c++语言版本是具备跨平台的生产能力, 目录名为~/.q1x/
 
 ```shell
 cp examples/quant1x.yaml ~/.q1x/quant1x.yaml
 ```
 
-### 1.3.3 rust版本以C++版本为基础，尽可能1:1还原c++的业务逻辑，目录名为~/.q1x-rs/
+#### 1.3.3 rust版本以C++版本为基础，尽可能1:1还原c++的业务逻辑，目录名为~/.q1x-rs/
 
 ```shell
 cp examples/quant1x.yaml ~/.q1x-rs/quant1x.yaml
 ```
 
-### 1.3.4 python版本没有直接的二进制数据，只提供基于go/c++/rust的数据导出功能
+#### 1.3.4 python版本没有直接的二进制数据，只提供基于go/c++/rust的数据导出功能
 
 - 数据源，默认是go版本的配置文件
 - 数据源切换, 多语言版本的数据源切换，需要在开发环境的目录配置.env或环境变量，环境变量名QUANT1X_WORK, 值为c++对应q1x，rust对应q1x-rust, 不包含符号点"."
 
-# 2. python
+## 2. python
 
 python的运行环境可能存在多个版本冲突的问题，那么怎么来解决多版本的共存的问题呢？使用pyenv。
 
-## 2.1 安装pyenv
+### 2.1 安装pyenv
 
 ```shell
 brew install pyenv
 ```
 
-### 2.1.1 查看已安装的版本
+#### 2.1.1 查看已安装的版本
 
 ```shell
 pyenv versions
@@ -106,23 +106,23 @@ pyenv versions
 * 3.12.9 (set by /Users/${USERNAME}/.pyenv/version)
 ```
 
-### 2.1.2 查看可安装的版本
+#### 2.1.2 查看可安装的版本
 
 ```shell
 pyenv install -l
 ```
 
-### 2.1.3 安装指定版本的python, 本文指定3.12.9或3.12.x更新版本
+#### 2.1.3 安装指定版本的python, 本文指定3.12.9或3.12.x更新版本
 
 ```shell
 pyenv install 3.12.9
 ```
 
-### 2.1.4 pip类库管理工具
+#### 2.1.4 pip类库管理工具
 
 安装python完成之后, python类库管理工具pip已经默认安装完成了
 
-### 2.1.5 python基础工具
+#### 2.1.5 python基础工具
 
 | 工具  | 功能                           |
 |:----|:-----------------------------|
@@ -130,7 +130,7 @@ pyenv install 3.12.9
 | pip-autoremove| 自动删除类库所有依赖库                  |
 |pipreqs| 项目/类库交叉依赖检测                  |
 
-### 2.1.6 pip 源配置
+#### 2.1.6 pip 源配置
 
 使用 pip config 命令配置清华镜像源：
 
@@ -139,65 +139,65 @@ pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 pip config set install.trusted-host https://pypi.tuna.tsinghua.edu.cn
 ```
 
-## 2.2 依赖库
+### 2.2 依赖库
 
 python环境中依赖管理的配置文件为requirements.txt，类似java的maven pom.xml、golang的go.mod。
 
-### 2.2.1 安装项目依赖的库
+#### 2.2.1 安装项目依赖的库
 
 ```shell
 pip install -r requirements.txt
 ```
 
-### 2.2.2 检测项目依赖输出到requirements.txt
+#### 2.2.2 检测项目依赖输出到requirements.txt
 
 ```shell
 pip freeze > requirements.txt
 ```
 
-### 2.2.3 交叉依赖
+#### 2.2.3 交叉依赖
 
 ```shell
 pip install pipreqs
 pipreqs ./ --encoding utf8
 ```
 
-## 2.3 上传package到PyPi
+### 2.3 上传package到PyPi
 
-### 2.3.1 安装或更新setuptools、wheel、twine
+#### 2.3.1 安装或更新setuptools、wheel、twine
 
 ```shell
 pip install --upgrade setuptools wheel twine
 ```
 
-### 2.3.2 打包并生成tar.gz和whl文件
+#### 2.3.2 打包并生成tar.gz和whl文件
 
 ```shell
 python setup.py sdist bdist_wheel
 ```
 
-### 2.3.3 上传package到PyPi的测试环境
+#### 2.3.3 上传package到PyPi的测试环境
 
 ```shell
 twine upload --repository testpypi dist/*
 ```
 
-### 2.3.4 上传package到PyPi的正式环境
+#### 2.3.4 上传package到PyPi的正式环境
 
 ```shell
 twine upload dist/*
 ```
 
-## 2.4 Matplotlib中文乱码问题解决方案
+### 2.4 Matplotlib中文乱码问题解决方案
 
-### 2.4.1 编写如下代码，获取matplotlib包所在的配置文件的路径
+#### 2.4.1 编写如下代码，获取matplotlib包所在的配置文件的路径
 
 ```python
 import matplotlib
 matplotlib.matplotlib_fname() #输出matplotlib包所在的配置文件的路径
 ```
 
-### 2.4.2 根据上面的路径打开文件夹（根据自己实际的输出路径去操作）
+#### 2.4.2 根据上面的路径打开文件夹（根据自己实际的输出路径去操作）
 
 我选择了SimHei中文字体, 复制到fonts/ttf/目录下
 
@@ -205,22 +205,22 @@ matplotlib.matplotlib_fname() #输出matplotlib包所在的配置文件的路径
 cp -r /Users/${USERNAME}/Library/Fonts/SimHei.ttf fonts/ttf/
 ```
 
-### 2.4.3 编辑2.4.1获得路径matplotlibrc文件
+#### 2.4.3 编辑2.4.1获得路径matplotlibrc文件
 
-#### 2.4.3.1 找到 #font.sans-serif，去掉前面的#，并在：后面写上在准备工作加入的中文字体的名称SimHei
+##### 2.4.3.1 找到 #font.sans-serif，去掉前面的#，并在：后面写上在准备工作加入的中文字体的名称SimHei
 
-#### 2.4.3.2 找到#axes.unicode_minus，去掉前面的#，并在：改为False
+##### 2.4.3.2 找到#axes.unicode_minus，去掉前面的#，并在：改为False
 
-### 2.4.4 控制台切换到~/.matplotlib目录, 删除tex.cache文件和fontList.json文件
+#### 2.4.4 控制台切换到~/.matplotlib目录, 删除tex.cache文件和fontList.json文件
 
 ```shell
 cd ~/.matplotlib
 rm -rf *
 ```
 
-# 3. golang 开发环境
+## 3. golang 开发环境
 
-## 3.1 环境设定
+### 3.1 环境设定
 
 ```shell
 go env -w GO111MODULE=on
@@ -228,31 +228,28 @@ go env -w GOPROXY=https://goproxy.cn,direct
 go env -w GOPRIVATE=gitee.com
 ```
 
-## 3.2 安装protobuf
+### 3.2 安装protobuf
 
 ```shell
-
 go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-
 go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-
 ```
 
-# 4. Rust 开发环境
+## 4. Rust 开发环境
 
-## 4.1 安装 Rust
+### 4.1 安装 Rust
 
 ```shell
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-## 4.2 更新 Rust 工具链到最新版本
+### 4.2 更新 Rust 工具链到最新版本
 
 ```shell
 rustup update
 ```
 
-## Rust: 构建与运行 `q1x` 二进制
+### Rust: 构建与运行 `q1x` 二进制
 
 本仓库在 `Cargo.toml` 中声明了一个名为 `q1x` 的可执行二进制（路径为 `main.rs`）。下面是构建与常见运行示例：
 
@@ -287,7 +284,7 @@ cargo run --bin q1x -- update --all
 cargo run --bin q1x -- update --calendar
 ```
 
-### 直接示例：从已构建二进制查看帮助
+#### 直接示例：从已构建二进制查看帮助
 
 你也可以直接运行已构建的二进制查看实际帮助文本，例如：
 
@@ -341,7 +338,7 @@ Options:
 - 为 `q1x` 添加示例配置和 systemd/Windows service 安装脚本。
 - 在 README 中加入更详细的运行参数说明（基于库中 `engine::daemon` 的实现）。
 
-# 5. c/c++ 开发环境
+## 5. c/c++ 开发环境
 
 本项目的 C/C++ 代码以 C++20 为目标，强烈建议在开发/构建阶段使用较新的编译器和现代构建工具以获得最佳性能与可维护性。
 
