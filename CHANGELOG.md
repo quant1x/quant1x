@@ -3,6 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.59] - 2026-07-28
+### Changed
+- docs: 将 README 2.1.6 pip 源配置改为 pip config 命令
+- docs: 修复 README MD033/MD041/markdownlint 告警
+
+- 将 <img> 内联 HTML 改为 Markdown 图片语法, 修复 MD033
+- 将顶级标题移至文件首行, 修复 MD041/MD022/MD031
+- 全文标题及代码块前后补空行
+
 ## [0.7.58] - 2026-07-27
 ### Changed
 - 新增主要交易所的公开授权费用表
@@ -15,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - 新增 Test 3: exact match + 盘前 current 边界用例
 - test_lazy_load_calendar_from_file 不再修改 HOME/QUANT1X_HOME
   进程环境变量, 避免并行测试竞态污染 test_expand_user / test_last_trading_day
+- release v0.7.58
 
 ## [0.7.57] - 2026-07-14
 ### Changed
@@ -2143,7 +2153,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.58...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.59...HEAD
+[0.7.59]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.58...v0.7.59
 [0.7.58]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.57...v0.7.58
 [0.7.57]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.56...v0.7.57
 [0.7.56]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.55...v0.7.56
