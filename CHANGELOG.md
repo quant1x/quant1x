@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.60] - 2026-07-28
+### Changed
+- docs: 修复 README MD025 多顶级标题告警
+
+将 5 个 # N. 章节标题及全部子标题逐级降一级, 全文仅保留一个 H1
+
 ## [0.7.59] - 2026-07-28
 ### Changed
 - docs: 将 README 2.1.6 pip 源配置改为 pip config 命令
@@ -11,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - 将 <img> 内联 HTML 改为 Markdown 图片语法, 修复 MD033
 - 将顶级标题移至文件首行, 修复 MD041/MD022/MD031
 - 全文标题及代码块前后补空行
+- release v0.7.59
 
 ## [0.7.58] - 2026-07-27
 ### Changed
@@ -2153,7 +2160,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.59...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.60...HEAD
+[0.7.60]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.59...v0.7.60
 [0.7.59]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.58...v0.7.59
 [0.7.58]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.57...v0.7.58
 [0.7.57]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.56...v0.7.57
