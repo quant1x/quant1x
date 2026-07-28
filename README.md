@@ -1,7 +1,7 @@
-
-<img src="logo.png" alt="Quant1X Logo" width="36%" height="36%">
-
 # Quant1X 量化交易实验室
+
+![Quant1X Logo](logo.png)
+
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://isocpp.org/)
 [![Go](https://img.shields.io/badge/Go-1.27-blue.svg)](https://golang.org/)
@@ -42,67 +42,84 @@ Quant1X 是一个多语言量化交易框架，支持 C++、Go、Rust、Python�
 
 ## 🚀 快速开始
 
-
 # 1. 环境配置
+
 ## 1.1 默认均为64位操作系统
+
 | python | golang | rust       | c++                         |
 |:-------|:-------|:-----------|:----------------------------|
 | 3.12.x | 1.27.x | 1.96+/2024 | gcc13+/clang17+/msvc14.3+ |
 
 ## 1.2 环境安装推荐使用brew
+
 安装brew时需要注意避免使用root权限
 
 ## 1.3 安装quant1x配置文件
+
 - 示例的配置文件路径 examples/quant1x.yaml, 需要将配置文件拷贝到用户目录下
 - 配置信息分交易、策略和数据三个部分，可以自定义缓存路径
 
 ### 1.3.1 go语言版本是目前比较稳定的生产版本, 配置文件目录名因为历史原因使用了全拼接的quant1x路径, 支持~/runtime/etc/quant1x.yaml
+
 ```shell
 cp examples/quant1x.yaml ~/.quant1x/quant1x.yaml
 ```
 
 ### 1.3.2 c++语言版本是具备跨平台的生产能力, 目录名为~/.q1x/
+
 ```shell
 cp examples/quant1x.yaml ~/.q1x/quant1x.yaml
 ```
 
 ### 1.3.3 rust版本以C++版本为基础，尽可能1:1还原c++的业务逻辑，目录名为~/.q1x-rs/
+
 ```shell
 cp examples/quant1x.yaml ~/.q1x-rs/quant1x.yaml
 ```
 
 ### 1.3.4 python版本没有直接的二进制数据，只提供基于go/c++/rust的数据导出功能
+
 - 数据源，默认是go版本的配置文件
-- 数据源切换, 多语言版本的数据源切换，需要在开发环境的目录配置.env或环境变量，环境变量名QUANT1X_WORK, 值为c++对应q1x，rust对应q1x-rust, 不包含符号点“.”
+- 数据源切换, 多语言版本的数据源切换，需要在开发环境的目录配置.env或环境变量，环境变量名QUANT1X_WORK, 值为c++对应q1x，rust对应q1x-rust, 不包含符号点"."
 
 # 2. python
 
 python的运行环境可能存在多个版本冲突的问题，那么怎么来解决多版本的共存的问题呢？使用pyenv。
 
 ## 2.1 安装pyenv
+
 ```shell
 brew install pyenv
 ```
+
 ### 2.1.1 查看已安装的版本
+
 ```shell
 pyenv versions
 ```
+
 我的电脑返回以下版本信息
+
 ```text
   system
   3.8.16
 * 3.12.9 (set by /Users/${USERNAME}/.pyenv/version)
 ```
+
 ### 2.1.2 查看可安装的版本
+
 ```shell
 pyenv install -l
 ```
+
 ### 2.1.3 安装指定版本的python, 本文指定3.12.9或3.12.x更新版本
+
 ```shell
 pyenv install 3.12.9
 ```
 
 ### 2.1.4 pip类库管理工具
+
 安装python完成之后, python类库管理工具pip已经默认安装完成了
 
 ### 2.1.5 python基础工具
@@ -114,7 +131,9 @@ pyenv install 3.12.9
 |pipreqs| 项目/类库交叉依赖检测                  |
 
 ### 2.1.6 pip 源配置
+
 使用 pip config 命令配置清华镜像源：
+
 ```shell
 pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 pip config set install.trusted-host https://pypi.tuna.tsinghua.edu.cn
@@ -187,8 +206,11 @@ cp -r /Users/${USERNAME}/Library/Fonts/SimHei.ttf fonts/ttf/
 ```
 
 ### 2.4.3 编辑2.4.1获得路径matplotlibrc文件
+
 #### 2.4.3.1 找到 #font.sans-serif，去掉前面的#，并在：后面写上在准备工作加入的中文字体的名称SimHei
+
 #### 2.4.3.2 找到#axes.unicode_minus，去掉前面的#，并在：改为False
+
 ### 2.4.4 控制台切换到~/.matplotlib目录, 删除tex.cache文件和fontList.json文件
 
 ```shell
@@ -349,7 +371,7 @@ Linux/macOS 快速安装（示例）
 
 Windows（Visual Studio）
 
-- 推荐安装 Visual Studio 2022 + Desktop development with C++，并从 “x64 本机工具命令提示符” 或者 VS 开发者 PowerShell 构建。
+- 推荐安装 Visual Studio 2022 + Desktop development with C++，并从 "x64 本机工具命令提示符" 或者 VS 开发者 PowerShell 构建。
 - 使用 vcpkg 管理依赖（示例：vcpkg integrate install），并在 CMake 调用中传递 `-DCMAKE_TOOLCHAIN_FILE=<vcpkg-root>/scripts/buildsystems/vcpkg.cmake`。
 
 构建示例（以仓库根目录为例）
@@ -507,6 +529,7 @@ func main() {
     }
 }
 ```
+
 ### Rust
 
 ```rust
