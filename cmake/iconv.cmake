@@ -1,5 +1,15 @@
 # libiconv
 find_package(Iconv REQUIRED)  # CMake 官方模块名称是 Iconv（大写 I）
+
+# macOS arm64: iconv 是 libSystem 内建的，不需要手动查找头文件和库目录
+#export LDFLAGS="-L/opt/homebrew/opt/libiconv/lib"
+#export CPPFLAGS="-I/opt/homebrew/opt/libiconv/include"
+if(APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+    target_link_libraries(third_libs INTERFACE Iconv::Iconv)
+    echo_lib_version(iconv "built-in (libSystem)")
+    return()
+endif()
+
 if (NOT DEFINED Iconv_VERSION) # 如果没有定义Iconv_VERSION变量, 去查找iconv.h文件路径
     if (DEFINED CACHE{ICONV_INCLUDE_DIR})
         message(WARNING "Cache exists: ICONV_INCLUDE_DIR=${ICONV_INCLUDE_DIR}")
