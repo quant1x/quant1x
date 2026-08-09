@@ -47,12 +47,13 @@ dependencies = [
     "caerus~=1.0.1",
     "joblib~=1.5.1",
     "inflection~=0.5.1",
+    "apscheduler~=3.11.3",
 ]
 
 [project.urls]
 Homepage = "https://github.com/quant1x/quant1x"
 
-[project.entry-points."console_scripts"]
+[project.scripts]
 # quant1x = "quant1x.__main__:entry"
 # quant1x-qmt = "quant1x.trader.qmt:main"
 
