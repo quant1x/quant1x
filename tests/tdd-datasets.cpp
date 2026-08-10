@@ -606,6 +606,7 @@ TEST_CASE("xtensor-add", "[xtensor]") {
     std::cout << "Size of result: " << c.shape()[0] << std::endl;
 }
 
+#ifdef __SSE2__
 #include <immintrin.h> // SSE / AVX intrinsics
 
 void vector_add_simd_hand_crafted(const double* a, const double* b, double* res, size_t N)
@@ -628,7 +629,9 @@ void vector_add_simd_hand_crafted(const double* a, const double* b, double* res,
         res[i] = a[i] + b[i];
     }
 }
+#endif // __SSE2__
 
+#ifdef __AVX__
 void vector_add_avx_hand_crafted(const double* a, const double* b, double* res, size_t N)
 {
     size_t i = 0;
@@ -650,6 +653,7 @@ void vector_add_avx_hand_crafted(const double* a, const double* b, double* res, 
         res[i] = a[i] + b[i];
     }
 }
+#endif // __AVX__
 // xtensor + xsimd
 #define XTENSOR_USE_XSIMD
 #include <xtensor/containers/xarray.hpp>
@@ -706,12 +710,16 @@ TEST_CASE("Vector Addition Benchmark", "[benchmark]") {
                        };
 
     BENCHMARK("Hand-Crafted-SSE") {
+#ifdef __SSE2__
                                        vector_add_simd_hand_crafted(a.data(), b.data(), res.data(), N);
+#endif
                                        return res[0];
                                    };
 
     BENCHMARK("Hand-Crafted-AVX") {
+#ifdef __AVX__
                                       vector_add_avx_hand_crafted(a.data(), b.data(), res.data(), N);
+#endif
                                       return res[0];
                                   };
 }

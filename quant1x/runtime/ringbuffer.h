@@ -23,6 +23,8 @@
 #if defined(_MSC_VER)
 #  include <intrin.h>
 #  define CPU_PAUSE() _mm_pause()
+#elif defined(__aarch64__) || defined(__arm64__)
+#  define CPU_PAUSE() __asm__ volatile("yield" ::: "memory")
 #else
 #  include <immintrin.h>
 #  define CPU_PAUSE() _mm_pause()

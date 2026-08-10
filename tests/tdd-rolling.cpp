@@ -225,6 +225,7 @@ TEST_CASE("Rolling stddev(0) Benchmark", "[benchmark]") {
         };
 }
 
+#ifdef __AVX2__
 // SIMD加速的滚动标准差计算
 void rolling_stddev_simd(const double* data, size_t size, size_t window, double* result) {
     // 初始化前window-1个位置为NaN
@@ -269,6 +270,7 @@ void rolling_stddev_simd(const double* data, size_t size, size_t window, double*
         result[i] = std::sqrt(variance);
     }
 }
+#endif // __AVX2__
 
 TEST_CASE("Rolling stddev(0) Benchmark Comparison", "[benchmark]") {
     const size_t data_size = 10'000;  // 1万数据点
@@ -289,9 +291,11 @@ TEST_CASE("Rolling stddev(0) Benchmark Comparison", "[benchmark]") {
                                         return rolling(data, window_size, stddev0);
                                     };
 
+#ifdef __AVX2__
     // SIMD加速实现
     BENCHMARK("SIMD (AVX2)") {
                                  rolling_stddev_simd(raw_data.data(), data_size, window_size, result.data());
                                  return result;
                              };
+#endif
 }
