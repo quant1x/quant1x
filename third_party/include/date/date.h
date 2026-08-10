@@ -84,7 +84,7 @@
 #   pragma warning(disable : 4127)
 #endif
 
-#if (defined(__GNUC__) && __GNUC__ < 5)
+#if (defined(__GNUC__) && __GNUC__ < 5) && !defined(__clang__) && !defined(_MSC_VER)
 #  define OPERATOR_LITERAL(suffix) operator"" _##suffix
 #else
 #  define OPERATOR_LITERAL(suffix) operator""_##suffix
@@ -7187,6 +7187,7 @@ from_stream(std::basic_istream<CharT, Traits>& is, const CharT* fmt,
                         int tp = not_a_ampm;
 #if !ONLY_C_LOCALE
                         tm = std::tm{};
+                        tm.tm_isdst = -1;
                         tm.tm_hour = 1;
                         ios::iostate err = ios::goodbit;
                         f.get(is, nullptr, is, err, &tm, command, fmt+1);
@@ -7635,8 +7636,14 @@ from_stream(std::basic_istream<CharT, Traits>& is, const CharT* fmt,
                     if (width == -1 && modified == CharT{} && '0' <= *fmt && *fmt <= '9')
                     {
                         width = static_cast<char>(*fmt) - '0';
-                        while ('0' <= fmt[1] && fmt[1] <= '9')
+                        if ('0' <= fmt[1] && fmt[1] <= '9')
+                        {
                             width = 10*width + static_cast<char>(*++fmt) - '0';
+                            if ('0' <= fmt[1] && fmt[1] <= '9')
+                            {
+                                is.setstate(ios::failbit);
+                            }
+                        }
                     }
                     else
                     {
@@ -8046,7 +8053,7 @@ from_stream(std::basic_istream<CharT, Traits>& is, const CharT* fmt,
     {
         if (offset_local != std::chrono::minutes::min())
         {
-            tp = round_i<Duration>(sys_days(fds.ymd) - offset_local + fds.tod.to_duration());
+            tp = round_i<Duration>(sys_days(fds.ymd) + fds.tod.to_duration() - offset_local);
             if (offset != nullptr)
                 *offset = offset_local;
         }
