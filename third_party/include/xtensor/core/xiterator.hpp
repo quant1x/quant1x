@@ -15,7 +15,6 @@
 #include <cstddef>
 #include <iterator>
 #include <numeric>
-#include <vector>
 
 #include <xtl/xcompare.hpp>
 #include <xtl/xiterator_base.hpp>
@@ -418,7 +417,7 @@ namespace xt
     }
 
     template <class C>
-    XTENSOR_CONSTEXPR_RETURN auto linear_begin(C& c) noexcept
+    constexpr auto linear_begin(C& c) noexcept
     {
         if constexpr (detail::has_linear_iterator<C>::value)
         {
@@ -431,7 +430,7 @@ namespace xt
     }
 
     template <class C>
-    XTENSOR_CONSTEXPR_RETURN auto linear_end(C& c) noexcept
+    constexpr auto linear_end(C& c) noexcept
     {
         if constexpr (detail::has_linear_iterator<C>::value)
         {
@@ -444,7 +443,7 @@ namespace xt
     }
 
     template <class C>
-    XTENSOR_CONSTEXPR_RETURN auto linear_begin(const C& c) noexcept
+    constexpr auto linear_begin(const C& c) noexcept
     {
         if constexpr (detail::has_linear_iterator<C>::value)
         {
@@ -457,7 +456,7 @@ namespace xt
     }
 
     template <class C>
-    XTENSOR_CONSTEXPR_RETURN auto linear_end(const C& c) noexcept
+    constexpr auto linear_end(const C& c) noexcept
     {
         if constexpr (detail::has_linear_iterator<C>::value)
         {

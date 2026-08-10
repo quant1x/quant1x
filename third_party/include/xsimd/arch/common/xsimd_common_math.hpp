@@ -29,7 +29,7 @@ namespace xsimd
         template <class A, class T, class>
         XSIMD_INLINE batch<T, A> abs(batch<T, A> const& self, requires_arch<common>) noexcept
         {
-            if (std::is_unsigned<T>::value)
+            if (std::is_unsigned_v<T>)
                 return self;
             else
             {
@@ -46,60 +46,44 @@ namespace xsimd
         }
 
         // avg
-        namespace detail
+        template <class A, class T>
+        XSIMD_INLINE batch<T, A> avg(batch<T, A> const& x, batch<T, A> const& y, requires_arch<common>) noexcept
         {
-            template <class A, class T>
-            XSIMD_INLINE batch<T, A> avg(batch<T, A> const& x, batch<T, A> const& y, std::true_type, std::false_type) noexcept
+            if constexpr (std::is_integral_v<T>)
             {
-                return (x & y) + ((x ^ y) >> 1);
+                if constexpr (std::is_signed_v<T>)
+                {
+                    // Inspired by
+                    // https://stackoverflow.com/questions/5697500/take-the-average-of-two-signed-numbers-in-c
+                    auto t = (x & y) + ((x ^ y) >> 1);
+                    auto t_u = bitwise_cast<std::make_unsigned_t<T>>(t);
+                    return t + (bitwise_cast<T>(t_u >> (8 * sizeof(T) - 1)) & (x ^ y));
+                }
+                else
+                {
+                    return (x & y) + ((x ^ y) >> 1);
+                }
             }
-
-            template <class A, class T>
-            XSIMD_INLINE batch<T, A> avg(batch<T, A> const& x, batch<T, A> const& y, std::true_type, std::true_type) noexcept
-            {
-                // Inspired by
-                // https://stackoverflow.com/questions/5697500/take-the-average-of-two-signed-numbers-in-c
-                auto t = (x & y) + ((x ^ y) >> 1);
-                auto t_u = bitwise_cast<typename std::make_unsigned<T>::type>(t);
-                auto avg = t + (bitwise_cast<T>(t_u >> (8 * sizeof(T) - 1)) & (x ^ y));
-                return avg;
-            }
-
-            template <class A, class T>
-            XSIMD_INLINE batch<T, A> avg(batch<T, A> const& x, batch<T, A> const& y, std::false_type, std::true_type) noexcept
+            else
             {
                 return (x + y) / 2;
             }
         }
 
-        template <class A, class T>
-        XSIMD_INLINE batch<T, A> avg(batch<T, A> const& x, batch<T, A> const& y, requires_arch<common>) noexcept
-        {
-            return detail::avg(x, y, typename std::is_integral<T>::type {}, typename std::is_signed<T>::type {});
-        }
-
         // avgr
-        namespace detail
-        {
-            template <class A, class T>
-            XSIMD_INLINE batch<T, A> avgr(batch<T, A> const& x, batch<T, A> const& y, std::true_type) noexcept
-            {
-                constexpr unsigned shift = 8 * sizeof(T) - 1;
-                auto adj = std::is_signed<T>::value ? ((x ^ y) & 0x1) : (((x ^ y) << shift) >> shift);
-                return ::xsimd::kernel::avg(x, y, A {}) + adj;
-            }
-
-            template <class A, class T>
-            XSIMD_INLINE batch<T, A> avgr(batch<T, A> const& x, batch<T, A> const& y, std::false_type) noexcept
-            {
-                return ::xsimd::kernel::avg(x, y, A {});
-            }
-        }
-
         template <class A, class T>
         XSIMD_INLINE batch<T, A> avgr(batch<T, A> const& x, batch<T, A> const& y, requires_arch<common>) noexcept
         {
-            return detail::avgr(x, y, typename std::is_integral<T>::type {});
+            if constexpr (std::is_integral_v<T>)
+            {
+                constexpr unsigned shift = 8 * sizeof(T) - 1;
+                auto adj = std::is_signed_v<T> ? ((x ^ y) & 0x1) : (((x ^ y) << shift) >> shift);
+                return ::xsimd::kernel::avg(x, y, A {}) + adj;
+            }
+            else
+            {
+                return ::xsimd::kernel::avg(x, y, A {});
+            }
         }
 
         // batch_cast
@@ -124,7 +108,7 @@ namespace xsimd
             template <class A, class T_out, class T_in>
             XSIMD_INLINE batch<T_out, A> batch_cast(batch<T_in, A> const& self, batch<T_out, A> const&, requires_arch<common>, with_slow_conversion) noexcept
             {
-                static_assert(!std::is_same<T_in, T_out>::value, "there should be no conversion for this type combination");
+                static_assert(!std::is_same_v<T_in, T_out>, "there should be no conversion for this type combination");
                 using batch_type_in = batch<T_in, A>;
                 using batch_type_out = batch<T_out, A>;
                 static_assert(batch_type_in::size == batch_type_out::size, "compatible sizes");
@@ -148,8 +132,8 @@ namespace xsimd
         template <class A, class T>
         XSIMD_INLINE batch<T, A> bitofsign(batch<T, A> const& self, requires_arch<common>) noexcept
         {
-            static_assert(std::is_integral<T>::value, "int type implementation");
-            if (std::is_unsigned<T>::value)
+            static_assert(std::is_integral_v<T>, "int type implementation");
+            if (std::is_unsigned_v<T>)
                 return batch<T, A>(0);
             else
                 return self >> (T)(8 * sizeof(T) - 1);
@@ -286,7 +270,7 @@ namespace xsimd
         }
 
         // copysign
-        template <class A, class T, class _ = typename std::enable_if<std::is_floating_point<T>::value, void>::type>
+        template <class A, class T, class = std::enable_if_t<std::is_floating_point_v<T>>>
         XSIMD_INLINE batch<T, A> copysign(batch<T, A> const& self, batch<T, A> const& other, requires_arch<common>) noexcept
         {
             return abs(self) | bitofsign(other);
@@ -613,7 +597,7 @@ namespace xsimd
                 }
 
                 template <size_t... Is, class Tuple>
-                XSIMD_INLINE B eval(::xsimd::detail::index_sequence<Is...>, const Tuple& tuple)
+                XSIMD_INLINE B eval(std::index_sequence<Is...>, const Tuple& tuple)
                 {
                     return estrin { x * x }(std::get<Is>(tuple)...);
                 }
@@ -621,7 +605,7 @@ namespace xsimd
                 template <class... Args>
                 XSIMD_INLINE B eval(const std::tuple<Args...>& tuple) noexcept
                 {
-                    return eval(::xsimd::detail::make_index_sequence<sizeof...(Args)>(), tuple);
+                    return eval(std::make_index_sequence<sizeof...(Args)>(), tuple);
                 }
 
                 template <class... Args>
@@ -743,7 +727,9 @@ namespace xsimd
                 static XSIMD_INLINE batch_type reduce(const batch_type& a, batch_type& x) noexcept
                 {
                     batch_type k = nearbyint(constants::invlog_2<batch_type>() * a);
+                    detail::reassociation_barrier(k, "compensated exp range reduction");
                     x = fnma(k, constants::log_2hi<batch_type>(), a);
+                    detail::reassociation_barrier(x, "compensated exp range reduction");
                     x = fnma(k, constants::log_2lo<batch_type>(), x);
                     return k;
                 }
@@ -769,7 +755,9 @@ namespace xsimd
                 static XSIMD_INLINE batch_type reduce(const batch_type& a, batch_type& x) noexcept
                 {
                     batch_type k = nearbyint(constants::invlog10_2<batch_type>() * a);
+                    detail::reassociation_barrier(k, "compensated exp10 range reduction");
                     x = fnma(k, constants::log10_2hi<batch_type>(), a);
+                    detail::reassociation_barrier(x, "compensated exp10 range reduction");
                     x -= k * constants::log10_2lo<batch_type>();
                     return k;
                 }
@@ -794,6 +782,7 @@ namespace xsimd
                 static XSIMD_INLINE batch_type reduce(const batch_type& a, batch_type& x) noexcept
                 {
                     batch_type k = nearbyint(a);
+                    detail::reassociation_barrier(k, "compensated exp2 range reduction");
                     x = (a - k);
                     return k;
                 }
@@ -819,7 +808,9 @@ namespace xsimd
                 static XSIMD_INLINE batch_type reduce(const batch_type& a, batch_type& hi, batch_type& lo, batch_type& x) noexcept
                 {
                     batch_type k = nearbyint(constants::invlog_2<batch_type>() * a);
+                    detail::reassociation_barrier(k, "compensated exp range reduction");
                     hi = fnma(k, constants::log_2hi<batch_type>(), a);
+                    detail::reassociation_barrier(hi, "compensated exp range reduction");
                     lo = k * constants::log_2lo<batch_type>();
                     x = hi - lo;
                     return k;
@@ -846,7 +837,9 @@ namespace xsimd
                 static XSIMD_INLINE batch_type reduce(const batch_type& a, batch_type&, batch_type&, batch_type& x) noexcept
                 {
                     batch_type k = nearbyint(constants::invlog10_2<batch_type>() * a);
+                    detail::reassociation_barrier(k, "compensated exp10 range reduction");
                     x = fnma(k, constants::log10_2hi<batch_type>(), a);
+                    detail::reassociation_barrier(x, "compensated exp10 range reduction");
                     x = fnma(k, constants::log10_2lo<batch_type>(), x);
                     return k;
                 }
@@ -878,6 +871,7 @@ namespace xsimd
                 {
                     batch_type k = nearbyint(a);
                     x = (a - k) * constants::log_2<batch_type>();
+                    detail::reassociation_barrier(x, "keep reduced exponent ordered before finalize");
                     return k;
                 }
 
@@ -937,7 +931,10 @@ namespace xsimd
         template <class A, class T>
         XSIMD_INLINE batch<T, A> exp10(batch<T, A> const& self, requires_arch<common>) noexcept
         {
-            return detail::exp<detail::exp10_tag>(self);
+            using batch_type = batch<T, A>;
+            batch_type out = detail::exp<detail::exp10_tag>(self);
+            detail::reassociation_barrier(out, "prevent folding exp10 for literal inputs");
+            return out;
         }
 
         // exp2
@@ -1087,7 +1084,7 @@ namespace xsimd
         template <class A, class T>
         XSIMD_INLINE batch<T, A> from_bool(batch_bool<T, A> const& self, requires_arch<common>) noexcept
         {
-            return batch<T, A>(self.data) & batch<T, A>(1);
+            return batch<T, A>((typename batch<T, A>::register_type)self.data) & batch<T, A>(1);
         }
 
         // horner
@@ -1494,6 +1491,7 @@ namespace xsimd
             batch_type R = t2 + t1;
             batch_type hfsq = batch_type(0.5) * f * f;
             batch_type dk = to_float(k);
+            detail::reassociation_barrier(dk, "keep compensated k conversion before split log(2) scaling");
             batch_type r = fma(dk, constants::log_2hi<batch_type>(), fma(s, (hfsq + R), dk * constants::log_2lo<batch_type>()) - hfsq + f);
 #ifdef __FAST_MATH__
             return r;
@@ -1525,6 +1523,7 @@ namespace xsimd
             hx += 0x3ff00000 - 0x3fe6a09e;
             k += (hx >> 20) - 0x3ff;
             batch_type dk = to_float(k);
+            detail::reassociation_barrier(dk, "keep compensated k conversion before split log(2) scaling");
             hx = (hx & i_type(0x000fffff)) + 0x3fe6a09e;
             x = ::xsimd::bitwise_cast<double>(hx << 32 | (i_type(0xffffffff) & ::xsimd::bitwise_cast<int_type>(x)));
 
@@ -1584,6 +1583,7 @@ namespace xsimd
             batch_type R = t1 + t2;
             batch_type hfsq = batch_type(0.5) * f * f;
             batch_type dk = to_float(k);
+            detail::reassociation_barrier(dk, "prevent distributing multiplies through compensated exponent conversion");
             batch_type r = fma(fms(s, hfsq + R, hfsq) + f, constants::invlog_2<batch_type>(), dk);
 #ifdef __FAST_MATH__
             return r;
@@ -1629,7 +1629,9 @@ namespace xsimd
             batch_type val_hi = hi * constants::invlog_2hi<batch_type>();
             batch_type val_lo = fma(lo + hi, constants::invlog_2lo<batch_type>(), lo * constants::invlog_2hi<batch_type>());
             batch_type dk = to_float(k);
+            detail::reassociation_barrier(dk, "Kahan compensated log2 summation");
             batch_type w1 = dk + val_hi;
+            detail::reassociation_barrier(w1, "Kahan compensated log2 summation");
             val_lo += (dk - w1) + val_hi;
             val_hi = w1;
             batch_type r = val_lo + val_hi;
@@ -1705,6 +1707,7 @@ namespace xsimd
             batch_type t2 = z * detail::horner<batch_type, 0x3f2aaaaa, 0x3e91e9ee>(w);
             batch_type R = t2 + t1;
             batch_type dk = to_float(k);
+            detail::reassociation_barrier(dk, "prevent distributing multiplies through compensated exponent conversion");
             batch_type hfsq = batch_type(0.5) * f * f;
             batch_type hibits = f - hfsq;
             hibits &= ::xsimd::bitwise_cast<float>(i_type(0xfffff000));
@@ -1752,10 +1755,11 @@ namespace xsimd
 #endif
             hx += 0x3ff00000 - 0x3fe6a09e;
             k += (hx >> 20) - 0x3ff;
+            batch_type dk = to_float(k);
+            detail::reassociation_barrier(dk, "prevent distributing multiplies through compensated exponent conversion");
             hx = (hx & i_type(0x000fffff)) + 0x3fe6a09e;
             x = ::xsimd::bitwise_cast<double>(hx << 32 | (i_type(0xffffffff) & ::xsimd::bitwise_cast<int_type>(x)));
             batch_type f = --x;
-            batch_type dk = to_float(k);
             batch_type s = f / (batch_type(2.) + f);
             batch_type z = s * s;
             batch_type w = z * z;
@@ -1818,6 +1822,7 @@ namespace xsimd
             batch_type R = t2 + t1;
             batch_type hfsq = batch_type(0.5) * f * f;
             batch_type dk = to_float(k);
+            detail::reassociation_barrier(dk, "prevent distributing multiplies through compensated exponent conversion");
             /* correction term ~ log(1+x)-log(u), avoid underflow in c/u */
             batch_type c = select(batch_bool_cast<float>(k >= i_type(2)), batch_type(1.) - (uf - self), self - (uf - batch_type(1.))) / uf;
             batch_type r = fma(dk, constants::log_2hi<batch_type>(), fma(s, (hfsq + R), dk * constants::log_2lo<batch_type>() + c) - hfsq + f);
@@ -1853,6 +1858,7 @@ namespace xsimd
             batch_type t2 = z * detail::horner<batch_type, 0x3fe5555555555593ll, 0x3fd2492494229359ll, 0x3fc7466496cb03dell, 0x3fc2f112df3e5244ll>(w);
             batch_type R = t2 + t1;
             batch_type dk = to_float(k);
+            detail::reassociation_barrier(dk, "prevent distributing multiplies through compensated exponent conversion");
             batch_type r = fma(dk, constants::log_2hi<batch_type>(), fma(s, hfsq + R, dk * constants::log_2lo<batch_type>() + c) - hfsq + f);
 #ifdef __FAST_MATH__
             return r;
@@ -1877,7 +1883,7 @@ namespace xsimd
         }
 
         // mod
-        template <class A, class T, class = typename std::enable_if<std::is_integral<T>::value, void>::type>
+        template <class A, class T, class = std::enable_if_t<std::is_integral_v<T>>>
         XSIMD_INLINE batch<T, A> mod(batch<T, A> const& self, batch<T, A> const& other, requires_arch<common>) noexcept
         {
             return detail::apply([](T x, T y) noexcept -> T
@@ -1886,7 +1892,7 @@ namespace xsimd
         }
 
         // nearbyint
-        template <class A, class T, class = typename std::enable_if<std::is_integral<T>::value, void>::type>
+        template <class A, class T, class = std::enable_if_t<std::is_integral_v<T>>>
         XSIMD_INLINE batch<T, A> nearbyint(batch<T, A> const& self, requires_arch<common>) noexcept
         {
             return self;
@@ -1900,17 +1906,9 @@ namespace xsimd
                 batch_type s = bitofsign(self);
                 batch_type v = self ^ s;
                 batch_type t2n = constants::twotonmb<batch_type>();
-                // Under fast-math, reordering is possible and the compiler optimizes d
-                // to v. That's not what we want, so prevent compiler optimization here.
-                // FIXME: it may be better to emit a memory barrier here (?).
-#ifdef __FAST_MATH__
                 batch_type d0 = v + t2n;
-                asm volatile("" ::"r"(&d0) : "memory");
+                detail::reassociation_barrier(d0, "prevent collapsing (v + 2^n) - 2^n back to v");
                 batch_type d = d0 - t2n;
-#else
-                batch_type d0 = v + t2n;
-                batch_type d = d0 - t2n;
-#endif
                 return s ^ select(v < t2n, d, v);
             }
         }
@@ -1926,7 +1924,7 @@ namespace xsimd
         }
 
         // nearbyint_as_int
-        template <class T, class A, class = typename std::enable_if<std::is_integral<T>::value, void>::type>
+        template <class T, class A, class = std::enable_if_t<std::is_integral_v<T>>>
         XSIMD_INLINE batch<T, A> nearbyint_as_int(batch<T, A> const& self, requires_arch<common>) noexcept
         {
             return self;
@@ -1956,7 +1954,7 @@ namespace xsimd
         // nextafter
         namespace detail
         {
-            template <class T, class A, bool is_int = std::is_integral<T>::value>
+            template <class T, class A, bool is_int = std::is_integral_v<T>>
             struct nextafter_kernel
             {
                 using batch_type = batch<T, A>;
@@ -2088,7 +2086,7 @@ namespace xsimd
         }
 
         // reciprocal
-        template <class T, class A, class = typename std::enable_if<std::is_floating_point<T>::value, void>::type>
+        template <class T, class A, class = std::enable_if_t<std::is_floating_point_v<T>>>
         XSIMD_INLINE batch<T, A> reciprocal(batch<T, A> const& self,
                                             requires_arch<common>) noexcept
         {
@@ -2103,6 +2101,19 @@ namespace xsimd
             return { reduce_add(self.real()), reduce_add(self.imag()) };
         }
 
+        template <class A, class T, class /*=std::enable_if_t<std::is_scalar_v<T>>*/>
+        XSIMD_INLINE T reduce_add(batch<T, A> const& self, requires_arch<common>) noexcept
+        {
+            alignas(A::alignment()) T buffer[batch<T, A>::size];
+            self.store_aligned(buffer);
+            T res = 0;
+            for (T val : buffer)
+            {
+                res += val;
+            }
+            return res;
+        }
+
         namespace detail
         {
             template <class T, T N>
@@ -2110,7 +2121,7 @@ namespace xsimd
             {
                 static constexpr T get(T i, T)
                 {
-                    return i >= N ? (i % 2) : i + N;
+                    return i < N ? (i + N) : ((i % N) + N);
                 }
             };
 
@@ -2147,18 +2158,50 @@ namespace xsimd
                                   self, std::integral_constant<unsigned, batch<T, A>::size>());
         }
 
+        // reduce_mul
+        template <class A, class T>
+        XSIMD_INLINE std::complex<T> reduce_mul(batch<std::complex<T>, A> const& self, requires_arch<common>) noexcept
+        {
+            // FIXME: could do better
+            alignas(A::alignment()) std::complex<T> buffer[batch<std::complex<T>, A>::size];
+            self.store_aligned(buffer);
+            std::complex<T> res = 1;
+            for (auto val : buffer)
+            {
+                res *= val;
+            }
+            return res;
+        }
+
+        template <class A, class T, class /*=std::enable_if_t<std::is_scalar_v<T>>*/>
+        XSIMD_INLINE T reduce_mul(batch<T, A> const& self, requires_arch<common>) noexcept
+        {
+            alignas(A::alignment()) T buffer[batch<T, A>::size];
+            self.store_aligned(buffer);
+            T res = 1;
+            for (T val : buffer)
+            {
+                res *= val;
+            }
+            return res;
+        }
+
         // remainder
         template <class A>
         XSIMD_INLINE batch<float, A> remainder(batch<float, A> const& self, batch<float, A> const& other, requires_arch<common>) noexcept
         {
-            return fnma(nearbyint(self / other), other, self);
+            batch<float, A> q = nearbyint(self / other);
+            detail::reassociation_barrier(q, "prevent pulling multiply back through rounded quotient");
+            return fnma(q, other, self);
         }
         template <class A>
         XSIMD_INLINE batch<double, A> remainder(batch<double, A> const& self, batch<double, A> const& other, requires_arch<common>) noexcept
         {
-            return fnma(nearbyint(self / other), other, self);
+            batch<double, A> q = nearbyint(self / other);
+            detail::reassociation_barrier(q, "prevent pulling multiply back through rounded quotient");
+            return fnma(q, other, self);
         }
-        template <class A, class T, class = typename std::enable_if<std::is_integral<T>::value, void>::type>
+        template <class A, class T, class = std::enable_if_t<std::is_integral_v<T>>>
         XSIMD_INLINE batch<T, A> remainder(batch<T, A> const& self, batch<T, A> const& other, requires_arch<common>) noexcept
         {
             auto mod = self % other;
@@ -2173,7 +2216,7 @@ namespace xsimd
         }
 
         // sign
-        template <class A, class T, class = typename std::enable_if<std::is_integral<T>::value, void>::type>
+        template <class A, class T, class = std::enable_if_t<std::is_integral_v<T>>>
         XSIMD_INLINE batch<T, A> sign(batch<T, A> const& self, requires_arch<common>) noexcept
         {
             using batch_type = batch<T, A>;
@@ -2219,7 +2262,7 @@ namespace xsimd
         }
 
         // signnz
-        template <class A, class T, class = typename std::enable_if<std::is_integral<T>::value, void>::type>
+        template <class A, class T, class = std::enable_if_t<std::is_integral_v<T>>>
         XSIMD_INLINE batch<T, A> signnz(batch<T, A> const& self, requires_arch<common>) noexcept
         {
             using batch_type = batch<T, A>;
@@ -2256,8 +2299,8 @@ namespace xsimd
         XSIMD_INLINE batch<std::complex<T>, A> sqrt(batch<std::complex<T>, A> const& z, requires_arch<common>) noexcept
         {
 
-            constexpr T csqrt_scale_factor = std::is_same<T, float>::value ? 6.7108864e7f : 1.8014398509481984e16;
-            constexpr T csqrt_scale = std::is_same<T, float>::value ? 1.220703125e-4f : 7.450580596923828125e-9;
+            constexpr T csqrt_scale_factor = std::is_same_v<T, float> ? 6.7108864e7f : 1.8014398509481984e16;
+            constexpr T csqrt_scale = std::is_same_v<T, float> ? 1.220703125e-4f : 7.450580596923828125e-9;
             using batch_type = batch<std::complex<T>, A>;
             using real_batch = batch<T, A>;
             real_batch x = z.real();

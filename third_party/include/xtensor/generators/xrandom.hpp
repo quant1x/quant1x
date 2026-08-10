@@ -63,14 +63,14 @@ namespace xt
         auto
         binomial(const S& shape, T trials = 1, D prob = 0.5, E& engine = random::get_default_random_engine());
 
-        template <class T, class S, class D = double, class E = random::default_engine_type>
+        template <class T = int, class S, class D = double, class E = random::default_engine_type>
         auto geometric(const S& shape, D prob = 0.5, E& engine = random::get_default_random_engine());
 
         template <class T, class S, class D = double, class E = random::default_engine_type>
         auto
         negative_binomial(const S& shape, T k = 1, D prob = 0.5, E& engine = random::get_default_random_engine());
 
-        template <class T, class S, class D = double, class E = random::default_engine_type>
+        template <class T = int, class S, class D = double, class E = random::default_engine_type>
         auto poisson(const S& shape, D rate = 1.0, E& engine = random::get_default_random_engine());
 
         template <class T, class S, class E = random::default_engine_type>
@@ -123,7 +123,7 @@ namespace xt
         auto
         binomial(const I (&shape)[L], T trials = 1, D prob = 0.5, E& engine = random::get_default_random_engine());
 
-        template <class T, class I, std::size_t L, class D = double, class E = random::default_engine_type>
+        template <class T = int, class I, std::size_t L, class D = double, class E = random::default_engine_type>
         auto geometric(const I (&shape)[L], D prob = 0.5, E& engine = random::get_default_random_engine());
 
         template <class T, class I, std::size_t L, class D = double, class E = random::default_engine_type>
@@ -134,7 +134,7 @@ namespace xt
             E& engine = random::get_default_random_engine()
         );
 
-        template <class T, class I, std::size_t L, class D = double, class E = random::default_engine_type>
+        template <class T = int, class I, std::size_t L, class D = double, class E = random::default_engine_type>
         auto poisson(const I (&shape)[L], D rate = 1.0, E& engine = random::get_default_random_engine());
 
         template <class T, class I, std::size_t L, class E = random::default_engine_type>
@@ -914,15 +914,16 @@ namespace xt
          *
          * For weighted random sampling with replacement, binary search with cumulative weights alogrithm is
          * used. For weighted random sampling without replacement, the algorithm used is the exponential sort
-         * from [Efraimidis and Spirakis](https://doi.org/10.1016/j.ipl.2005.11.003) (2006) with the ``weight
-         * / randexp(1)`` [trick](https://web.archive.org/web/20201021162211/https://krlmlr.github.io/wrswoR/)
-         * from Kirill Müller.
+         * from [Efraimidis and Spirakis](https://linkinghub.elsevier.com/retrieve/pii/S002001900500298X)
+         * (2006) with the ``weight / randexp(1)``
+         * [trick](https://web.archive.org/web/20201021162211/https://krlmlr.github.io/wrswoR/) from Kirill
+         * Müller.
          *
          * Note: this function makes a copy of your data, and only 1D data is accepted.
          *
          * @param e expression to sample from
          * @param n number of elements to sample
-         * @param w expression for the weight distribution.
+         * @param weights expression for the weight distribution.
          *          Weights must be positive and real-valued but need not sum to 1.
          * @param replace set true to sample with replacement
          * @param engine random number engine

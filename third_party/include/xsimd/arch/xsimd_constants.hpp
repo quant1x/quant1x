@@ -12,9 +12,9 @@
 #ifndef XSIMD_NUMERICAL_CONSTANT_HPP
 #define XSIMD_NUMERICAL_CONSTANT_HPP
 
-#include <limits>
-
 #include "../types/xsimd_utils.hpp"
+
+#include <limits>
 
 namespace xsimd
 {
@@ -150,7 +150,7 @@ namespace xsimd
 
         namespace detail
         {
-            template <class T, bool = std::is_integral<T>::value>
+            template <class T, bool = std::is_integral_v<T>>
             struct allbits_impl
             {
                 static constexpr T get_value() noexcept

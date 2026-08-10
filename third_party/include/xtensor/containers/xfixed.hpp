@@ -14,7 +14,6 @@
 #include <array>
 #include <cstddef>
 #include <utility>
-#include <vector>
 
 #include <xtl/xsequence.hpp>
 
@@ -257,12 +256,7 @@ namespace xt
         using inner_backstrides_type = backstrides_type;
 
         // NOTE: 0D (S::size() == 0) results in storage for 1 element (scalar)
-#if defined(_MSC_VER) && _MSC_VER < 1910 && !defined(_WIN64)
-        // WORKAROUND FOR MSVC 2015 32 bit, fallback to unaligned container for 0D scalar case
-        using storage_type = std::array<ET, detail::fixed_compute_size<S>::value>;
-#else
         using storage_type = aligned_array<ET, detail::fixed_compute_size<S>::value>;
-#endif
 
         using reference = typename storage_type::reference;
         using const_reference = typename storage_type::const_reference;
@@ -374,27 +368,12 @@ namespace xt
         storage_type& storage_impl() noexcept;
         const storage_type& storage_impl() const noexcept;
 
-        XTENSOR_CONSTEXPR_RETURN const inner_shape_type& shape_impl() const noexcept;
-        XTENSOR_CONSTEXPR_RETURN const inner_strides_type& strides_impl() const noexcept;
-        XTENSOR_CONSTEXPR_RETURN const inner_backstrides_type& backstrides_impl() const noexcept;
+        constexpr const inner_shape_type& shape_impl() const noexcept;
+        constexpr const inner_strides_type& strides_impl() const noexcept;
+        constexpr const inner_backstrides_type& backstrides_impl() const noexcept;
 
         friend class xcontainer<xfixed_container<ET, S, L, SH, Tag>>;
     };
-
-#ifdef XTENSOR_HAS_CONSTEXPR_ENHANCED
-    // Out of line definitions to prevent linker errors prior to C++17
-    template <class ET, class S, layout_type L, bool SH, class Tag>
-    constexpr
-        typename xfixed_container<ET, S, L, SH, Tag>::inner_shape_type xfixed_container<ET, S, L, SH, Tag>::m_shape;
-
-    template <class ET, class S, layout_type L, bool SH, class Tag>
-    constexpr
-        typename xfixed_container<ET, S, L, SH, Tag>::inner_strides_type xfixed_container<ET, S, L, SH, Tag>::m_strides;
-
-    template <class ET, class S, layout_type L, bool SH, class Tag>
-    constexpr typename xfixed_container<ET, S, L, SH, Tag>::inner_backstrides_type
-        xfixed_container<ET, S, L, SH, Tag>::m_backstrides;
-#endif
 
     /****************************************
      * xfixed_container_adaptor declaration *
@@ -511,27 +490,12 @@ namespace xt
         storage_type& storage_impl() noexcept;
         const storage_type& storage_impl() const noexcept;
 
-        XTENSOR_CONSTEXPR_RETURN const inner_shape_type& shape_impl() const noexcept;
-        XTENSOR_CONSTEXPR_RETURN const inner_strides_type& strides_impl() const noexcept;
-        XTENSOR_CONSTEXPR_RETURN const inner_backstrides_type& backstrides_impl() const noexcept;
+        constexpr const inner_shape_type& shape_impl() const noexcept;
+        constexpr const inner_strides_type& strides_impl() const noexcept;
+        constexpr const inner_backstrides_type& backstrides_impl() const noexcept;
 
         friend class xcontainer<xfixed_adaptor<EC, S, L, SH, Tag>>;
     };
-
-#ifdef XTENSOR_HAS_CONSTEXPR_ENHANCED
-    // Out of line definitions to prevent linker errors prior to C++17
-    template <class EC, class S, layout_type L, bool SH, class Tag>
-    constexpr
-        typename xfixed_adaptor<EC, S, L, SH, Tag>::inner_shape_type xfixed_adaptor<EC, S, L, SH, Tag>::m_shape;
-
-    template <class EC, class S, layout_type L, bool SH, class Tag>
-    constexpr
-        typename xfixed_adaptor<EC, S, L, SH, Tag>::inner_strides_type xfixed_adaptor<EC, S, L, SH, Tag>::m_strides;
-
-    template <class EC, class S, layout_type L, bool SH, class Tag>
-    constexpr typename xfixed_adaptor<EC, S, L, SH, Tag>::inner_backstrides_type
-        xfixed_adaptor<EC, S, L, SH, Tag>::m_backstrides;
-#endif
 
     /************************************
      * xfixed_container implementation *
@@ -771,21 +735,20 @@ namespace xt
     }
 
     template <class ET, class S, layout_type L, bool SH, class Tag>
-    XTENSOR_CONSTEXPR_RETURN auto xfixed_container<ET, S, L, SH, Tag>::shape_impl() const noexcept
-        -> const inner_shape_type&
+    constexpr auto xfixed_container<ET, S, L, SH, Tag>::shape_impl() const noexcept -> const inner_shape_type&
     {
         return m_shape;
     }
 
     template <class ET, class S, layout_type L, bool SH, class Tag>
-    XTENSOR_CONSTEXPR_RETURN auto xfixed_container<ET, S, L, SH, Tag>::strides_impl() const noexcept
+    constexpr auto xfixed_container<ET, S, L, SH, Tag>::strides_impl() const noexcept
         -> const inner_strides_type&
     {
         return m_strides;
     }
 
     template <class ET, class S, layout_type L, bool SH, class Tag>
-    XTENSOR_CONSTEXPR_RETURN auto xfixed_container<ET, S, L, SH, Tag>::backstrides_impl() const noexcept
+    constexpr auto xfixed_container<ET, S, L, SH, Tag>::backstrides_impl() const noexcept
         -> const inner_backstrides_type&
     {
         return m_backstrides;
@@ -968,21 +931,20 @@ namespace xt
     }
 
     template <class EC, class S, layout_type L, bool SH, class Tag>
-    XTENSOR_CONSTEXPR_RETURN auto xfixed_adaptor<EC, S, L, SH, Tag>::shape_impl() const noexcept
-        -> const inner_shape_type&
+    constexpr auto xfixed_adaptor<EC, S, L, SH, Tag>::shape_impl() const noexcept -> const inner_shape_type&
     {
         return m_shape;
     }
 
     template <class EC, class S, layout_type L, bool SH, class Tag>
-    XTENSOR_CONSTEXPR_RETURN auto xfixed_adaptor<EC, S, L, SH, Tag>::strides_impl() const noexcept
+    constexpr auto xfixed_adaptor<EC, S, L, SH, Tag>::strides_impl() const noexcept
         -> const inner_strides_type&
     {
         return m_strides;
     }
 
     template <class EC, class S, layout_type L, bool SH, class Tag>
-    XTENSOR_CONSTEXPR_RETURN auto xfixed_adaptor<EC, S, L, SH, Tag>::backstrides_impl() const noexcept
+    constexpr auto xfixed_adaptor<EC, S, L, SH, Tag>::backstrides_impl() const noexcept
         -> const inner_backstrides_type&
     {
         return m_backstrides;

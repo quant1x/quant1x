@@ -12,11 +12,10 @@
 
 #include <algorithm>
 #include <array>
-#include <cmath>
-#include <complex>
 #include <cstddef>
 #include <initializer_list>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <tuple>
 #include <type_traits>
@@ -29,12 +28,6 @@
 #include <xtl/xtype_traits.hpp>
 
 #include "../core/xtensor_config.hpp"
-
-#if (defined(_MSC_VER) && _MSC_VER >= 1910)
-#define NOEXCEPT(T)
-#else
-#define NOEXCEPT(T) noexcept(T)
-#endif
 
 namespace xt
 {
@@ -55,7 +48,7 @@ namespace xt
     constexpr decltype(auto) argument(Args&&... args) noexcept;
 
     template <class R, class F, class... S>
-    R apply(std::size_t index, F&& func, const std::tuple<S...>& s) NOEXCEPT(noexcept(func(std::get<0>(s))));
+    R apply(std::size_t index, F&& func, const std::tuple<S...>& s) noexcept(noexcept(func(std::get<0>(s))));
 
     template <class T, class S>
     void nested_copy(T&& iter, const S& s);
@@ -109,16 +102,6 @@ namespace xt
     template <class T, class R>
     using disable_integral_t = std::enable_if_t<!xtl::is_integral<T>::value, R>;
 
-    /********************************
-     * meta identity implementation *
-     ********************************/
-
-    template <class T>
-    struct meta_identity
-    {
-        using type = T;
-    };
-
     /***************************************
      * is_specialization_of implementation *
      ***************************************/
@@ -163,84 +146,68 @@ namespace xt
 
     namespace detail
     {
-        template <std::size_t I, class F, class... T>
-        inline typename std::enable_if<I == sizeof...(T), void>::type
-        for_each_impl(F&& /*f*/, std::tuple<T...>& /*t*/) noexcept
+        template <class F, size_t... I, class... Ts>
+        void for_each(F&& f, std::tuple<Ts...>& t, std::index_sequence<I...>) noexcept(
+            (noexcept(f(std::get<I>(t))) && ...)
+        )
         {
+            (f(std::get<I>(t)), ...);
         }
 
-        template <std::size_t I, class F, class... T>
-            inline typename std::enable_if < I<sizeof...(T), void>::type
-            for_each_impl(F&& f, std::tuple<T...>& t) noexcept(noexcept(f(std::get<I>(t))))
+        template <class F, size_t... I, class... Ts>
+        void for_each(F&& f, const std::tuple<Ts...>& t, std::index_sequence<I...>) noexcept(
+            (noexcept(f(std::get<I>(t))) && ...)
+        )
         {
-            f(std::get<I>(t));
-            for_each_impl<I + 1, F, T...>(std::forward<F>(f), t);
+            (f(std::get<I>(t)), ...);
         }
     }
 
-    template <class F, class... T>
-    inline void for_each(F&& f, std::tuple<T...>& t) noexcept(
-        noexcept(detail::for_each_impl<0, F, T...>(std::forward<F>(f), t))
+    template <class F, class... Ts>
+    inline void for_each(F&& f, std::tuple<Ts...>& t) noexcept(
+        noexcept(detail::for_each(std::forward<F>(f), t, std::make_index_sequence<sizeof...(Ts)>{}))
     )
     {
-        detail::for_each_impl<0, F, T...>(std::forward<F>(f), t);
+        detail::for_each(std::forward<F>(f), t, std::make_index_sequence<sizeof...(Ts)>{});
     }
 
-    namespace detail
-    {
-        template <std::size_t I, class F, class... T>
-        inline typename std::enable_if<I == sizeof...(T), void>::type
-        for_each_impl(F&& /*f*/, const std::tuple<T...>& /*t*/) noexcept
-        {
-        }
-
-        template <std::size_t I, class F, class... T>
-            inline typename std::enable_if < I<sizeof...(T), void>::type
-            for_each_impl(F&& f, const std::tuple<T...>& t) noexcept(noexcept(f(std::get<I>(t))))
-        {
-            f(std::get<I>(t));
-            for_each_impl<I + 1, F, T...>(std::forward<F>(f), t);
-        }
-    }
-
-    template <class F, class... T>
-    inline void for_each(F&& f, const std::tuple<T...>& t) noexcept(
-        noexcept(detail::for_each_impl<0, F, T...>(std::forward<F>(f), t))
+    template <class F, class... Ts>
+    inline void for_each(F&& f, const std::tuple<Ts...>& t) noexcept(
+        noexcept(detail::for_each(std::forward<F>(f), t, std::make_index_sequence<sizeof...(Ts)>{}))
     )
     {
-        detail::for_each_impl<0, F, T...>(std::forward<F>(f), t);
+        detail::for_each(std::forward<F>(f), t, std::make_index_sequence<sizeof...(Ts)>{});
     }
 
     /*****************************
      * accumulate implementation *
      *****************************/
 
-    /// @cond DOXYGEN_INCLUDE_NOEXCEPT
+    /// @cond DOXYGEN_INCLUDE_noexcept
 
     namespace detail
     {
-        template <std::size_t I, class F, class R, class... T>
-        inline std::enable_if_t<I == sizeof...(T), R>
-        accumulate_impl(F&& /*f*/, R init, const std::tuple<T...>& /*t*/) noexcept
+        template <class F, class R, class... T, size_t... I>
+        R accumulate_impl(F&& f, R init, const std::tuple<T...>& t, std::index_sequence<I...> /*I*/) noexcept(
+            (noexcept(f(init, std::get<I>(t))) && ...)
+        )
         {
-            return init;
-        }
-
-        template <std::size_t I, class F, class R, class... T>
-            inline std::enable_if_t < I<sizeof...(T), R>
-            accumulate_impl(F&& f, R init, const std::tuple<T...>& t) noexcept(noexcept(f(init, std::get<I>(t))))
-        {
-            R res = f(init, std::get<I>(t));
-            return accumulate_impl<I + 1, F, R, T...>(std::forward<F>(f), res, t);
+            R res = init;
+            auto wrapper = [&](const auto& i, const auto& j)
+            {
+                res = f(i, j);
+            };
+            (wrapper(res, std::get<I>(t)), ...);
+            return res;
         }
     }
 
     template <class F, class R, class... T>
     inline R accumulate(F&& f, R init, const std::tuple<T...>& t) noexcept(
-        noexcept(detail::accumulate_impl<0, F, R, T...>(std::forward<F>(f), init, t))
+        noexcept(detail::accumulate_impl(std::forward<F>(f), init, t, std::make_index_sequence<sizeof...(T)>{}))
     )
     {
-        return detail::accumulate_impl<0, F, R, T...>(std::forward<F>(f), init, t);
+        return detail::accumulate_impl(std::forward<F>(f), init, t, std::make_index_sequence<sizeof...(T)>{});
     }
 
     /// @endcond
@@ -284,8 +251,8 @@ namespace xt
      ************************/
 
     template <class R, class F, class... S>
-    inline R apply(std::size_t index, F&& func, const std::tuple<S...>& s)
-        NOEXCEPT(noexcept(func(std::get<0>(s))))
+    inline R
+    apply(std::size_t index, F&& func, const std::tuple<S...>& s) noexcept(noexcept(func(std::get<0>(s))))
     {
         XTENSOR_ASSERT(sizeof...(S) > index);
         return std::apply(
@@ -495,14 +462,15 @@ namespace xt
      * get_value_type *
      ******************/
 
-    template <class T, class = void_t<>>
+    template <class T>
     struct get_value_type
     {
         using type = T;
     };
 
     template <class T>
-    struct get_value_type<T, void_t<typename T::value_type>>
+        requires requires { typename T::value_type; }
+    struct get_value_type<T>
     {
         using type = typename T::value_type;
     };
@@ -554,112 +522,29 @@ namespace xt
     }
 
     /***********************************
-     * has_storage_type implementation *
-     ***********************************/
-
-    template <class T, class = void>
-    struct has_storage_type : std::false_type
-    {
-    };
+     * container_expression / data_interface_expression / strided_expression / iterable_expression *
+     ************************************************************************************************/
 
     template <class T>
     struct xcontainer_inner_types;
 
     template <class T>
-    struct has_storage_type<T, void_t<typename xcontainer_inner_types<T>::storage_type>>
-        : std::negation<
-              std::is_same<typename std::remove_cv<typename xcontainer_inner_types<T>::storage_type>::type, invalid_type>>
-    {
+    concept container_expression = requires {
+        typename xcontainer_inner_types<T>::storage_type;
+        requires !std::is_same_v<typename std::remove_cv<typename xcontainer_inner_types<T>::storage_type>::type, invalid_type>;
     };
-
-    /*************************************
-     * has_data_interface implementation *
-     *************************************/
-
-    template <class E, class = void>
-    struct has_data_interface : std::false_type
-    {
-    };
-
-    template <class E>
-    struct has_data_interface<E, void_t<decltype(std::declval<E>().data())>> : std::true_type
-    {
-    };
-
-    template <class E>
-    concept has_data_interface_concept = has_data_interface<E>::value;
-
-    template <class E, class = void>
-    struct has_strides : std::false_type
-    {
-    };
-
-    template <class E>
-    struct has_strides<E, void_t<decltype(std::declval<E>().strides())>> : std::true_type
-    {
-    };
-
-    template <class E, class = void>
-    struct has_iterator_interface : std::false_type
-    {
-    };
-
-    template <class E>
-    struct has_iterator_interface<E, void_t<decltype(std::declval<E>().begin())>> : std::true_type
-    {
-    };
-
-    template <class E>
-    concept has_iterator_interface_concept = has_iterator_interface<E>::value;
-
-    /******************************
-     * is_iterator implementation *
-     ******************************/
-
-    template <class E, class = void>
-    struct is_iterator : std::false_type
-    {
-    };
-
-    template <class E>
-    struct is_iterator<
-        E,
-        void_t<
-            decltype(*std::declval<const E>(), std::declval<const E>() == std::declval<const E>(), std::declval<const E>() != std::declval<const E>(), ++(*std::declval<E*>()), (*std::declval<E*>())++, std::true_type())>>
-        : std::true_type
-    {
-    };
-
-    template <typename E>
-    concept iterator_concept = is_iterator<E>::value;
-
-    /********************************************
-     * xtrivial_default_construct implemenation *
-     ********************************************/
-
-#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE >= 7
-// has_trivial_default_constructor has not been available since libstdc++-7.
-#define XTENSOR_GLIBCXX_USE_CXX11_ABI 1
-#else
-#if defined(_GLIBCXX_USE_CXX11_ABI)
-#if _GLIBCXX_USE_CXX11_ABI || (defined(_GLIBCXX_USE_DUAL_ABI) && !_GLIBCXX_USE_DUAL_ABI)
-#define XTENSOR_GLIBCXX_USE_CXX11_ABI 1
-#endif
-#endif
-#endif
-
-#if !defined(__GNUG__) || defined(_LIBCPP_VERSION) || defined(XTENSOR_GLIBCXX_USE_CXX11_ABI)
 
     template <class T>
-    using xtrivially_default_constructible = std::is_trivially_default_constructible<T>;
+    using get_storage_type_t = typename xcontainer_inner_types<T>::storage_type;
 
-#else
+    template <class E>
+    concept data_interface_expression = requires { std::declval<E>().data(); };
 
-    template <class T>
-    using xtrivially_default_constructible = std::has_trivial_default_constructor<T>;
+    template <class E>
+    concept strided_expression = requires { std::declval<E>().strides(); };
 
-#endif
-#undef XTENSOR_GLIBCXX_USE_CXX11_ABI
+    template <class E>
+    concept iterable_expression = requires { std::declval<E>().begin(); };
 
     /*************************
      * conditional type cast *
@@ -788,41 +673,18 @@ namespace xt
     }
 
     /*****************
-     * has_assign_to *
-     *****************/
-
-    template <class E1, class E2, class = void>
-    struct has_assign_to : std::false_type
-    {
-    };
+     * assignable_to *
+     ******************/
 
     template <class E1, class E2>
-    struct has_assign_to<E1, E2, void_t<decltype(std::declval<const E2&>().assign_to(std::declval<E1&>()))>>
-        : std::true_type
-    {
-    };
-
-    template <class E1, class E2>
-    constexpr bool has_assign_to_v = has_assign_to<E1, E2>::value;
+    concept assignable_to_expression = requires { std::declval<const E2&>().assign_to(std::declval<E1&>()); };
 
     /*************************************
      * overlapping_memory_checker_traits *
      *************************************/
 
-    template <class T, class Enable = void>
-    struct has_memory_address : std::false_type
-    {
-    };
-
     template <class T>
-    struct has_memory_address<T, void_t<decltype(std::addressof(*std::declval<T>().begin()))>> : std::true_type
-    {
-    };
-
-    template <typename T>
-    concept with_memory_address_concept = has_memory_address<std::decay_t<T>>::value;
-    template <typename T>
-    concept without_memory_address_concept = !has_memory_address<std::decay_t<T>>::value;
+    concept addressable_to_expression = requires { std::addressof(*std::declval<T>().begin()); };
 
     struct memory_range
     {
@@ -866,7 +728,7 @@ namespace xt
     };
 
     template <class E>
-    struct overlapping_memory_checker_traits<E, std::enable_if_t<has_memory_address<E>::value>>
+    struct overlapping_memory_checker_traits<E, std::enable_if_t<addressable_to_expression<E>>>
     {
         static bool check_overlap(const E& expr, const memory_range& dst_range)
         {
@@ -916,7 +778,7 @@ namespace xt
     };
 
     template <class Dst>
-    struct overlapping_memory_checker<Dst, std::enable_if_t<has_memory_address<Dst>::value>>
+    struct overlapping_memory_checker<Dst, std::enable_if_t<addressable_to_expression<Dst>>>
         : overlapping_memory_checker_base
     {
         explicit overlapping_memory_checker(const Dst& aDst)
@@ -970,102 +832,104 @@ namespace xt
     };
 #endif
 
-    /********************
-     * get_strides_type *
-     ********************/
+    /***************
+     * get_strides *
+     ***************/
 
+    template <class CP, class O, class A>
+    class xbuffer_adaptor;
+
+    namespace detail
+    {
+        template <class>
+        inline constexpr bool is_fixed_shape_v = false;
+
+        template <std::size_t... I>
+        inline constexpr bool is_fixed_shape_v<fixed_shape<I...>> = true;
+
+        template <class>
+        inline constexpr bool is_xbuffer_adaptor_v = false;
+
+        template <class CP, class O, class A>
+        inline constexpr bool is_xbuffer_adaptor_v<xbuffer_adaptor<CP, O, A>> = true;
+
+        template <class S>
+        concept fixed_shape_type = is_fixed_shape_v<S>;
+
+        template <class S>
+        concept xbuffer_adaptor_type = is_xbuffer_adaptor_v<S>;
+    }
+
+    // Defers strides-type mapping so callers can use it inside std::conditional_t<cond, A, B>::type
+    // without evaluating both branches (see xshared_expression in xexpression.hpp).
     template <class S>
     struct get_strides_type
     {
         using type = typename rebind_container<std::ptrdiff_t, S>::type;
     };
 
-    template <std::size_t... I>
-    struct get_strides_type<fixed_shape<I...>>
+    template <detail::fixed_shape_type S>
+    struct get_strides_type<S>
     {
         // TODO we could compute the strides statically here.
         //  But we'll need full constexpr support to have a
         //  homogenous ``compute_strides`` method
-        using type = std::array<std::ptrdiff_t, sizeof...(I)>;
+        using type = std::array<std::ptrdiff_t, S::size()>;
     };
 
-    template <class CP, class O, class A>
-    class xbuffer_adaptor;
-
-    template <class CP, class O, class A>
-    struct get_strides_type<xbuffer_adaptor<CP, O, A>>
+    template <detail::xbuffer_adaptor_type S>
+    struct get_strides_type<S>
     {
         // In bindings this mapping is called by reshape_view with an inner shape of type
         // xbuffer_adaptor.
         // Since we cannot create a buffer adaptor holding data, we map it to an std::vector.
-        using type = std::vector<
-            typename xbuffer_adaptor<CP, O, A>::value_type,
-            typename xbuffer_adaptor<CP, O, A>::allocator_type>;
+        using type = std::vector<typename S::value_type, typename S::allocator_type>;
     };
 
-
-    template <class C>
-    using get_strides_t = typename get_strides_type<C>::type;
+    template <class S>
+    using get_strides_t = typename get_strides_type<S>::type;
 
     /*******************
      * inner_reference *
      *******************/
 
     template <class ST>
-    struct inner_reference
-    {
-        using storage_type = std::decay_t<ST>;
-        using type = std::conditional_t<
-            std::is_const<std::remove_reference_t<ST>>::value,
-            typename storage_type::const_reference,
-            typename storage_type::reference>;
-    };
-
-    template <class ST>
-    using inner_reference_t = typename inner_reference<ST>::type;
+    using inner_reference_t = std::conditional_t<
+        std::is_const<std::remove_reference_t<ST>>::value,
+        typename std::decay_t<ST>::const_reference,
+        typename std::decay_t<ST>::reference>;
 
     /************
      * get_rank *
      ************/
 
-    template <class E, typename = void>
-    struct get_rank
-    {
-        static constexpr std::size_t value = SIZE_MAX;
+    // Define the requirement
+    template <typename T>
+    concept HasRank = requires {
+        T::rank;  // Checks if T::rank exists as a type nested member
     };
 
     template <class E>
-    struct get_rank<E, decltype((void) E::rank, void())>
+    constexpr std::size_t has_rank()
     {
-        static constexpr std::size_t value = E::rank;
-    };
-
-    /******************
-     * has_fixed_rank *
-     ******************/
+        return HasRank<E>;
+    }
 
     template <class E>
-    struct has_fixed_rank
+    constexpr std::size_t get_rank()
     {
-        using type = std::integral_constant<bool, get_rank<std::decay_t<E>>::value != SIZE_MAX>;
-    };
+        if constexpr (HasRank<std::decay_t<E>>)
+        {
+            return std::decay_t<E>::rank;
+        }
+        return SIZE_MAX;
+    }
 
     template <class E>
-    using has_fixed_rank_t = typename has_fixed_rank<std::decay_t<E>>::type;
-
-    /************
-     * has_rank *
-     ************/
-
-    template <class E, size_t N>
-    struct has_rank
+    constexpr std::size_t has_fixed_rank()
     {
-        using type = std::integral_constant<bool, get_rank<std::decay_t<E>>::value == N>;
-    };
-
-    template <class E, size_t N>
-    using has_rank_t = typename has_rank<std::decay_t<E>, N>::type;
-
+        return get_rank<E>() != SIZE_MAX;
+    }
 }
 
 #endif

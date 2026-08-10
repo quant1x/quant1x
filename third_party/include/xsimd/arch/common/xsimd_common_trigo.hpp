@@ -158,7 +158,7 @@ namespace xsimd
          */
         namespace detail
         {
-            template <class A, class T, class = typename std::enable_if<std::is_integral<T>::value, void>::type>
+            template <class A, class T, class = std::enable_if_t<std::is_integral_v<T>>>
             XSIMD_INLINE batch<T, A>
             average(const batch<T, A>& x1, const batch<T, A>& x2) noexcept
             {
@@ -354,8 +354,14 @@ namespace xsimd
         XSIMD_INLINE batch<T, A> atan2(batch<T, A> const& self, batch<T, A> const& other, requires_arch<common>) noexcept
         {
             using batch_type = batch<T, A>;
+#ifdef __FAST_MATH__
             const batch_type q = abs(self / other);
-            const batch_type z = detail::kernel_atan(q, batch_type(1.) / q);
+            const batch_type q_p = abs(other / self);
+#else
+            const batch_type q = abs(self / other);
+            const batch_type q_p = 1. / q;
+#endif
+            const batch_type z = detail::kernel_atan(q, q_p);
             return select(other > batch_type(0.), z, constants::pi<batch_type>() - z) * signnz(self);
         }
 
@@ -545,42 +551,54 @@ namespace xsimd
                     {
                         auto test = x > constants::pio4<B>();
                         xr = x - constants::pio2_1<B>();
+                        detail::reassociation_barrier(xr, "ordered pio2 subtraction");
                         xr -= constants::pio2_2<B>();
+                        detail::reassociation_barrier(xr, "ordered pio2 subtraction");
                         xr -= constants::pio2_3<B>();
+                        detail::reassociation_barrier(xr, "ordered pio2 subtraction");
                         xr = select(test, xr, x);
                         return select(test, B(1.), B(0.));
                     }
                     else if (all(x <= constants::twentypi<B>()))
                     {
                         B xi = nearbyint(x * constants::twoopi<B>());
+                        detail::reassociation_barrier(xi, "preserve quadrant selection");
                         xr = fnma(xi, constants::pio2_1<B>(), x);
+                        detail::reassociation_barrier(xr, "compensated range reduction");
                         xr -= xi * constants::pio2_2<B>();
+                        detail::reassociation_barrier(xr, "compensated range reduction");
                         xr -= xi * constants::pio2_3<B>();
+                        detail::reassociation_barrier(xr, "compensated range reduction");
                         return quadrant(xi);
                     }
                     else if (all(x <= constants::mediumpi<B>()))
                     {
                         B fn = nearbyint(x * constants::twoopi<B>());
+                        detail::reassociation_barrier(fn, "multi-term range reduction");
                         B r = x - fn * constants::pio2_1<B>();
+                        detail::reassociation_barrier(r, "multi-term range reduction");
                         B w = fn * constants::pio2_1t<B>();
                         B t = r;
                         w = fn * constants::pio2_2<B>();
                         r = t - w;
+                        detail::reassociation_barrier(r, "multi-term range reduction");
                         w = fn * constants::pio2_2t<B>() - ((t - r) - w);
                         t = r;
                         w = fn * constants::pio2_3<B>();
                         r = t - w;
+                        detail::reassociation_barrier(r, "multi-term range reduction");
                         w = fn * constants::pio2_3t<B>() - ((t - r) - w);
                         xr = r - w;
+                        detail::reassociation_barrier(xr, "multi-term range reduction");
                         return quadrant(fn);
                     }
                     else
                     {
                         static constexpr std::size_t size = B::size;
                         using value_type = typename B::value_type;
-                        alignas(B) std::array<value_type, size> tmp;
-                        alignas(B) std::array<value_type, size> txr;
-                        alignas(B) std::array<value_type, size> args;
+                        alignas(B::arch_type::alignment()) std::array<value_type, size> tmp;
+                        alignas(B::arch_type::alignment()) std::array<value_type, size> txr;
+                        alignas(B::arch_type::alignment()) std::array<value_type, size> args;
                         x.store_aligned(args.data());
 
                         for (std::size_t i = 0; i < size; ++i)

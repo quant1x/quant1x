@@ -12,11 +12,11 @@
 #ifndef XSIMD_SSSE3_HPP
 #define XSIMD_SSSE3_HPP
 
-#include <cstddef>
-#include <type_traits>
-
 #include "../types/xsimd_ssse3_register.hpp"
 #include "../types/xsimd_utils.hpp"
+
+#include <cstddef>
+#include <type_traits>
 
 namespace xsimd
 {
@@ -26,22 +26,22 @@ namespace xsimd
         using namespace types;
 
         // abs
-        template <class A, class T, typename std::enable_if<std::is_integral<T>::value && std::is_signed<T>::value, void>::type>
+        template <class A, class T, std::enable_if_t<std::is_integral_v<T> && std::is_signed_v<T>>>
         XSIMD_INLINE batch<T, A> abs(batch<T, A> const& self, requires_arch<ssse3>) noexcept
         {
-            XSIMD_IF_CONSTEXPR(sizeof(T) == 1)
+            if constexpr (sizeof(T) == 1)
             {
                 return _mm_abs_epi8(self);
             }
-            else XSIMD_IF_CONSTEXPR(sizeof(T) == 2)
+            else if constexpr (sizeof(T) == 2)
             {
                 return _mm_abs_epi16(self);
             }
-            else XSIMD_IF_CONSTEXPR(sizeof(T) == 4)
+            else if constexpr (sizeof(T) == 4)
             {
                 return _mm_abs_epi32(self);
             }
-            else XSIMD_IF_CONSTEXPR(sizeof(T) == 8)
+            else if constexpr (sizeof(T) == 8)
             {
                 return _mm_abs_epi64(self);
             }
@@ -57,43 +57,43 @@ namespace xsimd
         {
 
             template <class T, class A>
-            XSIMD_INLINE batch<T, A> extract_pair(batch<T, A> const&, batch<T, A> const& other, std::size_t, ::xsimd::detail::index_sequence<>) noexcept
+            XSIMD_INLINE batch<T, A> extract_pair(batch<T, A> const&, batch<T, A> const& other, std::size_t, std::index_sequence<>) noexcept
             {
                 return other;
             }
 
             template <class T, class A, std::size_t I, std::size_t... Is>
-            XSIMD_INLINE batch<T, A> extract_pair(batch<T, A> const& self, batch<T, A> const& other, std::size_t i, ::xsimd::detail::index_sequence<I, Is...>) noexcept
+            XSIMD_INLINE batch<T, A> extract_pair(batch<T, A> const& self, batch<T, A> const& other, std::size_t i, std::index_sequence<I, Is...>) noexcept
             {
                 if (i == I)
                 {
                     return _mm_alignr_epi8(self, other, sizeof(T) * I);
                 }
                 else
-                    return extract_pair(self, other, i, ::xsimd::detail::index_sequence<Is...>());
+                    return extract_pair(self, other, i, std::index_sequence<Is...>());
             }
         }
 
-        template <class A, class T, class _ = typename std::enable_if<std::is_integral<T>::value, void>::type>
+        template <class A, class T, class = std::enable_if_t<std::is_integral_v<T>>>
         XSIMD_INLINE batch<T, A> extract_pair(batch<T, A> const& self, batch<T, A> const& other, std::size_t i, requires_arch<ssse3>) noexcept
         {
             constexpr std::size_t size = batch<T, A>::size;
             assert(i < size && "index in bounds");
-            return detail::extract_pair(self, other, i, ::xsimd::detail::make_index_sequence<size>());
+            return detail::extract_pair(self, other, i, std::make_index_sequence<size>());
         }
 
         // reduce_add
-        template <class A, class T, class = typename std::enable_if<std::is_integral<T>::value, void>::type>
+        template <class A, class T, class = std::enable_if_t<std::is_integral_v<T>>>
         XSIMD_INLINE T reduce_add(batch<T, A> const& self, requires_arch<ssse3>) noexcept
         {
-            XSIMD_IF_CONSTEXPR(sizeof(T) == 2)
+            if constexpr (sizeof(T) == 2)
             {
                 __m128i tmp1 = _mm_hadd_epi16(self, self);
                 __m128i tmp2 = _mm_hadd_epi16(tmp1, tmp1);
                 __m128i tmp3 = _mm_hadd_epi16(tmp2, tmp2);
                 return _mm_cvtsi128_si32(tmp3) & 0xFFFF;
             }
-            else XSIMD_IF_CONSTEXPR(sizeof(T) == 4)
+            else if constexpr (sizeof(T) == 4)
             {
                 __m128i tmp1 = _mm_hadd_epi32(self, self);
                 __m128i tmp2 = _mm_hadd_epi32(tmp1, tmp1);
@@ -141,7 +141,7 @@ namespace xsimd
         }
 
         template <class A, class T, class IT>
-        XSIMD_INLINE typename std::enable_if<std::is_arithmetic<T>::value, batch<T, A>>::type
+        XSIMD_INLINE std::enable_if_t<std::is_arithmetic_v<T>, batch<T, A>>
         swizzle(batch<T, A> const& self, batch<IT, A> mask, requires_arch<ssse3>) noexcept
         {
             constexpr auto pikes = static_cast<as_unsigned_integer_t<T>>(0x0706050403020100ul);

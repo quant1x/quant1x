@@ -12,8 +12,6 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <numeric>
-#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -84,7 +82,7 @@ namespace xt
      *************************************/
 
     template <xgenerator_concept E>
-        requires(without_memory_address_concept<E>)
+        requires(!addressable_to_expression<std::decay_t<E>>)
     struct overlapping_memory_checker_traits<E>
     {
         static bool check_overlap(const E&, const memory_range&)
@@ -169,7 +167,7 @@ namespace xt
 
         template <class E, class FE = F>
         void assign_to(xexpression<E>& e) const noexcept
-            requires(has_assign_to_v<E, FE>);
+            requires(assignable_to_expression<E, FE>);
 
         const functor_type& functor() const noexcept;
 
@@ -376,7 +374,7 @@ namespace xt
     template <class F, class R, class S>
     template <class E, class FE>
     inline void xgenerator<F, R, S>::assign_to(xexpression<E>& e) const noexcept
-        requires(has_assign_to_v<E, FE>)
+        requires(assignable_to_expression<E, FE>)
     {
         e.derived_cast().resize(m_shape);
         m_f.assign_to(e);

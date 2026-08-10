@@ -13,7 +13,6 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
-#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -505,7 +504,8 @@ namespace xt
     /**
      * Returns a reference to the element at the specified position in the xindex_view.
      * @param first iterator starting the sequence of indices
-     * The number of indices in the sequence should be equal to or greater 1.
+     * @param last iterator ending the sequence of indices (not used, only for compatibility with xexpression
+     * operator()) The number of indices in the sequence should be equal to or greater 1.
      */
     template <class CT, class I>
     template <class It>
@@ -517,7 +517,8 @@ namespace xt
     /**
      * Returns a reference to the element at the specified position in the xindex_view.
      * @param first iterator starting the sequence of indices
-     * The number of indices in the sequence should be equal to or greater 1.
+     * @param last iterator ending the sequence of indices (not used, only for compatibility with xexpression
+     * operator()) The number of indices in the sequence should be equal to or greater 1.
      */
     template <class CT, class I>
     template <class It>

@@ -11,13 +11,10 @@
 #define XTENSOR_XSHAPE_HPP
 
 #include <algorithm>
-#include <cassert>
 #include <cstddef>
 #include <cstdlib>
-#include <cstring>
 #include <initializer_list>
 #include <iterator>
-#include <memory>
 
 #include "../containers/xstorage.hpp"
 #include "../core/xlayout.hpp"
@@ -122,7 +119,7 @@ namespace xt
      * Check if an object has a certain shape.
      *
      * @ingroup xt_xshape
-     * @param a an array
+     * @param e an array-like object
      * @param shape the shape to test
      * @return bool
      */
@@ -136,12 +133,12 @@ namespace xt
     /**
      * Check if an object has a certain shape.
      *
-     * @ingroup has_shape
-     * @param a an array
+     * @ingroup xt_xshape
+     * @param e an array-like object
      * @param shape the shape to test
      * @return bool
      */
-    template <class E, class S, class = typename std::enable_if_t<has_iterator_interface<S>::value>>
+    template <class E, class S, class = typename std::enable_if_t<iterable_expression<S>>>
     inline bool has_shape(const E& e, const S& shape)
     {
         return e.shape().size() == shape.size()

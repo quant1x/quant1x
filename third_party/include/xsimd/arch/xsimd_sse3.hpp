@@ -13,6 +13,7 @@
 #define XSIMD_SSE3_HPP
 
 #include "../types/xsimd_sse3_register.hpp"
+
 #include <type_traits>
 
 namespace xsimd
@@ -36,7 +37,7 @@ namespace xsimd
         }
 
         // load_unaligned
-        template <class A, class T, class = typename std::enable_if<std::is_integral<T>::value, void>::type>
+        template <class A, class T, class = std::enable_if_t<std::is_integral_v<T>>>
         XSIMD_INLINE batch<T, A> load_unaligned(T const* mem, convert<T>, requires_arch<sse3>) noexcept
         {
             return _mm_lddqu_si128((__m128i const*)mem);
@@ -51,6 +52,14 @@ namespace xsimd
             return _mm_cvtss_f32(tmp1);
         }
 
+        // reduce_mul
+        template <class A>
+        XSIMD_INLINE float reduce_mul(batch<float, A> const& self, requires_arch<sse3>) noexcept
+        {
+            __m128 tmp1 = _mm_mul_ps(self, _mm_movehl_ps(self, self));
+            __m128 tmp2 = _mm_mul_ps(tmp1, _mm_movehdup_ps(tmp1));
+            return _mm_cvtss_f32(tmp2);
+        }
     }
 
 }

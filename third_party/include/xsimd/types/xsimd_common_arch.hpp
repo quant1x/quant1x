@@ -14,6 +14,8 @@
 
 #include "../config/xsimd_config.hpp"
 
+#include <cstddef>
+
 /**
  * @defgroup architectures Architecture description
  * */

@@ -59,7 +59,8 @@ namespace xt
      *
      * @ingroup xt_xstrides
      * @param strides Strides of the array.
-     * @param args Array index.
+     * @param arg First array index.
+     * @param args Remaining array indices.
      * @return The flat index.
      */
     template <class offset_type, class S, class Arg, class... Args>
@@ -170,6 +171,10 @@ namespace xt
     It strided_data_end(const C& c, It begin, layout_type l, size_type offset)
     {
         using difference_type = typename std::iterator_traits<It>::difference_type;
+        if (c.size() == 0 || std::find(c.shape().cbegin(), c.shape().cend(), size_type(0)) != c.shape().cend())
+        {
+            return begin;
+        }
         if (c.dimension() == 0)
         {
             ++begin;
@@ -241,7 +246,8 @@ namespace xt
      * @brief Get strides of an object.
      *
      * @ingroup xt_xstrides
-     * @param a an array
+     * @param e an array
+     * @param type output stride convention
      * @return array
      */
     template <class E>
@@ -285,7 +291,9 @@ namespace xt
      * @brief Get stride of an object along an axis.
      *
      * @ingroup xt_xstrides
-     * @param a an array
+     * @param e an array
+     * @param axis axis along which to query the stride
+     * @param type output stride convention
      * @return integer
      */
     template <class E>

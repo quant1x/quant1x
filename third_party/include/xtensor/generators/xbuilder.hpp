@@ -146,7 +146,7 @@ namespace xt
      * the same shape, value type and layout as the input xexpression *e*.
      *
      * Note: contrary to zeros(shape), this function returns a non-lazy, allocated container!
-     * Use ``xt::zeros<double>(e.shape());` for a lazy version.
+     * Use ``xt::zeros<double>(e.shape());`` for a lazy version.
      *
      * @param e the xexpression from which to extract shape, value type and layout.
      */
@@ -499,7 +499,7 @@ namespace xt
             {
                 // trim off extra indices if provided to match behavior of containers
                 auto dim_offset = std::distance(first, last) - std::get<0>(t).dimension();
-                size_t axis_dim = *(first + axis + dim_offset);
+                std::size_t axis_dim = *(first + axis + dim_offset);
                 auto match = [&](auto& arr)
                 {
                     if (axis_dim >= arr.shape()[axis])
@@ -512,16 +512,16 @@ namespace xt
 
                 auto get = [&](auto& arr)
                 {
-                    size_t offset = 0;
-                    const size_t end = arr.dimension();
-                    for (size_t i = 0; i < end; i++)
+                    std::size_t offset = 0;
+                    const std::size_t end = arr.dimension();
+                    for (std::size_t i = 0; i < end; i++)
                     {
                         const auto& shape = arr.shape();
-                        const size_t stride = std::accumulate(
+                        const std::size_t stride = std::accumulate(
                             shape.begin() + i + 1,
                             shape.end(),
-                            1,
-                            std::multiplies<size_t>()
+                            size_t(1),
+                            std::multiplies<std::size_t>()
                         );
                         if (i == axis)
                         {
@@ -563,29 +563,29 @@ namespace xt
             {
                 auto get_item = [&](auto& arr)
                 {
-                    size_t offset = 0;
-                    const size_t end = arr.dimension();
-                    size_t after_axis = 0;
-                    for (size_t i = 0; i < end; i++)
+                    std::size_t offset = 0;
+                    const std::size_t end = arr.dimension();
+                    std::size_t after_axis = 0;
+                    for (std::size_t i = 0; i < end; i++)
                     {
                         if (i == axis)
                         {
                             after_axis = 1;
                         }
                         const auto& shape = arr.shape();
-                        const size_t stride = std::accumulate(
-                            shape.begin() + i + 1,
+                        const std::size_t stride = std::accumulate(
+                            shape.begin() + static_cast<std::ptrdiff_t>(i) + 1,
                             shape.end(),
-                            1,
-                            std::multiplies<size_t>()
+                            std::size_t(1),
+                            std::multiplies<std::size_t>()
                         );
-                        const auto len = (*(first + i + after_axis));
+                        const auto len = (*(first + static_cast<std::ptrdiff_t>(i + after_axis)));
                         offset += len * stride;
                     }
-                    const auto element = arr.begin() + offset;
+                    const auto element = arr.begin() + static_cast<std::ptrdiff_t>(offset);
                     return *element;
                 };
-                size_type i = *(first + axis);
+                size_type i = *(first + static_cast<std::ptrdiff_t>(axis));
                 return apply<value_type>(i, get_item, t);
             }
         };
@@ -910,6 +910,32 @@ namespace xt
 
     namespace detail
     {
+        template <class S>
+        struct vstack_fixed_shape_impl;
+
+        template <std::size_t N>
+        struct vstack_fixed_shape_impl<fixed_shape<N>>
+        {
+            using type = fixed_shape<1, N>;
+        };
+
+        template <std::size_t I, std::size_t... J>
+        struct vstack_fixed_shape_impl<fixed_shape<I, J...>>
+        {
+            using type = fixed_shape<I, J...>;
+        };
+
+        template <class... CT>
+        struct vstack_fixed_shape
+        {
+            using type = concat_fixed_shape_t<
+                0,
+                typename vstack_fixed_shape_impl<typename std::decay_t<CT>::shape_type>::type...>;
+        };
+
+        template <class... CT>
+        using vstack_fixed_shape_t = typename vstack_fixed_shape<CT...>::type;
+
         template <class S, class... CT>
         inline auto vstack_shape(std::tuple<CT...>& t, const S& shape)
         {
@@ -948,23 +974,31 @@ namespace xt
         return detail::make_xgenerator(detail::vstack_impl<CT...>(std::move(t), size_t(0)), new_shape);
     }
 
+    /**
+     * @brief Stack fixed-shape xexpressions in sequence vertically (row wise).
+     * This overload preserves the result shape at compile time by treating
+     * 1-D fixed shapes as ``(1, N)`` row vectors before concatenation.
+     *
+     * @param t \ref xtuple of fixed-shape xexpressions to stack
+     * @return xgenerator evaluating to stacked elements with a fixed compile-time shape
+     */
+    template <fixed_shape_container_concept... CT>
+    inline auto vstack(std::tuple<CT...>&& t)
+    {
+        using shape_type = detail::vstack_fixed_shape_t<CT...>;
+        return detail::make_xgenerator(detail::vstack_impl<CT...>(std::move(t), size_t(0)), shape_type{});
+    }
+
     namespace detail
     {
 
         template <std::size_t... I, class... E>
         inline auto meshgrid_impl(std::index_sequence<I...>, E&&... e) noexcept
         {
-#if defined _MSC_VER
-            const std::array<std::size_t, sizeof...(E)> shape = {e.shape()[0]...};
-            return std::make_tuple(
-                detail::make_xgenerator(detail::repeat_impl<xclosure_t<E>>(std::forward<E>(e), I), shape)...
-            );
-#else
             return std::make_tuple(detail::make_xgenerator(
                 detail::repeat_impl<xclosure_t<E>>(std::forward<E>(e), I),
                 {e.shape()[0]...}
             )...);
-#endif
         }
     }
 

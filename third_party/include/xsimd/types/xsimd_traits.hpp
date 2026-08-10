@@ -12,9 +12,17 @@
 #ifndef XSIMD_TRAITS_HPP
 #define XSIMD_TRAITS_HPP
 
+#include <complex>
+#include <cstdint>
 #include <type_traits>
 
-#include "xsimd_batch.hpp"
+#ifdef XSIMD_ENABLE_XTL_COMPLEX
+#include <xtl/xcomplex.hpp>
+#endif
+
+#include "../config/xsimd_config.hpp"
+#include "./xsimd_batch_fwd.hpp"
+#include "./xsimd_utils.hpp"
 
 /**
  * high level type traits
@@ -40,6 +48,9 @@ namespace xsimd
     {
     };
 
+    template <typename T, class A = default_arch>
+    inline constexpr bool has_simd_register_v = has_simd_register<T, A>::value;
+
     namespace detail
     {
         template <class T, bool>
@@ -53,8 +64,10 @@ namespace xsimd
             static constexpr size_t size = 1;
         };
 
+#if XSIMD_CPP_VERSION < 201703L
         template <class T>
         constexpr size_t simd_traits_impl<T, false>::size;
+#endif
 
         template <class T>
         struct simd_traits_impl<T, true>
@@ -64,8 +77,10 @@ namespace xsimd
             static constexpr size_t size = type::size;
         };
 
+#if XSIMD_CPP_VERSION < 201703L
         template <class T>
         constexpr size_t simd_traits_impl<T, true>::size;
+#endif
 
         template <class T, class A>
         struct static_check_supported_config_emitter
@@ -73,7 +88,7 @@ namespace xsimd
 
             static_assert(A::supported(),
                           "usage of batch type with unsupported architecture");
-            static_assert(!A::supported() || xsimd::has_simd_register<T, A>::value,
+            static_assert(!A::supported() || xsimd::has_simd_register_v<T, A>,
                           "usage of batch type with unsupported type");
         };
 
@@ -103,20 +118,20 @@ namespace xsimd
     }
 
     template <class T>
-    struct simd_traits : detail::simd_traits_impl<T, xsimd::has_simd_register<T>::value>
+    struct simd_traits : detail::simd_traits_impl<T, xsimd::has_simd_register_v<T>>
     {
     };
 
     template <class T>
     struct simd_traits<std::complex<T>>
-        : detail::simd_traits_impl<std::complex<T>, xsimd::has_simd_register<T>::value>
+        : detail::simd_traits_impl<std::complex<T>, xsimd::has_simd_register_v<T>>
     {
     };
 
 #ifdef XSIMD_ENABLE_XTL_COMPLEX
     template <class T, bool i3ec>
     struct simd_traits<xtl::xcomplex<T, T, i3ec>>
-        : detail::simd_traits_impl<std::complex<T>, xsimd::has_simd_register<T>::value>
+        : detail::simd_traits_impl<std::complex<T>, xsimd::has_simd_register_v<T>>
     {
     };
 #endif
@@ -128,8 +143,10 @@ namespace xsimd
         static constexpr size_t size = simd_traits<type>::size;
     };
 
+#if XSIMD_CPP_VERSION < 201703L
     template <class T>
     constexpr size_t revert_simd_traits<T>::size;
+#endif
 
     template <class T>
     struct revert_simd_traits<batch<T>>
@@ -138,8 +155,10 @@ namespace xsimd
         static constexpr size_t size = batch<T>::size;
     };
 
+#if XSIMD_CPP_VERSION < 201703L
     template <class T>
     constexpr size_t revert_simd_traits<batch<T>>::size;
+#endif
 
     template <class T>
     using simd_type = typename simd_traits<T>::type;
@@ -159,61 +178,64 @@ namespace xsimd
         template <class T1, class T2>
         struct simd_condition
         {
-            static constexpr bool value = (std::is_same<T1, T2>::value && !std::is_same<T1, bool>::value) || (std::is_same<T1, bool>::value && !std::is_same<T2, bool>::value) || std::is_same<T1, float>::value || std::is_same<T1, double>::value || std::is_same<T1, int8_t>::value || std::is_same<T1, uint8_t>::value || std::is_same<T1, int16_t>::value || std::is_same<T1, uint16_t>::value || std::is_same<T1, int32_t>::value || std::is_same<T1, uint32_t>::value || std::is_same<T1, int64_t>::value || std::is_same<T1, uint64_t>::value || std::is_same<T1, char>::value || detail::is_complex<T1>::value;
+            static constexpr bool value = (std::is_same_v<T1, T2> && !std::is_same_v<T1, bool>) || (std::is_same_v<T1, bool> && !std::is_same_v<T2, bool>) || std::is_same_v<T1, float> || std::is_same_v<T1, double> || std::is_same_v<T1, int8_t> || std::is_same_v<T1, uint8_t> || std::is_same_v<T1, int16_t> || std::is_same_v<T1, uint16_t> || std::is_same_v<T1, int32_t> || std::is_same_v<T1, uint32_t> || std::is_same_v<T1, int64_t> || std::is_same_v<T1, uint64_t> || std::is_same_v<T1, char> || detail::is_complex_v<T1>;
         };
+
+        template <class T1, class T2>
+        inline constexpr bool simd_condition_v = simd_condition<T1, T2>::value;
 
         template <class T1, class T2, class A>
         struct simd_return_type_impl
-            : std::enable_if<simd_condition<T1, T2>::value, batch<T2, A>>
+            : std::enable_if<simd_condition_v<T1, T2>, batch<T2, A>>
         {
         };
 
         template <class T2, class A>
         struct simd_return_type_impl<bool, T2, A>
-            : std::enable_if<simd_condition<bool, T2>::value, batch_bool<T2, A>>
+            : std::enable_if<simd_condition_v<bool, T2>, batch_bool<T2, A>>
         {
         };
 
         template <class T2, class A>
         struct simd_return_type_impl<bool, std::complex<T2>, A>
-            : std::enable_if<simd_condition<bool, T2>::value, batch_bool<T2, A>>
+            : std::enable_if<simd_condition_v<bool, T2>, batch_bool<T2, A>>
         {
         };
 
         template <class T1, class T2, class A>
         struct simd_return_type_impl<std::complex<T1>, T2, A>
-            : std::enable_if<simd_condition<T1, T2>::value, batch<std::complex<T2>, A>>
+            : std::enable_if<simd_condition_v<T1, T2>, batch<std::complex<T2>, A>>
         {
         };
 
         template <class T1, class T2, class A>
         struct simd_return_type_impl<std::complex<T1>, std::complex<T2>, A>
-            : std::enable_if<simd_condition<T1, T2>::value, batch<std::complex<T2>, A>>
+            : std::enable_if<simd_condition_v<T1, T2>, batch<std::complex<T2>, A>>
         {
         };
 
 #ifdef XSIMD_ENABLE_XTL_COMPLEX
         template <class T1, class T2, bool I3EC, class A>
         struct simd_return_type_impl<xtl::xcomplex<T1, T1, I3EC>, T2, A>
-            : std::enable_if<simd_condition<T1, T2>::value, batch<std::complex<T2>, A>>
+            : std::enable_if<simd_condition_v<T1, T2>, batch<std::complex<T2>, A>>
         {
         };
 
         template <class T1, class T2, bool I3EC, class A>
         struct simd_return_type_impl<xtl::xcomplex<T1, T1, I3EC>, std::complex<T2>, A>
-            : std::enable_if<simd_condition<T1, T2>::value, batch<std::complex<T2>, A>>
+            : std::enable_if<simd_condition_v<T1, T2>, batch<std::complex<T2>, A>>
         {
         };
 
         template <class T1, class T2, bool I3EC, class A>
         struct simd_return_type_impl<xtl::xcomplex<T1, T1, I3EC>, xtl::xcomplex<T2, T2, I3EC>, A>
-            : std::enable_if<simd_condition<T1, T2>::value, batch<std::complex<T2>, A>>
+            : std::enable_if<simd_condition_v<T1, T2>, batch<std::complex<T2>, A>>
         {
         };
 
         template <class T1, class T2, bool I3EC, class A>
         struct simd_return_type_impl<std::complex<T1>, xtl::xcomplex<T2, T2, I3EC>, A>
-            : std::enable_if<simd_condition<T1, T2>::value, batch<std::complex<T2>, A>>
+            : std::enable_if<simd_condition_v<T1, T2>, batch<std::complex<T2>, A>>
         {
         };
 #endif
@@ -225,21 +247,91 @@ namespace xsimd
     /**
      * @ingroup batch_traits
      *
+     * type traits that provide information about a batch or scalar type.
+     *
+     * @tparam T type to analyze.
+     */
+
+    template <class T>
+    struct batch_traits
+    {
+        using scalar_type = T; ///< T if scalar, or type of the scalar element for the batch T.
+        using mask_type = bool; ///< Mask type for T: bool for scalars, or batch_bool for batch types.
+
+        static constexpr bool is_batch = false; ///< True if T is @c batch<...>.
+        static constexpr bool is_batch_bool = false; ///< True if T is @c batch_bool<...>.
+        static constexpr bool is_any_batch = false; ///< True if T is @c batch<...> or @c batch_bool<...>.
+        static constexpr bool is_complex = detail::is_complex_v<T>; ///< True if T is complex or a batch of complex values.
+    };
+
+#if XSIMD_CPP_VERSION < 201703L
+    template <class T>
+    constexpr bool batch_traits<T>::is_batch;
+    template <class T>
+    constexpr bool batch_traits<T>::is_batch_bool;
+    template <class T>
+    constexpr bool batch_traits<T>::is_any_batch;
+    template <class T>
+    constexpr bool batch_traits<T>::is_complex;
+#endif
+
+    template <class T, class A>
+    struct batch_traits<batch<T, A>>
+    {
+        using scalar_type = T;
+        using mask_type = typename batch<T, A>::batch_bool_type;
+
+        static constexpr bool is_batch = true;
+        static constexpr bool is_batch_bool = false;
+        static constexpr bool is_any_batch = true;
+        static constexpr bool is_complex = detail::is_complex_v<T>;
+    };
+
+#if XSIMD_CPP_VERSION < 201703L
+    template <class T, class A>
+    constexpr bool batch_traits<batch<T, A>>::is_batch;
+    template <class T, class A>
+    constexpr bool batch_traits<batch<T, A>>::is_batch_bool;
+    template <class T, class A>
+    constexpr bool batch_traits<batch<T, A>>::is_any_batch;
+    template <class T, class A>
+    constexpr bool batch_traits<batch<T, A>>::is_complex;
+#endif
+
+    template <class T, class A>
+    struct batch_traits<batch_bool<T, A>>
+    {
+        using scalar_type = bool;
+        using mask_type = batch_bool<T, A>;
+
+        static constexpr bool is_batch = false;
+        static constexpr bool is_batch_bool = true;
+        static constexpr bool is_any_batch = true;
+        static constexpr bool is_complex = false;
+    };
+
+#if XSIMD_CPP_VERSION < 201703L
+    template <class T, class A>
+    constexpr bool batch_traits<batch_bool<T, A>>::is_batch;
+    template <class T, class A>
+    constexpr bool batch_traits<batch_bool<T, A>>::is_batch_bool;
+    template <class T, class A>
+    constexpr bool batch_traits<batch_bool<T, A>>::is_any_batch;
+    template <class T, class A>
+    constexpr bool batch_traits<batch_bool<T, A>>::is_complex;
+#endif
+
+    /**
+     * @ingroup batch_traits
+     *
      * type traits that inherits from @c std::true_type for @c batch<...> types and from
      * @c std::false_type otherwise.
      *
      * @tparam T type to analyze.
      */
-    template <class T>
-    struct is_batch;
 
     template <class T>
-    struct is_batch : std::false_type
-    {
-    };
-
-    template <class T, class A>
-    struct is_batch<batch<T, A>> : std::true_type
+    struct is_batch : std::integral_constant<bool, batch_traits<T>::is_batch>
     {
     };
 
@@ -253,12 +345,21 @@ namespace xsimd
      */
 
     template <class T>
-    struct is_batch_bool : std::false_type
+    struct is_batch_bool : std::integral_constant<bool, batch_traits<T>::is_batch_bool>
     {
     };
 
-    template <class T, class A>
-    struct is_batch_bool<batch_bool<T, A>> : std::true_type
+    /**
+     * @ingroup batch_traits
+     *
+     * type traits that inherits from @c std::true_type for @c batch<...> or batch_bool<...>
+     * types and from @c std::false_type otherwise.
+     *
+     * @tparam T type to analyze.
+     */
+
+    template <class T>
+    struct is_any_batch : std::integral_constant<bool, batch_traits<T>::is_any_batch>
     {
     };
 
@@ -272,12 +373,7 @@ namespace xsimd
      */
 
     template <class T>
-    struct is_batch_complex : std::false_type
-    {
-    };
-
-    template <class T, class A>
-    struct is_batch_complex<batch<std::complex<T>, A>> : std::true_type
+    struct is_batch_complex : std::integral_constant<bool, batch_traits<T>::is_batch && batch_traits<T>::is_complex>
     {
     };
 
@@ -285,19 +381,14 @@ namespace xsimd
      * @ingroup batch_traits
      *
      * type traits whose @c type field is set to @c T::value_type if @c
-     * is_batch<T>::value and to @c T otherwise.
+     * is_batch_v<T> and to @c T otherwise.
      *
      * @tparam T type to analyze.
      */
     template <class T>
     struct scalar_type
     {
-        using type = T;
-    };
-    template <class T, class A>
-    struct scalar_type<batch<T, A>>
-    {
-        using type = T;
+        using type = typename batch_traits<T>::scalar_type;
     };
 
     template <class T>
@@ -307,19 +398,14 @@ namespace xsimd
      * @ingroup batch_traits
      *
      * type traits whose @c type field is set to @c T::value_type if @c
-     * is_batch_bool<T>::value and to @c bool otherwise.
+     * is_batch_bool_v<T> and to @c bool otherwise.
      *
      * @tparam T type to analyze.
      */
     template <class T>
     struct mask_type
     {
-        using type = bool;
-    };
-    template <class T, class A>
-    struct mask_type<batch<T, A>>
-    {
-        using type = typename batch<T, A>::batch_bool_type;
+        using type = typename batch_traits<T>::mask_type;
     };
 
     template <class T>

@@ -21,16 +21,6 @@
 #include "../core/xtensor_config.hpp"
 #include "../utils/xutils.hpp"
 
-#ifndef XTENSOR_CONSTEXPR
-#if (defined(_MSC_VER) || __GNUC__ < 8)
-#define XTENSOR_CONSTEXPR inline
-#define XTENSOR_GLOBAL_CONSTEXPR static const
-#else
-#define XTENSOR_CONSTEXPR constexpr
-#define XTENSOR_GLOBAL_CONSTEXPR constexpr
-#endif
-#endif
-
 namespace xt
 {
 
@@ -70,11 +60,11 @@ namespace xt
      * slice tags *
      **************/
 
-#define DEFINE_TAG_CONVERSION(NAME)                 \
-    template <class T>                              \
-    XTENSOR_CONSTEXPR NAME convert() const noexcept \
-    {                                               \
-        return NAME();                              \
+#define DEFINE_TAG_CONVERSION(NAME)         \
+    template <class T>                      \
+    constexpr NAME convert() const noexcept \
+    {                                       \
+        return NAME();                      \
     }
 
     struct xall_tag
@@ -494,7 +484,7 @@ namespace xt
     template <class R = std::ptrdiff_t, class T>
     inline auto drop(T&& indices)
     {
-        if constexpr (xtl::is_integral<T>::value)
+        if constexpr (xtl::is_integral<std::remove_cvref_t<T>>::value)
         {
             using slice_type = xdrop_slice<R>;
             using container_type = typename slice_type::container_type;
@@ -642,12 +632,12 @@ namespace xt
             std::ptrdiff_t rng[3];  // = { 0, 0, 0 };
         };
 
-        XTENSOR_CONSTEXPR xtuph get_tuph_or_val(std::ptrdiff_t /*val*/, std::true_type)
+        constexpr xtuph get_tuph_or_val(std::ptrdiff_t /*val*/, std::true_type)
         {
             return xtuph();
         }
 
-        XTENSOR_CONSTEXPR std::ptrdiff_t get_tuph_or_val(std::ptrdiff_t val, std::false_type)
+        constexpr std::ptrdiff_t get_tuph_or_val(std::ptrdiff_t val, std::false_type)
         {
             return val;
         }
@@ -655,7 +645,7 @@ namespace xt
         template <class A, class B, class C>
         struct rangemaker<A, B, C>
         {
-            XTENSOR_CONSTEXPR operator xrange_adaptor<A, B, C>()
+            constexpr operator xrange_adaptor<A, B, C>()
             {
                 return xrange_adaptor<A, B, C>(
                     {get_tuph_or_val(rng[0], std::is_same<A, xtuph>()),
@@ -670,7 +660,7 @@ namespace xt
         template <class A, class B>
         struct rangemaker<A, B>
         {
-            XTENSOR_CONSTEXPR operator xrange_adaptor<A, B, xt::placeholders::xtuph>()
+            constexpr operator xrange_adaptor<A, B, xt::placeholders::xtuph>()
             {
                 return xrange_adaptor<A, B, xt::placeholders::xtuph>(
                     {get_tuph_or_val(rng[0], std::is_same<A, xtuph>()),
@@ -683,7 +673,7 @@ namespace xt
         };
 
         template <class... OA>
-        XTENSOR_CONSTEXPR auto operator|(const rangemaker<OA...>& rng, const std::ptrdiff_t& t)
+        constexpr auto operator|(const rangemaker<OA...>& rng, const std::ptrdiff_t& t)
         {
             auto nrng = rangemaker<OA..., std::ptrdiff_t>({rng.rng[0], rng.rng[1], rng.rng[2]});
             nrng.rng[sizeof...(OA)] = t;
@@ -691,17 +681,17 @@ namespace xt
         }
 
         template <class... OA>
-        XTENSOR_CONSTEXPR auto operator|(const rangemaker<OA...>& rng, const xt::placeholders::xtuph& /*t*/)
+        constexpr auto operator|(const rangemaker<OA...>& rng, const xt::placeholders::xtuph& /*t*/)
         {
             auto nrng = rangemaker<OA..., xt::placeholders::xtuph>({rng.rng[0], rng.rng[1], rng.rng[2]});
             return nrng;
         }
 
-        XTENSOR_GLOBAL_CONSTEXPR xtuph _{};
-        XTENSOR_GLOBAL_CONSTEXPR rangemaker<> _r = rangemaker<>({{0, 0, 0}});
-        XTENSOR_GLOBAL_CONSTEXPR xall_tag _a{};
-        XTENSOR_GLOBAL_CONSTEXPR xnewaxis_tag _n{};
-        XTENSOR_GLOBAL_CONSTEXPR xellipsis_tag _e{};
+        constexpr xtuph _{};
+        constexpr rangemaker<> _r = rangemaker<>({{0, 0, 0}});
+        constexpr xall_tag _a{};
+        constexpr xnewaxis_tag _n{};
+        constexpr xellipsis_tag _e{};
     }
 
     inline auto xnone()
@@ -718,7 +708,7 @@ namespace xt
 
             type operator()(T t)
             {
-                return (xtl::is_integral<T>::value) ? static_cast<type>(t) : t;
+                return static_cast<type>(t);
             }
         };
 
@@ -780,7 +770,7 @@ namespace xt
     {
         if constexpr (is_xslice<S>::value)
         {
-            return slice.size();
+            return static_cast<std::size_t>(slice.size());
         }
         else
         {
@@ -797,7 +787,7 @@ namespace xt
     {
         if constexpr (is_xslice<S>::value)
         {
-            return slice.step_size(idx);
+            return static_cast<std::size_t>(slice.step_size(idx));
         }
         else
         {
@@ -810,7 +800,7 @@ namespace xt
     {
         if constexpr (is_xslice<S>::value)
         {
-            return slice.step_size(idx, n);
+            return static_cast<std::size_t>(slice.step_size(idx, n));
         }
         else
         {
@@ -828,7 +818,7 @@ namespace xt
         if constexpr (is_xslice<S>::value)
         {
             using ST = typename S::size_type;
-            return slice(static_cast<ST>(i));
+            return static_cast<std::size_t>(slice(static_cast<ST>(i)));
         }
         else
         {
@@ -1068,8 +1058,13 @@ namespace xt
         , m_size(size_type(0))
         , m_step(step)
     {
+        if ((step > 0 && start_val >= stop_val) || (step < 0 && start_val <= stop_val))
+        {
+            m_size = 0;
+            return;
+        }
         size_type n = stop_val - start_val;
-        m_size = n / step + (((n < 0) ^ (step > 0)) && (n % step));
+        m_size = n / step + static_cast<bool>(n % step);
     }
 
     template <class T>
@@ -1597,7 +1592,5 @@ namespace xt
         return !(*this == rhs);
     }
 }
-
-#undef XTENSOR_CONSTEXPR
 
 #endif
