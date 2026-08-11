@@ -166,9 +166,24 @@ message(STATUS "================== 基础功能库 ==================")
 include(cmake/openssl.cmake)
 
 # zlib
+# vcpkg x64-mingw-static 生成的 zlib 库为 libzs.a, CMake 内置 FindZLIB 搜索
+# 库名为 z/zlib/zdll, 不匹配 zs, 需在 find_package 前显式指定 ZLIB_LIBRARY
+if(DEFINED VCPKG_LIBS_PATH)
+    set(ZLIB_LIBRARY "${VCPKG_LIBS_PATH}/lib/libzs.a" CACHE FILEPATH "zlib library" FORCE)
+    set(ZLIB_INCLUDE_DIR "${VCPKG_LIBS_PATH}/include" CACHE PATH "zlib include dir" FORCE)
+endif()
 find_package(ZLIB REQUIRED)
 target_link_libraries(third_libs INTERFACE ZLIB::ZLIB)
 echo_lib_version(ZLIB ${ZLIB_VERSION})
+
+# minizip
+find_package(minizip CONFIG REQUIRED)
+target_link_libraries(third_libs INTERFACE $<IF:$<TARGET_EXISTS:MINIZIP::minizip>,MINIZIP::minizip,MINIZIP::minizipstatic>)
+if(DEFINED minizip_VERSION AND NOT minizip_VERSION STREQUAL "")
+    echo_lib_version(minizip ${minizip_VERSION})
+else()
+    echo_lib_version(minizip "unknown")
+endif()
 
 # libiconv
 include(cmake/iconv.cmake)
@@ -239,14 +254,6 @@ if (MSVC)
         add_compile_definitions(KJ_USE_FIBERS=0)
     endif ()
 endif ()
-
-find_package(unofficial-minizip CONFIG REQUIRED)
-target_link_libraries(third_libs INTERFACE unofficial::minizip::minizip)
-if(DEFINED unofficial-minizip_VERSION AND NOT unofficial-minizip_VERSION STREQUAL "")
-    echo_lib_version(unofficial-minizip ${unofficial-minizip_VERSION})
-else()
-    echo_lib_version(unofficial-minizip "unknown")
-endif()
 
 message(STATUS "================== 底层 工具库 ==================")
 # ASIO
@@ -841,6 +848,7 @@ message(STATUS "                                    asio : v${ASIO_VERSION_FULL}
 message(STATUS "                         Iconv(libiconv) : v${Iconv_VERSION}")
 message(STATUS "                                     fmt : v${fmt_VERSION}")
 message(STATUS "                                    zlib : v${ZLIB_VERSION}")
+message(STATUS "                                 minizip : v${minizip_VERSION}")
 message(STATUS "                                    inja : v${inja_VERSION}")
 message(STATUS "                           nlohmann_json : v${nlohmann_json_VERSION}")
 message(STATUS "                                     xtl : v${xtl_VERSION}")
