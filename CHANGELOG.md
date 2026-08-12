@@ -3,11 +3,34 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.61] - 2026-08-12
+### Changed
+- rust: 修改最低版本为1.97.1
+- python: 新增定时任务依赖库
+- c++: 适配arm架构
+- c++: vcpkg适配arm架构
+- 修复 macOS arm64 (Apple Silicon) 编译兼容性
+
+- cmake/simd.cmake: arm64 分支去掉 -mavx/-mavx2，保留 -march=native
+- CMakeLists.txt: VCPKG_TARGET_TRIPLET 设置加 FORCE 覆盖缓存；unofficial-minizip 版本变量判空兜底
+- quant1x/runtime/ringbuffer.h: arm64 用 yield 指令替代 x86 _mm_pause()
+- quant1x/proto/snapshot.capnp.h: 用 Cap'n Proto 1.5.0 重新生成
+- tests/tdd-rolling.cpp: AVX2 代码用 #ifdef __AVX2__ 守卫
+- tests/tdd-datasets.cpp: SSE/AVX 内联函数用 #ifdef 守卫
+- c++: 升级ASIO版本到1.38.2
+- c++: 升级BS::thread_pool版本到5.1.0
+- c++: 升级xsimd到14.3.0
+- c++: 更新date库
+- c++: 调整编译配置
+- c++: 调整依赖库版本
+- python: Regime Switching 的多因子量化框架
+
 ## [0.7.60] - 2026-07-28
 ### Changed
 - docs: 修复 README MD025 多顶级标题告警
 
 将 5 个 # N. 章节标题及全部子标题逐级降一级, 全文仅保留一个 H1
+- release v0.7.60
 
 ## [0.7.59] - 2026-07-28
 ### Changed
@@ -2160,7 +2183,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.60...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.61...HEAD
+[0.7.61]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.60...v0.7.61
 [0.7.60]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.59...v0.7.60
 [0.7.59]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.58...v0.7.59
 [0.7.58]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.57...v0.7.58
