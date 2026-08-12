@@ -295,6 +295,7 @@ if(ENABLE_MIMALLOC)
     echo_lib_version(mimalloc ${mimalloc_VERSION})
 else()
     message(STATUS "mimalloc support disabled (ENABLE_MIMALLOC=OFF)")
+    set(mimalloc_VERSION "0.0.0")
 endif()
 
 # spdlog

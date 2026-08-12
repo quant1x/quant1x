@@ -1,10 +1,11 @@
 {
   "name": "quant1x",
-  "version": "0.6.0",
+  "version": "0.7.60",
   "description": "quant1x",
   "dependencies": [
     "openssl",
     "libiconv",
+    "minizip"
     "yaml-cpp",
     "zlib",
     "mimalloc",
@@ -15,5 +16,40 @@
     "benchmark",
     "catch2",
     "gtest"
-  ]
+  ],
+  "overrides": [
+    {
+      "name": "openssl",
+      "version>=": "3.5.2"
+    },
+    {
+      "name": "libiconv",
+      "version>=": "1.18"
+    },
+    {
+      "name": "minizip",
+      "version>=": "1.3.2"
+    },
+    {
+      "name": "yaml-cpp",
+      "version>=": "0.8.0"
+    },
+    {
+      "name": "mimalloc",
+      "version>=": "3.4.0"
+    },
+    {
+      "name": "catch2",
+      "version>=": "3.15.3"
+    },
+    {
+      "name": "benchmark",
+      "version>=": "1.9.5"
+    },
+    {
+      "name": "gtest",
+      "version>=": "1.18.0"
+    }
+  ],
+  "builtin-baseline": "aae277acf4e7de287ddb5e208b5316614de6aad7"
 }
