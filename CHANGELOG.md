@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.62] - 2026-08-13
+### Changed
+- python: 调整包路径
+- python: 调整功能模块为regime
+
 ## [0.7.61] - 2026-08-12
 ### Changed
 - rust: 修改最低版本为1.97.1
@@ -24,6 +29,7 @@ All notable changes to this project will be documented in this file.
 - c++: 调整编译配置
 - c++: 调整依赖库版本
 - python: Regime Switching 的多因子量化框架
+- release v0.7.61
 
 ## [0.7.60] - 2026-07-28
 ### Changed
@@ -2183,7 +2189,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.61...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.62...HEAD
+[0.7.62]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.61...v0.7.62
 [0.7.61]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.60...v0.7.61
 [0.7.60]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.59...v0.7.60
 [0.7.59]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.58...v0.7.59
