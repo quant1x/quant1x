@@ -11,7 +11,7 @@ matplotlib.rcParams['axes.unicode_minus'] = False
 import sys
 sys.path.insert(0, '/data/workspace')
 
-from .regime_switching_framework import (
+from ..quant1x.learn.regime_switching.regime_switching_framework import (
     DataEngine, RegimeDetector, FactorModel, PortfolioOptimizer,
     RegimeAwareBacktester, LiveMonitor, run_full_pipeline
 )
