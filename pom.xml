@@ -26,6 +26,8 @@
         </dependency>
     </dependencies>
     <build>
+        <!-- 构建目录独立于 Cargo 的 target/：mvn clean 只删 build/java，不影响 Rust 构建产物 -->
+        <directory>build/java</directory>
         <!-- 主源码根为仓库根，通过 include 白名单只编译 quant1x 下的 Java 源文件，不依赖 excludes -->
         <sourceDirectory>.</sourceDirectory>
         <testSourceDirectory>tests</testSourceDirectory>
@@ -70,8 +72,8 @@
                     <version>${maven.surefire.plugin.version}</version>
                     <configuration>
                         <environmentVariables>
-                            <LD_LIBRARY_PATH>target/classes</LD_LIBRARY_PATH>
-                            <DYLD_LIBRARY_PATH>target/classes</DYLD_LIBRARY_PATH>
+                            <LD_LIBRARY_PATH>build/java/classes</LD_LIBRARY_PATH>
+                            <DYLD_LIBRARY_PATH>build/java/classes</DYLD_LIBRARY_PATH>
                         </environmentVariables>
                     </configuration>
                 </plugin>
