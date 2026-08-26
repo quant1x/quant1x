@@ -3,10 +3,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.63] - 2026-08-26
+### Changed
+- 修复 std 包迁移与 KLine 到 Bar 类型迁移后遗留的编译错误
+
+- std.* 引用统一迁移到 base 包(CloseQuietly/NewException/ExpandUser 等)
+- KLine/KLineRaw/XdxrInfo/CumulativeAdjustment 类型迁移到 schema 与 tdx 包
+- data 包补齐 UpdateWithAdapters/DetectSymbol/DetectInstrumentTypeByRule 及 re-export
+- config 恢复 GetXdxrFilename/GetBarFilename/GetBarFilenameEx, 对齐 C++ subpath 截断
+- tdx 包新增 LoadXdxr 导出, tdxproto 新增 ResetSeqId
+- core.GetBasePath 优先读取 QUANT1X_HOME 环境变量
+- 补齐 data/tdx/factors/command 等包的编译错误, go build 与测试编译全部通过
+- release version 0.7.63
+
 ## [0.7.62] - 2026-08-13
 ### Changed
 - python: 调整包路径
 - python: 调整功能模块为regime
+- release v0.7.62
 
 ## [0.7.61] - 2026-08-12
 ### Changed
@@ -2189,7 +2203,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.62...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.63...HEAD
+[0.7.63]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.62...v0.7.63
 [0.7.62]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.61...v0.7.62
 [0.7.61]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.60...v0.7.61
 [0.7.60]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.59...v0.7.60
