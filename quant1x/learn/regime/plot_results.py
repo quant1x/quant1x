@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 """
 可视化脚本: 绘制 Regime Switching 框架的运行结果
 """

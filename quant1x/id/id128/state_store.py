@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2026 Quant1X. All rights reserved.
-# Author: wangfeng <wangfengxy@sina.cn>
-# SPDX-License-Identifier: MIT
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
 
 from __future__ import annotations
 

@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Quant1X <wangfengxy@sina.cn>.
+# Licensed under the MIT License.
+
 import unittest
 from quant1x.base.bits import round_up_to_power_of_two
 
