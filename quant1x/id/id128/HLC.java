@@ -38,11 +38,19 @@ public final class HLC {
     int seed;
     /** 每次 fsync 之间最多追加的记录条数 */
     long syncEvery;
+    /** 严格模式：每次发号前从磁盘读取最新状态并取 max（默认关闭） */
+    boolean strict;
     /** 状态存储，null 表示不持久化 */
     StateStore store;
 
     private final Object lock = new Object();
     private static final SecureRandom RANDOM = new SecureRandom();
+
+    /**
+     * 进程级随机种子：类加载时生成一次（对齐 Go 的 sync.Once / Python 的模块级缓存）。
+     * 仅用于无状态文件时随机化初始 logical，降低重启碰撞概率。
+     */
+    private static final int RANDOM_SEED = randomUint16();
 
     /**
      * 构造 HLC 实例；构造时会尝试从状态文件恢复持久化状态，
@@ -52,8 +60,8 @@ public final class HLC {
      */
     public HLC(Option... options) {
         now = System::currentTimeMillis;
-        seed = randomUint16();
-        syncEvery = 1;
+        seed = RANDOM_SEED;
+        syncEvery = FileStateStore.defaultSyncEvery();
 
         for (Option opt : options) {
             if (opt != null) {
@@ -63,6 +71,7 @@ public final class HLC {
 
         if (store instanceof FileStateStore) {
             ((FileStateStore) store).syncEvery = syncEvery;
+            ((FileStateStore) store).strict = strict;
         }
 
         Optional<PersistentState> restored = loadState();
@@ -110,6 +119,22 @@ public final class HLC {
     public long timestamp() {
         synchronized (lock) {
             return physical;
+        }
+    }
+
+    /**
+     * 把快速路径批量缓冲中尚未落盘的状态记录写入磁盘并同步。
+     * 启用状态文件后，进程异常退出最多丢失最近 syncEvery-1 条进度
+     * （这些 ID 重启后可能重复）；优雅退出前调用本方法可零丢失。
+     * 未启用状态文件时为空操作。可多次调用，幂等。
+     *
+     * @throws IOException 落盘失败时抛出
+     */
+    public void close() throws IOException {
+        synchronized (lock) {
+            if (store instanceof FileStateStore) {
+                ((FileStateStore) store).flush();
+            }
         }
     }
 

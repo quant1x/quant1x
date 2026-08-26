@@ -49,7 +49,9 @@ class IdTests(unittest.TestCase):
                 with_state_file(state_file),
             )
 
-            first = Generator(1, HLC(*options)).next()
+            first_hlc = HLC(*options)
+            first = Generator(1, first_hlc).next()
+            first_hlc.close()  # 快速路径为批量缓冲：优雅退出前刷盘
             second = Generator(1, HLC(*options)).next()
             self.assertLess(first, second)
 

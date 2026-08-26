@@ -13,6 +13,7 @@ type HLC struct {
 	now       func() int64
 	seed      uint16
 	syncEvery uint32
+	strict    bool
 	store     stateStore
 }
 
@@ -20,7 +21,7 @@ func NewHLC(opts ...Option) *HLC {
 	h := &HLC{
 		now:       func() int64 { return time.Now().UnixMilli() },
 		seed:      randomUint16(),
-		syncEvery: 1,
+		syncEvery: defaultSyncEveryValue(),
 	}
 
 	for _, opt := range opts {
@@ -31,6 +32,7 @@ func NewHLC(opts ...Option) *HLC {
 
 	if fileStore, ok := h.store.(*fileStateStore); ok {
 		fileStore.syncEvery = h.syncEvery
+		fileStore.strict = h.strict
 	}
 
 	if restored, ok, err := h.loadState(); err != nil {
@@ -80,6 +82,23 @@ func (h *HLC) Now() (uint64, uint32) {
 
 	hlc := uint64(h.physical)<<16 | uint64(h.logical)
 	return hlc, h.seq
+}
+
+// Close 把快速路径批量缓冲中尚未落盘的状态记录写入磁盘并同步。
+// 启用状态文件后，进程异常退出最多丢失最近 syncEvery-1 条进度
+// （这些 ID 在重启后可能重复）；优雅退出前调用本方法可零丢失。
+// 未启用状态文件时为空操作。可在 NewHLC 返回的实例上调用多次，幂等。
+func (h *HLC) Close() error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	if h.store == nil {
+		return nil
+	}
+	if f, ok := h.store.(interface{ Flush() error }); ok {
+		return f.Flush()
+	}
+	return nil
 }
 
 // Timestamp 返回当前保存的物理毫秒值。

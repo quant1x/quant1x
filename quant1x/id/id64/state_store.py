@@ -8,21 +8,23 @@ import os
 import time
 import zlib
 from dataclasses import dataclass
-from typing import Optional, Protocol, Tuple
+from typing import Protocol, Tuple
 
+# 状态文件单条记录大小（与 id128 一致）：
+# physical(8B) + logical(2B, 恒 0) + seq(4B) + crc32(4B) = 18B。
 RECORD_SIZE = 18
 
 # 默认落盘间隔：快速路径下状态记录先在内存批量缓冲中累积，
 # 每攒满 N 条才一次性落盘（带跨进程锁 + fsync）。
-# 可用环境变量 QUANT1X_ID128_SYNC_EVERY 覆盖（显式 with_state_sync_every 优先级最高）。
+# 可用环境变量 QUANT1X_ID64_SYNC_EVERY 覆盖（显式 with_state_sync_every 优先级最高）。
 # 默认 1000：大多数请求不碰磁盘；进程异常退出最多丢失最近 1000 条进度
 # （这些 ID 重启后可能重复），优雅退出前调用 close() 可零丢失。
 DEFAULT_SYNC_EVERY = 1000
 
 
 def default_sync_every() -> int:
-    """返回默认落盘间隔（环境变量 QUANT1X_ID128_SYNC_EVERY，未设置或非法时为 1000）。"""
-    raw = os.environ.get("QUANT1X_ID128_SYNC_EVERY")
+    """返回默认落盘间隔（环境变量 QUANT1X_ID64_SYNC_EVERY，未设置或非法时为 1000）。"""
+    raw = os.environ.get("QUANT1X_ID64_SYNC_EVERY")
     if raw:
         try:
             value = int(raw)
@@ -36,7 +38,6 @@ def default_sync_every() -> int:
 @dataclass(frozen=True)
 class PersistentState:
     physical: int
-    logical: int
     seq: int
 
 
@@ -44,7 +45,7 @@ class StateStore(Protocol):
     def load(self) -> Tuple[PersistentState, bool]:
         ...
 
-    def next_state(self, local: PersistentState, now_ms: int, seed: int) -> PersistentState:
+    def next_state(self, local: PersistentState, now_ms: int, seq_bits: int) -> PersistentState:
         ...
 
 
@@ -52,10 +53,6 @@ def compare_persistent_state(left: PersistentState, right: PersistentState) -> i
     if left.physical < right.physical:
         return -1
     if left.physical > right.physical:
-        return 1
-    if left.logical < right.logical:
-        return -1
-    if left.logical > right.logical:
         return 1
     if left.seq < right.seq:
         return -1
@@ -67,7 +64,7 @@ def compare_persistent_state(left: PersistentState, right: PersistentState) -> i
 def encode_state(state: PersistentState) -> bytes:
     body = (
         int(state.physical).to_bytes(8, "big", signed=False)
-        + int(state.logical).to_bytes(2, "big", signed=False)
+        + b"\x00\x00"  # logical 恒 0（兼容 id128 的 18B 记录格式）
         + int(state.seq).to_bytes(4, "big", signed=False)
     )
     checksum = zlib.crc32(body) & 0xFFFFFFFF
@@ -82,7 +79,6 @@ def decode_state(record: bytes) -> PersistentState:
         raise ValueError("invalid record checksum")
     return PersistentState(
         physical=int.from_bytes(record[0:8], "big", signed=False),
-        logical=int.from_bytes(record[8:10], "big", signed=False),
         seq=int.from_bytes(record[10:14], "big", signed=False),
     )
 
@@ -160,7 +156,7 @@ class FileStateStore:
     开启严格模式（strict=True）后每次 next_state 都读盘取 max，保证多写者活跃共享唯一。
     """
 
-    def __init__(self, path: str, sync_every: Optional[int] = None, strict: bool = False) -> None:
+    def __init__(self, path: str, sync_every: int | None = None, strict: bool = False) -> None:
         self.path = path
         self.lock_path = path + ".lock"
         self.sync_every = max(1, int(sync_every if sync_every is not None else default_sync_every()))
@@ -172,12 +168,12 @@ class FileStateStore:
     def load(self) -> Tuple[PersistentState, bool]:
         return self._load_latest_state()
 
-    def next_state(self, local: PersistentState, now_ms: int, seed: int) -> PersistentState:
+    def next_state(self, local: PersistentState, now_ms: int, seq_bits: int) -> PersistentState:
         if not self.strict:
             # 快速路径：纯内存推进，记录先入批量缓冲；攒满 sync_every 条才落盘一次。
             # 进程异常退出最多丢失最近 sync_every-1 条进度（这些 ID 重启后可能重复），
             # 优雅退出前调用 close() 可把缓冲完整刷盘、零丢失。
-            next_state = advance_persistent_state(local, now_ms, seed)
+            next_state = advance_persistent_state(local, now_ms, seq_bits)
             self._buffer_state(next_state)
             return next_state
 
@@ -187,7 +183,7 @@ class FileStateStore:
             latest, ok = self._load_latest_state()
             if ok and compare_persistent_state(latest, base) > 0:
                 base = latest
-            next_state = advance_persistent_state(base, now_ms, seed)
+            next_state = advance_persistent_state(base, now_ms, seq_bits)
             self._append_state(next_state)
             return next_state
 
@@ -217,7 +213,7 @@ class FileStateStore:
 
     def _load_latest_state(self) -> Tuple[PersistentState, bool]:
         if not os.path.exists(self.path):
-            return PersistentState(0, 0, 0), False
+            return PersistentState(0, 0), False
 
         size = os.path.getsize(self.path)
         if size < RECORD_SIZE:
@@ -256,19 +252,16 @@ class FileStateStore:
                 self.unsynced = 0
 
 
-def advance_persistent_state(state: PersistentState, now_ms: int, seed: int) -> PersistentState:
-    physical = state.physical
-    logical = state.logical
-    seq = state.seq
+def advance_persistent_state(state: PersistentState, now_ms: int, seq_bits: int) -> PersistentState:
+    """在共享状态上推进 (physical, seq)：
 
-    if now_ms > physical:
-        return PersistentState(now_ms, seed & 0xFFFF, 0)
+    - 物理时间前进：重置 seq 为 0
+    - 否则 seq+1；seq 达容量时进位 physical+1 并重置 seq（保持单调，不等待墙钟追平）
+    """
+    if now_ms > state.physical:
+        return PersistentState(now_ms, 0)
 
-    seq = (seq + 1) & 0xFFFFFFFF
-    if seq == 0:
-        logical = (logical + 1) & 0xFFFF
-        if logical == 0:
-            physical += 1
-            logical = seed & 0xFFFF
-
-    return PersistentState(physical, logical, seq)
+    mask = (1 << seq_bits) - 1
+    if state.seq >= mask:
+        return PersistentState(state.physical + 1, 0)
+    return PersistentState(state.physical, state.seq + 1)

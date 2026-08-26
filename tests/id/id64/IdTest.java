@@ -2,7 +2,7 @@
 // Author: wangfeng <wangfengxy@sina.cn>
 // SPDX-License-Identifier: MIT
 
-package quant1x.id.id128;
+package quant1x.id.id64;
 
 import org.junit.jupiter.api.Test;
 
@@ -19,11 +19,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * Java 版 id 单元测试，与 Go 版 {@code id_test.go} 一一对应。
+ * Java 版 id64 单元测试，与 Go 版 {@code id_test.go} 一一对应。
  */
 class IdTest {
 
@@ -32,17 +33,17 @@ class IdTest {
         AtomicLong fakeNow = new AtomicLong(1000);
         HLC hlc = new HLC(
                 Option.withClock(fakeNow::get),
-                Option.withLogicalSeed(7));
+                Option.withSeqSeed(9));
 
         HLC.Now prev = hlc.now();
         fakeNow.set(500);
         HLC.Now cur = hlc.now();
 
-        boolean monotonic = cur.hlc() > prev.hlc()
-                || (cur.hlc() == prev.hlc() && cur.seq() > prev.seq());
+        boolean monotonic = cur.physical() > prev.physical()
+                || (cur.physical() == prev.physical() && cur.seq() > prev.seq());
         if (!monotonic) {
-            fail("rollback violated monotonicity: prev=(" + Long.toHexString(prev.hlc())
-                    + "," + prev.seq() + ") cur=(" + Long.toHexString(cur.hlc()) + "," + cur.seq() + ")");
+            fail("rollback violated monotonicity: prev=(" + prev.physical() + "," + prev.seq()
+                    + ") cur=(" + cur.physical() + "," + cur.seq() + ")");
         }
     }
 
@@ -51,52 +52,77 @@ class IdTest {
         final long fakeNow = 4321;
         HLC hlc = new HLC(
                 Option.withClock(() -> fakeNow),
-                Option.withLogicalSeed(9));
+                Option.withSeqSeed(9));
 
         assertEquals(fakeNow, hlc.timestamp(), "Timestamp()");
-        HLC.Now now = hlc.now();
-        assertEquals(9, now.hlc() & 0xFFFF, "logical seed");
+        assertEquals(9, hlc.seq, "initial seq");
+    }
+
+    @Test
+    void nodeCountDerivation() {
+        long[][] cases = {
+                {1024, 11, 11},
+                {5000, 13, 9},
+                {3, 2, 20},
+                {131072, 18, 4},
+        };
+        for (long[] c : cases) {
+            HLC hlc = new HLC(Option.withNodeCount(c[0]));
+            assertEquals((int) c[2], hlc.seqBits(), "seqBits for count=" + c[0]);
+            Generator gen = new Generator(0, hlc);
+            assertEquals((int) c[1], gen.workerBits(), "workerBits for count=" + c[0]);
+        }
+    }
+
+    @Test
+    void nodeCountTooLarge() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new HLC(Option.withNodeCount(262144)), "seqBits = 3 < 4");
     }
 
     @Test
     void fieldDecoding() {
-        long hlcValue = 0x0102030405060708L;
-        long nodeID = 0x11223344L;
-        long seq = 0xaabbccddL;
+        long elapsed = 0x123456789AL;
+        int workerBits = 11;
+        int seqBits = 11;
+        long nodeID = 0x1F;
+        long seq = 0x2A;
 
-        Uint128 raw = Uint128.of(hlcValue, (nodeID << 32) | seq);
-        Id id = Id.fromUint128(raw);
+        long value = (elapsed << HLC.PAYLOAD_BITS) | (nodeID << seqBits) | seq;
+        Id id = Id.fromLong(value);
 
-        assertEquals(hlcValue, id.hlc(), "hlc");
-        assertEquals(nodeID, id.nodeId(), "nodeID");
-        assertEquals(seq, id.seq(), "seq");
+        assertEquals(elapsed, id.physical(), "physical");
+        assertEquals(nodeID, id.nodeId(workerBits), "nodeID");
+        assertEquals(seq, id.seq(workerBits), "seq");
+        assertEquals(value, id.toLong(), "toLong");
+        assertEquals(id, Id.fromBytes(id.bytes()), "bytes round-trip");
     }
 
     @Test
     void persistentStateAcrossRestart() throws Exception {
-        Path stateFile = Files.createTempDirectory("id").resolve("hlc.state");
-        long fakeNow = 1000;
+        Path stateFile = Files.createTempDirectory("id64").resolve("id64.state");
+        long fakeNow = HLC.EPOCH_MS + 1000; // 需在 epoch 之后（Generator 组装时校验）
         Option[] opts = {
                 Option.withClock(() -> fakeNow),
-                Option.withLogicalSeed(7),
+                Option.withSeqSeed(9),
                 Option.withStateFile(stateFile.toString())
         };
 
         HLC firstHLC = new HLC(opts);
-        Uint128 first = new Generator(1, firstHLC).next();
+        long first = new Generator(1, firstHLC).next();
         firstHLC.close(); // 快速路径为批量缓冲：优雅退出前刷盘
-        Uint128 second = new Generator(1, new HLC(opts)).next();
+        long second = new Generator(1, new HLC(opts)).next();
 
-        assertTrue(first.lt(second), () -> "restart state did not advance: first=" + first + " second=" + second);
+        assertTrue(first < second, () -> "restart state did not advance: first=" + first + " second=" + second);
     }
 
     @Test
     void sharedStateFileAcrossInstances() throws Exception {
-        Path stateFile = Files.createTempDirectory("id").resolve("hlc.state");
-        long fakeNow = 1000;
+        Path stateFile = Files.createTempDirectory("id64").resolve("id64.state");
+        long fakeNow = HLC.EPOCH_MS + 1000; // 需在 epoch 之后（Generator 组装时校验）
         Option[] opts = {
                 Option.withClock(() -> fakeNow),
-                Option.withLogicalSeed(7),
+                Option.withSeqSeed(9),
                 Option.withStateFile(stateFile.toString()),
                 // 多写者活跃共享：必须显式开启严格模式（每次发号读盘取 max）
                 Option.withStateStrict()
@@ -105,18 +131,18 @@ class IdTest {
         Generator left = new Generator(1, new HLC(opts));
         Generator right = new Generator(1, new HLC(opts));
 
-        Uint128 first = left.next();
-        Uint128 second = right.next();
+        long first = left.next();
+        long second = right.next();
 
-        assertTrue(first.lt(second), () -> "shared state file did not serialize progress: first=" + first + " second=" + second);
+        assertTrue(first < second, () -> "shared state file did not serialize progress: first=" + first + " second=" + second);
     }
 
     @Test
     void loadIgnoresCorruptedTail() throws Exception {
-        Path stateFile = Files.createTempDirectory("id").resolve("hlc.state");
+        Path stateFile = Files.createTempDirectory("id64").resolve("id64.state");
         FileStateStore store = new FileStateStore(stateFile.toString());
 
-        PersistentState want = PersistentState.of(1234, 7, 99);
+        PersistentState want = PersistentState.of(1234, 99);
         store.appendState(want);
 
         // 追加 4 字节垃圾，模拟坏损尾部
@@ -128,12 +154,18 @@ class IdTest {
     }
 
     @Test
+    void nodeIdOutOfRange() {
+        HLC hlc = new HLC(Option.withNodeCount(3)); // workerBits=2，nodeID 上限 3
+        assertThrows(IllegalArgumentException.class, () -> new Generator(4, hlc));
+    }
+
+    @Test
     void concurrent() throws Exception {
         HLC hlc = new HLC();
         Generator gen = new Generator(1, hlc);
 
         final int n = 200_000;
-        final Uint128[] ids = new Uint128[n];
+        final long[] ids = new long[n];
 
         ExecutorService pool = Executors.newFixedThreadPool(64);
         try {
@@ -158,15 +190,15 @@ class IdTest {
             pool.shutdownNow();
         }
 
-        Set<Uint128> seen = new HashSet<>(n);
-        for (Uint128 id : ids) {
+        Set<Long> seen = new HashSet<>(n);
+        for (long id : ids) {
             assertTrue(seen.add(id), () -> "duplicate id: " + id);
         }
 
-        Uint128[] sorted = ids.clone();
+        long[] sorted = ids.clone();
         Arrays.sort(sorted);
         for (int i = 1; i < sorted.length; i++) {
-            assertTrue(sorted[i - 1].lt(sorted[i]),
+            assertTrue(sorted[i - 1] < sorted[i],
                     "concurrent ordering violation at " + i + "\nprev=" + sorted[i - 1] + "\ncur=" + sorted[i]);
         }
     }

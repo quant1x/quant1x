@@ -74,7 +74,13 @@ func TestHLC_PersistentStateAcrossRestart(t *testing.T) {
 		WithStateFile(stateFile),
 	}
 
-	first := NewGenerator(1, NewHLC(opts...)).Next()
+	firstHLC := NewHLC(opts...)
+	first := NewGenerator(1, firstHLC).Next()
+	// 快速路径为批量缓冲：优雅退出前 Close 刷盘，确保重启恢复最新水位
+	if err := firstHLC.Close(); err != nil {
+		t.Fatalf("Close() error = %v", err)
+	}
+
 	second := NewGenerator(1, NewHLC(opts...)).Next()
 
 	if !first.Lt(second) {
@@ -89,6 +95,8 @@ func TestHLC_SharedStateFileAcrossInstances(t *testing.T) {
 		WithClock(func() int64 { return fakeNow }),
 		WithLogicalSeed(7),
 		WithStateFile(stateFile),
+		// 多写者活跃共享：必须显式开启严格模式（每次发号读盘取 max）
+		WithStateStrict(),
 	}
 
 	left := NewGenerator(1, NewHLC(opts...))
@@ -205,5 +213,68 @@ func BenchmarkGeneratorNextWithStateFileSyncEvery256(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = gen.Next()
+	}
+}
+
+// 严格模式：每次发号读盘取 max（多写者活跃共享唯一性）
+func BenchmarkGeneratorNextWithStateFileStrict(b *testing.B) {
+	stateFile := filepath.Join(b.TempDir(), "hlc.state")
+	gen := NewGenerator(1, NewHLC(
+		WithStateFile(stateFile),
+		WithStateStrict(),
+	))
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = gen.Next()
+	}
+}
+
+// 快速路径批量缓冲语义：未攒满不落盘、攒满自动落盘、Close 刷盘后可重启恢复。
+func TestHLC_BatchBufferFlushSemantics(t *testing.T) {
+	const fakeNow = int64(1000)
+	stateFile := filepath.Join(t.TempDir(), "hlc.state")
+	hlc := NewHLC(
+		WithClock(func() int64 { return fakeNow }),
+		WithStateFile(stateFile),
+		WithStateSyncEvery(10),
+	)
+
+	// 未攒满：状态文件不应落盘
+	for i := 0; i < 5; i++ {
+		hlc.Now()
+	}
+	if _, err := os.Stat(stateFile); !os.IsNotExist(err) {
+		t.Fatalf("state file should not exist before batch flush, stat err = %v", err)
+	}
+
+	// 攒满 syncEvery：自动落盘一次
+	for i := 0; i < 5; i++ {
+		hlc.Now()
+	}
+	data, err := os.ReadFile(stateFile)
+	if err != nil {
+		t.Fatalf("state file should exist after batch flush: %v", err)
+	}
+	if len(data) < 10*persistentStateRecordSize {
+		t.Fatalf("state file should contain >= 10 records, got %d bytes", len(data))
+	}
+
+	// Close 刷盘剩余缓冲后，重启恢复最新水位
+	if err := hlc.Close(); err != nil {
+		t.Fatalf("Close() error = %v", err)
+	}
+	prev := NewGenerator(1, hlc).Next()
+	if err := hlc.Close(); err != nil {
+		t.Fatalf("Close() (idempotent) error = %v", err)
+	}
+	next := NewGenerator(1, NewHLC(
+		WithClock(func() int64 { return fakeNow }),
+		WithStateFile(stateFile),
+		WithStateSyncEvery(10),
+	)).Next()
+	if !prev.Lt(next) {
+		t.Fatalf("restart state did not advance: prev=%#x next=%#x", prev, next)
 	}
 }

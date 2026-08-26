@@ -2,7 +2,7 @@
 // Author: wangfeng <wangfengxy@sina.cn>
 // SPDX-License-Identifier: MIT
 
-package quant1x.id.id128;
+package quant1x.id.id64;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -19,11 +19,11 @@ import java.util.zip.CRC32;
 /**
  * 基于文件的 {@link StateStore} 实现，与 Go/Python 版保持 1:1 对齐。
  *
- * <p>状态文件布局：每 18 字节一条记录
+ * <p>状态文件布局：每 18 字节一条记录（与 id128 一致）
  * <pre>
  * |------------|---------|---------|-----------|
  * | Physical   | Logical | Seq     | CRC32     |
- * | 8B         | 2B      | 4B      | 4B        |
+ * | 8B         | 2B(恒0) | 4B      | 4B        |
  * |------------|---------|---------|-----------|
  * </pre>
  * 全部使用 BigEndian；CRC32 为 IEEE 802.3（对应 Go 的 crc32.ChecksumIEEE），
@@ -41,15 +41,15 @@ final class FileStateStore implements StateStore {
     /**
      * 默认落盘间隔：快速路径下状态记录先在内存批量缓冲中累积，
      * 每攒满 N 条才一次性落盘（带跨进程锁 + fsync）。
-     * 可用环境变量 {@code QUANT1X_ID128_SYNC_EVERY} 覆盖（显式 Option.withStateSyncEvery 优先级最高）。
+     * 可用环境变量 {@code QUANT1X_ID64_SYNC_EVERY} 覆盖（显式 Option.withStateSyncEvery 优先级最高）。
      * 默认 1000：大多数请求不碰磁盘；进程异常退出最多丢失最近 1000 条进度
      * （这些 ID 重启后可能重复），优雅退出前调用 {@code HLC.close()} 可零丢失。
      */
     static final long DEFAULT_SYNC_EVERY = 1000;
 
-    /** 返回默认落盘间隔（环境变量 QUANT1X_ID128_SYNC_EVERY，未设置或非法时为 1000）。 */
+    /** 返回默认落盘间隔（环境变量 QUANT1X_ID64_SYNC_EVERY，未设置或非法时为 1000）。 */
     static long defaultSyncEvery() {
-        String raw = System.getenv("QUANT1X_ID128_SYNC_EVERY");
+        String raw = System.getenv("QUANT1X_ID64_SYNC_EVERY");
         if (raw != null) {
             try {
                 long value = Long.parseLong(raw.trim());
@@ -101,12 +101,12 @@ final class FileStateStore implements StateStore {
     }
 
     @Override
-    public PersistentState next(PersistentState local, long nowMs, int seed) throws IOException {
+    public PersistentState next(PersistentState local, long nowMs, int seqBits) throws IOException {
         if (!strict) {
             // 快速路径：纯内存推进，记录先入批量缓冲；攒满 syncEvery 条才落盘一次。
             // 进程异常退出最多丢失最近 syncEvery-1 条进度（这些 ID 重启后可能重复），
             // 优雅退出前调用 HLC.close() 可把缓冲完整刷盘、零丢失。
-            PersistentState next = HLC.advancePersistentState(local, nowMs, seed);
+            PersistentState next = HLC.advancePersistentState(local, nowMs, seqBits);
             bufferState(next);
             return next;
         }
@@ -120,7 +120,7 @@ final class FileStateStore implements StateStore {
             if (latest.isPresent() && comparePersistentState(latest.get(), base) > 0) {
                 base = latest.get();
             }
-            PersistentState next = HLC.advancePersistentState(base, nowMs, seed);
+            PersistentState next = HLC.advancePersistentState(base, nowMs, seqBits);
             appendState(next);
             return next;
         }
@@ -176,11 +176,11 @@ final class FileStateStore implements StateStore {
         }
         long size = Files.size(path);
         if (size < RECORD_SIZE) {
-            throw new IOException("id: 状态文件长度非法: " + size);
+            throw new IOException("id64: 状态文件长度非法: " + size);
         }
         long end = size - (size % RECORD_SIZE);
         if (end == 0) {
-            throw new IOException("id: 状态文件长度非法: " + size);
+            throw new IOException("id64: 状态文件长度非法: " + size);
         }
         try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
             ByteBuffer buf = ByteBuffer.allocate(RECORD_SIZE);
@@ -192,18 +192,17 @@ final class FileStateStore implements StateStore {
                     continue;
                 }
                 byte[] record = buf.array();
-                long checksum = Uint128.readUint32(record, 14);
+                long checksum = ByteIO.readUint32(record, 14);
                 if (crc32(record, 0, 14) != checksum) {
                     // 坏损记录，跳过，继续向前找
                     continue;
                 }
                 return Optional.of(new PersistentState(
-                        Uint128.readUint64(record, 0),
-                        Uint128.readUint16(record, 8),
-                        Uint128.readUint32(record, 10)));
+                        ByteIO.readUint64(record, 0),
+                        ByteIO.readUint32(record, 10)));
             }
         }
-        throw new IOException("id: 状态文件中没有有效记录");
+        throw new IOException("id64: 状态文件中没有有效记录");
     }
 
     /** 追加一条状态记录；按 {@link #syncEvery} 间隔执行 fsync（force） */
@@ -233,13 +232,13 @@ final class FileStateStore implements StateStore {
     // 记录编解码
     // ------------------------------------------------------------------
 
-    /** 编码状态为 18 字节记录（含 CRC32） */
+    /** 编码状态为 18 字节记录（含 CRC32），logical 字段恒 0 */
     static byte[] encodeState(PersistentState state) {
         byte[] record = new byte[RECORD_SIZE];
-        Uint128.writeUint64(record, 0, state.physical);
-        Uint128.writeUint16(record, 8, state.logical & 0xFFFF);
-        Uint128.writeUint32(record, 10, state.seq & 0xFFFFFFFFL);
-        Uint128.writeUint32(record, 14, crc32(record, 0, 14));
+        ByteIO.writeUint64(record, 0, state.physical);
+        ByteIO.writeUint16(record, 8, 0); // logical 恒 0（兼容 id128 的 18B 记录格式）
+        ByteIO.writeUint32(record, 10, (int) (state.seq & 0xFFFFFFFFL));
+        ByteIO.writeUint32(record, 14, (int) crc32(record, 0, 14));
         return record;
     }
 
@@ -251,7 +250,7 @@ final class FileStateStore implements StateStore {
     }
 
     /**
-     * 无符号三元组比较（physical/logical/seq）。
+     * 无符号二元组比较（physical/seq）。
      *
      * @return 负数/0/正数 表示 left 小于/等于/大于 right
      */
@@ -260,12 +259,6 @@ final class FileStateStore implements StateStore {
             return -1;
         }
         if (left.physical > right.physical) {
-            return 1;
-        }
-        if (left.logical < right.logical) {
-            return -1;
-        }
-        if (left.logical > right.logical) {
             return 1;
         }
         if (left.seq < right.seq) {

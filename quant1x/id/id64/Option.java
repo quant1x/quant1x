@@ -2,36 +2,19 @@
 // Author: wangfeng <wangfengxy@sina.cn>
 // SPDX-License-Identifier: MIT
 
-package quant1x.id.id128;
+package quant1x.id.id64;
 
 import java.util.function.LongSupplier;
 
 /**
- * HLC 构造期配置项，对应 Go 版的函数式 Option 与 Python 版的
- * {@code with_clock/with_logical_seed/with_state_file/with_state_sync_every}。
- *
- * <pre>
- * HLC hlc = new HLC(
- *         Option.withClock(System::currentTimeMillis),
- *         Option.withLogicalSeed(7),
- *         Option.withStateFile("id.state"),
- *         Option.withStateSyncEvery(1000));
- * </pre>
+ * HLC 的可选配置项，对应 Go/Python 版的 Option。
  */
 @FunctionalInterface
 public interface Option {
 
-    /**
-     * 将配置应用到 {@link HLC} 实例（仅构造期调用）。
-     */
     void apply(HLC hlc);
 
-    /**
-     * 注入时钟源（返回当前物理时间，毫秒）。
-     * 缺省为 {@link System#currentTimeMillis()}。
-     *
-     * @param now 时钟源，为 null 时忽略
-     */
+    /** 覆盖默认时钟（返回绝对毫秒），测试用 */
     static Option withClock(LongSupplier now) {
         return hlc -> {
             if (now != null) {
@@ -40,21 +23,12 @@ public interface Option {
         };
     }
 
-    /**
-     * 注入逻辑种子（16 位），用于回退场景的随机化。
-     * 缺省为加密随机数。
-     *
-     * @param seed 16 位种子
-     */
-    static Option withLogicalSeed(int seed) {
+    /** 设置序列号启动种子（默认随机），用于无状态文件时随机化初始 seq */
+    static Option withSeqSeed(int seed) {
         return hlc -> hlc.seed = seed & 0xFFFF;
     }
 
-    /**
-     * 启用基于文件的状态持久化（跨重启强唯一）。
-     *
-     * @param path 状态文件路径，为 null 或空时忽略
-     */
+    /** 启用状态文件持久化，跨进程/重启恢复高水位 */
     static Option withStateFile(String path) {
         return hlc -> {
             if (path != null && !path.isEmpty()) {
@@ -63,12 +37,7 @@ public interface Option {
         };
     }
 
-    /**
-     * 设置每次 fsync 之间最多追加的状态记录条数。
-     * 缺省为 1000（可被环境变量 {@code QUANT1X_ID128_SYNC_EVERY} 覆盖）；大于 0。
-     *
-     * @param every 每次 fsync 之间最多追加的记录条数
-     */
+    /** 设置状态文件落盘间隔（每 N 次生成落盘一次） */
     static Option withStateSyncEvery(long every) {
         return hlc -> {
             hlc.syncEvery = Math.max(1, every);
@@ -94,6 +63,35 @@ public interface Option {
             if (hlc.store instanceof FileStateStore) {
                 ((FileStateStore) hlc.store).strict = true;
             }
+        };
+    }
+
+    /**
+     * 设置预期的节点总数，据此动态推导节点位宽与序列号位宽：
+     * <pre>
+     * workerBits = bit_length(nodeCount)
+     * seqBits    = 64 - 1 - 41 - workerBits
+     * </pre>
+     * 当 seqBits &lt; 4（节点数 &gt; 2^18）时抛出 IllegalArgumentException。
+     */
+    static Option withNodeCount(long count) {
+        return hlc -> {
+            long nodeCount = Math.max(1, count);
+            int workerBits = Long.SIZE - Long.numberOfLeadingZeros(nodeCount);
+            hlc.seqBits = HLC.PAYLOAD_BITS - workerBits;
+            if (hlc.seqBits < 4) {
+                throw new IllegalArgumentException("id64: 节点数过多，无法为序列号保留足够的位宽");
+            }
+        };
+    }
+
+    /** 直接设置序列号位宽（底层选项，通常用 withNodeCount 代替） */
+    static Option withSeqBits(int bits) {
+        return hlc -> {
+            if (bits < 4 || bits > HLC.PAYLOAD_BITS - 1) {
+                throw new IllegalArgumentException("id64: seqBits 超出有效范围 [4, 21]");
+            }
+            hlc.seqBits = bits;
         };
     }
 }

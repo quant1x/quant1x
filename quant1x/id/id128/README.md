@@ -2,7 +2,7 @@
 
 基于本地 HLC 状态生成可排序的 128-bit ID。提供 **Go**、**Python** 和 **Java** 三套 1:1 对齐的实现，核心语义与位布局完全一致。
 
-当前实现优先保证单实例内严格单调；当配置状态文件后，可以在同一节点跨重启延续高水位，避免重复发号。它不是带远端合并能力的完整分布式 HLC。
+当前实现优先保证单实例内严格单调；当配置状态文件后，可以在同一节点跨重启延续高水位，避免重复发号。默认采用**快速路径**（构造时从状态文件恢复一次水位，运行期纯内存推进，状态记录批量缓冲、攒批落盘），适合单写者与多进程顺序接管（failover）；多个写者**同时活跃**共享同一状态文件时，必须显式开启**严格模式**（每次发号读盘取 max）。它不是带远端合并能力的完整分布式 HLC。
 
 ## 设计边界
 
@@ -137,12 +137,14 @@ System.out.println("hi=" + id.high64() + " lo=" + id.low64());
 | `NewHLC(opts ...Option)` | 创建 HLC 实例 |
 | `(h *HLC) Now()` | 返回 `(hlc uint64, seq uint32)` |
 | `(h *HLC) Timestamp()` | 返回当前物理毫秒值 `int64` |
+| `(h *HLC) Close() error` | 刷盘批量缓冲（优雅退出前调用，可零丢失；未启用状态文件时空操作） |
 | `NewGenerator(nodeID uint32, hlc *HLC)` | 创建生成器，`hlc` 不能为空 |
 | `(g *Generator) Next()` | 返回 `Uint128` |
 | `WithClock(now func() int64)` | 注入测试时钟 |
 | `WithLogicalSeed(seed uint16)` | 启动逻辑种子 |
 | `WithStateFile(path string)` | 持久化状态文件路径 |
-| `WithStateSyncEvery(every uint32)` | 同步频率（默认 1） |
+| `WithStateSyncEvery(every uint32)` | 同步频率（默认 1000，环境变量 `QUANT1X_ID128_SYNC_EVERY`） |
+| `WithStateStrict()` | 严格模式：每次发号读盘取 max（默认关闭） |
 
 ### Python
 
@@ -150,12 +152,14 @@ System.out.println("hi=" + id.high64() + " lo=" + id.low64());
 | ---- | ---- |
 | `HLC(*options)` | 创建 HLC 实例 |
 | `hlc.now()` | 返回 `(hlc: int, seq: int)` |
+| `hlc.close()` | 刷盘批量缓冲（优雅退出前调用，可零丢失；未启用状态文件时空操作） |
 | `Generator(node_id: int, hlc: HLC)` | 创建生成器 |
 | `gen.next()` | 返回 `Uint128` |
 | `with_clock(now: Callable)` | 注入测试时钟 |
 | `with_logical_seed(seed: int)` | 启动逻辑种子 |
 | `with_state_file(path: str)` | 持久化状态文件路径 |
-| `with_state_sync_every(every: int)` | 同步频率（默认 1） |
+| `with_state_sync_every(every: int)` | 同步频率（默认 1000，环境变量 `QUANT1X_ID128_SYNC_EVERY`） |
+| `with_state_strict()` | 严格模式：每次发号读盘取 max（默认关闭） |
 
 ### Java
 
@@ -163,19 +167,22 @@ System.out.println("hi=" + id.high64() + " lo=" + id.low64());
 | ---- | ---- |
 | `new HLC(Option...)` | 创建 HLC 实例 |
 | `hlc.now()` | 返回 `Now`，含 `hlc()` 与 `seq()` |
+| `hlc.close()` | 刷盘批量缓冲（优雅退出前调用，可零丢失；未启用状态文件时空操作） |
 | `new Generator(nodeID: long, hlc: HLC)` | 创建生成器，`hlc` 不能为 null |
 | `gen.next()` | 返回 `Uint128` |
 | `Option.withClock(LongSupplier)` | 注入测试时钟 |
 | `Option.withLogicalSeed(int)` | 启动逻辑种子（16 位） |
 | `Option.withStateFile(String)` | 持久化状态文件路径 |
-| `Option.withStateSyncEvery(long)` | 同步频率（默认 1） |
+| `Option.withStateSyncEvery(long)` | 同步频率（默认 1000，环境变量 `QUANT1X_ID128_SYNC_EVERY`） |
+| `Option.withStateStrict()` | 严格模式：每次发号读盘取 max（默认关闭） |
 
 ## 使用建议
 
 1. `nodeID` 必须由外部系统唯一分配，否则跨节点唯一性无法成立。
-2. 如果你需要跨重启的强唯一保证，应启用 `WithStateFile(...)` / `with_state_file(...)` / `withStateFile(...)`，把最后发号状态持久化到稳定存储。
-3. 如果你需要在吞吐和崩溃恢复之间折中，可以配合 `WithStateSyncEvery(...)` / `with_state_sync_every(...)` / `withStateSyncEvery(...)` 降低 `fsync` 频率；这会降低同步成本，但进程异常退出时最近若干条状态可能尚未落盘。
-4. 如果你需要真正的分布式 HLC，请补充远端时间戳合并接口，而不是只依赖本地 `Now()`。
+2. 如果你需要跨重启的强唯一保证，应启用 `WithStateFile(...)` / `with_state_file(...)` / `withStateFile(...)`，把最后发号状态持久化到稳定存储。默认快速路径即可满足（构造时恢复 + 批量缓冲落盘）；优雅退出前调用 `Close()` / `close()` 把剩余缓冲刷盘，可保证重启零重复。
+3. 如果你需要**多个写者同时活跃**共享同一状态文件（如同 JVM/同进程多个 HLC 实例、多进程双活），必须额外开启 `WithStateStrict(...)` / `with_state_strict(...)` / `withStateStrict(...)`——严格模式让每次发号以磁盘最新状态为基准。
+4. 如果你需要在吞吐和崩溃恢复之间折中，可以配合 `WithStateSyncEvery(...)` / `with_state_sync_every(...)` / `withStateSyncEvery(...)` 调整批量落盘频率；这会影响进程异常退出时的丢失窗口（最近最多 N 条进度可能尚未落盘）。优雅退出前调用 `Close()` / `close()` 可把剩余缓冲完整刷盘、零丢失。
+5. 如果你需要真正的分布式 HLC，请补充远端时间戳合并接口，而不是只依赖本地 `Now()`。
 
 ## DB 兼容性
 
@@ -240,7 +247,7 @@ Uint128 recovered = Uint128.fromBytes(raw);
 只要满足下面两个前提，就可以在同一节点上跨重启避免重复 ID：
 
 1. `nodeID` 在节点维度上稳定且唯一。
-2. `WithStateFile(...)` / `with_state_file(...)` / `withStateFile(...)` 指向稳定、可持久化的状态文件；同一文件上的并发发号会由库内置的进程锁串行化。
+2. `WithStateFile(...)` / `with_state_file(...)` / `withStateFile(...)` 指向稳定、可持久化的状态文件。默认快速路径已覆盖单写者与进程顺序接管（failover）场景——新实例构造时读到前任写者的最新水位；若多个写者**同时活跃**共享同一文件，必须显式开启 `WithStateStrict(...)` / `with_state_strict(...)` / `withStateStrict(...)`（以每次发号增加一次磁盘读为代价，保证各写者水位同步）。
 
 **Go**
 
@@ -269,9 +276,21 @@ Generator gen = new Generator(1, hlc);
 Uint128 id = gen.next();
 ```
 
-每次 `Now()` / `now()` 都会先获取状态文件对应的进程锁，再把最新 `(physical, logical, seq)` 作为一条校验过的状态记录追加到文件末尾；重启后会恢复最后一条有效记录，再继续递增。
+**快速路径（默认）**：状态记录先在内存批量缓冲中累积，每攒满 `syncEvery` 条才在进程锁保护下一次性追加到文件末尾并 `fsync`；热路径零系统调用。重启后会恢复最后一条有效记录，再继续递增。进程异常退出最多丢失最近 `syncEvery-1` 条进度（这些 ID 重启后可能重复）；优雅退出前调用 `Close()` / `close()`（三语言一致）可把缓冲完整刷盘、零丢失。
 
-默认同步频率为 `1`，即每次发号后都同步到磁盘，以优先保证崩溃后的可恢复性。
+**严格模式（`WithStateStrict`）**：每次 `Now()` / `now()` 都先获取进程锁、读盘取 max，再把最新 `(physical, logical, seq)` 作为一条校验过的状态记录追加到文件末尾，用于多写者同时活跃共享。
+
+### 落盘间隔的默认值与环境变量
+
+- 默认 `syncEvery = 1000`：快速路径下每攒满 1000 条状态记录才落盘一次（含锁 + `fsync`）。大多数请求不触碰磁盘，热路径纯内存；进程异常退出最多丢失最近 1000 条**持久化进度**，调用 `Close()` / `close()` 可零丢失。
+- 可通过环境变量 `QUANT1X_ID128_SYNC_EVERY` 覆盖默认值（三语言一致），显式 Option 优先级最高：
+
+```bash
+# 每 100 条记录刷盘一次
+QUANT1X_ID128_SYNC_EVERY=100 ./your-binary
+```
+
+- 极端低延迟场景可调大（如 10000），强调持久化可调小（如 1，等价于每条落盘）。
 
 ## 测试
 
@@ -329,7 +348,7 @@ mvn -q test
 
 ```powershell
 Push-Location .\quant1x\id\id128
-go test -run '^$' -bench 'BenchmarkGeneratorNext$|BenchmarkGeneratorNextWithStateFile$|BenchmarkGeneratorNextWithStateFileSyncEvery256$' -benchmem
+go test -run '^$' -bench 'BenchmarkGeneratorNext$|BenchmarkGeneratorNextWithStateFile$|BenchmarkGeneratorNextWithStateFileSyncEvery256$|BenchmarkGeneratorNextWithStateFileStrict$' -benchmem
 Pop-Location
 ```
 
@@ -337,15 +356,17 @@ Pop-Location
 
 | 基准项 | ns/op | 约等于吞吐量 | B/op | allocs/op |
 | ---- | ----: | ----: | ----: | ----: |
-| `BenchmarkGeneratorNext` | `17.49` | `约 5718 万/s` | `0` | `0` |
-| `BenchmarkGeneratorNextWithStateFile` | `1,693,666` | `约 590/s` | `1923` | `19` |
-| `BenchmarkGeneratorNextWithStateFileSyncEvery256` | `264,519` | `约 3780/s` | `2034` | `19` |
+| `BenchmarkGeneratorNext` | `20.08` | `约 4980 万/s` | `0` | `0` |
+| `BenchmarkGeneratorNextWithStateFile`（快速路径，批量缓冲） | `1,312` | `约 76 万/s` | `0` | `0` |
+| `BenchmarkGeneratorNextWithStateFileSyncEvery256` | `5,284` | `约 19 万/s` | `3` | `0` |
+| `BenchmarkGeneratorNextWithStateFileStrict`（严格模式） | `292,556` | `约 3418/s` | `1578` | `17` |
 
 结果解读：
 
 1. 纯内存路径适合高吞吐本地发号，数量级约为每秒数千万。
-2. 严格持久化路径的主要瓶颈是进程锁和每次 `fsync`，吞吐量会下降到每秒数百。
-3. 通过 `WithStateSyncEvery(256)` 批量同步后，吞吐量可提升到每秒数千，但代价是崩溃时最近最多 255 条状态可能尚未持久化。
+2. 快速路径（默认）：构造时恢复一次水位，运行期纯内存推进，状态记录在批量缓冲中累积、每攒满 `syncEvery`（默认 1000）条才落盘一次，吞吐约每秒 76 万，热路径零系统调用。
+3. 严格模式（`WithStateStrict`）：每次发号一次磁盘读（尾部 18B + CRC）+ 一次落盘写，用于多写者活跃共享，吞吐约为每秒数千。
+4. `WithStateSyncEvery(N)` 控制批量落盘频率：N 越小落盘越频繁、吞吐越低、崩溃丢失窗口越小；N 越大吞吐越高、丢失窗口越大。进程异常退出时最近最多 N 条进度可能尚未落盘，调用 `Close()` / `close()` 可零丢失。
 
 ## Go ↔ Python ↔ Java 横向对比
 
