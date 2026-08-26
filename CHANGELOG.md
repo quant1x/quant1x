@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.64] - 2026-08-26
+### Changed
+- 新增分布式id 128bit版本
+- release version 0.7.64
+
 ## [0.7.63] - 2026-08-26
 ### Changed
 - 修复 std 包迁移与 KLine 到 Bar 类型迁移后遗留的编译错误
@@ -2203,7 +2208,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.63...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.64...HEAD
+[0.7.64]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.63...v0.7.64
 [0.7.63]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.62...v0.7.63
 [0.7.62]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.61...v0.7.62
 [0.7.61]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.60...v0.7.61
