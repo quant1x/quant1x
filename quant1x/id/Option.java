@@ -14,7 +14,7 @@ import java.util.function.LongSupplier;
  * HLC hlc = new HLC(
  *         Option.withClock(System::currentTimeMillis),
  *         Option.withLogicalSeed(7),
- *         Option.withStateFile("hlcid.state"),
+ *         Option.withStateFile("id.state"),
  *         Option.withStateSyncEvery(1));
  * </pre>
  */

@@ -18,7 +18,7 @@ from .state_store import FileStateStore, PersistentState
 from .uint128 import Uint128
 
 
-class HlcidPythonTests(unittest.TestCase):
+class IdTests(unittest.TestCase):
     def test_hlc_rollback_monotonic(self) -> None:
         current = {"value": 1000}
         hlc = HLC(with_clock(lambda: current["value"]), with_logical_seed(7))
@@ -42,7 +42,7 @@ class HlcidPythonTests(unittest.TestCase):
 
     def test_persistent_state_across_restart(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
-            state_file = os.path.join(temp_dir, "hlcid.state")
+            state_file = os.path.join(temp_dir, "id.state")
             current = {"value": 1000}
             options = (
                 with_clock(lambda: current["value"]),
@@ -56,7 +56,7 @@ class HlcidPythonTests(unittest.TestCase):
 
     def test_load_ignores_corrupted_tail(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
-            state_file = os.path.join(temp_dir, "hlcid.state")
+            state_file = os.path.join(temp_dir, "id.state")
             store = FileStateStore(state_file)
             want = PersistentState(1234, 7, 99)
             store._append_state(want)

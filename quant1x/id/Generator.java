@@ -30,7 +30,7 @@ public final class Generator {
      */
     public Generator(long nodeID, HLC hlc) {
         if (hlc == null) {
-            throw new NullPointerException("hlcid: nil HLC");
+            throw new NullPointerException("id: nil HLC");
         }
         this.hlc = hlc;
         this.nodeID = nodeID & 0xFFFFFFFFL;

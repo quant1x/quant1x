@@ -17,20 +17,20 @@ func lockProcessFile(path string) (func() error, error) {
 				closeErr := file.Close()
 				removeErr := os.Remove(path)
 				if closeErr != nil {
-					return fmt.Errorf("hlcid: 关闭锁文件失败: %w", closeErr)
+					return fmt.Errorf("id: 关闭锁文件失败: %w", closeErr)
 				}
 				if removeErr != nil {
-					return fmt.Errorf("hlcid: 删除锁文件失败: %w", removeErr)
+					return fmt.Errorf("id: 删除锁文件失败: %w", removeErr)
 				}
 				return nil
 			}, nil
 		}
 
 		if !os.IsExist(err) {
-			return nil, fmt.Errorf("hlcid: 获取兼容锁失败: %w", err)
+			return nil, fmt.Errorf("id: 获取兼容锁失败: %w", err)
 		}
 		if time.Now().After(deadline) {
-			return nil, fmt.Errorf("hlcid: 获取兼容锁超时")
+			return nil, fmt.Errorf("id: 获取兼容锁超时")
 		}
 		time.Sleep(10 * time.Millisecond)
 	}

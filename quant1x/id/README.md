@@ -20,7 +20,7 @@
 Go、Python 和 Java 同目录共存，靠文件后缀区分：
 
 ```
-hlcid/
+id/
 ├── uint128.go       # Uint128（Go）
 ├── uint128.py       # Uint128（Python）
 ├── Uint128.java     # Uint128（Java）
@@ -44,11 +44,12 @@ hlcid/
 ├── state_lock_unix.go    # 文件锁 Unix（Go）
 ├── state_lock_windows.go # 文件锁 Windows（Go）
 ├── state_lock_other.go   # 文件锁 兼容模式（Go）
-├── hlcid_test.go    # 测试（Go）
-├── hlcid_test.py    # 测试（Python）
-├── HlcidTest.java   # 测试（Java）
+├── id_test.go       # 测试（Go）
+├── id_test.py       # 测试（Python）
 └── __init__.py      # Python 包入口
 ```
+
+各语言测试统一位于仓库 `tests/` 目录（Go / Python 例外，留在本目录）。Java 测试亦在 `tests/` 下，按 package 组织（如 `tests/id/IdTest.java`），物理路径与模块目录保持一致。
 
 ## ID 位布局
 
@@ -78,25 +79,25 @@ package main
 import (
     "fmt"
 
-    "gitee.com/quant1x/su-zhen/core/hlcid"
+    "github.com/quant1x/quant1x/quant1x/id"
 )
 
 func main() {
-    hlc := hlcid.NewHLC()
-    gen := hlcid.NewGenerator(1, hlc)
-    id := gen.Next()
+    hlc := id.NewHLC()
+    gen := id.NewGenerator(1, hlc)
+    next := gen.Next()
 
-    fmt.Printf("hi=%d lo=%d\n", id.Hi, id.Lo)
-    fmt.Printf("bytes=%x\n", id.Bytes())
+    fmt.Printf("hi=%d lo=%d\n", next.Hi, next.Lo)
+    fmt.Printf("bytes=%x\n", next.Bytes())
 }
 ```
 
 ### Python
 
 ```python
-from core.hlcid import Generator, HLC, with_state_file
+from quant1x.id import Generator, HLC, with_state_file
 
-hlc = HLC(with_state_file("./data/hlcid.state"))
+hlc = HLC(with_state_file("./data/id.state"))
 gen = Generator(1, hlc)
 id = gen.next()
 
@@ -113,7 +114,7 @@ import quant1x.id.Uint128;
 import quant1x.id.Option;
 
 HLC hlc = new HLC(
-        Option.withStateFile("./data/hlcid.state"));
+        Option.withStateFile("./data/id.state"));
 Generator gen = new Generator(1, hlc);
 Uint128 id = gen.next();
 
@@ -198,7 +199,7 @@ db.Exec("INSERT INTO events (id, data) VALUES (?, ?)", id.Bytes(), data)
 
 var raw [16]byte
 row.Scan(&raw[:])
-recovered := hlcid.FromBytes(raw)
+recovered := id.FromBytes(raw)
 ```
 
 **Python**
@@ -244,17 +245,17 @@ Uint128 recovered = Uint128.fromBytes(raw);
 **Go**
 
 ```go
-hlc := hlcid.NewHLC(
-    hlcid.WithStateFile("./data/hlcid.state"),
+hlc := id.NewHLC(
+    id.WithStateFile("./data/id.state"),
 )
-gen := hlcid.NewGenerator(1, hlc)
-id := gen.Next()
+gen := id.NewGenerator(1, hlc)
+next := gen.Next()
 ```
 
 **Python**
 
 ```python
-hlc = HLC(with_state_file("./data/hlcid.state"))
+hlc = HLC(with_state_file("./data/id.state"))
 gen = Generator(1, hlc)
 id = gen.next()
 ```
@@ -263,7 +264,7 @@ id = gen.next()
 
 ```java
 HLC hlc = new HLC(
-        Option.withStateFile("./data/hlcid.state"));
+        Option.withStateFile("./data/id.state"));
 Generator gen = new Generator(1, hlc);
 Uint128 id = gen.next();
 ```
@@ -277,7 +278,7 @@ Uint128 id = gen.next();
 ### Go
 
 ```powershell
-Push-Location .\core\hlcid
+Push-Location .\quant1x\id
 go test -v
 Pop-Location
 ```
@@ -295,7 +296,7 @@ Pop-Location
 ### Python
 
 ```powershell
-python -m unittest core.hlcid.hlcid_test
+python -m unittest quant1x.id.id_test
 ```
 
 测试覆盖：
@@ -324,10 +325,10 @@ mvn -q test
 
 ## 基准测试
 
-仅 Go 版提供（代码位于 `hlcid_test.go`）：
+仅 Go 版提供（代码位于 `id_test.go`）：
 
 ```powershell
-Push-Location .\core\hlcid
+Push-Location .\quant1x\id
 go test -run '^$' -bench 'BenchmarkGeneratorNext$|BenchmarkGeneratorNextWithStateFile$|BenchmarkGeneratorNextWithStateFileSyncEvery256$' -benchmem
 Pop-Location
 ```

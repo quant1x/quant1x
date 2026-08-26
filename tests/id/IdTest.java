@@ -23,9 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * Java 版 hlcid 单元测试，与 Go 版 {@code hlcid_test.go} 一一对应。
+ * Java 版 id 单元测试，与 Go 版 {@code id_test.go} 一一对应。
  */
-class HlcidTest {
+class IdTest {
 
     @Test
     void rollbackMonotonic() {
@@ -74,7 +74,7 @@ class HlcidTest {
 
     @Test
     void persistentStateAcrossRestart() throws Exception {
-        Path stateFile = Files.createTempDirectory("hlcid").resolve("hlc.state");
+        Path stateFile = Files.createTempDirectory("id").resolve("hlc.state");
         long fakeNow = 1000;
         Option[] opts = {
                 Option.withClock(() -> fakeNow),
@@ -90,7 +90,7 @@ class HlcidTest {
 
     @Test
     void sharedStateFileAcrossInstances() throws Exception {
-        Path stateFile = Files.createTempDirectory("hlcid").resolve("hlc.state");
+        Path stateFile = Files.createTempDirectory("id").resolve("hlc.state");
         long fakeNow = 1000;
         Option[] opts = {
                 Option.withClock(() -> fakeNow),
@@ -109,7 +109,7 @@ class HlcidTest {
 
     @Test
     void loadIgnoresCorruptedTail() throws Exception {
-        Path stateFile = Files.createTempDirectory("hlcid").resolve("hlc.state");
+        Path stateFile = Files.createTempDirectory("id").resolve("hlc.state");
         FileStateStore store = new FileStateStore(stateFile.toString());
 
         PersistentState want = PersistentState.of(1234, 7, 99);

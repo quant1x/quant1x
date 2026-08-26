@@ -12,7 +12,7 @@ from .uint128 import Uint128
 class Generator:
     def __init__(self, node_id: int, hlc: HLC) -> None:
         if hlc is None:
-            raise ValueError("hlcid: nil HLC")
+            raise ValueError("id: nil HLC")
         self.hlc = hlc
         self.node_id = node_id & 0xFFFFFFFF
 

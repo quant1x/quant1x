@@ -5,7 +5,7 @@
 package quant1x.id;
 
 /**
- * 不可变的 128 位无符号整数，是 hlcid 的核心数据类型，与 Go/Python 版保持
+ * 不可变的 128 位无符号整数，是 id 的核心数据类型，与 Go/Python 版保持
  * 一致的位布局与语义（真实 128 位、BigEndian 编解码、无符号比较与算术）。
  */
 public final class Uint128 implements Comparable<Uint128> {

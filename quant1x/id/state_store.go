@@ -48,7 +48,7 @@ func (s *fileStateStore) Load() (persistentState, bool, error) {
 func (s *fileStateStore) Next(local persistentState, now int64, seed uint16) (state persistentState, err error) {
 	unlock, err := lockProcessFile(s.lockPath)
 	if err != nil {
-		return persistentState{}, fmt.Errorf("hlcid: 获取进程锁失败: %w", err)
+		return persistentState{}, fmt.Errorf("id: 获取进程锁失败: %w", err)
 	}
 	defer func() {
 		unlockErr := unlock()
@@ -81,23 +81,23 @@ func (s *fileStateStore) loadLatestState() (persistentState, bool, error) {
 		if os.IsNotExist(err) {
 			return persistentState{}, false, nil
 		}
-		return persistentState{}, false, fmt.Errorf("hlcid: 读取状态文件失败: %w", err)
+		return persistentState{}, false, fmt.Errorf("id: 读取状态文件失败: %w", err)
 	}
 	defer file.Close()
 
 	info, err := file.Stat()
 	if err != nil {
-		return persistentState{}, false, fmt.Errorf("hlcid: 获取状态文件信息失败: %w", err)
+		return persistentState{}, false, fmt.Errorf("id: 获取状态文件信息失败: %w", err)
 	}
 
 	size := info.Size()
 	if size < persistentStateRecordSize {
-		return persistentState{}, false, fmt.Errorf("hlcid: 状态文件长度非法: %d", size)
+		return persistentState{}, false, fmt.Errorf("id: 状态文件长度非法: %d", size)
 	}
 
 	end := size - (size % persistentStateRecordSize)
 	if end == 0 {
-		return persistentState{}, false, fmt.Errorf("hlcid: 状态文件长度非法: %d", size)
+		return persistentState{}, false, fmt.Errorf("id: 状态文件长度非法: %d", size)
 	}
 
 	var record [persistentStateRecordSize]byte
@@ -106,7 +106,7 @@ func (s *fileStateStore) loadLatestState() (persistentState, bool, error) {
 			if errors.Is(err, io.EOF) {
 				continue
 			}
-			return persistentState{}, false, fmt.Errorf("hlcid: 读取状态记录失败: %w", err)
+			return persistentState{}, false, fmt.Errorf("id: 读取状态记录失败: %w", err)
 		}
 
 		checksum := binary.BigEndian.Uint32(record[14:18])
@@ -122,12 +122,12 @@ func (s *fileStateStore) loadLatestState() (persistentState, bool, error) {
 		return state, true, nil
 	}
 
-	return persistentState{}, false, fmt.Errorf("hlcid: 状态文件中没有有效记录")
+	return persistentState{}, false, fmt.Errorf("id: 状态文件中没有有效记录")
 }
 
 func (s *fileStateStore) appendState(state persistentState) error {
 	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
-		return fmt.Errorf("hlcid: 创建状态目录失败: %w", err)
+		return fmt.Errorf("id: 创建状态目录失败: %w", err)
 	}
 
 	var buf [persistentStateRecordSize]byte
@@ -138,12 +138,12 @@ func (s *fileStateStore) appendState(state persistentState) error {
 
 	file, err := os.OpenFile(s.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 	if err != nil {
-		return fmt.Errorf("hlcid: 打开状态文件失败: %w", err)
+		return fmt.Errorf("id: 打开状态文件失败: %w", err)
 	}
 	defer file.Close()
 
 	if _, err := file.Write(buf[:]); err != nil {
-		return fmt.Errorf("hlcid: 追加状态记录失败: %w", err)
+		return fmt.Errorf("id: 追加状态记录失败: %w", err)
 	}
 
 	// TODO: s.syncEvery 当前仅在构造期写入（单线程），若未来支持运行时动态调整，
@@ -154,7 +154,7 @@ func (s *fileStateStore) appendState(state persistentState) error {
 	}
 	if atomic.AddUint32(&s.unsynced, 1) >= syncEvery {
 		if err := file.Sync(); err != nil {
-			return fmt.Errorf("hlcid: 刷新状态文件失败: %w", err)
+			return fmt.Errorf("id: 刷新状态文件失败: %w", err)
 		}
 		atomic.StoreUint32(&s.unsynced, 0)
 	}

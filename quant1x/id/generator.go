@@ -7,7 +7,7 @@ type Generator struct {
 
 func NewGenerator(nodeID uint32, hlc *HLC) *Generator {
 	if hlc == nil {
-		panic("hlcid: nil HLC")
+		panic("id: nil HLC")
 	}
 
 	return &Generator{

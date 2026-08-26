@@ -27,7 +27,7 @@
         </dependency>
     </dependencies>
     <build>
-        <testSourceDirectory>tests/core/hlcid</testSourceDirectory>
+        <testSourceDirectory>tests</testSourceDirectory>
         <plugins>
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
@@ -57,7 +57,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <excludes>
-                        <exclude>**/HlcidTest.java</exclude>
+                        <exclude>**/tests/**</exclude>
                     </excludes>
                 </configuration>
             </plugin>

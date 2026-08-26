@@ -20,7 +20,7 @@ var (
 func lockProcessFile(path string) (func() error, error) {
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o644)
 	if err != nil {
-		return nil, fmt.Errorf("hlcid: 打开锁文件失败: %w", err)
+		return nil, fmt.Errorf("id: 打开锁文件失败: %w", err)
 	}
 
 	var overlapped syscall.Overlapped
@@ -34,7 +34,7 @@ func lockProcessFile(path string) (func() error, error) {
 	)
 	if r1 == 0 {
 		_ = file.Close()
-		return nil, fmt.Errorf("hlcid: 获取 Windows 文件锁失败: %w", callErr)
+		return nil, fmt.Errorf("id: 获取 Windows 文件锁失败: %w", callErr)
 	}
 
 	return func() error {
@@ -47,10 +47,10 @@ func lockProcessFile(path string) (func() error, error) {
 		)
 		closeErr := file.Close()
 		if r1 == 0 {
-			return fmt.Errorf("hlcid: 释放 Windows 文件锁失败: %w", callErr)
+			return fmt.Errorf("id: 释放 Windows 文件锁失败: %w", callErr)
 		}
 		if closeErr != nil {
-			return fmt.Errorf("hlcid: 关闭锁文件失败: %w", closeErr)
+			return fmt.Errorf("id: 关闭锁文件失败: %w", closeErr)
 		}
 		return nil
 	}, nil

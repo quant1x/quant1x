@@ -86,11 +86,11 @@ final class FileStateStore implements StateStore {
         }
         long size = Files.size(path);
         if (size < RECORD_SIZE) {
-            throw new IOException("hlcid: 状态文件长度非法: " + size);
+            throw new IOException("id: 状态文件长度非法: " + size);
         }
         long end = size - (size % RECORD_SIZE);
         if (end == 0) {
-            throw new IOException("hlcid: 状态文件长度非法: " + size);
+            throw new IOException("id: 状态文件长度非法: " + size);
         }
         try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
             ByteBuffer buf = ByteBuffer.allocate(RECORD_SIZE);
@@ -113,7 +113,7 @@ final class FileStateStore implements StateStore {
                         Uint128.readUint32(record, 10)));
             }
         }
-        throw new IOException("hlcid: 状态文件中没有有效记录");
+        throw new IOException("id: 状态文件中没有有效记录");
     }
 
     /** 追加一条状态记录；按 {@link #syncEvery} 间隔执行 fsync（force） */

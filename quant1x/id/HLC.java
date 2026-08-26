@@ -92,7 +92,7 @@ public final class HLC {
                 try {
                     next = store.next(current, nowMs, seed);
                 } catch (IOException e) {
-                    throw new IllegalStateException("hlcid: 状态存储失败", e);
+                    throw new IllegalStateException("id: 状态存储失败", e);
                 }
             } else {
                 next = advancePersistentState(current, nowMs, seed);
@@ -125,7 +125,7 @@ public final class HLC {
         try {
             return store.load();
         } catch (IOException e) {
-            throw new IllegalStateException("hlcid: 恢复持久化状态失败", e);
+            throw new IllegalStateException("id: 恢复持久化状态失败", e);
         }
     }
 
