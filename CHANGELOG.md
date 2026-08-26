@@ -3,6 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.69] - 2026-08-26
+### Changed
+- feat(id): 状态文件批量缓冲优化并新增 id64 多语言实现
+
+- id128 快速路径改为批量缓冲：热路径纯内存推进，攒满 syncEvery 条才落盘，吞吐提升约 200 倍；新增 Close()/close() 优雅刷盘接口（Go/Python/Java）
+- 新增 id64 多语言实现（Go/Python/Java）：快速路径批量缓冲 + 严格模式句柄缓存，严格模式每轮系统调用由 8 次降至 5 次、零分配编码，吞吐提升约 17 倍
+- 补齐 Go/Python/Java 测试与 README 文档
+- release version 0.7.69
+
 ## [0.7.68] - 2026-08-26
 ### Changed
 - id 模块代码下沉一级至 id128 子目录，Go/Java/Python 包名同步调整
@@ -2257,7 +2266,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.68...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.69...HEAD
+[0.7.69]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.68...v0.7.69
 [0.7.68]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.67...v0.7.68
 [0.7.67]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.66...v0.7.67
 [0.7.66]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.65...v0.7.66
