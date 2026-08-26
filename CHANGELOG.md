@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.66] - 2026-08-26
+### Changed
+- 更新rust版本到1.98.0
+- release version 0.7.66
+
 ## [0.7.65] - 2026-08-26
 ### Changed
 - 新增 Maven Wrapper 并修正测试源码目录
@@ -2218,7 +2223,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.65...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.66...HEAD
+[0.7.66]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.65...v0.7.66
 [0.7.65]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.64...v0.7.65
 [0.7.64]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.63...v0.7.64
 [0.7.63]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.62...v0.7.63

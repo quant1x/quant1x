@@ -1935,7 +1935,7 @@ dependencies = [
 
 [[package]]
 name = "quant1x"
-version = "0.7.65"
+version = "0.7.66"
 dependencies = [
  "bytes",
  "chrono",
