@@ -222,3 +222,13 @@ type SampleStatus struct {
 	UpdateTime string `name:"更新时间" csv:"update_time"` // 最后更新时间
 	State      uint64 `name:"状态码" csv:"state"`        // 状态码
 }
+
+// UpdateWithAdapters 按代码列表遍历, 对每只证券调用所有适配器的更新方法.
+func UpdateWithAdapters(adapters []DataAdapter, date meta.Timestamp, codes []string) {
+	for _, code := range codes {
+		inst := DetectSymbol(code)
+		for _, adapter := range adapters {
+			adapter.Update(inst, date)
+		}
+	}
+}

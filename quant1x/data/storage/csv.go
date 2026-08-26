@@ -17,7 +17,7 @@ func init() {
 
 // CsvToSlice CSV文件转struct切片
 func CsvToSlice[S ~[]E, E any](filename string, pointer *S) error {
-	filepath, err := std.ExpandUser(filename)
+	filepath, err := base.ExpandUser(filename)
 	if err != nil {
 		return err
 	}
@@ -26,18 +26,18 @@ func CsvToSlice[S ~[]E, E any](filename string, pointer *S) error {
 		return err
 	}
 	err = gocsv.Unmarshal(csvFile, pointer)
-	std.CloseQuietly(csvFile)
+	base.CloseQuietly(csvFile)
 	return err
 }
 
 // SliceToCsv struct切片转csv文件
 func SliceToCsv[S ~[]E, E any](filename string, s S, force ...bool) error {
-	filepath, err := std.ExpandUser(filename)
+	filepath, err := base.ExpandUser(filename)
 	if err != nil {
 		return err
 	}
 	// 检查目录, 不存在就创建
-	_ = std.CheckFilepath(filepath, true)
+	_ = base.CheckFilepath(filepath, true)
 	csvFile, err := os.Create(filepath)
 	if err != nil {
 		return err
@@ -53,6 +53,6 @@ func SliceToCsv[S ~[]E, E any](filename string, s S, force ...bool) error {
 			err = csvFile.Sync()
 		}
 	}
-	std.CloseQuietly(csvFile)
+	base.CloseQuietly(csvFile)
 	return err
 }

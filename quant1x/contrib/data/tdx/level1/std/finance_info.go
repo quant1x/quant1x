@@ -38,7 +38,7 @@ func (f *FinanceInfoContext) SerializeRequestBody() []byte {
 	_ = binary.Write(buf, binary.LittleEndian, count)
 	for _, code := range f.Codes {
 		_ = buf.WriteByte(uint8(tdxproto.ExchangeToMarketId(code.Exchange)))
-		sym := std.String2Bytes(code.Ticker)
+		sym := base.String2Bytes(code.Ticker)
 		if len(sym) > 6 {
 			sym = sym[:6]
 		}
@@ -65,7 +65,7 @@ func (f *FinanceInfoContext) DeserializeResponseBody(body []byte) error {
 		const baseUnit = 10000.0
 
 		ex := tdxproto.MarketIdToExchange(int(raw.Market))
-		ticker := std.Bytes2String(raw.Code[:])
+		ticker := base.Bytes2String(raw.Code[:])
 
 		info.Code = data.BuildInstrument(ex, ticker)
 		info.LiuTongGuBen = tdxproto.NumberToFloat64(raw.LiuTongGuBen) * baseUnit

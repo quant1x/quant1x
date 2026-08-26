@@ -7,6 +7,7 @@ import (
 	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/level1/std"
 	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/tdxproto"
 	"github.com/quant1x/quant1x/quant1x/data"
+	"github.com/quant1x/quant1x/quant1x/data/schema"
 	"github.com/quant1x/quant1x/quant1x/encoding"
 	logger "github.com/quant1x/quant1x/quant1x/log"
 )
@@ -42,14 +43,14 @@ func tdxUpdateBar(symbol data.InstrumentInfo, _date data.Timestamp) {
 
 	// 1. 确定缓存文件并读取本地缓存
 	cacheFilename := config.GetBarFilename(symbol.Symbol(), true)
-	var cacheBars []data.KLine
+	var cacheBars []schema.Bar
 	err := encoding.CsvToSlices(cacheFilename, &cacheBars)
 	if err != nil {
 		logger.Debugf("[DataKLine] load cache failed for %s: %v", symbol.Symbol(), err)
 		// 继续更新
 	}
 	barsLength := len(cacheBars)
-	barsOffsetDays := data.MaxCachedDaysToDropOnIncrementalUpdate
+	barsOffsetDays := schema.MaxCachedDaysToDropOnIncrementalUpdate
 	adjustTimes := 0
 
 	// 默认起始日期(使用 datasets.MarketFirstDate, 与 C++ 的 market_first_date 等价)
@@ -138,14 +139,14 @@ func tdxUpdateBar(symbol data.InstrumentInfo, _date data.Timestamp) {
 	}
 
 	// 5. 转换为增量 K 线并调整单位(成交量单位从手转为股)
-	incrementalBars := make([]data.KLine, 0, elementCount)
+	incrementalBars := make([]schema.Bar, 0, elementCount)
 	for _, vec := range hs {
 		for _, row := range vec {
 			dts := data.PreMarketTimestamp(row.Year, row.Month, row.Day)
 			if dts.Less(startT) || dts.Greater(endT) {
 				continue
 			}
-			bx := data.KLine{
+			bx := schema.Bar{
 				Date:            dts.OnlyDate(),
 				Open:            row.Open,
 				Close:           row.Close,
@@ -166,11 +167,11 @@ func tdxUpdateBar(symbol data.InstrumentInfo, _date data.Timestamp) {
 	isFreshFetchRequireAdjustment := adjustTimes == 1
 	dividends, _ := tdxGetXdxrList(symbol)
 	if isFreshFetchRequireAdjustment {
-		data.ApplyForwardAdjustmentForEvent(incrementalBars, currentStartDate.OnlyDate(), dividends)
+		schema.ApplyForwardAdjustmentForEvent(incrementalBars, currentStartDate.OnlyDate(), dividends)
 	}
 
 	// 7. 合并本地缓存与增量数据
-	var bars []data.KLine
+	var bars []schema.Bar
 	if barsLength > barsOffsetDays {
 		bars = append(bars, cacheBars[:barsLength-barsOffsetDays]...)
 	}
@@ -182,7 +183,7 @@ func tdxUpdateBar(symbol data.InstrumentInfo, _date data.Timestamp) {
 
 	// 8. 若不是仅更新最新记录, 则对全量数据做前复权处理
 	if !isFreshFetchRequireAdjustment {
-		data.ApplyForwardAdjustmentForEvent(bars, currentStartDate.OnlyDate(), dividends)
+		schema.ApplyForwardAdjustmentForEvent(bars, currentStartDate.OnlyDate(), dividends)
 	}
 
 	// 9. 保存缓存(确保父目录存在)

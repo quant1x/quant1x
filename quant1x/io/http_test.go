@@ -47,5 +47,5 @@ func TestHttpHead2(t *testing.T) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(std.Bytes2String(data))
+	fmt.Println(base.Bytes2String(data))
 }

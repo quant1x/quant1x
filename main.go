@@ -10,9 +10,9 @@ import (
 	"github.com/quant1x/quant1x/quant1x/util"
 
 	_ "github.com/quant1x/quant1x/quant1x/contrib/data/tdx" // for data provider plugins
-	_ "github.com/quant1x/quant1x/quant1x/data/market"      // for go:linkname GetCodeList
 )
 
+// _ "github.com/quant1x/quant1x/quant1x/data/market"      // for go:linkname GetCodeList
 var (
 	MinVersion  = util.InvalidVersion // 版本号
 	application = "q1x-go"            // 应用程序名

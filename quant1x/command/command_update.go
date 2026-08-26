@@ -3,8 +3,8 @@ package command
 import (
 	"fmt"
 
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
 	"github.com/quant1x/quant1x/quant1x/data"
-	"github.com/quant1x/quant1x/quant1x/data/market"
 	cli "github.com/spf13/cobra"
 )
 
@@ -83,7 +83,7 @@ func initUpdate() {
 			ts := data.DateRange(tsStart, tsEnd, false)
 			fmt.Println(ts)
 			fmt.Println("date count:", len(ts))
-			codes := market.GetCodeList()
+			codes := tdx.GetCodeList()
 			fmt.Println("code count:", len(codes))
 			for _, date := range ts {
 				fmt.Println("处理日期:", date.OnlyDate())

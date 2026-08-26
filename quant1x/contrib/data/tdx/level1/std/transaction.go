@@ -67,7 +67,7 @@ func NewTransactionContext(instrument data.InstrumentInfo, offset, size int) *Tr
 	return &TransactionContext{
 		FrameBase: tdxproto.NewFrameBase(tdxproto.StdCommandTransactionData, tdxproto.FlagUncompressed, tdxproto.PacketTypeRequest),
 		Market:    uint16(tdxproto.ExchangeToMarketId(instrument.Exchange)),
-		Code:      [6]byte(std.String2Bytes(instrument.Ticker)),
+		Code:      [6]byte(base.String2Bytes(instrument.Ticker)),
 		Start:     uint16(offset),
 		Count:     uint16(size),
 		sc:        instrument,
@@ -201,7 +201,7 @@ func NewHistoryTransactionContext(instrument data.InstrumentInfo, date uint32, o
 		FrameBase: tdxproto.NewFrameBase(tdxproto.StdCommandHistoryTransactionData, tdxproto.FlagUncompressed, tdxproto.PacketTypeRequest),
 		Date:      date,
 		Market:    uint16(tdxproto.ExchangeToMarketId(instrument.Exchange)),
-		Code:      [6]byte(std.String2Bytes(instrument.Ticker)),
+		Code:      [6]byte(base.String2Bytes(instrument.Ticker)),
 		Start:     uint16(offset),
 		Count:     uint16(size),
 		sc:        instrument,
@@ -315,11 +315,12 @@ func (h *HistoryTransactionContext) String() string {
 	return fmt.Sprintf("HistoryTransactionContext{Date:%d,Market:%d,Code:%s,Start:%d,Count:%d,ReplyCount:%d}", h.Date, h.Market, code, h.Start, h.Count, h.Reply.Count)
 }
 
-func Reverse(list []TickTransaction) []TickTransaction {
+// Reverse 反转切片, 对齐 Python reversed() / C++ std::reverse 的通用语义.
+func Reverse[T any](list []T) []T {
 	if len(list) == 0 {
 		return list
 	}
-	result := make([]TickTransaction, len(list))
+	result := make([]T, len(list))
 	for i, v := range list {
 		result[len(list)-1-i] = v
 	}

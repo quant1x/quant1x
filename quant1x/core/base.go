@@ -45,8 +45,12 @@ func lazyInitBasePath() {
 	}
 }
 
-// GetBasePath 返回默认的基础路径, 如果无法展开用户目录则返回默认路径
+// GetBasePath 返回默认的基础路径, 优先使用环境变量 QUANT1X_HOME,
+// 否则展开用户目录; 如果无法展开用户目录则返回默认路径
 func GetBasePath() string {
+	if home := os.Getenv("QUANT1X_HOME"); home != "" {
+		return home
+	}
 	onceBasePath.Do(lazyInitBasePath)
 	return quant1xBasePath
 }

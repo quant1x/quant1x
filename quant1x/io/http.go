@@ -95,7 +95,7 @@ const (
 
 var (
 	TimeZero = time.Unix(0, 0)
-	NotFound = std.NewException(stdNetHttp.StatusNotFound, "%s", stdNetHttp.StatusText(stdNetHttp.StatusNotFound))
+	NotFound = base.NewException(stdNetHttp.StatusNotFound, "%s", stdNetHttp.StatusText(stdNetHttp.StatusNotFound))
 )
 
 var (
@@ -198,11 +198,11 @@ func Request(url string, method string, content string, header ...map[string]any
 		return nil, TimeZero, NotFound
 	}
 	lm := response.Header.Get(LastModified)
-	if response.StatusCode == stdNetHttp.StatusNotModified && !std.IsEmpty(lm) {
+	if response.StatusCode == stdNetHttp.StatusNotModified && !base.IsEmpty(lm) {
 		return nil, TimeZero, nil
 	}
 	lastModified, err = time.Parse(time.RFC1123, lm)
-	defer std.CloseQuietly(response.Body)
+	defer base.CloseQuietly(response.Body)
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, TimeZero, err
@@ -223,7 +223,7 @@ func Request(url string, method string, content string, header ...map[string]any
 		}
 	}
 	if reader != nil {
-		defer std.CloseQuietly(reader)
+		defer base.CloseQuietly(reader)
 		body, err = io.ReadAll(reader)
 		if err != nil {
 			return nil, TimeZero, err

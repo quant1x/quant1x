@@ -95,6 +95,12 @@ func tdxGetXdxrList(sc data.InstrumentInfo) ([]schema.XdxrInfo, error) {
 	return nil, data.ErrNoData
 }
 
+// LoadXdxr 加载指定证券代码(如 "sh600000")的除权除息数据.
+// 优先读取本地缓存, 缓存缺失时通过网络拉取并保存.
+func LoadXdxr(code string) ([]schema.XdxrInfo, error) {
+	return tdxGetXdxrList(data.DetectSymbol(code))
+}
+
 // DataXdxr 实现了 data.DataAdapter, 用于 XDXR 数据, 并在包初始化时注册到缓存插件中心.
 type DataXdxr struct{}
 
@@ -104,7 +110,7 @@ func (d *DataXdxr) Key() string     { return "xdxr" }
 func (d *DataXdxr) Name() string    { return "除权除息" }
 func (d *DataXdxr) Usage() string   { return "" }
 
-func (d *DataXdxr) Print(instrument data.InstrumentInfo, dates ...exchange.Timestamp) {
+func (d *DataXdxr) Print(instrument data.InstrumentInfo, dates ...data.Timestamp) {
 	// No-op for now; could be extended to pretty-print loaded XDXR rows.
 }
 

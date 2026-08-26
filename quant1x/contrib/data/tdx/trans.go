@@ -76,7 +76,7 @@ type TurnoverDataSummary struct {
 }
 
 // loadTransactionDataFromCache 从 CSV 缓存读取逐笔数据并返回数据列表及起始时间字符串.
-func loadTransactionDataFromCache(instrument data.InstrumentInfo, featureDate data.Timestamp, ignorePreviousData bool) ([]data.Transaction, string) {
+func loadTransactionDataFromCache(instrument data.InstrumentInfo, featureDate data.Timestamp, ignorePreviousData bool) ([]schema.Transaction, string) {
 	list := make([]schema.Transaction, 0)
 
 	if ignorePreviousData {
@@ -327,7 +327,7 @@ func (d *DataTrans) Key() string     { return "trans" }
 func (d *DataTrans) Name() string    { return "逐笔成交" }
 func (d *DataTrans) Usage() string   { return "" }
 
-func (d *DataTrans) Print(instrument data.InstrumentInfo, dates ...exchange.Timestamp) {
+func (d *DataTrans) Print(instrument data.InstrumentInfo, dates ...data.Timestamp) {
 	_ = instrument
 	_ = dates
 }

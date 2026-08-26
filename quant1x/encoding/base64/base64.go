@@ -19,23 +19,23 @@ func getRandFromSeed(seed int64) *rand.Rand {
 
 // Base64GetEncoder 生成一个新的base64的码表
 func Base64GetEncoder() string {
-	encoder := slices.Clone(std.String2Bytes(BASE64CHAR))
+	encoder := slices.Clone(base.String2Bytes(BASE64CHAR))
 	seed := time.Now().UnixNano()
 	r := getRandFromSeed(seed)
 	r.Shuffle(len(encoder), func(i, j int) {
 		encoder[i], encoder[j] = encoder[j], encoder[i]
 	})
-	return std.Bytes2String(encoder)
+	return base.Bytes2String(encoder)
 }
 
 func getBase64Encoder(seed int64) string {
-	encoder := slices.Clone(std.String2Bytes(BASE64CHAR))
+	encoder := slices.Clone(base.String2Bytes(BASE64CHAR))
 	r := getRandFromSeed(seed)
 	r.Shuffle(len(encoder), func(i, j int) {
 		encoder[i], encoder[j] = encoder[j], encoder[i]
 	})
 	r = nil
-	return std.Bytes2String(encoder)
+	return base.Bytes2String(encoder)
 }
 
 type PseudoBase64 struct {
@@ -59,7 +59,7 @@ func NewPseudoBase64(seed int64) PseudoBase64 {
 }
 
 func (codec PseudoBase64) Encode(s string) string {
-	return codec.encoding.EncodeToString(std.String2Bytes(s))
+	return codec.encoding.EncodeToString(base.String2Bytes(s))
 }
 
 func (codec PseudoBase64) Decode(s string) (string, error) {
@@ -67,5 +67,5 @@ func (codec PseudoBase64) Decode(s string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return std.Bytes2String(data), nil
+	return base.Bytes2String(data), nil
 }

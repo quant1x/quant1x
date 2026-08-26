@@ -109,11 +109,11 @@ func GetValuesByTags(value any, tag ...string) []string {
 			var str string
 			switch v := ov.(type) {
 			case float32:
-				str = fmt.Sprintf("%.02f", std.Decimal(float64(v), 2))
+				str = fmt.Sprintf("%.02f", base.Decimal(float64(v), 2))
 			case float64:
-				str = fmt.Sprintf("%.02f", std.Decimal(v, 2))
+				str = fmt.Sprintf("%.02f", base.Decimal(v, 2))
 			default:
-				str = std.ToString(ov)
+				str = base.ToString(ov)
 			}
 			values = append(values, str)
 		}

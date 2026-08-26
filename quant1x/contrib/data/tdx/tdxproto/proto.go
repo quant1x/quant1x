@@ -82,6 +82,11 @@ func nextSequenceId() uint32 {
 	return atomic.AddUint32(&seqId, 1)
 }
 
+// ResetSeqId 重置序列号(主要用于测试).
+func ResetSeqId() {
+	atomic.StoreUint32(&seqId, 0)
+}
+
 // ============================================================
 // CommandToString — 对齐 C++ command_to_string / Rust Command.desc
 // ============================================================

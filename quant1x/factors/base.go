@@ -5,8 +5,9 @@ import (
 	"sort"
 	"time"
 
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
 	"github.com/quant1x/quant1x/quant1x/data"
-	"github.com/quant1x/quant1x/quant1x/data"
+	"github.com/quant1x/quant1x/quant1x/data/schema"
 )
 
 const DateLayout = "2006-01-02"
@@ -43,7 +44,7 @@ func (c CumulativeAdjustment) Inverse(adjustedPrice float64) float64 {
 //
 //	如果找到目标日期, 返回其在数组中的偏移量(从末尾开始计数)
 //	如果目标日期不存在或比所有K线日期都早, 返回-1
-func CheckBarOffset(bars []data.KLineRaw, date string) int {
+func CheckBarOffset(bars []tdx.BarRaw, date string) int {
 	rows := len(bars)
 	offset := 0
 	for i := 0; i < rows; i++ {
@@ -62,7 +63,7 @@ func CheckBarOffset(bars []data.KLineRaw, date string) int {
 	return offset
 }
 
-func IpoDateFromXdxrs(xdxrList []data.XdxrInfo) *string {
+func IpoDateFromXdxrs(xdxrList []schema.XdxrInfo) *string {
 	for _, v := range xdxrList {
 		if v.Category != 5 {
 			continue
@@ -74,7 +75,7 @@ func IpoDateFromXdxrs(xdxrList []data.XdxrInfo) *string {
 	return nil
 }
 
-func CombineAdjustmentsInPeriod(xdxrList []data.XdxrInfo, startDate, endDate data.Timestamp) []CumulativeAdjustment {
+func CombineAdjustmentsInPeriod(xdxrList []schema.XdxrInfo, startDate, endDate data.Timestamp) []CumulativeAdjustment {
 	result := []CumulativeAdjustment{}
 
 	for _, info := range xdxrList {
@@ -88,7 +89,8 @@ func CombineAdjustmentsInPeriod(xdxrList []data.XdxrInfo, startDate, endDate dat
 			continue
 		}
 
-		m, a := info.AdjustFactor()
+		adjFactor := info.AdjustFactor()
+		m, a := adjFactor.M, adjFactor.A
 		eventMonetaryAdjustment := info.ComputeMonetaryAdjustment()
 		eventShareAdjustmentRatio := info.ComputeShareAdjustmentRatio()
 
@@ -122,7 +124,7 @@ func CombineAdjustmentsInPeriod(xdxrList []data.XdxrInfo, startDate, endDate dat
 	return result
 }
 
-func ApplyForwardAdjustmentIncrementally(bars []*data.KLine, xdxrList []data.XdxrInfo, lastAdjustedDate, asOfDate data.Timestamp, truncateToAsOfDate bool) {
+func ApplyForwardAdjustmentIncrementally(bars []*schema.Bar, xdxrList []schema.XdxrInfo, lastAdjustedDate, asOfDate data.Timestamp, truncateToAsOfDate bool) {
 	if len(bars) == 0 {
 		return
 	}
@@ -158,7 +160,7 @@ func ApplyForwardAdjustmentIncrementally(bars []*data.KLine, xdxrList []data.Xdx
 			}
 
 			if currentDate.Less(factor.Timestamp) {
-				adj := data.CumulativeAdjustment{
+				adj := schema.CumulativeAdjustment{
 					M:                    factor.M,
 					A:                    factor.A,
 					ShareAdjustmentRatio: factor.ShareAdjustmentRatio,
@@ -178,7 +180,7 @@ func ApplyForwardAdjustmentIncrementally(bars []*data.KLine, xdxrList []data.Xdx
 	}
 }
 
-func CalculatePreAdjust(bars []*data.KLine, xdxrList []data.XdxrInfo) {
+func CalculatePreAdjust(bars []*schema.Bar, xdxrList []schema.XdxrInfo) {
 	if len(bars) == 0 {
 		return
 	}
@@ -206,39 +208,39 @@ func CalculatePreAdjust(bars []*data.KLine, xdxrList []data.XdxrInfo) {
 //  2. 如果找不到对应日期数据, 返回空切片
 //  3. 当存在除权除息数据时, 会对K线进行前复权处理
 //  4. 返回的K线数据按日期升序排列
-func GetCrossSectionForwardAdjustedBars(securityCode, asOfDate string) []*data.KLine {
+func GetCrossSectionForwardAdjustedBars(securityCode, asOfDate string) []*schema.Bar {
 	correctedCode := data.CorrectSecurityCode(securityCode)
 	ts, _ := data.ParseTimestamp(asOfDate)
 	fixedDate := ts.OnlyDate()
 
-	rawBars, err := data.LoadBarRaw(correctedCode)
+	rawBars, err := tdx.LoadBarRaw(correctedCode)
 	if err != nil || len(rawBars) == 0 {
-		return []*data.KLine{}
+		return []*schema.Bar{}
 	}
 
 	lastBar := rawBars[len(rawBars)-1]
 	if lastBar.Date < fixedDate {
-		rawBars, err = data.LoadBarRaw(correctedCode)
+		rawBars, err = tdx.LoadBarRaw(correctedCode)
 		if err != nil {
-			return []*data.KLine{}
+			return []*schema.Bar{}
 		}
 	}
 
 	offset := CheckBarOffset(rawBars, fixedDate)
 	if offset < 0 {
-		return []*data.KLine{}
+		return []*schema.Bar{}
 	}
 
 	fixedCount := len(rawBars) - offset
 	filteredBars := rawBars[:fixedCount]
 
 	if len(filteredBars) == 0 {
-		return []*data.KLine{}
+		return []*schema.Bar{}
 	}
 
-	bars := []*data.KLine{}
+	bars := []*schema.Bar{}
 	for _, rawBar := range filteredBars {
-		bar := &data.KLine{
+		bar := &schema.Bar{
 			Date:            rawBar.Date,
 			Open:            rawBar.Open,
 			Close:           rawBar.Close,
@@ -254,7 +256,7 @@ func GetCrossSectionForwardAdjustedBars(securityCode, asOfDate string) []*data.K
 		bars = append(bars, bar)
 	}
 
-	xdxrList, err := data.LoadXdxr(correctedCode)
+	xdxrList, err := tdx.LoadXdxr(correctedCode)
 	if err != nil {
 		return bars // return unadjusted if no xdxr
 	}

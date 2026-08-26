@@ -6,21 +6,21 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/level1/std"
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/tdxproto"
 	"github.com/quant1x/quant1x/quant1x/encoding"
 	"golang.org/x/text/encoding/simplifiedchinese"
 )
 
 func TestBuildRequest(t *testing.T) {
-	atomic.StoreUint32(&seqId, 0)
-	ctx := NewHeartbeatContext()
+	tdxproto.ResetSeqId()
+	ctx := std.NewHeartbeatContext()
 	payload := SerializeRequest(ctx)
 
-	wantLen := RequestHeaderLength
+	wantLen := tdxproto.RequestHeaderLength
 	if len(payload) != wantLen {
 		t.Fatalf("unexpected request length: got %d want %d", len(payload), wantLen)
 	}
@@ -70,10 +70,10 @@ func TestReadResponseHeader(t *testing.T) {
 }
 
 func TestHeartbeatRequest(t *testing.T) {
-	atomic.StoreUint32(&seqId, 0)
+	tdxproto.ResetSeqId()
 	ctx := std.NewHeartbeatContext()
 	payload := SerializeRequest(ctx)
-	if len(payload) != RequestHeaderLength {
+	if len(payload) != tdxproto.RequestHeaderLength {
 		t.Fatalf("unexpected heartbeat request length: %d", len(payload))
 	}
 	if payload[5] != PacketCtrlHeartbeat {

@@ -37,7 +37,7 @@ func ZlibUnCompress(compressSrc []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer std.CloseQuietly(r)
+	defer base.CloseQuietly(r)
 	_, err = io.Copy(&out, r)
 	if err != nil {
 		return nil, err

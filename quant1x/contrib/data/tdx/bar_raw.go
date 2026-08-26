@@ -9,7 +9,7 @@ import (
 	"github.com/quant1x/quant1x/quant1x/config"
 	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/level1/std"
 	"github.com/quant1x/quant1x/quant1x/data"
-	"github.com/quant1x/quant1x/quant1x/data/exchange"
+	"github.com/quant1x/quant1x/quant1x/data/meta"
 	"github.com/quant1x/quant1x/quant1x/data/schema"
 	"github.com/quant1x/quant1x/quant1x/encoding"
 	logger "github.com/quant1x/quant1x/quant1x/log"
@@ -26,14 +26,14 @@ func (d *DataBarRaw) Name() string    { return "日K线RAW" }
 func (d *DataBarRaw) Usage() string   { return "日K线RAW" }
 
 // Print 实现 DataAdapter.Print(可变参数日期)
-func (d *DataBarRaw) Print(code data.InstrumentInfo, dates ...exchange.Timestamp) {
+func (d *DataBarRaw) Print(code data.InstrumentInfo, dates ...meta.Timestamp) {
 	_ = code
 	_ = dates
 }
 
 // Update 对应 C++ DataBarRaw::Update 的行为: 读取本地缓存, 确定时间窗口, 分页拉取 level1 数据,
 // 反转与合并结果, 并写回缓存文件.
-func (d *DataBarRaw) Update(code data.InstrumentInfo, _date data.Timestamp) {
+func (d *DataBarRaw) Update(code data.InstrumentInfo, _date meta.Timestamp) {
 	// 1. 确定缓存文件并读取本地缓存
 	cacheFilename := config.GetBarFilename(code.Symbol(), false)
 	var cacheBars []BarRaw

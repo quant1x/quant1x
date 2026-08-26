@@ -97,10 +97,10 @@ func compressOldLogs(previousFile string) {
 		// 压缩文件: 原文件 → 原文件.gz
 		gzPath := previousFile[:len(previousFile)-logExtLength] + ".gz"
 		dst, _ := os.Create(gzPath)
-		defer std.CloseQuietly(dst)
+		defer base.CloseQuietly(dst)
 
 		gzWriter := gzip.NewWriter(dst)
-		defer std.CloseQuietly(gzWriter)
+		defer base.CloseQuietly(gzWriter)
 		fileStat, err := src.Stat()
 		if err != nil {
 			return

@@ -24,9 +24,9 @@ const (
 )
 
 var (
-	ErrNotImplemented = std.NewException(ErrDataSourceNotImplemented, "not implemented") // 未实现错误
-	ErrNoData         = std.NewException(ErrDataSourceNoData, "no data")                 // 无数据错误
-	ErrDataEOF        = std.NewException(ErrDataSourceEOF, "data eof")                   // 数据读取到末尾错误
+	ErrNotImplemented = base.NewException(ErrDataSourceNotImplemented, "not implemented") // 未实现错误
+	ErrNoData         = base.NewException(ErrDataSourceNoData, "no data")                 // 无数据错误
+	ErrDataEOF        = base.NewException(ErrDataSourceEOF, "data eof")                   // 数据读取到末尾错误
 )
 
 // DataSource 数据源接口

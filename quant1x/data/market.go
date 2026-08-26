@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/quant1x/quant1x/quant1x/data/meta"
 	"github.com/quant1x/quant1x/quant1x/base"
+	"github.com/quant1x/quant1x/quant1x/data/meta"
+	"github.com/quant1x/quant1x/quant1x/data/meta/ticker_rules"
+	"github.com/quant1x/quant1x/quant1x/data/schema"
 )
 
 // ============================================================
@@ -21,6 +23,7 @@ type Exchange = meta.Exchange
 type InstrumentInfo = meta.Instrument
 type Timestamp = meta.Timestamp
 type InstrumentType = meta.InstrumentType
+type Transaction = schema.Transaction
 
 // ============================================================
 // Exchange constants from meta.
@@ -49,12 +52,15 @@ const SecurityTypeUnknown = meta.InstrumentTypeUnknown
 // ============================================================
 
 var (
-	NowTimestamp       = meta.NowTimestamp
-	PreMarketTimestamp = meta.PreMarketTimestamp
-	ParseTimestamp     = meta.ParseTimestamp
-	LastTradingDay     = meta.LastTradingDay
+	NowTimestamp           = meta.NowTimestamp
+	PreMarketTimestamp     = meta.PreMarketTimestamp
+	ParseTimestamp         = meta.ParseTimestamp
+	LastTradingDay         = meta.LastTradingDay
 	NewTimestampFromString = meta.NewTimestampFromString
-	DateRange          = meta.DateRange
+	DateRange              = meta.DateRange
+	ZeroTimestamp          = meta.ZeroTimestamp
+	NewTimestampFromTime   = meta.NewTimestampFromTime
+	CanInitialize          = meta.CanInitialize
 )
 
 // ============================================================
@@ -63,12 +69,12 @@ var (
 
 // String2Bytes converts a string to a byte slice.
 func String2Bytes(s string) []byte {
-	return std.String2Bytes(s)
+	return base.String2Bytes(s)
 }
 
 // Bytes2String converts a byte slice to a string.
 func Bytes2String(b []byte) string {
-	return std.Bytes2String(b)
+	return base.Bytes2String(b)
 }
 
 // ============================================================
@@ -125,6 +131,143 @@ func AssertIndexByMarketAndCode(ex meta.Exchange, code string) bool {
 	default:
 		return false
 	}
+}
+
+// ============================================================
+// DetectInstrumentTypeByRule — 根据交易所与代码检测证券类型
+// ============================================================
+
+// DetectInstrumentTypeByRule 使用对应交易所的规则检测证券类型, 与 Python data/market.py 对齐.
+// 若交易所无匹配规则, 返回 InstrumentTypeUnknown.
+func DetectInstrumentTypeByRule(exchange meta.Exchange, code string) meta.InstrumentType {
+	var rules []ticker_rules.CodeRule
+	switch exchange {
+	case meta.SSE:
+		rules = ticker_rules.SseRules()
+	case meta.SZSE:
+		rules = ticker_rules.SzseRules()
+	case meta.BSE:
+		rules = ticker_rules.BseRules()
+	case meta.HKEX:
+		rules = ticker_rules.HkexRules()
+	case meta.USA:
+		rules = ticker_rules.UsaRules()
+	default:
+		return meta.InstrumentTypeUnknown
+	}
+	return ticker_rules.MatchRule(code, rules).InstrumentType
+}
+
+// ============================================================
+// DetectSymbol — 检测并解析证券代码的市场及类型
+// ============================================================
+
+// DetectSymbol 检测并解析证券代码的市场类型及证券类型, 与 Python data/market.py::detect_symbol 对齐.
+func DetectSymbol(inputStr string) meta.Instrument {
+	s := strings.ToLower(strings.TrimSpace(inputStr))
+	if s == "" {
+		return meta.Instrument{Exchange: meta.UNKNOWN, Type: meta.InstrumentTypeUnknown}
+	}
+	pureCode := s
+
+	var ticker string
+	var exchange = meta.UNKNOWN
+	var typ = meta.InstrumentTypeUnknown
+
+	// 1. 判断前缀: sh600000
+	if len(pureCode) >= 2 {
+		if ex, err := meta.ParseExchange(pureCode[:2]); err == nil && ex != meta.UNKNOWN {
+			ticker = pureCode[2:]
+			exchange = ex
+		}
+	}
+	// 2. 判断后缀: 600000.sh or AAPL.us
+	if exchange == meta.UNKNOWN && len(pureCode) >= 3 && pureCode[len(pureCode)-3] == '.' {
+		if ex, err := meta.ParseExchange(pureCode[len(pureCode)-2:]); err == nil && ex != meta.UNKNOWN {
+			ticker = pureCode[:len(pureCode)-3]
+			exchange = ex
+		}
+	}
+
+	if exchange == meta.UNKNOWN {
+		switch len(pureCode) {
+		case 4:
+			if isAllAlpha(pureCode) {
+				return meta.Instrument{Exchange: meta.USA, Type: meta.InstrumentTypeStock, Ticker: pureCode}
+			}
+		case 5:
+			if isAllDigit(pureCode) {
+				return meta.Instrument{Exchange: meta.HKEX, Type: meta.InstrumentTypeStock, Ticker: pureCode}
+			}
+		case 6:
+			// 1. 全局规则优先匹配
+			cr := ticker_rules.MatchRule(pureCode, ticker_rules.GlobalRules())
+			if cr.Exchange != meta.UNKNOWN {
+				return meta.Instrument{Exchange: cr.Exchange, Type: cr.InstrumentType, Ticker: pureCode}
+			}
+			// 2.1 0, 159和3开头, 优先匹配深交所
+			if strings.HasPrefix(pureCode, "0") || strings.HasPrefix(pureCode, "159") || strings.HasPrefix(pureCode, "3") {
+				cr = ticker_rules.MatchRule(pureCode, ticker_rules.SzseRules())
+				if cr.Exchange != meta.UNKNOWN {
+					return meta.Instrument{Exchange: cr.Exchange, Type: cr.InstrumentType, Ticker: pureCode}
+				}
+			}
+			// 2.2 6和5开头, 优先匹配上交所
+			if strings.HasPrefix(pureCode, "6") || strings.HasPrefix(pureCode, "5") {
+				cr = ticker_rules.MatchRule(pureCode, ticker_rules.SseRules())
+				if cr.Exchange != meta.UNKNOWN {
+					return meta.Instrument{Exchange: cr.Exchange, Type: cr.InstrumentType, Ticker: pureCode}
+				}
+			}
+			// 2.3 匹配上交所
+			cr = ticker_rules.MatchRule(pureCode, ticker_rules.SseRules())
+			if cr.Exchange != meta.UNKNOWN {
+				return meta.Instrument{Exchange: cr.Exchange, Type: cr.InstrumentType, Ticker: pureCode}
+			}
+			// 2.4 匹配深交所
+			cr = ticker_rules.MatchRule(pureCode, ticker_rules.SzseRules())
+			if cr.Exchange != meta.UNKNOWN {
+				return meta.Instrument{Exchange: cr.Exchange, Type: cr.InstrumentType, Ticker: pureCode}
+			}
+			// 2.5 匹配北交所
+			cr = ticker_rules.MatchRule(pureCode, ticker_rules.BseRules())
+			if cr.Exchange != meta.UNKNOWN {
+				return meta.Instrument{Exchange: cr.Exchange, Type: cr.InstrumentType, Ticker: pureCode}
+			}
+		default:
+			exchange = meta.UNKNOWN
+			typ = meta.InstrumentTypeUnknown
+		}
+	}
+
+	// 3. 如果exchange是UNKNOWN, 则返回未知规则
+	if exchange == meta.UNKNOWN {
+		return meta.Instrument{Exchange: meta.UNKNOWN, Type: meta.InstrumentTypeUnknown}
+	}
+
+	if typ == meta.InstrumentTypeUnknown {
+		var rules []ticker_rules.CodeRule
+		switch exchange {
+		case meta.SSE:
+			rules = ticker_rules.SseRules()
+		case meta.SZSE:
+			rules = ticker_rules.SzseRules()
+		case meta.BSE:
+			rules = ticker_rules.BseRules()
+		case meta.HKEX:
+			rules = ticker_rules.HkexRules()
+		case meta.USA:
+			rules = ticker_rules.UsaRules()
+		default:
+			return meta.Instrument{Exchange: meta.UNKNOWN, Type: meta.InstrumentTypeUnknown}
+		}
+		cr := ticker_rules.MatchRule(ticker, rules)
+		if cr.InstrumentType != meta.InstrumentTypeUnknown {
+			return meta.Instrument{Exchange: cr.Exchange, Type: cr.InstrumentType, Ticker: ticker}
+		}
+		return meta.Instrument{Exchange: meta.UNKNOWN, Type: meta.InstrumentTypeUnknown}
+	}
+	return meta.Instrument{Exchange: exchange, Type: typ, Ticker: ticker}
 }
 
 // ============================================================
@@ -200,8 +343,23 @@ func isAllDigits(s string) bool {
 }
 
 func isAllAlpha(s string) bool {
+	if s == "" {
+		return false
+	}
 	for _, c := range s {
 		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') {
+			return false
+		}
+	}
+	return true
+}
+
+func isAllDigit(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		if c < '0' || c > '9' {
 			return false
 		}
 	}

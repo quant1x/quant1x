@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/quant1x/quant1x/quant1x/base"
 	"github.com/quant1x/quant1x/quant1x/config"
 	"github.com/quant1x/quant1x/quant1x/runtime"
-	"github.com/quant1x/quant1x/quant1x/base"
 )
 
 // TODO: https://www.tradinghours.com/markets
@@ -189,7 +189,7 @@ func NewTimeRange(timeRange string, status TimeStatus, reg Region) (*TimeRange, 
 		Reg:    reg,
 	}
 
-	zoneOffsetHours := std.GetTimezoneOffsetStandard(reg.Timezone(), time.Local.String()) * -1
+	zoneOffsetHours := base.GetTimezoneOffsetStandard(reg.Timezone(), time.Local.String()) * -1
 
 	timeRange = regexp.MustCompile(`\s+`).ReplaceAllString(timeRange, "")
 

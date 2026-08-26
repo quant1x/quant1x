@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/quant1x/quant1x/quant1x/base"
 	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/level1/std"
 	"github.com/quant1x/quant1x/quant1x/core"
 	"github.com/quant1x/quant1x/quant1x/data"
@@ -166,7 +167,7 @@ func initStandardConnectionPool() (*qio.TcpConnectionPool, error) {
 		needDetect = true
 	} else if shouldRefreshCache(info) {
 		needDetect = true
-	} else if tp := data.NewTimestampFromTime(info.ModTime()); err == nil && data.CanInitialize(&tp) {
+	} else if tp := data.NewTimestampFromTime(info.ModTime()); err == nil && data.CanInitialize(data.SSE, &tp) {
 		needDetect = true
 	}
 
@@ -217,7 +218,7 @@ func initStandardConnectionPool() (*qio.TcpConnectionPool, error) {
 //	error - 如果创建目录失败则返回错误
 func ensureServerCachePath() (string, error) {
 	meta := core.GetMetaPath()
-	if err := std.MkDirs(meta, true); err != nil {
+	if err := base.MkDirs(meta, true); err != nil {
 		return "", err
 	}
 	return filepath.Join(meta, serverCacheFileName), nil
@@ -244,7 +245,7 @@ func loadCachedServers(path string) ([]serverInfo, os.FileInfo, error) {
 
 func saveCachedServers(path string, servers []serverInfo) error {
 	wrapper := serverListWrapper{Standard: servers}
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, std.CACHE_FILE_PERMS)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, base.CACHE_FILE_PERMS)
 	if err != nil {
 		return err
 	}

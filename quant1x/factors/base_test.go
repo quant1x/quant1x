@@ -6,8 +6,10 @@ import (
 	"testing"
 
 	"github.com/quant1x/quant1x/quant1x/config"
+	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
 	"github.com/quant1x/quant1x/quant1x/data"
-	"github.com/quant1x/quant1x/quant1x/data"
+	"github.com/quant1x/quant1x/quant1x/data/schema"
+	"github.com/quant1x/quant1x/quant1x/encoding"
 )
 
 func TestGetCrossSectionForwardAdjustedBars(t *testing.T) {
@@ -47,7 +49,7 @@ func TestGetCrossSectionForwardAdjustedBars(t *testing.T) {
 
 func TestCombineAdjustmentsInPeriod(t *testing.T) {
 	// Load some test XDXR data
-	xdxrList, err := data.LoadXdxr("sh600000")
+	xdxrList, err := tdx.LoadXdxr("sh600000")
 	if err != nil {
 		t.Skipf("Skipping test due to missing XDXR data: %v", err)
 		return
@@ -79,7 +81,7 @@ func TestCombineAdjustmentsInPeriod(t *testing.T) {
 
 func TestCheckBarOffset(t *testing.T) {
 	// Create mock bar data
-	bars := []data.KLineRaw{
+	bars := []tdx.BarRaw{
 		{Date: "2024-01-01"},
 		{Date: "2024-01-02"},
 		{Date: "2024-01-03"},
@@ -107,7 +109,7 @@ func TestCheckBarOffset(t *testing.T) {
 
 func TestIpoDateFromXdxrs(t *testing.T) {
 	// Load XDXR data
-	xdxrList, err := data.LoadXdxr("sh600000")
+	xdxrList, err := tdx.LoadXdxr("sh600000")
 	if err != nil {
 		t.Skipf("Skipping test due to missing XDXR data: %v", err)
 		return
@@ -159,7 +161,8 @@ func TestCompareWithCachedBars(t *testing.T) {
 
 	// Load cached bar data
 	cacheFilename := config.GetBarFilename(code, true)
-	cachedBars, err := data.ReadBarFromCSV(cacheFilename)
+	cachedBars := []schema.Bar{}
+	err := encoding.CsvToSlices(cacheFilename, &cachedBars)
 	if err != nil || len(cachedBars) == 0 {
 		t.Skipf("Skipping test due to missing cached bar data: %v", err)
 		return
@@ -178,7 +181,7 @@ func TestCompareWithCachedBars(t *testing.T) {
 	}
 
 	// Find the first data with the same date
-	var firstAdjusted *data.KLine
+	var firstAdjusted *schema.Bar
 	firstCached := cachedBars[0]
 
 	for i := range adjustedBars {

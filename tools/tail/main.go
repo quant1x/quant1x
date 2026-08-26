@@ -212,7 +212,7 @@ func main() {
 
 			for idx, filename := range files {
 				filename = strings.TrimSpace(filename)
-				filename, _ = std.ExpandUser(filename)
+				filename, _ = base.ExpandUser(filename)
 
 				showHeader := multiple && !quiet
 				if verbose {
@@ -281,7 +281,7 @@ func main() {
 // TailFile 跟踪文件更新 tail -f
 func TailFile(filename string, config tail.Config, done chan bool) {
 	defer func() { done <- true }()
-	filename, _ = std.ExpandUser(filename)
+	filename, _ = base.ExpandUser(filename)
 	t, err := tail.TailFile(filename, config)
 	if err != nil {
 		fmt.Println(err)
@@ -298,7 +298,7 @@ func TailFile(filename string, config tail.Config, done chan bool) {
 
 // TailFileFollow follows file and prints lines with optional prefix
 func TailFileFollow(filename string, config tail.Config, prefix string) {
-	filename, _ = std.ExpandUser(filename)
+	filename, _ = base.ExpandUser(filename)
 	t, err := tail.TailFile(filename, config)
 	if err != nil {
 		fmt.Println(err)
@@ -464,7 +464,7 @@ func printFromByte(filename string, from int) {
 
 // TailFileWithNumber 查看最后n行数据
 func TailFileWithNumber(filename string, config tail.Config, n int) {
-	filename, _ = std.ExpandUser(filename)
+	filename, _ = base.ExpandUser(filename)
 
 	// If not following, just read the file and keep a ring buffer of last n lines
 	if !config.Follow {
