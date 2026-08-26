@@ -40,7 +40,6 @@
     "python.analysis.autoImportCompletions": true,
     "python.envFile": "${workspaceFolder}/.env",
     "cmake.buildDirectory": "${workspaceFolder}/build",
-    "java.project.outputPath": "${workspaceFolder}/target/classes",
     "cmake.configureSettings": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "CMAKE_BUILD_TYPE": "Debug"

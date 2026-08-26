@@ -39,7 +39,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>${maven.surefire.plugin.version}</version>
             </plugin>
         </plugins>
         <pluginManagement>
@@ -64,6 +63,17 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>${maven.resources.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven.surefire.plugin.version}</version>
+                    <configuration>
+                        <environmentVariables>
+                            <LD_LIBRARY_PATH>target/classes</LD_LIBRARY_PATH>
+                            <DYLD_LIBRARY_PATH>target/classes</DYLD_LIBRARY_PATH>
+                        </environmentVariables>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
