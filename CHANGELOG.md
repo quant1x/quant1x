@@ -3,6 +3,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.67] - 2026-08-26
+### Changed
+- 改名：id 模块包名由 hlcid 统一为 id，测试文件命名与落位规范化
+
+将 hlcid 更名为 id（混合型分布式 ID）：统一各语言错误前缀、状态文件名、注释与 README 示例；测试源文件统一命名；pom.xml 测试源根改为仓库级 tests 目录并通用排除 tests 下所有 Java 文件。
+- 构建：pom.xml 改用 include 白名单编译 Java 源，测试根统一为 tests/，Java 输出目录移出 bin/
+
+- pom.xml 主源码根保持仓库根（sourceDirectory=.），仅编译 quant1x/**/*.java，
+  不依赖 excludes，未来新增功能模块自动纳入，无需再改 pom
+- 测试源码根固定为 tests/（testSourceDirectory=tests），不再绑定单一模块目录
+- 移除 build-helper-maven-plugin 与 excludes 方案
+- .vscode/settings.json 将 Java 输出目录改为 target/classes，
+  避免 VS Code Java 扩展默认生成仓库根 bin/ 目录
+- 清理已产生的 bin/ 编译产物
+- java: 调整编译临时目录
+- 构建：Maven 构建目录独立为 build/java，避免 mvn clean 误删 Rust 的 target/ 产物
+
+- pom.xml 设置 <directory>build/java</directory>，mvn clean 只删该目录，
+  target/ 完全留给 Cargo
+- surefire 的 LD_LIBRARY_PATH / DYLD_LIBRARY_PATH 同步改为 build/java/classes
+- release version 0.7.67
+
 ## [0.7.66] - 2026-08-26
 ### Changed
 - 更新rust版本到1.98.0
@@ -2223,7 +2245,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.66...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.67...HEAD
+[0.7.67]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.66...v0.7.67
 [0.7.66]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.65...v0.7.66
 [0.7.65]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.64...v0.7.65
 [0.7.64]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.63...v0.7.64
