@@ -3,6 +3,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.65] - 2026-08-26
+### Changed
+- 新增 Maven Wrapper 并修正测试源码目录
+
+- 新增 mvnw / mvnw.cmd 脚本，VSCode 终端无需依赖全局 PATH 即可使用 Maven，首次运行自动下载 Maven 3.9.16 到 .mvn/wrapper/
+- mvnw 脚本标记可执行权限（100755），保证 Mac/Linux 下可直接运行
+- .gitignore 忽略 .mvn/wrapper 下的下载缓存，避免入库
+- pom.xml 修正 testSourceDirectory 为 tests/core/hlcid
+- release version 0.7.65
+
 ## [0.7.64] - 2026-08-26
 ### Changed
 - 新增分布式id 128bit版本
@@ -2208,7 +2218,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.64...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.65...HEAD
+[0.7.65]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.64...v0.7.65
 [0.7.64]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.63...v0.7.64
 [0.7.63]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.62...v0.7.63
 [0.7.62]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.61...v0.7.62
