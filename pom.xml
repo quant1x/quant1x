@@ -14,7 +14,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
         <maven.resources.plugin.version>3.4.0</maven.resources.plugin.version>
-        <build-helper.plugin.version>3.4.0</build-helper.plugin.version>
         <maven.surefire.plugin.version>3.2.5</maven.surefire.plugin.version>
         <junit.jupiter.version>5.8.2</junit.jupiter.version>
     </properties>
@@ -27,38 +26,14 @@
         </dependency>
     </dependencies>
     <build>
+        <!-- 主源码根为仓库根，通过 include 白名单只编译 quant1x 下的 Java 源文件，不依赖 excludes -->
+        <sourceDirectory>.</sourceDirectory>
         <testSourceDirectory>tests</testSourceDirectory>
         <plugins>
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>add-source</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>add-source</goal>
-                        </goals>
-                        <configuration>
-                            <sources>
-                                <source>.</source>
-                            </sources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>**/tests/**</exclude>
-                    </excludes>
                 </configuration>
             </plugin>
             <plugin>
@@ -75,6 +50,10 @@
                     <version>${maven.compiler.plugin.version}</version>
                     <configuration>
                         <encoding>${project.build.sourceEncoding}</encoding>
+                        <!-- include 白名单：只编译 quant1x 下的 Java 源文件（含未来新增模块），其他语言文件不受影响 -->
+                        <includes>
+                            <include>quant1x/**/*.java</include>
+                        </includes>
                         <!-- 隐藏 JDK 9+ 对过时 source/target 8 的警告，同时保持 Java 8 字节码兼容 -->
                         <compilerArgs>
                             <arg>-Xlint:-options</arg>
@@ -85,11 +64,6 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>${maven.resources.plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>${build-helper.plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
