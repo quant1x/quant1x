@@ -1,4 +1,4 @@
-package id
+package id128
 
 type Generator struct {
 	hlc    *HLC

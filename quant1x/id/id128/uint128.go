@@ -1,5 +1,5 @@
 // Package id 提供 128 位无符号整数和基于 HLC 的 ID 生成器。
-package id
+package id128
 
 import (
 	"encoding/binary"

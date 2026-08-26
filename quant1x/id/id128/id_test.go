@@ -1,4 +1,4 @@
-package id
+package id128
 
 import (
 	"os"

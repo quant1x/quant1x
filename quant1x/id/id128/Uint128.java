@@ -2,7 +2,7 @@
 // Author: wangfeng <wangfengxy@sina.cn>
 // SPDX-License-Identifier: MIT
 
-package quant1x.id;
+package quant1x.id.id128;
 
 /**
  * 不可变的 128 位无符号整数，是 id 的核心数据类型，与 Go/Python 版保持

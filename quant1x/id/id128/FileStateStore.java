@@ -2,7 +2,7 @@
 // Author: wangfeng <wangfengxy@sina.cn>
 // SPDX-License-Identifier: MIT
 
-package quant1x.id;
+package quant1x.id.id128;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

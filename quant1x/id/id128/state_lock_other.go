@@ -1,6 +1,6 @@
 //go:build !windows && !unix
 
-package id
+package id128
 
 import (
 	"fmt"
