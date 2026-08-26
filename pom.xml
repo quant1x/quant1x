@@ -27,7 +27,7 @@
         </dependency>
     </dependencies>
     <build>
-        <testSourceDirectory>suzhen/core/hlcid</testSourceDirectory>
+        <testSourceDirectory>tests/core/hlcid</testSourceDirectory>
         <plugins>
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>

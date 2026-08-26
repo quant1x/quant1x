@@ -46,3 +46,7 @@ target/
 
 # setuptools_scm generated version file
 _version.py
+
+# Maven Wrapper 下载缓存（首次运行自动下载，不入库）
+.mvn/wrapper/apache-maven-*/
+.mvn/wrapper/*.zip
