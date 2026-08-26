@@ -3,6 +3,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.68] - 2026-08-26
+### Changed
+- id 模块代码下沉一级至 id128 子目录，Go/Java/Python 包名同步调整
+
+- quant1x/id/ 下全部代码移动到 quant1x/id/id128/（git mv 保留历史）
+- Go：package id → id128（含测试文件）
+- Java：package quant1x.id → quant1x.id.id128，测试移动至 tests/id/id128/IdTest.java
+- Python：新增子包 quant1x.id.id128，父包 quant1x/id/__init__.py 保留并转发到子包
+- README：import 路径、测试命令、目录结构同步更新
+- python: 修复文件头部版权信息
+- release version 0.7.68
+
 ## [0.7.67] - 2026-08-26
 ### Changed
 - 改名：id 模块包名由 hlcid 统一为 id，测试文件命名与落位规范化
@@ -2245,7 +2257,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.67...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.68...HEAD
+[0.7.68]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.67...v0.7.68
 [0.7.67]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.66...v0.7.67
 [0.7.66]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.65...v0.7.66
 [0.7.65]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.64...v0.7.65
