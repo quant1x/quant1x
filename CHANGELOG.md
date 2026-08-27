@@ -3,6 +3,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.72] - 2026-08-27
+### Changed
+- 优化 Go Vyukov 环形缓冲区
+
+对齐 C++ sequence-based MPMC 算法，隔离生产者和消费者缓存行，优化槽位布局与竞争退避，并补充非阻塞操作和边界测试。
+- release version 0.7.72
+
 ## [0.7.71] - 2026-08-27
 ### Changed
 - 补充 Rust Region 字符串解析
@@ -2284,7 +2291,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.71...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.72...HEAD
+[0.7.72]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.71...v0.7.72
 [0.7.71]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.70...v0.7.71
 [0.7.70]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.69...v0.7.70
 [0.7.69]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.68...v0.7.69
