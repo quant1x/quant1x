@@ -292,10 +292,13 @@ func TestRingBuffer_Boundaries(t *testing.T) {
 		t.Errorf("expected ErrInvalidSize for size=0, got %v", err)
 	}
 
-	// 测试非2的幂
-	_, err = New[int](3)
-	if err != ErrInvalidSize {
-		t.Errorf("expected ErrInvalidSize for size=3, got %v", err)
+	// 非2的幂按 C++ 实现向上取整
+	rounded, err := New[int](3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rounded.Cap() != 4 {
+		t.Fatalf("capacity for size=3 = %d, want 4", rounded.Cap())
 	}
 
 	// 测试最小有效size=2
@@ -322,6 +325,34 @@ func TestRingBuffer_Boundaries(t *testing.T) {
 	}
 	if rb.IsFull() {
 		t.Error("buffer should not be full after read")
+	}
+}
+
+func TestRingBuffer_TryOperations(t *testing.T) {
+	rb, err := New[int](3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := rb.TryPop(); err != ErrQueueEmpty {
+		t.Fatalf("empty TryPop error = %v, want ErrQueueEmpty", err)
+	}
+	for i := 0; i < rb.Cap(); i++ {
+		if err := rb.TryPush(i); err != nil {
+			t.Fatalf("TryPush(%d): %v", i, err)
+		}
+	}
+	if err := rb.TryPush(99); err != ErrQueueFull {
+		t.Fatalf("full TryPush error = %v, want ErrQueueFull", err)
+	}
+	for i := 0; i < rb.Cap(); i++ {
+		value, err := rb.TryPop()
+		if err != nil || value != i {
+			t.Fatalf("TryPop() = (%d, %v), want (%d, nil)", value, err, i)
+		}
+	}
+	rb.Close()
+	if _, err := rb.TryPop(); err != ErrClosed {
+		t.Fatalf("closed empty TryPop error = %v, want ErrClosed", err)
 	}
 }
 

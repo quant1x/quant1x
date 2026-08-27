@@ -2,187 +2,185 @@ package runtime
 
 import (
 	"errors"
+	"math/bits"
 	"runtime"
-	"sync"
 	"sync/atomic"
-	"unsafe"
+	"time"
 )
 
 var (
 	ErrQueueFull   = errors.New("queue is full")
-	ErrInvalidSize = errors.New("size must be power of two")
+	ErrQueueEmpty  = errors.New("queue is empty")
+	ErrInvalidSize = errors.New("size must be positive")
 	ErrClosed      = errors.New("ring buffer closed")
 )
 
-// Slot 表示环形缓冲区中的单个槽位
-type Slot[T any] struct {
-	data unsafe.Pointer // 数据存储
-	flag uint32         // 状态标志 (0: empty, 1: writing, 2: readable)
+// alignedCounter keeps producer and consumer positions on separate cache lines.
+type alignedCounter struct {
+	value uint64
+	_pad  [56]byte
 }
 
-// RingBuffer 表示 MPMC 环形缓冲区
+// RingBuffer is a bounded lock-free MPMC queue based on Vyukov's algorithm.
 type RingBuffer[T any] struct {
-	slots       []Slot[T] // 使用槽位数组存储数据
-	size        uint32
-	mask        uint32
-	producerPos uint32    // 全局生产者位置
-	consumerPos uint32    // 全局消费者位置
-	closed      uint32    // 关闭标记
-	pool        sync.Pool // 对象池, 用于复用 T 的包装对象
+	slots       []T
+	sequences   []alignedCounter
+	mask        uint64
+	producerPos alignedCounter
+	consumerPos alignedCounter
+	closed      uint32
 }
 
-// New 创建并返回一个新的 MPMC 环形缓冲区
+// New creates a queue. Non-zero capacities are rounded up to a power of two,
+// matching the C++ implementation.
 func New[T any](size uint32) (*RingBuffer[T], error) {
-	if size == 0 || (size&(size-1)) != 0 {
+	if size == 0 {
 		return nil, ErrInvalidSize
 	}
-
+	capacity := uint64(size)
+	if capacity&(capacity-1) != 0 {
+		capacity = 1 << bits.Len32(size)
+	}
 	rb := &RingBuffer[T]{
-		slots: make([]Slot[T], size),
-		size:  size,
-		mask:  size - 1,
-		pool: sync.Pool{
-			New: func() any { return new(T) },
-		},
+		slots:     make([]T, int(capacity)),
+		sequences: make([]alignedCounter, int(capacity)),
+		mask:      capacity - 1,
 	}
-
-	for i := range rb.slots {
-		atomic.StoreUint32(&rb.slots[i].flag, 0) // 初始化为empty状态
+	for i := range rb.sequences {
+		atomic.StoreUint64(&rb.sequences[i].value, uint64(i))
 	}
-
 	return rb, nil
 }
 
-// spinWait 自旋等待, 使用指数退避以减少忙等带来的开销
-func spinWait(retries *int32) {
-	r := atomic.AddInt32(retries, 1)
+func queueBackoff(retries *uint32) {
 	switch {
-	case r < 4:
-		for i := 0; i < 1<<(r*2); i++ {
+	case *retries < 4:
+		// 早期竞争时保持当前线程运行，近似 CPU pause，避免调度器介入。
+		for i := uint32(0); i < 1<<*retries; i++ {
 		}
-	case r < 8:
+	case *retries < 8:
 		runtime.Gosched()
 	default:
-		runtime.Gosched()
+		delay := *retries - 8
+		if delay > 4 {
+			delay = 4
+		}
+		time.Sleep(time.Microsecond << delay)
+	}
+	if *retries < 16 {
+		(*retries)++
 	}
 }
 
-// Write 由生产者向环形缓冲区写入数据.
-//
-// 为确保写入的数据指针在堆上有效, 该实现将值装箱(在对象池中获取对象并写入),
-// 避免依赖编译器的逃逸分析带来的不确定性.
-func (rb *RingBuffer[T]) Write(value T) error {
-	if atomic.LoadUint32(&rb.closed) == 1 {
-		return errors.New("queue closed")
+func queuePause(retries *uint32) {
+	spins := uint32(1) << min(*retries, 4)
+	for i := uint32(0); i < spins; i++ {
 	}
+	if *retries < 16 {
+		(*retries)++
+	}
+}
 
-	var currentProd, minCons uint32
-	var retries int32 = 0 // ✅ 引入重试计数
+// TryWrite performs a non-blocking enqueue, matching C++ try_push.
+func (rb *RingBuffer[T]) TryWrite(value T) error {
+	if atomic.LoadUint32(&rb.closed) != 0 {
+		return ErrClosed
+	}
+	var retries uint32
 	for {
-		currentProd = atomic.LoadUint32(&rb.producerPos)
-		minCons = atomic.LoadUint32(&rb.consumerPos)
-
-		if currentProd-minCons >= rb.size {
-			spinWait(&retries)
+		pos := atomic.LoadUint64(&rb.producerPos.value)
+		index := pos & rb.mask
+		seq := atomic.LoadUint64(&rb.sequences[index].value)
+		dif := int64(seq - pos)
+		if dif == 0 {
+			if atomic.CompareAndSwapUint64(&rb.producerPos.value, pos, pos+1) {
+				rb.slots[index] = value
+				atomic.StoreUint64(&rb.sequences[index].value, pos+1)
+				return nil
+			}
+			queuePause(&retries)
 			continue
 		}
-
-		index := currentProd & rb.mask
-		slot := &rb.slots[index]
-
-		// 尝试获取写权限
-		if atomic.LoadUint32(&slot.flag) != 0 {
-			spinWait(&retries)
-			continue
+		if dif < 0 {
+			return ErrQueueFull
 		}
-
-		// CAS更新槽位状态为writing
-		if !atomic.CompareAndSwapUint32(&slot.flag, 0, 1) {
-			spinWait(&retries)
-			continue
-		}
-
-		// 写入数据: 使用对象池复用, 避免频繁分配
-		boxed := rb.pool.Get().(*T)
-		*boxed = value
-		atomic.StorePointer(&slot.data, unsafe.Pointer(boxed))
-		atomic.StoreUint32(&slot.flag, 2)
-
-		// 更新全局生产者位置
-		if atomic.CompareAndSwapUint32(&rb.producerPos, currentProd, currentProd+1) {
-			return nil
-		}
-
-		// 如果更新失败, 回滚槽位状态
-		atomic.StoreUint32(&slot.flag, 0)
-		spinWait(&retries)
+		queuePause(&retries)
 	}
 }
 
-// Read 由消费者从环形缓冲区读取数据
-func (rb *RingBuffer[T]) Read() (T, error) {
+// TryPush is the C++-style name for TryWrite.
+func (rb *RingBuffer[T]) TryPush(value T) error { return rb.TryWrite(value) }
+
+// TryRead performs a non-blocking dequeue, matching C++ try_pop.
+func (rb *RingBuffer[T]) TryRead() (T, error) {
 	var zero T
-	var retries int32 = 0 // ✅ 引入重试计数
+	var retries uint32
 	for {
-		currentCons := atomic.LoadUint32(&rb.consumerPos)
-		currentProd := atomic.LoadUint32(&rb.producerPos)
-
-		// 检查队列是否关闭且没有更多数据
-		if atomic.LoadUint32(&rb.closed) == 1 && currentCons >= currentProd {
-			return zero, ErrClosed
-		}
-
-		if currentCons >= currentProd {
-			// 队列为空时让出 CPU 时间片
-			spinWait(&retries)
+		pos := atomic.LoadUint64(&rb.consumerPos.value)
+		index := pos & rb.mask
+		seq := atomic.LoadUint64(&rb.sequences[index].value)
+		dif := int64(seq - (pos + 1))
+		if dif == 0 {
+			if atomic.CompareAndSwapUint64(&rb.consumerPos.value, pos, pos+1) {
+				value := rb.slots[index]
+				atomic.StoreUint64(&rb.sequences[index].value, pos+rb.mask+1)
+				return value, nil
+			}
+			queuePause(&retries)
 			continue
 		}
-
-		index := currentCons & rb.mask
-		slot := &rb.slots[index]
-
-		// 检查槽位是否可读
-		if atomic.LoadUint32(&slot.flag) != 2 {
-			spinWait(&retries)
-			continue
+		if dif < 0 {
+			if atomic.LoadUint32(&rb.closed) != 0 {
+				return zero, ErrClosed
+			}
+			return zero, ErrQueueEmpty
 		}
-
-		// CAS更新槽位状态为empty
-		if !atomic.CompareAndSwapUint32(&slot.flag, 2, 0) {
-			spinWait(&retries)
-			continue
-		}
-
-		// 读取数据并更新全局消费者位置
-		valPtr := atomic.LoadPointer(&slot.data)
-		if valPtr == nil {
-			atomic.StoreUint32(&slot.flag, 2) // 回滚槽位状态
-			spinWait(&retries)
-			continue
-		}
-
-		if atomic.CompareAndSwapUint32(&rb.consumerPos, currentCons, currentCons+1) {
-			val := *(*T)(valPtr)
-			rb.pool.Put((*T)(valPtr)) // 放回对象池复用
-			return val, nil
-		}
-
-		// 如果更新失败, 回滚槽位状态
-		atomic.StoreUint32(&slot.flag, 2)
-		spinWait(&retries)
+		queuePause(&retries)
 	}
 }
+
+// TryPop is the C++-style name for TryRead.
+func (rb *RingBuffer[T]) TryPop() (T, error) { return rb.TryRead() }
+
+// Write is a blocking compatibility wrapper around TryWrite.
+func (rb *RingBuffer[T]) Write(value T) error {
+	var retries uint32
+	for {
+		if err := rb.TryWrite(value); err != ErrQueueFull {
+			return err
+		}
+		queueBackoff(&retries)
+	}
+}
+
+// Push is the blocking compatibility name for Write.
+func (rb *RingBuffer[T]) Push(value T) error { return rb.Write(value) }
+
+// Read is a blocking compatibility wrapper around TryRead.
+func (rb *RingBuffer[T]) Read() (T, error) {
+	var retries uint32
+	for {
+		value, err := rb.TryRead()
+		if err != ErrQueueEmpty {
+			return value, err
+		}
+		queueBackoff(&retries)
+	}
+}
+
+// Pop is the blocking compatibility name for Read.
+func (rb *RingBuffer[T]) Pop() (T, error) { return rb.Read() }
 
 // Len 返回缓冲区中当前元素的数量
 func (rb *RingBuffer[T]) Len() int {
-	prod := atomic.LoadUint32(&rb.producerPos)
-	cons := atomic.LoadUint32(&rb.consumerPos)
+	prod := atomic.LoadUint64(&rb.producerPos.value)
+	cons := atomic.LoadUint64(&rb.consumerPos.value)
 	return int(prod - cons)
 }
 
 // Cap 返回缓冲区的容量
 func (rb *RingBuffer[T]) Cap() int {
-	return int(rb.size)
+	return len(rb.slots)
 }
 
 // IsEmpty 当缓冲区为空时返回 true
@@ -192,7 +190,7 @@ func (rb *RingBuffer[T]) IsEmpty() bool {
 
 // IsFull 当缓冲区已满时返回 true
 func (rb *RingBuffer[T]) IsFull() bool {
-	return rb.Len() == int(rb.size)
+	return rb.Len() == rb.Cap()
 }
 
 // Close 关闭环形缓冲区(设置关闭标志), 写入方将被拒绝写入
@@ -200,9 +198,14 @@ func (rb *RingBuffer[T]) Close() {
 	atomic.StoreUint32(&rb.closed, 1)
 }
 
+func (rb *RingBuffer[T]) IsClosed() bool {
+	return atomic.LoadUint32(&rb.closed) != 0
+}
+
 // WaitForClose 在关闭后阻塞直到所有数据被消费完成
 func (rb *RingBuffer[T]) WaitForClose() {
+	var retries uint32
 	for !rb.IsEmpty() {
-		runtime.Gosched()
+		queueBackoff(&retries)
 	}
 }
