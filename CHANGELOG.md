@@ -3,6 +3,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.70] - 2026-08-27
+### Changed
+- 修复 mmap 跨平台实现并更新 id64 checkpoint
+
+新增固定大小 mmap 文件封装与双槽位 checkpoint，修复 POSIX 构建标签、Bytes 接口和映射长度校验，更新 id64 文档与测试。
+- 调整 id64 标识文件命名
+
+将 id64.go 重命名为 id.go，并保留标识类型实现。
+- go: 调整测试输出的文件扩展名为out, 不保存在代码仓库
+- release version 0.7.70
+
 ## [0.7.69] - 2026-08-26
 ### Changed
 - feat(id): 状态文件批量缓冲优化并新增 id64 多语言实现
@@ -2266,7 +2277,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.69...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.70...HEAD
+[0.7.70]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.69...v0.7.70
 [0.7.69]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.68...v0.7.69
 [0.7.68]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.67...v0.7.68
 [0.7.67]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.66...v0.7.67
