@@ -29,7 +29,7 @@ func TestCacheToSlice(t *testing.T) {
 	const count = 1_000_000
 	dataSize := int64(unsafe.Sizeof(FinancialData{})) * count
 	_ = dataSize
-	c, err := OpenCache[FinancialData]("market.dat")
+	c, err := OpenCache[FinancialData]("market.out")
 	if err != nil {
 		panic(err)
 	}
