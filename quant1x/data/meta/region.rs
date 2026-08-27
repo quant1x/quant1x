@@ -67,6 +67,74 @@ impl Region {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ParseRegionError;
+
+impl std::fmt::Display for ParseRegionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "unknown region")
+    }
+}
+
+impl std::error::Error for ParseRegionError {}
+
+impl std::str::FromStr for Region {
+    type Err = ParseRegionError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
+            "CN" => Ok(Self::CN),
+            "HK" => Ok(Self::HK),
+            "US" => Ok(Self::US),
+            "UK" => Ok(Self::UK),
+            "EU" => Ok(Self::EU),
+            "SG" => Ok(Self::SG),
+            "JP" => Ok(Self::JP),
+            "OS" => Ok(Self::OFFSHORE),
+            "ON" => Ok(Self::ONSHORE),
+            "GLB" => Ok(Self::GLB),
+            "UNKNOWN" => Ok(Self::UNKNOWN),
+            _ => Err(ParseRegionError),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ParseRegionError, Region};
+    use std::str::FromStr;
+
+    #[test]
+    fn parses_all_region_codes() {
+        let cases = [
+            ("CN", Region::CN),
+            ("HK", Region::HK),
+            ("US", Region::US),
+            ("UK", Region::UK),
+            ("EU", Region::EU),
+            ("SG", Region::SG),
+            ("JP", Region::JP),
+            ("OS", Region::OFFSHORE),
+            ("ON", Region::ONSHORE),
+            ("GLB", Region::GLB),
+            ("UNKNOWN", Region::UNKNOWN),
+        ];
+
+        for (value, expected) in cases {
+            assert_eq!(Region::from_str(value), Ok(expected));
+            assert_eq!(value.parse::<Region>(), Ok(expected));
+            assert_eq!(expected.as_str(), value);
+        }
+    }
+
+    #[test]
+    fn rejects_invalid_region_codes() {
+        for value in ["", "cn", " OS", "OS ", "CNH", "UNKNOWN "] {
+            assert_eq!(value.parse::<Region>(), Err(ParseRegionError));
+        }
+    }
+}
+
 impl std::fmt::Display for Region {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_str())
