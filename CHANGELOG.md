@@ -3,6 +3,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.71] - 2026-08-27
+### Changed
+- 补充 Rust Region 字符串解析
+
+为 Region 实现 FromStr 和解析错误类型，支持合法区域代码解析并增加非法输入测试。
+- release version 0.7.71
+
 ## [0.7.70] - 2026-08-27
 ### Changed
 - 修复 mmap 跨平台实现并更新 id64 checkpoint
@@ -2277,7 +2284,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.70...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.71...HEAD
+[0.7.71]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.70...v0.7.71
 [0.7.70]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.69...v0.7.70
 [0.7.69]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.68...v0.7.69
 [0.7.68]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.67...v0.7.68
