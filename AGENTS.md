@@ -188,6 +188,11 @@ type Bar struct {
   - ❌ 在代码或提交信息中自行推断版本号
   - ❌ 修改 `CHANGELOG.md`、`pyproject.toml`、`Cargo.toml` 中的 `version` 字段
 
+## 提交信息规范
+
+- Git commit 的主题和正文必须使用中文，准确说明本次变更内容。
+- 提交信息不得自行添加版本号、Git Tag 或发布相关信息。
+
 ## 十、一句话总结（给 AI 的记忆锚点）
 
 > Quant1X 是多语言语义同构系统，Python 是 Spec，C++ 是 Truth，Rust / Go 是对齐实现，I/O 边界死守 `snake_case`。

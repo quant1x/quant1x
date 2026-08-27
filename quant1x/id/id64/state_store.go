@@ -11,8 +11,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
+
+	"github.com/quant1x/quant1x/quant1x/base/cache"
 )
 
 // defaultSyncEvery 默认落盘间隔：快速路径下状态记录先在内存批量缓冲中累积，
@@ -31,9 +32,13 @@ func defaultSyncEveryValue() uint32 {
 	return defaultSyncEvery
 }
 
-// persistentStateRecordSize 状态文件单条记录大小（与 id128 一致）：
-// physical(8B) + logical(2B, 恒 0) + seq(4B) + crc32(4B) = 18B。
-const persistentStateRecordSize = 18
+const (
+	legacyRecordSize          = 18
+	persistentStateRecordSize = legacyRecordSize
+	checkpointSlotSize        = 32
+	checkpointFileSize        = checkpointSlotSize * 2
+	checkpointRecordSize      = 24
+)
 
 // persistentState 是持久化高水位状态。
 type persistentState struct {
@@ -56,15 +61,16 @@ type stateStore interface {
 // 新写者构造时读到前任写者最近一次落盘的水位，保证跨进程、跨重启不重复。
 // 开启严格模式（strict=true）后每次 Next 都读盘取 max，保证多写者活跃共享唯一。
 type fileStateStore struct {
-	path      string
-	lockPath  string
-	syncEvery uint32
-	unsynced  uint32
-	strict    bool
-	dirReady  bool
-	// pending 是快速路径的批量缓冲：尚未落盘的状态记录。
-	// 仅由 HLC 内部锁（h.mu）串行化访问，无需额外同步。
-	pending []byte
+	path       string
+	lockPath   string
+	syncEvery  uint32
+	unsynced   uint32
+	strict     bool
+	dirReady   bool
+	mapped     *cache.MappedFile
+	generation uint64
+	latest     persistentState
+	pending    []byte // 保留旧格式辅助代码的兼容缓冲，不参与 mmap 热路径
 
 	// 严格模式句柄缓存（懒打开，首轮发号建立，之后复用）：
 	// 把每轮发号的系统调用从 ~8 次（两次 OpenFile/Close + Stat/ReadAt/Write/锁）
@@ -81,22 +87,111 @@ func newFileStateStore(path string) stateStore {
 		path:      path,
 		lockPath:  path + ".lock",
 		syncEvery: syncEvery,
-		// 预分配批量缓冲容量，避免热路径上 append 触发扩容分配
-		pending: make([]byte, 0, int(syncEvery)*persistentStateRecordSize),
 	}
 }
 
 func (s *fileStateStore) Load() (persistentState, bool, error) {
-	return s.loadLatestState()
+	var legacy persistentState
+	var ok bool
+	if info, err := os.Stat(s.path); err == nil && info.Size() != checkpointFileSize {
+		legacy, ok, err = s.loadLatestState()
+		if err != nil {
+			return persistentState{}, false, err
+		}
+	} else if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return persistentState{}, false, err
+	}
+	if err := s.openMapped(); err != nil {
+		return persistentState{}, false, err
+	}
+	mappedState, mappedOK := s.loadCheckpoint()
+	if mappedOK && (!ok || comparePersistentState(mappedState, legacy) > 0) {
+		legacy, ok = mappedState, true
+	}
+	if ok {
+		s.latest = legacy
+	}
+	return legacy, ok, nil
+}
+
+func (s *fileStateStore) openMapped() error {
+	if s.mapped != nil {
+		return nil
+	}
+	mapped, err := cache.OpenMappedFile(s.path, checkpointFileSize)
+	if err != nil {
+		return fmt.Errorf("id64: 打开 mmap 状态文件失败: %w", err)
+	}
+	s.mapped = mapped
+	return nil
+}
+
+func (s *fileStateStore) ensureMapped() error { return s.openMapped() }
+
+func (s *fileStateStore) loadCheckpoint() (persistentState, bool) {
+	if s.mapped == nil {
+		return persistentState{}, false
+	}
+	data := s.mapped.Bytes()
+	var best persistentState
+	var bestGeneration uint64
+	valid := false
+	for slot := 0; slot < 2; slot++ {
+		record := data[slot*checkpointSlotSize : (slot+1)*checkpointSlotSize]
+		generation := binary.BigEndian.Uint64(record[0:8])
+		if generation == 0 || crc32.ChecksumIEEE(record[:20]) != binary.BigEndian.Uint32(record[20:24]) {
+			continue
+		}
+		if !valid || generation > bestGeneration {
+			bestGeneration = generation
+			best = persistentState{
+				Physical: int64(binary.BigEndian.Uint64(record[8:16])),
+				Seq:      binary.BigEndian.Uint32(record[16:20]),
+			}
+			valid = true
+		}
+	}
+	if valid {
+		s.generation = bestGeneration
+		s.latest = best
+	}
+	return best, valid
+}
+
+func (s *fileStateStore) checkpoint(state persistentState, flush bool) error {
+	if err := s.openMapped(); err != nil {
+		return err
+	}
+	s.generation++
+	record := s.mapped.Bytes()[(s.generation%2)*checkpointSlotSize:]
+	for i := range record[:checkpointSlotSize] {
+		record[i] = 0
+	}
+	binary.BigEndian.PutUint64(record[0:8], s.generation)
+	binary.BigEndian.PutUint64(record[8:16], uint64(state.Physical))
+	binary.BigEndian.PutUint32(record[16:20], state.Seq)
+	binary.BigEndian.PutUint32(record[20:24], crc32.ChecksumIEEE(record[:20]))
+	if flush {
+		return s.mapped.Flush()
+	}
+	return nil
 }
 
 func (s *fileStateStore) Next(local persistentState, now int64, seqBits uint8) (persistentState, error) {
 	if !s.strict {
-		// 快速路径：纯内存推进，记录先入批量缓冲；攒满 syncEvery 条才落盘一次。
+		// 快速路径：纯内存推进；攒满 syncEvery 条才 checkpoint 一次。
 		// 进程异常退出最多丢失最近 syncEvery-1 条进度（这些 ID 重启后可能重复），
 		// 优雅退出前调用 HLC.Close() 可把缓冲完整刷盘、零丢失。
 		next := advancePersistentState(local, now, seqBits)
-		if err := s.bufferState(next); err != nil {
+		s.latest = next
+		s.unsynced++
+		if s.unsynced >= s.syncEvery {
+			if err := s.checkpoint(next, true); err != nil {
+				return persistentState{}, err
+			}
+			s.unsynced = 0
+		}
+		if err := s.ensureMapped(); err != nil {
 			return persistentState{}, err
 		}
 		return next, nil
@@ -108,22 +203,19 @@ func (s *fileStateStore) Next(local persistentState, now int64, seqBits uint8) (
 	}
 	defer func() { _ = unlock() }()
 
-	// 严格模式：以磁盘最新状态为基准（多写者活跃共享唯一性）。
-	f, err := s.stateFileCached()
-	if err != nil {
-		return persistentState{}, err
-	}
+	// 严格模式：以共享映射中的最新状态为基准（多写者活跃共享唯一性）。
 	base := local
-	latest, ok, err := s.loadLatestFrom(f)
-	if err != nil {
-		return persistentState{}, err
-	}
+	latest, ok := s.loadCheckpoint()
 	if ok && comparePersistentState(latest, base) > 0 {
 		base = latest
 	}
 	next := advancePersistentState(base, now, seqBits)
-	if err := s.appendTo(f, next); err != nil {
+	if err := s.checkpoint(next, s.unsynced+1 >= s.syncEvery); err != nil {
 		return persistentState{}, err
+	}
+	s.unsynced++
+	if s.unsynced >= s.syncEvery {
+		s.unsynced = 0
 	}
 	return next, nil
 }
@@ -234,16 +326,34 @@ func (s *fileStateStore) flushPending() error {
 // Flush 立即把批量缓冲中的记录写入状态文件（带锁 + fsync）。
 // 优雅退出前调用，可避免重启后重复最近尚未落盘的 ID。
 func (s *fileStateStore) Flush() error {
-	return s.flushPending()
+	if s.mapped == nil || s.unsynced == 0 {
+		return nil
+	}
+	if err := s.checkpoint(s.latest, true); err != nil {
+		return err
+	}
+	s.unsynced = 0
+	return nil
 }
 
 // Close 释放严格模式缓存的文件句柄（幂等）。
 // 通常在 HLC.Close 时调用；句柄未建立或已释放时为空操作。
 func (s *fileStateStore) Close() error {
 	var firstErr error
+	if err := s.Flush(); err != nil {
+		firstErr = err
+	}
+	if s.mapped != nil {
+		if err := s.mapped.Close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
+		s.mapped = nil
+	}
 	if s.strictFile != nil {
 		if err := s.strictFile.Close(); err != nil {
-			firstErr = fmt.Errorf("id64: 关闭状态文件失败: %w", err)
+			if firstErr == nil {
+				firstErr = fmt.Errorf("id64: 关闭状态文件失败: %w", err)
+			}
 		}
 		s.strictFile = nil
 	}
@@ -347,12 +457,13 @@ func (s *fileStateStore) appendTo(f *os.File, state persistentState) error {
 		return fmt.Errorf("id64: 写入状态文件失败: %w", err)
 	}
 
-	count := atomic.AddUint32(&s.unsynced, 1)
+	s.unsynced++
+	count := s.unsynced
 	if count >= s.syncEvery {
 		if err := f.Sync(); err != nil {
 			return fmt.Errorf("id64: 状态文件同步失败: %w", err)
 		}
-		atomic.StoreUint32(&s.unsynced, 0)
+		s.unsynced = 0
 	}
 	return nil
 }

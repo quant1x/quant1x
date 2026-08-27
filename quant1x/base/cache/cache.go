@@ -1,4 +1,4 @@
-﻿package cache
+package cache
 
 import (
 	"fmt"
@@ -86,6 +86,7 @@ func OpenCache[E any](name string) (*Cache[E], error) {
 	}
 	finfo, err := f.Stat()
 	if err != nil {
+		_ = f.Close()
 		return nil, fmt.Errorf("stat file failed: %w", err)
 	}
 

@@ -104,6 +104,7 @@ func TestHLC_PersistentStateAcrossRestart(t *testing.T) {
 	}
 
 	hlc2 := NewHLC(WithClock(func() int64 { return now }), WithStateFile(path), WithSeqSeed(9))
+	defer hlc2.Close()
 	p2, s2 := hlc2.Now()
 	if p2 < p1 || (p2 == p1 && s2 <= s1) {
 		t.Fatalf("重启后未保持单调: (%d,%d) -> (%d,%d)", p1, s1, p2, s2)
@@ -145,17 +146,18 @@ func TestHLC_CorruptedTailTruncation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o644)
+	f, err := os.OpenFile(path, os.O_WRONLY, 0o644)
 	if err != nil {
 		t.Fatal(err)
 	}
-	// 18 字节、CRC 不匹配的坏记录，触发截断
-	if _, err := f.Write([]byte("ABCDEFGHIJKLMNOPQR")); err != nil {
+	// 损坏最新 checkpoint 槽位，恢复时应回退到另一个槽位。
+	if _, err := f.WriteAt([]byte("ABCDEFGHIJKLMNOPQRSTUVWX"), 32); err != nil {
 		t.Fatal(err)
 	}
 	f.Close()
 
 	hlc2 := NewHLC(WithClock(func() int64 { return now }), WithStateFile(path))
+	defer hlc2.Close()
 	hlc2.Now() // 坏损尾部应被截断并继续工作（不 panic）
 }
 
@@ -220,6 +222,7 @@ func BenchmarkNext(b *testing.B) {
 
 func BenchmarkNextStateFile(b *testing.B) {
 	hlc := NewHLC(WithStateFile(filepath.Join(b.TempDir(), "state.bin")))
+	defer hlc.Close()
 	gen := NewGenerator(1, hlc)
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -250,12 +253,16 @@ func TestHLC_BatchBufferFlushSemantics(t *testing.T) {
 		WithStateSyncEvery(10),
 	)
 
-	// 未攒满：状态文件不应落盘
+	// mmap 文件固定创建为两个 checkpoint 槽位。
 	for i := 0; i < 5; i++ {
 		hlc.Now()
 	}
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		t.Fatalf("state file should not exist before batch flush, stat err = %v", err)
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("state file should exist before checkpoint: %v", err)
+	}
+	if info.Size() != checkpointFileSize {
+		t.Fatalf("state file should be fixed-size before checkpoint: size=%d", info.Size())
 	}
 
 	// 攒满 syncEvery：自动落盘一次
@@ -264,10 +271,10 @@ func TestHLC_BatchBufferFlushSemantics(t *testing.T) {
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("state file should exist after batch flush: %v", err)
+		t.Fatalf("state file should exist after checkpoint: %v", err)
 	}
-	if len(data) < 10*persistentStateRecordSize {
-		t.Fatalf("state file should contain >= 10 records, got %d bytes", len(data))
+	if len(data) != checkpointFileSize {
+		t.Fatalf("state file should remain fixed-size, got %d bytes", len(data))
 	}
 
 	// Close 刷盘剩余缓冲后，重启恢复最新水位
@@ -283,6 +290,7 @@ func TestHLC_BatchBufferFlushSemantics(t *testing.T) {
 		WithStateFile(path),
 		WithStateSyncEvery(10),
 	)
+	defer hlc2.Close()
 	p2, s2 := hlc2.Now()
 	if p2 < prevP || (p2 == prevP && s2 <= prevS) {
 		t.Fatalf("restart state did not advance: prev=(%d,%d) next=(%d,%d)", prevP, prevS, p2, s2)

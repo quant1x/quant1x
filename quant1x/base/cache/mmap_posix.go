@@ -1,6 +1,6 @@
 // mmap_posix.go (Linux/MacOS实现)
-//go:build !windows
-// +build !windows
+//go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris
+// +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
 
 package cache
 
@@ -14,6 +14,10 @@ import (
 type posixMmap struct {
 	data []byte
 	file *os.File
+}
+
+func (m *posixMmap) Bytes() []byte {
+	return m.data
 }
 
 func mmap(size int, f *os.File) (MemObject, error) {
