@@ -196,6 +196,86 @@ impl<T> Queue<T> {
         // 关闭后, 生产者应停止推入新数据, 消费者在耗尽现有数据后会收到 Err
         self.closed.store(1, Ordering::Release);
     }
+
+    /// 非阻塞推入: 队列已满时立即返回 Err, 不会自旋等待空位
+    ///
+    /// 与 [`Queue::push`] 的区别在于满队列时直接失败而非自旋重试. 
+    pub fn try_push(&self, value: T) -> Result<(), ()> {
+        let mut backoff = 0u32;
+        loop {
+            let pos = self.enqueue_pos.load(Ordering::Relaxed);
+            let index = pos & self.mask;
+            let slot = &self.buffer[index];
+            let seq = slot.seq.load(Ordering::Acquire);
+            if seq == pos {
+                if self
+                    .enqueue_pos
+                    .compare_exchange(pos, pos + 1, Ordering::SeqCst, Ordering::Relaxed)
+                    .is_ok()
+                {
+                    unsafe {
+                        (*slot.data.get()).write(value);
+                    }
+                    slot.seq.store(pos + 1, Ordering::Release);
+                    return Ok(());
+                }
+                // CAS 竞争失败, 短暂重试后大概率成功
+                Self::backoff_spin(&mut backoff);
+            } else if seq < pos {
+                // 槽位序列号落后, 尚未被消费者重置, 判定为队满
+                return Err(());
+            } else {
+                Self::backoff_spin(&mut backoff);
+            }
+        }
+    }
+
+    /// 非阻塞弹出: 队列为空时立即返回 Err, 不会自旋等待数据
+    ///
+    /// 与 [`Queue::pop`] 的区别在于空队列时直接失败而非自旋等待. 
+    pub fn try_pop(&self) -> Result<T, ()> {
+        let mut backoff = 0u32;
+        loop {
+            let pos = self.dequeue_pos.load(Ordering::Relaxed);
+            let index = pos & self.mask;
+            let slot = &self.buffer[index];
+            let seq = slot.seq.load(Ordering::Acquire);
+            if seq == pos + 1 {
+                if self
+                    .dequeue_pos
+                    .compare_exchange(pos, pos + 1, Ordering::SeqCst, Ordering::Relaxed)
+                    .is_ok()
+                {
+                    let val = unsafe { (*slot.data.get()).assume_init_read() };
+                    slot.seq.store(pos + self.mask + 1, Ordering::Release);
+                    return Ok(val);
+                }
+                Self::backoff_spin(&mut backoff);
+            } else if seq < pos + 1 {
+                // 序号落后, 当前没有可读数据
+                return Err(());
+            } else {
+                Self::backoff_spin(&mut backoff);
+            }
+        }
+    }
+
+    /// 当前队列中元素数量的近似值(Relaxed 顺序, 非精确快照)
+    pub fn len(&self) -> usize {
+        let enqueue = self.enqueue_pos.load(Ordering::Relaxed);
+        let dequeue = self.dequeue_pos.load(Ordering::Relaxed);
+        enqueue.saturating_sub(dequeue)
+    }
+
+    /// 队列容量(2 的幂)
+    pub fn cap(&self) -> usize {
+        self.mask + 1
+    }
+
+    /// 队列是否为空(近似判断)
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 #[cfg(test)]
