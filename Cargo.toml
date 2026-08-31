@@ -73,6 +73,13 @@ ctrlc = "3.4"
 tokio-cron-scheduler = "0.9"
 serde_repr = "0.1.20"
 
+# Criterion 自带 main (criterion_main!), 必须关闭 libtest harness:
+# 否则 rustc 在 --test 模式注入的 main 会覆盖 criterion_main, 基准一次都不运行,
+# 而编译与退出码均无异常 (表现为 `running 0 tests` 后 0.00s 通过).
+[[bench]]
+name = "vyukov_bench"
+harness = false
+
 [[bin]]
 name = "q1x"
 path = "main.rs"
