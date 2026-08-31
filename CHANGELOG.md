@@ -3,6 +3,73 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.73] - 2026-08-31
+### Changed
+- feat(distributed): 新增 distributed/id 发号器与 Serve 队列流水线
+
+- 新增 64 位可排序分布式 ID：HLC 单调推进、时钟回拨保护、动态节点位宽、base64url 编码
+- 状态文件为定长 128B mmap 双槽 checkpoint（generation + CRC 选最新有效槽），旧追加式日志自动迁移
+- 跨进程互斥采用共享映射内锁字（PID + 时间戳 CAS），持锁进程死亡立即抢占，无需锁文件
+- 新增 Generator.Serve 生产循环接入 Vyukov MPMC 无锁队列，消费端 TryPop 取号无锁化
+- 修复 Flush 与严格模式 checkpoint 的并发竞态、Close 在刷盘失败时的句柄泄漏；统一错误前缀为 distributed/id
+- README 补充实测基准数据（含每秒速率换算与读法说明）、Serve 用法与选型建议
+- 修复log包的日志级别丢失、压缩错误处理与并发安全问题
+
+- fatal core 的 LevelEnabler 改为接收 DPanic/Panic/Fatal, 避免三个级别日志被静默丢弃
+- compressOldLogs 显式检查 os.Create/io.Copy/gzWriter.Close 错误, 失败时清理不完整 .gz 文件
+- getLogger/NewTextLoggerWithCompression/InitLogger 由 panic 改为返回 error, init 失败仅输出 stderr
+- InitLogger 创建日志目录(base.MkDirs), 与 Python/C++ 实现行为对齐
+- 重复调用 InitLogger 时先停止并清理旧缓冲写入器, 避免文件句柄泄漏
+- waitForStop 先输出退出日志再停止写入器, 避免退出日志丢失
+- 全局 cfg/logger/bws 读写统一加互斥锁保护
+- 包级日志入口判空防 nil panic, 修正 FlushInterval 类型语义
+- getApplicationName 改用 TrimSuffix 去除扩展名, 兼容多点文件名
+- 删除拼写错误的 logger_wapper.go, 新建 logger_wrapper.go
+- 重写 logger_test.go 为正确调用方式
+- runtime: ringbuffer 增加非阻塞 try_push/try_pop 与 len/cap/is_empty 查询方法
+- distributed: 新增分布式 ID 生成器, 含 HLC 混合逻辑时钟与 mmap 状态文件持久化
+- distributed: 新增 Python 版分布式 ID 生成器, 与 Go/Rust 语义对齐
+
+- id.py: ID 类型与位布局 (41 位 physical + 22 位 payload, 大端 8 字节)
+- hlc.py: HLC 混合逻辑时钟, 回拨单调, seq 溢出物理 +1
+- state_store.py: mmap 双槽 checkpoint + 锁字跨进程互斥 + 旧版 18B 日志迁移
+- queue.py: 有界 MPMC 队列, 非阻塞 try_push/try_pop
+- generator.py: 单例 Generator 与响应取消的 serve 循环
+- tests.py: 14 个用例, 对齐 Go id_test.go / Rust tests.rs 语义
+- 修正 strict 模式 latest 回退缺陷 (Go/Rust 参考实现潜在问题, Python 作为 Spec 锚点修正)
+- distributed/id: 增加 C++ 版分布式 ID 实现
+
+新增 quant1x/distributed/id 的 C++ 实现 (命名空间 quant1x::distributed::id),
+与 Go/Python/Rust 三版二进制与语义对齐, 共 7 个模块:
+
+- crc32: CRC32-IEEE 查表法, 与 Go hash/crc32 ChecksumIEEE 输出一致
+- error: 12 变体错误分类与 Result 包装, 不使用异常做控制流
+- id: 64 位 ID 类型, 大端 8 字节与 11 字符 base64url 无填充编码
+- state_store: 128 字节定长 mmap 状态文件, 双槽 checkpoint 加跨进程锁字,
+  支持旧版 18 字节追加式记录迁移
+- hlc: 混合逻辑时钟与构建器, 对应 Go 的 Option 函数式配置
+- queue: 复用 runtime::ringbuffer 的 Vyukov MPMC 队列
+- generator: 发号器与 serve 生产循环, 响应取消与队列关闭
+
+编码对齐说明: Rust 版 base64url 的末字符把数据放在低 4 位, 与 Go/Python
+的标准 RawURLEncoding (高 4 位) 不兼容; 按 Python (Spec) 与 Go 的标准实现,
+C++ 对齐后者, 已在代码注释标注, 建议后续修正 Rust 版.
+
+缺陷修正: 严格模式下 checkpoint 未同步 latest, 导致 close() 的 flush()
+用旧水位覆盖新 checkpoint (重启可能重复 ID), 该问题在 Go/Rust 参考实现中
+同样存在, 本次按 Python (Spec 锚点) 的修正方式同步处理.
+
+基建调整:
+- runtime/ringbuffer.h: 补充 len/is_empty 查询方法, 对齐 Rust runtime::Queue
+- base/mmap.h: 头内函数补充 inline 以消除多翻译单元重复符号;
+  malloc 后显式清零并初始化句柄字段, 修复未初始化句柄告警;
+  补充缺失的 string.h 与 stdexcept 依赖
+
+测试: 新增 tests/tdd-distributed-id.cpp, 覆盖位字段解析、编码往返、
+时钟回拨单调性、节点位宽推导、并发唯一性、状态文件跨重启恢复与迁移,
+以及 serve 的生产消费链路; 并已与 Python 版做过状态文件双向读写验证.
+- release version 0.7.73
+
 ## [0.7.72] - 2026-08-27
 ### Changed
 - 优化 Go Vyukov 环形缓冲区
@@ -2291,7 +2358,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.72...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.73...HEAD
+[0.7.73]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.72...v0.7.73
 [0.7.72]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.71...v0.7.72
 [0.7.71]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.70...v0.7.71
 [0.7.70]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.69...v0.7.70
