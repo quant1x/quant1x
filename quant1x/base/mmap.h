@@ -5,6 +5,8 @@
 #include <filesystem>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdexcept>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -41,9 +43,11 @@ const int FILE_MODE = 0644;
 
 namespace fs = std::filesystem;
 
-static void mmap_destroy(mmap_t **mm);
+// 注意: 本头文件在头内定义函数, 必须保持 inline 以避免多翻译单元包含时
+// 产生重复符号 (ODR). 历史实现缺少 inline, 仅在单一 TU 包含时可用.
+inline void mmap_destroy(mmap_t **mm);
 
-void file_open(mmap_t *mm, const char * const filename) {
+inline void file_open(mmap_t *mm, const char * const filename) {
 #ifdef _WIN32
     HANDLE fileHandle = CreateFileA(filename, GENERIC_READ | GENERIC_WRITE,
                                     FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
@@ -62,7 +66,7 @@ void file_open(mmap_t *mm, const char * const filename) {
     mm->filename = filename;
 }
 
-void file_truncate(mmap_t *mm, size_t fSize) {
+inline void file_truncate(mmap_t *mm, size_t fSize) {
 #ifdef _WIN32
     if (SetFilePointer(mm->fileHandle, (LONG)fSize, nullptr, FILE_BEGIN) == INVALID_SET_FILE_POINTER ||
         !SetEndOfFile(mm->fileHandle)) {
@@ -78,7 +82,7 @@ void file_truncate(mmap_t *mm, size_t fSize) {
     mm->size = fSize;
 }
 
-void file_mmap(mmap_t *mm, int64_t offset, size_t size) {
+inline void file_mmap(mmap_t *mm, int64_t offset, size_t size) {
 #ifdef _WIN32
     /* The size of the CreateFileMapping object is the current size
      * of the size of the mmap object (e.g. file size), not the size
@@ -128,7 +132,7 @@ void file_mmap(mmap_t *mm, int64_t offset, size_t size) {
     mm->size = size;
 }
 
-void mmap_unmap(mmap_t *mm) {
+inline void mmap_unmap(mmap_t *mm) {
 #ifdef _WIN32
     if (mm->mv) {
         UnmapViewOfFile(mm->mv);
@@ -146,7 +150,7 @@ void mmap_unmap(mmap_t *mm) {
 #endif
 }
 
-void file_close(mmap_t *mm) {
+inline void file_close(mmap_t *mm) {
 #ifdef _WIN32
     if (mm->fileHandle != INVALID_HANDLE_VALUE) {
         CloseHandle(mm->fileHandle);
@@ -160,7 +164,7 @@ void file_close(mmap_t *mm) {
 #endif
 }
 
-mmap_t * v1_mmap_open(const char * const filename, size_t offset, size_t size) {
+inline mmap_t * v1_mmap_open(const char * const filename, size_t offset, size_t size) {
     fs::create_directories(fs::path(filename).parent_path());
     mmap_t m;
 #ifdef _WIN32
@@ -218,9 +222,20 @@ mmap_t * v1_mmap_open(const char * const filename, size_t offset, size_t size) {
     return mm;
 }
 
-mmap_t * mmap_open(const char * const filename, size_t offset, size_t size) {
+inline mmap_t * mmap_open(const char * const filename, size_t offset, size_t size) {
     fs::create_directories(fs::path(filename).parent_path());
     auto * mm = (mmap_t *)malloc(sizeof(mmap_t));
+    if (mm == nullptr) {
+        throw std::runtime_error("out of memory");
+    }
+    // malloc 不会调用默认成员初始化器, 必须显式清零并恢复句柄的无效值,
+    // 否则 file_mmap/mmap_destroy 可能读到未初始化的句柄字段
+    memset(mm, 0, sizeof(mmap_t));
+#ifdef _WIN32
+    mm->fileHandle = INVALID_HANDLE_VALUE;
+#else
+    mm->fd = -1;
+#endif
     try {
         file_open(mm, filename);
         file_truncate(mm, size);
@@ -231,7 +246,7 @@ mmap_t * mmap_open(const char * const filename, size_t offset, size_t size) {
     return mm;
 }
 
-void mmap_flush(mmap_t *mm) {
+inline void mmap_flush(mmap_t *mm) {
     if (mm->data) {
 #ifdef _WIN32
         FlushViewOfFile(mm->data, mm->size);
@@ -242,7 +257,7 @@ void mmap_flush(mmap_t *mm) {
 }
 
 
-void mmap_destroy(mmap_t **mm) {
+inline void mmap_destroy(mmap_t **mm) {
     if(*mm == nullptr) {
         return;
     }
@@ -253,11 +268,11 @@ void mmap_destroy(mmap_t **mm) {
 }
 
 
-void mmap_close(mmap_t **mm) {
+inline void mmap_close(mmap_t **mm) {
     mmap_destroy(mm);
 }
 
-void mmap_resize(mmap_t *mm, size_t new_size) {
+inline void mmap_resize(mmap_t *mm, size_t new_size) {
     if(mm == nullptr) {
         return;
     }
@@ -269,7 +284,7 @@ void mmap_resize(mmap_t *mm, size_t new_size) {
     file_mmap(mm, (int64_t)mm->offset, new_size);
 }
 
-void mmap_reopen(mmap_t * mm) {
+inline void mmap_reopen(mmap_t * mm) {
     if(mm == nullptr) {
         return;
     }

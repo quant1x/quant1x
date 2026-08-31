@@ -152,6 +152,19 @@ public:
         return mask_ + 1;
     }
 
+    // 当前队列中元素数量的近似值(Relaxed 顺序, 非精确快照)
+    // 与 Rust `runtime::Queue::len` 语义一致: enqueue - dequeue, 下溢按 0 处理.
+    size_t len() const noexcept {
+        const size_t enqueue = enqueue_pos_.load(std::memory_order_relaxed);
+        const size_t dequeue = dequeue_pos_.load(std::memory_order_relaxed);
+        return enqueue > dequeue ? enqueue - dequeue : 0;
+    }
+
+    // 队列是否为空(近似判断)
+    bool is_empty() const noexcept {
+        return len() == 0;
+    }
+
 private:
     struct Slot {
         alignas(64) std::atomic<size_t> seq{0};

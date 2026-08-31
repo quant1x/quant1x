@@ -290,6 +290,9 @@ add_app_executable(test-iconv.cpp)
 add_app_executable(test-multibar.cpp)
 add_app_executable(test_go_strings_port.cpp)
 
+# 分布式 ID 测试
+add_catch2_executable(tdd-distributed-id.cpp)
+
 # 基准测试
 add_benchmark_executable(test-benchmark.cpp)
 

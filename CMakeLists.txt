@@ -589,6 +589,15 @@ set(quant1x-headers
     # 机器学习
     quant1x/learn/fpgrowth/fp_growth.h
     quant1x/learn/fpgrowth/fp_growth_core.h
+
+    # 分布式 ID
+    quant1x/distributed/id/crc32.h
+    quant1x/distributed/id/error.h
+    quant1x/distributed/id/id.h
+    quant1x/distributed/id/state_store.h
+    quant1x/distributed/id/hlc.h
+    quant1x/distributed/id/queue.h
+    quant1x/distributed/id/generator.h
 )
 
 set(quant1x-sources
@@ -718,6 +727,15 @@ set(quant1x-sources
     # protobuf 生成文件
     quant1x/proto/chips.pb.cc
     quant1x/proto/xdxr.pb.cc
+
+    # 分布式 ID
+    quant1x/distributed/id/crc32.cpp
+    quant1x/distributed/id/error.cpp
+    quant1x/distributed/id/id.cpp
+    quant1x/distributed/id/state_store.cpp
+    quant1x/distributed/id/hlc.cpp
+    quant1x/distributed/id/queue.cpp
+    quant1x/distributed/id/generator.cpp
 )
 
 # If mimalloc is enabled and we're using the C++ new/delete override mode,
