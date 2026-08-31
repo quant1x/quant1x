@@ -2,10 +2,10 @@
 
 import (
 	"compress/gzip"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"time"
 
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/quant1x/quant1x/quant1x/base"
@@ -29,14 +29,14 @@ var (
 func getLogger(cfg Config, level zapcore.Level) (zapcore.Core, error) {
 	filename, ok := mapLevelToFilename[level]
 	if !ok {
-		panic("invalid log level")
+		return nil, fmt.Errorf("invalid log level: %v", level)
 	}
 	// 配置日志滚动器, 按天切割
 	path := filepath.Join(cfg.Path, filename+"_%Y%m%d.log")
 	rl, err := rotatelogs.New(
 		path,                              // 文件名格式, 带日期
-		rotatelogs.WithMaxAge(cfg.MaxAge), // 保留7天的日志
-		rotatelogs.WithRotationTime(cfg.RotationTime), // 每24小时切割一次
+		rotatelogs.WithMaxAge(cfg.MaxAge), // 日志最大保留时间
+		rotatelogs.WithRotationTime(cfg.RotationTime), // 日志切割时间
 		rotatelogs.WithHandler(rotatelogs.HandlerFunc(
 			func(e rotatelogs.Event) {
 				if e.Type() == rotatelogs.FileRotatedEventType {
@@ -50,16 +50,15 @@ func getLogger(cfg Config, level zapcore.Level) (zapcore.Core, error) {
 				}
 			})),
 	)
-
 	if err != nil {
 		return nil, err
 	}
 	writeSyncer := zapcore.AddSync(rl)
-	// 带缓冲的 WriteSyncer(缓冲区大小 256KB)
+	// 带缓冲的 WriteSyncer
 	bufferedWriteSyncer := &zapcore.BufferedWriteSyncer{
 		WS:            writeSyncer,
-		Size:          cfg.BufferSize * 1024,           // 缓冲区大小
-		FlushInterval: cfg.FlushInterval * time.Second, // 定时刷新间隔
+		Size:          cfg.BufferSize * 1024, // 缓冲区大小, 单位 KB
+		FlushInterval: cfg.FlushInterval,     // 定时刷新间隔
 	}
 	var syncers []zapcore.WriteSyncer
 	syncers = append(syncers, bufferedWriteSyncer)
@@ -71,64 +70,72 @@ func getLogger(cfg Config, level zapcore.Level) (zapcore.Core, error) {
 		textEncoder,
 		zapcore.NewMultiWriteSyncer(syncers...),
 		zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
-			//ret := false
-			//switch lvl {
-			//case zapcore.DebugLevel, zapcore.InfoLevel, zapcore.WarnLevel, zapcore.ErrorLevel:
-			//	ret = lvl == level
-			//default:
-			//	ret = lvl <= zapcore.FatalLevel
-			//}
-			//return ret
+			if level == zapcore.FatalLevel {
+				// fatal 文件同时承接 DPanic/Panic/Fatal 三个级别, 避免被静默丢弃
+				return lvl >= zapcore.DPanicLevel
+			}
 			return lvl == level
 		}),
 	)
 	return core, nil
 }
 
-// 压缩旧日志文件的钩子函数
+// compressOldLogs 压缩被滚动替换的旧日志文件
 func compressOldLogs(previousFile string) {
 	const logExt = ".log"
 	const logExtLength = len(logExt)
-	if filepath.Ext(previousFile) == logExt {
-		src, err := os.Open(previousFile)
-		if err != nil {
-			return
-		}
-		// 压缩文件: 原文件 → 原文件.gz
-		gzPath := previousFile[:len(previousFile)-logExtLength] + ".gz"
-		dst, _ := os.Create(gzPath)
-		defer base.CloseQuietly(dst)
+	if filepath.Ext(previousFile) != logExt {
+		return
+	}
+	src, err := os.Open(previousFile)
+	if err != nil {
+		return
+	}
+	defer base.CloseQuietly(src)
 
-		gzWriter := gzip.NewWriter(dst)
-		defer base.CloseQuietly(gzWriter)
-		fileStat, err := src.Stat()
-		if err != nil {
-			return
-		}
+	// 压缩文件: 原文件 → 原文件.gz
+	gzPath := previousFile[:len(previousFile)-logExtLength] + ".gz"
+	dst, err := os.Create(gzPath)
+	if err != nil {
+		return
+	}
+	defer base.CloseQuietly(dst)
 
-		gzWriter.Name = fileStat.Name()
-		gzWriter.ModTime = fileStat.ModTime()
-		_, err = io.Copy(gzWriter, src) // 压缩内容
-		if err != nil {
-			return
-		}
-		_ = src.Close()
-		_ = os.Remove(previousFile) // 删除原文件
+	fileStat, err := src.Stat()
+	if err != nil {
+		return
+	}
+	gzWriter := gzip.NewWriter(dst)
+	gzWriter.Name = fileStat.Name()
+	gzWriter.ModTime = fileStat.ModTime()
+	if _, err = io.Copy(gzWriter, src); err != nil {
+		// 压缩失败, 清理不完整的 .gz 文件
+		_ = gzWriter.Close()
+		_ = dst.Close()
+		_ = os.Remove(gzPath)
+		return
+	}
+	if err = gzWriter.Close(); err != nil {
+		// 压缩数据不完整, 清理
+		_ = dst.Close()
+		_ = os.Remove(gzPath)
+		return
+	}
+	// Windows 下文件未关闭无法删除, 需先关闭源文件
+	_ = src.Close()
+	if err = os.Remove(previousFile); err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, "remove old log file failed:", err)
 	}
 }
 
 // NewTextLoggerWithCompression 初始化支持压缩的纯文本日志配置
-func NewTextLoggerWithCompression(cfg Config) *zap.Logger {
-	// --------------------------------------------
-	// 2. 按级别配置日志文件(启用压缩)
-	// --------------------------------------------
-	// 配置日志滚动器, 按天切割
+func NewTextLoggerWithCompression(cfg Config) (*zap.Logger, error) {
 	var cores []zapcore.Core
 	// debug日志
 	if cfg.Level <= zapcore.DebugLevel {
 		debugLogger, err := getLogger(cfg, zap.DebugLevel)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		cores = append(cores, debugLogger)
 	}
@@ -136,7 +143,7 @@ func NewTextLoggerWithCompression(cfg Config) *zap.Logger {
 	if cfg.Level <= zapcore.InfoLevel {
 		infoLogger, err := getLogger(cfg, zap.InfoLevel)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		cores = append(cores, infoLogger)
 	}
@@ -144,7 +151,7 @@ func NewTextLoggerWithCompression(cfg Config) *zap.Logger {
 	if cfg.Level <= zapcore.ErrorLevel {
 		errorLogger, err := getLogger(cfg, zap.ErrorLevel)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		cores = append(cores, errorLogger)
 	}
@@ -152,7 +159,7 @@ func NewTextLoggerWithCompression(cfg Config) *zap.Logger {
 	if cfg.Level <= zapcore.WarnLevel {
 		warnLogger, err := getLogger(cfg, zap.WarnLevel)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		cores = append(cores, warnLogger)
 	}
@@ -160,18 +167,12 @@ func NewTextLoggerWithCompression(cfg Config) *zap.Logger {
 	if cfg.Level <= zapcore.FatalLevel {
 		fatalLogger, err := getLogger(cfg, zap.FatalLevel)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		cores = append(cores, fatalLogger)
 	}
-	// --------------------------------------------
-	// 3. 创建不同级别的 Core 并合并
-	// --------------------------------------------
-
+	// 合并不同级别的 Core
 	core := zapcore.NewTee(cores...)
-
-	// --------------------------------------------
-	// 4. 构建 Logger
-	// --------------------------------------------
-	return zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
+	// AddCallerSkip(1): 一层跳过 SugaredLogger, 一层跳过 log 包封装函数
+	return zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1)), nil
 }

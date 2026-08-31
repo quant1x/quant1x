@@ -2,24 +2,22 @@ package log
 
 import (
 	"testing"
-	"time"
 
 	"github.com/quant1x/quant1x/quant1x/config"
 	"github.com/quant1x/quant1x/quant1x/runtime"
-	"go.uber.org/zap"
 )
 
 func TestLogger(t *testing.T) {
 	defer runtime.WaitForShutdown(1)
-	InitLogger(config.GetLogsPath(), INFO)
+	if err := InitLogger(config.GetLogsPath(), INFO); err != nil {
+		t.Fatalf("init logger failed: %v", err)
+	}
 	count := 10
-	//logger.Fatal("This is fatal")
 	for i := 0; i < count; i++ {
-		// 输出日志
-		logger.Infof("%d: This is an info message, %+v", i, zap.String("user", "Alice"))
-		logger.Errorf("%d: This is an error message, %+v", i, zap.Int("code", 500))
-		logger.Debugf("This is a debug message, %d", i)
-		logger.Warnf("This is a warn message, %+v", zap.Int("code", 200))
-		time.Sleep(1 * time.Second)
+		// 通过包级入口输出, 验证 caller 与各级别写入
+		Infof("%d: This is an info message, user=%s", i, "Alice")
+		Errorf("%d: This is an error message, code=%d", i, 500)
+		Debugf("This is a debug message, %d", i)
+		Warnf("This is a warn message, code=%d", i, 200)
 	}
 }

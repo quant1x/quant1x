@@ -1,12 +1,14 @@
 package log
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/quant1x/quant1x/quant1x/base"
 	"github.com/quant1x/quant1x/quant1x/config"
 	"github.com/quant1x/quant1x/quant1x/runtime"
 	"go.uber.org/zap"
@@ -22,32 +24,32 @@ func customTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 type coreLoggerAdapter struct{}
 
 func (c *coreLoggerAdapter) Debugf(template string, args ...any) {
-	if logger != nil {
-		logger.Debugf(template, args...)
+	if l := getSugar(); l != nil {
+		l.Debugf(template, args...)
 	}
 }
 
 func (c *coreLoggerAdapter) Infof(template string, args ...any) {
-	if logger != nil {
-		logger.Infof(template, args...)
+	if l := getSugar(); l != nil {
+		l.Infof(template, args...)
 	}
 }
 
 func (c *coreLoggerAdapter) Warnf(template string, args ...any) {
-	if logger != nil {
-		logger.Warnf(template, args...)
+	if l := getSugar(); l != nil {
+		l.Warnf(template, args...)
 	}
 }
 
 func (c *coreLoggerAdapter) Errorf(template string, args ...any) {
-	if logger != nil {
-		logger.Errorf(template, args...)
+	if l := getSugar(); l != nil {
+		l.Errorf(template, args...)
 	}
 }
 
 func (c *coreLoggerAdapter) Fatalf(template string, args ...any) {
-	if logger != nil {
-		logger.Fatalf(template, args...)
+	if l := getSugar(); l != nil {
+		l.Fatalf(template, args...)
 	}
 }
 
@@ -58,14 +60,12 @@ type Config struct {
 	EnableConsole bool          // 控制台开关
 	MaxAge        time.Duration // 最大保留时间
 	RotationTime  time.Duration // 日志切割时间
-	BufferSize    int           // 缓冲区大小, 单位KB
-	FlushInterval time.Duration // 定时刷新间隔, 单位秒
+	BufferSize    int           // 缓冲区大小, 单位 KB
+	FlushInterval time.Duration // 定时刷新间隔
 }
 
 var (
-	// --------------------------------------------
-	// 1. 定义纯文本编码器
-	// --------------------------------------------
+	// 纯文本编码器
 	encoderConfig = zapcore.EncoderConfig{
 		TimeKey:        "time",
 		LevelKey:       "level",
@@ -100,26 +100,20 @@ var (
 		MaxAge:        7 * 24 * time.Hour,
 		RotationTime:  24 * time.Hour,
 		BufferSize:    256,
-		FlushInterval: 5,
+		FlushInterval: 5 * time.Second,
 	}
-	logger *zap.SugaredLogger = nil
-)
-var (
-	mu  sync.Mutex
-	bws []*zapcore.BufferedWriteSyncer
 )
 
-// func init() {
-// 	tempPath := os.TempDir()
-// 	//cfg.Path = getLogRoot(tempPath)
-// 	//zapLogger := NewTextLoggerWithCompression(cfg)
-// 	//logger = zapLogger.Sugar()
-// 	fmt.Println(tempPath)
-// 	InitLogger(tempPath, defaultLevel)
-// }
+var (
+	mu     sync.Mutex
+	bws    []*zapcore.BufferedWriteSyncer
+	logger *zap.SugaredLogger
+)
 
 func init() {
-	InitLogger(config.GetLogsPath(), defaultLevel)
+	if err := InitLogger(config.GetLogsPath(), defaultLevel); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "init logger failed: %v\n", err)
+	}
 }
 
 func addBufferWriteSyncer(bw *zapcore.BufferedWriteSyncer) {
@@ -131,17 +125,27 @@ func addBufferWriteSyncer(bw *zapcore.BufferedWriteSyncer) {
 	bws = append(bws, bw)
 }
 
+// getSugar 返回全局日志实例(线程安全), 未初始化时返回 nil
+func getSugar() *zap.SugaredLogger {
+	mu.Lock()
+	defer mu.Unlock()
+	return logger
+}
+
 // IsDebug 是否debug日志模式
 func IsDebug() bool {
+	mu.Lock()
+	defer mu.Unlock()
 	return cfg.Level == zapcore.DebugLevel
 }
 
 // InitLogger 初始化全局日志模块
-func InitLogger(path string, level LogLevel) {
-	path = strings.TrimSpace(path)
-	if path == "" {
-		path = os.TempDir()
-	}
+func InitLogger(path string, level LogLevel) error {
+	// 停止并清理上一次初始化遗留的缓冲写入器, 避免文件句柄泄漏
+	mu.Lock()
+	old := bws
+	bws = nil
+	logger = nil
 	defaultLevel = level
 	cfg.EnableConsole = false
 	switch level {
@@ -158,10 +162,25 @@ func InitLogger(path string, level LogLevel) {
 		cfg.Level = zapcore.FatalLevel
 	}
 	cfg.Path = getLogRoot(path)
-	zapLogger := NewTextLoggerWithCompression(cfg)
+	mu.Unlock()
+	for _, bw := range old {
+		_ = bw.Stop()
+	}
+
+	// 日志目录不存在时创建(与 Python/C++ 实现行为一致)
+	if err := base.MkDirs(cfg.Path); err != nil {
+		return fmt.Errorf("create log dir %q failed: %w", cfg.Path, err)
+	}
+	zapLogger, err := NewTextLoggerWithCompression(cfg)
+	if err != nil {
+		return err
+	}
+	mu.Lock()
 	logger = zapLogger.Sugar()
+	mu.Unlock()
 	runtime.SetLogger(&coreLoggerAdapter{})
 	_ = runtime.RegisterHook("logger", waitForStop)
+	return nil
 }
 
 func getLogRoot(path string) string {
@@ -169,11 +188,12 @@ func getLogRoot(path string) string {
 	return filepath.Join(path, applicationName)
 }
 
-// getApplicationName 获取执行文件名
+// getApplicationName 获取执行文件名(去掉扩展名)
 func getApplicationName() string {
-	path, _ := os.Executable()
+	path, err := os.Executable()
+	if err != nil {
+		return "unknown"
+	}
 	_, exec := filepath.Split(path)
-	arr := strings.Split(exec, ".")
-	__applicationName := arr[0]
-	return __applicationName
+	return strings.TrimSuffix(exec, filepath.Ext(exec))
 }
