@@ -51,11 +51,15 @@ csv = "1.2"
 mimalloc = "0.1"
 tokio = { version = "1.0", features = ["full"] }
 cron = "0.12"
+memmap2 = "0.9"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["shellapi", "processthreadsapi", "winbase", "handleapi", "minwinbase", "synchapi", "errhandlingapi", "winuser", "winnls", "stringapiset"] }
 named_pipe = "0.4"
 windows = { version = "0.48", features = ["Win32_Foundation", "Win32_System_Pipes", "Win32_System_Threading", "Win32_System_IO"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
 
 [dev-dependencies]
 mockito = "1.0"

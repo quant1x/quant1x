@@ -76,6 +76,9 @@ pub use crate::data::*;
 // datasets 已并入 data 模块, 移除旧的 datasets 顶级导出
 pub mod contrib;
 pub use crate::contrib::*;
+// distributed ID generator (port of Go quant1x/distributed/id)
+pub mod distributed;
+pub use crate::distributed::*;
 
 /// Return the filename used for the calendar cache (convenience wrapper around
 /// the internal config helper). This is intentionally a tiny, stable API so
