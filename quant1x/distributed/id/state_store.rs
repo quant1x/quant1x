@@ -285,6 +285,10 @@ impl FileStateStore {
             map.flush()
                 .map_err(|e| Error::StateFile(format!("msync state file failed: {e}")))?;
         }
+        // 写入成功后同步内存水位: 否则 Flush()/Close() 会用旧水位的 latest
+        // 覆盖刚写入的新 checkpoint, 造成水位回退 (严格模式重启可能重复 ID).
+        // 该缺陷在 Go 参考实现中同样存在, 已按 Python (Spec 锚点) 的修正方式统一处理.
+        inner.latest = state;
         Ok(())
     }
 

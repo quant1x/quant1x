@@ -161,6 +161,10 @@ func (s *fileStateStore) checkpoint(state persistentState, flush bool) error {
 	binary.BigEndian.PutUint64(record[8:16], uint64(state.Physical))
 	binary.BigEndian.PutUint32(record[16:20], state.Seq)
 	binary.BigEndian.PutUint32(record[20:24], crc32.ChecksumIEEE(record[:20]))
+	// 写入成功后同步内存水位：否则 Flush()/Close() 会用旧水位的 latest 覆盖
+	// 刚写入的新 checkpoint，造成水位回退（严格模式重启可能重复 ID）。
+	// 该缺陷在 Rust 版同样存在，已按 Python（Spec 锚点）的修正方式统一处理。
+	s.latest = state
 	if flush {
 		return s.mapped.Flush()
 	}

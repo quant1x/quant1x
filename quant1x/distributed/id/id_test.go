@@ -3,6 +3,7 @@ package id
 import (
 	"context"
 	"errors"
+	"math"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -70,6 +71,29 @@ func TestIDFieldsAndEncoding(t *testing.T) {
 	}
 	if FromBytes(id.Bytes()) != id || len(id.String()) != 11 {
 		t.Fatalf("ID encoding round trip failed: %q", id.String())
+	}
+}
+
+// TestIDStringMatchesStandardVectors 锁定 base64url 编码布局与 Python/Rust/C++ 一致。
+//
+// String() 使用 base64.RawURLEncoding：末字符（第 11 个）承载 byte[7] 的低 4 位，
+// 且置于 6 位值的高 4 位、低 2 位补 0。Rust 版早期实现把数据放在低 4 位，
+// 与其余三语言产生的字符串不互通，已修正；此用例防止再次回归。
+func TestIDStringMatchesStandardVectors(t *testing.T) {
+	cases := []struct {
+		value ID
+		want  string
+	}{
+		{ID(0), "AAAAAAAAAAA"},
+		{ID(1), "AAAAAAAAAAE"},
+		{ID(42), "AAAAAAAAACo"},
+		{ID(0x123456789ABCDEF0), "EjRWeJq83vA"},
+		{ID(math.MaxUint64), "__________8"},
+	}
+	for _, testCase := range cases {
+		if got := testCase.value.String(); got != testCase.want {
+			t.Fatalf("ID(%d).String() = %q, want %q", uint64(testCase.value), got, testCase.want)
+		}
 	}
 }
 
@@ -207,13 +231,25 @@ func TestGeneratorServeDrainAfterCancel(t *testing.T) {
 	serveDone := make(chan error, 1)
 	go func() { serveDone <- generator.Serve(ctx, queue) }()
 
-	// 等待生产者至少填入一个 ID
-	for queue.Len() == 0 {
+	// 等待队列填满: 复现"生产端阻塞在满队列"的场景.
+	// 早期实现的 Serve 使用阻塞式 Push, 一旦队列满且消费者停止就会卡在 Push 内部,
+	// 无法响应取消, 该缺陷正是本用例最初挂起的原因 (Rust/C++/Python 版已规避).
+	deadline := time.Now().Add(5 * time.Second)
+	for queue.Len() < queue.Cap() {
+		if time.Now().After(deadline) {
+			t.Fatalf("queue not filled: len = %d, cap = %d", queue.Len(), queue.Cap())
+		}
 		time.Sleep(time.Millisecond)
 	}
 	cancel()
-	if err := <-serveDone; !errors.Is(err, context.Canceled) {
-		t.Fatalf("Serve() error = %v, want context.Canceled", err)
+	// 取消后 Serve 必须尽快退出; 超时保护避免回归时整个测试套件挂死
+	select {
+	case err := <-serveDone:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("Serve() error = %v, want context.Canceled", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Serve() did not return within 5s after cancel (blocked on a full queue)")
 	}
 
 	queue.Close() // 进入只读排空

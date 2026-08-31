@@ -96,7 +96,10 @@ fn encode_base64url(value: u64) -> String {
     out[7] = BASE64URL_ALPHABET[(b[5] & 0x3F) as usize];
     out[8] = BASE64URL_ALPHABET[(b[6] >> 2) as usize];
     out[9] = BASE64URL_ALPHABET[((b[6] & 0x03) << 4 | b[7] >> 4) as usize];
-    out[10] = BASE64URL_ALPHABET[(b[7] & 0x0F) as usize];
+    // 末字符: byte[7] 的低 4 位置于 6 位值的高 4 位, 低 2 位补 0.
+    // 这是标准 RawURLEncoding 的布局 (Go base64 / Python urlsafe_b64encode),
+    // 早期实现把数据放在低 4 位, 与 Go/Python 产生的字符串不互通, 已修正.
+    out[10] = BASE64URL_ALPHABET[((b[7] & 0x0F) << 2) as usize];
     String::from_utf8(out.to_vec()).expect("base64url output is always ASCII")
 }
 
@@ -114,7 +117,7 @@ fn decode_base64url_char(c: u8) -> Option<u8> {
 
 /// 解码 11 字符 base64url (无填充) 字符串为 8 字节
 ///
-/// 与 Go base64 解码一致: 最后一个字符仅取低 4 位, 多余位忽略.
+/// 与 Go base64 解码一致: 最后一个字符仅取高 4 位 (>> 2), 低 2 位为编码补零, 忽略.
 fn decode_base64url(s: &str) -> Option<[u8; 8]> {
     if s.len() != 11 {
         return None;
@@ -131,7 +134,7 @@ fn decode_base64url(s: &str) -> Option<[u8; 8]> {
         (v[5] << 4) | (v[6] >> 2),
         (v[6] << 6) | v[7],
         (v[8] << 2) | (v[9] >> 4),
-        (v[9] << 4) | (v[10] & 0x0F),
+        ((v[9] & 0x0F) << 4) | (v[10] >> 2),
     ])
 }
 
@@ -154,6 +157,19 @@ mod tests {
             let parsed = Id::parse(&s).unwrap();
             assert_eq!(parsed, id);
         }
+    }
+
+    /// 与 Go base64.RawURLEncoding / Python base64.urlsafe_b64encode 对照的标准向量
+    ///
+    /// 早期实现把末字符的数据放在低 4 位, 与 Go/Python 不互通; 这些断言用于
+    /// 锁定跨语言兼容的编码布局, 防止回归.
+    #[test]
+    fn test_string_matches_go_python_vectors() {
+        assert_eq!(Id(0).to_string(), "AAAAAAAAAAA");
+        assert_eq!(Id(1).to_string(), "AAAAAAAAAAE");
+        assert_eq!(Id(42).to_string(), "AAAAAAAAACo");
+        assert_eq!(Id(0x1234_5678_9ABC_DEF0).to_string(), "EjRWeJq83vA");
+        assert_eq!(Id(u64::MAX).to_string(), "__________8");
     }
 
     #[test]

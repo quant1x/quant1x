@@ -253,6 +253,9 @@ class FileStateStore:
         checksum = zlib.crc32(bytes(record[0:20])) & 0xFFFFFFFF
         struct.pack_into(">I", record, 20, checksum)
         self.mapped[slot:slot + CHECKPOINT_SLOT_SIZE] = bytes(record)
+        # 写入成功后同步内存水位, 保证 Flush()/Close() 不会用旧水位覆盖新 checkpoint.
+        # 四种语言统一在 checkpoint 内同步 (Python 为 Spec 锚点, 此修正已同步到 Go/Rust/C++).
+        self.latest = state
         if flush:
             self.mapped.flush()
 
@@ -316,9 +319,9 @@ class FileStateStore:
             if ok and compare_persistent_state(latest, base) > 0:
                 base = latest
             next_state = advance_persistent_state(base, now, seq_bits)
-            # 注意: Go/Rust 参考实现此处未更新 latest, 导致 close() 的 flush()
-            # 用旧水位覆盖新 checkpoint 造成回退 (严格模式重启会重复 ID).
-            # Python 作为 Spec 锚点修正此缺陷: 始终以最新推进水位为准.
+            # 始终以最新推进水位为准; checkpoint() 内也会同步 latest, 两处一致.
+            # (Go/Rust 早期实现在严格模式下不更新 latest, 导致 close() 的 flush()
+            #  用旧水位覆盖新 checkpoint 造成回退, 该缺陷已在四种语言中统一修正.)
             self.latest = next_state
             flush = self.unsynced + 1 >= self.sync_every
             self.checkpoint(next_state, flush)
