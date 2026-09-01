@@ -1142,5 +1142,7 @@ install(TARGETS q1x
 include(CTest)
 enable_testing()
 add_subdirectory(tests)
+# 基准测试 (C++ 版, 对应 Rust benches/)
+add_subdirectory(benches)
 # 演示代码
 add_subdirectory(examples)
