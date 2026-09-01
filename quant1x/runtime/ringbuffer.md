@@ -1,79 +1,72 @@
-# Vyukov ringbuffer — 推荐使用 LLVM/Clang（已验证优先级）
+# Vyukov ringbuffer — C++ / Rust 多语言实现与性能对齐状态
 
-本目录包含 Vyukov 有界 MPMC 队列的 C++ 头文件实现（`vyukov.hpp`）和一个微基准 runner（`vyukov_runner.cpp`）。
+本目录包含 Vyukov 有界 MPMC 队列的多语言平行实现：
 
-## 为什么推荐 LLVM/Clang
+| 语言 | 文件 | 定位 |
+|---|---|---|
+| C++ | `ringbuffer.h` | 生产（模板头文件单文件实现） |
+| Rust | `ringbuffer.rs` | 生态扩展（参考实现，语义锚点） |
+| Go | `ringbuffer.go` + `ringbuffer_test.go` | 生态扩展 |
 
-- 在本仓库的本地测量中，使用 LLVM 后端（clang++ / clang-cl / rustc 的 LLVM）能够显著提高吞吐：clang 与 MSVC 编译出的二进制在同一台机器上常见为 ~25–35M ops/sec，而 g++ 在相同实现下通常落在 ~5–8M（受代码细节影响会有波动）。
-- 因此，对于对吞吐敏感的场景，建议在开发/CI 中默认使用 clang（或保持 Rust 的实现）。
+基准测试位于仓库根 `benches/`：
 
-## 快速构建命令（示例）
+- `benches/vyukov_bench.rs` — Rust（Criterion）
+- `benches/vyukov_bench.cpp` — C++（Google Benchmark，由 `benches/CMakeLists.txt` 接入 CMake，目标 `benchmark-vyukov_bench`）
 
-- 在 Linux / 支持 clang++ 的环境下：
+## 算法与 API 契约
+
+基于每个槽位的序号（per-slot sequence）与原子入队/出队游标（`enqueue_pos_` / `dequeue_pos_`）实现无锁并发；槽按 64 字节对齐最小化伪共享。元素类型须满足 nothrow 构造/析构（编译期 `static_assert` 强制）。
+
+C++ 提供两套入队/出队语义，与 Rust 逐级对齐：
+
+- **非阻塞** `try_push` / `try_pop`：满/空/竞争失败立即返回 `false`，热路径绝不执行 yield/sleep（最坏等待为单次 CPU pause + 一次重试）。
+- **阻塞式** `push` / `pop`（与 Rust `Queue::push` / `Queue::pop` 语义一致）：CAS 竞争失败与槽位瞬态冲突在内部按 `backoff_spin` 退避并无限重试直到成功；`push` 仅队满时返回 `false`，`pop` 仅"已关闭且为空"时返回 `false`。
+- `close()`：消费者在耗尽存量后退出。
+- `backoff_spin`：前 4 次 CPU_PAUSE 自旋 → 中 4 次 `yield` → 之后 sleep 50µs，与 Rust 四级退避一致。
+
+## 性能对比状态（Apple Silicon / arm64，2026-08 实测）
+
+### 已修复：aarch64 退避指令选择（决定性根因）
+
+C++ 原 `CPU_PAUSE()` 在 aarch64 上使用 `yield` 指令，其 ARM 语义是"降低自旋等待线程的调度优先级/节流执行"，在 Apple Silicon 上被激进化实现。8 路 CAS 争抢（dequeue_pos/enqueue_pos）时所有线程被同步节流，形成 convoy 正反馈：争抢越久线程越慢，线程越慢争抢越久。**修复：`yield` → `isb`**，与 Rust `core::hint::spin_loop`（`isb`）逐字节对齐。
+
+修复前后同一工作负载（8P8C、每生产者 20000 条 i64、单轮 160000 条）：
+
+| 指标 | C++ 修复前 | C++ 修复后 | Rust |
+|---|---|---|---|
+| 整轮耗时 | 4855µs | **1946µs** | 1561µs |
+| drain 阶段 | 3394µs（138~7700µs 双峰抖动） | **652µs** | 198µs |
+| backpressure 吞吐（容量 1024） | 15.9M/s | **21.2M/s** | 21.5M/s（**-1.1%** ✅） |
+| uncontended 吞吐（容量 262144） | 33~36M/s | **87.1M/s** | 118.1M/s |
+
+### 已排除的候选方案（均实测后回退，代码中留有注释）
+
+1. **ctor 清零**：曾用默认初始化 `new Slot[cap]` 替代 `std::make_unique<Slot[]>` 以对齐 Rust `Vec::with_capacity` 不初始化语义——实测在 Apple Silicon 上反而变慢（ctor 291µs → 424µs）：make_unique 的连续 memset 触页为预取友好，跨 64B 步进的 seq 存储触发分散页错误。保留 make_unique。
+2. **strong + SeqCst CAS**（完全照抄 Rust 参考实现）：实测更差（2421µs vs 1946µs），C++ 保留 weak + acq_rel（在 arm64 / x86 上与 Rust SeqCst 编译产物一致，语义等价）。
+
+### 剩余差距（已知，非缺陷）
+
+uncontended 场景 C++ 仍慢约 25%，全部集中在 drain 阶段（652 vs 198µs）：C++ 生产者速率（~180M/s）略快于消费者（~150M/s），导致 push 阶段 backlog 累积到 ~95k（Rust 仅 ~34k）。这是生产者/消费者速率平衡的微架构效应，不是算法或实现缺陷——backpressure 场景已在 1% 内对齐。
+
+### 基准测试对齐方法
+
+- 场景与参数严格一致：8P8C、每生产者 20000 条、容量 1024（backpressure）/ 262144（uncontended）。
+- 差分测量：每 iteration 先跑完整生产-消费轮次，再跑等量空转线程创建，两者耗时之差为纯队列操作耗时（对齐 Rust `iter_custom` + saturating_sub）。
+- 正确性校验：每轮断言 `consumed == TOTAL`（160000），C++ 用 `SkipWithError`，Rust 用 `assert_eq!`，Release 下均生效。
+
+## 复现
 
 ```bash
-clang++ -std=c++20 -O3 -march=native quant1x/ringbuffer/vyukov_runner.cpp -o quant1x/ringbuffer/vyukov_runner_clang -pthread
-./quant1x/ringbuffer/vyukov_runner_clang
+# C++ (Google Benchmark)
+ninja -C build benchmark-vyukov_bench
+./build/benches/benchmark-vyukov_bench --benchmark_min_time=2s
+
+# Rust (Criterion)
+cargo bench --bench vyukov_bench
 ```
 
-- 在 Windows（推荐使用 clang-cl，从 Developer Command Prompt/PowerShell 调用 vcvarsall）：
+## 注意事项
 
-```cmd
-call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
-clang-cl /std:c++20 /O2 /MD /Fe:quant1x\ringbuffer\vyukov_runner_clangcl.exe quant1x\ringbuffer\vyukov_runner.cpp
-quant1x\ringbuffer\vyukov_runner_clangcl.exe
-```
-
-### 为什么这些 flags
-
-- `-O3 -march=native` 启用更激进的优化并利用目标 CPU 指令集。若需要更可预测的测量，请移除 `-march=native` 并指定固定架构。
-
-## 关于 g++（兼容性说明）
-
-- 我们保留了对 g++ 的兼容实现，但要注意：在 Windows + MinGW（或某些 g++ 版本）组合下，g++ 的 codegen 对该热点代码表现较保守，吞吐会显著低于 clang/MSVC。
-- 如果必须使用 g++：
-  - 可在代码中引入条件编译分支以提供更 "GCC-friendly" 的实现（通常会在正确性与性能间做权衡）；
-  - 或把 g++ 用作功能/回归测试，而在 CI/perf 测试中优先使用 clang。
-
-## 持续集成（建议）
-
-- 仓库中包含一个示例 workflow：`.github/workflows/clang-windows.yml`，用于在 Windows / Ubuntu 上用 clang 构建并运行基准。建议把该 workflow 作为 perf-sensitive 配置的一部分。
-
-## 汇报与再现
-
-- 基准样本会写入：`quant1x/ringbuffer/cpp_perf_samples.csv`（每次运行覆盖）。
-- 如果你愿意，我可以把当前的 clang/msvc/gcc 基准结果整理成对比报告并提交为 PR 注释。
-
-## 复现实验（快速步骤）
-
-1. 在 release 模式用现有 runner 采样（runner 会做 10 次采样）：
-
-```powershell
-# 直接运行已编译的二进制（若已编译）
-.\target\release\vyukov_runner.exe
-
-# 或使用 cargo run（会在未编译时构建）
-cargo run --manifest-path d:/projects/quant1x/quant1x/Cargo.toml --bin vyukov_runner --features vyukov --release
-```
-
-1. 生成并查看图表与报告（需要 Python + matplotlib）：
-
-```powershell
-python quant1x/ringbuffer/plot_perf.py
-# 打开 perf_report.md 或 perf_hist.png / perf_box.png
-```
-
-## 注意与建议
-
-- 性能波动可能由系统调度、CPU 频率、电源策略、编译器标志（`RUSTFLAGS`）、链接器与运行时差异引起；建议在受控环境（空闲系统、固定 CPU 亲和性、电源性能模式）下重复测量以获得更稳健结果。
-
-## 统计摘要
-
-- 样本数: 200
-- 平均 (mean): 43631329.56 ops/sec
-- 中位数 (median): 43546578.56 ops/sec
-- 标准差 (stddev): 3429885.57 ops/sec
-- 最小值: 34444256.28 ops/sec
-- 最大值: 54202867.78 ops/sec
-- 25th percentile: 41269013.63 ops/sec
-- 75th percentile: 45642871.44 ops/sec
+- 推荐 LLVM/Clang 后端（clang++ / rustc 的 LLVM）；g++ 对热点代码的 codegen 更保守，吞吐显著偏低。
+- 性能波动受系统调度、CPU 频率、电源策略影响，建议在受控环境（空闲系统、固定 CPU 亲和性、电源性能模式）下测量。
+- 当前对比数据在 Apple Silicon（arm64）上测得；x86 平台行为可能不同，尚未实测。
