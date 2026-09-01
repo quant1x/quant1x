@@ -479,6 +479,20 @@ ctest --test-dir cmake-build-debug --output-on-failure
 ./cmake-build-debug/bin/q1x --help
 ```
 
+## ⚡ 多语言性能对齐：Vyukov Ringbuffer
+
+`quant1x/runtime/ringbuffer.h`（C++）与 `quant1x/runtime/ringbuffer.rs`（Rust）为 Vyukov 有界 MPMC 队列的平行实现（Go 见 `ringbuffer.go`），基准位于仓库根 `benches/vyukov_bench.{cpp,rs}`，详细状态见 [ringbuffer.md](quant1x/runtime/ringbuffer.md)。
+
+已完成的关键性能对齐（Apple Silicon / arm64 实测）：
+
+| 修复项 | 内容 | 效果 |
+|---|---|---|
+| aarch64 退避指令 | `yield` → `isb`，与 Rust `core::hint::spin_loop` 逐字节对齐 | 8P8C 整轮 4855µs → 1946µs |
+| ctor 槽区分配 | `std::make_unique<Slot[]>` 清零 → `aligned_alloc(64)` + placement new 只写 seq，对齐 Rust `Vec::with_capacity` 不初始化语义 | ctor ~246µs → ~185µs（Rust ~210µs） |
+| 基准 harness 计数器 | 共享原子 `consumed.fetch_add()` → 每线程本地计数、join 后合并，消除复合缓存行争用伪影 | 8P8C 消费速率与 backlog 与 Rust 完全对齐（160 vs 159 M/s） |
+
+修复后 uncontended 吞吐 C++ 107~131 M/s vs Rust 121~125 M/s（噪声带内对齐）；队列自身差异均已闭合，无已知性能缺陷。
+
 ## 📊 获取K线数据示例
 
 ### Python

@@ -18,7 +18,6 @@
 // 被唤醒, 该延迟远大于线程创建开销. 因此保留每轮创建线程的结构.
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicI64, Ordering};
 use std::thread;
 use std::time::Instant;
 
@@ -41,7 +40,11 @@ const CAPACITY_UNCONTENDED: usize = 1 << 18;
 /// 运行一轮完整的生产-消费, 返回消费总数
 fn run_round(capacity: usize) -> i64 {
     let queue = Arc::new(VQueue::<i64>::new(capacity));
-    let consumed = Arc::new(AtomicI64::new(0));
+    // 每消费者线程本地计数, join 时合并.
+    // 注: 不用共享原子计数器 (consumed.fetch_add) —— 8P8C 场景下 pop 与 fetch_add
+    // 两个竞争点叠加会使 backlog 大幅放大 (隔离探针消融实验实测, 无 fetch_add 时
+    // C++/Rust 消费速率完全对齐 160 vs 159M/s), 属测量伪影而非队列缺陷.
+    // 故消费者线程直接返回本地计数, 由 join 返回值汇总.
 
     let mut producers = Vec::with_capacity(NUM_PRODUCERS);
     for id in 0..NUM_PRODUCERS {
@@ -64,17 +67,16 @@ fn run_round(capacity: usize) -> i64 {
     let mut consumers = Vec::with_capacity(NUM_CONSUMERS);
     for _ in 0..NUM_CONSUMERS {
         let queue = queue.clone();
-        let consumed = consumed.clone();
         consumers.push(thread::spawn(move || {
+            let mut local: i64 = 0;
             loop {
                 match queue.pop() {
-                    Ok(_) => {
-                        consumed.fetch_add(1, Ordering::Relaxed);
-                    }
+                    Ok(_) => local += 1,
                     // pop 仅在队列关闭且为空时返回 Err
                     Err(_) => break,
                 }
             }
+            local
         }));
     }
 
@@ -83,10 +85,10 @@ fn run_round(capacity: usize) -> i64 {
     }
     // 关闭队列, 消费者排空存量后退出
     queue.close();
-    for consumer in consumers {
-        consumer.join().expect("消费者线程崩溃");
-    }
-    consumed.load(Ordering::Acquire)
+    consumers
+        .into_iter()
+        .map(|c| c.join().expect("消费者线程崩溃"))
+        .sum()
 }
 
 /// 创建并回收与一轮生产消费等量的线程, 但不做任何队列操作

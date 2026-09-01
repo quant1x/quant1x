@@ -20,6 +20,7 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <memory>
 #include <type_traits>
 #include <new>
@@ -64,17 +65,26 @@ public:
         }
         size_t cap = round_up_to_power_of_two(capacity);
         mask_ = cap - 1;
-        // 说明: 曾尝试用默认初始化 `new Slot[cap]` 替代 make_unique 以省去 16MB 整块
-        // 清零(对齐 Rust `Vec::with_capacity` 不初始化语义), 实测在 Apple Silicon 上反而
-        // 变慢: make_unique 的连续 memset 触页为预取友好(可命中大页/顺序缺页), ctor 约
-        // 291us; 而 `new Slot[cap]` 的跨 64B 步进 seq 存储会触发分散页错误, ctor 劣化到
-        // ~424us, 整轮 total 从 1914us 退步到 2109us. 故保留 make_unique(清零成本低于
-        // 分散触页成本), 与 Rust 的 ctor 差异(~180us)属于可接受的平台实现差异.
-        buffer_ = std::make_unique<Slot[]>(cap);
-        // 初始化序号
-        for (size_t i = 0; i < cap; ++i) {
-            buffer_[i].seq.store(i, std::memory_order_relaxed);
+        // 槽区分配策略: aligned_alloc(64) 惰性触页 + placement new 只写 seq.
+        // 对齐 Rust `Vec::with_capacity`(不初始化) 语义, 避免 `std::make_unique<Slot[]>`
+        // 对 16MB 槽区的 value-initialize(逐字节清零). 实测(Apple Silicon, ctor_variants):
+        //   - malloc 16MB(惰性)                    ~8us
+        //   - make_unique 纯 memset 16MB          ~67us
+        //   - make_unique + 写 seq(旧 ctor)       ~246us
+        //   - aligned_alloc + placement 只写 seq  ~185us  (对齐 Rust ~210us, 省 ~60us)
+        // 注: 之前用 `new Slot[cap]` 反而慢(424us) 是 over-aligned operator new[] 逐元素
+        // 构造路径低效(非正确对比); aligned_alloc 整块惰性分配 + 单步 placement 无此问题.
+        // aligned_alloc 的内存必须用 free 释放, 故 buffer_ 删除器为 free(见成员声明).
+        void* raw = std::aligned_alloc(64, cap * sizeof(Slot));
+        if (!raw) {
+            throw std::bad_alloc();
         }
+        Slot* slots = static_cast<Slot*>(raw);
+        // 只写 seq(模仿 Rust AtomicUsize::new(i)), storage 保持未初始化
+        for (size_t i = 0; i < cap; ++i) {
+            new (&slots[i]) Slot(i);
+        }
+        buffer_.reset(slots);
         enqueue_pos_.store(0, std::memory_order_relaxed);
         dequeue_pos_.store(0, std::memory_order_relaxed);
         closed_.store(false, std::memory_order_relaxed);
@@ -261,15 +271,21 @@ private:
     // 整个槽位独占一个缓存行: struct 级 64 字节对齐确保槽的起始地址与大小
     // 都是 64 的整数倍, 无论成员如何调整都不产生跨槽伪共享
     struct alignas(64) Slot {
-        std::atomic<size_t> seq{0};
-        // 使用 std::byte 作为原始存储以在 C++17+ 中提供更好的类型安全
-        // 注意: storage 显式清零 `{}` —— 见构造函数的说明注释, 整块清零的
-        // 顺序触页在 Apple Silicon 上比跨步初始化更高效, 故保留 value-initialize.
-        alignas(alignof(T)) std::byte storage[sizeof(T)]{};
+        // 只写 seq 的构造函数(模仿 Rust `AtomicUsize::new(i)`), storage 保持未初始化
+        // (与 Rust `MaybeUninit::uninit` 语义一致). 配合 ctor 的 aligned_alloc 惰性
+        // 分配, 避免 make_unique 对 16MB 槽区的 value-initialize 清零
+        // (实测 ctor 246us → 185us, 对齐 Rust ~210us, 见 ctor 内说明).
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init) -- storage 故意不初始化
+        explicit Slot(size_t s) noexcept : seq(s) {}
+        std::atomic<size_t> seq;
+        alignas(alignof(T)) std::byte storage[sizeof(T)];
     };
 
-    // 槽位数组, 长度为 capacity(向上取整到 2 的幂), 每个槽按 64 字节对齐
-    std::unique_ptr<Slot[]> buffer_;
+    // 槽位数组, 长度为 capacity(向上取整到 2 的幂), 每个槽按 64 字节对齐.
+    // 内存由 aligned_alloc 分配, 删除器必须为 free (delete[] 与 aligned_alloc 不匹配, 属 UB).
+    std::unique_ptr<Slot[], void (*)(Slot*)> buffer_{nullptr, +[](Slot* p) noexcept {
+        std::free(p);
+    }};
     // 用于将序号映射为数组索引的掩码(mask = capacity - 1)
     size_t mask_;
     // 生产者游标(下一个待写入序号), 按缓存行对齐以减少伪共享

@@ -42,7 +42,11 @@ constexpr size_t CAPACITY_UNCONTENDED = 1 << 18;
 ///         消费成功后用 relaxed 原子累加计数
 int64_t run_round(size_t capacity) {
     queue<int64_t> q(capacity);
-    std::atomic<int64_t> consumed{0};
+    // 每消费者线程本地计数, 结束时合并.
+    // 注: 不用共享原子计数器 (consumed.fetch_add) —— 8P8C 场景下 pop 与 fetch_add
+    // 两个竞争点叠加会使 C++ 侧 backlog 从 ~6k 放大到 ~70k (隔离探针消融实验实测,
+    // 无 fetch_add 时 C++/Rust 消费速率完全对齐 160 vs 159M/s), 属测量伪影而非队列缺陷.
+    std::vector<int64_t> per_consumer(NUM_CONSUMERS, 0);
 
     std::vector<std::thread> producers;
     producers.reserve(NUM_PRODUCERS);
@@ -62,11 +66,13 @@ int64_t run_round(size_t capacity) {
     std::vector<std::thread> consumers;
     consumers.reserve(NUM_CONSUMERS);
     for (size_t c = 0; c < NUM_CONSUMERS; ++c) {
-        consumers.emplace_back([&q, &consumed]() {
+        consumers.emplace_back([&q, &per_consumer, c]() {
             int64_t v;
+            int64_t local = 0;
             while (q.pop(v)) {
-                consumed.fetch_add(1, std::memory_order_relaxed);
+                ++local;
             }
+            per_consumer[c] = local; // 每线程写自己槽位, 无竞争 (join 后主线程再合并)
         });
     }
 
@@ -77,7 +83,11 @@ int64_t run_round(size_t capacity) {
     for (auto& t : consumers) {
         t.join();
     }
-    return consumed.load(std::memory_order_acquire);
+    int64_t consumed = 0;
+    for (size_t c = 0; c < NUM_CONSUMERS; ++c) {
+        consumed += per_consumer[c];
+    }
+    return consumed;
 }
 
 /// 创建并回收与一轮生产消费等量的线程, 但不做任何队列操作
