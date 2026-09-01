@@ -197,11 +197,13 @@ impl<T> Queue<T> {
         self.closed.store(1, Ordering::Release);
     }
 
-    /// 非阻塞推入: 队列已满时立即返回 Err, 不会自旋等待空位
+    /// 非阻塞推入: 队列已满或竞争失败时立即返回 Err, 不会自旋等待空位
     ///
-    /// 与 [`Queue::push`] 的区别在于满队列时直接失败而非自旋重试. 
+    /// 与 [`Queue::push`] 的区别在于满队列/竞争时快速失败而非内部退避. 
     pub fn try_push(&self, value: T) -> Result<(), ()> {
-        let mut backoff = 0u32;
+        // try_ 契约: 竞争失败最多以一次 spin_loop 吸收纳秒级瞬态并重试一次,
+        // 仍不可行立即返回 Err; 绝不 yield/sleep, 阻塞等待策略由调用者控制
+        let mut retry = 0u32;
         loop {
             let pos = self.enqueue_pos.load(Ordering::Relaxed);
             let index = pos & self.mask;
@@ -219,22 +221,33 @@ impl<T> Queue<T> {
                     slot.seq.store(pos + 1, Ordering::Release);
                     return Ok(());
                 }
-                // CAS 竞争失败, 短暂重试后大概率成功
-                Self::backoff_spin(&mut backoff);
+                // CAS 竞争失败: 快速失败 (见 try_ 契约注释)
+                if retry != 0 {
+                    return Err(());
+                }
+                retry += 1;
+                hint::spin_loop();
             } else if seq < pos {
                 // 槽位序列号落后, 尚未被消费者重置, 判定为队满
                 return Err(());
             } else {
-                Self::backoff_spin(&mut backoff);
+                // 槽正被其他消费者读取: 快速失败 (见 try_ 契约注释)
+                if retry != 0 {
+                    return Err(());
+                }
+                retry += 1;
+                hint::spin_loop();
             }
         }
     }
 
-    /// 非阻塞弹出: 队列为空时立即返回 Err, 不会自旋等待数据
+    /// 非阻塞弹出: 队列为空或竞争失败时立即返回 Err, 不会自旋等待数据
     ///
-    /// 与 [`Queue::pop`] 的区别在于空队列时直接失败而非自旋等待. 
+    /// 与 [`Queue::pop`] 的区别在于空队列/竞争时快速失败而非内部退避. 
     pub fn try_pop(&self) -> Result<T, ()> {
-        let mut backoff = 0u32;
+        // try_ 契约: 竞争失败最多以一次 spin_loop 吸收纳秒级瞬态并重试一次,
+        // 仍不可行立即返回 Err; 绝不 yield/sleep, 阻塞等待策略由调用者控制
+        let mut retry = 0u32;
         loop {
             let pos = self.dequeue_pos.load(Ordering::Relaxed);
             let index = pos & self.mask;
@@ -250,12 +263,22 @@ impl<T> Queue<T> {
                     slot.seq.store(pos + self.mask + 1, Ordering::Release);
                     return Ok(val);
                 }
-                Self::backoff_spin(&mut backoff);
+                // CAS 竞争失败: 快速失败 (见 try_ 契约注释)
+                if retry != 0 {
+                    return Err(());
+                }
+                retry += 1;
+                hint::spin_loop();
             } else if seq < pos + 1 {
                 // 序号落后, 当前没有可读数据
                 return Err(());
             } else {
-                Self::backoff_spin(&mut backoff);
+                // 槽正被其他生产者写入: 快速失败 (见 try_ 契约注释)
+                if retry != 0 {
+                    return Err(());
+                }
+                retry += 1;
+                hint::spin_loop();
             }
         }
     }

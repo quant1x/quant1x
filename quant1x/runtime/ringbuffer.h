@@ -1,11 +1,13 @@
 // Vyukov 有界 MPMC 队列的 C++17 头文件单文件移植(模板)
-// 实现说明(中文): 
+// 实现说明(中文):
 // - 基于每个槽位的序号(per-slot sequence)以及原子性的入队/出队索引实现无锁并发
 // - 槽按 64 字节对齐以最小化伪共享(false sharing)带来的性能下降
-// - 提供非阻塞的 try_push / try_pop 语义: 满/空时立即返回 false
+// - 提供非阻塞的 try_push / try_pop 语义: 满/空/竞争失败时立即返回 false,
+//   热路径绝不执行 yield/sleep 等 OS 调度操作 (最坏等待为单次 CPU pause)
 // - 提供 close() 方法, 供消费者观察队列关闭并在耗尽数据后退出
-// - 待修复/注意: 析构的线程安全性, 异常安全性与潜在内存泄漏需要在使用时注意
-// - 可优化之处: 利用更现代的 C++17 特性, 改进退避策略以提升不同平台上的性能
+// - 元素类型须满足 nothrow 构造与 nothrow 析构 (编译期 static_assert 强制):
+//   无锁算法无法回滚已推进的全局入队索引, 抛异常的构造会破坏队列一致性
+// - 待修复/注意: 析构的线程安全性与潜在内存泄漏需要在使用时注意
 #pragma once
 #ifndef QUANT1X_RUNTIME_RINGBUFFER_H
 #define QUANT1X_RUNTIME_RINGBUFFER_H 1
@@ -18,7 +20,6 @@
 #include <new>
 #include <utility>
 #include <stdexcept>
-#include <exception>
 
 #if defined(_MSC_VER)
 #  include <intrin.h>
@@ -29,9 +30,6 @@
 #  include <immintrin.h>
 #  define CPU_PAUSE() _mm_pause()
 #endif
-
-#include <thread>
-#include <chrono>
 
 // 跨编译器的属性宏: 在 GCC/Clang 上使用 always_inline/hot, 以期望代码内联和热路径优化；
 // 在 MSVC 上使用 __forceinline. 
@@ -89,12 +87,15 @@ public:
         return emplace(std::move(value));
     }
 
-    // 非阻塞出队. 成功时返回 true 并将元素写入 `out`. 
-    // 如果队列为空(或为空且已关闭)则返回 false. 
+    // 非阻塞出队. 成功时返回 true 并将元素写入 `out`.
+    // 队列为空(或为空且已关闭)、队满竞争或槽位瞬态冲突时立即返回 false.
     ATTR_ALWAYS_INLINE_HOT bool try_pop(T& out) noexcept(
         std::is_nothrow_move_assignable_v<T> && std::is_nothrow_destructible_v<T>
     ) {
-        uint32_t backoff = 0;
+        // try_ 契约: 竞争失败最多以一次 CPU pause 吸收纳秒级瞬态 (相邻线程正在
+        // 完成槽位读写) 并重试一次, 仍不可行立即返回 false; 绝不 yield/sleep,
+        // 阻塞等待策略由调用者控制
+        uint32_t retry = 0;
         while (true) {
             size_t pos =
 #if defined(__GNUG__)
@@ -120,7 +121,11 @@ public:
                     slot.seq.store(pos + mask_ + 1, std::memory_order_release);
                     return true;
                 } else {
-                    backoff_spin(backoff);
+                    // CAS 竞争失败: 快速失败 (见函数头注释)
+                    if (retry++ != 0) {
+                        return false;
+                    }
+                    CPU_PAUSE();
                     continue;
                 }
             } else if (seq < pos + 1) {
@@ -130,8 +135,11 @@ public:
                 }
                 return false; // 队列为空但未关闭
             } else {
-                // 槽正被其他生产者写入
-                backoff_spin(backoff);
+                // 槽正被其他生产者写入: 快速失败 (见函数头注释)
+                if (retry++ != 0) {
+                    return false;
+                }
+                CPU_PAUSE();
                 continue;
             }
         }
@@ -190,10 +198,6 @@ private:
         return __atomic_load_n(reinterpret_cast<const size_t*>(&a), __ATOMIC_RELAXED);
     }
 
-    static inline void atomic_store_release_gcc(std::atomic<size_t>& a, size_t v) noexcept {
-        __atomic_store_n(reinterpret_cast<size_t*>(&a), v, __ATOMIC_RELEASE);
-    }
-
     static inline bool atomic_cas_weak_gcc(std::atomic<size_t>& a, size_t& expected, size_t desired) noexcept {
         return __atomic_compare_exchange_n(reinterpret_cast<size_t*>(&a), &expected, desired, true, __ATOMIC_ACQ_REL, __ATOMIC_RELAXED);
     }
@@ -212,28 +216,22 @@ private:
         return v;
     }
 
-    static ATTR_ALWAYS_INLINE_HOT void backoff_spin(uint32_t& iter) noexcept {
-        if (iter < 4) {
-            // 短时紧自旋并执行 CPU pause
-            for (uint32_t i = 0; i < (1u << iter); ++i) {
-                CPU_PAUSE();
-            }
-        } else if (iter < 8) {
-            // 让出以允许其他线程运行
-            std::this_thread::yield();
-        } else {
-            // 更长时间睡眠以降低 CPU 使用率
-            std::this_thread::sleep_for(std::chrono::microseconds(1u << (iter - 8)));
-        }
-        if (iter < 16) ++iter; // 限制退避上限以防止溢出
-    }
-
     template<typename U>
     ATTR_ALWAYS_INLINE_HOT bool emplace(U&& value) noexcept(
         std::is_nothrow_constructible_v<T, U> &&
         std::is_nothrow_destructible_v<T>
     ) {
-        uint32_t backoff = 0;
+        static_assert(
+            std::is_nothrow_constructible_v<T, U> &&
+            std::is_nothrow_destructible_v<T>,
+            "queue<T> requires nothrow-constructible and nothrow-destructible "
+            "element types: a lock-free queue cannot roll back the globally "
+            "monotonic enqueue position once a slot reservation is taken, so "
+            "a throwing constructor would corrupt the queue state"
+        );
+        // try_ 契约: 竞争失败最多以一次 CPU pause 吸收纳秒级瞬态并重试一次,
+        // 仍不可行立即返回 false; 绝不 yield/sleep, 阻塞等待策略由调用者控制
+        uint32_t retry = 0;
         while (true) {
             size_t pos =
 #if defined(__GNUG__)
@@ -253,45 +251,29 @@ private:
                 if (enqueue_pos_.compare_exchange_weak(expected_pos, pos + 1,
                     std::memory_order_acq_rel, std::memory_order_relaxed)) {
 #endif
-                    // 成功预留该槽位
-                    try {
-                        T* ptr = std::launder(reinterpret_cast<T*>(&slot.storage));
-                        new (ptr) T(std::forward<U>(value));
-                        slot.seq.store(pos + 1, std::memory_order_release);
-                        return true;
-                    } catch (...) {
-                        // 构造失败 - 回滚预留
-                        // 这种情况很少见, 但为了异常安全必须处理
-                        // 若可用则使用 GCC 原子存储辅助函数
-#if defined(__GNUG__)
-                        atomic_store_release_gcc(enqueue_pos_, pos);
-#else
-                        enqueue_pos_.store(pos, std::memory_order_release);
-#endif
-                        slot.seq.store(pos, std::memory_order_release);
-                        // 如果该实例化是 noexcept 的, 重新抛出会直接调用
-                        // std::terminate(编译器会发出 -Wterminate 警告). 
-                        // 因此使用 constexpr 分支: 在 noexcept 情况下调用
-                        // std::terminate, 否则重新抛出异常以保留原始行为. 
-                        if constexpr (
-                            std::is_nothrow_constructible_v<T, U> &&
-                            std::is_nothrow_destructible_v<T>
-                        ) {
-                            std::terminate();
-                        } else {
-                            throw;
-                        }
-                    }
+                    // 成功预留该槽位; 构造为 nothrow (见 static_assert),
+                    // 不存在需要回滚索引的异常路径
+                    T* ptr = std::launder(reinterpret_cast<T*>(&slot.storage));
+                    new (ptr) T(std::forward<U>(value));
+                    slot.seq.store(pos + 1, std::memory_order_release);
+                    return true;
                 } else {
-                    backoff_spin(backoff);
+                    // CAS 竞争失败: 快速失败 (见上方 try_ 契约注释)
+                    if (retry++ != 0) {
+                        return false;
+                    }
+                    CPU_PAUSE();
                     continue;
                 }
             } else if (seq < pos) {
                 // 队列已满
                 return false;
             } else {
-                // 槽正被其他消费者读取
-                backoff_spin(backoff);
+                // 槽正被其他消费者读取: 快速失败 (见上方 try_ 契约注释)
+                if (retry++ != 0) {
+                    return false;
+                }
+                CPU_PAUSE();
                 continue;
             }
         }
