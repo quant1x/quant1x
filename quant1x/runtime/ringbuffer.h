@@ -29,6 +29,8 @@
 #include <chrono>
 #include <thread>
 
+#include <quant1x/base/safe.h>
+
 #if defined(_MSC_VER)
 #  include <intrin.h>
 #  define CPU_PAUSE() _mm_pause()
@@ -65,7 +67,7 @@ public:
         }
         size_t cap = round_up_to_power_of_two(capacity);
         mask_ = cap - 1;
-        // 槽区分配策略: aligned_alloc(64) 惰性触页 + placement new 只写 seq.
+        // 槽区分配策略: 64 字节对齐整块惰性分配 + placement new 只写 seq.
         // 对齐 Rust `Vec::with_capacity`(不初始化) 语义, 避免 `std::make_unique<Slot[]>`
         // 对 16MB 槽区的 value-initialize(逐字节清零). 实测(Apple Silicon, ctor_variants):
         //   - malloc 16MB(惰性)                    ~8us
@@ -74,8 +76,9 @@ public:
         //   - aligned_alloc + placement 只写 seq  ~185us  (对齐 Rust ~210us, 省 ~60us)
         // 注: 之前用 `new Slot[cap]` 反而慢(424us) 是 over-aligned operator new[] 逐元素
         // 构造路径低效(非正确对比); aligned_alloc 整块惰性分配 + 单步 placement 无此问题.
-        // aligned_alloc 的内存必须用 free 释放, 故 buffer_ 删除器为 free(见成员声明).
-        void* raw = std::aligned_alloc(64, cap * sizeof(Slot));
+        // 平台差异(Windows CRT 不提供 aligned_alloc)已收敛至 base/safe.h 的
+        // safe::aligned_alloc / safe::aligned_free, 参数顺序统一为 (alignment, size).
+        void* raw = safe::aligned_alloc(64, cap * sizeof(Slot));
         if (!raw) {
             throw std::bad_alloc();
         }
@@ -272,7 +275,7 @@ private:
     // 都是 64 的整数倍, 无论成员如何调整都不产生跨槽伪共享
     struct alignas(64) Slot {
         // 只写 seq 的构造函数(模仿 Rust `AtomicUsize::new(i)`), storage 保持未初始化
-        // (与 Rust `MaybeUninit::uninit` 语义一致). 配合 ctor 的 aligned_alloc 惰性
+        // (与 Rust `MaybeUninit::uninit` 语义一致). 配合 ctor 的 64 字节对齐惰性
         // 分配, 避免 make_unique 对 16MB 槽区的 value-initialize 清零
         // (实测 ctor 246us → 185us, 对齐 Rust ~210us, 见 ctor 内说明).
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init) -- storage 故意不初始化
@@ -282,9 +285,10 @@ private:
     };
 
     // 槽位数组, 长度为 capacity(向上取整到 2 的幂), 每个槽按 64 字节对齐.
-    // 内存由 aligned_alloc 分配, 删除器必须为 free (delete[] 与 aligned_alloc 不匹配, 属 UB).
+    // 内存由 safe::aligned_alloc 分配, 删除器为与之成对的 safe::aligned_free
+    // (平台分支见 base/safe.h, 分配/释放混用属 UB).
     std::unique_ptr<Slot[], void (*)(Slot*)> buffer_{nullptr, +[](Slot* p) noexcept {
-        std::free(p);
+        safe::aligned_free(p);
     }};
     // 用于将序号映射为数组索引的掩码(mask = capacity - 1)
     size_t mask_;

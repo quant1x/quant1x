@@ -3,6 +3,7 @@
 #define QUANT1X_BASE_SAFE_H 1
 
 #include <cerrno>   // C标准库errno
+#include <cstddef>  // size_t
 #include <cstdio>   // snprintf
 #include <cstring>  // C标准库字符串函数
 #include <ctime>
@@ -42,6 +43,17 @@ namespace safe {
         buf.resize(std::strlen(buf.c_str()));
         return buf;
     }
+
+    // 按指定对齐分配内存, 参数顺序与 std::aligned_alloc 一致 (alignment, size).
+    // 跨平台差异收敛(Windows CRT 不提供 aligned_alloc):
+    //   - MSVC:    _aligned_malloc / _aligned_free
+    //   - MinGW-w64: __mingw_aligned_malloc / __mingw_aligned_free
+    //   - 其余(glibc / macOS arm64 g++ 等): std::aligned_alloc / std::free
+    // 失败返回 nullptr(不抛异常), 分配/释放必须成对使用, 混用属 UB.
+    void* aligned_alloc(size_t alignment, size_t size) noexcept;
+
+    // 释放 aligned_alloc 分配的内存, 与分配函数成对匹配(见 aligned_alloc 说明)
+    void aligned_free(void* p) noexcept;
 }  // namespace safe
 
 #endif  // QUANT1X_BASE_SAFE_H
