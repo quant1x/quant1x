@@ -5,6 +5,7 @@
 #include <quant1x/distributed/id/state_store.h>
 
 #include <quant1x/base/mmap.h>
+#include <quant1x/base/safe.h>
 #include <quant1x/distributed/id/crc32.h>
 
 #include <chrono>
@@ -219,11 +220,12 @@ PersistentState advance_persistent_state(const PersistentState &state, int64_t n
 }
 
 uint32_t default_sync_every_value() noexcept {
-    const char *value = std::getenv(ENV_SYNC_EVERY);
-    if (value != nullptr && *value != '\0') {
+    // safe::getenv 收敛 MSVC 的 getenv 弃用警告 (C4996) 与平台差异
+    const auto value = safe::getenv(ENV_SYNC_EVERY);
+    if (value.has_value() && !value->empty()) {
         char *end = nullptr;
-        const unsigned long parsed = std::strtoul(value, &end, 10);
-        if (end != value && parsed > 0 && parsed <= UINT32_MAX) {
+        const unsigned long parsed = std::strtoul(value->c_str(), &end, 10);
+        if (end != value->c_str() && parsed > 0 && parsed <= UINT32_MAX) {
             return static_cast<uint32_t>(parsed);
         }
     }
