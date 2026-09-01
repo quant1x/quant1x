@@ -381,7 +381,9 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
     # 检测 C++ 编译器是否支持 -Os
     check_cxx_compiler_flag("-Os" HAS_OS_FLAG_CXX)
 
-    if (HAS_OS_FLAG_C AND HAS_OS_FLAG_CXX)
+    # MSVC 的 cl.exe 接受 -Os 语法但语义为 /Os(优化体积), 且 /O 组选项互斥、
+    # 最后一个生效, 会覆盖前面的 /O2 导致热路径性能崩盘, 故排除.
+    if (HAS_OS_FLAG_C AND HAS_OS_FLAG_CXX AND NOT MSVC)
         message(STATUS "Compiler supports -Os optimization")
         # 全局设置（不推荐，除非确实需要）
         target_compile_options(global_compile_options INTERFACE -Os)
