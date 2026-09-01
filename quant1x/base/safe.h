@@ -5,6 +5,7 @@
 #include <cerrno>   // C标准库errno
 #include <cstddef>  // size_t
 #include <cstdio>   // snprintf
+#include <cstdint>  // int64_t
 #include <cstring>  // C标准库字符串函数
 #include <ctime>
 #include <string>
@@ -54,6 +55,25 @@ namespace safe {
 
     // 释放 aligned_alloc 分配的内存, 与分配函数成对匹配(见 aligned_alloc 说明)
     void aligned_free(void* p) noexcept;
+
+    // 短时休眠, 参数单位为微秒.
+    //
+    // Windows 上**不要**用 std::this_thread::sleep_for 做亚毫秒级休眠:
+    // MSVC 的实现会把短暂时长向上取整为 Sleep(1), 而 Sleep(1) 受系统默认 15.6ms
+    // 定时器粒度支配 —— 实测 sleep_for(50us) 单次实际耗时 15.57ms, 是名义值的
+    // 311 倍. Rust 的 thread::sleep(50us) 实测 0.55ms, 两者相差 28 倍.
+    //
+    // 该差异对无锁算法的退避路径是致命的: Vyukov 队列在连续 8 次 CAS 竞争失败后
+    // 进入第三级退避(名义 50us), C++ 侧每次退避实际停摆 15.6ms, 8 生产者场景下
+    // 吞吐从 23.1M/s 跌到 1.1M/s(实测, 相差 21 倍), 而 Rust 侧曲线保持平坦.
+    //
+    // 本函数在 Windows 上改用 CREATE_WAITABLE_TIMER_HIGH_RESOLUTION 可等待定时器
+    // (实测单次 0.53ms, 与 Rust 一致); 其他平台退化为 std::this_thread::sleep_for.
+    // 定时器句柄每次调用创建并关闭: 复用句柄需 thread_local 且多线程共享同一句柄
+    // 会互相干扰, 而实测创建开销仅 14us(548us vs 534us), 相对休眠本身可忽略.
+    //
+    // 该常量需 Windows 10 1803+; 创建失败时回退到 std::this_thread::sleep_for.
+    void sleep_for_microseconds(uint64_t us) noexcept;
 }  // namespace safe
 
 #endif  // QUANT1X_BASE_SAFE_H

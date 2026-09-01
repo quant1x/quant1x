@@ -56,9 +56,57 @@ Rust `Vec::with_capacity` 只分配不初始化；C++ 旧实现 `std::make_uniqu
 
 **修复**：`std::aligned_alloc(64, cap * sizeof(Slot))` 惰性分配 + placement new 构造 `Slot(i)` 只写 seq（模仿 Rust `AtomicUsize::new(i)`），storage 保持未初始化（同 `MaybeUninit::uninit`），删除器为 `std::free`。注意不能用 `new Slot[cap]`（over-aligned `operator new[]` 逐元素构造路径低效，实测 424µs，是低效路径而非正确对比）。
 
+### 已修复：Windows 退避第三级的休眠粒度（决定性根因，x86_64 慢数倍的真凶）
+
+三级退避的第三级名义休眠 50µs，但 MSVC 的 `std::this_thread::sleep_for(50µs)` 会向上取整为 `Sleep(1)`，受 Windows **默认 15.6ms 定时器粒度**支配：
+
+| 平台 / 手段 | 名义 | 实测单次耗时 |
+|---|---|---|
+| C++ `std::this_thread::sleep_for(50µs)`（MSVC） | 50µs | **15,571 µs**（311×） |
+| Rust `thread::sleep(50µs)` | 50µs | **554 µs** |
+| C++ `CreateWaitableTimerExW(HIGH_RESOLUTION)` | 50µs | **535 µs**（与 Rust 一致） |
+
+**相差 28 倍**。Vyukov 队列在连续 8 次 CAS 竞争失败后进入该级退避，C++ 侧每次停摆 15.6ms，而 Rust 只停 0.55ms。这是 Windows x86_64 上 C++ 比 Rust 慢数倍的主因，且**单线程基准完全测不出**（无争抢时不触发退避）。
+
+**修复**：新增 `safe::sleep_for_microseconds()`（`base/safe.h` / `base/safe.cpp`），Windows 上改用 `CREATE_WAITABLE_TIMER_HIGH_RESOLUTION` 可等待定时器，其余平台退化为 `sleep_for`。`windows.h` 仅在 `safe.cpp` 内包含，避免其宏泄漏到所有包含 `safe.h` 的翻译单元。
+
+修复前后（i7-12700T / Windows 11 / cl /O2，环形容量 65536，单轮 320 万条）：
+
+| 场景 | 修复前 | 修复后 | Rust |
+|---|---|---|---|
+| 1P1C | 50.1 M/s | **78.8 M/s** | 67.0 M/s |
+| 4P4C | 25.1 M/s | **82.3 M/s** | 76.7 M/s |
+| 8P8C | 15.6 M/s | **75.0 M/s** | 77.8 M/s |
+| 16P16C | 8.5 M/s | **68.4 M/s** | 50.7 M/s |
+
+修复后 C++ 曲线与 Rust 同样平坦（不再随线程数单调崩塌），8P8C 提升 **4.8 倍**。连续三轮复测（与 Rust 交替跑以抵消系统负载漂移），C++ 与 Rust 在各档位均落在同一噪声带内：
+
+| 场景 | C++ run1/2/3 | Rust run1/2/3 |
+|---|---|---|
+| 1P1C | 81.3 / 81.8 / 63.9 | 78.9 / 69.9 / 66.5 |
+| 4P4C | 80.1 / 73.8 / 76.5 | 77.8 / 73.7 / 76.0 |
+| 8P8C | 76.4 / 70.4 / 69.9 | 76.9 / 69.8 / 74.0 |
+| 16P16C | 72.0 / 65.0 / 68.8 | 69.6 / 66.0 / 73.6 |
+
+> **测量环境警告**：本测量的绝对数值对系统负载极度敏感。开发机后台常驻 IDE / 浏览器 / IM 等高占用进程时，同一份二进制实测可从 62 M/s 跌到 2.1 M/s（30 倍），且连纯内存分配耗时（ctor）都会同步从 25ms 涨到 135ms —— 后者与队列逻辑无关，是识别"环境噪声"而非"实现回退"的可靠判据。任何对比都应与 Rust 基线**交替**跑多轮取最好值，不可单轮定论。
+
+> 定位方法备忘：本问题被"单线程消融基准"长期掩盖。`scripts/msvc_mini_bench.bat` 测出单线程 167M ops/s（健康），无法暴露退避停摆；只有把入队侧与出队侧拆开、并测 1P1C→16P16C 的**扩展性曲线**，才能看出"吞吐随线程数单调下降"这一特征。新增 `benches/ringbuffer_mpmc_probe.cpp`（配 `scripts/msvc_mpmc_probe.bat`）固化该测量。
+
+### 诊断工具（Windows）
+
+| 工具 | 用途 | 能测出什么 |
+|---|---|---|
+| `scripts/msvc_sched_cost_probe.bat` | 调度原语开销（`sleep_for` / `yield` / `Sleep` / 可等待定时器） | **休眠粒度**——本次根因，也用于回归验证 `safe::sleep_for_microseconds` 是否仍生效 |
+| `scripts/msvc_mpmc_probe.bat` | 8P8C 争抢探针，同时构建 cl 与 clang-cl | **多线程扩展性曲线**，判定队列吞吐随线程数的变化趋势 |
+| `scripts/msvc_mini_bench.bat` | 单线程 push/pop 消融 | 仅热路径指令成本；**测不出争用与退避停摆**（见"定位方法备忘"） |
+
+三者分工的关键：先看调度原语（排除休眠粒度），再看扩展性曲线（排除争抢），最后才用单线程消融定位热路径指令。顺序反了会误判——本次就曾在单线程数字"健康"的情况下长期找不到根因。
+
 ### 已排除的候选方案（均实测后回退，代码中留有注释）
 
 1. **strong + SeqCst CAS**（完全照抄 Rust 参考实现）：实测更差（2421µs vs 1946µs），C++ 保留 weak + acq_rel（在 arm64 / x86 上与 Rust SeqCst 编译产物一致，语义等价）。
+
+2. **MSVC 下用 `_InterlockedCompareExchange64(p, 0, 0)` 实现 relaxed 读游标**：该内建是**带 lock 前缀的读-改-写**，而 Rust 的 `load(Relaxed)` 只是一条 `mov`。`cl /O2` 汇编实测：修复前 push 热循环为 `2 × lock cmpxchg`（读游标 + CAS），修复后为 `1 × mov + 1 × lock cmpxchg`，与 rustc / clang-cl 一致。该改动**必要**（每次读游标都要独占争抢中的缓存行，把 CAS 争抢流量翻倍），但**不是** Windows 慢数倍的主因 —— 单独修它实测无显著变化（8P8C 1.3 vs 1.4 M/s，在噪声带内），真正的根因是上面的休眠粒度。现已回归 `std::atomic` 接口，仅 CAS 保留平台内建。
 
 ### 剩余差距（已知，非缺陷）
 
@@ -88,8 +136,44 @@ cmake --build build-clang --target benchmark-vyukov_bench
 cargo bench --bench vyukov_bench
 ```
 
+## Windows 侧复现
+
+```bat
+:: 1) 调度原语开销 —— 先确认休眠粒度正常(应约 0.55ms, 若为 15ms 则高精度定时器不可用)
+scripts\msvc_sched_cost_probe.bat
+
+:: 2) 8P8C 争抢探针, 同时构建 cl 与 clang-cl 两套做对比
+scripts\msvc_mpmc_probe.bat
+
+:: 3) 单线程消融(仅作热路径参考, 测不出争用与退避)
+scripts\msvc_mini_bench.bat
+
+:: 4) CMake 构建配置(含本机绝对路径, 使用前按需修改)
+scripts\msvc_configure.bat
+```
+
+### Rust 基线（用于对照 C++ 扩展性曲线）
+
+`benches/vyukov_bench.rs`（Criterion）只覆盖固定 8P8C。若需要 1P1C→16P16C 的
+**扩展性曲线**与 C++ 侧逐档对照，可临时用 `rustc` 直接编译（无需改动 Cargo.toml，
+`ringbuffer.rs` 只依赖 std）：
+
+```rust
+// rust_scale.rs —— 与 benches/ringbuffer_mpmc_probe.cpp 参数严格一致
+include!("<repo>/quant1x/runtime/ringbuffer.rs");
+fn main() { /* 对 np in [1,2,4,8,16] 各跑一轮, 消费者用每线程本地计数 */ }
+```
+
+```bat
+rustc -O -o build-msvc\rust_scale.exe build-msvc\rust_scale.rs
+```
+
+注意：`ringbuffer.rs` 自带 `use std::sync::Arc; use std::thread;`，外侧不可重复导入
+（会触发 `E0252`）。对照时应与 C++ 侧**交替**跑多轮取最好值，以抵消系统负载漂移。
+
 ## 注意事项
 
 - 推荐 LLVM/Clang 后端（clang++ / rustc 的 LLVM）；g++ 对热点代码的 codegen 更保守，吞吐显著偏低。
+- Windows 上 third tier 退避必须走 `safe::sleep_for_microseconds()`，不可用 `std::this_thread::sleep_for`（15.6ms 粒度，详见"已修复"一节）。
 - 性能波动受系统调度、CPU 频率、电源策略影响，建议在受控环境（空闲系统、固定 CPU 亲和性、电源性能模式）下测量。
-- 当前对比数据在 Apple Silicon（arm64）上测得；x86 平台行为可能不同，尚未实测。
+- arm64 数据在 Apple Silicon 上测得；x86_64 数据在 i7-12700T / Windows 11 上测得，修复后两者均与 Rust 对齐。

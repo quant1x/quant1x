@@ -26,7 +26,8 @@
 #include <new>
 #include <utility>
 #include <stdexcept>
-#include <chrono>
+// <chrono> 曾为 backoff_spin 第三级的 sleep_for(50us) 而包含; 该级现改走
+// safe::sleep_for_microseconds(50) 以绕开 Windows 15.6ms 定时器粒度, 故不再需要.
 #include <thread>
 
 #include <quant1x/base/safe.h>
@@ -48,13 +49,71 @@
 #  define CPU_PAUSE() _mm_pause()
 #endif
 
-// 跨编译器的属性宏: 在 GCC/Clang 上使用 always_inline/hot, 以期望代码内联和热路径优化；
-// 在 MSVC 上使用 __forceinline. 
+// 跨编译器的属性宏: 在 GCC/Clang 上使用 always_inline/hot, 在 MSVC 上使用 __forceinline.
+// 必须定义于热路径包装层之前: 包装层依赖它保证被内联进 try_push / try_pop / push / pop.
 #if defined(_MSC_VER)
 #  define ATTR_ALWAYS_INLINE_HOT __forceinline
 #else
 #  define ATTR_ALWAYS_INLINE_HOT inline __attribute__((always_inline, hot))
 #endif
+
+// ---------------------------------------------------------------------------
+// 热路径原子包装层
+//
+// 设计目标只有一个: 让各编译器在 x86_64 / arm64 上生成与 Rust 参考实现(LLVM 后端)
+// 等价的指令序列. "使用平台内建"本身不是目的, 指令条数才是.
+//
+// 历史教训 (2026-09, Windows x86_64, cl /O2 汇编实测):
+// 曾以 `_InterlockedCompareExchange64(p, 0, 0)` 实现 MSVC 下的 relaxed 读游标.
+// 该内建是**带 lock 前缀的读-改-写**, 而 Rust 的 `load(Relaxed)` 只是一条 `mov`:
+//   * 每次"读游标"都要独占 enqueue_pos_ / dequeue_pos_ 所在缓存行(MESI → E/M 态),
+//     8 路生产者/消费者在同一行上互相失效, 把本已串化的 CAS 争抢流量再翻一倍.
+//   * 单线程消融基准暴露不了: 无跨核争用时 lock 指令只是一次本地 RMW, 与 `mov`
+//     的差距被完全掩盖(见 scripts/msvc_mini_bench.bat 的定位局限).
+// 实测 (cl /O2, push 热循环, 游标在 [obj+64]):
+//   * 修复前: 2 × `lock cmpxchg` + 0 × `mov`  (读游标与 CAS 都是 lock RMW)
+//   * 修复后: 1 × `mov` + 1 × `lock cmpxchg` (与 rustc / clang-cl 一致)
+// 结论: relaxed 读一律回归 std::atomic 接口; 只有 CAS 保留平台内建 —— 它在 x64 上
+// 与 `lock cmpxchg` 逐字节等价, 且可杜绝编译器额外插入 `mfence` / `xchg` 序列.
+//
+// ⚠️ 但本项**不是** Windows 上比 Rust 慢数倍的主因: 单独修它 8P8C 实测 1.3 vs
+// 1.4 M/s, 落在噪声带内. 真正的根因是 backoff_spin 第三级的休眠粒度(见下方
+// backoff_spin 注释与 base/safe.h 中 sleep_for_microseconds 的说明). 保留本修复
+// 因为它确实消除了多余的 lock 流量, 但不要误当作性能差距的解释.
+// ---------------------------------------------------------------------------
+namespace runtime::ringbuffer {
+namespace detail {
+
+// Relaxed 读取入队/出队游标. x86_64 / arm64 上均退化为普通 load, 无 lock, 无 fence.
+ATTR_ALWAYS_INLINE_HOT size_t atomic_load_relaxed(const std::atomic<size_t>& a) noexcept {
+    return a.load(std::memory_order_relaxed);
+}
+
+// 竞争入队/出队游标. 成功序 acq_rel / 失败序 relaxed: 失败路径只重读游标, 不需要同步;
+// x86_64 上 acq_rel 的 `lock cmpxchg` 本身即全序, 不会再额外插入 fence.
+// 不使用 SeqCst: 本算法除游标外还有 per-slot seq 做 release/acquire 配对, 游标只需
+// "不重复发号"的原子性, 无需全局序(实测 arm64/x64 与 Rust SeqCst 生成同码).
+ATTR_ALWAYS_INLINE_HOT bool atomic_cas_weak(std::atomic<size_t>& a, size_t& expected, size_t desired) noexcept {
+#if defined(_MSC_VER) && !defined(__clang__) && (defined(_M_X64) || defined(_M_AMD64))
+    const long long exp = static_cast<long long>(expected);
+    const long long res = _InterlockedCompareExchange64(
+        reinterpret_cast<volatile long long*>(std::addressof(a)),
+        static_cast<long long>(desired), exp);
+    if (res == exp) {
+        return true;
+    }
+    expected = static_cast<size_t>(res);
+    return false;
+#else
+    return a.compare_exchange_weak(expected, desired, std::memory_order_acq_rel, std::memory_order_relaxed);
+#endif
+}
+
+}  // namespace detail
+}  // namespace runtime::ringbuffer
+
+
+
 
 namespace runtime::ringbuffer {
 
@@ -142,23 +201,13 @@ public:
         // 阻塞等待策略由调用者控制
         uint32_t retry = 0;
         while (true) {
-            size_t pos =
-#if defined(__GNUG__)
-                atomic_load_relaxed_gcc(dequeue_pos_);
-#else
-                dequeue_pos_.load(std::memory_order_relaxed);
-#endif
+            size_t pos = detail::atomic_load_relaxed(dequeue_pos_);
             Slot& slot = buffer_[pos & mask_];
             size_t seq = slot.seq.load(std::memory_order_acquire);
 
             if (seq == pos + 1) {
                 size_t expected_pos = pos;
-#if defined(__GNUG__)
-                if (atomic_cas_weak_gcc(dequeue_pos_, expected_pos, pos + 1)) {
-#else
-                if (dequeue_pos_.compare_exchange_weak(expected_pos, pos + 1,
-                    std::memory_order_acquire, std::memory_order_relaxed)) {
-#endif
+                if (detail::atomic_cas_weak(dequeue_pos_, expected_pos, pos + 1)) {
                     // 成功获取该槽位的所有权
                     T* ptr = std::launder(reinterpret_cast<T*>(&slot.storage));
                     out = std::move(*ptr);
@@ -199,23 +248,13 @@ public:
     ) {
         uint32_t backoff = 0;
         while (true) {
-            size_t pos =
-#if defined(__GNUG__)
-                atomic_load_relaxed_gcc(dequeue_pos_);
-#else
-                dequeue_pos_.load(std::memory_order_relaxed);
-#endif
+            size_t pos = detail::atomic_load_relaxed(dequeue_pos_);
             Slot& slot = buffer_[pos & mask_];
             size_t seq = slot.seq.load(std::memory_order_acquire);
 
             if (seq == pos + 1) {
                 size_t expected_pos = pos;
-#if defined(__GNUG__)
-                if (atomic_cas_weak_gcc(dequeue_pos_, expected_pos, pos + 1)) {
-#else
-                if (dequeue_pos_.compare_exchange_weak(expected_pos, pos + 1,
-                    std::memory_order_acquire, std::memory_order_relaxed)) {
-#endif
+                if (detail::atomic_cas_weak(dequeue_pos_, expected_pos, pos + 1)) {
                     // 成功获取该槽位的所有权
                     T* ptr = std::launder(reinterpret_cast<T*>(&slot.storage));
                     out = std::move(*ptr);
@@ -293,23 +332,19 @@ private:
     // 用于将序号映射为数组索引的掩码(mask = capacity - 1)
     size_t mask_;
     // 生产者游标(下一个待写入序号), 按缓存行对齐以减少伪共享
+    // 注: 保持 64 字节(与 Rust `#[repr(align(64))]` 一致)以保证跨语言布局等价;
+    // x86 的相邻扇区预取(128B)可能让两行仍在同一扇区内, 若要实验 alignas(128)
+    // 需 C++/Rust 同时改, 否则对比失去意义.
     alignas(64) std::atomic<size_t> enqueue_pos_{0};
     // 消费者游标(下一个待读取序号), 按缓存行对齐以减少伪共享
     alignas(64) std::atomic<size_t> dequeue_pos_{0};
     // 关闭标志(true 表示队列已关闭), 消费者可据此在空队列时退出
-    std::atomic<bool> closed_{false};
-
-#if defined(__GNUG__)
-    // 针对 GCC 的轻量封装, 基于 __atomic 内建函数, 用于在 Windows (MinGW) 上
-    // 尝试引导更高效的热路径原子操作代码生成
-    static inline size_t atomic_load_relaxed_gcc(const std::atomic<size_t>& a) noexcept {
-        return __atomic_load_n(reinterpret_cast<const size_t*>(&a), __ATOMIC_RELAXED);
-    }
-
-    static inline bool atomic_cas_weak_gcc(std::atomic<size_t>& a, size_t& expected, size_t desired) noexcept {
-        return __atomic_compare_exchange_n(reinterpret_cast<size_t*>(&a), &expected, desired, true, __ATOMIC_ACQ_REL, __ATOMIC_RELAXED);
-    }
-#endif
+    // 独占缓存行: 与上面对齐的游标不同, alignas 只影响偏移不影响大小, 不显式对齐
+    // 时 closed_ 会落在 dequeue_pos_ 的同一行内(cl /O2 实测偏移 [obj+128] 与
+    // [obj+136]), close() 的一次 release 写会把 8 路消费者正在争抢的 dequeue_pos_
+    // 整行失效. Rust 侧 `AlignedAtomicUsize` 的 repr(align(64)) 使其 size = 64,
+    // `closed` 天然独占一行, 此处是为对齐该布局.
+    alignas(64) std::atomic<bool> closed_{false};
 
     // 向上取整到下一个 2 的幂
     static size_t round_up_to_power_of_two(size_t v) noexcept {
@@ -330,15 +365,22 @@ private:
     // 自旋退避策略: 与 Rust `Queue::backoff_spin` 逐级对齐.
     // - 前 4 次: CPU_PAUSE 自旋提示, 纳秒级, 吸收瞬时竞争
     // - 中 4 次: std::this_thread::yield 让出时间片, 微秒级, 竞争持续时降低总线争用
-    // - 之后: sleep 50us, 毫秒级, 长时间等待时彻底释放 CPU
+    // - 之后: 休眠 50us, 长时间等待时彻底释放 CPU
     // 退避计数器在重试间保持, 竞争越久退避越激进, 避免多生产者/消费者互相饿死.
+    //
+    // 第三级**必须**走 safe::sleep_for_microseconds 而非 std::this_thread::sleep_for:
+    // MSVC 的后者会把 50us 向上取整为 Sleep(1), 受 Windows 默认 15.6ms 定时器粒度
+    // 支配, 实测单次实际耗时 15.57ms(名义值的 311 倍); Rust 的 thread::sleep(50us)
+    // 实测 0.55ms. 相差 28 倍 —— 这是 Windows x86_64 上本实现比 Rust 慢数倍的
+    // 主因: 8 生产者场景下每次退避停摆 15.6ms, 实测吞吐 1.1M/s vs 修复后 23.1M/s.
+    // 详见 base/safe.h 中 sleep_for_microseconds 的说明.
     static void backoff_spin(uint32_t& iter) noexcept {
         if (iter < 4) {
             CPU_PAUSE();
         } else if (iter < 8) {
             std::this_thread::yield();
         } else {
-            std::this_thread::sleep_for(std::chrono::microseconds(50));
+            safe::sleep_for_microseconds(50);
         }
         ++iter;
     }
@@ -363,24 +405,14 @@ private:
         // 仅队满(seq < pos)返回 false.
         uint32_t backoff = 0;
         while (true) {
-            size_t pos =
-#if defined(__GNUG__)
-                atomic_load_relaxed_gcc(enqueue_pos_);
-#else
-                enqueue_pos_.load(std::memory_order_relaxed);
-#endif
+            size_t pos = detail::atomic_load_relaxed(enqueue_pos_);
             Slot& slot = buffer_[pos & mask_];
             size_t seq = slot.seq.load(std::memory_order_acquire);
 
             if (seq == pos) {
                 // 槽位已准备好写入
                 size_t expected_pos = pos;
-#if defined(__GNUG__)
-                if (atomic_cas_weak_gcc(enqueue_pos_, expected_pos, pos + 1)) {
-#else
-                if (enqueue_pos_.compare_exchange_weak(expected_pos, pos + 1,
-                    std::memory_order_acq_rel, std::memory_order_relaxed)) {
-#endif
+                if (detail::atomic_cas_weak(enqueue_pos_, expected_pos, pos + 1)) {
                     // 成功预留该槽位; 构造为 nothrow (见 static_assert),
                     // 不存在需要回滚索引的异常路径
                     T* ptr = std::launder(reinterpret_cast<T*>(&slot.storage));
@@ -420,24 +452,14 @@ private:
         // 仍不可行立即返回 false; 绝不 yield/sleep, 阻塞等待策略由调用者控制
         uint32_t retry = 0;
         while (true) {
-            size_t pos =
-#if defined(__GNUG__)
-                atomic_load_relaxed_gcc(enqueue_pos_);
-#else
-                enqueue_pos_.load(std::memory_order_relaxed);
-#endif
+            size_t pos = detail::atomic_load_relaxed(enqueue_pos_);
             Slot& slot = buffer_[pos & mask_];
             size_t seq = slot.seq.load(std::memory_order_acquire);
 
             if (seq == pos) {
                 // 槽位已准备好写入
                 size_t expected_pos = pos;
-#if defined(__GNUG__)
-                if (atomic_cas_weak_gcc(enqueue_pos_, expected_pos, pos + 1)) {
-#else
-                if (enqueue_pos_.compare_exchange_weak(expected_pos, pos + 1,
-                    std::memory_order_acq_rel, std::memory_order_relaxed)) {
-#endif
+                if (detail::atomic_cas_weak(enqueue_pos_, expected_pos, pos + 1)) {
                     // 成功预留该槽位; 构造为 nothrow (见 static_assert),
                     // 不存在需要回滚索引的异常路径
                     T* ptr = std::launder(reinterpret_cast<T*>(&slot.storage));
