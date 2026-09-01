@@ -168,22 +168,44 @@ include(cmake/openssl.cmake)
 # zlib
 # vcpkg MinGW(x64-mingw-static) 生成的 zlib 静态库为 libzs.a, CMake 内置 FindZLIB 搜索
 # 库名为 z/zlib/zdll, 不匹配 zs, 需在 find_package 前显式指定 ZLIB_LIBRARY
-# 其余平台(arm64-osx / x64-linux 等) vcpkg 生成的 zlib 静态库名为 libz.a
+# 其余平台 vcpkg 生成的 zlib 静态库名各异: arm64-osx / x64-linux 为 libz.a,
+# MSVC(x64-windows-static) 为 zlib.lib. 统一通过 vcpkg 的 ZLIB::ZLIB 导入
+# target 链接, 避免按平台硬编码库名.
 if(DEFINED VCPKG_LIBS_PATH)
     if(MINGW)
         set(ZLIB_LIBRARY "${VCPKG_LIBS_PATH}/lib/libzs.a" CACHE FILEPATH "zlib library" FORCE)
+        set(ZLIB_INCLUDE_DIR "${VCPKG_LIBS_PATH}/include" CACHE PATH "zlib include dir" FORCE)
+    endif()
+endif()
+find_package(ZLIB REQUIRED)
+# MSVC 下 FindZLIB 会找到 zlib.lib, 无需手动指定 ZLIB_LIBRARY;
+# 非 MinGW 平台若 FindZLIB 未命中, 再按平台库名回退.
+if(NOT MINGW AND NOT TARGET ZLIB::ZLIB)
+    if(MSVC)
+        set(ZLIB_LIBRARY "${VCPKG_LIBS_PATH}/lib/zlib.lib" CACHE FILEPATH "zlib library" FORCE)
     else()
         set(ZLIB_LIBRARY "${VCPKG_LIBS_PATH}/lib/libz.a" CACHE FILEPATH "zlib library" FORCE)
     endif()
     set(ZLIB_INCLUDE_DIR "${VCPKG_LIBS_PATH}/include" CACHE PATH "zlib include dir" FORCE)
+    find_package(ZLIB REQUIRED)
 endif()
-find_package(ZLIB REQUIRED)
 target_link_libraries(third_libs INTERFACE ZLIB::ZLIB)
 echo_lib_version(ZLIB ${ZLIB_VERSION})
 
 # minizip
 find_package(minizip CONFIG REQUIRED)
-target_link_libraries(third_libs INTERFACE $<IF:$<TARGET_EXISTS:MINIZIP::minizip>,MINIZIP::minizip,MINIZIP::minizipstatic>)
+# 各版本/各 triplet 的 target 名不统一: 旧包 MINIZIP::minizip / MINIZIP::minizipstatic,
+# 新包(minizip 1.3.2+)为 minizip::minizip. 生成期条件表达式在 MSVC 下无法命中
+# 目标名, 这里按实际存在的 target 依次回退.
+if(TARGET MINIZIP::minizip)
+    target_link_libraries(third_libs INTERFACE MINIZIP::minizip)
+elseif(TARGET MINIZIP::minizipstatic)
+    target_link_libraries(third_libs INTERFACE MINIZIP::minizipstatic)
+elseif(TARGET minizip::minizip)
+    target_link_libraries(third_libs INTERFACE minizip::minizip)
+else()
+    message(FATAL_ERROR "minizip: 未找到可用的 CMake target")
+endif()
 if(DEFINED minizip_VERSION AND NOT minizip_VERSION STREQUAL "")
     echo_lib_version(minizip ${minizip_VERSION})
 else()
@@ -210,12 +232,36 @@ echo_lib_version(yaml-cpp ${yaml-cpp_VERSION})
 # tsl::robin_map(robin-map)
 #find_package(tsl-robin-map CONFIG REQUIRED)
 #target_link_libraries(main PRIVATE tsl::robin_map)
-set(tsl-robin-map_VERSION "1.4.0")
+set(_tsl_robin_header "${CMAKE_SOURCE_DIR}/third_party/include/tsl/robin_growth_policy.h")
+if(EXISTS "${_tsl_robin_header}")
+    file(STRINGS "${_tsl_robin_header}" _tsl_robin_version_lines
+        REGEX "TSL_RH_VERSION_(MAJOR|MINOR|PATCH)[ 	]+[0-9]+")
+    set(_tsl_robin_major "0")
+    set(_tsl_robin_minor "0")
+    set(_tsl_robin_patch "0")
+    foreach(_line IN LISTS _tsl_robin_version_lines)
+        if(_line MATCHES "TSL_RH_VERSION_MAJOR[ 	]+([0-9]+)")
+            set(_tsl_robin_major "${CMAKE_MATCH_1}")
+        elseif(_line MATCHES "TSL_RH_VERSION_MINOR[ 	]+([0-9]+)")
+            set(_tsl_robin_minor "${CMAKE_MATCH_1}")
+        elseif(_line MATCHES "TSL_RH_VERSION_PATCH[ 	]+([0-9]+)")
+            set(_tsl_robin_patch "${CMAKE_MATCH_1}")
+        endif()
+    endforeach()
+    set(tsl-robin-map_VERSION "${_tsl_robin_major}.${_tsl_robin_minor}.${_tsl_robin_patch}")
+else()
+    set(tsl-robin-map_VERSION "unknown")
+endif()
+unset(_tsl_robin_header)
+unset(_tsl_robin_version_lines)
+unset(_tsl_robin_major)
+unset(_tsl_robin_minor)
+unset(_tsl_robin_patch)
 echo_lib_version(tsl-robin-map ${tsl-robin-map_VERSION})
 
 # croncpp
 #find_package(croncpp CONFIG REQUIRED)
-set(croncpp_VERSION "2023-03-30")
+set(croncpp_VERSION "2026.08.12")
 echo_lib_version(croncpp ${croncpp_VERSION})
 
 # ==============================
