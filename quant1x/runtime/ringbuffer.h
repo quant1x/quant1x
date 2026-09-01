@@ -174,8 +174,10 @@ public:
     }
 
 private:
-    struct Slot {
-        alignas(64) std::atomic<size_t> seq{0};
+    // 整个槽位独占一个缓存行: struct 级 64 字节对齐确保槽的起始地址与大小
+    // 都是 64 的整数倍, 无论成员如何调整都不产生跨槽伪共享
+    struct alignas(64) Slot {
+        std::atomic<size_t> seq{0};
         // 使用 std::byte 作为原始存储以在 C++17+ 中提供更好的类型安全
         alignas(alignof(T)) std::byte storage[sizeof(T)]{};
     };
@@ -211,7 +213,10 @@ private:
         v |= v >> 4;
         v |= v >> 8;
         v |= v >> 16;
-        v |= v >> 32;
+        // 32 位 size_t 下移位计数 >= 位宽是 UB, 编译期剪除该分支
+        if constexpr (sizeof(size_t) > 4) {
+            v |= v >> 32;
+        }
         v++;
         return v;
     }
