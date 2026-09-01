@@ -166,10 +166,15 @@ message(STATUS "================== 基础功能库 ==================")
 include(cmake/openssl.cmake)
 
 # zlib
-# vcpkg x64-mingw-static 生成的 zlib 库为 libzs.a, CMake 内置 FindZLIB 搜索
+# vcpkg MinGW(x64-mingw-static) 生成的 zlib 静态库为 libzs.a, CMake 内置 FindZLIB 搜索
 # 库名为 z/zlib/zdll, 不匹配 zs, 需在 find_package 前显式指定 ZLIB_LIBRARY
+# 其余平台(arm64-osx / x64-linux 等) vcpkg 生成的 zlib 静态库名为 libz.a
 if(DEFINED VCPKG_LIBS_PATH)
-    set(ZLIB_LIBRARY "${VCPKG_LIBS_PATH}/lib/libzs.a" CACHE FILEPATH "zlib library" FORCE)
+    if(MINGW)
+        set(ZLIB_LIBRARY "${VCPKG_LIBS_PATH}/lib/libzs.a" CACHE FILEPATH "zlib library" FORCE)
+    else()
+        set(ZLIB_LIBRARY "${VCPKG_LIBS_PATH}/lib/libz.a" CACHE FILEPATH "zlib library" FORCE)
+    endif()
     set(ZLIB_INCLUDE_DIR "${VCPKG_LIBS_PATH}/include" CACHE PATH "zlib include dir" FORCE)
 endif()
 find_package(ZLIB REQUIRED)
