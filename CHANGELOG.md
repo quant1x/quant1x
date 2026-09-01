@@ -3,6 +3,244 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.74] - 2026-09-01
+### Changed
+- distributed/id: 修正 base64url 跨语言不兼容与严格模式水位回退, 修复 Go Serve 队满卡死
+
+三处跨语言一致性问题与缺陷修复:
+
+1. Rust 版 base64url 编码与 Go/Python 不兼容
+   Rust 的 encode_base64url 把末字符的数据放在 6 位值的低 4 位, 而 Go 的
+   base64.RawURLEncoding 与 Python 的 urlsafe_b64encode 放在高 4 位 (低 2 位补 0),
+   导致同一 ID 在 Rust 与其他语言间产生的字符串不同, 无法互通.
+   按 Python (Spec 锚点) 与 Go 的标准布局修正 Rust 的编码与解码, 并在 Go/Rust/C++
+   三侧补充标准向量断言锁定布局, 防止回归.
+
+2. 严格模式下 checkpoint 未同步内存水位导致水位回退
+   Go/Rust 的 checkpoint() 写入成功後未更新 latest, close() 触发的 flush() 会用
+   旧水位覆盖刚写入的新 checkpoint, 造成水位回退, 严格模式重启可能重复发号.
+   按 Python (Spec 锚点) 的修正方式, 在 Go/Rust 的 checkpoint() 内于写入成功后
+   同步 latest, 并把 Python 侧的修正统一收敛到 checkpoint() 内, 使四种语言行为一致.
+
+3. Go 版 Serve 在队列满时无法响应取消 (TestGeneratorServeDrainAfterCancel 挂起)
+   Serve 使用阻塞式 Push, 队列满且消费者停止时会卡在 Push 内部, 无法回到循环顶部
+   检查 ctx.Done(), 导致取消信号被永久延迟, 整个测试套件挂死; 该缺陷在 Rust/C++/
+   Python 版实现时已刻意规避. 本次改用非阻塞 TryPush 循环, 队列满时重试同一个 ID
+   并让出时间片, 每轮检查取消与关闭, 与其余三语言语义一致.
+   同时加强该用例: 改为等待队列填满后再取消以复现"生产端阻塞在满队列"场景,
+   并增加 5 秒超时保护, 避免回归时挂死测试套件.
+
+验证: Go/Rust/Python/C++ 四语言测试全部通过, base64url 标准向量四语言输出一致.
+- benches: 修复 vyukov 基准测试从未运行、吞吐高估与场景缺失
+
+修复 benches/vyukov_bench.rs 与 Cargo.toml 的以下缺陷:
+
+1. 基准从未实际运行 (致命)
+   Cargo.toml 未声明 [[bench]] harness = false, Cargo 默认启用 libtest harness,
+   rustc 在 --test 模式注入的 main 覆盖了 criterion_main! 生成的主函数,
+   表现为 `running 0 tests` 后 0.00s 通过, 编译无错无警告且退出码为 0.
+   CI 中长期绿灯但从未产生任何数据. 现已补上 harness = false 声明.
+
+2. 吞吐被高估 60 倍
+   Throughput::Elements 硬编码 8*300000, 而实际单轮工作量为 8*5000,
+   声明值与真实值脱节, 报告吞吐虚高 60 倍 (613 Melem/s vs 真实约 10 Melem/s).
+   现改为由 TOTAL 常量推导, 与断言共用同一来源.
+
+3. 背压路径从未被测量
+   队列容量 65536 大于单轮总量 40000, 队列永不满, push 从不阻塞.
+   现拆分为背压 (容量 1024) 与无背压 (容量 262144) 两个场景.
+
+4. 线程创建开销被计入队列吞吐
+   每轮 spawn/join 16 个线程, Windows 上约 1ms; 早期单轮总耗时仅约 4ms,
+   该开销占比可达 25%. 现以 iter_custom 差分扣除等量空转线程的开销,
+   并保留 thread_overhead 对照基准使开销可见; 单轮数据量取 16 万条,
+   使扣除后剩余耗时远大于线程开销, 降低差分测量的相对误差.
+
+关于线程复用: 曾尝试复用生产/消费线程以彻底消除创建开销, 实测劣化且
+方差极大. 原因是常驻消费者在两轮之间持续阻塞在 pop 上, 而 pop 在队列
+空时会退避到 sleep(50us), 下一轮开始时必须先等这些睡眠中的消费者被唤醒,
+该延迟远大于线程创建开销. 该结论已写入文件注释, 避免后续重复尝试.
+
+当前实测 (Windows, 8 生产者 + 8 消费者, 受机器负载影响约 10~15% 波动):
+背压场景约 21 Melem/s, 无背压场景约 23 Melem/s.
+- examples: 将 vyukov_demo 注册为 CTest 用例并补齐正确性校验
+
+examples/vyukov_demo.cpp 从未被注册到 examples/CMakeLists.txt, 因此不参与
+构建 (build 目录无任何产物), 长期处于"写了但不编译"的状态. 本次将其纳入
+构建并注册为 CTest 用例, 同时按下述要点补齐其作为测试用例的必备条件:
+
+- 头文件包含改用 <quant1x/runtime/ringbuffer.h>: 原先使用相对路径
+  "../quant1x/runtime/ringbuffer.h", 与 tests 下同类文件不一致;
+- 增加并发语义校验: 生产总数与消费总数均须等于预期值, 否则以非 0 退出码
+  结束. 原实现只打印吞吐并恒返回 0, 直接作为测试会永远通过;
+- 增加超时保护 (60 秒): 消费者以"消费总数达到预期"为退出条件, 若生产者异常
+  终止, 消费者会无限自旋并挂死整个测试套件;
+- 变量统一为 constexpr 常量式命名, 计数使用 relaxed 原子操作.
+
+examples/CMakeLists.txt 同步清理: 移除 parse_yaml_example 上指向不存在目录
+的相对 include 路径 (该 target 的头文件路径由链接 quant1x 传递而来).
+
+验证:
+- ctest -R vyukov_demo 通过 (40 万条, 吞吐约 8.3 Melem/s);
+- 注入缺陷 (生产者不计数) 后用例 ***Failed 并输出期望值与实际值;
+- 注入缺陷 (生产者少生产) 后用例在超时后 3.27 秒失败退出, 未挂死;
+- 上述临时改动已还原, 文件内无残留.
+- runtime: 修正 Vyukov 队列 try_ 语义并根除 C++ 异常回滚的索引倒退隐患
+
+代码审查发现三处问题, 本次一并修正 (C++ 与 Rust 同步, 与 Go 版既有
+架构对齐, 即 try_ 快速失败 + 阻塞退避归外层方法):
+
+1. try_push / try_pop 违背非阻塞契约: 原实现竞争失败时调用 backoff_spin,
+   最坏路径会走到 yield 甚至 sleep (C++ 最坏 256us), 行情线程会被意外
+   阻塞引入延迟尖峰. 修正后竞争失败最多以一次 CPU pause (Rust 为
+   spin_loop) 吸收纳秒级瞬态并重试一次, 仍不可行立即返回 false/Err;
+   热路径不再包含任何 OS 调度操作.
+
+2. (仅 C++) emplace 异常回滚会倒退全局入队索引, 破坏无锁算法正确性:
+   CAS 成功后其他生产者可继续推进 enqueue_pos_, catch 块中的
+   store(pos) 回滚会覆盖其进度, 导致后续生产者死循环或覆盖未读数据.
+   修正: emplace 入口增加 static_assert 强制元素类型满足 nothrow 构造
+   与 nothrow 析构, 从编译期杜绝异常路径, 并删除整个 try-catch 回滚
+   逻辑及仅为它存在的 atomic_store_release_gcc. 现有调用方
+   (distributed/id 的 Id, uint64_t) 均为平凡类型, 不受影响.
+
+3. backoff_spin 及 <thread>/<chrono> 依赖删除: try_ 改快速失败后该
+   函数不再被调用; Rust 阻塞版 push/pop 的内部退避 (含 sleep) 属阻塞
+   方法语义, 予以保留.
+
+验证:
+- g++ -O3: vyukov_demo (4P4C, 40 万条) 计数校验通过, 吞吐 7.0-7.8
+  Melem/s 与修改前持平;
+- test-ringbuffer (10 采样 x 400 万) 全部通过;
+- distributed/id/queue.cpp 编译通过 (static_assert 成立);
+- cargo test: runtime::ringbuffer (basic, mpmc_small) 与
+  distributed::id (16 tests) 全部通过.
+- runtime: Vyukov 队列 C++ 槽位对齐显式化并消除 32 位平台移位 UB
+
+微调两处 (纯 C++, Rust/Go 无对应问题):
+
+1. alignas(64) 从成员 seq 提升到 Slot 结构体声明, 显式表达"整个槽位
+   独占一个缓存行"的设计意图: 无论未来如何调整成员, 槽的起始地址与
+   大小都保持 64 字节整数倍, 杜绝跨槽伪共享. 生成的布局不变 (seq 仍
+   在偏移 0, sizeof 仍为 64), 且与 Rust 版 #[repr(align(64))] 的
+   struct 级对齐标注跨语言一致.
+
+2. round_up_to_power_of_two 中 v >> 32 在 32 位 size_t 下移位计数
+   大于等于类型位宽, 属未定义行为. 以 if constexpr (sizeof(size_t)
+   > 4) 包裹, 64 位下编译期剪除该分支保持零开销, 32 位下合法.
+
+验证:
+- g++ -O3: vyukov_demo 2 轮通过 (400000/400000), 吞吐 7.36 Melem/s
+  与修改前持平;
+- test-ringbuffer (10 采样 x 400 万) 全部通过;
+- clangd lint 无警告.
+- 修复vcpkg.json格式的错误
+- 修复 macOS 构建时找不到 zlib 库的问题
+
+vcpkg 在 MinGW(x64-mingw-static) 下生成的 zlib 静态库名为 libzs.a，
+而 macOS(arm64-osx) 等其他平台为 libz.a。原实现硬编码 libzs.a，
+导致 macOS 上链接 q1x 时缺失该库。现按平台区分 zlib 静态库名。
+- 对齐 Rust: ringbuffer 增加阻塞式 push/pop 并修复 aarch64 退避指令
+
+- ringbuffer.h 新增 push/pop 阻塞式语义(与 Rust Queue::push/pop 一致),
+  仅队满或已关闭且为空时返回 false, 竞争失败按 backoff_spin 四级退避重试
+- 修复 Apple Silicon 性能 bug: aarch64 CPU_PAUSE 由 yield 改为 isb
+  (yield 的节流语义在 8 路 CAS 争抢下形成 convoy 正反馈, drain 阶段
+  138~7700us 剧烈抖动; 改 isb 后与 Rust spin_loop 完全对齐)
+- 新增 benches/vyukov_bench.cpp (Google Benchmark) 与 benches/CMakeLists.txt,
+  场景/参数与 Rust benches/vyukov_bench.rs 对齐 (8P8C, PER=20000,
+  容量 1024/262144, 差分扣除线程开销, 每轮断言数据完整性)
+- 文档: 更新 ringbuffer.md 记录 C++/Rust 性能对齐状态
+
+- 记录 aarch64 退避指令 yield->isb 的根因修复与实测效果
+- 记录已排除的候选方案 (ctor 清零 / strong+SeqCst CAS) 及原因
+- 记录剩余差距 (uncontended drain 阶段 ~25%, 微架构效应) 与基准对齐方法
+- 修复 ringbuffer ctor 槽区分配与基准计数器伪影，对齐 C++/Rust 性能
+
+1. ringbuffer.h: ctor 改用 aligned_alloc(64) + placement new 只写 seq，消除 16MB 槽区清零，对齐 Rust Vec::with_capacity 不初始化语义（~246µs → ~185µs）
+
+2. vyukov_bench.cpp/rs: 基准消费者改为每线程本地计数、join 后合并，消除共享原子计数器 consumed.fetch_add 引发的复合缓存行争用伪影（8P8C 消费速率 160 vs 159M/s 完全对齐）
+
+3. ringbuffer.md/README.md: 同步更新性能对齐状态、强制 Clang/LLVM 复现命令与 aarch64 isb 技术注记
+- 收敛跨平台对齐内存分配至 base/safe
+
+Windows CRT 不提供 aligned_alloc, 导致 MinGW-w64 下 std::aligned_alloc
+编译失败. 在 safe 中新增 aligned_alloc/aligned_free 统一三平台分支
+(MSVC _aligned_malloc / MinGW-w64 __mingw_aligned_malloc / 其余
+std::aligned_alloc), ringbuffer 槽区分配改用 safe 接口.
+- c++: 更新依赖库robin-map版本到1.4.1
+- c++: 更新croncpp版本到2026.08.12
+- c++: 更新部分依赖库的版本号
+- c++: 调整环境变量函数的调用
+- 修复 Windows x86_64 上 Vyukov 队列比 Rust 慢数倍的问题
+
+根因是三级退避的第三级休眠粒度: 名义 50us, 但 MSVC 的
+std::this_thread::sleep_for 会向上取整为 Sleep(1), 受 Windows 默认
+15.6ms 定时器粒度支配, 实测单次 15.57ms; 而 Rust 的 thread::sleep(50us)
+实测 0.55ms, 相差 28 倍. 连续 8 次 CAS 竞争失败后进入该级退避, C++ 侧
+每次停摆 15.6ms, 这是多线程场景慢数倍的主因.
+
+该问题长期被单线程消融基准掩盖: 无争抢时不触发退避, 单线程实测
+167M ops/s 属健康值, 只有测 1P1C 到 16P16C 的扩展性曲线才能看出吞吐
+随线程数单调崩塌的特征.
+
+修复:
+- 新增 safe::sleep_for_microseconds(), Windows 上改用带
+  CREATE_WAITABLE_TIMER_HIGH_RESOLUTION 标志的可等待定时器(实测 0.53ms,
+  与 Rust 一致), 其余平台退化为 std::this_thread::sleep_for.
+  windows.h 仅在 safe.cpp 内包含, 避免其宏泄漏到所有 safe.h 使用方;
+  该标志缺失时编译期自动退化, 语义不变.
+- ringbuffer.h 的 backoff_spin 第三级改用它.
+
+顺带修复两处真实缺陷:
+- MSVC 下曾以 _InterlockedCompareExchange64(p, 0, 0) 实现 relaxed 读游标,
+  该内建是带 lock 前缀的读改写, 而 Rust 的 load(Relaxed) 只是一条 mov.
+  cl /O2 汇编实测 push 热循环由 2 条 lock cmpxchg(读游标与 CAS) 变为
+  1 条 mov 加 1 条 lock cmpxchg, 与 rustc/clang-cl 一致.
+- closed_ 未做缓存行对齐, 落在 dequeue_pos_ 同一行内, close() 的一次
+  release 写会使 8 路消费者争抢的 dequeue_pos_ 整行失效; 补充
+  alignas(64) 以对齐 Rust 侧 AlignedAtomicUsize 的布局.
+- 移除随之不再需要的 <chrono> 包含.
+
+效果(i7-12700T / Windows 11 / cl /O2, 环形容量 65536, 单轮 320 万条),
+8P8C 由 15.6M/s 提升到 75.0M/s(4.8 倍), 16P16C 由 8.5M/s 提升到
+68.4M/s; 修复后曲线与 Rust 同样平坦, 三轮交替复测两者落在同一噪声带内.
+- 新增 Windows 侧 Vyukov 队列性能诊断工具(探针与构建脚本)
+
+本次性能问题的定位过程暴露出原有工具的空缺: 单线程消融基准测不出缓存行
+争用与退避停摆, 而那正是根因所在. 补上三个分工明确的探针, 使同类问题
+今后可被直接观测, 而不是靠猜测编译器后端.
+
+新增探针(benches/):
+- ringbuffer_sched_cost_probe.cpp: 测量 sleep_for / yield / Sleep(1) /
+  可等待定时器的真实耗时. 这是定位休眠粒度问题的关键工具, 也用于回归
+  验证 safe::sleep_for_microseconds 是否仍生效(若回落到 15ms 量级即说明
+  高精度定时器在当前系统不可用, 队列退避会回归慢路径).
+- ringbuffer_mpmc_probe.cpp: 8P8C 争抢探针, 分 backpressure / uncontended
+  两档并输出构造/生产/排空三阶段耗时. 固化了"扩展性曲线"这一测量方法 ——
+  吞吐随线程数单调下降是争抢类问题的特征信号.
+- ringbuffer_single_thread_ablation.cpp: 单线程消融, 并在文件头明确标注其
+  定位局限(测不出争用与退避), 避免后续再次误用它判断多线程性能.
+  两处场景均保证队列不会队满: 一旦队满 push 会快速返回 false, 剩余迭代
+  退化为空转, 吞吐会虚高一个量级(初版曾因此测出无意义的 387M/s).
+
+配套脚本(scripts/):
+- msvc_sched_cost_probe.bat / msvc_mpmc_probe.bat / msvc_mini_bench.bat
+  均用 cl 与 clang-cl 双编译器构建, 便于区分"编译器后端差异"与"实现缺陷".
+- msvc_configure.bat: 本机 CMake 配置辅助(含机器专属路径, 已加注释说明).
+
+三个探针均不依赖 Google Benchmark, 单文件可直接编译, 因此不接入
+benches/CMakeLists.txt, 以免拖慢常规构建.
+- 修正 MSVC 下 Release 构建被 -Os 覆盖为体积优化的问题
+
+编译选项检测里 cl.exe 同样"接受" -Os 语法, 但其语义是 MSVC 的 /Os(优化
+体积), 且 /O 组选项互斥、最后一个生效 —— 于是追加的 -Os 会覆盖前面的 /O2,
+使 Release 构建的热路径性能崩盘.
+
+之前该分支对所有编译器一视同仁地追加 -Os, 仅在两端都报告支持时生效;
+现为 MSVC 排除该分支, 保持 /O2 的速度优化语义.
+- release version 0.7.74
+
 ## [0.7.73] - 2026-08-31
 ### Changed
 - feat(distributed): 新增 distributed/id 发号器与 Serve 队列流水线
@@ -2358,7 +2596,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.73...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.74...HEAD
+[0.7.74]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.73...v0.7.74
 [0.7.73]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.72...v0.7.73
 [0.7.72]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.71...v0.7.72
 [0.7.71]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.70...v0.7.71
