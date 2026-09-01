@@ -5,7 +5,7 @@
   "dependencies": [
     "openssl",
     "libiconv",
-    "minizip"
+    "minizip",
     "yaml-cpp",
     "zlib",
     "mimalloc",
