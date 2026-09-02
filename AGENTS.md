@@ -192,6 +192,66 @@ type Bar struct {
 
 - Git commit 的主题和正文必须使用中文，准确说明本次变更内容。
 - 提交信息不得自行添加版本号、Git Tag 或发布相关信息。
+- 所有代码变更（新特性、Bug 修复、重构、测试、文档、性能优化等）必须在提交主题中显式标注涉及的开发语言，确保多语言语义一致的审计性。
+- 主题必须采用统一模板：`<type>[<language>]：<summary>`。
+- `<type>` 取值建议：`feat`（新特性）、`fix`（修复）、`refactor`（重构）、`test`（测试）、`perf`（性能）、`docs`（文档）、`chore`（例行维护）。
+- `<language>` 允许值：`python`、`cpp`、`rust`、`go`、`multi`。若涉及多个语言，使用 `python+cpp`、`python+rust+go` 等形式，优先按语义顺序书写：`python+cpp` > `python+cpp+rust+go`。
+- 若是一处跨语言同步改动，正文必须补充：
+  1. 变更概述；
+  2. 涉及语言与文件范围；
+  3. 语义一致性说明；
+  4. 验证方式/测试命令。
+- 主题中禁止仅写“update / optimize / fix”这类空泛描述，必须指明对象和语言，例如：
+  - `feat[python]：为 runtime ringbuffer 增加原生 Python 语义实现`
+  - `fix[cpp+rust]：修正 vyukov 退避策略与 arm64 调度兼容性`
+  - `test[python]：补充 ringbuffer 回归测试覆盖 close 与 wait_for_close`
+  - `docs[multi]：同步更新 ringbuffer 契约与跨语言语义说明`
+- 若某次提交仅修改单一语言，主题中必须明确写出该语言；若跨语言同步提交，则必须写 `multi` 或多个语言组合；不得出现“无语言标记”的提交信息。
+- 主题和正文都应优先使用中文，必要时保留英文术语（如 `RingBuffer`、`QueueFullError`、`try_push`）作为对象标识。
+- 提交信息必须保持可审计、可分组、可检索，方便后续基于语言维度筛选 commit。
+
+示例：
+
+```text
+feat[python]：为 runtime ringbuffer 增加原生 Python 语义实现
+
+- 新增 quant1x/runtime/ringbuffer.py，保留 try_push / try_pop / push / pop / close / wait_for_close 语义
+- 目标为与 Go/C++/Rust 的 spec 契约保持一致，避免 Python 侧语义漂移
+- 验证：PYTHONPATH=. python -m unittest quant1x.runtime.ringbuffer_test
+```
+
+```text
+fix[cpp+rust]：修正 vyukov 退避策略，消除 arm64 争抢下的 convoy 效应
+
+- 调整 backoff 退避策略，统一 C++ 与 Rust 的调度行为
+- 重点修复 aarch64 上 yield/isb 差异导致的性能退化
+- 说明：该修复仅影响调度策略，不改变 ringbuffer 语义契约
+- 验证：cargo bench --bench vyukov_bench
+```
+
+```text
+test[python+go]：补充 ringbuffer 语义回归测试，覆盖 close 与阻塞等待行为
+
+- 以 Python 作为 spec 锚点，Go 侧对齐测试语义
+- 验证：python -m unittest quant1x.runtime.ringbuffer_test
+```
+
+### 提交前检查清单（Checklist）
+
+在执行 `git commit` 之前，AI 必须逐项核对：
+
+- [ ] 主题是否符合 `type[language]：summary` 模板？
+- [ ] `type` 是否真实反映本次变更类型（feat / fix / refactor / test / perf / docs / chore）？
+- [ ] `language` 是否准确标明本次涉及的开发语言，未标注或误标注均视为不合规？
+- [ ] 若涉及多语言，是否使用 `python+cpp`、`python+rust+go` 等组合形式，而非笼统写 `multi`？
+- [ ] 标题是否避免“update / optimize / fix”这类空泛描述，是否明确对象和影响？
+- [ ] 正文是否包含：变更概述、涉及语言与文件范围、语义一致性说明、验证方式/命令？
+- [ ] 若为跨语言同步改动，是否说明了语义一致性与测试验证方式？
+- [ ] 是否未包含版本号、Git Tag、发布相关字符串？
+- [ ] 是否使用中文为主，必要时保留英文术语作为对象标识？
+- [ ] 是否能在审计时根据语言维度快速过滤和回溯？
+
+提交未满足以上任一项，必须在提交前修正，不能直接提交。
 
 ## 十、一句话总结（给 AI 的记忆锚点）
 
