@@ -22,7 +22,11 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>${junit.jupiter.version}</version>
-            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.lmax</groupId>
+            <artifactId>disruptor</artifactId>
+            <version>3.4.4</version>
         </dependency>
     </dependencies>
     <build>
@@ -51,9 +55,10 @@
                     <version>${maven.compiler.plugin.version}</version>
                     <configuration>
                         <encoding>${project.build.sourceEncoding}</encoding>
-                        <!-- include 白名单：只编译 quant1x 下的 Java 源文件（含未来新增模块），其他语言文件不受影响 -->
+                        <!-- include 白名单：编译主代码与根目录 tests 下的 Java 测试/基准，避免污染其他语言源码 -->
                         <includes>
                             <include>quant1x/**/*.java</include>
+                            <include>tests/**/*.java</include>
                         </includes>
                         <!-- 隐藏 JDK 9+ 对过时 source/target 8 的警告，同时保持 Java 8 字节码兼容 -->
                         <compilerArgs>
