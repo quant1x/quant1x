@@ -1,4 +1,4 @@
-package quant1x.tests;
+package tests;
 
 import com.lmax.disruptor.BlockingWaitStrategy;
 import com.lmax.disruptor.EventFactory;
