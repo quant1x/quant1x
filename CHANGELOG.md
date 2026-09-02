@@ -3,6 +3,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.75] - 2026-09-02
+### Changed
+- 添加 Python 原生 RingBuffer 实现与回归测试
+- docs[python+multi]：补充 git 提交语言标注与 checklist 约束
+- test[java]：新增 LMAX Disruptor 基准脚本与 Java 性能验证
+- chore[java]：收敛 Maven Wrapper 忽略规则
+- fix[java]：修正 Maven 测试包声明，确保 tests 目录下的 Java 测试可正常执行
+
+- 修正 tests/LMAXDisruptorBenchmark.java 的 package 声明，从 quant1x.tests 调整为 tests\n- 该改动与 pom.xml 中 testSourceDirectory=tests 的配置保持一致，避免 Java(536871240) 包路径不匹配警告\n- 语义保持不变，仅修正测试源码与 Maven 测试目录的对应关系\n- 验证：./mvnw -q -Dtest=tests.LMAXDisruptorBenchmark test
+- fix[java]：修正 distributed id Java 测试包层级与规范规则
+- feat[java]：实现分布式 id Java 版本并补齐状态持久化
+- release version 0.7.75
+
 ## [0.7.74] - 2026-09-01
 ### Changed
 - distributed/id: 修正 base64url 跨语言不兼容与严格模式水位回退, 修复 Go Serve 队满卡死
@@ -2596,7 +2609,8 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.74...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.75...HEAD
+[0.7.75]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.74...v0.7.75
 [0.7.74]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.73...v0.7.74
 [0.7.73]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.72...v0.7.73
 [0.7.72]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.71...v0.7.72
