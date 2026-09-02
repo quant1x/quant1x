@@ -17,6 +17,9 @@
 - Go 实现必须位于功能子目录中，例如 `data/t1/`
 - Go 包名必须与目录名完全一致（如 `package t1`）
 - **禁止**为了"方便"合并 Go 文件到根目录
+- Java 测试文件的 `package` 必须与 `tests/` 作为源码根目录时的目录层级一致；不应额外增加 `quant1x` 顶层包，但也不能省略 `tests` 根层级，例如 `tests/distributed/id` 对应 `package tests.distributed.id`
+- 若 IDE/编译器提示 `The declared package "distributed.id" does not match the expected package "tests.distributed.id"`，这是错误配置；必须修正为 `tests` 目录根层级与 package 一致，并禁止在 Java 测试里人为多加 `quant1x.` 这一层
+- 任何新增 Java 类/测试都必须遵循“模块目录 == package 层级（相对 tests 根目录）”的规则，避免出现 `quant1x.distributed.id`、`distributed.id` 这种与 `tests/` 根层级不一致的命名
 
 ## 三、命名规则
 
