@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.76] - 2026-09-05
+### Changed
+- fix[c++]: 修订注释
+- release version 0.7.76
+
 ## [0.7.75] - 2026-09-02
 ### Changed
 - 添加 Python 原生 RingBuffer 实现与回归测试
@@ -10,8 +15,7 @@ All notable changes to this project will be documented in this file.
 - test[java]：新增 LMAX Disruptor 基准脚本与 Java 性能验证
 - chore[java]：收敛 Maven Wrapper 忽略规则
 - fix[java]：修正 Maven 测试包声明，确保 tests 目录下的 Java 测试可正常执行
-
-- 修正 tests/LMAXDisruptorBenchmark.java 的 package 声明，从 quant1x.tests 调整为 tests\n- 该改动与 pom.xml 中 testSourceDirectory=tests 的配置保持一致，避免 Java(536871240) 包路径不匹配警告\n- 语义保持不变，仅修正测试源码与 Maven 测试目录的对应关系\n- 验证：./mvnw -q -Dtest=tests.LMAXDisruptorBenchmark test
+  - 修正 tests/LMAXDisruptorBenchmark.java 的 package 声明，从 quant1x.tests 调整为 tests\n- 该改动与 pom.xml 中 testSourceDirectory=tests 的配置保持一致，避免 Java(536871240) 包路径不匹配警告\n- 语义保持不变，仅修正测试源码与 Maven 测试目录的对应关系\n- 验证：./mvnw -q -Dtest=tests.LMAXDisruptorBenchmark test
 - fix[java]：修正 distributed id Java 测试包层级与规范规则
 - feat[java]：实现分布式 id Java 版本并补齐状态持久化
 - release version 0.7.75
@@ -19,374 +23,348 @@ All notable changes to this project will be documented in this file.
 ## [0.7.74] - 2026-09-01
 ### Changed
 - distributed/id: 修正 base64url 跨语言不兼容与严格模式水位回退, 修复 Go Serve 队满卡死
+  三处跨语言一致性问题与缺陷修复:
 
-三处跨语言一致性问题与缺陷修复:
+  1. Rust 版 base64url 编码与 Go/Python 不兼容
+     Rust 的 encode_base64url 把末字符的数据放在 6 位值的低 4 位, 而 Go 的
+     base64.RawURLEncoding 与 Python 的 urlsafe_b64encode 放在高 4 位 (低 2 位补 0),
+     导致同一 ID 在 Rust 与其他语言间产生的字符串不同, 无法互通.
+     按 Python (Spec 锚点) 与 Go 的标准布局修正 Rust 的编码与解码, 并在 Go/Rust/C++
+     三侧补充标准向量断言锁定布局, 防止回归.
 
-1. Rust 版 base64url 编码与 Go/Python 不兼容
-   Rust 的 encode_base64url 把末字符的数据放在 6 位值的低 4 位, 而 Go 的
-   base64.RawURLEncoding 与 Python 的 urlsafe_b64encode 放在高 4 位 (低 2 位补 0),
-   导致同一 ID 在 Rust 与其他语言间产生的字符串不同, 无法互通.
-   按 Python (Spec 锚点) 与 Go 的标准布局修正 Rust 的编码与解码, 并在 Go/Rust/C++
-   三侧补充标准向量断言锁定布局, 防止回归.
+  2. 严格模式下 checkpoint 未同步内存水位导致水位回退
+     Go/Rust 的 checkpoint() 写入成功後未更新 latest, close() 触发的 flush() 会用
+     旧水位覆盖刚写入的新 checkpoint, 造成水位回退, 严格模式重启可能重复发号.
+     按 Python (Spec 锚点) 的修正方式, 在 Go/Rust 的 checkpoint() 内于写入成功后
+     同步 latest, 并把 Python 侧的修正统一收敛到 checkpoint() 内, 使四种语言行为一致.
 
-2. 严格模式下 checkpoint 未同步内存水位导致水位回退
-   Go/Rust 的 checkpoint() 写入成功後未更新 latest, close() 触发的 flush() 会用
-   旧水位覆盖刚写入的新 checkpoint, 造成水位回退, 严格模式重启可能重复发号.
-   按 Python (Spec 锚点) 的修正方式, 在 Go/Rust 的 checkpoint() 内于写入成功后
-   同步 latest, 并把 Python 侧的修正统一收敛到 checkpoint() 内, 使四种语言行为一致.
+  3. Go 版 Serve 在队列满时无法响应取消 (TestGeneratorServeDrainAfterCancel 挂起)
+     Serve 使用阻塞式 Push, 队列满且消费者停止时会卡在 Push 内部, 无法回到循环顶部
+     检查 ctx.Done(), 导致取消信号被永久延迟, 整个测试套件挂死; 该缺陷在 Rust/C++/
+     Python 版实现时已刻意规避. 本次改用非阻塞 TryPush 循环, 队列满时重试同一个 ID
+     并让出时间片, 每轮检查取消与关闭, 与其余三语言语义一致.
+     同时加强该用例: 改为等待队列填满后再取消以复现"生产端阻塞在满队列"场景,
+     并增加 5 秒超时保护, 避免回归时挂死测试套件.
 
-3. Go 版 Serve 在队列满时无法响应取消 (TestGeneratorServeDrainAfterCancel 挂起)
-   Serve 使用阻塞式 Push, 队列满且消费者停止时会卡在 Push 内部, 无法回到循环顶部
-   检查 ctx.Done(), 导致取消信号被永久延迟, 整个测试套件挂死; 该缺陷在 Rust/C++/
-   Python 版实现时已刻意规避. 本次改用非阻塞 TryPush 循环, 队列满时重试同一个 ID
-   并让出时间片, 每轮检查取消与关闭, 与其余三语言语义一致.
-   同时加强该用例: 改为等待队列填满后再取消以复现"生产端阻塞在满队列"场景,
-   并增加 5 秒超时保护, 避免回归时挂死测试套件.
-
-验证: Go/Rust/Python/C++ 四语言测试全部通过, base64url 标准向量四语言输出一致.
+  验证: Go/Rust/Python/C++ 四语言测试全部通过, base64url 标准向量四语言输出一致.
 - benches: 修复 vyukov 基准测试从未运行、吞吐高估与场景缺失
+  修复 benches/vyukov_bench.rs 与 Cargo.toml 的以下缺陷:
 
-修复 benches/vyukov_bench.rs 与 Cargo.toml 的以下缺陷:
+  1. 基准从未实际运行 (致命)
+     Cargo.toml 未声明 [[bench]] harness = false, Cargo 默认启用 libtest harness,
+     rustc 在 --test 模式注入的 main 覆盖了 criterion_main! 生成的主函数,
+     表现为 `running 0 tests` 后 0.00s 通过, 编译无错无警告且退出码为 0.
+     CI 中长期绿灯但从未产生任何数据. 现已补上 harness = false 声明.
 
-1. 基准从未实际运行 (致命)
-   Cargo.toml 未声明 [[bench]] harness = false, Cargo 默认启用 libtest harness,
-   rustc 在 --test 模式注入的 main 覆盖了 criterion_main! 生成的主函数,
-   表现为 `running 0 tests` 后 0.00s 通过, 编译无错无警告且退出码为 0.
-   CI 中长期绿灯但从未产生任何数据. 现已补上 harness = false 声明.
+  2. 吞吐被高估 60 倍
+     Throughput::Elements 硬编码 8*300000, 而实际单轮工作量为 8*5000,
+     声明值与真实值脱节, 报告吞吐虚高 60 倍 (613 Melem/s vs 真实约 10 Melem/s).
+     现改为由 TOTAL 常量推导, 与断言共用同一来源.
 
-2. 吞吐被高估 60 倍
-   Throughput::Elements 硬编码 8*300000, 而实际单轮工作量为 8*5000,
-   声明值与真实值脱节, 报告吞吐虚高 60 倍 (613 Melem/s vs 真实约 10 Melem/s).
-   现改为由 TOTAL 常量推导, 与断言共用同一来源.
+  3. 背压路径从未被测量
+     队列容量 65536 大于单轮总量 40000, 队列永不满, push 从不阻塞.
+     现拆分为背压 (容量 1024) 与无背压 (容量 262144) 两个场景.
 
-3. 背压路径从未被测量
-   队列容量 65536 大于单轮总量 40000, 队列永不满, push 从不阻塞.
-   现拆分为背压 (容量 1024) 与无背压 (容量 262144) 两个场景.
+  4. 线程创建开销被计入队列吞吐
+     每轮 spawn/join 16 个线程, Windows 上约 1ms; 早期单轮总耗时仅约 4ms,
+     该开销占比可达 25%. 现以 iter_custom 差分扣除等量空转线程的开销,
+     并保留 thread_overhead 对照基准使开销可见; 单轮数据量取 16 万条,
+     使扣除后剩余耗时远大于线程开销, 降低差分测量的相对误差.
 
-4. 线程创建开销被计入队列吞吐
-   每轮 spawn/join 16 个线程, Windows 上约 1ms; 早期单轮总耗时仅约 4ms,
-   该开销占比可达 25%. 现以 iter_custom 差分扣除等量空转线程的开销,
-   并保留 thread_overhead 对照基准使开销可见; 单轮数据量取 16 万条,
-   使扣除后剩余耗时远大于线程开销, 降低差分测量的相对误差.
+  关于线程复用: 曾尝试复用生产/消费线程以彻底消除创建开销, 实测劣化且
+  方差极大. 原因是常驻消费者在两轮之间持续阻塞在 pop 上, 而 pop 在队列
+  空时会退避到 sleep(50us), 下一轮开始时必须先等这些睡眠中的消费者被唤醒,
+  该延迟远大于线程创建开销. 该结论已写入文件注释, 避免后续重复尝试.
 
-关于线程复用: 曾尝试复用生产/消费线程以彻底消除创建开销, 实测劣化且
-方差极大. 原因是常驻消费者在两轮之间持续阻塞在 pop 上, 而 pop 在队列
-空时会退避到 sleep(50us), 下一轮开始时必须先等这些睡眠中的消费者被唤醒,
-该延迟远大于线程创建开销. 该结论已写入文件注释, 避免后续重复尝试.
-
-当前实测 (Windows, 8 生产者 + 8 消费者, 受机器负载影响约 10~15% 波动):
-背压场景约 21 Melem/s, 无背压场景约 23 Melem/s.
+  当前实测 (Windows, 8 生产者 + 8 消费者, 受机器负载影响约 10~15% 波动):
+  背压场景约 21 Melem/s, 无背压场景约 23 Melem/s.
 - examples: 将 vyukov_demo 注册为 CTest 用例并补齐正确性校验
+  examples/vyukov_demo.cpp 从未被注册到 examples/CMakeLists.txt, 因此不参与
+  构建 (build 目录无任何产物), 长期处于"写了但不编译"的状态. 本次将其纳入
+  构建并注册为 CTest 用例, 同时按下述要点补齐其作为测试用例的必备条件:
 
-examples/vyukov_demo.cpp 从未被注册到 examples/CMakeLists.txt, 因此不参与
-构建 (build 目录无任何产物), 长期处于"写了但不编译"的状态. 本次将其纳入
-构建并注册为 CTest 用例, 同时按下述要点补齐其作为测试用例的必备条件:
+  - 头文件包含改用 <quant1x/runtime/ringbuffer.h>: 原先使用相对路径
+    "../quant1x/runtime/ringbuffer.h", 与 tests 下同类文件不一致;
+  - 增加并发语义校验: 生产总数与消费总数均须等于预期值, 否则以非 0 退出码
+    结束. 原实现只打印吞吐并恒返回 0, 直接作为测试会永远通过;
+  - 增加超时保护 (60 秒): 消费者以"消费总数达到预期"为退出条件, 若生产者异常
+    终止, 消费者会无限自旋并挂死整个测试套件;
+  - 变量统一为 constexpr 常量式命名, 计数使用 relaxed 原子操作.
 
-- 头文件包含改用 <quant1x/runtime/ringbuffer.h>: 原先使用相对路径
-  "../quant1x/runtime/ringbuffer.h", 与 tests 下同类文件不一致;
-- 增加并发语义校验: 生产总数与消费总数均须等于预期值, 否则以非 0 退出码
-  结束. 原实现只打印吞吐并恒返回 0, 直接作为测试会永远通过;
-- 增加超时保护 (60 秒): 消费者以"消费总数达到预期"为退出条件, 若生产者异常
-  终止, 消费者会无限自旋并挂死整个测试套件;
-- 变量统一为 constexpr 常量式命名, 计数使用 relaxed 原子操作.
+  examples/CMakeLists.txt 同步清理: 移除 parse_yaml_example 上指向不存在目录
+  的相对 include 路径 (该 target 的头文件路径由链接 quant1x 传递而来).
 
-examples/CMakeLists.txt 同步清理: 移除 parse_yaml_example 上指向不存在目录
-的相对 include 路径 (该 target 的头文件路径由链接 quant1x 传递而来).
-
-验证:
-- ctest -R vyukov_demo 通过 (40 万条, 吞吐约 8.3 Melem/s);
-- 注入缺陷 (生产者不计数) 后用例 ***Failed 并输出期望值与实际值;
-- 注入缺陷 (生产者少生产) 后用例在超时后 3.27 秒失败退出, 未挂死;
-- 上述临时改动已还原, 文件内无残留.
+  验证:
+  - ctest -R vyukov_demo 通过 (40 万条, 吞吐约 8.3 Melem/s);
+  - 注入缺陷 (生产者不计数) 后用例 ***Failed 并输出期望值与实际值;
+  - 注入缺陷 (生产者少生产) 后用例在超时后 3.27 秒失败退出, 未挂死;
+  - 上述临时改动已还原, 文件内无残留.
 - runtime: 修正 Vyukov 队列 try_ 语义并根除 C++ 异常回滚的索引倒退隐患
+  代码审查发现三处问题, 本次一并修正 (C++ 与 Rust 同步, 与 Go 版既有
+  架构对齐, 即 try_ 快速失败 + 阻塞退避归外层方法):
 
-代码审查发现三处问题, 本次一并修正 (C++ 与 Rust 同步, 与 Go 版既有
-架构对齐, 即 try_ 快速失败 + 阻塞退避归外层方法):
+  1. try_push / try_pop 违背非阻塞契约: 原实现竞争失败时调用 backoff_spin,
+     最坏路径会走到 yield 甚至 sleep (C++ 最坏 256us), 行情线程会被意外
+     阻塞引入延迟尖峰. 修正后竞争失败最多以一次 CPU pause (Rust 为
+     spin_loop) 吸收纳秒级瞬态并重试一次, 仍不可行立即返回 false/Err;
+     热路径不再包含任何 OS 调度操作.
 
-1. try_push / try_pop 违背非阻塞契约: 原实现竞争失败时调用 backoff_spin,
-   最坏路径会走到 yield 甚至 sleep (C++ 最坏 256us), 行情线程会被意外
-   阻塞引入延迟尖峰. 修正后竞争失败最多以一次 CPU pause (Rust 为
-   spin_loop) 吸收纳秒级瞬态并重试一次, 仍不可行立即返回 false/Err;
-   热路径不再包含任何 OS 调度操作.
+  2. (仅 C++) emplace 异常回滚会倒退全局入队索引, 破坏无锁算法正确性:
+     CAS 成功后其他生产者可继续推进 enqueue_pos_, catch 块中的
+     store(pos) 回滚会覆盖其进度, 导致后续生产者死循环或覆盖未读数据.
+     修正: emplace 入口增加 static_assert 强制元素类型满足 nothrow 构造
+     与 nothrow 析构, 从编译期杜绝异常路径, 并删除整个 try-catch 回滚
+     逻辑及仅为它存在的 atomic_store_release_gcc. 现有调用方
+     (distributed/id 的 Id, uint64_t) 均为平凡类型, 不受影响.
 
-2. (仅 C++) emplace 异常回滚会倒退全局入队索引, 破坏无锁算法正确性:
-   CAS 成功后其他生产者可继续推进 enqueue_pos_, catch 块中的
-   store(pos) 回滚会覆盖其进度, 导致后续生产者死循环或覆盖未读数据.
-   修正: emplace 入口增加 static_assert 强制元素类型满足 nothrow 构造
-   与 nothrow 析构, 从编译期杜绝异常路径, 并删除整个 try-catch 回滚
-   逻辑及仅为它存在的 atomic_store_release_gcc. 现有调用方
-   (distributed/id 的 Id, uint64_t) 均为平凡类型, 不受影响.
+  3. backoff_spin 及 <thread>/<chrono> 依赖删除: try_ 改快速失败后该
+     函数不再被调用; Rust 阻塞版 push/pop 的内部退避 (含 sleep) 属阻塞
+     方法语义, 予以保留.
 
-3. backoff_spin 及 <thread>/<chrono> 依赖删除: try_ 改快速失败后该
-   函数不再被调用; Rust 阻塞版 push/pop 的内部退避 (含 sleep) 属阻塞
-   方法语义, 予以保留.
-
-验证:
-- g++ -O3: vyukov_demo (4P4C, 40 万条) 计数校验通过, 吞吐 7.0-7.8
-  Melem/s 与修改前持平;
-- test-ringbuffer (10 采样 x 400 万) 全部通过;
-- distributed/id/queue.cpp 编译通过 (static_assert 成立);
-- cargo test: runtime::ringbuffer (basic, mpmc_small) 与
-  distributed::id (16 tests) 全部通过.
+  验证:
+  - g++ -O3: vyukov_demo (4P4C, 40 万条) 计数校验通过, 吞吐 7.0-7.8
+    Melem/s 与修改前持平;
+  - test-ringbuffer (10 采样 x 400 万) 全部通过;
+  - distributed/id/queue.cpp 编译通过 (static_assert 成立);
+  - cargo test: runtime::ringbuffer (basic, mpmc_small) 与
+    distributed::id (16 tests) 全部通过.
 - runtime: Vyukov 队列 C++ 槽位对齐显式化并消除 32 位平台移位 UB
+  微调两处 (纯 C++, Rust/Go 无对应问题):
 
-微调两处 (纯 C++, Rust/Go 无对应问题):
+  1. alignas(64) 从成员 seq 提升到 Slot 结构体声明, 显式表达"整个槽位
+     独占一个缓存行"的设计意图: 无论未来如何调整成员, 槽的起始地址与
+     大小都保持 64 字节整数倍, 杜绝跨槽伪共享. 生成的布局不变 (seq 仍
+     在偏移 0, sizeof 仍为 64), 且与 Rust 版 #[repr(align(64))] 的
+     struct 级对齐标注跨语言一致.
 
-1. alignas(64) 从成员 seq 提升到 Slot 结构体声明, 显式表达"整个槽位
-   独占一个缓存行"的设计意图: 无论未来如何调整成员, 槽的起始地址与
-   大小都保持 64 字节整数倍, 杜绝跨槽伪共享. 生成的布局不变 (seq 仍
-   在偏移 0, sizeof 仍为 64), 且与 Rust 版 #[repr(align(64))] 的
-   struct 级对齐标注跨语言一致.
+  2. round_up_to_power_of_two 中 v >> 32 在 32 位 size_t 下移位计数
+     大于等于类型位宽, 属未定义行为. 以 if constexpr (sizeof(size_t)
+     > 4) 包裹, 64 位下编译期剪除该分支保持零开销, 32 位下合法.
 
-2. round_up_to_power_of_two 中 v >> 32 在 32 位 size_t 下移位计数
-   大于等于类型位宽, 属未定义行为. 以 if constexpr (sizeof(size_t)
-   > 4) 包裹, 64 位下编译期剪除该分支保持零开销, 32 位下合法.
-
-验证:
-- g++ -O3: vyukov_demo 2 轮通过 (400000/400000), 吞吐 7.36 Melem/s
-  与修改前持平;
-- test-ringbuffer (10 采样 x 400 万) 全部通过;
-- clangd lint 无警告.
+  验证:
+  - g++ -O3: vyukov_demo 2 轮通过 (400000/400000), 吞吐 7.36 Melem/s
+    与修改前持平;
+  - test-ringbuffer (10 采样 x 400 万) 全部通过;
+  - clangd lint 无警告.
 - 修复vcpkg.json格式的错误
 - 修复 macOS 构建时找不到 zlib 库的问题
-
-vcpkg 在 MinGW(x64-mingw-static) 下生成的 zlib 静态库名为 libzs.a，
-而 macOS(arm64-osx) 等其他平台为 libz.a。原实现硬编码 libzs.a，
-导致 macOS 上链接 q1x 时缺失该库。现按平台区分 zlib 静态库名。
+  vcpkg 在 MinGW(x64-mingw-static) 下生成的 zlib 静态库名为 libzs.a，
+  而 macOS(arm64-osx) 等其他平台为 libz.a。原实现硬编码 libzs.a，
+  导致 macOS 上链接 q1x 时缺失该库。现按平台区分 zlib 静态库名。
 - 对齐 Rust: ringbuffer 增加阻塞式 push/pop 并修复 aarch64 退避指令
-
-- ringbuffer.h 新增 push/pop 阻塞式语义(与 Rust Queue::push/pop 一致),
-  仅队满或已关闭且为空时返回 false, 竞争失败按 backoff_spin 四级退避重试
-- 修复 Apple Silicon 性能 bug: aarch64 CPU_PAUSE 由 yield 改为 isb
-  (yield 的节流语义在 8 路 CAS 争抢下形成 convoy 正反馈, drain 阶段
-  138~7700us 剧烈抖动; 改 isb 后与 Rust spin_loop 完全对齐)
-- 新增 benches/vyukov_bench.cpp (Google Benchmark) 与 benches/CMakeLists.txt,
-  场景/参数与 Rust benches/vyukov_bench.rs 对齐 (8P8C, PER=20000,
-  容量 1024/262144, 差分扣除线程开销, 每轮断言数据完整性)
+  - ringbuffer.h 新增 push/pop 阻塞式语义(与 Rust Queue::push/pop 一致),
+    仅队满或已关闭且为空时返回 false, 竞争失败按 backoff_spin 四级退避重试
+  - 修复 Apple Silicon 性能 bug: aarch64 CPU_PAUSE 由 yield 改为 isb
+    (yield 的节流语义在 8 路 CAS 争抢下形成 convoy 正反馈, drain 阶段
+    138~7700us 剧烈抖动; 改 isb 后与 Rust spin_loop 完全对齐)
+  - 新增 benches/vyukov_bench.cpp (Google Benchmark) 与 benches/CMakeLists.txt,
+    场景/参数与 Rust benches/vyukov_bench.rs 对齐 (8P8C, PER=20000,
+    容量 1024/262144, 差分扣除线程开销, 每轮断言数据完整性)
 - 文档: 更新 ringbuffer.md 记录 C++/Rust 性能对齐状态
-
-- 记录 aarch64 退避指令 yield->isb 的根因修复与实测效果
-- 记录已排除的候选方案 (ctor 清零 / strong+SeqCst CAS) 及原因
-- 记录剩余差距 (uncontended drain 阶段 ~25%, 微架构效应) 与基准对齐方法
+  - 记录 aarch64 退避指令 yield->isb 的根因修复与实测效果
+  - 记录已排除的候选方案 (ctor 清零 / strong+SeqCst CAS) 及原因
+  - 记录剩余差距 (uncontended drain 阶段 ~25%, 微架构效应) 与基准对齐方法
 - 修复 ringbuffer ctor 槽区分配与基准计数器伪影，对齐 C++/Rust 性能
+  1. ringbuffer.h: ctor 改用 aligned_alloc(64) + placement new 只写 seq，消除 16MB 槽区清零，对齐 Rust Vec::with_capacity 不初始化语义（~246µs → ~185µs）
 
-1. ringbuffer.h: ctor 改用 aligned_alloc(64) + placement new 只写 seq，消除 16MB 槽区清零，对齐 Rust Vec::with_capacity 不初始化语义（~246µs → ~185µs）
+  2. vyukov_bench.cpp/rs: 基准消费者改为每线程本地计数、join 后合并，消除共享原子计数器 consumed.fetch_add 引发的复合缓存行争用伪影（8P8C 消费速率 160 vs 159M/s 完全对齐）
 
-2. vyukov_bench.cpp/rs: 基准消费者改为每线程本地计数、join 后合并，消除共享原子计数器 consumed.fetch_add 引发的复合缓存行争用伪影（8P8C 消费速率 160 vs 159M/s 完全对齐）
-
-3. ringbuffer.md/README.md: 同步更新性能对齐状态、强制 Clang/LLVM 复现命令与 aarch64 isb 技术注记
+  3. ringbuffer.md/README.md: 同步更新性能对齐状态、强制 Clang/LLVM 复现命令与 aarch64 isb 技术注记
 - 收敛跨平台对齐内存分配至 base/safe
-
-Windows CRT 不提供 aligned_alloc, 导致 MinGW-w64 下 std::aligned_alloc
-编译失败. 在 safe 中新增 aligned_alloc/aligned_free 统一三平台分支
-(MSVC _aligned_malloc / MinGW-w64 __mingw_aligned_malloc / 其余
-std::aligned_alloc), ringbuffer 槽区分配改用 safe 接口.
+  Windows CRT 不提供 aligned_alloc, 导致 MinGW-w64 下 std::aligned_alloc
+  编译失败. 在 safe 中新增 aligned_alloc/aligned_free 统一三平台分支
+  (MSVC _aligned_malloc / MinGW-w64 __mingw_aligned_malloc / 其余
+  std::aligned_alloc), ringbuffer 槽区分配改用 safe 接口.
 - c++: 更新依赖库robin-map版本到1.4.1
 - c++: 更新croncpp版本到2026.08.12
 - c++: 更新部分依赖库的版本号
 - c++: 调整环境变量函数的调用
 - 修复 Windows x86_64 上 Vyukov 队列比 Rust 慢数倍的问题
+  根因是三级退避的第三级休眠粒度: 名义 50us, 但 MSVC 的
+  std::this_thread::sleep_for 会向上取整为 Sleep(1), 受 Windows 默认
+  15.6ms 定时器粒度支配, 实测单次 15.57ms; 而 Rust 的 thread::sleep(50us)
+  实测 0.55ms, 相差 28 倍. 连续 8 次 CAS 竞争失败后进入该级退避, C++ 侧
+  每次停摆 15.6ms, 这是多线程场景慢数倍的主因.
 
-根因是三级退避的第三级休眠粒度: 名义 50us, 但 MSVC 的
-std::this_thread::sleep_for 会向上取整为 Sleep(1), 受 Windows 默认
-15.6ms 定时器粒度支配, 实测单次 15.57ms; 而 Rust 的 thread::sleep(50us)
-实测 0.55ms, 相差 28 倍. 连续 8 次 CAS 竞争失败后进入该级退避, C++ 侧
-每次停摆 15.6ms, 这是多线程场景慢数倍的主因.
+  该问题长期被单线程消融基准掩盖: 无争抢时不触发退避, 单线程实测
+  167M ops/s 属健康值, 只有测 1P1C 到 16P16C 的扩展性曲线才能看出吞吐
+  随线程数单调崩塌的特征.
 
-该问题长期被单线程消融基准掩盖: 无争抢时不触发退避, 单线程实测
-167M ops/s 属健康值, 只有测 1P1C 到 16P16C 的扩展性曲线才能看出吞吐
-随线程数单调崩塌的特征.
+  修复:
+  - 新增 safe::sleep_for_microseconds(), Windows 上改用带
+    CREATE_WAITABLE_TIMER_HIGH_RESOLUTION 标志的可等待定时器(实测 0.53ms,
+    与 Rust 一致), 其余平台退化为 std::this_thread::sleep_for.
+    windows.h 仅在 safe.cpp 内包含, 避免其宏泄漏到所有 safe.h 使用方;
+    该标志缺失时编译期自动退化, 语义不变.
+  - ringbuffer.h 的 backoff_spin 第三级改用它.
 
-修复:
-- 新增 safe::sleep_for_microseconds(), Windows 上改用带
-  CREATE_WAITABLE_TIMER_HIGH_RESOLUTION 标志的可等待定时器(实测 0.53ms,
-  与 Rust 一致), 其余平台退化为 std::this_thread::sleep_for.
-  windows.h 仅在 safe.cpp 内包含, 避免其宏泄漏到所有 safe.h 使用方;
-  该标志缺失时编译期自动退化, 语义不变.
-- ringbuffer.h 的 backoff_spin 第三级改用它.
+  顺带修复两处真实缺陷:
+  - MSVC 下曾以 _InterlockedCompareExchange64(p, 0, 0) 实现 relaxed 读游标,
+    该内建是带 lock 前缀的读改写, 而 Rust 的 load(Relaxed) 只是一条 mov.
+    cl /O2 汇编实测 push 热循环由 2 条 lock cmpxchg(读游标与 CAS) 变为
+    1 条 mov 加 1 条 lock cmpxchg, 与 rustc/clang-cl 一致.
+  - closed_ 未做缓存行对齐, 落在 dequeue_pos_ 同一行内, close() 的一次
+    release 写会使 8 路消费者争抢的 dequeue_pos_ 整行失效; 补充
+    alignas(64) 以对齐 Rust 侧 AlignedAtomicUsize 的布局.
+  - 移除随之不再需要的 <chrono> 包含.
 
-顺带修复两处真实缺陷:
-- MSVC 下曾以 _InterlockedCompareExchange64(p, 0, 0) 实现 relaxed 读游标,
-  该内建是带 lock 前缀的读改写, 而 Rust 的 load(Relaxed) 只是一条 mov.
-  cl /O2 汇编实测 push 热循环由 2 条 lock cmpxchg(读游标与 CAS) 变为
-  1 条 mov 加 1 条 lock cmpxchg, 与 rustc/clang-cl 一致.
-- closed_ 未做缓存行对齐, 落在 dequeue_pos_ 同一行内, close() 的一次
-  release 写会使 8 路消费者争抢的 dequeue_pos_ 整行失效; 补充
-  alignas(64) 以对齐 Rust 侧 AlignedAtomicUsize 的布局.
-- 移除随之不再需要的 <chrono> 包含.
-
-效果(i7-12700T / Windows 11 / cl /O2, 环形容量 65536, 单轮 320 万条),
-8P8C 由 15.6M/s 提升到 75.0M/s(4.8 倍), 16P16C 由 8.5M/s 提升到
-68.4M/s; 修复后曲线与 Rust 同样平坦, 三轮交替复测两者落在同一噪声带内.
+  效果(i7-12700T / Windows 11 / cl /O2, 环形容量 65536, 单轮 320 万条),
+  8P8C 由 15.6M/s 提升到 75.0M/s(4.8 倍), 16P16C 由 8.5M/s 提升到
+  68.4M/s; 修复后曲线与 Rust 同样平坦, 三轮交替复测两者落在同一噪声带内.
 - 新增 Windows 侧 Vyukov 队列性能诊断工具(探针与构建脚本)
+  本次性能问题的定位过程暴露出原有工具的空缺: 单线程消融基准测不出缓存行
+  争用与退避停摆, 而那正是根因所在. 补上三个分工明确的探针, 使同类问题
+  今后可被直接观测, 而不是靠猜测编译器后端.
 
-本次性能问题的定位过程暴露出原有工具的空缺: 单线程消融基准测不出缓存行
-争用与退避停摆, 而那正是根因所在. 补上三个分工明确的探针, 使同类问题
-今后可被直接观测, 而不是靠猜测编译器后端.
+  新增探针(benches/):
+  - ringbuffer_sched_cost_probe.cpp: 测量 sleep_for / yield / Sleep(1) /
+    可等待定时器的真实耗时. 这是定位休眠粒度问题的关键工具, 也用于回归
+    验证 safe::sleep_for_microseconds 是否仍生效(若回落到 15ms 量级即说明
+    高精度定时器在当前系统不可用, 队列退避会回归慢路径).
+  - ringbuffer_mpmc_probe.cpp: 8P8C 争抢探针, 分 backpressure / uncontended
+    两档并输出构造/生产/排空三阶段耗时. 固化了"扩展性曲线"这一测量方法 ——
+    吞吐随线程数单调下降是争抢类问题的特征信号.
+  - ringbuffer_single_thread_ablation.cpp: 单线程消融, 并在文件头明确标注其
+    定位局限(测不出争用与退避), 避免后续再次误用它判断多线程性能.
+    两处场景均保证队列不会队满: 一旦队满 push 会快速返回 false, 剩余迭代
+    退化为空转, 吞吐会虚高一个量级(初版曾因此测出无意义的 387M/s).
 
-新增探针(benches/):
-- ringbuffer_sched_cost_probe.cpp: 测量 sleep_for / yield / Sleep(1) /
-  可等待定时器的真实耗时. 这是定位休眠粒度问题的关键工具, 也用于回归
-  验证 safe::sleep_for_microseconds 是否仍生效(若回落到 15ms 量级即说明
-  高精度定时器在当前系统不可用, 队列退避会回归慢路径).
-- ringbuffer_mpmc_probe.cpp: 8P8C 争抢探针, 分 backpressure / uncontended
-  两档并输出构造/生产/排空三阶段耗时. 固化了"扩展性曲线"这一测量方法 ——
-  吞吐随线程数单调下降是争抢类问题的特征信号.
-- ringbuffer_single_thread_ablation.cpp: 单线程消融, 并在文件头明确标注其
-  定位局限(测不出争用与退避), 避免后续再次误用它判断多线程性能.
-  两处场景均保证队列不会队满: 一旦队满 push 会快速返回 false, 剩余迭代
-  退化为空转, 吞吐会虚高一个量级(初版曾因此测出无意义的 387M/s).
+  配套脚本(scripts/):
+  - msvc_sched_cost_probe.bat / msvc_mpmc_probe.bat / msvc_mini_bench.bat
+    均用 cl 与 clang-cl 双编译器构建, 便于区分"编译器后端差异"与"实现缺陷".
+  - msvc_configure.bat: 本机 CMake 配置辅助(含机器专属路径, 已加注释说明).
 
-配套脚本(scripts/):
-- msvc_sched_cost_probe.bat / msvc_mpmc_probe.bat / msvc_mini_bench.bat
-  均用 cl 与 clang-cl 双编译器构建, 便于区分"编译器后端差异"与"实现缺陷".
-- msvc_configure.bat: 本机 CMake 配置辅助(含机器专属路径, 已加注释说明).
-
-三个探针均不依赖 Google Benchmark, 单文件可直接编译, 因此不接入
-benches/CMakeLists.txt, 以免拖慢常规构建.
+  三个探针均不依赖 Google Benchmark, 单文件可直接编译, 因此不接入
+  benches/CMakeLists.txt, 以免拖慢常规构建.
 - 修正 MSVC 下 Release 构建被 -Os 覆盖为体积优化的问题
+  编译选项检测里 cl.exe 同样"接受" -Os 语法, 但其语义是 MSVC 的 /Os(优化
+  体积), 且 /O 组选项互斥、最后一个生效 —— 于是追加的 -Os 会覆盖前面的 /O2,
+  使 Release 构建的热路径性能崩盘.
 
-编译选项检测里 cl.exe 同样"接受" -Os 语法, 但其语义是 MSVC 的 /Os(优化
-体积), 且 /O 组选项互斥、最后一个生效 —— 于是追加的 -Os 会覆盖前面的 /O2,
-使 Release 构建的热路径性能崩盘.
-
-之前该分支对所有编译器一视同仁地追加 -Os, 仅在两端都报告支持时生效;
-现为 MSVC 排除该分支, 保持 /O2 的速度优化语义.
+  之前该分支对所有编译器一视同仁地追加 -Os, 仅在两端都报告支持时生效;
+  现为 MSVC 排除该分支, 保持 /O2 的速度优化语义.
 - release version 0.7.74
 
 ## [0.7.73] - 2026-08-31
 ### Changed
 - feat(distributed): 新增 distributed/id 发号器与 Serve 队列流水线
-
-- 新增 64 位可排序分布式 ID：HLC 单调推进、时钟回拨保护、动态节点位宽、base64url 编码
-- 状态文件为定长 128B mmap 双槽 checkpoint（generation + CRC 选最新有效槽），旧追加式日志自动迁移
-- 跨进程互斥采用共享映射内锁字（PID + 时间戳 CAS），持锁进程死亡立即抢占，无需锁文件
-- 新增 Generator.Serve 生产循环接入 Vyukov MPMC 无锁队列，消费端 TryPop 取号无锁化
-- 修复 Flush 与严格模式 checkpoint 的并发竞态、Close 在刷盘失败时的句柄泄漏；统一错误前缀为 distributed/id
-- README 补充实测基准数据（含每秒速率换算与读法说明）、Serve 用法与选型建议
+  - 新增 64 位可排序分布式 ID：HLC 单调推进、时钟回拨保护、动态节点位宽、base64url 编码
+  - 状态文件为定长 128B mmap 双槽 checkpoint（generation + CRC 选最新有效槽），旧追加式日志自动迁移
+  - 跨进程互斥采用共享映射内锁字（PID + 时间戳 CAS），持锁进程死亡立即抢占，无需锁文件
+  - 新增 Generator.Serve 生产循环接入 Vyukov MPMC 无锁队列，消费端 TryPop 取号无锁化
+  - 修复 Flush 与严格模式 checkpoint 的并发竞态、Close 在刷盘失败时的句柄泄漏；统一错误前缀为 distributed/id
+  - README 补充实测基准数据（含每秒速率换算与读法说明）、Serve 用法与选型建议
 - 修复log包的日志级别丢失、压缩错误处理与并发安全问题
-
-- fatal core 的 LevelEnabler 改为接收 DPanic/Panic/Fatal, 避免三个级别日志被静默丢弃
-- compressOldLogs 显式检查 os.Create/io.Copy/gzWriter.Close 错误, 失败时清理不完整 .gz 文件
-- getLogger/NewTextLoggerWithCompression/InitLogger 由 panic 改为返回 error, init 失败仅输出 stderr
-- InitLogger 创建日志目录(base.MkDirs), 与 Python/C++ 实现行为对齐
-- 重复调用 InitLogger 时先停止并清理旧缓冲写入器, 避免文件句柄泄漏
-- waitForStop 先输出退出日志再停止写入器, 避免退出日志丢失
-- 全局 cfg/logger/bws 读写统一加互斥锁保护
-- 包级日志入口判空防 nil panic, 修正 FlushInterval 类型语义
-- getApplicationName 改用 TrimSuffix 去除扩展名, 兼容多点文件名
-- 删除拼写错误的 logger_wapper.go, 新建 logger_wrapper.go
-- 重写 logger_test.go 为正确调用方式
+  - fatal core 的 LevelEnabler 改为接收 DPanic/Panic/Fatal, 避免三个级别日志被静默丢弃
+  - compressOldLogs 显式检查 os.Create/io.Copy/gzWriter.Close 错误, 失败时清理不完整 .gz 文件
+  - getLogger/NewTextLoggerWithCompression/InitLogger 由 panic 改为返回 error, init 失败仅输出 stderr
+  - InitLogger 创建日志目录(base.MkDirs), 与 Python/C++ 实现行为对齐
+  - 重复调用 InitLogger 时先停止并清理旧缓冲写入器, 避免文件句柄泄漏
+  - waitForStop 先输出退出日志再停止写入器, 避免退出日志丢失
+  - 全局 cfg/logger/bws 读写统一加互斥锁保护
+  - 包级日志入口判空防 nil panic, 修正 FlushInterval 类型语义
+  - getApplicationName 改用 TrimSuffix 去除扩展名, 兼容多点文件名
+  - 删除拼写错误的 logger_wapper.go, 新建 logger_wrapper.go
+  - 重写 logger_test.go 为正确调用方式
 - runtime: ringbuffer 增加非阻塞 try_push/try_pop 与 len/cap/is_empty 查询方法
 - distributed: 新增分布式 ID 生成器, 含 HLC 混合逻辑时钟与 mmap 状态文件持久化
 - distributed: 新增 Python 版分布式 ID 生成器, 与 Go/Rust 语义对齐
-
-- id.py: ID 类型与位布局 (41 位 physical + 22 位 payload, 大端 8 字节)
-- hlc.py: HLC 混合逻辑时钟, 回拨单调, seq 溢出物理 +1
-- state_store.py: mmap 双槽 checkpoint + 锁字跨进程互斥 + 旧版 18B 日志迁移
-- queue.py: 有界 MPMC 队列, 非阻塞 try_push/try_pop
-- generator.py: 单例 Generator 与响应取消的 serve 循环
-- tests.py: 14 个用例, 对齐 Go id_test.go / Rust tests.rs 语义
-- 修正 strict 模式 latest 回退缺陷 (Go/Rust 参考实现潜在问题, Python 作为 Spec 锚点修正)
+  - id.py: ID 类型与位布局 (41 位 physical + 22 位 payload, 大端 8 字节)
+  - hlc.py: HLC 混合逻辑时钟, 回拨单调, seq 溢出物理 +1
+  - state_store.py: mmap 双槽 checkpoint + 锁字跨进程互斥 + 旧版 18B 日志迁移
+  - queue.py: 有界 MPMC 队列, 非阻塞 try_push/try_pop
+  - generator.py: 单例 Generator 与响应取消的 serve 循环
+  - tests.py: 14 个用例, 对齐 Go id_test.go / Rust tests.rs 语义
+  - 修正 strict 模式 latest 回退缺陷 (Go/Rust 参考实现潜在问题, Python 作为 Spec 锚点修正)
 - distributed/id: 增加 C++ 版分布式 ID 实现
+  新增 quant1x/distributed/id 的 C++ 实现 (命名空间 quant1x::distributed::id),
+  与 Go/Python/Rust 三版二进制与语义对齐, 共 7 个模块:
 
-新增 quant1x/distributed/id 的 C++ 实现 (命名空间 quant1x::distributed::id),
-与 Go/Python/Rust 三版二进制与语义对齐, 共 7 个模块:
+  - crc32: CRC32-IEEE 查表法, 与 Go hash/crc32 ChecksumIEEE 输出一致
+  - error: 12 变体错误分类与 Result 包装, 不使用异常做控制流
+  - id: 64 位 ID 类型, 大端 8 字节与 11 字符 base64url 无填充编码
+  - state_store: 128 字节定长 mmap 状态文件, 双槽 checkpoint 加跨进程锁字,
+    支持旧版 18 字节追加式记录迁移
+  - hlc: 混合逻辑时钟与构建器, 对应 Go 的 Option 函数式配置
+  - queue: 复用 runtime::ringbuffer 的 Vyukov MPMC 队列
+  - generator: 发号器与 serve 生产循环, 响应取消与队列关闭
 
-- crc32: CRC32-IEEE 查表法, 与 Go hash/crc32 ChecksumIEEE 输出一致
-- error: 12 变体错误分类与 Result 包装, 不使用异常做控制流
-- id: 64 位 ID 类型, 大端 8 字节与 11 字符 base64url 无填充编码
-- state_store: 128 字节定长 mmap 状态文件, 双槽 checkpoint 加跨进程锁字,
-  支持旧版 18 字节追加式记录迁移
-- hlc: 混合逻辑时钟与构建器, 对应 Go 的 Option 函数式配置
-- queue: 复用 runtime::ringbuffer 的 Vyukov MPMC 队列
-- generator: 发号器与 serve 生产循环, 响应取消与队列关闭
+  编码对齐说明: Rust 版 base64url 的末字符把数据放在低 4 位, 与 Go/Python
+  的标准 RawURLEncoding (高 4 位) 不兼容; 按 Python (Spec) 与 Go 的标准实现,
+  C++ 对齐后者, 已在代码注释标注, 建议后续修正 Rust 版.
 
-编码对齐说明: Rust 版 base64url 的末字符把数据放在低 4 位, 与 Go/Python
-的标准 RawURLEncoding (高 4 位) 不兼容; 按 Python (Spec) 与 Go 的标准实现,
-C++ 对齐后者, 已在代码注释标注, 建议后续修正 Rust 版.
+  缺陷修正: 严格模式下 checkpoint 未同步 latest, 导致 close() 的 flush()
+  用旧水位覆盖新 checkpoint (重启可能重复 ID), 该问题在 Go/Rust 参考实现中
+  同样存在, 本次按 Python (Spec 锚点) 的修正方式同步处理.
 
-缺陷修正: 严格模式下 checkpoint 未同步 latest, 导致 close() 的 flush()
-用旧水位覆盖新 checkpoint (重启可能重复 ID), 该问题在 Go/Rust 参考实现中
-同样存在, 本次按 Python (Spec 锚点) 的修正方式同步处理.
+  基建调整:
+  - runtime/ringbuffer.h: 补充 len/is_empty 查询方法, 对齐 Rust runtime::Queue
+  - base/mmap.h: 头内函数补充 inline 以消除多翻译单元重复符号;
+    malloc 后显式清零并初始化句柄字段, 修复未初始化句柄告警;
+    补充缺失的 string.h 与 stdexcept 依赖
 
-基建调整:
-- runtime/ringbuffer.h: 补充 len/is_empty 查询方法, 对齐 Rust runtime::Queue
-- base/mmap.h: 头内函数补充 inline 以消除多翻译单元重复符号;
-  malloc 后显式清零并初始化句柄字段, 修复未初始化句柄告警;
-  补充缺失的 string.h 与 stdexcept 依赖
-
-测试: 新增 tests/tdd-distributed-id.cpp, 覆盖位字段解析、编码往返、
-时钟回拨单调性、节点位宽推导、并发唯一性、状态文件跨重启恢复与迁移,
-以及 serve 的生产消费链路; 并已与 Python 版做过状态文件双向读写验证.
+  测试: 新增 tests/tdd-distributed-id.cpp, 覆盖位字段解析、编码往返、
+  时钟回拨单调性、节点位宽推导、并发唯一性、状态文件跨重启恢复与迁移,
+  以及 serve 的生产消费链路; 并已与 Python 版做过状态文件双向读写验证.
 - release version 0.7.73
 
 ## [0.7.72] - 2026-08-27
 ### Changed
 - 优化 Go Vyukov 环形缓冲区
-
-对齐 C++ sequence-based MPMC 算法，隔离生产者和消费者缓存行，优化槽位布局与竞争退避，并补充非阻塞操作和边界测试。
+  对齐 C++ sequence-based MPMC 算法，隔离生产者和消费者缓存行，优化槽位布局与竞争退避，并补充非阻塞操作和边界测试。
 - release version 0.7.72
 
 ## [0.7.71] - 2026-08-27
 ### Changed
 - 补充 Rust Region 字符串解析
-
-为 Region 实现 FromStr 和解析错误类型，支持合法区域代码解析并增加非法输入测试。
+  为 Region 实现 FromStr 和解析错误类型，支持合法区域代码解析并增加非法输入测试。
 - release version 0.7.71
 
 ## [0.7.70] - 2026-08-27
 ### Changed
 - 修复 mmap 跨平台实现并更新 id64 checkpoint
-
-新增固定大小 mmap 文件封装与双槽位 checkpoint，修复 POSIX 构建标签、Bytes 接口和映射长度校验，更新 id64 文档与测试。
+  新增固定大小 mmap 文件封装与双槽位 checkpoint，修复 POSIX 构建标签、Bytes 接口和映射长度校验，更新 id64 文档与测试。
 - 调整 id64 标识文件命名
-
-将 id64.go 重命名为 id.go，并保留标识类型实现。
+  将 id64.go 重命名为 id.go，并保留标识类型实现。
 - go: 调整测试输出的文件扩展名为out, 不保存在代码仓库
 - release version 0.7.70
 
 ## [0.7.69] - 2026-08-26
 ### Changed
 - feat(id): 状态文件批量缓冲优化并新增 id64 多语言实现
-
-- id128 快速路径改为批量缓冲：热路径纯内存推进，攒满 syncEvery 条才落盘，吞吐提升约 200 倍；新增 Close()/close() 优雅刷盘接口（Go/Python/Java）
-- 新增 id64 多语言实现（Go/Python/Java）：快速路径批量缓冲 + 严格模式句柄缓存，严格模式每轮系统调用由 8 次降至 5 次、零分配编码，吞吐提升约 17 倍
-- 补齐 Go/Python/Java 测试与 README 文档
+  - id128 快速路径改为批量缓冲：热路径纯内存推进，攒满 syncEvery 条才落盘，吞吐提升约 200 倍；新增 Close()/close() 优雅刷盘接口（Go/Python/Java）
+  - 新增 id64 多语言实现（Go/Python/Java）：快速路径批量缓冲 + 严格模式句柄缓存，严格模式每轮系统调用由 8 次降至 5 次、零分配编码，吞吐提升约 17 倍
+  - 补齐 Go/Python/Java 测试与 README 文档
 - release version 0.7.69
 
 ## [0.7.68] - 2026-08-26
 ### Changed
 - id 模块代码下沉一级至 id128 子目录，Go/Java/Python 包名同步调整
-
-- quant1x/id/ 下全部代码移动到 quant1x/id/id128/（git mv 保留历史）
-- Go：package id → id128（含测试文件）
-- Java：package quant1x.id → quant1x.id.id128，测试移动至 tests/id/id128/IdTest.java
-- Python：新增子包 quant1x.id.id128，父包 quant1x/id/__init__.py 保留并转发到子包
-- README：import 路径、测试命令、目录结构同步更新
+  - quant1x/id/ 下全部代码移动到 quant1x/id/id128/（git mv 保留历史）
+  - Go：package id → id128（含测试文件）
+  - Java：package quant1x.id → quant1x.id.id128，测试移动至 tests/id/id128/IdTest.java
+  - Python：新增子包 quant1x.id.id128，父包 quant1x/id/__init__.py 保留并转发到子包
+  - README：import 路径、测试命令、目录结构同步更新
 - python: 修复文件头部版权信息
 - release version 0.7.68
 
 ## [0.7.67] - 2026-08-26
 ### Changed
 - 改名：id 模块包名由 hlcid 统一为 id，测试文件命名与落位规范化
-
-将 hlcid 更名为 id（混合型分布式 ID）：统一各语言错误前缀、状态文件名、注释与 README 示例；测试源文件统一命名；pom.xml 测试源根改为仓库级 tests 目录并通用排除 tests 下所有 Java 文件。
+  将 hlcid 更名为 id（混合型分布式 ID）：统一各语言错误前缀、状态文件名、注释与 README 示例；测试源文件统一命名；pom.xml 测试源根改为仓库级 tests 目录并通用排除 tests 下所有 Java 文件。
 - 构建：pom.xml 改用 include 白名单编译 Java 源，测试根统一为 tests/，Java 输出目录移出 bin/
-
-- pom.xml 主源码根保持仓库根（sourceDirectory=.），仅编译 quant1x/**/*.java，
-  不依赖 excludes，未来新增功能模块自动纳入，无需再改 pom
-- 测试源码根固定为 tests/（testSourceDirectory=tests），不再绑定单一模块目录
-- 移除 build-helper-maven-plugin 与 excludes 方案
-- .vscode/settings.json 将 Java 输出目录改为 target/classes，
-  避免 VS Code Java 扩展默认生成仓库根 bin/ 目录
-- 清理已产生的 bin/ 编译产物
+  - pom.xml 主源码根保持仓库根（sourceDirectory=.），仅编译 quant1x/**/*.java，
+    不依赖 excludes，未来新增功能模块自动纳入，无需再改 pom
+  - 测试源码根固定为 tests/（testSourceDirectory=tests），不再绑定单一模块目录
+  - 移除 build-helper-maven-plugin 与 excludes 方案
+  - .vscode/settings.json 将 Java 输出目录改为 target/classes，
+    避免 VS Code Java 扩展默认生成仓库根 bin/ 目录
+  - 清理已产生的 bin/ 编译产物
 - java: 调整编译临时目录
 - 构建：Maven 构建目录独立为 build/java，避免 mvn clean 误删 Rust 的 target/ 产物
-
-- pom.xml 设置 <directory>build/java</directory>，mvn clean 只删该目录，
-  target/ 完全留给 Cargo
-- surefire 的 LD_LIBRARY_PATH / DYLD_LIBRARY_PATH 同步改为 build/java/classes
+  - pom.xml 设置 <directory>build/java</directory>，mvn clean 只删该目录，
+    target/ 完全留给 Cargo
+  - surefire 的 LD_LIBRARY_PATH / DYLD_LIBRARY_PATH 同步改为 build/java/classes
 - release version 0.7.67
 
 ## [0.7.66] - 2026-08-26
@@ -397,11 +375,10 @@ C++ 对齐后者, 已在代码注释标注, 建议后续修正 Rust 版.
 ## [0.7.65] - 2026-08-26
 ### Changed
 - 新增 Maven Wrapper 并修正测试源码目录
-
-- 新增 mvnw / mvnw.cmd 脚本，VSCode 终端无需依赖全局 PATH 即可使用 Maven，首次运行自动下载 Maven 3.9.16 到 .mvn/wrapper/
-- mvnw 脚本标记可执行权限（100755），保证 Mac/Linux 下可直接运行
-- .gitignore 忽略 .mvn/wrapper 下的下载缓存，避免入库
-- pom.xml 修正 testSourceDirectory 为 tests/core/hlcid
+  - 新增 mvnw / mvnw.cmd 脚本，VSCode 终端无需依赖全局 PATH 即可使用 Maven，首次运行自动下载 Maven 3.9.16 到 .mvn/wrapper/
+  - mvnw 脚本标记可执行权限（100755），保证 Mac/Linux 下可直接运行
+  - .gitignore 忽略 .mvn/wrapper 下的下载缓存，避免入库
+  - pom.xml 修正 testSourceDirectory 为 tests/core/hlcid
 - release version 0.7.65
 
 ## [0.7.64] - 2026-08-26
@@ -412,14 +389,13 @@ C++ 对齐后者, 已在代码注释标注, 建议后续修正 Rust 版.
 ## [0.7.63] - 2026-08-26
 ### Changed
 - 修复 std 包迁移与 KLine 到 Bar 类型迁移后遗留的编译错误
-
-- std.* 引用统一迁移到 base 包(CloseQuietly/NewException/ExpandUser 等)
-- KLine/KLineRaw/XdxrInfo/CumulativeAdjustment 类型迁移到 schema 与 tdx 包
-- data 包补齐 UpdateWithAdapters/DetectSymbol/DetectInstrumentTypeByRule 及 re-export
-- config 恢复 GetXdxrFilename/GetBarFilename/GetBarFilenameEx, 对齐 C++ subpath 截断
-- tdx 包新增 LoadXdxr 导出, tdxproto 新增 ResetSeqId
-- core.GetBasePath 优先读取 QUANT1X_HOME 环境变量
-- 补齐 data/tdx/factors/command 等包的编译错误, go build 与测试编译全部通过
+  - std.* 引用统一迁移到 base 包(CloseQuietly/NewException/ExpandUser 等)
+  - KLine/KLineRaw/XdxrInfo/CumulativeAdjustment 类型迁移到 schema 与 tdx 包
+  - data 包补齐 UpdateWithAdapters/DetectSymbol/DetectInstrumentTypeByRule 及 re-export
+  - config 恢复 GetXdxrFilename/GetBarFilename/GetBarFilenameEx, 对齐 C++ subpath 截断
+  - tdx 包新增 LoadXdxr 导出, tdxproto 新增 ResetSeqId
+  - core.GetBasePath 优先读取 QUANT1X_HOME 环境变量
+  - 补齐 data/tdx/factors/command 等包的编译错误, go build 与测试编译全部通过
 - release version 0.7.63
 
 ## [0.7.62] - 2026-08-13
@@ -435,13 +411,12 @@ C++ 对齐后者, 已在代码注释标注, 建议后续修正 Rust 版.
 - c++: 适配arm架构
 - c++: vcpkg适配arm架构
 - 修复 macOS arm64 (Apple Silicon) 编译兼容性
-
-- cmake/simd.cmake: arm64 分支去掉 -mavx/-mavx2，保留 -march=native
-- CMakeLists.txt: VCPKG_TARGET_TRIPLET 设置加 FORCE 覆盖缓存；unofficial-minizip 版本变量判空兜底
-- quant1x/runtime/ringbuffer.h: arm64 用 yield 指令替代 x86 _mm_pause()
-- quant1x/proto/snapshot.capnp.h: 用 Cap'n Proto 1.5.0 重新生成
-- tests/tdd-rolling.cpp: AVX2 代码用 #ifdef __AVX2__ 守卫
-- tests/tdd-datasets.cpp: SSE/AVX 内联函数用 #ifdef 守卫
+  - cmake/simd.cmake: arm64 分支去掉 -mavx/-mavx2，保留 -march=native
+  - CMakeLists.txt: VCPKG_TARGET_TRIPLET 设置加 FORCE 覆盖缓存；unofficial-minizip 版本变量判空兜底
+  - quant1x/runtime/ringbuffer.h: arm64 用 yield 指令替代 x86 _mm_pause()
+  - quant1x/proto/snapshot.capnp.h: 用 Cap'n Proto 1.5.0 重新生成
+  - tests/tdd-rolling.cpp: AVX2 代码用 #ifdef __AVX2__ 守卫
+  - tests/tdd-datasets.cpp: SSE/AVX 内联函数用 #ifdef 守卫
 - c++: 升级ASIO版本到1.38.2
 - c++: 升级BS::thread_pool版本到5.1.0
 - c++: 升级xsimd到14.3.0
@@ -454,18 +429,16 @@ C++ 对齐后者, 已在代码注释标注, 建议后续修正 Rust 版.
 ## [0.7.60] - 2026-07-28
 ### Changed
 - docs: 修复 README MD025 多顶级标题告警
-
-将 5 个 # N. 章节标题及全部子标题逐级降一级, 全文仅保留一个 H1
+  将 5 个 # N. 章节标题及全部子标题逐级降一级, 全文仅保留一个 H1
 - release v0.7.60
 
 ## [0.7.59] - 2026-07-28
 ### Changed
 - docs: 将 README 2.1.6 pip 源配置改为 pip config 命令
 - docs: 修复 README MD033/MD041/markdownlint 告警
-
-- 将 <img> 内联 HTML 改为 Markdown 图片语法, 修复 MD033
-- 将顶级标题移至文件首行, 修复 MD041/MD022/MD031
-- 全文标题及代码块前后补空行
+  - 将 <img> 内联 HTML 改为 Markdown 图片语法, 修复 MD033
+  - 将顶级标题移至文件首行, 修复 MD041/MD022/MD031
+  - 全文标题及代码块前后补空行
 - release v0.7.59
 
 ## [0.7.58] - 2026-07-27
@@ -474,12 +447,11 @@ C++ 对齐后者, 已在代码注释标注, 建议后续修正 Rust 版.
 - 调整go版本
 - rust: 调整默认元数据路径
 - fix(calendar): 修复 last_trading_day upper_bound 语义及测试环境变量污染
-
-- last_trading_day 对齐 C++ std::upper_bound: Ok(idx) 不再直接返回,
-  统一走 idx+1 路径确保盘前判断始终生效
-- 新增 Test 3: exact match + 盘前 current 边界用例
-- test_lazy_load_calendar_from_file 不再修改 HOME/QUANT1X_HOME
-  进程环境变量, 避免并行测试竞态污染 test_expand_user / test_last_trading_day
+  - last_trading_day 对齐 C++ std::upper_bound: Ok(idx) 不再直接返回,
+    统一走 idx+1 路径确保盘前判断始终生效
+  - 新增 Test 3: exact match + 盘前 current 边界用例
+  - test_lazy_load_calendar_from_file 不再修改 HOME/QUANT1X_HOME
+    进程环境变量, 避免并行测试竞态污染 test_expand_user / test_last_trading_day
 - release v0.7.58
 
 ## [0.7.57] - 2026-07-14
@@ -496,12 +468,11 @@ C++ 对齐后者, 已在代码注释标注, 建议后续修正 Rust 版.
 ### Changed
 - 更新schema文档
 - refactor: rename std to base across all four languages
-
-- C++: rename base.h -> common.h, update all include directives
-- Go: rename package std -> package base (12 files)
-- Rust: rename crate::std:: -> crate::base:: (18 files)
-- Python: rename from quant1x.std -> from quant1x.base (16 files)
-- CMakeLists.txt: update precompiled header path to common.h
+  - C++: rename base.h -> common.h, update all include directives
+  - Go: rename package std -> package base (12 files)
+  - Rust: rename crate::std:: -> crate::base:: (18 files)
+  - Python: rename from quant1x.std -> from quant1x.base (16 files)
+  - CMakeLists.txt: update precompiled header path to common.h
 - release v0.7.56
 
 ## [0.7.55] - 2026-06-30
@@ -512,11 +483,10 @@ C++ 对齐后者, 已在代码注释标注, 建议后续修正 Rust 版.
 ## [0.7.54] - 2026-06-30
 ### Changed
 - refactor: rename kline to bar across all languages (C++, Rust, Go, Python)
-
-- Rename tdd-klines.cpp to tdd-bars.cpp (test file)
-- Update fetch_kline_raw -> fetch_bar_raw in bar.cpp
-- Fix type names, function names, comments, and documentation
-- All four languages share the same Bar/BarRaw nomenclature
+  - Rename tdd-klines.cpp to tdd-bars.cpp (test file)
+  - Update fetch_kline_raw -> fetch_bar_raw in bar.cpp
+  - Fix type names, function names, comments, and documentation
+  - All four languages share the same Bar/BarRaw nomenclature
 - release v0.7.54
 
 ## [0.7.53] - 2026-06-30
@@ -527,72 +497,63 @@ C++ 对齐后者, 已在代码注释标注, 建议后续修正 Rust 版.
 ## [0.7.52] - 2026-06-30
 ### Changed
 - docs: 在 CONTRIBUTING.md 和 AGENTS.md 中增加版本与发布规则
-
-- CONTRIBUTING.md 新增第 7 节：版本号由 Git Tag 唯一决定，四种语言共享
-- AGENTS.md 新增第九节：AI Agent 严禁触碰版本号、Git Tag、CHANGELOG、发布脚本
-- autochangelog 是唯一合法发布入口
+  - CONTRIBUTING.md 新增第 7 节：版本号由 Git Tag 唯一决定，四种语言共享
+  - AGENTS.md 新增第九节：AI Agent 严禁触碰版本号、Git Tag、CHANGELOG、发布脚本
+  - autochangelog 是唯一合法发布入口
 - release v0.7.52
 
 ## [0.7.51] - 2026-06-30
 ### Changed
 - 统一消息序列号函数签名
 - refactor: remove data/kline.h, merge into schema/bar.h
-
-- Delete quant1x/data/kline.h
-- Move operator<<(ostream&, const Bar&) and KLine alias into schema/bar.h
-- Keep backward-compat alias quant1x::data::KLine → schema::Bar
-- Update all #include references from kline.h to schema/bar.h
-- Affected files: backtest.h, position.h, tdd-chips, tdd-dataframe-data, tdd-xdxr, tdd-patterns-wave-release
+  - Delete quant1x/data/kline.h
+  - Move operator<<(ostream&, const Bar&) and KLine alias into schema/bar.h
+  - Keep backward-compat alias quant1x::data::KLine → schema::Bar
+  - Update all #include references from kline.h to schema/bar.h
+  - Affected files: backtest.h, position.h, tdd-chips, tdd-dataframe-data, tdd-xdxr, tdd-patterns-wave-release
 - fix: 修复 init lambda 重复注册 TDX 适配器导致崩溃
-
-- 移除 main.cpp init lambda 中重复的 data::Register() 调用
-- init_datasource() 已统一注册 DataXdxr、DataKLineRaw、DataKLine、DataTrans、DataMinute、DataMinuteKLine
-- 重复注册触发 adapter::Register() 的 ErrAlreadyExists 异常, 导致未捕获崩溃
+  - 移除 main.cpp init lambda 中重复的 data::Register() 调用
+  - init_datasource() 已统一注册 DataXdxr、DataKLineRaw、DataKLine、DataTrans、DataMinute、DataMinuteKLine
+  - 重复注册触发 adapter::Register() 的 ErrAlreadyExists 异常, 导致未捕获崩溃
 - Merge branch 'fix-package' into 0.7.x
 - 调整git仓库忽略项设置
 - fix: 修复C++编译错误
-
-- filesystem.cpp: 在manual_clock_cast前添加<chrono> include，公共区域也添加<chrono>
-- bar_raw.cpp: 解决namespace io重定义冲突(重命名为csvio)，删除未使用的element_count/reply_size变量
-- bar.cpp: 删除未使用的element_count/reply_size变量
-- sector.cpp: 为未使用的operator<<添加[[maybe_unused]]属性
+  - filesystem.cpp: 在manual_clock_cast前添加<chrono> include，公共区域也添加<chrono>
+  - bar_raw.cpp: 解决namespace io重定义冲突(重命名为csvio)，删除未使用的element_count/reply_size变量
+  - bar.cpp: 删除未使用的element_count/reply_size变量
+  - sector.cpp: 为未使用的operator<<添加[[maybe_unused]]属性
 - fix: 为未使用的const变量添加[[maybe_unused]]属性
-
-- tdd-f10-safety-score.cpp: defaultSafetyScoreOfIgnore
-- tdd-snapshot.cpp: tdd_capnp_cache_size
+  - tdd-f10-safety-score.cpp: defaultSafetyScoreOfIgnore
+  - tdd-snapshot.cpp: tdd_capnp_cache_size
 - fix: 修复test-iconv.cpp在macOS上的编译错误
-
-- <malloc.h> -> <stdlib.h> (macOS无此头文件)
-- <windows.h> 用 #ifdef _WIN32 包裹
+  - <malloc.h> -> <stdlib.h> (macOS无此头文件)
+  - <windows.h> 用 #ifdef _WIN32 包裹
 - fix: test-iconv.cpp中Windows API调用用#ifdef _WIN32包裹
 - release v0.7.51
 - docs: 细化 AGENTS.md 命名规范，新增国际量化金融标准术语参考体系
-
-- 新增 §3.0 命名参考体系（Type Vocabulary）：13 项核心类型标准名称表
-- 明确命名以 Bloomberg/QuantLib/Backtrader 等国际平台术语为基准
-- 拒绝拼音、音译、本地化翻译（如 KLine → Bar）
-- 详解 Bar vs KLine：Bar 是国际标准，KLine 是中文音译遗留
-- 新增命名验收标准三步校验
-- 补充文件命名规则：data/schema/ 下以领域概念命名
-- 修正 §3.2 示例从 Tick 改为 Bar
+  - 新增 §3.0 命名参考体系（Type Vocabulary）：13 项核心类型标准名称表
+  - 明确命名以 Bloomberg/QuantLib/Backtrader 等国际平台术语为基准
+  - 拒绝拼音、音译、本地化翻译（如 KLine → Bar）
+  - 详解 Bar vs KLine：Bar 是国际标准，KLine 是中文音译遗留
+  - 新增命名验收标准三步校验
+  - 补充文件命名规则：data/schema/ 下以领域概念命名
+  - 修正 §3.2 示例从 Tick 改为 Bar
 - release v0.7.51
 
 ## [0.7.50] - 2026-06-22
 ### Changed
 - feat(ticker_rules): add Go implementation of all market ticker rules
-
-Implement rule.go (RulePrefix, CodeRule, MatchRule, GlobalRules) and market rules for BSE, SSE, SZSE, HKEX, USA including HK price tick and US code mapping.
+  Implement rule.go (RulePrefix, CodeRule, MatchRule, GlobalRules) and market rules for BSE, SSE, SZSE, HKEX, USA including HK price tick and US code mapping.
 - release v0.7.50
 
 ## [0.7.49] - 2026-06-22
 ### Changed
 - feat(storage): add C++, Rust, Go storage implementations based on Python design
-
-- Add C++ FileStorage<T>, BasedataFileStorage<T>, MetaFileStorage<T> in storage.h
-- Add Rust FileStorage trait, BasedataFileStorage, MetaFileStorage in storage.rs
-- Add Go FileStorage interface, BasedataFileStorage, MetaFileStorage in storage.go
-- Add storage.md design document
-- Register storage module in data/mod.rs
+  - Add C++ FileStorage<T>, BasedataFileStorage<T>, MetaFileStorage<T> in storage.h
+  - Add Rust FileStorage trait, BasedataFileStorage, MetaFileStorage in storage.rs
+  - Add Go FileStorage interface, BasedataFileStorage, MetaFileStorage in storage.go
+  - Add storage.md design document
+  - Register storage module in data/mod.rs
 - release v0.7.49
 
 ## [0.7.48] - 2026-06-22
@@ -601,17 +562,16 @@ Implement rule.go (RulePrefix, CodeRule, MatchRule, GlobalRules) and market rule
 - c++: 调整入口源文件名为app
 - c++: datasets收敛到app
 - fix: API迁移 - 恢复CMakeLists.txt中禁用的源文件并修复旧版API调用
-
-- CMakeLists.txt: 取消注释约12个TODO标记的源文件
-- detect_symbol: 3元组返回值迁移为Instrument结构体
-- correct_security_code: 双参数迁移为单参数
-- date_range -> get_date_range
-- ExchangeId -> Exchange枚举直接使用
-- instruments命名空间函数迁移
-- cpr::Parameters使用双花括号语法
-- 修复缺失的#include和namespace别名
-- 修复Owner()缺少const限定符
-- 清理build临时日志文件
+  - CMakeLists.txt: 取消注释约12个TODO标记的源文件
+  - detect_symbol: 3元组返回值迁移为Instrument结构体
+  - correct_security_code: 双参数迁移为单参数
+  - date_range -> get_date_range
+  - ExchangeId -> Exchange枚举直接使用
+  - instruments命名空间函数迁移
+  - cpr::Parameters使用双花括号语法
+  - 修复缺失的#include和namespace别名
+  - 修复Owner()缺少const限定符
+  - 清理build临时日志文件
 - release v0.7.48
 
 ## [0.7.47] - 2026-06-21
@@ -634,15 +594,14 @@ Implement rule.go (RulePrefix, CodeRule, MatchRule, GlobalRules) and market rule
 ### Changed
 - go: 初步与新的数据框架对齐
 - 修复 buffer.h 的未定义行为及潜在缺陷
-
-- 添加 <limits>/<array>/<string>/<cassert> 头文件，消除隐式依赖
-- push_arithmetic/get_arithmetic 增加 static_assert 阻止 long double（防止栈溢出）
-- get_le 用 memcpy 替代 static_cast 避免有符号转换实现定义行为
-- get_string 用 std::memchr 替代 strnlen（POSIX）解决跨平台问题
-- varint_decode 中 shift 类型改为 uint32_t 避免位宽假设
-- seek/skip 添加 assert 边界检查
-- ensure_capacity 替换为 prepare_write 增加 overflow 检查，防止写入越界
-- 修复 get_array 返回 std::array 时的重载匹配编译错误
+  - 添加 <limits>/<array>/<string>/<cassert> 头文件，消除隐式依赖
+  - push_arithmetic/get_arithmetic 增加 static_assert 阻止 long double（防止栈溢出）
+  - get_le 用 memcpy 替代 static_cast 避免有符号转换实现定义行为
+  - get_string 用 std::memchr 替代 strnlen（POSIX）解决跨平台问题
+  - varint_decode 中 shift 类型改为 uint32_t 避免位宽假设
+  - seek/skip 添加 assert 边界检查
+  - ensure_capacity 替换为 prepare_write 增加 overflow 检查，防止写入越界
+  - 修复 get_array 返回 std::array 时的重载匹配编译错误
 - release v0.7.44
 
 ## [0.7.43] - 2026-06-21
@@ -658,11 +617,10 @@ Implement rule.go (RulePrefix, CodeRule, MatchRule, GlobalRules) and market rule
 ## [0.7.41] - 2026-06-20
 ### Changed
 - fix: 修复 security_list_test 编译和链接错误
-
-- data.ExchangeBSE -> data.BSE (修正不存在常量)
-- 移除 _ = data.DataHandler() (go:linkname 依赖 tdx 包导致链接失败)
-- bar.go: 移除 gitee.com 外部依赖, exchange.Timestamp -> data.Timestamp
-- 测试改为自包含连接提供者, 直接拨号+握手, 不依赖 tdx 包 init()
+  - data.ExchangeBSE -> data.BSE (修正不存在常量)
+  - 移除 _ = data.DataHandler() (go:linkname 依赖 tdx 包导致链接失败)
+  - bar.go: 移除 gitee.com 外部依赖, exchange.Timestamp -> data.Timestamp
+  - 测试改为自包含连接提供者, 直接拨号+握手, 不依赖 tdx 包 init()
 - release v0.7.41
 
 ## [0.7.40] - 2026-06-20
@@ -712,23 +670,21 @@ Implement rule.go (RulePrefix, CodeRule, MatchRule, GlobalRules) and market rule
 ## [0.7.32] - 2026-06-18
 ### Changed
 - fix: align publish.sh with publish.ps1 and fix bash regex version extraction
-
-- 统一构建工具: python setup.py → python -m build
-- 版本号从构建产物文件名解析，修正贪婪 (.+) → ([^-]+) 避免 PEP 427 wheel 文件名误匹配
-- 参数对齐: 移除 --dry-run/--repository，新增 --no-rich/--allow-existing
-- 版本重复检查改为阻断型 (exit 2)，--allow-existing 可强制继续
-- 新增 PYTHONIOENCODING/TWINE_NON_INTERACTIVE 环境变量
-- 新增 build 模块预检
+  - 统一构建工具: python setup.py → python -m build
+  - 版本号从构建产物文件名解析，修正贪婪 (.+) → ([^-]+) 避免 PEP 427 wheel 文件名误匹配
+  - 参数对齐: 移除 --dry-run/--repository，新增 --no-rich/--allow-existing
+  - 版本重复检查改为阻断型 (exit 2)，--allow-existing 可强制继续
+  - 新增 PYTHONIOENCODING/TWINE_NON_INTERACTIVE 环境变量
+  - 新增 build 模块预检
 - release v0.7.32
 
 ## [0.7.31] - 2026-06-18
 ### Changed
 - refactor: rename namespace config to quant1x::config
-
-- 将所有 quant1x/config/ 目录下的 namespace config 改为 namespace quant1x::config
-- 更新所有外部文件的 namespace 别名: namespace config = ::config; -> namespace config = quant1x::config;
-- 更新 YAML convert 模板特化中的 config:: 引用
-- 涉及 33 个文件，编译通过
+  - 将所有 quant1x/config/ 目录下的 namespace config 改为 namespace quant1x::config
+  - 更新所有外部文件的 namespace 别名: namespace config = ::config; -> namespace config = quant1x::config;
+  - 更新 YAML convert 模板特化中的 config:: 引用
+  - 涉及 33 个文件，编译通过
 - release v0.7.31
 
 ## [0.7.30] - 2026-06-18
@@ -746,46 +702,42 @@ Implement rule.go (RulePrefix, CodeRule, MatchRule, GlobalRules) and market rule
 ## [0.7.28] - 2026-06-17
 ### Changed
 - refactor(cpp): align cache paths with Rust/Python, add network fetch for stub adapters
-
-- Use inst.cache_dir() (e.g. sse/szse) in cache paths for kline_raw, xdxr, kline, trans, minute, kline_minute
-- kline_raw: day_raw/{cache_dir}/{symbol}.raw
-- xdxr: xdxr/{cache_dir}/{symbol}.csv
-- kline: day/{cache_dir}/{symbol}.csv
-- trans: trans/{cache_dir}/{year}/{yyyymmdd}/{symbol}.csv
-- minute: minute/{cache_dir}/{symbol}.csv
-- kline_minute: kline_minute/{cache_dir}/{symbol}.csv
-- Implement actual network fetch + save logic for kline, trans, minute, kline_minute adapters
+  - Use inst.cache_dir() (e.g. sse/szse) in cache paths for kline_raw, xdxr, kline, trans, minute, kline_minute
+  - kline_raw: day_raw/{cache_dir}/{symbol}.raw
+  - xdxr: xdxr/{cache_dir}/{symbol}.csv
+  - kline: day/{cache_dir}/{symbol}.csv
+  - trans: trans/{cache_dir}/{year}/{yyyymmdd}/{symbol}.csv
+  - minute: minute/{cache_dir}/{symbol}.csv
+  - kline_minute: kline_minute/{cache_dir}/{symbol}.csv
+  - Implement actual network fetch + save logic for kline, trans, minute, kline_minute adapters
 - refactor(cpp): move protocol.h/cpp and helpers.h from level1/ to tdx/ to align with Rust/Python
-
-- Moved quant1x/contrib/data/tdx/level1/{protocol.h, protocol.cpp, helpers.h} -> quant1x/contrib/data/tdx/
-- Updated all 19 include references across client.h, instruments.cpp, tests, and 16 level1 headers
-- Fixed double-slash paths in xdxr_info.h, transaction_data.h
-- Updated CMakeLists.txt source paths and added helpers.h to header list
-- Updated helpers.rs comment to reflect new path
+  - Moved quant1x/contrib/data/tdx/level1/{protocol.h, protocol.cpp, helpers.h} -> quant1x/contrib/data/tdx/
+  - Updated all 19 include references across client.h, instruments.cpp, tests, and 16 level1 headers
+  - Fixed double-slash paths in xdxr_info.h, transaction_data.h
+  - Updated CMakeLists.txt source paths and added helpers.h to header list
+  - Updated helpers.rs comment to reflect new path
 - refactor(cpp): move forward-adjustment logic from factors/ into tdx/kline, align DataKLine::Update with Python
+  kline.h/cpp:
+  - Full DataKLine::Update() flow matching Python: cache load -> date range -> batch fetch -> merge -> adjust -> save
+  - apply_forward_adjustment_for_event() for incremental updates
+  - apply_forward_adjustments_once() / calculate_pre_adjust() for general use
+  - combine_adjustments_in_period() using meta::schema::CumulativeAdjustment
+  - CSV I/O: read_kline_from_csv, save_kline, load_kline, get_kline_filename
+  - get_xdxr_list / ipo_date_from_xdxrs reading from xdxr cache
 
-kline.h/cpp:
-- Full DataKLine::Update() flow matching Python: cache load -> date range -> batch fetch -> merge -> adjust -> save
-- apply_forward_adjustment_for_event() for incremental updates
-- apply_forward_adjustments_once() / calculate_pre_adjust() for general use
-- combine_adjustments_in_period() using meta::schema::CumulativeAdjustment
-- CSV I/O: read_kline_from_csv, save_kline, load_kline, get_kline_filename
-- get_xdxr_list / ipo_date_from_xdxrs reading from xdxr cache
-
-factors/base.h/cpp:
-- Remove all adjustment types/functions (moved to tdx::kline)
-- checkout_klines / klines_forward_adjusted_to_date now delegate to tdx:: functions
-- Keep feature constants and backward-compatible wrapper API
+  factors/base.h/cpp:
+  - Remove all adjustment types/functions (moved to tdx::kline)
+  - checkout_klines / klines_forward_adjusted_to_date now delegate to tdx:: functions
+  - Keep feature constants and backward-compatible wrapper API
 - refactor(cpp): align kline_raw with Python semantics, add ext protocol support, remove old base factors
-
-- kline_raw: fetch_kline_raw returns domain Bar (not protocol SecurityBar), internal SecurityBar->Bar conversion
-- level1: add ext_sync.h (ExtSynchronize, cmd 0x2454) and instrument_bars.h (InstrumentBars, cmd 0x23FF) for ext K-line protocol
-- client: add ExtensionProtocolHandler with get_ext_conn() for ext connection pool
-- fetch_kline_raw_from_ext: replace TODO stub with full ext protocol implementation
-- kline: remove redundant SecurityBar->Bar conversion, directly consume domain Bar
-- factors: delete old base.cpp/h, update base_compat.h/f10.cpp/history.cpp
-- tests: update tdd-* tests, user: update no0/strategy-no0
-- gitignore: add build_output.txt
+  - kline_raw: fetch_kline_raw returns domain Bar (not protocol SecurityBar), internal SecurityBar->Bar conversion
+  - level1: add ext_sync.h (ExtSynchronize, cmd 0x2454) and instrument_bars.h (InstrumentBars, cmd 0x23FF) for ext K-line protocol
+  - client: add ExtensionProtocolHandler with get_ext_conn() for ext connection pool
+  - fetch_kline_raw_from_ext: replace TODO stub with full ext protocol implementation
+  - kline: remove redundant SecurityBar->Bar conversion, directly consume domain Bar
+  - factors: delete old base.cpp/h, update base_compat.h/f10.cpp/history.cpp
+  - tests: update tdd-* tests, user: update no0/strategy-no0
+  - gitignore: add build_output.txt
 - 删除cmake构建临时文件
 - release v0.7.28
 
@@ -799,23 +751,21 @@ factors/base.h/cpp:
 - fix: compile error in connection_pool and varint_decode bug, ignore env-dependent tests
 - git仓库忽略codebuddy的临时目录
 - refactor: migrate exchange namespace to meta, adapter Update/Print to Instrument ref
-
-- Move exchange-related types under data::meta namespace
-- Change DataAdapter/FeatureAdapter Update/Print from string code to Instrument& inst
-- Update all 12 adapter subclasses, extract code via inst.symbol() internally
-- Fix callers (cache.cpp, tests) to pass Instrument via data::detect_symbol()
-- Update CMakeLists.txt source paths accordingly
+  - Move exchange-related types under data::meta namespace
+  - Change DataAdapter/FeatureAdapter Update/Print from string code to Instrument& inst
+  - Update all 12 adapter subclasses, extract code via inst.symbol() internally
+  - Fix callers (cache.cpp, tests) to pass Instrument via data::detect_symbol()
+  - Update CMakeLists.txt source paths accordingly
 - release v0.7.26
 
 ## [0.7.25] - 2026-06-15
 ### Changed
 - refactor: align RequestHeader/ResponseHeader field names with Python base message
+  - zip_flag -> frame_type (align with Python RequestHeader.frame_type)
 
-- zip_flag -> frame_type (align with Python RequestHeader.frame_type)
+  - packet_type -> packet_flag (align with Python ResponseHeader.packet_flag)
 
-- packet_type -> packet_flag (align with Python ResponseHeader.packet_flag)
-
-- update all submodule references in heartbeat/minute_time/security_bars/finance_info
+  - update all submodule references in heartbeat/minute_time/security_bars/finance_info
 - release v0.7.25
 
 ## [0.7.24] - 2026-06-15
@@ -831,15 +781,14 @@ factors/base.h/cpp:
 ## [0.7.22] - 2026-06-15
 ### Changed
 - feat(tdx): 实现板块文件下载与解析功能，添加测试
-
-- 新增 block.rs: BlockInfo 消息 (STD_BLOCK_DATA 0x06b9)，支持分块下载板块原始数据
-- 扩展 sector.rs: 实现 sync_block_files() 完整下载流程
-  - 从 level1 分块下载原始板块文件
-  - 解析二进制板块文件 (384字节头 + 2813字节记录)
-  - 解压 zhb.zip 提取配置文件
-  - 加载行业配置并生成CSV缓存
-  - get_sector_list() 首次调用自动触发同步
-- 添加 9 个测试用例 (6个单元测试 + 3个集成测试标记ignore)
+  - 新增 block.rs: BlockInfo 消息 (STD_BLOCK_DATA 0x06b9)，支持分块下载板块原始数据
+  - 扩展 sector.rs: 实现 sync_block_files() 完整下载流程
+    - 从 level1 分块下载原始板块文件
+    - 解析二进制板块文件 (384字节头 + 2813字节记录)
+    - 解压 zhb.zip 提取配置文件
+    - 加载行业配置并生成CSV缓存
+    - get_sector_list() 首次调用自动触发同步
+  - 添加 9 个测试用例 (6个单元测试 + 3个集成测试标记ignore)
 - release v0.7.22
 
 ## [0.7.21] - 2026-06-15
@@ -880,19 +829,18 @@ factors/base.h/cpp:
 ## [0.7.16] - 2026-06-09
 ### Changed
 - feat: migrate F10 data modules to contrib layer, add financial_report/share_holder/notice
-
-- Add financial_report.py: quarterly report fetching from EastMoney API
-  with full-market cache + single-stock fallback
-- Add share_holder.py: top10 shareholders data from TDX F10
-- Add notice.py: annual/quarterly report disclosure dates
-- Add f10.py: unified F10 data aggregation
-- Add fund.py: fund flow data placeholder in level1
-- Add reports_filename/top10_holders_filename to config module
-- Fix quarterly cache path: avoid double-offset bug (2026Q1 -> 2025Q4)
-- Fix SecurityCode comparison with correct_security_code normalization
-- Upgrade exception logging from debug to warning with traceback
-- Move f10.py from level1/ to tdx/ parent directory
-- Update level1 imports and command routing
+  - Add financial_report.py: quarterly report fetching from EastMoney API
+    with full-market cache + single-stock fallback
+  - Add share_holder.py: top10 shareholders data from TDX F10
+  - Add notice.py: annual/quarterly report disclosure dates
+  - Add f10.py: unified F10 data aggregation
+  - Add fund.py: fund flow data placeholder in level1
+  - Add reports_filename/top10_holders_filename to config module
+  - Fix quarterly cache path: avoid double-offset bug (2026Q1 -> 2025Q4)
+  - Fix SecurityCode comparison with correct_security_code normalization
+  - Upgrade exception logging from debug to warning with traceback
+  - Move f10.py from level1/ to tdx/ parent directory
+  - Update level1 imports and command routing
 - python: 保存python测试数据
 - python: 调整命令字包路径
 - python: 调整辅助函数的包路径
@@ -980,19 +928,18 @@ factors/base.h/cpp:
 - refactor: 优化run_module.py，package_name改为从LICENSE父目录自动获取，找不到则抛异常
 - update changelog
 - feat: migrate F10 data modules to contrib layer, add financial_report/share_holder/notice
-
-- Add financial_report.py: quarterly report fetching from EastMoney API
-  with full-market cache + single-stock fallback
-- Add share_holder.py: top10 shareholders data from TDX F10
-- Add notice.py: annual/quarterly report disclosure dates
-- Add f10.py: unified F10 data aggregation
-- Add fund.py: fund flow data placeholder in level1
-- Add reports_filename/top10_holders_filename to config module
-- Fix quarterly cache path: avoid double-offset bug (2026Q1 -> 2025Q4)
-- Fix SecurityCode comparison with correct_security_code normalization
-- Upgrade exception logging from debug to warning with traceback
-- Move f10.py from level1/ to tdx/ parent directory
-- Update level1 imports and command routing
+  - Add financial_report.py: quarterly report fetching from EastMoney API
+    with full-market cache + single-stock fallback
+  - Add share_holder.py: top10 shareholders data from TDX F10
+  - Add notice.py: annual/quarterly report disclosure dates
+  - Add f10.py: unified F10 data aggregation
+  - Add fund.py: fund flow data placeholder in level1
+  - Add reports_filename/top10_holders_filename to config module
+  - Fix quarterly cache path: avoid double-offset bug (2026Q1 -> 2025Q4)
+  - Fix SecurityCode comparison with correct_security_code normalization
+  - Upgrade exception logging from debug to warning with traceback
+  - Move f10.py from level1/ to tdx/ parent directory
+  - Update level1 imports and command routing
 - python: 保存python测试数据
 - python: 调整命令字包路径
 - python: 调整辅助函数的包路径
@@ -1020,81 +967,74 @@ factors/base.h/cpp:
 - rust: 修复协议握手没实现的bug
 - release v0.7.21
 - feat(tdx): 实现板块文件下载与解析功能，添加测试
-
-- 新增 block.rs: BlockInfo 消息 (STD_BLOCK_DATA 0x06b9)，支持分块下载板块原始数据
-- 扩展 sector.rs: 实现 sync_block_files() 完整下载流程
-  - 从 level1 分块下载原始板块文件
-  - 解析二进制板块文件 (384字节头 + 2813字节记录)
-  - 解压 zhb.zip 提取配置文件
-  - 加载行业配置并生成CSV缓存
-  - get_sector_list() 首次调用自动触发同步
-- 添加 9 个测试用例 (6个单元测试 + 3个集成测试标记ignore)
+  - 新增 block.rs: BlockInfo 消息 (STD_BLOCK_DATA 0x06b9)，支持分块下载板块原始数据
+  - 扩展 sector.rs: 实现 sync_block_files() 完整下载流程
+    - 从 level1 分块下载原始板块文件
+    - 解析二进制板块文件 (384字节头 + 2813字节记录)
+    - 解压 zhb.zip 提取配置文件
+    - 加载行业配置并生成CSV缓存
+    - get_sector_list() 首次调用自动触发同步
+  - 添加 9 个测试用例 (6个单元测试 + 3个集成测试标记ignore)
 - release v0.7.22
 - refactor: 合并 handshake/handshake_std 为统一的 handshake 方法
 - release v0.7.23
 - fix: extension server probe now uses ExtensionProtocolHandler handshake
 - release v0.7.24
 - refactor: align RequestHeader/ResponseHeader field names with Python base message
+  - zip_flag -> frame_type (align with Python RequestHeader.frame_type)
 
-- zip_flag -> frame_type (align with Python RequestHeader.frame_type)
+  - packet_type -> packet_flag (align with Python ResponseHeader.packet_flag)
 
-- packet_type -> packet_flag (align with Python ResponseHeader.packet_flag)
-
-- update all submodule references in heartbeat/minute_time/security_bars/finance_info
+  - update all submodule references in heartbeat/minute_time/security_bars/finance_info
 - release v0.7.25
 - fix: compile error in connection_pool and varint_decode bug, ignore env-dependent tests
 - git仓库忽略codebuddy的临时目录
 - refactor: migrate exchange namespace to meta, adapter Update/Print to Instrument ref
-
-- Move exchange-related types under data::meta namespace
-- Change DataAdapter/FeatureAdapter Update/Print from string code to Instrument& inst
-- Update all 12 adapter subclasses, extract code via inst.symbol() internally
-- Fix callers (cache.cpp, tests) to pass Instrument via data::detect_symbol()
-- Update CMakeLists.txt source paths accordingly
+  - Move exchange-related types under data::meta namespace
+  - Change DataAdapter/FeatureAdapter Update/Print from string code to Instrument& inst
+  - Update all 12 adapter subclasses, extract code via inst.symbol() internally
+  - Fix callers (cache.cpp, tests) to pass Instrument via data::detect_symbol()
+  - Update CMakeLists.txt source paths accordingly
 - release v0.7.26
 - python: 删除旧版本的代码检测
 - release v0.7.27
 - refactor(cpp): align cache paths with Rust/Python, add network fetch for stub adapters
-
-- Use inst.cache_dir() (e.g. sse/szse) in cache paths for kline_raw, xdxr, kline, trans, minute, kline_minute
-- kline_raw: day_raw/{cache_dir}/{symbol}.raw
-- xdxr: xdxr/{cache_dir}/{symbol}.csv
-- kline: day/{cache_dir}/{symbol}.csv
-- trans: trans/{cache_dir}/{year}/{yyyymmdd}/{symbol}.csv
-- minute: minute/{cache_dir}/{symbol}.csv
-- kline_minute: kline_minute/{cache_dir}/{symbol}.csv
-- Implement actual network fetch + save logic for kline, trans, minute, kline_minute adapters
+  - Use inst.cache_dir() (e.g. sse/szse) in cache paths for kline_raw, xdxr, kline, trans, minute, kline_minute
+  - kline_raw: day_raw/{cache_dir}/{symbol}.raw
+  - xdxr: xdxr/{cache_dir}/{symbol}.csv
+  - kline: day/{cache_dir}/{symbol}.csv
+  - trans: trans/{cache_dir}/{year}/{yyyymmdd}/{symbol}.csv
+  - minute: minute/{cache_dir}/{symbol}.csv
+  - kline_minute: kline_minute/{cache_dir}/{symbol}.csv
+  - Implement actual network fetch + save logic for kline, trans, minute, kline_minute adapters
 - refactor(cpp): move protocol.h/cpp and helpers.h from level1/ to tdx/ to align with Rust/Python
-
-- Moved quant1x/contrib/data/tdx/level1/{protocol.h, protocol.cpp, helpers.h} -> quant1x/contrib/data/tdx/
-- Updated all 19 include references across client.h, instruments.cpp, tests, and 16 level1 headers
-- Fixed double-slash paths in xdxr_info.h, transaction_data.h
-- Updated CMakeLists.txt source paths and added helpers.h to header list
-- Updated helpers.rs comment to reflect new path
+  - Moved quant1x/contrib/data/tdx/level1/{protocol.h, protocol.cpp, helpers.h} -> quant1x/contrib/data/tdx/
+  - Updated all 19 include references across client.h, instruments.cpp, tests, and 16 level1 headers
+  - Fixed double-slash paths in xdxr_info.h, transaction_data.h
+  - Updated CMakeLists.txt source paths and added helpers.h to header list
+  - Updated helpers.rs comment to reflect new path
 - refactor(cpp): move forward-adjustment logic from factors/ into tdx/kline, align DataKLine::Update with Python
+  kline.h/cpp:
+  - Full DataKLine::Update() flow matching Python: cache load -> date range -> batch fetch -> merge -> adjust -> save
+  - apply_forward_adjustment_for_event() for incremental updates
+  - apply_forward_adjustments_once() / calculate_pre_adjust() for general use
+  - combine_adjustments_in_period() using meta::schema::CumulativeAdjustment
+  - CSV I/O: read_kline_from_csv, save_kline, load_kline, get_kline_filename
+  - get_xdxr_list / ipo_date_from_xdxrs reading from xdxr cache
 
-kline.h/cpp:
-- Full DataKLine::Update() flow matching Python: cache load -> date range -> batch fetch -> merge -> adjust -> save
-- apply_forward_adjustment_for_event() for incremental updates
-- apply_forward_adjustments_once() / calculate_pre_adjust() for general use
-- combine_adjustments_in_period() using meta::schema::CumulativeAdjustment
-- CSV I/O: read_kline_from_csv, save_kline, load_kline, get_kline_filename
-- get_xdxr_list / ipo_date_from_xdxrs reading from xdxr cache
-
-factors/base.h/cpp:
-- Remove all adjustment types/functions (moved to tdx::kline)
-- checkout_klines / klines_forward_adjusted_to_date now delegate to tdx:: functions
-- Keep feature constants and backward-compatible wrapper API
+  factors/base.h/cpp:
+  - Remove all adjustment types/functions (moved to tdx::kline)
+  - checkout_klines / klines_forward_adjusted_to_date now delegate to tdx:: functions
+  - Keep feature constants and backward-compatible wrapper API
 - refactor(cpp): align kline_raw with Python semantics, add ext protocol support, remove old base factors
-
-- kline_raw: fetch_kline_raw returns domain Bar (not protocol SecurityBar), internal SecurityBar->Bar conversion
-- level1: add ext_sync.h (ExtSynchronize, cmd 0x2454) and instrument_bars.h (InstrumentBars, cmd 0x23FF) for ext K-line protocol
-- client: add ExtensionProtocolHandler with get_ext_conn() for ext connection pool
-- fetch_kline_raw_from_ext: replace TODO stub with full ext protocol implementation
-- kline: remove redundant SecurityBar->Bar conversion, directly consume domain Bar
-- factors: delete old base.cpp/h, update base_compat.h/f10.cpp/history.cpp
-- tests: update tdd-* tests, user: update no0/strategy-no0
-- gitignore: add build_output.txt
+  - kline_raw: fetch_kline_raw returns domain Bar (not protocol SecurityBar), internal SecurityBar->Bar conversion
+  - level1: add ext_sync.h (ExtSynchronize, cmd 0x2454) and instrument_bars.h (InstrumentBars, cmd 0x23FF) for ext K-line protocol
+  - client: add ExtensionProtocolHandler with get_ext_conn() for ext connection pool
+  - fetch_kline_raw_from_ext: replace TODO stub with full ext protocol implementation
+  - kline: remove redundant SecurityBar->Bar conversion, directly consume domain Bar
+  - factors: delete old base.cpp/h, update base_compat.h/f10.cpp/history.cpp
+  - tests: update tdd-* tests, user: update no0/strategy-no0
+  - gitignore: add build_output.txt
 - 删除cmake构建临时文件
 - release v0.7.28
 - 调整全角符号为半角, 调整io部分文件类功能归于std模块
@@ -1675,9 +1615,9 @@ factors/base.h/cpp:
 ## [0.6.132] - 2025-10-05
 ### Changed
 - !1 backtest: implement FIFO round-trip stats, add stats helper and compat…
-* backtest: implement FIFO round-trip stats, add stats helper and compat…
-* 新增0号演示性策略(C++)
-* 调整错误码的命名空间
+  * backtest: implement FIFO round-trip stats, add stats helper and compat…
+  * 新增0号演示性策略(C++)
+  * 调整错误码的命名空间
 - 调整backtest代码结构
 - update changelog
 
@@ -1781,7 +1721,7 @@ factors/base.h/cpp:
 - 修复头文件扩展名的问题
 - 调整测试工具的路径
 - 明确k线协议中参数I其实是frequency频率，或者step步长，运行在指定k线类型的前提下按
-frequency聚合k线
+  frequency聚合k线
 - runtime：添加基于 tokio 的 AsyncScheduler 与 core 全局绑定；清理 scheduler.rs 中警告
 - 新增异步调度器模块
 - update changelog
@@ -1813,9 +1753,9 @@ frequency聚合k线
 - 缓存一个版本
 - 删除mod备份
 - 优化RingBuffer：
-1. 改成使用 std::byte storage[]（从 aligned_storage 改为 byte-array），并使用 std::launder，这影响了如何对内存读写与类型别名进行优化与内联（不同编译器处理此类写法的 codegen 有差异）。
-2. 添加了异常安全 rollback（在构造失败时回滚 enqueue_pos_/slot.seq），并在函数上标注了 noexcept(...) 条件，这可能让编译器为异常路径插入额外栈/原子操作或限制某些优化（尤其是 GCC 在当前版本上对条件 noexcept + 异常捕获/回滚的交互优化可能更保守）。
-3. backoff_spin 更激进/可变，这有利于减少 busy-wait，但会改变时序与测量（不大可能直接造成 GCC 性能降这么多，但会影响热点在运行时的竞争特征）。
+  1. 改成使用 std::byte storage[]（从 aligned_storage 改为 byte-array），并使用 std::launder，这影响了如何对内存读写与类型别名进行优化与内联（不同编译器处理此类写法的 codegen 有差异）。
+  2. 添加了异常安全 rollback（在构造失败时回滚 enqueue_pos_/slot.seq），并在函数上标注了 noexcept(...) 条件，这可能让编译器为异常路径插入额外栈/原子操作或限制某些优化（尤其是 GCC 在当前版本上对条件 noexcept + 异常捕获/回滚的交互优化可能更保守）。
+  3. backoff_spin 更激进/可变，这有利于减少 busy-wait，但会改变时序与测量（不大可能直接造成 GCC 性能降这么多，但会影响热点在运行时的竞争特征）。
 - update changelog
 
 ## [0.6.112] - 2025-09-30
@@ -2609,267 +2549,268 @@ frequency聚合k线
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.75...HEAD
-[0.7.75]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.74...v0.7.75
-[0.7.74]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.73...v0.7.74
-[0.7.73]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.72...v0.7.73
-[0.7.72]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.71...v0.7.72
-[0.7.71]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.70...v0.7.71
-[0.7.70]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.69...v0.7.70
-[0.7.69]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.68...v0.7.69
-[0.7.68]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.67...v0.7.68
-[0.7.67]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.66...v0.7.67
-[0.7.66]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.65...v0.7.66
-[0.7.65]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.64...v0.7.65
-[0.7.64]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.63...v0.7.64
-[0.7.63]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.62...v0.7.63
-[0.7.62]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.61...v0.7.62
-[0.7.61]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.60...v0.7.61
-[0.7.60]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.59...v0.7.60
-[0.7.59]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.58...v0.7.59
-[0.7.58]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.57...v0.7.58
-[0.7.57]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.56...v0.7.57
-[0.7.56]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.55...v0.7.56
-[0.7.55]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.54...v0.7.55
-[0.7.54]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.53...v0.7.54
-[0.7.53]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.52...v0.7.53
-[0.7.52]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.51...v0.7.52
-[0.7.51]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.50...v0.7.51
-[0.7.50]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.49...v0.7.50
-[0.7.49]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.48...v0.7.49
-[0.7.48]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.47...v0.7.48
-[0.7.47]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.46...v0.7.47
-[0.7.46]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.45...v0.7.46
-[0.7.45]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.44...v0.7.45
-[0.7.44]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.43...v0.7.44
-[0.7.43]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.42...v0.7.43
-[0.7.42]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.41...v0.7.42
-[0.7.41]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.40...v0.7.41
-[0.7.40]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.39...v0.7.40
-[0.7.39]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.38...v0.7.39
-[0.7.38]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.37...v0.7.38
-[0.7.37]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.36...v0.7.37
-[0.7.36]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.35...v0.7.36
-[0.7.35]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.34...v0.7.35
-[0.7.34]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.33...v0.7.34
-[0.7.33]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.32...v0.7.33
-[0.7.32]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.31...v0.7.32
-[0.7.31]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.30...v0.7.31
-[0.7.30]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.29...v0.7.30
-[0.7.29]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.28...v0.7.29
-[0.7.28]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.27...v0.7.28
-[0.7.27]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.26...v0.7.27
-[0.7.26]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.25...v0.7.26
-[0.7.25]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.24...v0.7.25
-[0.7.24]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.23...v0.7.24
-[0.7.23]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.22...v0.7.23
-[0.7.22]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.21...v0.7.22
-[0.7.21]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.20...v0.7.21
-[0.7.20]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.19...v0.7.20
-[0.7.19]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.18...v0.7.19
-[0.7.18]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.17...v0.7.18
-[0.7.17]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.16...v0.7.17
-[0.7.16]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.15...v0.7.16
-[0.7.15]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.14...v0.7.15
-[0.7.14]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.13...v0.7.14
-[0.7.13]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.12...v0.7.13
-[0.7.12]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.11...v0.7.12
-[0.7.11]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.10...v0.7.11
-[0.7.10]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.9...v0.7.10
-[0.7.9]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.8...v0.7.9
-[0.7.8]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.7...v0.7.8
-[0.7.7]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.6.1...v0.7.7
-[0.7.6.1]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.6...v0.7.6.1
-[0.7.6]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.5...v0.7.6
-[0.7.5]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.4...v0.7.5
-[0.7.4]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.3...v0.7.4
-[0.7.3]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.2...v0.7.3
-[0.7.2]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.1...v0.7.2
-[0.7.1]: https://gitee.com/quant1x/quant1x.git/compare/v0.7.0...v0.7.1
-[0.7.0]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.160...v0.7.0
-[0.6.160]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.159...v0.6.160
-[0.6.159]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.158...v0.6.159
-[0.6.158]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.157...v0.6.158
-[0.6.157]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.156...v0.6.157
-[0.6.156]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.155...v0.6.156
-[0.6.155]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.154...v0.6.155
-[0.6.154]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.153...v0.6.154
-[0.6.153]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.152...v0.6.153
-[0.6.152]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.151...v0.6.152
-[0.6.151]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.150...v0.6.151
-[0.6.150]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.149...v0.6.150
-[0.6.149]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.148...v0.6.149
-[0.6.148]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.147...v0.6.148
-[0.6.147]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.146...v0.6.147
-[0.6.146]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.145...v0.6.146
-[0.6.145]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.144...v0.6.145
-[0.6.144]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.143...v0.6.144
-[0.6.143]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.142...v0.6.143
-[0.6.142]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.141...v0.6.142
-[0.6.141]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.140...v0.6.141
-[0.6.140]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.139...v0.6.140
-[0.6.139]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.138...v0.6.139
-[0.6.138]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.137...v0.6.138
-[0.6.137]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.136...v0.6.137
-[0.6.136]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.135...v0.6.136
-[0.6.135]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.134...v0.6.135
-[0.6.134]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.133...v0.6.134
-[0.6.133]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.132...v0.6.133
-[0.6.132]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.131...v0.6.132
-[0.6.131]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.130...v0.6.131
-[0.6.130]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.129...v0.6.130
-[0.6.129]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.128...v0.6.129
-[0.6.128]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.127...v0.6.128
-[0.6.127]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.126...v0.6.127
-[0.6.126]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.125...v0.6.126
-[0.6.125]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.124...v0.6.125
-[0.6.124]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.123...v0.6.124
-[0.6.123]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.122...v0.6.123
-[0.6.122]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.121...v0.6.122
-[0.6.121]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.120...v0.6.121
-[0.6.120]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.119...v0.6.120
-[0.6.119]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.118...v0.6.119
-[0.6.118]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.117...v0.6.118
-[0.6.117]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.116...v0.6.117
-[0.6.116]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.115...v0.6.116
-[0.6.115]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.114...v0.6.115
-[0.6.114]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.113...v0.6.114
-[0.6.113]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.112...v0.6.113
-[0.6.112]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.111...v0.6.112
-[0.6.111]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.110...v0.6.111
-[0.6.110]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.109...v0.6.110
-[0.6.109]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.108...v0.6.109
-[0.6.108]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.107...v0.6.108
-[0.6.107]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.106...v0.6.107
-[0.6.106]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.105...v0.6.106
-[0.6.105]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.104...v0.6.105
-[0.6.104]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.103...v0.6.104
-[0.6.103]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.102...v0.6.103
-[0.6.102]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.101...v0.6.102
-[0.6.101]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.100...v0.6.101
-[0.6.100]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.99...v0.6.100
-[0.6.99]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.98...v0.6.99
-[0.6.98]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.97...v0.6.98
-[0.6.97]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.96...v0.6.97
-[0.6.96]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.95...v0.6.96
-[0.6.95]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.94...v0.6.95
-[0.6.94]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.93...v0.6.94
-[0.6.93]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.92...v0.6.93
-[0.6.92]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.91...v0.6.92
-[0.6.91]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.90...v0.6.91
-[0.6.90]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.89...v0.6.90
-[0.6.89]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.88...v0.6.89
-[0.6.88]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.87...v0.6.88
-[0.6.87]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.86...v0.6.87
-[0.6.86]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.85...v0.6.86
-[0.6.85]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.84...v0.6.85
-[0.6.84]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.83...v0.6.84
-[0.6.83]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.82...v0.6.83
-[0.6.82]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.81...v0.6.82
-[0.6.81]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.80...v0.6.81
-[0.6.80]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.79...v0.6.80
-[0.6.79]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.78...v0.6.79
-[0.6.78]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.77...v0.6.78
-[0.6.77]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.76...v0.6.77
-[0.6.76]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.75...v0.6.76
-[0.6.75]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.74...v0.6.75
-[0.6.74]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.73...v0.6.74
-[0.6.73]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.72...v0.6.73
-[0.6.72]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.71...v0.6.72
-[0.6.71]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.70...v0.6.71
-[0.6.70]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.69...v0.6.70
-[0.6.69]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.68...v0.6.69
-[0.6.68]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.67...v0.6.68
-[0.6.67]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.66...v0.6.67
-[0.6.66]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.65...v0.6.66
-[0.6.65]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.64...v0.6.65
-[0.6.64]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.63...v0.6.64
-[0.6.63]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.62...v0.6.63
-[0.6.62]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.61...v0.6.62
-[0.6.61]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.60...v0.6.61
-[0.6.60]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.59...v0.6.60
-[0.6.59]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.58...v0.6.59
-[0.6.58]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.57...v0.6.58
-[0.6.57]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.56...v0.6.57
-[0.6.56]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.55...v0.6.56
-[0.6.55]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.54...v0.6.55
-[0.6.54]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.53...v0.6.54
-[0.6.53]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.52...v0.6.53
-[0.6.52]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.51...v0.6.52
-[0.6.51]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.50...v0.6.51
-[0.6.50]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.49...v0.6.50
-[0.6.49]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.48...v0.6.49
-[0.6.48]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.47...v0.6.48
-[0.6.47]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.46...v0.6.47
-[0.6.46]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.45...v0.6.46
-[0.6.45]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.44...v0.6.45
-[0.6.44]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.43...v0.6.44
-[0.6.43]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.42...v0.6.43
-[0.6.42]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.41...v0.6.42
-[0.6.41]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.40...v0.6.41
-[0.6.40]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.39...v0.6.40
-[0.6.39]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.38...v0.6.39
-[0.6.38]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.37...v0.6.38
-[0.6.37]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.36...v0.6.37
-[0.6.36]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.35...v0.6.36
-[0.6.35]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.34...v0.6.35
-[0.6.34]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.33...v0.6.34
-[0.6.33]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.32...v0.6.33
-[0.6.32]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.31...v0.6.32
-[0.6.31]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.30...v0.6.31
-[0.6.30]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.29...v0.6.30
-[0.6.29]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.28...v0.6.29
-[0.6.28]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.27...v0.6.28
-[0.6.27]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.26...v0.6.27
-[0.6.26]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.25...v0.6.26
-[0.6.25]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.24...v0.6.25
-[0.6.24]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.23...v0.6.24
-[0.6.23]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.22...v0.6.23
-[0.6.22]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.21...v0.6.22
-[0.6.21]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.20...v0.6.21
-[0.6.20]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.19...v0.6.20
-[0.6.19]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.18...v0.6.19
-[0.6.18]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.17...v0.6.18
-[0.6.17]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.16...v0.6.17
-[0.6.16]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.15...v0.6.16
-[0.6.15]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.14...v0.6.15
-[0.6.14]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.13...v0.6.14
-[0.6.13]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.12...v0.6.13
-[0.6.12]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.11...v0.6.12
-[0.6.11]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.10...v0.6.11
-[0.6.10]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.9...v0.6.10
-[0.6.9]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.8...v0.6.9
-[0.6.8]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.7...v0.6.8
-[0.6.7]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.6...v0.6.7
-[0.6.6]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.5...v0.6.6
-[0.6.5]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.4...v0.6.5
-[0.6.4]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.3...v0.6.4
-[0.6.3]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.2...v0.6.3
-[0.6.2]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.1...v0.6.2
-[0.6.1]: https://gitee.com/quant1x/quant1x.git/compare/v0.6.0...v0.6.1
-[0.6.0]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.9...v0.6.0
-[0.5.9]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.8...v0.5.9
-[0.5.8]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.7...v0.5.8
-[0.5.7]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.6...v0.5.7
-[0.5.6]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.5...v0.5.6
-[0.5.5]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.4...v0.5.5
-[0.5.4]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.3...v0.5.4
-[0.5.3]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.2...v0.5.3
-[0.5.2]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.1...v0.5.2
-[0.5.1]: https://gitee.com/quant1x/quant1x.git/compare/v0.5.0...v0.5.1
-[0.5.0]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.13...v0.5.0
-[0.1.13]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.12...v0.1.13
-[0.1.12]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.11...v0.1.12
-[0.1.11]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.10...v0.1.11
-[0.1.10]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.9...v0.1.10
-[0.1.9]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.8...v0.1.9
-[0.1.8]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.7...v0.1.8
-[0.1.7]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.6...v0.1.7
-[0.1.6]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.5...v0.1.6
-[0.1.5]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.4...v0.1.5
-[0.1.4]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.3...v0.1.4
-[0.1.3]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.2...v0.1.3
-[0.1.2]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.1...v0.1.2
-[0.1.1]: https://gitee.com/quant1x/quant1x.git/compare/v0.1.0...v0.1.1
+[Unreleased]: https://gitee.com/quant1x/quant1x/compare/v0.7.76...HEAD
+[0.7.76]: https://gitee.com/quant1x/quant1x/compare/v0.7.75...v0.7.76
+[0.7.75]: https://gitee.com/quant1x/quant1x/compare/v0.7.74...v0.7.75
+[0.7.74]: https://gitee.com/quant1x/quant1x/compare/v0.7.73...v0.7.74
+[0.7.73]: https://gitee.com/quant1x/quant1x/compare/v0.7.72...v0.7.73
+[0.7.72]: https://gitee.com/quant1x/quant1x/compare/v0.7.71...v0.7.72
+[0.7.71]: https://gitee.com/quant1x/quant1x/compare/v0.7.70...v0.7.71
+[0.7.70]: https://gitee.com/quant1x/quant1x/compare/v0.7.69...v0.7.70
+[0.7.69]: https://gitee.com/quant1x/quant1x/compare/v0.7.68...v0.7.69
+[0.7.68]: https://gitee.com/quant1x/quant1x/compare/v0.7.67...v0.7.68
+[0.7.67]: https://gitee.com/quant1x/quant1x/compare/v0.7.66...v0.7.67
+[0.7.66]: https://gitee.com/quant1x/quant1x/compare/v0.7.65...v0.7.66
+[0.7.65]: https://gitee.com/quant1x/quant1x/compare/v0.7.64...v0.7.65
+[0.7.64]: https://gitee.com/quant1x/quant1x/compare/v0.7.63...v0.7.64
+[0.7.63]: https://gitee.com/quant1x/quant1x/compare/v0.7.62...v0.7.63
+[0.7.62]: https://gitee.com/quant1x/quant1x/compare/v0.7.61...v0.7.62
+[0.7.61]: https://gitee.com/quant1x/quant1x/compare/v0.7.60...v0.7.61
+[0.7.60]: https://gitee.com/quant1x/quant1x/compare/v0.7.59...v0.7.60
+[0.7.59]: https://gitee.com/quant1x/quant1x/compare/v0.7.58...v0.7.59
+[0.7.58]: https://gitee.com/quant1x/quant1x/compare/v0.7.57...v0.7.58
+[0.7.57]: https://gitee.com/quant1x/quant1x/compare/v0.7.56...v0.7.57
+[0.7.56]: https://gitee.com/quant1x/quant1x/compare/v0.7.55...v0.7.56
+[0.7.55]: https://gitee.com/quant1x/quant1x/compare/v0.7.54...v0.7.55
+[0.7.54]: https://gitee.com/quant1x/quant1x/compare/v0.7.53...v0.7.54
+[0.7.53]: https://gitee.com/quant1x/quant1x/compare/v0.7.52...v0.7.53
+[0.7.52]: https://gitee.com/quant1x/quant1x/compare/v0.7.51...v0.7.52
+[0.7.51]: https://gitee.com/quant1x/quant1x/compare/v0.7.50...v0.7.51
+[0.7.50]: https://gitee.com/quant1x/quant1x/compare/v0.7.49...v0.7.50
+[0.7.49]: https://gitee.com/quant1x/quant1x/compare/v0.7.48...v0.7.49
+[0.7.48]: https://gitee.com/quant1x/quant1x/compare/v0.7.47...v0.7.48
+[0.7.47]: https://gitee.com/quant1x/quant1x/compare/v0.7.46...v0.7.47
+[0.7.46]: https://gitee.com/quant1x/quant1x/compare/v0.7.45...v0.7.46
+[0.7.45]: https://gitee.com/quant1x/quant1x/compare/v0.7.44...v0.7.45
+[0.7.44]: https://gitee.com/quant1x/quant1x/compare/v0.7.43...v0.7.44
+[0.7.43]: https://gitee.com/quant1x/quant1x/compare/v0.7.42...v0.7.43
+[0.7.42]: https://gitee.com/quant1x/quant1x/compare/v0.7.41...v0.7.42
+[0.7.41]: https://gitee.com/quant1x/quant1x/compare/v0.7.40...v0.7.41
+[0.7.40]: https://gitee.com/quant1x/quant1x/compare/v0.7.39...v0.7.40
+[0.7.39]: https://gitee.com/quant1x/quant1x/compare/v0.7.38...v0.7.39
+[0.7.38]: https://gitee.com/quant1x/quant1x/compare/v0.7.37...v0.7.38
+[0.7.37]: https://gitee.com/quant1x/quant1x/compare/v0.7.36...v0.7.37
+[0.7.36]: https://gitee.com/quant1x/quant1x/compare/v0.7.35...v0.7.36
+[0.7.35]: https://gitee.com/quant1x/quant1x/compare/v0.7.34...v0.7.35
+[0.7.34]: https://gitee.com/quant1x/quant1x/compare/v0.7.33...v0.7.34
+[0.7.33]: https://gitee.com/quant1x/quant1x/compare/v0.7.32...v0.7.33
+[0.7.32]: https://gitee.com/quant1x/quant1x/compare/v0.7.31...v0.7.32
+[0.7.31]: https://gitee.com/quant1x/quant1x/compare/v0.7.30...v0.7.31
+[0.7.30]: https://gitee.com/quant1x/quant1x/compare/v0.7.29...v0.7.30
+[0.7.29]: https://gitee.com/quant1x/quant1x/compare/v0.7.28...v0.7.29
+[0.7.28]: https://gitee.com/quant1x/quant1x/compare/v0.7.27...v0.7.28
+[0.7.27]: https://gitee.com/quant1x/quant1x/compare/v0.7.26...v0.7.27
+[0.7.26]: https://gitee.com/quant1x/quant1x/compare/v0.7.25...v0.7.26
+[0.7.25]: https://gitee.com/quant1x/quant1x/compare/v0.7.24...v0.7.25
+[0.7.24]: https://gitee.com/quant1x/quant1x/compare/v0.7.23...v0.7.24
+[0.7.23]: https://gitee.com/quant1x/quant1x/compare/v0.7.22...v0.7.23
+[0.7.22]: https://gitee.com/quant1x/quant1x/compare/v0.7.21...v0.7.22
+[0.7.21]: https://gitee.com/quant1x/quant1x/compare/v0.7.20...v0.7.21
+[0.7.20]: https://gitee.com/quant1x/quant1x/compare/v0.7.19...v0.7.20
+[0.7.19]: https://gitee.com/quant1x/quant1x/compare/v0.7.18...v0.7.19
+[0.7.18]: https://gitee.com/quant1x/quant1x/compare/v0.7.17...v0.7.18
+[0.7.17]: https://gitee.com/quant1x/quant1x/compare/v0.7.16...v0.7.17
+[0.7.16]: https://gitee.com/quant1x/quant1x/compare/v0.7.15...v0.7.16
+[0.7.15]: https://gitee.com/quant1x/quant1x/compare/v0.7.14...v0.7.15
+[0.7.14]: https://gitee.com/quant1x/quant1x/compare/v0.7.13...v0.7.14
+[0.7.13]: https://gitee.com/quant1x/quant1x/compare/v0.7.12...v0.7.13
+[0.7.12]: https://gitee.com/quant1x/quant1x/compare/v0.7.11...v0.7.12
+[0.7.11]: https://gitee.com/quant1x/quant1x/compare/v0.7.10...v0.7.11
+[0.7.10]: https://gitee.com/quant1x/quant1x/compare/v0.7.9...v0.7.10
+[0.7.9]: https://gitee.com/quant1x/quant1x/compare/v0.7.8...v0.7.9
+[0.7.8]: https://gitee.com/quant1x/quant1x/compare/v0.7.7...v0.7.8
+[0.7.7]: https://gitee.com/quant1x/quant1x/compare/v0.7.6.1...v0.7.7
+[0.7.6.1]: https://gitee.com/quant1x/quant1x/compare/v0.7.6...v0.7.6.1
+[0.7.6]: https://gitee.com/quant1x/quant1x/compare/v0.7.5...v0.7.6
+[0.7.5]: https://gitee.com/quant1x/quant1x/compare/v0.7.4...v0.7.5
+[0.7.4]: https://gitee.com/quant1x/quant1x/compare/v0.7.3...v0.7.4
+[0.7.3]: https://gitee.com/quant1x/quant1x/compare/v0.7.2...v0.7.3
+[0.7.2]: https://gitee.com/quant1x/quant1x/compare/v0.7.1...v0.7.2
+[0.7.1]: https://gitee.com/quant1x/quant1x/compare/v0.7.0...v0.7.1
+[0.7.0]: https://gitee.com/quant1x/quant1x/compare/v0.6.160...v0.7.0
+[0.6.160]: https://gitee.com/quant1x/quant1x/compare/v0.6.159...v0.6.160
+[0.6.159]: https://gitee.com/quant1x/quant1x/compare/v0.6.158...v0.6.159
+[0.6.158]: https://gitee.com/quant1x/quant1x/compare/v0.6.157...v0.6.158
+[0.6.157]: https://gitee.com/quant1x/quant1x/compare/v0.6.156...v0.6.157
+[0.6.156]: https://gitee.com/quant1x/quant1x/compare/v0.6.155...v0.6.156
+[0.6.155]: https://gitee.com/quant1x/quant1x/compare/v0.6.154...v0.6.155
+[0.6.154]: https://gitee.com/quant1x/quant1x/compare/v0.6.153...v0.6.154
+[0.6.153]: https://gitee.com/quant1x/quant1x/compare/v0.6.152...v0.6.153
+[0.6.152]: https://gitee.com/quant1x/quant1x/compare/v0.6.151...v0.6.152
+[0.6.151]: https://gitee.com/quant1x/quant1x/compare/v0.6.150...v0.6.151
+[0.6.150]: https://gitee.com/quant1x/quant1x/compare/v0.6.149...v0.6.150
+[0.6.149]: https://gitee.com/quant1x/quant1x/compare/v0.6.148...v0.6.149
+[0.6.148]: https://gitee.com/quant1x/quant1x/compare/v0.6.147...v0.6.148
+[0.6.147]: https://gitee.com/quant1x/quant1x/compare/v0.6.146...v0.6.147
+[0.6.146]: https://gitee.com/quant1x/quant1x/compare/v0.6.145...v0.6.146
+[0.6.145]: https://gitee.com/quant1x/quant1x/compare/v0.6.144...v0.6.145
+[0.6.144]: https://gitee.com/quant1x/quant1x/compare/v0.6.143...v0.6.144
+[0.6.143]: https://gitee.com/quant1x/quant1x/compare/v0.6.142...v0.6.143
+[0.6.142]: https://gitee.com/quant1x/quant1x/compare/v0.6.141...v0.6.142
+[0.6.141]: https://gitee.com/quant1x/quant1x/compare/v0.6.140...v0.6.141
+[0.6.140]: https://gitee.com/quant1x/quant1x/compare/v0.6.139...v0.6.140
+[0.6.139]: https://gitee.com/quant1x/quant1x/compare/v0.6.138...v0.6.139
+[0.6.138]: https://gitee.com/quant1x/quant1x/compare/v0.6.137...v0.6.138
+[0.6.137]: https://gitee.com/quant1x/quant1x/compare/v0.6.136...v0.6.137
+[0.6.136]: https://gitee.com/quant1x/quant1x/compare/v0.6.135...v0.6.136
+[0.6.135]: https://gitee.com/quant1x/quant1x/compare/v0.6.134...v0.6.135
+[0.6.134]: https://gitee.com/quant1x/quant1x/compare/v0.6.133...v0.6.134
+[0.6.133]: https://gitee.com/quant1x/quant1x/compare/v0.6.132...v0.6.133
+[0.6.132]: https://gitee.com/quant1x/quant1x/compare/v0.6.131...v0.6.132
+[0.6.131]: https://gitee.com/quant1x/quant1x/compare/v0.6.130...v0.6.131
+[0.6.130]: https://gitee.com/quant1x/quant1x/compare/v0.6.129...v0.6.130
+[0.6.129]: https://gitee.com/quant1x/quant1x/compare/v0.6.128...v0.6.129
+[0.6.128]: https://gitee.com/quant1x/quant1x/compare/v0.6.127...v0.6.128
+[0.6.127]: https://gitee.com/quant1x/quant1x/compare/v0.6.126...v0.6.127
+[0.6.126]: https://gitee.com/quant1x/quant1x/compare/v0.6.125...v0.6.126
+[0.6.125]: https://gitee.com/quant1x/quant1x/compare/v0.6.124...v0.6.125
+[0.6.124]: https://gitee.com/quant1x/quant1x/compare/v0.6.123...v0.6.124
+[0.6.123]: https://gitee.com/quant1x/quant1x/compare/v0.6.122...v0.6.123
+[0.6.122]: https://gitee.com/quant1x/quant1x/compare/v0.6.121...v0.6.122
+[0.6.121]: https://gitee.com/quant1x/quant1x/compare/v0.6.120...v0.6.121
+[0.6.120]: https://gitee.com/quant1x/quant1x/compare/v0.6.119...v0.6.120
+[0.6.119]: https://gitee.com/quant1x/quant1x/compare/v0.6.118...v0.6.119
+[0.6.118]: https://gitee.com/quant1x/quant1x/compare/v0.6.117...v0.6.118
+[0.6.117]: https://gitee.com/quant1x/quant1x/compare/v0.6.116...v0.6.117
+[0.6.116]: https://gitee.com/quant1x/quant1x/compare/v0.6.115...v0.6.116
+[0.6.115]: https://gitee.com/quant1x/quant1x/compare/v0.6.114...v0.6.115
+[0.6.114]: https://gitee.com/quant1x/quant1x/compare/v0.6.113...v0.6.114
+[0.6.113]: https://gitee.com/quant1x/quant1x/compare/v0.6.112...v0.6.113
+[0.6.112]: https://gitee.com/quant1x/quant1x/compare/v0.6.111...v0.6.112
+[0.6.111]: https://gitee.com/quant1x/quant1x/compare/v0.6.110...v0.6.111
+[0.6.110]: https://gitee.com/quant1x/quant1x/compare/v0.6.109...v0.6.110
+[0.6.109]: https://gitee.com/quant1x/quant1x/compare/v0.6.108...v0.6.109
+[0.6.108]: https://gitee.com/quant1x/quant1x/compare/v0.6.107...v0.6.108
+[0.6.107]: https://gitee.com/quant1x/quant1x/compare/v0.6.106...v0.6.107
+[0.6.106]: https://gitee.com/quant1x/quant1x/compare/v0.6.105...v0.6.106
+[0.6.105]: https://gitee.com/quant1x/quant1x/compare/v0.6.104...v0.6.105
+[0.6.104]: https://gitee.com/quant1x/quant1x/compare/v0.6.103...v0.6.104
+[0.6.103]: https://gitee.com/quant1x/quant1x/compare/v0.6.102...v0.6.103
+[0.6.102]: https://gitee.com/quant1x/quant1x/compare/v0.6.101...v0.6.102
+[0.6.101]: https://gitee.com/quant1x/quant1x/compare/v0.6.100...v0.6.101
+[0.6.100]: https://gitee.com/quant1x/quant1x/compare/v0.6.99...v0.6.100
+[0.6.99]: https://gitee.com/quant1x/quant1x/compare/v0.6.98...v0.6.99
+[0.6.98]: https://gitee.com/quant1x/quant1x/compare/v0.6.97...v0.6.98
+[0.6.97]: https://gitee.com/quant1x/quant1x/compare/v0.6.96...v0.6.97
+[0.6.96]: https://gitee.com/quant1x/quant1x/compare/v0.6.95...v0.6.96
+[0.6.95]: https://gitee.com/quant1x/quant1x/compare/v0.6.94...v0.6.95
+[0.6.94]: https://gitee.com/quant1x/quant1x/compare/v0.6.93...v0.6.94
+[0.6.93]: https://gitee.com/quant1x/quant1x/compare/v0.6.92...v0.6.93
+[0.6.92]: https://gitee.com/quant1x/quant1x/compare/v0.6.91...v0.6.92
+[0.6.91]: https://gitee.com/quant1x/quant1x/compare/v0.6.90...v0.6.91
+[0.6.90]: https://gitee.com/quant1x/quant1x/compare/v0.6.89...v0.6.90
+[0.6.89]: https://gitee.com/quant1x/quant1x/compare/v0.6.88...v0.6.89
+[0.6.88]: https://gitee.com/quant1x/quant1x/compare/v0.6.87...v0.6.88
+[0.6.87]: https://gitee.com/quant1x/quant1x/compare/v0.6.86...v0.6.87
+[0.6.86]: https://gitee.com/quant1x/quant1x/compare/v0.6.85...v0.6.86
+[0.6.85]: https://gitee.com/quant1x/quant1x/compare/v0.6.84...v0.6.85
+[0.6.84]: https://gitee.com/quant1x/quant1x/compare/v0.6.83...v0.6.84
+[0.6.83]: https://gitee.com/quant1x/quant1x/compare/v0.6.82...v0.6.83
+[0.6.82]: https://gitee.com/quant1x/quant1x/compare/v0.6.81...v0.6.82
+[0.6.81]: https://gitee.com/quant1x/quant1x/compare/v0.6.80...v0.6.81
+[0.6.80]: https://gitee.com/quant1x/quant1x/compare/v0.6.79...v0.6.80
+[0.6.79]: https://gitee.com/quant1x/quant1x/compare/v0.6.78...v0.6.79
+[0.6.78]: https://gitee.com/quant1x/quant1x/compare/v0.6.77...v0.6.78
+[0.6.77]: https://gitee.com/quant1x/quant1x/compare/v0.6.76...v0.6.77
+[0.6.76]: https://gitee.com/quant1x/quant1x/compare/v0.6.75...v0.6.76
+[0.6.75]: https://gitee.com/quant1x/quant1x/compare/v0.6.74...v0.6.75
+[0.6.74]: https://gitee.com/quant1x/quant1x/compare/v0.6.73...v0.6.74
+[0.6.73]: https://gitee.com/quant1x/quant1x/compare/v0.6.72...v0.6.73
+[0.6.72]: https://gitee.com/quant1x/quant1x/compare/v0.6.71...v0.6.72
+[0.6.71]: https://gitee.com/quant1x/quant1x/compare/v0.6.70...v0.6.71
+[0.6.70]: https://gitee.com/quant1x/quant1x/compare/v0.6.69...v0.6.70
+[0.6.69]: https://gitee.com/quant1x/quant1x/compare/v0.6.68...v0.6.69
+[0.6.68]: https://gitee.com/quant1x/quant1x/compare/v0.6.67...v0.6.68
+[0.6.67]: https://gitee.com/quant1x/quant1x/compare/v0.6.66...v0.6.67
+[0.6.66]: https://gitee.com/quant1x/quant1x/compare/v0.6.65...v0.6.66
+[0.6.65]: https://gitee.com/quant1x/quant1x/compare/v0.6.64...v0.6.65
+[0.6.64]: https://gitee.com/quant1x/quant1x/compare/v0.6.63...v0.6.64
+[0.6.63]: https://gitee.com/quant1x/quant1x/compare/v0.6.62...v0.6.63
+[0.6.62]: https://gitee.com/quant1x/quant1x/compare/v0.6.61...v0.6.62
+[0.6.61]: https://gitee.com/quant1x/quant1x/compare/v0.6.60...v0.6.61
+[0.6.60]: https://gitee.com/quant1x/quant1x/compare/v0.6.59...v0.6.60
+[0.6.59]: https://gitee.com/quant1x/quant1x/compare/v0.6.58...v0.6.59
+[0.6.58]: https://gitee.com/quant1x/quant1x/compare/v0.6.57...v0.6.58
+[0.6.57]: https://gitee.com/quant1x/quant1x/compare/v0.6.56...v0.6.57
+[0.6.56]: https://gitee.com/quant1x/quant1x/compare/v0.6.55...v0.6.56
+[0.6.55]: https://gitee.com/quant1x/quant1x/compare/v0.6.54...v0.6.55
+[0.6.54]: https://gitee.com/quant1x/quant1x/compare/v0.6.53...v0.6.54
+[0.6.53]: https://gitee.com/quant1x/quant1x/compare/v0.6.52...v0.6.53
+[0.6.52]: https://gitee.com/quant1x/quant1x/compare/v0.6.51...v0.6.52
+[0.6.51]: https://gitee.com/quant1x/quant1x/compare/v0.6.50...v0.6.51
+[0.6.50]: https://gitee.com/quant1x/quant1x/compare/v0.6.49...v0.6.50
+[0.6.49]: https://gitee.com/quant1x/quant1x/compare/v0.6.48...v0.6.49
+[0.6.48]: https://gitee.com/quant1x/quant1x/compare/v0.6.47...v0.6.48
+[0.6.47]: https://gitee.com/quant1x/quant1x/compare/v0.6.46...v0.6.47
+[0.6.46]: https://gitee.com/quant1x/quant1x/compare/v0.6.45...v0.6.46
+[0.6.45]: https://gitee.com/quant1x/quant1x/compare/v0.6.44...v0.6.45
+[0.6.44]: https://gitee.com/quant1x/quant1x/compare/v0.6.43...v0.6.44
+[0.6.43]: https://gitee.com/quant1x/quant1x/compare/v0.6.42...v0.6.43
+[0.6.42]: https://gitee.com/quant1x/quant1x/compare/v0.6.41...v0.6.42
+[0.6.41]: https://gitee.com/quant1x/quant1x/compare/v0.6.40...v0.6.41
+[0.6.40]: https://gitee.com/quant1x/quant1x/compare/v0.6.39...v0.6.40
+[0.6.39]: https://gitee.com/quant1x/quant1x/compare/v0.6.38...v0.6.39
+[0.6.38]: https://gitee.com/quant1x/quant1x/compare/v0.6.37...v0.6.38
+[0.6.37]: https://gitee.com/quant1x/quant1x/compare/v0.6.36...v0.6.37
+[0.6.36]: https://gitee.com/quant1x/quant1x/compare/v0.6.35...v0.6.36
+[0.6.35]: https://gitee.com/quant1x/quant1x/compare/v0.6.34...v0.6.35
+[0.6.34]: https://gitee.com/quant1x/quant1x/compare/v0.6.33...v0.6.34
+[0.6.33]: https://gitee.com/quant1x/quant1x/compare/v0.6.32...v0.6.33
+[0.6.32]: https://gitee.com/quant1x/quant1x/compare/v0.6.31...v0.6.32
+[0.6.31]: https://gitee.com/quant1x/quant1x/compare/v0.6.30...v0.6.31
+[0.6.30]: https://gitee.com/quant1x/quant1x/compare/v0.6.29...v0.6.30
+[0.6.29]: https://gitee.com/quant1x/quant1x/compare/v0.6.28...v0.6.29
+[0.6.28]: https://gitee.com/quant1x/quant1x/compare/v0.6.27...v0.6.28
+[0.6.27]: https://gitee.com/quant1x/quant1x/compare/v0.6.26...v0.6.27
+[0.6.26]: https://gitee.com/quant1x/quant1x/compare/v0.6.25...v0.6.26
+[0.6.25]: https://gitee.com/quant1x/quant1x/compare/v0.6.24...v0.6.25
+[0.6.24]: https://gitee.com/quant1x/quant1x/compare/v0.6.23...v0.6.24
+[0.6.23]: https://gitee.com/quant1x/quant1x/compare/v0.6.22...v0.6.23
+[0.6.22]: https://gitee.com/quant1x/quant1x/compare/v0.6.21...v0.6.22
+[0.6.21]: https://gitee.com/quant1x/quant1x/compare/v0.6.20...v0.6.21
+[0.6.20]: https://gitee.com/quant1x/quant1x/compare/v0.6.19...v0.6.20
+[0.6.19]: https://gitee.com/quant1x/quant1x/compare/v0.6.18...v0.6.19
+[0.6.18]: https://gitee.com/quant1x/quant1x/compare/v0.6.17...v0.6.18
+[0.6.17]: https://gitee.com/quant1x/quant1x/compare/v0.6.16...v0.6.17
+[0.6.16]: https://gitee.com/quant1x/quant1x/compare/v0.6.15...v0.6.16
+[0.6.15]: https://gitee.com/quant1x/quant1x/compare/v0.6.14...v0.6.15
+[0.6.14]: https://gitee.com/quant1x/quant1x/compare/v0.6.13...v0.6.14
+[0.6.13]: https://gitee.com/quant1x/quant1x/compare/v0.6.12...v0.6.13
+[0.6.12]: https://gitee.com/quant1x/quant1x/compare/v0.6.11...v0.6.12
+[0.6.11]: https://gitee.com/quant1x/quant1x/compare/v0.6.10...v0.6.11
+[0.6.10]: https://gitee.com/quant1x/quant1x/compare/v0.6.9...v0.6.10
+[0.6.9]: https://gitee.com/quant1x/quant1x/compare/v0.6.8...v0.6.9
+[0.6.8]: https://gitee.com/quant1x/quant1x/compare/v0.6.7...v0.6.8
+[0.6.7]: https://gitee.com/quant1x/quant1x/compare/v0.6.6...v0.6.7
+[0.6.6]: https://gitee.com/quant1x/quant1x/compare/v0.6.5...v0.6.6
+[0.6.5]: https://gitee.com/quant1x/quant1x/compare/v0.6.4...v0.6.5
+[0.6.4]: https://gitee.com/quant1x/quant1x/compare/v0.6.3...v0.6.4
+[0.6.3]: https://gitee.com/quant1x/quant1x/compare/v0.6.2...v0.6.3
+[0.6.2]: https://gitee.com/quant1x/quant1x/compare/v0.6.1...v0.6.2
+[0.6.1]: https://gitee.com/quant1x/quant1x/compare/v0.6.0...v0.6.1
+[0.6.0]: https://gitee.com/quant1x/quant1x/compare/v0.5.9...v0.6.0
+[0.5.9]: https://gitee.com/quant1x/quant1x/compare/v0.5.8...v0.5.9
+[0.5.8]: https://gitee.com/quant1x/quant1x/compare/v0.5.7...v0.5.8
+[0.5.7]: https://gitee.com/quant1x/quant1x/compare/v0.5.6...v0.5.7
+[0.5.6]: https://gitee.com/quant1x/quant1x/compare/v0.5.5...v0.5.6
+[0.5.5]: https://gitee.com/quant1x/quant1x/compare/v0.5.4...v0.5.5
+[0.5.4]: https://gitee.com/quant1x/quant1x/compare/v0.5.3...v0.5.4
+[0.5.3]: https://gitee.com/quant1x/quant1x/compare/v0.5.2...v0.5.3
+[0.5.2]: https://gitee.com/quant1x/quant1x/compare/v0.5.1...v0.5.2
+[0.5.1]: https://gitee.com/quant1x/quant1x/compare/v0.5.0...v0.5.1
+[0.5.0]: https://gitee.com/quant1x/quant1x/compare/v0.1.13...v0.5.0
+[0.1.13]: https://gitee.com/quant1x/quant1x/compare/v0.1.12...v0.1.13
+[0.1.12]: https://gitee.com/quant1x/quant1x/compare/v0.1.11...v0.1.12
+[0.1.11]: https://gitee.com/quant1x/quant1x/compare/v0.1.10...v0.1.11
+[0.1.10]: https://gitee.com/quant1x/quant1x/compare/v0.1.9...v0.1.10
+[0.1.9]: https://gitee.com/quant1x/quant1x/compare/v0.1.8...v0.1.9
+[0.1.8]: https://gitee.com/quant1x/quant1x/compare/v0.1.7...v0.1.8
+[0.1.7]: https://gitee.com/quant1x/quant1x/compare/v0.1.6...v0.1.7
+[0.1.6]: https://gitee.com/quant1x/quant1x/compare/v0.1.5...v0.1.6
+[0.1.5]: https://gitee.com/quant1x/quant1x/compare/v0.1.4...v0.1.5
+[0.1.4]: https://gitee.com/quant1x/quant1x/compare/v0.1.3...v0.1.4
+[0.1.3]: https://gitee.com/quant1x/quant1x/compare/v0.1.2...v0.1.3
+[0.1.2]: https://gitee.com/quant1x/quant1x/compare/v0.1.1...v0.1.2
+[0.1.1]: https://gitee.com/quant1x/quant1x/compare/v0.1.0...v0.1.1
 
-[0.1.0]: https://gitee.com/quant1x/quant1x.git/releases/tag/v0.1.0
+[0.1.0]: https://gitee.com/quant1x/quant1x/releases/tag/v0.1.0
