@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.77] - 2026-09-07
+### Changed
+- fix[rust]: 修复criterion 0.4版本的安全问题
+- release version 0.7.77
+
 ## [0.7.76] - 2026-09-05
 ### Changed
 - fix[c++]: 修订注释
@@ -2549,7 +2554,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x/compare/v0.7.76...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x/compare/v0.7.77...HEAD
+[0.7.77]: https://gitee.com/quant1x/quant1x/compare/v0.7.76...v0.7.77
 [0.7.76]: https://gitee.com/quant1x/quant1x/compare/v0.7.75...v0.7.76
 [0.7.75]: https://gitee.com/quant1x/quant1x/compare/v0.7.74...v0.7.75
 [0.7.74]: https://gitee.com/quant1x/quant1x/compare/v0.7.73...v0.7.74
