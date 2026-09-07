@@ -64,10 +64,10 @@ libc = "0.2"
 [dev-dependencies]
 mockito = "1.0"
 # Criterion for benchmarking
-criterion = "0.4"
+criterion = "0.5.1"
 # keep dependencies minimal for now; remove tokio/cron/uuid/futures that were
 # temporarily added during an attempt to integrate tokio-cron-scheduler.
-bytes = "1.5"
+bytes = "1.11"
 signal-hook = "0.3"
 ctrlc = "3.4"
 tokio-cron-scheduler = "0.9"
