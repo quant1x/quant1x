@@ -3,6 +3,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.78] - 2026-09-14
+### Changed
+- fix[rust]: 更新rust标准版本到1.98.1
+- fix[multi]: 删除废弃的文件
+- fix[docs]: 优化主题logo
+- docs[multi]：透明化 logo 背景并裁剪四周空白
+  - 将 docs/quant1x-2.png 的灰蓝色背景（189,199,209）设为透明
+  - 一并处理字母 Q、u 等被图形包围的封闭填充区域，避免残留底色
+  - 按 alpha 包围盒裁掉四周空白，尺寸由 680×586 调整为 676×564
+  - 边缘增加 3px 羽化，消除硬锯齿
+  - 验证：以透明棋盘格底查看 docs/quant1x-2.png
+- fix[image]: 调整logo图片
+- docs[multi]：重组 README 文档结构
+  - 新增目录导航与项目结构章节，说明顶层目录与多语言平行实现规则
+  - 快速开始调整为六步：获取源码、配置文件、Go、Rust、C/C++、Python
+  - 环境搭建细节下沉到附录，正文只保留结论性内容
+  - 合并重复的环境要求表格，清理 AI 口吻段落与过时的版本号示例
+  - 新增文档索引，汇总架构规范、数据字典与核心模块说明
+  - 贡献章节补充中文提交信息规范 type[language]：summary
+  - 验证：人工通读 README.md，确认章节层级与文档链接有效
+- release version 0.7.78
+
 ## [0.7.77] - 2026-09-07
 ### Changed
 - fix[rust]: 修复criterion 0.4版本的安全问题
@@ -2554,7 +2576,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x/compare/v0.7.77...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x/compare/v0.7.78...HEAD
+[0.7.78]: https://gitee.com/quant1x/quant1x/compare/v0.7.77...v0.7.78
 [0.7.77]: https://gitee.com/quant1x/quant1x/compare/v0.7.76...v0.7.77
 [0.7.76]: https://gitee.com/quant1x/quant1x/compare/v0.7.75...v0.7.76
 [0.7.75]: https://gitee.com/quant1x/quant1x/compare/v0.7.74...v0.7.75
