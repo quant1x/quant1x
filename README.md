@@ -11,302 +11,172 @@
 ![tag](https://img.shields.io/github/tag/quant1x/quant1x.svg?style=flat)
 ![Crates.io](https://img.shields.io/crates/d/quant1x.svg)
 
-Quant1X 是一个多语言量化交易框架，支持 C++、Go、Rust、Python，提供完整的量化交易解决方案，包括数据处理、策略开发、回测引擎、实时交易等功能。
+Quant1X 是一个多语言平行实现的量化交易框架，同时提供 C++、Go、Rust、Python 四种语言的等价实现，覆盖数据处理、因子与指标、策略开发、回测引擎、实时行情与交易等完整链路。
 
-## ✨ 特性
+四种语言**互不依赖、不跨语言调用**（无 FFI / Cgo / SWIG），通过同名文件、同名函数与统一的 I/O 契约保持语义一致，可通过同一组测试向量交叉验证。
 
-- **多语言支持**：C++20、Go 1.27+、Rust 1.98.1+、Python 3.12+
-- **高性能**：优化的算法和数据结构，支持 SIMD 指令集
-- **模块化设计**：可插拔的组件架构，易于扩展
-- **实时数据**：支持 Level1 市场数据
-- **策略框架**：内置多种技术指标和策略模板
-- **回测引擎**：高效的回测系统，支持多资产组合
-- **网络通信**：内置 HTTP/WebSocket 客户端，支持多种协议
+## 目录
 
-## 📋 环境要求
+- [核心特性](#核心特性)
+- [环境要求](#环境要求)
+- [项目结构](#项目结构)
+- [快速开始](#快速开始)
+  - [1. 获取源码](#1-获取源码)
+  - [2. 配置文件](#2-配置文件)
+  - [3. Go](#3-go)
+  - [4. Rust](#4-rust)
+  - [5. C/C++](#5-cc)
+  - [6. Python](#6-python)
+- [附录：开发环境搭建](#附录开发环境搭建)
+- [多语言一致性](#多语言一致性)
+- [使用示例](#使用示例)
+- [文档索引](#文档索引)
+- [贡献](#贡献)
+- [许可证](#许可证)
+- [相关链接](#相关链接)
+
+## 核心特性
+
+- **多语言平行实现**：同一功能在 C++、Go、Rust、Python 中各有独立实现，语义对齐、命名一致
+- **高性能**：优化的算法与数据结构，支持 SIMD，关键路径（如 Vyukov MPMC 队列）跨语言性能对齐
+- **模块化设计**：按功能划分目录，可插拔组件架构，易于扩展
+- **行情与数据**：支持 Level1 行情、K 线、除权除息、板块、F10 等数据集及其缓存更新
+- **策略与因子框架**：内置多种技术指标、因子计算与策略模板
+- **回测引擎**：高效回测系统，支持多资产组合
+- **网络通信**：内置 HTTP / WebSocket 客户端，支持多种协议
+- **文档即契约**：重要模块均配同级 `.md` 文档，作为跨语言实现与 AI 辅助开发的依据
+
+> 详细的架构理念、目录规范与命名规范见 [CONTRIBUTING.md](CONTRIBUTING.md)，AI 协作规则见 [AGENTS.md](AGENTS.md)。
+
+## 环境要求
 
 ### 系统要求
 
-- 64位操作系统 (Windows/Linux/macOS)
-- 至少 8GB RAM，推荐 16GB+
+- 64 位操作系统（Windows / Linux / macOS）
+- 至少 8GB 内存，推荐 16GB 以上
 - 支持 AVX2 指令集的 CPU
 
 ### 语言版本
 
 | 语言 | 版本要求 | 推荐版本 |
-|------|----------|----------|
+|---|---|---|
 | Python | 3.12+ | 3.12.x |
 | Go | 1.27+ | 1.27.x |
-| Rust | 1.98.1+ | 1.98.1+ (2024) |
-| C++ | C++20 | GCC 13+/Clang 17+/MSVC 14.3+ |
+| Rust | 1.98.1+ | 1.98.1+（Edition 2024） |
+| C++ | C++20 | GCC 13+ / Clang 17+ / MSVC 14.3+ |
 
-## 🚀 快速开始
+C/C++ 构建另需 CMake 3.30+，推荐 Ninja 作为构建器。
 
-## 1. 环境配置
-
-### 1.1 默认均为64位操作系统
-
-| python | golang | rust       | c++                         |
-|:-------|:-------|:-----------|:----------------------------|
-| 3.12.x | 1.27.x | 1.98.1+/2024 | gcc13+/clang17+/msvc14.3+ |
-
-### 1.2 环境安装推荐使用brew
-
-安装brew时需要注意避免使用root权限
-
-### 1.3 安装quant1x配置文件
-
-- 示例的配置文件路径 examples/quant1x.yaml, 需要将配置文件拷贝到用户目录下
-- 配置信息分交易、策略和数据三个部分，可以自定义缓存路径
-
-#### 1.3.1 go语言版本是目前比较稳定的生产版本, 配置文件目录名因为历史原因使用了全拼接的quant1x路径, 支持~/runtime/etc/quant1x.yaml
-
-```shell
-cp examples/quant1x.yaml ~/.quant1x/quant1x.yaml
-```
-
-#### 1.3.2 c++语言版本是具备跨平台的生产能力, 目录名为~/.q1x/
-
-```shell
-cp examples/quant1x.yaml ~/.q1x/quant1x.yaml
-```
-
-#### 1.3.3 rust版本以C++版本为基础，尽可能1:1还原c++的业务逻辑，目录名为~/.q1x-rs/
-
-```shell
-cp examples/quant1x.yaml ~/.q1x-rs/quant1x.yaml
-```
-
-#### 1.3.4 python版本没有直接的二进制数据，只提供基于go/c++/rust的数据导出功能
-
-- 数据源，默认是go版本的配置文件
-- 数据源切换, 多语言版本的数据源切换，需要在开发环境的目录配置.env或环境变量，环境变量名QUANT1X_WORK, 值为c++对应q1x，rust对应q1x-rust, 不包含符号点"."
-
-## 2. python
-
-python的运行环境可能存在多个版本冲突的问题，那么怎么来解决多版本的共存的问题呢？使用pyenv。
-
-### 2.1 安装pyenv
-
-```shell
-brew install pyenv
-```
-
-#### 2.1.1 查看已安装的版本
-
-```shell
-pyenv versions
-```
-
-我的电脑返回以下版本信息
+## 项目结构
 
 ```text
-  system
-  3.8.16
-* 3.12.9 (set by /Users/${USERNAME}/.pyenv/version)
+quant1x/
+├── quant1x/            # 各语言的平行实现（按功能划分目录）
+│   ├── data/           # 行情与基础数据（K线、除权除息、板块、F10 等）
+│   ├── factors/        # 因子与特征计算
+│   ├── indicators/     # 技术指标
+│   ├── ta/             # 技术分析算子
+│   ├── formula/        # 公式引擎（含 MyTT 兼容实现）
+│   ├── backtest/       # 回测引擎
+│   ├── trader/         # 交易相关
+│   ├── realtime/       # 实时行情
+│   ├── runtime/        # 并发与运行时组件（含 Vyukov Ringbuffer）
+│   ├── encoding/       # 二进制编码与结构化序列化
+│   ├── id/             # 分布式 ID
+│   ├── distributed/    # 分布式协调
+│   ├── learn/          # 机器学习相关（FPGrowth、regime 等）
+│   ├── config/         # 配置
+│   ├── io/ log/ net/ util/ ...
+├── docs/               # 文档（数据字典、交易规则等）
+├── examples/           # 示例程序与示例配置
+├── tests/              # 跨语言一致性测试（含 Java 用例）
+├── benches/            # 基准测试（Vyukov 队列等）
+├── proto/              # 协议定义
+├── scripts/ labs/      # 脚本与实验 notebook
 ```
 
-#### 2.1.2 查看可安装的版本
+同一功能在 `quant1x/<module>/` 下以 `xxx.py`、`xxx.h` / `xxx.cpp`、`xxx.rs` 平行存在，Go 实现位于同名子目录（如 `data/t1/api.go`，包名为 `t1`），以此规避 Go 的循环依赖限制。
+
+## 快速开始
+
+### 1. 获取源码
 
 ```shell
-pyenv install -l
+git clone https://gitee.com/quant1x/quant1x.git
+cd quant1x
 ```
 
-#### 2.1.3 安装指定版本的python, 本文指定3.12.9或3.12.x更新版本
+### 2. 配置文件
+
+示例配置位于 `examples/quant1x.yaml`，按语言拷贝到对应的用户目录即可使用。配置分为**交易、策略、数据**三个部分，可自定义缓存路径。
+
+| 语言 | 配置目录 | 安装命令 |
+|---|---|---|
+| Go | `~/.quant1x/` | `cp examples/quant1x.yaml ~/.quant1x/quant1x.yaml` |
+| C++ | `~/.q1x/` | `cp examples/quant1x.yaml ~/.q1x/quant1x.yaml` |
+| Rust | `~/.q1x-rs/` | `cp examples/quant1x.yaml ~/.q1x-rs/quant1x.yaml` |
+| Python | — | 无独立二进制数据，复用 Go / C++ / Rust 导出的数据 |
+
+Python 侧数据源默认读取 Go 版本的配置；如需切换，在开发环境的 `.env` 或环境变量中设置 `QUANT1X_WORK`，取值与目录对应：**C++ 为 `q1x`，Rust 为 `q1x-rust`**（不含点号）。
+
+### 3. Go
+
+Go 版本是目前较为稳定的生产版本。
 
 ```shell
-pyenv install 3.12.9
+# 构建全部包
+go build ./...
+
+# 运行测试
+go test ./...
+
+# 运行主程序
+go run main.go --help
 ```
 
-#### 2.1.4 pip类库管理工具
+### 4. Rust
 
-安装python完成之后, python类库管理工具pip已经默认安装完成了
-
-#### 2.1.5 python基础工具
-
-| 工具  | 功能                           |
-|:----|:-----------------------------|
-| pip | 类似maven、gradle、go mod的类库管理工具 |
-| pip-autoremove| 自动删除类库所有依赖库                  |
-|pipreqs| 项目/类库交叉依赖检测                  |
-
-#### 2.1.6 pip 源配置
-
-使用 pip config 命令配置清华镜像源：
+Rust 版本以 C++ 版本为基础，尽可能 1:1 还原 C++ 的业务逻辑。仓库在 `Cargo.toml` 中声明了可执行二进制 `q1x`（入口 `main.rs`）。
 
 ```shell
-pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
-pip config set install.trusted-host https://pypi.tuna.tsinghua.edu.cn
-```
-
-### 2.2 依赖库
-
-python环境中依赖管理的配置文件为requirements.txt，类似java的maven pom.xml、golang的go.mod。
-
-#### 2.2.1 安装项目依赖的库
-
-```shell
-pip install -r requirements.txt
-```
-
-#### 2.2.2 检测项目依赖输出到requirements.txt
-
-```shell
-pip freeze > requirements.txt
-```
-
-#### 2.2.3 交叉依赖
-
-```shell
-pip install pipreqs
-pipreqs ./ --encoding utf8
-```
-
-### 2.3 上传package到PyPi
-
-#### 2.3.1 安装或更新setuptools、wheel、twine
-
-```shell
-pip install --upgrade setuptools wheel twine
-```
-
-#### 2.3.2 打包并生成tar.gz和whl文件
-
-```shell
-python setup.py sdist bdist_wheel
-```
-
-#### 2.3.3 上传package到PyPi的测试环境
-
-```shell
-twine upload --repository testpypi dist/*
-```
-
-#### 2.3.4 上传package到PyPi的正式环境
-
-```shell
-twine upload dist/*
-```
-
-### 2.4 Matplotlib中文乱码问题解决方案
-
-#### 2.4.1 编写如下代码，获取matplotlib包所在的配置文件的路径
-
-```python
-import matplotlib
-matplotlib.matplotlib_fname() #输出matplotlib包所在的配置文件的路径
-```
-
-#### 2.4.2 根据上面的路径打开文件夹（根据自己实际的输出路径去操作）
-
-我选择了SimHei中文字体, 复制到fonts/ttf/目录下
-
-```shell
-cp -r /Users/${USERNAME}/Library/Fonts/SimHei.ttf fonts/ttf/
-```
-
-#### 2.4.3 编辑2.4.1获得路径matplotlibrc文件
-
-##### 2.4.3.1 找到 #font.sans-serif，去掉前面的#，并在：后面写上在准备工作加入的中文字体的名称SimHei
-
-##### 2.4.3.2 找到#axes.unicode_minus，去掉前面的#，并在：改为False
-
-#### 2.4.4 控制台切换到~/.matplotlib目录, 删除tex.cache文件和fontList.json文件
-
-```shell
-cd ~/.matplotlib
-rm -rf *
-```
-
-## 3. golang 开发环境
-
-### 3.1 环境设定
-
-```shell
-go env -w GO111MODULE=on
-go env -w GOPROXY=https://goproxy.cn,direct
-go env -w GOPRIVATE=gitee.com
-```
-
-### 3.2 安装protobuf
-
-```shell
-go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-```
-
-## 4. Rust 开发环境
-
-### 4.1 安装 Rust
-
-```shell
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
-### 4.2 更新 Rust 工具链到最新版本
-
-```shell
-rustup update
-```
-
-### Rust: 构建与运行 `q1x` 二进制
-
-本仓库在 `Cargo.toml` 中声明了一个名为 `q1x` 的可执行二进制（路径为 `main.rs`）。下面是构建与常见运行示例：
-
-- 在开发模式下构建：
-
-```shell
+# Debug 构建
 cargo build --bin q1x
-```
 
-- 在发布/生产模式下构建（优化）：
-
-```shell
+# Release 构建（生产推荐）
 cargo build --release --bin q1x
-```
 
-- 运行并查看帮助信息：
-
-```shell
-# 打印程序帮助（包含子命令和选项）
+# 查看帮助
 cargo run --bin q1x -- --help
 ```
 
-- 常见子命令示例（基于项目根 `main.rs` 中使用的 clap 定义）：
+常用子命令：
 
 ```shell
-# 管理服务（install/uninstall/start/stop/status/run）
+# 服务管理（install / uninstall / start / stop / status / run）
 cargo run --bin q1x -- service install
 cargo run --bin q1x -- service start
 
-# 更新缓存数据（calendar / servers / all / base / features）
+# 更新缓存数据（all / calendar / servers / base / features）
 cargo run --bin q1x -- update --all
 cargo run --bin q1x -- update --calendar
 ```
 
-#### 直接示例：从已构建二进制查看帮助
-
-你也可以直接运行已构建的二进制查看实际帮助文本，例如：
+也可以直接运行构建产物（Windows 示例）：
 
 ```shell
-# Debug 二进制
-.\target\debug\q1x.exe --help
-
-# Release 二进制
 .\target\release\q1x.exe --help
 ```
 
-下面是我在本地运行 `target/release/q1x.exe --help` 捕获到的输出（供参考）：
+帮助输出示例（版本与子命令随实现演进，以实际构建为准）：
 
 ```text
 quant1x - Rust edition
 --------------------------------------------------------------------------------
-         Version : 0.6.10
+         Version : <构建版本>
         Author : Quant1X Team
 --------------------------------------------------------------------------------
 
-
-Usage: q1x.exe [OPTIONS] [COMMAND]
+Usage: q1x [OPTIONS] [COMMAND]
 
 Commands:
   service  Manage the service.
@@ -327,161 +197,194 @@ Options:
       Print help (see a summary with '-h')
 ```
 
-说明与注意事项：
+注意事项：
 
-- `q1x` 二进制是一个可与库（crate）协同工作的前端：它会尝试调用库中暴露的初始化与子命令钩子（如 `quant1x::global_init`, `quant1x::datasets_init`, `quant1x::engine_daemon` 等）。如果你直接从源码运行，确保启用了需要的 feature 或在编译时链接到库中实现这些函数的 crate。
-- 在 Windows 上，可以通过 `service` 子命令与提升参数（`--pipe`, `--elevated-out`, `--elevated-pipe`）交互以支持以服务/守护进程模式运行。具体行为由 `engine::daemon` 的实现决定。
-- 若打算在 CI 或部署中使用，请优先使用 `--release` 构建并根据目标平台交叉编译或在对应平台上构建以避免 -march/native 引入不可移植的指令集。
+- `q1x` 二进制是 crate 的前端入口，会调用库中暴露的初始化与子命令钩子（如 `quant1x::global_init`、`quant1x::datasets_init`、`quant1x::engine_daemon`）。从源码运行时请确保启用所需 feature。
+- Windows 上可通过 `service` 子命令配合 `--pipe`、`--elevated-out`、`--elevated-pipe` 以服务 / 守护进程模式运行。
+- CI 或部署场景请优先使用 `--release` 构建，并在目标平台上编译，避免 `-march=native` 引入不可移植的指令集。
 
-如果需要，我可以：
+### 5. C/C++
 
-- 为 `q1x` 添加示例配置和 systemd/Windows service 安装脚本。
-- 在 README 中加入更详细的运行参数说明（基于库中 `engine::daemon` 的实现）。
+C/C++ 版本具备跨平台的生产能力，代码以 C++20 为目标。
 
-## 5. c/c++ 开发环境
+跨平台构建（Ninja + Clang/GCC，推荐）：
 
-本项目的 C/C++ 代码以 C++20 为目标，强烈建议在开发/构建阶段使用较新的编译器和现代构建工具以获得最佳性能与可维护性。
-
-推荐工具链与版本
-
-- 编译器：GCC 14.3+ / Clang 18+ / MSVC (Visual Studio 2022)（MSVC 工具集 14.3+）
-- CMake：3.30+（建议最新版）
-- 构建器：Ninja（推荐）或 Make/MSBuild
-- 包管理：vcpkg 或 Conan（可选，但用于管理第三方依赖非常有用）
-
-常用依赖（示例）
-
-- OpenSSL（网络/加密）
-- protobuf（序列化）
-- fmt / spdlog（格式化与日志）
-
-Linux/macOS 快速安装（示例）
-
-- Ubuntu / Debian:
-
-  - sudo apt update && sudo apt install -y build-essential cmake ninja-build clang pkg-config
-  - 若使用 vcpkg，请参考 vcpkg 文档进行安装。
-
-- macOS (Homebrew):
-
-  - brew install cmake ninja llvm vcpkg
-
-Windows（Visual Studio）
-
-- 推荐安装 Visual Studio 2022 + Desktop development with C++，并从 "x64 本机工具命令提示符" 或者 VS 开发者 PowerShell 构建。
-- 使用 vcpkg 管理依赖（示例：vcpkg integrate install），并在 CMake 调用中传递 `-DCMAKE_TOOLCHAIN_FILE=<vcpkg-root>/scripts/buildsystems/vcpkg.cmake`。
-
-构建示例（以仓库根目录为例）
-
-- 使用 Ninja + Clang/GCC（跨平台推荐）：
-
-  - mkdir -p build && cd build
-  - cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 ..
-  - cmake --build . --config Release
-
-- 使用 Visual Studio（Windows）：
-
-  - mkdir build && cd build
-  - cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release ..
-  - cmake --build . --config Release
-
-建议的编译选项（可在 CMakeLists 或构建命令中添加）
-
-- Release 编译：-O3 -DNDEBUG
-- 可选：启用 LTO（Link Time Optimization）与目标特定指令集：-march=native（仅在目标机测试时启用）
-- 针对跨平台性能调优：保持内存对齐、禁用不必要的异常展开（视模块而定）、使用合适的预取/缓存策略
-
-关于性能与编译器选择（说明）
-
-- 在本项目的微基准中，LLVM/Clang 与 MSVC 在某些并发热点代码上生成的汇编与性能通常优于某些 GCC 版本；若追求最高性能，建议在 CI 中使用 clang 或 MSVC 做对比测试。
-- 但为保证广泛兼容性，请在主 CI 流水线中测试所有目标编译器（GCC / Clang / MSVC）。
-
-调试与分析工具
-
-- 使用 sanitizers（AddressSanitizer, ThreadSanitizer）在调试构建中快速捕获内存/线程错误：在 CMake 中开启 -DSANITIZE_ADDRESS=ON（项目支持时）。
-- 使用 perf / VTune / Windows Performance Analyzer 进行性能剖析。
-
-依赖管理（vcpkg 简短示例）
-
-- 克隆并引导 vcpkg：
-
-  ```sh
-  git clone https://github.com/microsoft/vcpkg.git
-  ./vcpkg/bootstrap-vcpkg.sh  # Linux/macOS
-  .\vcpkg\bootstrap-vcpkg.bat  # Windows (PowerShell/CMD)
-  ```
-
-- 在 CMake 调用中添加 toolchain 文件：
-
-  ```sh
-  cmake -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake ..
-  ```
-
-平台特定注意事项
-
-- Windows：注意选择 x64 构建，使用 vcpkg 的 triplet（例如 `x64-windows`）来安装二进制依赖。
-- Linux：若在容器/CI 中构建，尽量固定基础镜像以保证可重复构建（例如 `ubuntu:22.04`）。
-- macOS：使用 Homebrew 管理依赖，并注意 Apple Clang 与 LLVM Clang 之间的小差别。
-
-如果你希望我为项目添加一个方便的 CMake 构建示例（例如 top-level `build` 脚本和 CI job 示例），我可以继续创建并把它加入仓库。
-
-附加：C++ 具体构建与测试示例
-
-依赖安装（protobuf/其他）示例：
-
-- protobuf 推荐使用 3.21.11（高版本可能依赖 abseil，引入额外复杂性）：
-
-  ```sh
-  # 下载并解压源码
-  wget https://gh-proxy.com/github.com/protocolbuffers/protobuf/releases/download/v21.11/protobuf-cpp-3.21.11.zip
-  unzip protobuf-cpp-3.21.11.zip && cd protobuf-3.21.11
-  mkdir build && cd build
-  cmake -DCMAKE_INSTALL_PREFIX=$HOME/runtime -Dprotobuf_BUILD_TESTS=OFF -G "Unix Makefiles" ../
-  make -j$(nproc) && make install
-  ```
-
-- Windows (MSVC) 编译示例：
-
-  ```ps1
-  mkdir build; cd build
-  cmake -DCMAKE_INSTALL_PREFIX=d:/runtime -G "Visual Studio 17 2022" -A x64 ..
-  cmake --build . --config Release
-  ```
-
-其它依赖安装（vcpkg 举例）:
-
-```sh
-vcpkg install yaml-cpp zlib asio xtensor mimalloc spdlog fmt duktape benchmark catch2 flatbuffers capnproto
+```shell
+mkdir -p build && cd build
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 ..
+cmake --build . --config Release
 ```
 
-项目快速编译（Debug 示例）：
+Visual Studio（Windows）：
 
-```sh
+```shell
+mkdir build && cd build
+cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . --config Release
+```
+
+Debug 构建、安装、测试与运行：
+
+```shell
 cmake -DCMAKE_BUILD_TYPE=Debug -G Ninja -S . -B cmake-build-debug
 cmake --build cmake-build-debug --target q1x -j 18
-```
-
-安装主程序示例：
-
-```sh
 ninja -C cmake-build-debug install
-```
-
-运行测试（ctest）：
-
-```sh
 ctest --test-dir cmake-build-debug --output-on-failure
-```
-
-运行示例程序：
-
-```sh
 ./cmake-build-debug/bin/q1x --help
 ```
 
-## ⚡ 多语言性能对齐：Vyukov Ringbuffer
+### 6. Python
 
-`quant1x/runtime/ringbuffer.h`（C++）与 `quant1x/runtime/ringbuffer.rs`（Rust）为 Vyukov 有界 MPMC 队列的平行实现（Go 见 `ringbuffer.go`），基准位于仓库根 `benches/vyukov_bench.{cpp,rs}`，详细状态见 [ringbuffer.md](quant1x/runtime/ringbuffer.md)。
+Python 版本主要用于探索验证与数据分析，运行依赖 Go / C++ / Rust 导出的数据。
+
+```shell
+# 安装依赖
+pip install -r requirements.txt
+
+# 切换数据源（c++ 对应 q1x，rust 对应 q1x-rust）
+export QUANT1X_WORK=q1x
+```
+
+## 附录：开发环境搭建
+
+### Python
+
+多版本共存推荐使用 pyenv（安装时避免使用 root 权限）：
+
+```shell
+brew install pyenv
+pyenv versions          # 查看已安装版本
+pyenv install -l        # 查看可安装版本
+pyenv install 3.12.9    # 安装指定版本
+```
+
+基础工具：
+
+| 工具 | 功能 |
+|---|---|
+| pip | 类库管理工具（类似 maven / gradle / go mod） |
+| pip-autoremove | 自动删除类库及其全部依赖 |
+| pipreqs | 项目 / 类库交叉依赖检测 |
+
+配置 pip 镜像源（清华源示例）：
+
+```shell
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+pip config set install.trusted-host https://pypi.tuna.tsinghua.edu.cn
+```
+
+依赖管理（`requirements.txt` 类似 Java 的 `pom.xml`、Go 的 `go.mod`）：
+
+```shell
+pip install -r requirements.txt   # 安装依赖
+pip freeze > requirements.txt     # 导出依赖
+pip install pipreqs && pipreqs ./ --encoding utf8   # 交叉依赖检测
+```
+
+打包与发布到 PyPi：
+
+```shell
+pip install --upgrade setuptools wheel twine
+python setup.py sdist bdist_wheel
+twine upload --repository testpypi dist/*   # 测试环境
+twine upload dist/*                          # 正式环境
+```
+
+Matplotlib 中文乱码处理：
+
+1. 获取配置文件路径：`python -c "import matplotlib; matplotlib.matplotlib_fname()"`
+2. 将中文字体（如 `SimHei.ttf`）复制到该路径下的 `fonts/ttf/` 目录
+3. 编辑 `matplotlibrc`：启用 `font.sans-serif` 并填入 `SimHei`；将 `axes.unicode_minus` 设为 `False`
+4. 删除 `~/.matplotlib` 下的缓存文件（`tex.cache`、`fontList.json` 等）
+
+### Go
+
+```shell
+go env -w GO111MODULE=on
+go env -w GOPROXY=https://goproxy.cn,direct
+go env -w GOPRIVATE=gitee.com
+```
+
+安装 protobuf 代码生成插件：
+
+```shell
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+```
+
+### Rust
+
+```shell
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh   # 安装
+rustup update                                                    # 更新工具链
+```
+
+### C/C++
+
+推荐工具链：
+
+- 编译器：GCC 14.3+ / Clang 18+ / MSVC（Visual Studio 2022，工具集 14.3+）
+- CMake 3.30+，构建器推荐 Ninja
+- 包管理：vcpkg 或 Conan（可选）
+
+常用依赖：OpenSSL（网络 / 加密）、protobuf（序列化）、fmt / spdlog（格式化与日志）。
+
+系统依赖安装示例：
+
+```shell
+# Ubuntu / Debian
+sudo apt update && sudo apt install -y build-essential cmake ninja-build clang pkg-config
+
+# macOS
+brew install cmake ninja llvm vcpkg
+```
+
+vcpkg 依赖安装示例：
+
+```shell
+vcpkg install yaml-cpp zlib asio xtensor mimalloc spdlog fmt duktape benchmark catch2 flatbuffers capnproto
+```
+
+protobuf 建议使用 3.21.11（更高版本依赖 abseil，会引入额外复杂度）：
+
+```shell
+wget https://gh-proxy.com/github.com/protocolbuffers/protobuf/releases/download/v21.11/protobuf-cpp-3.21.11.zip
+unzip protobuf-cpp-3.21.11.zip && cd protobuf-3.21.11
+mkdir build && cd build
+cmake -DCMAKE_INSTALL_PREFIX=$HOME/runtime -Dprotobuf_BUILD_TESTS=OFF -G "Unix Makefiles" ../
+make -j$(nproc) && make install
+```
+
+Windows（MSVC）示例：
+
+```powershell
+mkdir build; cd build
+cmake -DCMAKE_INSTALL_PREFIX=d:/runtime -G "Visual Studio 17 2022" -A x64 ..
+cmake --build . --config Release
+```
+
+建议的编译选项：Release 使用 `-O3 -DNDEBUG`；可选启用 LTO 与目标特定指令集（`-march=native` 仅在目标机测试时启用）。
+
+调试与分析：
+
+- 调试构建中开启 sanitizer（`AddressSanitizer` / `ThreadSanitizer`）以捕获内存与线程错误
+- 使用 perf / VTune / Windows Performance Analyzer 做性能剖析
+
+平台注意事项：
+
+- Windows：选择 x64 构建，使用 vcpkg triplet（如 `x64-windows`）安装二进制依赖
+- Linux：容器 / CI 中固定基础镜像（如 `ubuntu:22.04`）以保证可重复构建
+- macOS：使用 Homebrew 管理依赖，注意 Apple Clang 与 LLVM Clang 的差异
+
+编译器选择：在并发热点代码上，Clang / MSVC 生成的汇编有时优于部分 GCC 版本；追求极致性能时建议在 CI 中做对比测试，同时在主流水线中覆盖 GCC / Clang / MSVC 全部目标编译器。
+
+## 多语言一致性
+
+四语言实现遵循同一份文档契约：同一功能目录下存在同名文件与同名函数签名，I/O 边界统一为全小写 `snake_case` 字段，通过同一组测试向量交叉验证数值结果（epsilon 范围内一致）。
+
+### 性能对齐：Vyukov Ringbuffer
+
+`quant1x/runtime/ringbuffer.h`（C++）与 `quant1x/runtime/ringbuffer.rs`（Rust）是 Vyukov 有界 MPMC 队列的平行实现（Go 见 `ringbuffer.go`），基准位于 `benches/vyukov_bench.{cpp,rs}`，详见 [ringbuffer.md](quant1x/runtime/ringbuffer.md)。
 
 已完成的关键性能对齐（Apple Silicon / arm64 实测）：
 
@@ -491,9 +394,11 @@ ctest --test-dir cmake-build-debug --output-on-failure
 | ctor 槽区分配 | `std::make_unique<Slot[]>` 清零 → `aligned_alloc(64)` + placement new 只写 seq，对齐 Rust `Vec::with_capacity` 不初始化语义 | ctor ~246µs → ~185µs（Rust ~210µs） |
 | 基准 harness 计数器 | 共享原子 `consumed.fetch_add()` → 每线程本地计数、join 后合并，消除复合缓存行争用伪影 | 8P8C 消费速率与 backlog 与 Rust 完全对齐（160 vs 159 M/s） |
 
-修复后 uncontended 吞吐 C++ 107~131 M/s vs Rust 121~125 M/s（噪声带内对齐）；队列自身差异均已闭合，无已知性能缺陷。
+修复后 uncontended 吞吐 C++ 107~131 M/s，Rust 121~125 M/s（噪声带内对齐）；队列自身差异均已闭合，无已知性能缺陷。
 
-## 📊 获取K线数据示例
+## 使用示例
+
+获取前复权 K 线数据（同一功能在三种语言中的等价调用）：
 
 ### Python
 
@@ -524,12 +429,12 @@ import (
 func main() {
     code := "sh600000"
     asOfDate := "2024-12-26"
-    
+
     // 获取前复权K线数据
     bars := factors.GetCrossSectionForwardAdjustedBars(code, asOfDate)
-    
+
     fmt.Printf("Loaded %d adjusted bar records for %s\n", len(bars), code)
-    
+
     // 显示最近5条记录
     start := len(bars) - 5
     if start < 0 {
@@ -549,43 +454,67 @@ use quant1x::factors::base::get_cross_section_forward_adjusted_bars;
 fn main() {
     let code = "sh600000";
     let as_of_date = "2024-12-26";
-    
+
     // 获取前复权K线数据
     let bars = get_cross_section_forward_adjusted_bars(code, as_of_date);
-    
+
     println!("Loaded {} adjusted bar records for {}", bars.len(), code);
-    
+
     // 显示最近5条记录
     let start = if bars.len() > 5 { bars.len() - 5 } else { 0 };
     for bar in &bars[start..] {
-        println!("Date: {}, Open: {:.2}, Close: {:.2}", 
+        println!("Date: {}, Open: {:.2}, Close: {:.2}",
                 bar.date, bar.open, bar.close);
     }
 }
 ```
 
-## 🤝 贡献
+## 文档索引
 
-欢迎贡献代码！请遵循以下步骤：
+| 分类 | 文档 |
+|---|---|
+| 架构与开发规范 | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| AI 协作规则 | [AGENTS.md](AGENTS.md) |
+| 数据字典（数据项与更新时序） | [docs/README.md](docs/README.md) |
+| 模块库说明 | [docs/library.md](docs/library.md) |
+| 命令行参数 | [docs/argparse.md](docs/argparse.md) |
+| 交易所费用 | [docs/exchange-license-fees.md](docs/exchange-license-fees.md) |
+| Vyukov Ringbuffer 契约 | [quant1x/runtime/ringbuffer.md](quant1x/runtime/ringbuffer.md) |
+| 技术分析算子 | [quant1x/ta/README.md](quant1x/ta/README.md) |
+| 分布式 ID（64/128 位） | [quant1x/id/id64/README.md](quant1x/id/id64/README.md)、[quant1x/id/id128/README.md](quant1x/id/id128/README.md) |
+| 结构化二进制编码 | [quant1x/encoding/binary/cstruct/README.md](quant1x/encoding/binary/cstruct/README.md) |
+| 市场状态识别 | [quant1x/learn/regime/README.md](quant1x/learn/regime/README.md) |
+
+## 贡献
+
+欢迎贡献代码，流程如下：
 
 1. Fork 本项目
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
+2. 创建特性分支（`git checkout -b feature/AmazingFeature`）
+3. 提交更改（`git commit`）
+4. 推送到分支（`git push origin feature/AmazingFeature`）
 5. 创建 Pull Request
 
 ### 开发规范
 
-- 遵循各语言的编码规范
-- 添加单元测试
-- 更新文档
-- 确保所有测试通过
+- 遵循各语言的编码规范，以及 [CONTRIBUTING.md](CONTRIBUTING.md) 中的目录与命名约定
+- 新增功能优先补齐 Python 实现与同级 `.md` 文档，再跟进其他语言
+- 添加单元测试，并保证同一功能在四种语言下的结果一致
+- 更新相关文档，确保所有测试通过
 
-## 📄 许可证
+### 提交信息规范
+
+提交信息使用中文，主题格式：`<type>[<language>]：<summary>`
+
+- `type`：`feat` / `fix` / `refactor` / `perf` / `test` / `docs` / `chore`
+- `language`：`python` / `cpp` / `rust` / `go` / `multi`，跨语言用 `python+cpp` 形式组合
+- 示例：`feat[python]：为 runtime ringbuffer 增加原生 Python 语义实现`
+
+## 许可证
 
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
 
-## 📚 相关链接
+## 相关链接
 
 - [文档](docs/)
 - [示例](examples/)
@@ -594,4 +523,4 @@ fn main() {
 
 ---
 
-**注意**: 本项目仅用于学习和研究目的，不构成投资建议。在实际交易前，请充分了解和评估各种风险并咨询专业人士。
+**注意**：本项目仅用于学习和研究目的，不构成投资建议。在实际交易前，请充分了解和评估各种风险并咨询专业人士。
