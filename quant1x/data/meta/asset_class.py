@@ -23,7 +23,7 @@ class AssetClass(Enum):
     """优先股"""
     EQUITY_DEPOSITORY_RECEIPT = "DEPOSITORY_RECEIPT"  # 存托凭证(CDR/ADR)
     """存托凭证"""
-    EQUITY_GEM = "GEN" # 创业板
+    EQUITY_GEM = "GEM" # 创业板
     """创业板"""
     EQUITY_CONNECT = "CONNECT"
     """跨市场合约"""
