@@ -1,0 +1,75 @@
+{
+    "python.analysis.autoImportCompletions": true,
+    "python.envFile": "${workspaceFolder}/.env",
+    "cmake.launchBehavior": "reuseTerminal",
+    "terminal.integrated.fontFamily": "'FiraCode Nerd Font Mono', 'Courier New', monospace",
+    "debug.console.fontFamily": "'Source Code Pro', 'Courier New', monospace",
+    "editor.inlayHints.fontFamily": "",
+    "editor.fontVariations": false,
+    "editor.fontFamily": "'Source Code Pro', 'Courier New', monospace",
+    "editor.inlineSuggest.fontFamily": "'Source Code Pro', 'Courier New', monospace",
+    "chat.editor.fontFamily": "default",
+    "chat.fontFamily": "default",
+    "terminal.integrated.scrollback": 10000,
+    "go.diagnostic.vulncheck": "Imports",
+    "code-runner.executorMap": {
+        "python": "python scripts/run_module.py $fullFileName"
+    },
+    "code-runner.runInTerminal": true,
+    "testMate.cpp.test.advancedExecutables": [
+        {
+            // macOS / Linux: 可执行文件通常无扩展名
+            "pattern": "build/tests/catch2-*",
+            "cwd": "${workspaceFolder}",
+            "env": {}
+        },
+        {
+            // Windows: 保留 .exe 模式
+            "pattern": "build/tests/catch2-*.exe",
+            "cwd": "${workspaceFolder}",
+            "env": {}
+        }
+    ],
+    "testMate.cpp.debug.configTemplate": {
+        "type": "${assert:testMate.cpp.debug.configTemplate doesn't support this platform.}",
+        "linux": {
+            "type": "cppdbg",
+            "MIMode": "gdb"
+        },
+        "darwin": {
+            "type": "lldb",
+            "env": {
+                "ASAN_OPTIONS": "detect_leaks=1",
+                "LSAN_OPTIONS": "suppressions=leaksanitizer.supp",
+                "DYLD_LIBRARY_PATH": "${command:cmake.buildDirectory}/lib"
+            }
+        },
+        "win32": {
+            "type": "cppdbg"
+        },
+        "preLaunchTask": "CMake: build",
+        "program": "${exec}",
+        "args": "${argsArray}",
+        "cwd": "${command:cmake.launchTargetDirectory}",
+        "sourceFileMap": "${sourceFileMapObj}"
+    },
+    "testMate.cpp.debug.noThrow": false,
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.configureSettings": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_BUILD_TYPE": "Debug"
+    },
+    "cmake.buildArgs": [
+        "--config",
+        "Debug"
+    ],
+    "cmake.configureArgs": [
+        "-DVCPKG_PREFER_SYSTEM_LIBS=OFF",
+        "-DVCPKG_MANIFEST_MODE=OFF"
+    ],
+    "vcpkg.general.enable": true,
+    "vcpkg.target.useStaticLib": false,
+    "vcpkg.target.installDependencies": true,
+    "vcpkg.target.preferSystemLibs": false,
+    "vcpkg.target.useManifest": false
+}
