@@ -42,7 +42,8 @@
     "cmake.buildDirectory": "${workspaceFolder}/build",
     "cmake.configureSettings": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_TOOLCHAIN_FILE": "d:\\runtime\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
     },
     "cmake.buildArgs": [
         "--config",
@@ -63,4 +64,17 @@
     "python": "python scripts/run_module.py $fullFileName"
     },
     "code-runner.runInTerminal": true,
+    "cmake.configureArgs": [
+        "-DVCPKG_APPLOCAL_DEPS=ON",
+        "-DVCPKG_PREFER_SYSTEM_LIBS=OFF",
+        "-DVCPKG_TARGET_TRIPLET=x64-windows",
+        "-DVCPKG_MANIFEST_MODE=OFF"
+    ],
+    "vcpkg.general.enable": true,
+    "vcpkg.target.hostTriplet": "x64-windows",
+    "vcpkg.target.defaultTriplet": "x64-windows",
+    "vcpkg.target.useStaticLib": false,
+    "vcpkg.target.installDependencies": true,
+    "vcpkg.target.preferSystemLibs": false,
+    "vcpkg.target.useManifest": false,
 }
