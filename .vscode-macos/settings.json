@@ -1,8 +1,11 @@
 {
-    // vcpkg 全局根目录: CMakeLists.txt 在 DEFINED ENV{VCPKG_ROOT} 缺失时 FATAL_ERROR,
-    // 故此处显式给出, 不依赖外部终端环境。工具链文件由同一根目录推导。
-    "cmake.configureEnvironment": {
-        "VCPKG_ROOT": "/Users/wangfeng/runtime/vcpkg"
-    },
-    "python-envs.defaultEnvManager": "ms-python.python:pyenv"
+    // ===== Python =====
+    "python-envs.defaultEnvManager": "ms-python.python:pyenv",
+
+    // ===== CMake =====
+    // CMakeLists.txt 在 DEFINED ENV{VCPKG_ROOT} 缺失时 FATAL_ERROR, 故显式给出根目录,
+    // 不依赖外部终端环境。
+    // "cmake.configureEnvironment": {
+    //     "VCPKG_ROOT": "/Users/wangfeng/runtime/vcpkg"
+    // }
 }

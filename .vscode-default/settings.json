@@ -1,21 +1,49 @@
 {
-    "python.analysis.autoImportCompletions": true,
-    "python.envFile": "${workspaceFolder}/.env",
-    "cmake.launchBehavior": "reuseTerminal",
-    "terminal.integrated.fontFamily": "'FiraCode Nerd Font Mono', 'Courier New', monospace",
-    "debug.console.fontFamily": "'Source Code Pro', 'Courier New', monospace",
-    "editor.inlayHints.fontFamily": "",
-    "editor.fontVariations": false,
+    // ===== 编辑器与字体 (VS Code 内置) =====
     "editor.fontFamily": "'Source Code Pro', 'Courier New', monospace",
+    "editor.fontVariations": false,
+    "editor.inlayHints.fontFamily": "",
     "editor.inlineSuggest.fontFamily": "'Source Code Pro', 'Courier New', monospace",
+    "debug.console.fontFamily": "'Source Code Pro', 'Courier New', monospace",
     "chat.editor.fontFamily": "default",
     "chat.fontFamily": "default",
+
+    // ===== 终端 (VS Code 内置) =====
+    "terminal.integrated.fontFamily": "'FiraCode Nerd Font Mono', 'Courier New', monospace",
     "terminal.integrated.scrollback": 10000,
+
+    // ===== Python =====
+    "python.analysis.autoImportCompletions": true,
+    "python.envFile": "${workspaceFolder}/.env",
+
+    // ===== Go =====
     "go.diagnostic.vulncheck": "Imports",
-    "code-runner.executorMap": {
-        "python": "python scripts/run_module.py $fullFileName"
+
+    // ===== CMake =====
+    "cmake.launchBehavior": "reuseTerminal",
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.configureSettings": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_BUILD_TYPE": "Debug"
     },
-    "code-runner.runInTerminal": true,
+    // "cmake.configureArgs": [
+    //     "-DVCPKG_PREFER_SYSTEM_LIBS=OFF",
+    //     "-DVCPKG_MANIFEST_MODE=OFF"
+    // ],
+    "cmake.buildArgs": [
+        "--config",
+        "Debug"
+    ],
+
+    // ===== vcpkg =====
+    // triplet 与工具链路径随平台, 见 .vscode-windows / .vscode-macos
+    //"vcpkg.general.enable": true,
+    //"vcpkg.target.useStaticLib": false,
+    //"vcpkg.target.installDependencies": true,
+    //"vcpkg.target.preferSystemLibs": false,
+    //"vcpkg.target.useManifest": false,
+
+    // ===== C++ 测试 (C++ TestMate) =====
     "testMate.cpp.test.advancedExecutables": [
         {
             // macOS / Linux: 可执行文件通常无扩展名
@@ -54,22 +82,10 @@
         "sourceFileMap": "${sourceFileMapObj}"
     },
     "testMate.cpp.debug.noThrow": false,
-    "cmake.buildDirectory": "${workspaceFolder}/build",
-    "cmake.configureSettings": {
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "CMAKE_BUILD_TYPE": "Debug"
+
+    // ===== 代码运行 (Code Runner) =====
+    "code-runner.executorMap": {
+        "python": "python scripts/run_module.py $fullFileName"
     },
-    "cmake.buildArgs": [
-        "--config",
-        "Debug"
-    ],
-    "cmake.configureArgs": [
-        "-DVCPKG_PREFER_SYSTEM_LIBS=OFF",
-        "-DVCPKG_MANIFEST_MODE=OFF"
-    ],
-    "vcpkg.general.enable": true,
-    "vcpkg.target.useStaticLib": false,
-    "vcpkg.target.installDependencies": true,
-    "vcpkg.target.preferSystemLibs": false,
-    "vcpkg.target.useManifest": false
+    "code-runner.runInTerminal": true
 }
