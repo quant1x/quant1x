@@ -1,19 +1,18 @@
 {
     // vcpkg 全局根目录: CMakeLists.txt 在 DEFINED ENV{VCPKG_ROOT} 缺失时 FATAL_ERROR,
     // 故此处显式给出, 不依赖外部终端环境。工具链文件由同一根目录推导。
+    "vcpkg.general.vcpkgPath": "d:\\runtime\\vcpkg",
     "cmake.configureEnvironment": {
         "VCPKG_ROOT": "d:\\runtime\\vcpkg"
     },
     "cmake.configureSettings": {
         "CMAKE_TOOLCHAIN_FILE": "d:\\runtime\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
     },
-    // 数组整体替换, 故 Windows 层须重述公共项 + 平台项
-    "cmake.configureArgs": [
-        "-DVCPKG_APPLOCAL_DEPS=ON",
-        "-DVCPKG_PREFER_SYSTEM_LIBS=OFF",
-        "-DVCPKG_TARGET_TRIPLET=x64-windows",
-        "-DVCPKG_MANIFEST_MODE=OFF"
-    ],
-    "vcpkg.target.hostTriplet": "x64-windows",
-    "vcpkg.target.defaultTriplet": "x64-windows"
+    // 本项目 Windows 侧走 MinGW + 全静态: CMakeLists.txt 对 GNU/MinGW 取
+    // x64-mingw-static, 对 MSVC/Clang 取 x64-windows-static。
+    // vcpkg.target.defaultTriplet 会被扩成 -DVCPKG_TARGET_TRIPLET=<值>, 而 CMakeLists
+    // 是 set(... CACHE) 不带 FORCE —— 一旦该值为空, 自探测失效, VCPKG_LIBS_PATH 退化
+    // 成 installed/ 根, OpenSSL 等包全部找不到。故此处必须与 CMakeLists 口径一致。
+    "vcpkg.target.hostTriplet": "x64-mingw-static",
+    "vcpkg.target.defaultTriplet": "x64-mingw-static"
 }
