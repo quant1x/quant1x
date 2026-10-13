@@ -3,6 +3,43 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.79] - 2026-10-13
+### Changed
+- fix[python]: 创业板拼写错误
+- chore[git]: git仓库忽略.vscode目录
+- chore[vscode]: 将windows平台的.vscode配置目录改成.vscode-windows
+- chore[cpp]：按共享层与平台层拆分 VS Code 工作区配置并显式给出 vcpkg 路径
+  - 变更概述：将原先全部堆在 .vscode-windows/ 的工作区配置拆为共享层与平台层，由 mopr-vscode-sync 按当前平台深合并生成 .vscode/
+  - 涉及文件范围：新增 .vscode-default/settings.json 与 .vscode-default/c_cpp_properties.json；.vscode-windows/settings.json 收敛为 Windows 差异；移除 .vscode-windows/c_cpp_properties.json（跨平台一致，已在共享层）
+  - 共享层承载：字体与终端/编辑器外观、python 与 go 分析项、code-runner、testMate 测试与调试模板（含 linux/darwin/win32 三分支）、cmake 构建目录与公共编译定义、vcpkg 通用开关
+  - 平台层承载：vcpkg 路径显式配置，新增 cmake.configureEnvironment.VCPKG_ROOT=d:\runtime\vcpkg，并由同一根目录推导 CMAKE_TOOLCHAIN_FILE；x64-windows triplet 与 VCPKG_APPLOCAL_DEPS=ON；cmake.configureArgs 为数组整体替换故重述公共项
+  - launch.json 保留在 Windows 层：pipeName 使用 \\.\pipe\ 命名管道，非跨平台
+  - 语义一致性：合并产物与原 .vscode/settings.json 逐键一致，仅多出 VCPKG_ROOT，满足 CMakeLists.txt 对该环境变量的取值要求
+  - 验证方式：mopr-vscode-sync 生成成功，mopr-vscode-sync --check 返回 0（无差异）
+- feat[vscode]: 拆分macos下的配置
+- fix[cpp]：修正 Windows 层 vcpkg triplet 为 x64-mingw-static 并显式给出 vcpkg 根目录
+  - 变更概述：修正 .vscode-windows/settings.json 的 vcpkg 目标 triplet 与根目录配置
+  - 涉及文件范围：仅 .vscode-windows/settings.json（Windows 平台层）
+  - 原因：CMakeLists.txt 对 GNU/MinGW 取 x64-mingw-static，仅 MSVC/Clang 取 x64-windows-static；原值 x64-windows 与项目实际构建口径不符
+  - 关键点：CMakeLists.txt 用 set(VCPKG_TARGET_TRIPLET ... CACHE STRING) 不带 FORCE，命令行一旦带进 -DVCPKG_TARGET_TRIPLET（含空值）即顶掉自探测，导致 VCPKG_LIBS_PATH 退化为 installed/ 根，OpenSSL 等依赖包查找失败
+  - 处理：triplet 改由 vcpkg.target.defaultTriplet 与 hostTriplet 给出，值为 x64-mingw-static，不再在 cmake.configureArgs 中重复书写该 -D 项
+  - vcpkg 路径：新增 vcpkg.general.vcpkgPath 指向 d:\runtime\vcpkg，配合既有的 VCPKG_ROOT 与 CMAKE_TOOLCHAIN_FILE，三处同源
+  - 验证方式：mopr-vscode-sync 生成成功，mopr-vscode-sync --check 返回 0（无差异）
+- fix[cpp]：vcpkg triplet 自探测改为 FORCE，避免被命令行空值覆盖
+  - 变更概述：CMakeLists.txt 中按平台选择 VCPKG_TARGET_TRIPLET 的缓存写入统一加上 FORCE
+  - 涉及文件范围：CMakeLists.txt 第 79、81、84 行（Windows 的 MSVC/Clang 与 MinGW/GNU 分支、Linux 分支）；macOS 分支原本已带 FORCE
+  - 原因：set(... CACHE STRING ...) 不带 FORCE 时，命令行传入的 -DVCPKG_TARGET_TRIPLET（含扩展注入的空值）会顶掉自探测结果，导致 VCPKG_LIBS_PATH 退化为 installed/ 根，OpenSSL 等依赖包查找失败
+  - 语义一致性说明：四个平台分支的写入方式现已一致，triplet 恒由编译器与系统判定得出，外部 -D 项不再能覆盖
+  - 验证方式：重新执行 CMake 配置，观察 VCPKG_TARGET_TRIPLET 与 VCPKG_LIBS_PATH 输出指向 installed/x64-mingw-static
+- refactor[cpp]：按功能域与插件重排 VS Code 分层配置并修复 Windows 层非法 JSON
+  - 变更概述：对 .vscode-default / .vscode-windows / .vscode-macos 三层的 settings.json 按功能域与所属插件重排键序，并补充分区注释
+  - 涉及文件范围：.vscode-default/settings.json、.vscode-windows/settings.json、.vscode-macos/settings.json
+  - 分区顺序：编辑器与字体、终端、Python、Go、CMake、vcpkg、C++ 测试 (C++ TestMate)、代码运行 (Code Runner)，各层保持一致
+  - 修复：.vscode-windows/settings.json 在注释掉 vcpkg triplet 后，cmake.configureSettings 的右花括号后缺少逗号导致 JSON 非法，现随重排一并修正
+  - 说明：仅重排键序与注释，未增删配置项；triplet 已由 CMakeLists.txt 按编译器 FORCE 写入，故该两行保持注释状态
+  - 验证方式：mopr-vscode-sync 生成成功，mopr-vscode-sync --check 返回 0（无差异）；产物键集合与重排前逐一相同
+- release version 0.7.79
+
 ## [0.7.78] - 2026-09-14
 ### Changed
 - fix[rust]: 更新rust标准版本到1.98.1
@@ -2576,7 +2613,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x/compare/v0.7.78...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x/compare/v0.7.79...HEAD
+[0.7.79]: https://gitee.com/quant1x/quant1x/compare/v0.7.78...v0.7.79
 [0.7.78]: https://gitee.com/quant1x/quant1x/compare/v0.7.77...v0.7.78
 [0.7.77]: https://gitee.com/quant1x/quant1x/compare/v0.7.76...v0.7.77
 [0.7.76]: https://gitee.com/quant1x/quant1x/compare/v0.7.75...v0.7.76
