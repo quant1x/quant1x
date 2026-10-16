@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.82] - 2026-10-16
+### Changed
+- fix[python]: 调整setuptools版本未77.0.3
+- fix[python]: 支持到python 3.15
+- release version 0.7.82
+
 ## [0.7.81] - 2026-10-16
 ### Changed
 - feat[python]：为网站图标套件补 64x64 尺寸
@@ -2639,7 +2645,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x/compare/v0.7.81...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x/compare/v0.7.82...HEAD
+[0.7.82]: https://gitee.com/quant1x/quant1x/compare/v0.7.81...v0.7.82
 [0.7.81]: https://gitee.com/quant1x/quant1x/compare/v0.7.80...v0.7.81
 [0.7.80]: https://gitee.com/quant1x/quant1x/compare/v0.7.79...v0.7.80
 [0.7.79]: https://gitee.com/quant1x/quant1x/compare/v0.7.78...v0.7.79
