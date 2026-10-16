@@ -20,6 +20,9 @@ dist/
 *.egg-info/
 
 *.png
+# 应用与网站图标是交付物, 需入库 (由 scripts/gen_icons.py 从 logo.png 生成)
+!assets/icons/**/*.png
+
 *.pkl
 
 #visual studio
