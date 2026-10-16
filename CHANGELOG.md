@@ -3,6 +3,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.81] - 2026-10-16
+### Changed
+- feat[python]：为网站图标套件补 64x64 尺寸
+  - 变更概述：web favicon 套件此前只有 16/32/96 三档 PNG，缺少 64x64，现补齐
+  - 涉及文件范围：scripts/gen_icons.py 增加 favicon-64x64.png 一档；新增产物 assets/icons/web/favicon-64x64.png
+  - 说明：Windows app.ico 内嵌尺寸本已含 64，macOS 的 icon_32x32@2x.png 即 64px 文件，本次补的是网站侧的显式 64x64 PNG
+  - 验证方式：python scripts/gen_icons.py 重生成成功，产物校验为 64x64 RGBA 透明底
+- refactor[png]: 调整logo
+- release version 0.7.81
+
 ## [0.7.80] - 2026-10-16
 ### Changed
 - feat[python]：新增图标生成脚本并由 logo.png 派生标准 app 与网站图标
@@ -2629,7 +2639,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x/compare/v0.7.80...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x/compare/v0.7.81...HEAD
+[0.7.81]: https://gitee.com/quant1x/quant1x/compare/v0.7.80...v0.7.81
 [0.7.80]: https://gitee.com/quant1x/quant1x/compare/v0.7.79...v0.7.80
 [0.7.79]: https://gitee.com/quant1x/quant1x/compare/v0.7.78...v0.7.79
 [0.7.78]: https://gitee.com/quant1x/quant1x/compare/v0.7.77...v0.7.78
