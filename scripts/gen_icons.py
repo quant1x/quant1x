@@ -121,6 +121,7 @@ def main() -> None:
     web = OUT / "web"
     save_png(master, web / "favicon-16x16.png", 16)
     save_png(master, web / "favicon-32x32.png", 32)
+    save_png(master, web / "favicon-64x64.png", 64)
     save_png(master, web / "favicon-96x96.png", 96)
     save_png(master, web / "android-chrome-192x192.png", 192)
     save_png(master, web / "android-chrome-512x512.png", 512)
