@@ -8,7 +8,14 @@ dynamic = ["version"]  # 仅保留 version 为动态（由 setuptools_scm 提供
 description = "Quant1X量化研究"
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {text = "MIT License"}
-authors = [{name = "Quant1X", email = "wangfengxy@sina.cn"}]
+# PEP 621 authors → core metadata: setuptools 将带 email 的条目映射到 Author-email，
+# 仅含 name 的条目映射到 Author。同一作者分两条声明以同时填充 Author 与 Author-email。
+# 分两条记录，是为了pip show时能够同时显示 Author 与 Author-email，如果只写一条带 email
+# 的记录，pip show 只会显示 Author-email，而不会显示 Author。
+authors = [
+    { name = "Quant1X" },
+    { name = "Quant1X", email = "wangfengxy@sina.cn" },
+]
 keywords = ["quant1x", "python"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
