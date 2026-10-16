@@ -3,6 +3,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.80] - 2026-10-16
+### Changed
+- feat[python]：新增图标生成脚本并由 logo.png 派生标准 app 与网站图标
+  - 变更概述：新增 scripts/gen_icons.py，由仓库根目录 logo.png 生成一套标准图标，并将产物一并入库
+  - 涉及文件范围：新增 scripts/gen_icons.py 与 assets/icons/ 下 ios、android、macos、windows、web 五组共 42 个文件
+  - 生成流程：先把非方形的 logo 等比缩放居中到 1024x1024 透明方形母版（内容占比 92%），再由母版按 LANCZOS 派生各尺寸，保证同一次生成内各尺寸比例一致
+  - 平台口径：iOS 采用 Xcode AppIcon 命名并垫白底不透明（系统会把透明渲染为黑色）；Android 采用 mipmap 密度命名并含 Play Store 512；macOS 采用 AppIcon.appiconset 命名并含 @2x；Windows 输出 16 至 256 七尺寸合一的 ICO；Web 输出 favicon 套件与 PWA 清单 site.webmanifest
+  - 依赖说明：脚本仅依赖 Pillow，无其它第三方依赖，不进入项目构建链
+  - 验证方式：python scripts/gen_icons.py 执行成功，校验两个 ICO 的内嵌尺寸齐全、apple-touch-icon 为不透明 RGB、母版为 1024x1024 透明底
+- chore[python]：补入图标 PNG 产物并为 assets/icons 开 .gitignore 例外
+  - 变更概述：上一个提交只入库了脚本与两个 ICO，PNG 图标被 .gitignore 的全局 *.png 规则排除，现补入
+  - 涉及文件范围：.gitignore；assets/icons 下 ios、android、macos、windows、web 五组共 38 个 PNG
+  - .gitignore 调整：在 *.png 之后追加 !assets/icons/**/*.png，图标属交付物需入库；其余 PNG 仍按原规则忽略
+  - 验证方式：git add 后 status 显示 38 个 PNG 均已暂存，工作树其余部分无改动
+- release version 0.7.80
+
 ## [0.7.79] - 2026-10-13
 ### Changed
 - fix[python]: 创业板拼写错误
@@ -2613,7 +2629,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x/compare/v0.7.79...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x/compare/v0.7.80...HEAD
+[0.7.80]: https://gitee.com/quant1x/quant1x/compare/v0.7.79...v0.7.80
 [0.7.79]: https://gitee.com/quant1x/quant1x/compare/v0.7.78...v0.7.79
 [0.7.78]: https://gitee.com/quant1x/quant1x/compare/v0.7.77...v0.7.78
 [0.7.77]: https://gitee.com/quant1x/quant1x/compare/v0.7.76...v0.7.77
