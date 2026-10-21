@@ -3,6 +3,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.84] - 2026-10-22
+### Changed
+- chore[multi]：为 .githooks 钩子脚本补上执行位并纳入版本管理
+  - 变更概述：将 .githooks/pre-commit 与 .githooks/commit-msg 两个钩子加入版本管理，并标记为 100755 可执行模式
+  - 涉及语言与文件范围：shell 钩子脚本，.githooks/pre-commit、.githooks/commit-msg
+  - 语义一致性说明：本机 core.fileMode=false，Windows 文件系统不保留权限位，执行位只能记录在 git 索引中；标记为 100755 后，在 Linux/macOS 侧 clone 出来即为可执行，配合已配置的 core.hooksPath=.githooks 生效
+  - 验证方式：git ls-files -s -- .githooks 显示为 100755
+- feat[python]：补交 .githooks 钩子的两个校验脚本
+  - 变更概述：先前只提交了 shell 钩子本体，其依赖的校验脚本未纳入版本管理，现补交
+  - 涉及语言与文件范围：python，.githooks/commit_msg_check.py、.githooks/text_check.py
+  - 语义一致性说明：两个脚本不带 shebang，钩子以 python "$hook_dir/xxx.py" 方式调用，故保持 100644 不设执行位
+  - 验证方式：git ls-files -s -- .githooks 显示两个 .py 为 100644，两个钩子为 100755
+- release version 0.7.84
+
 ## [0.7.83] - 2026-10-16
 ### Changed
 - fix[python]: 修订authors信息，影响面是pip show显示author信息不空
@@ -2650,7 +2664,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x/compare/v0.7.83...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x/compare/v0.7.84...HEAD
+[0.7.84]: https://gitee.com/quant1x/quant1x/compare/v0.7.83...v0.7.84
 [0.7.83]: https://gitee.com/quant1x/quant1x/compare/v0.7.82...v0.7.83
 [0.7.82]: https://gitee.com/quant1x/quant1x/compare/v0.7.81...v0.7.82
 [0.7.81]: https://gitee.com/quant1x/quant1x/compare/v0.7.80...v0.7.81
