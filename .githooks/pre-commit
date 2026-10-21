@@ -1,0 +1,45 @@
+#!/bin/sh
+# pre-commit 钩子：提交内容编码校验（新混入 BOM → 拒绝提交）
+# 校验逻辑见同目录 text_check.py
+hook_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+run_check() {
+    # 优先使用 python / python3；在 Windows 环境下回退到 py -3
+    if command -v python >/dev/null 2>&1; then
+        python -V >/dev/null 2>&1
+        probe=$?
+        if [ "$probe" -ne 126 ] && [ "$probe" -ne 127 ]; then
+            python "$hook_dir/text_check.py"
+            return $?
+        fi
+    fi
+    if command -v python3 >/dev/null 2>&1; then
+        python3 -V >/dev/null 2>&1
+        probe=$?
+        if [ "$probe" -ne 126 ] && [ "$probe" -ne 127 ]; then
+            python3 "$hook_dir/text_check.py"
+            return $?
+        fi
+    fi
+    if command -v py >/dev/null 2>&1; then
+        py -3 -V >/dev/null 2>&1
+        probe=$?
+        if [ "$probe" -ne 126 ] && [ "$probe" -ne 127 ]; then
+            py -3 "$hook_dir/text_check.py"
+            return $?
+        fi
+    fi
+    return 127
+}
+
+run_check
+check_rc=$?
+if [ "$check_rc" -eq 127 ]; then
+    echo "pre-commit 校验未通过：未找到可用 Python 解释器（python/python3/py -3）。" >&2
+    exit 1
+fi
+if [ "$check_rc" -ne 0 ]; then
+    echo "pre-commit 校验未通过，提交已中止。请去掉新混入的 BOM 后重试。" >&2
+    exit 1
+fi
+
+exit 0

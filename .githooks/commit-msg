@@ -1,0 +1,60 @@
+#!/bin/sh
+# commit-msg 钩子：提交信息编码校验（非法 UTF-8 / GBK 乱码 → 拒绝提交）
+# 校验逻辑见同目录 commit_msg_check.py
+hook_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+run_check() {
+    # 优先使用 python / python3；在 Windows 环境下回退到 py -3
+    if command -v python >/dev/null 2>&1; then
+        python -V >/dev/null 2>&1
+        probe=$?
+        if [ "$probe" -ne 126 ] && [ "$probe" -ne 127 ]; then
+            python "$hook_dir/commit_msg_check.py" "$1"
+            return $?
+        fi
+    fi
+    if command -v python3 >/dev/null 2>&1; then
+        python3 -V >/dev/null 2>&1
+        probe=$?
+        if [ "$probe" -ne 126 ] && [ "$probe" -ne 127 ]; then
+            python3 "$hook_dir/commit_msg_check.py" "$1"
+            return $?
+        fi
+    fi
+    if command -v py >/dev/null 2>&1; then
+        py -3 -V >/dev/null 2>&1
+        probe=$?
+        if [ "$probe" -ne 126 ] && [ "$probe" -ne 127 ]; then
+            py -3 "$hook_dir/commit_msg_check.py" "$1"
+            return $?
+        fi
+    fi
+    return 127
+}
+
+run_check "$1"
+check_rc=$?
+if [ "$check_rc" -eq 127 ]; then
+    echo "commit-msg 校验未通过：未找到可用 Python 解释器（python/python3/py -3）。" >&2
+    exit 1
+fi
+if [ "$check_rc" -ne 0 ]; then
+    echo "commit-msg 校验未通过，提交已中止。请修正提交信息后重试。" >&2
+    exit 1
+fi
+
+# 提交尾注/署名约束（仓库规则）：
+# - 禁止 Co-authored-by trailer
+# - 禁止 Copilot/AI 署名（包含历史常见 noreply 地址）
+msg_file="$1"
+if [ -n "$msg_file" ] && [ -f "$msg_file" ]; then
+    if tr -d '\r' < "$msg_file" | grep -Eiq '^[[:space:]]*co-authored-by[[:space:]]*:'; then
+        echo "commit-msg 校验未通过：禁止 Co-authored-by trailer。" >&2
+        exit 1
+    fi
+    if tr -d '\r' < "$msg_file" | grep -Eiq 'copilot@users\.noreply\.github\.com|^[[:space:]]*(copilot|ai)[[:space:]]*(署名|signature)[[:space:]]*:'; then
+        echo "commit-msg 校验未通过：禁止 Copilot/AI 署名信息。" >&2
+        exit 1
+    fi
+fi
+
+exit 0
