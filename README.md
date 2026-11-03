@@ -1,6 +1,8 @@
 # Quant1X 量化交易实验室
 
-![Quant1X Logo](logo.png)
+<p align="center">
+  <img src="logo.png" alt="Quant1X Logo" width="360">
+</p>
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://isocpp.org/)
