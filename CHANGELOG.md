@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.85] - 2026-11-03
+### Changed
+- refactor[go]: 对齐日历接口
+- fix[go]: 新增ETF期权数据，以观测VIX指数
+- release version 0.7.85
+
 ## [0.7.84] - 2026-10-22
 ### Changed
 - chore[multi]：为 .githooks 钩子脚本补上执行位并纳入版本管理
@@ -2664,7 +2670,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://gitee.com/quant1x/quant1x/compare/v0.7.84...HEAD
+[Unreleased]: https://gitee.com/quant1x/quant1x/compare/v0.7.85...HEAD
+[0.7.85]: https://gitee.com/quant1x/quant1x/compare/v0.7.84...v0.7.85
 [0.7.84]: https://gitee.com/quant1x/quant1x/compare/v0.7.83...v0.7.84
 [0.7.83]: https://gitee.com/quant1x/quant1x/compare/v0.7.82...v0.7.83
 [0.7.82]: https://gitee.com/quant1x/quant1x/compare/v0.7.81...v0.7.82
