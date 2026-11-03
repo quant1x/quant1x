@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/quant1x/pkg/tools/tail"
+	"github.com/nxadm/tail"
 	"github.com/quant1x/quant1x/quant1x/base"
 	cli "github.com/spf13/cobra"
 )

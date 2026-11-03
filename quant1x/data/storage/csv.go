@@ -3,7 +3,7 @@
 import (
 	"os"
 
-	"github.com/quant1x/pkg/gocsv"
+	"github.com/gocarina/gocsv"
 	"github.com/quant1x/quant1x/quant1x/base"
 )
 

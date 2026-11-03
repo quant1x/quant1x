@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/quant1x/gox/encoding/yaml"
 	"github.com/quant1x/quant1x/quant1x/base"
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -72,8 +72,6 @@ func BlockFilename(ns ...string) string {
 }
 
 func parseYamlConfig(filename string, config *BaseConfig) error {
-	// 默认值(即使配置文件不存在, 也应返回可用配置)
-	_ = ApplyDefaults(config)
 	config.Filename = strings.TrimSpace(filename)
 	config.ConfigMap = map[string]any{}
 

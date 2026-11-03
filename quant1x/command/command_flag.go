@@ -4,9 +4,10 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/quant1x/pkg/tablewriter"
-	"github.com/quant1x/quant1x/quant1x/data"
+	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/quant1x/quant1x/quant1x/base/meta"
+	"github.com/quant1x/quant1x/quant1x/data"
 	cli "github.com/spf13/cobra"
 )
 
@@ -84,13 +85,13 @@ type optionUsage struct {
 func getPluginsUsage(plugins []data.DataAdapter) string {
 	writer := strings.Builder{}
 	table := tablewriter.NewWriter(&writer)
-	table.SetHeader(meta.GetHeadersByTags(optionUsage{}))
+	table.Header(meta.GetHeadersByTags(optionUsage{}))
 	table.Append(meta.GetValuesByTags(optionUsage{Key: defaultFlagAll, Name: "全部", Provider: ""}))
 	for _, plugin := range plugins {
 		ou := optionUsage{Key: plugin.Key(), Name: plugin.Name(), Provider: plugin.Owner(), Usage: plugin.Usage()}
 		table.Append(meta.GetValuesByTags(ou))
 	}
-	table.EnableBorder(false)
+	table.Options(tablewriter.WithRendition(tw.Rendition{Borders: tw.BorderNone}))
 	table.Render()
 	return writer.String()
 }

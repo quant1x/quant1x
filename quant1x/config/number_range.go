@@ -134,6 +134,12 @@ func (r *NumberRange) UnmarshalYAML(value *yaml.Node) error {
 	}
 }
 
+// UnmarshalText 按 default 标签填充默认值
+func (r *NumberRange) UnmarshalText(text []byte) error {
+	r.ParseFromString(string(text))
+	return nil
+}
+
 func toFloat64(v interface{}) (float64, error) {
 	switch x := v.(type) {
 	case int:

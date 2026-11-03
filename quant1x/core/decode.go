@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"gopkg.in/yaml.v3"
+	"github.com/quant1x/gox/encoding/yaml"
 )
 
 // DecodeTo 将 src(通常是 map[string]any / []any / 基础类型)解码到 dst(通常是 *Struct).
@@ -134,7 +134,7 @@ func LookupConfig(path string) (any, bool) {
 
 // DecodeConfig 按 path 查找配置段, 并解码到 dst.
 //
-// - 如果目标结构体字段带有 `default:"..."`, 会在解码后调用 ApplyDefaults(dst) 填充零值默认值.
+// - 目标结构体字段带有 `default:"..."` 时, 先按标签填充零值, 再用配置值覆盖.
 // - 如果配置文件中配置项存在且有效, 则覆盖默认值；如果不存在, 则仅使用默认值.
 func DecodeConfig(path string, dst any) error {
 	// Apply defaults first so target has defaults even if path is missing.
