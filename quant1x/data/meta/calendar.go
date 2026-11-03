@@ -252,96 +252,258 @@ func get_calendar_list() []string {
 	return append([]string(nil), globalCalendarsString...)
 }
 
+// #sym:get_calendar_list
+// GetCalendarList returns all trading dates as YYYY-MM-DD strings.
+func GetCalendarList() []string {
+	return get_calendar_list()
+}
+
+// #sym:get_calendar_timestamps
+// GetCalendarTimestamps returns a copy of the trading calendar timestamps.
+func GetCalendarTimestamps() []Timestamp {
+	calendarRollingOnce.Do(lazyLoadCalendar)
+	return append([]Timestamp(nil), globalCalendarsTimestamp...)
+}
+
+// #sym:load_calendar
+// LoadCalendar loads and returns the trading calendar timestamps.
+func LoadCalendar() []Timestamp {
+	return GetCalendarTimestamps()
+}
+
+// #sym:load_calendar_series
+// LoadCalendarSeries returns the trading calendar as date strings.
+func LoadCalendarSeries() []string {
+	return GetCalendarList()
+}
+
+// #sym:get_today
+// GetToday returns the current date in YYYY-MM-DD format.
+func GetToday() string {
+	return NowTimestamp().OnlyDate()
+}
+
+// #sym:fix_trade_date
+// FixTradeDate parses a YYYY-MM-DD date and formats it with a strftime format.
+func FixTradeDate(date string, format ...string) (string, error) {
+	if date == "" {
+		return date, nil
+	}
+	parsed, err := time.ParseInLocation(OnlyDateLayout, date, time.Local)
+	if err != nil {
+		return "", fmt.Errorf("invalid trade date %q: %w", date, err)
+	}
+	outputFormat := "%Y-%m-%d"
+	if len(format) > 0 && format[0] != "" {
+		outputFormat = format[0]
+	}
+	outputLayout, err := strftimeLayout(outputFormat)
+	if err != nil {
+		return "", err
+	}
+	return parsed.Format(outputLayout), nil
+}
+
+func strftimeLayout(format string) (string, error) {
+	var layout strings.Builder
+	for i := 0; i < len(format); i++ {
+		if format[i] != '%' {
+			layout.WriteByte(format[i])
+			continue
+		}
+		i++
+		if i >= len(format) {
+			return "", fmt.Errorf("invalid trailing %% in date format")
+		}
+		switch format[i] {
+		case '%':
+			layout.WriteByte('%')
+		case 'Y':
+			layout.WriteString("2006")
+		case 'y':
+			layout.WriteString("06")
+		case 'm':
+			layout.WriteString("01")
+		case 'd':
+			layout.WriteString("02")
+		case 'e':
+			layout.WriteString("_2")
+		case 'H':
+			layout.WriteString("15")
+		case 'I':
+			layout.WriteString("03")
+		case 'M':
+			layout.WriteString("04")
+		case 'S':
+			layout.WriteString("05")
+		case 'b':
+			layout.WriteString("Jan")
+		case 'B':
+			layout.WriteString("January")
+		case 'a':
+			layout.WriteString("Mon")
+		case 'A':
+			layout.WriteString("Monday")
+		case 'p':
+			layout.WriteString("PM")
+		case 'j':
+			layout.WriteString("002")
+		case 'z':
+			layout.WriteString("-0700")
+		case 'Z':
+			layout.WriteString("MST")
+		default:
+			return "", fmt.Errorf("unsupported date format directive %%%c", format[i])
+		}
+	}
+	return layout.String(), nil
+}
+
 func get_date_range(begin, end string, skipToday bool) []string {
+	return GetDateRange(begin, end, skipToday)
+}
+
+// #sym:get_date_range
+// GetDateRange returns trading date strings within the inclusive date range.
+func GetDateRange(begin, end string, skipTodayOption ...bool) []string {
+	skipToday := len(skipTodayOption) > 0 && skipTodayOption[0]
+	return tradingDateStringRange(get_calendar_list(), begin, end, skipToday, GetToday())
+}
+
+func tradingDateStringRange(list []string, begin, end string, skipToday bool, today string) []string {
 	if begin > end {
 		return nil
 	}
-	list := get_calendar_list()
+	if len(list) == 0 {
+		return nil
+	}
 	is := sort.SearchStrings(list, begin)
-	ie := sort.SearchStrings(list, end)
-
-	// Follow C++ ordering: handle skipToday first, else adjust ie to <= end
+	ie := sort.Search(len(list), func(i int) bool { return list[i] > end })
 	if skipToday {
-		if ie < len(list) {
-			today := NowTimestamp().OnlyDate()
-			lastDay := list[ie]
+		if ie > 0 {
+			lastDay := list[ie-1]
 			if lastDay > today || lastDay > end {
 				ie--
 			}
 		}
-	} else {
-		for ie >= 0 && ie < len(list) && list[ie] > end {
-			ie--
-		}
 	}
-
-	if is < 0 || ie < 0 || is > ie || ie >= len(list) {
+	if is >= ie {
 		return nil
 	}
-	return append([]string(nil), list[is:ie+1]...)
+	return append([]string(nil), list[is:ie]...)
 }
 
-func DateRange(begin, end Timestamp, skipToday bool) []Timestamp {
-	// Mirror C++: operate directly on the timestamp cache (pre-market times)
-	calendarRollingOnce.Do(lazyLoadCalendar)
-	tradeDates := globalCalendarsTimestamp
+// #sym:date_range
+func DateRange(begin, end Timestamp, skipTodayOption ...bool) []Timestamp {
+	skipToday := len(skipTodayOption) > 0 && skipTodayOption[0]
+	return tradingDateRange(GetCalendarTimestamps(), begin, end, skipToday, NowTimestamp().PreMarketTime())
+}
+
+// DateRangeToNow returns trading dates from begin through the current time.
+func DateRangeToNow(begin Timestamp, skipToday ...bool) []Timestamp {
+	end := NowTimestamp()
+	if len(skipToday) > 0 {
+		return DateRange(begin, end, skipToday[0])
+	}
+	return DateRange(begin, end)
+}
+
+func tradingDateRange(tradeDates []Timestamp, begin, end Timestamp, skipToday bool, today Timestamp) []Timestamp {
 	if len(tradeDates) == 0 {
 		return nil
 	}
-
+	if begin.Greater(end) {
+		return nil
+	}
 	n := len(tradeDates)
-
-	// lower_bound: first >= begin
 	lower := sort.Search(n, func(i int) bool { return !tradeDates[i].Less(begin) })
-
-	// upper_bound: first > end
 	upper := sort.Search(n, func(i int) bool { return tradeDates[i].Greater(end) })
-
-	if skipToday && upper < n {
-		today := NowTimestamp().PreMarketTime()
-		// if candidate at upper is > today or > end, step back
-		if tradeDates[upper].Greater(today) || tradeDates[upper].Greater(end) {
-			if upper > 0 {
-				upper--
-			}
-		}
-	} else {
-		// adjust upper to the last index <= end
-		for upper > 0 && tradeDates[upper-1].Greater(end) {
+	if skipToday && upper > 0 {
+		lastInRange := tradeDates[upper-1]
+		if lastInRange.Greater(today) || lastInRange.Greater(end) {
 			upper--
 		}
 	}
-
-	// validity checks (mirror C++ conditions)
-	if lower >= upper || lower == n || upper == 0 {
+	if lower >= upper {
 		return nil
 	}
-
-	// return half-open [lower, upper)
-	out := make([]Timestamp, upper-lower)
-	copy(out, tradeDates[lower:upper])
-	return out
+	return append([]Timestamp(nil), tradeDates[lower:upper]...)
 }
 
-// LastTradingDay returns the most recent trading day <= date
-func LastTradingDay(t Timestamp) Timestamp {
-	// Ensure calendar is loaded (persistent RollingOnce, parity with C++ global_calendar_once).
-	calendarRollingOnce.Do(lazyLoadCalendar)
-	if len(globalCalendarsTimestamp) == 0 {
-		return NowTimestamp().PreMarketTime()
+func lastTradingDay(tradeDates []Timestamp, date, current Timestamp) Timestamp {
+	if len(tradeDates) == 0 {
+		return date
 	}
-	// Follow C++ logic: find upper_bound (first > t), then step back to <= t.
-	n := len(globalCalendarsTimestamp)
-	i := sort.Search(n, func(i int) bool { return globalCalendarsTimestamp[i].Greater(t) })
+	i := sort.Search(len(tradeDates), func(i int) bool { return tradeDates[i].Greater(date) })
 	if i != 0 {
-		i-- // now globalCalendarsTimestamp[i] <= t
-	}
-
-	lastTimestamp := globalCalendarsTimestamp[i]
-	currentTimestamp := NowTimestamp()
-	// If current time is before lastTimestamp (盘前), move to previous trading day if possible
-	if currentTimestamp.Less(lastTimestamp) && i != 0 {
 		i--
 	}
-	return globalCalendarsTimestamp[i]
+	if current.Less(tradeDates[i]) && i != 0 {
+		i--
+	}
+	return tradeDates[i]
+}
+
+func prevTradingDay(tradeDates []Timestamp, date, current Timestamp) Timestamp {
+	if len(tradeDates) == 0 {
+		return date
+	}
+	i := sort.Search(len(tradeDates), func(i int) bool { return !tradeDates[i].Less(date) })
+	if i > 0 {
+		i--
+	}
+	if current.Less(tradeDates[i]) && i > 0 {
+		i--
+	}
+	return tradeDates[i]
+}
+
+func nextTradingDay(tradeDates []Timestamp, date, current Timestamp) Timestamp {
+	if len(tradeDates) == 0 {
+		return date
+	}
+	i := sort.Search(len(tradeDates), func(i int) bool { return !tradeDates[i].Less(date) })
+	if i >= len(tradeDates) {
+		return tradeDates[len(tradeDates)-1]
+	}
+	if !current.Less(tradeDates[i]) && i < len(tradeDates)-1 {
+		i++
+	}
+	return tradeDates[i]
+}
+
+func calendarQueryArguments(args []Timestamp) (Timestamp, Timestamp) {
+	date := NowTimestamp().PreMarketTime()
+	current := NowTimestamp()
+	if len(args) > 0 && args[0].Value() != 0 {
+		date = args[0]
+	}
+	if len(args) > 1 && args[1].Value() != 0 {
+		current = args[1]
+	}
+	return date, current
+}
+
+// #sym:last_trading_day
+// LastTradingDay returns the most recent trading day not later than date.
+// With no arguments, the current date and time are used. An optional second
+// timestamp supplies the current time for deterministic pre-market checks.
+func LastTradingDay(args ...Timestamp) Timestamp {
+	date, current := calendarQueryArguments(args)
+	return lastTradingDay(GetCalendarTimestamps(), date, current)
+}
+
+// #sym:prev_trading_day
+// PrevTradingDay returns the trading day immediately before date.
+func PrevTradingDay(args ...Timestamp) Timestamp {
+	date, current := calendarQueryArguments(args)
+	return prevTradingDay(GetCalendarTimestamps(), date, current)
+}
+
+// #sym:next_trading_day
+// NextTradingDay returns the next trading day, considering whether today's
+// pre-market time has already passed.
+func NextTradingDay(args ...Timestamp) Timestamp {
+	date, current := calendarQueryArguments(args)
+	return nextTradingDay(GetCalendarTimestamps(), date, current)
 }
