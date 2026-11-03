@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-11-03
+### Changed
+- fix[go]: 更新依赖库
+- release version 0.8.1
+
 ## [0.8.0] - 2026-11-03
 ### Changed
 - refactor[go]：剔除 quant1x/pkg 依赖并对齐 yaml 默认值机制
@@ -2702,7 +2707,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.0...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.1...HEAD
+[0.8.1]: https://codeberg.org/quant1x/quant1x/compare/v0.8.0...v0.8.1
 [0.8.0]: https://codeberg.org/quant1x/quant1x/compare/v0.7.85...v0.8.0
 [0.7.85]: https://codeberg.org/quant1x/quant1x/compare/v0.7.84...v0.7.85
 [0.7.84]: https://codeberg.org/quant1x/quant1x/compare/v0.7.83...v0.7.84
