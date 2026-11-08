@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // To add this test to the test run, `tests/CMakeLists.txt` already contains:
 //   add_catch2_executable(tdd-encoding-json.cpp)
 // which creates a Catch2 test target named `catch2-tdd-encoding-json`.

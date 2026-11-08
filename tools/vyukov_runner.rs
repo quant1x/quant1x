@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 use quant1x::runtime::ringbuffer::Queue as VQueue;
 use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::Arc;

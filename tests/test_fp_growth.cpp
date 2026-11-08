@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #include <quant1x/learn/fpgrowth/fp_growth.h>
 #include <iostream>
 #include <vector>

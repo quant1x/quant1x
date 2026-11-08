@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
-# Copyright (c) Quant1X <wangfengxy@sina.cn>.
-# Licensed under the MIT License.
+# Copyright (C) 2026 Quant1X Team
+# SPDX-License-Identifier: MIT
 
 def _get_version() -> str:
     # 1. 优先读取 setuptools_scm 写入的 _version.py

@@ -1,8 +1,6 @@
-# -*- coding: utf-8 -*-
-# Copyright (c) Quant1X <wangfengxy@sina.cn>.
-# Licensed under the MIT License.
-#
-# 标准行情协议包 — 按命令字拆分
+# -*- coding: UTF-8 -*-
+# Copyright (C) 2026 Quant1X Team
+# SPDX-License-Identifier: MIT
 
 from .hello import StdLoginContext, UpgradeTipContext
 from .heartbeat import HeartbeatContext

@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 //! FP-Growth 算法实现
 //!
 //! 纯Rust实现的FP-Growth频繁项集挖掘算法. 

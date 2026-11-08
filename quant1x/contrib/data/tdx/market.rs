@@ -1,8 +1,5 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// market — 通达信市场/类别映射表
-// 对应 Python contrib/data/tdx/market.py
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use crate::data::meta::exchange::Exchange;
 use crate::data::meta::instrument::InstrumentType;

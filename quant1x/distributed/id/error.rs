@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 //! 统一的错误类型 (对应 Go 包内的 error 使用)
 
 use std::fmt;

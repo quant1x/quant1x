@@ -1,9 +1,5 @@
-// -*- coding: utf-8 -*-
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// block — 板块文件数据请求 (STD_BLOCK_DATA, 0x06b9)
-// 对应 Python quant1x/contrib/data/tdx/level1/std/block.py
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use super::super::super::command::*;
 use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};

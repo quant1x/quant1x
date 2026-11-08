@@ -1,5 +1,4 @@
-// Copyright (c) 2026 Quant1X. All rights reserved.
-// Author: wangfeng <wangfengxy@sina.cn>
+// Copyright (C) 2026 Quant1X Team
 // SPDX-License-Identifier: MIT
 
 package quant1x.id.id64;

@@ -1,5 +1,5 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 /// 板块信息结构体
 #[derive(Debug, Clone, Default)]

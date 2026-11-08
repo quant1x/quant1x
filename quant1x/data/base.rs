@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // Auto-port of C++ datasets/base.h kinds for Rust
 // Provide UPPER_SNAKE_CASE constants (Rust style) and keep the original
 // CamelCase names as backward-compatible aliases to ease review and porting.

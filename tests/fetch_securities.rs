@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // 用于触发证券列表刷新并打印结果的集成测试
 // 该测试会调用公共的 init_securities(), 该函数执行 level1 抓取并写入 CSV 文件.
 

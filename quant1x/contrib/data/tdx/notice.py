@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-# Copyright (c) Quant1X <wangfengxy@sina.cn>.
-# Licensed under the MIT License.
+# -*- coding: UTF-8 -*-
+# Copyright (C) 2026 Quant1X Team
+# SPDX-License-Identifier: MIT
 
 """
 上市公司公告数据获取 (东方财富API)

@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 package tests.distributed.id;
 
 import org.junit.jupiter.api.Test;

@@ -1,4 +1,7 @@
-﻿#pragma once
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#pragma once
 #ifndef API_ALGO_H
 #define API_ALGO_H 1
 

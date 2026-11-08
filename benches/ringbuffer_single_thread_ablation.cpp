@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // Vyukov MPMC 队列的单线程消融基准 (不依赖 Google Benchmark, 单文件可直接 cl / clang-cl 编译)
 //
 // 用途与**定位局限**:

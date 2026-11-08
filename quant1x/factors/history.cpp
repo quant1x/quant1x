@@ -1,4 +1,7 @@
-﻿#include <quant1x/factors/history.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <quant1x/factors/history.h>
 #include <quant1x/formula.h>
 #include <quant1x/pandas/dataframe.h>
 #include <boost/pfr.hpp>

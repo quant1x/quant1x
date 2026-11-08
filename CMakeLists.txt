@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.30)
+cmake_minimum_required(VERSION 3.30)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 # 加载基础 CMake 配置
 include(cmake/base.cmake)

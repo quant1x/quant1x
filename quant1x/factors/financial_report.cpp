@@ -1,4 +1,7 @@
-﻿#include <quant1x/factors/financial_report.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <quant1x/factors/financial_report.h>
 #include <cpr/cpr.h>
 #include <quant1x/base/filesystem.h>
 #include <quant1x/base/time.h>

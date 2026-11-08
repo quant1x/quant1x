@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 use bytes::{Buf, BytesMut};
 use mio::net::TcpStream;
 use mio::{Events, Interest, Poll, Token};

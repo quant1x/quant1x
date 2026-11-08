@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // 文件状态存储 (对应 Go fileStateStore, Python state_store.py, Rust state_store.rs)
 //
 // 状态与跨进程锁均落在同一块共享 mmap 上:

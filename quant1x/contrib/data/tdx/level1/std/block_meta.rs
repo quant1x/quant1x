@@ -1,8 +1,5 @@
-// -*- coding: utf-8 -*-
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// block_meta — 板块元数据 (STD_BLOCK_META, 0x02c5)
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use crate::base::BinaryStream;
 

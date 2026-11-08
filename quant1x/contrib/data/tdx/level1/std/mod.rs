@@ -1,9 +1,5 @@
-// -*- coding: utf-8 -*-
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// std — 标准行情协议消息
-// 按命令字拆分为独立子模块, 统一通过 mod.rs 重新导出
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 pub mod hello;
 pub mod heartbeat;

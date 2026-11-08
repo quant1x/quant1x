@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-# Copyright (c) Quant1X <wangfengxy@sina.cn>.
-# Licensed under the MIT License.
+# -*- coding: UTF-8 -*-
+# Copyright (C) 2026 Quant1X Team
+# SPDX-License-Identifier: MIT
 
 from quant1x import config
 from quant1x.data.market.blocks import parse_raw_block_file, get_sector_filename

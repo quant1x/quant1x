@@ -1,4 +1,7 @@
-﻿#include <iostream>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <iostream>
 #include <quant1x/base/strings.h>
 
 int main() {

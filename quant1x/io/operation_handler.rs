@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 use mio::net::TcpStream;
 use std::net::TcpStream as StdTcpStream;
 use std::time::Duration;

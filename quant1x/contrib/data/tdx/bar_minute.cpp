@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #include <quant1x/contrib/data/tdx/bar_minute.h>
 #include <quant1x/contrib/data/tdx/client.h>
 #include <quant1x/contrib/data/tdx/level1/std/security_bars.h>

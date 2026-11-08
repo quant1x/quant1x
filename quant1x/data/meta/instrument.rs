@@ -1,7 +1,5 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// Instrument — 证券信息结构体, 与 Python data/meta/instrument.py 对齐
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use super::exchange::Exchange;
 use super::region::Region;

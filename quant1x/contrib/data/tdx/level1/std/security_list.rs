@@ -1,9 +1,5 @@
-// -*- coding: utf-8 -*-
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// security_list — 证券列表 (STD_SECURITY_LIST, 0x044d)
-// 对应 Python level1/std/security_list.py
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use encoding::{DecoderTrap, Encoding};
 use encoding::all::GBK;

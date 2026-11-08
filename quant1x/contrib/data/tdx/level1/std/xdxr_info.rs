@@ -1,10 +1,5 @@
-// -*- coding: utf-8 -*-
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// xdxr — 除权除息信息 (STD_XDXR_INFO, 0x000f)
-// 对应 Python level1/std/xdxr.py
-// 对应 C++   level1/xdxr_info.h
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use crate::base::BinaryStream;
 use crate::data::schema::{XdxrInfo, XdxrEntry};

@@ -1,7 +1,5 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// market — 市场/证券代码识别与纠正, 与 Python data/market.py 对齐
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 #include "market.h"
 #include "meta/ticker_rules/market_sse.h"

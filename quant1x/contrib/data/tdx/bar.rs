@@ -1,8 +1,5 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// bar — 前复权K线数据缓存读取, 与 Python contrib/data/tdx/bar.py 对齐
-// 作为 datasource 的本地代理, 仅从本地缓存CSV文件读取数据, 不依赖 level1 协议
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use std::sync::Arc;
 

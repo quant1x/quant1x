@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};

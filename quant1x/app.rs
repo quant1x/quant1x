@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // 小型适配模块, 为 `src/main.rs` 提供应用级入口点. 
 // 这些实现有意保持最小且非侵入: 提供 no-op 回退实现, 
 // 上层的 Rust 实现可在本 crate 中提供更完整的实现来覆盖它们. 

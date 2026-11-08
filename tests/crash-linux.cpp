@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #define BACKWARD_HAS_DW 1
 #include "backward.hpp"
 

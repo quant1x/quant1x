@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
-# Copyright (c) Quant1X <wangfengxy@sina.cn>.
-# Licensed under the MIT License.
+# Copyright (C) 2026 Quant1X Team
+# SPDX-License-Identifier: MIT
+
 """混合逻辑时钟 HLC (与 Go 的 hlc.go / Rust 的 hlc.rs 语义对齐).
 
 约定:

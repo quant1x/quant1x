@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
-# Copyright (c) Quant1X <wangfengxy@sina.cn>.
-# Licensed under the MIT License.
+# Copyright (C) 2026 Quant1X Team
+# SPDX-License-Identifier: MIT
+
 """分布式 ID 类型与位布局常量 (与 Go/Rust 语义对齐).
 
 位布局 (64 位, 大端):

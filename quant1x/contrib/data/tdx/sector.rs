@@ -1,8 +1,5 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// sector — 板块列表加载与下载, 与 Python contrib/data/tdx/sector.py 对齐
-// 作为 datasource 的本地代理, 从 level1 下载板块文件并解析为 CSV 缓存
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use crate::data::schema::Sector;
 use std::collections::HashMap;

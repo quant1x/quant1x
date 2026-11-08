@@ -1,8 +1,5 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// tdx/instruments - TDX security cache loader and initializer
-// Aligned with Python contrib/data/tdx/instruments.py and Rust instruments.rs
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 #include <quant1x/contrib/data/tdx/instruments.h>
 #include <quant1x/config/base.h>

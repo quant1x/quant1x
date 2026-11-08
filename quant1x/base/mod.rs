@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 pub mod buffer;
 pub use buffer::BinaryStream;
 pub mod except;

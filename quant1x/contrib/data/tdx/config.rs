@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 //! TDX 服务器配置模块
 //!
 //! 对应 Python `_config.py`:

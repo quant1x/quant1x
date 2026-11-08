@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // This translation unit forces inclusion of mimalloc's new/delete overrides
 // when the project enables mimalloc in the "new_delete" mode. Including
 // the header in a single TU ensures the overridden operators are available

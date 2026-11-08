@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // 混合逻辑时钟 (HLC, 对应 Go HLC/Option, Python hlc.py, Rust Hlc/HlcBuilder)
 //
 // 保证同一进程内生成的 (physical, seq) 严格递增:

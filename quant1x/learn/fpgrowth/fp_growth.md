@@ -1,4 +1,4 @@
-﻿# FP Growth 算法 - C++ 实现
+# FP Growth 算法 - C++ 实现
 
 [![C++](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://isocpp.org/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)

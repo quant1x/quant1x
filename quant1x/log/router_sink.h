@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #pragma once
 #include <spdlog/sinks/sink.h>
 #include <spdlog/sinks/base_sink.h>

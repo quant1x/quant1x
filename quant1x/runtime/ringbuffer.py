@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
-# Copyright (c) Quant1X <wangfengxy@sina.cn>.
-# Licensed under the MIT License.
+# Copyright (C) 2026 Quant1X Team
+# SPDX-License-Identifier: MIT
+
 """Vyukov 风格的 Python 原生环形缓冲区.
 
 该实现保留 Go/Rust/C++ 侧的核心语义：

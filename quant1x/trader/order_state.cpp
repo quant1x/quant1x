@@ -1,4 +1,7 @@
-﻿#include <quant1x/trader/order_state.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <quant1x/trader/order_state.h>
 #include <spdlog/spdlog.h>
 #include <quant1x/base/filesystem.h>
 #include <quant1x/trader/fee.h>

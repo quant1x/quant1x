@@ -1,5 +1,5 @@
-// Copyright (c) 2017, A. Stoewer <adrian.stoewer@rz.ifi.lmu.de>
-// All rights reserved.
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 package base
 

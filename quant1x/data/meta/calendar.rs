@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 use super::sina::FinanceDecoder;
 use crate::runtime::RollingOnce;
 use crate::meta::Timestamp;

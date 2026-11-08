@@ -1,9 +1,5 @@
-// -*- coding: utf-8 -*-
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// TDX protocol — 协议头与消息基类
-// 对应 Python quant1x/contrib/data/tdx/protocol.py
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use crate::base::BinaryStream;
 use flate2::read::ZlibDecoder;

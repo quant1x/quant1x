@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# Copyright (c) Quant1X <wangfengxy@sina.cn>.
-# Licensed under the MIT License.
+# -*- coding: UTF-8 -*-
+# Copyright (C) 2026 Quant1X Team
+# SPDX-License-Identifier: MIT
 
 """
 二进制文件转C/C++头文件转换器

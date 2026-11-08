@@ -1,4 +1,7 @@
-﻿#include <quant1x/test/test.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <quant1x/test/test.h>
 #include <quant1x/base/strings.h>
 #include <spdlog/sinks/daily_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>

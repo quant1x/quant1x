@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // 分布式 ID 的单元测试
 //
 // 语义对齐 Go id_test.go / Rust distributed/id/tests.rs / Python tests.py,

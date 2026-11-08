@@ -1,8 +1,5 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// ext — 扩展行情协议消息
-// 对应 Python contrib/data/tdx/level1/ext.py
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use crate::data::meta::instrument::{Instrument, InstrumentType};
 use crate::base::BinaryStream;

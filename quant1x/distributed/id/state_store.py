@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
-# Copyright (c) Quant1X <wangfengxy@sina.cn>.
-# Licensed under the MIT License.
+# Copyright (C) 2026 Quant1X Team
+# SPDX-License-Identifier: MIT
+
 """跨进程持久化状态存储 (与 Go/Rust 语义对齐).
 
 布局: 128 字节定长文件, 内存映射.

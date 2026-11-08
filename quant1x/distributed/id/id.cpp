@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // 64 位可排序分布式 ID 的实现
 #include <quant1x/distributed/id/id.h>
 

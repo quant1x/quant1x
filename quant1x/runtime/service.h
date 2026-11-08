@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #pragma once
 #ifndef API_RUNTIME_SERVICE_H
 #define API_RUNTIME_SERVICE_H 1

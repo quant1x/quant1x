@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #include <quant1x/plugins/plugin_loader.h>
 #include <quant1x/engine/rule_engine.h>
 #include <filesystem>

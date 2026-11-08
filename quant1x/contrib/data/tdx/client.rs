@@ -1,8 +1,5 @@
-// -*- coding: utf-8 -*-
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// TDX client — 连接管理
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use std::net::SocketAddr;
 use std::str::FromStr;

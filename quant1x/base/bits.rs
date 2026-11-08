@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // bits.rs
 // 实现：round_up_to_power_of_two
 // 说明：返回大于等于 x 的最小 2 的幂次方。与项目其他语言保持一致：

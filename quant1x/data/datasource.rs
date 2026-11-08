@@ -1,7 +1,5 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// datasource — 数据源抽象接口, 与 Python data/datasource.py 对齐(旧版本)
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use crate::data::meta::exchange::Exchange;
 use crate::data::meta::instrument::Instrument;

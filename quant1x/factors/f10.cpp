@@ -1,4 +1,7 @@
-﻿#include <quant1x/encoding/csv.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <quant1x/encoding/csv.h>
 #include <quant1x/data/meta/timestamp.h>
 #include <quant1x/data/meta/calendar.h>
 #include <quant1x/contrib/data/tdx/client.h>

@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #pragma once
 #ifndef QUANT1X_DATA_META_TICKER_RULES_MARKET_SSE_H
 #define QUANT1X_DATA_META_TICKER_RULES_MARKET_SSE_H 1

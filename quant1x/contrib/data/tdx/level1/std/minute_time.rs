@@ -1,8 +1,5 @@
-// -*- coding: utf-8 -*-
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// minute_time — 历史分时数据 (STD_HISTORY_MINUTE_DATA, 0x0fb4)
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use crate::base::BinaryStream;
 

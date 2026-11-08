@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 //! ID 生成器 (对应 Go Generator)
 
 use std::sync::atomic::{AtomicBool, Ordering};

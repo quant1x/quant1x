@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // K线类型 (mimicking Python BarFreq)
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

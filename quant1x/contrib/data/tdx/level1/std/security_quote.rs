@@ -1,8 +1,5 @@
-// -*- coding: utf-8 -*-
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// security_quote — 行情快照 (STD_SECURITY_QUOTES_OLD, 0x053e)
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use crate::market;
 use crate::base::BinaryStream;

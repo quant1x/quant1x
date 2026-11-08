@@ -1,4 +1,7 @@
-﻿#include <quant1x/io/csv-reader.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <quant1x/io/csv-reader.h>
 #include <quant1x/io/csv-writer.h>
 #include <quant1x/base/filesystem.h>
 #include <quant1x/io/http.h>

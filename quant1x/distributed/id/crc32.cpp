@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // CRC32-IEEE 的实现
 #include <quant1x/distributed/id/crc32.h>
 

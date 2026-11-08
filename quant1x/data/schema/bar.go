@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 package schema
 
 // MaxCachedDaysToDropOnIncrementalUpdate 是增量更新缓存清理的最大天数.

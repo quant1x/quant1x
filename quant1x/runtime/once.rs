@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 use chrono::{Local, Timelike};
 use std::io::{self, Write};
 use std::path::PathBuf;

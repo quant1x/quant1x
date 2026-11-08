@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
-# Copyright (c) Quant1X <wangfengxy@sina.cn>.
-# Licensed under the MIT License.
+# Copyright (C) 2026 Quant1X Team
+# SPDX-License-Identifier: MIT
+
 """HLC 构造选项 (与 Go 的 option.go / Rust 的 option 语义对齐).
 
 每个 with_* 返回一个可调用对象, 在 HLC 构造时按其语义应用.

@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 use super::*;
 use std::net::{TcpListener, TcpStream as StdTcpStream};
 use std::sync::{Arc, Mutex};

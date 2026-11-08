@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
-# Copyright (c) Quant1X <wangfengxy@sina.cn>.
-# Licensed under the MIT License.
+# Copyright (C) 2026 Quant1X Team
+# SPDX-License-Identifier: MIT
 
 from .cache import MaxCachedDaysToDropOnIncrementalUpdate
 from .market import detect_symbol, detect_instrument_type_by_rule

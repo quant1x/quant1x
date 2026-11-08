@@ -1,4 +1,7 @@
-﻿#include "no0.h"
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include "no0.h"
 
 #include <quant1x/encoding/csv.h>
 #include <quant1x/formula.h>

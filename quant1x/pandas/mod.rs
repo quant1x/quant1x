@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 use std::time::Duration;
 
 /// Parse frequency string similar to C++ pandas::ParseTimeRule + parse_frequency

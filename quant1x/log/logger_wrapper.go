@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 package log
 
 // 包级日志入口, 未初始化时静默丢弃, 避免 nil 指针 panic

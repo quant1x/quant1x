@@ -1,5 +1,5 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 // Package tdxproto contains the shared protocol types that both tdx and
 // its level1/std sub-package depend on, breaking the import cycle.

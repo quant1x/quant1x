@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // CRC32-IEEE 校验 (对应 Rust distributed/id/crc32.rs, 与 Go hash/crc32 ChecksumIEEE 一致)
 //
 // 多项式 0xEDB88320 (反射表示), 初值 0xFFFFFFFF, 结果取反.

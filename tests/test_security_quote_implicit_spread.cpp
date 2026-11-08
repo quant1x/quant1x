@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #include <gtest/gtest.h>
 #include <cmath>
 #include <quant1x/contrib/data/tdx/level1/std/security_quote.h>

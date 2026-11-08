@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // ID 队列的实现
 #include <quant1x/distributed/id/queue.h>
 

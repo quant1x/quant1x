@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 //! 对齐 Go id_test.go 的语义测试
 
 use std::collections::HashSet;

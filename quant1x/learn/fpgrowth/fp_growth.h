@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #ifndef QUANT1X_FP_GROWTH_H
 #define QUANT1X_FP_GROWTH_H 1
 

@@ -1,4 +1,7 @@
-﻿#include <quant1x/contrib/data/tdx/client.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <quant1x/contrib/data/tdx/client.h>
 #include <quant1x/data/meta/session.h>
 #include <quant1x/base/except.h>
 #include <quant1x/encoding/yaml.h>

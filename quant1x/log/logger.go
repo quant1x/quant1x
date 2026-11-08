@@ -1,4 +1,7 @@
-﻿package log
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+package log
 
 import (
 	"compress/gzip"

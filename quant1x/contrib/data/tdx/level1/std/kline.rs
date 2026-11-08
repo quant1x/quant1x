@@ -1,8 +1,5 @@
-// -*- coding: utf-8 -*-
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// kline — K线类型枚举
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

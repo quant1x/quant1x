@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // lazy_daily_sink.cpp
 #include "lazy_daily_sink.h"
 #include <spdlog/sinks/daily_file_sink.h>

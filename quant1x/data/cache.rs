@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 use crate::data::meta::timestamp::Timestamp;
 use std::fs;
 use std::time::UNIX_EPOCH;

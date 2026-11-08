@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 use crate::runtime::scheduler::{AsyncScheduler, TaskId};
 use once_cell::sync::OnceCell;
 use std::sync::Arc;

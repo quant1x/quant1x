@@ -1,4 +1,7 @@
-﻿#include <quant1x/io/http.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <quant1x/io/http.h>
 #include <cpr/cpr.h>
 #include <ctime>
 #include <iomanip>

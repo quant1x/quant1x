@@ -1,4 +1,7 @@
-﻿#include <fcntl.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <fcntl.h>
 #include <pwd.h>
 #include <quant1x/runtime/core.h>
 #include <quant1x/runtime/service.h>

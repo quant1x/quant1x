@@ -1,4 +1,7 @@
-﻿#include <quant1x/config/cache.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <quant1x/config/cache.h>
 #include <quant1x/config/base.h>
 #include <quant1x/data/market.h>
 #include <quant1x/data/meta/timestamp.h>

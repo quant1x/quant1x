@@ -1,7 +1,5 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// CodeRule — 证券代码规则, 与 Python data/meta/ticker_rules/rule.py 对齐
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 package ticker_rules
 

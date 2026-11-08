@@ -1,7 +1,5 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// instruments — 证券信息缓存读取
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use crate::data::meta::exchange::Exchange;
 use crate::data::meta::instrument::{Instrument, InstrumentType};

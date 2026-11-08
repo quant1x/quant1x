@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #include "fp_growth.h"
 #include "fp_growth_core.h"
 

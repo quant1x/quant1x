@@ -1,8 +1,5 @@
-// -*- coding: utf-8 -*-
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// hello — 标准行情握手1/2 (STD_SYNCHRONIZE1, STD_SYNCHRONIZE2)
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use encoding_rs::GBK;
 

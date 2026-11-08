@@ -1,4 +1,7 @@
-﻿package io
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+package io
 
 import (
 	"bytes"

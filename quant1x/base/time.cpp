@@ -1,4 +1,7 @@
-﻿#include <quant1x/base/time.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <quant1x/base/time.h>
 
 #include <chrono>
 #if __cpp_lib_chrono < 201907L

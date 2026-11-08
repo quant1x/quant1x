@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // 运行多个 Vyukov MPMC 工作负载采样, 并将每次运行的 ops/sec 写入 CSV. 
 #include <iostream>
 #include <fstream>

@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #include <quant1x/runtime/scheduler.h>
 
 static thread_local AsyncScheduler* current_scheduler_ptr = nullptr;

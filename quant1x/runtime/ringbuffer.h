@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // Vyukov 有界 MPMC 队列的 C++17 头文件单文件(模板)
 // 实现说明(中文):
 // - 基于每个槽位的序号(per-slot sequence)以及原子性的入队/出队索引实现无锁并发

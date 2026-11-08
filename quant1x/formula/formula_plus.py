@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-# Copyright (c) Quant1X <wangfengxy@sina.cn>.
-# Licensed under the MIT License.
+# -*- coding: UTF-8 -*-
+# Copyright (C) 2026 Quant1X Team
+# SPDX-License-Identifier: MIT
 
 # MyTT 麦语言-通达信-同花顺指标实现     https://github.com/mpquant/MyTT
 # 高级函数版本, 本文件函数计算结果经过验证完全正确, 可以正常使用, 但代码比较复杂, 做为进阶使用. 

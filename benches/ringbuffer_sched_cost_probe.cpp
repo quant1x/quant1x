@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // 调度原语开销探针: sleep_for / yield / Sleep(1) 的真实耗时
 //
 // 存在理由: 这是定位"Windows x86_64 上 C++ 比 Rust 慢数倍"的关键工具.

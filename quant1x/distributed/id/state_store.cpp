@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // 文件状态存储的实现
 //
 // 跨语言一致性: 文件格式、字节序、CRC 校验与 Go/Python/Rust 完全一致,

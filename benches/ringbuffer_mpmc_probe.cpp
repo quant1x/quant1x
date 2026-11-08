@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // Vyukov MPMC 队列的多线程争抢探针 (不依赖 Google Benchmark, 单文件可直接 cl / clang-cl 编译)
 //
 // 存在理由: scripts/msvc_mini_bench.bat 的单线程消融测不出缓存行争用. 2026-09 定位

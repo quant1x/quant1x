@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 use std::collections::VecDeque;
 use std::net::{Shutdown, SocketAddr};
 use std::sync::{Arc, Mutex, Weak};

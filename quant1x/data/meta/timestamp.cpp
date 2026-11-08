@@ -1,4 +1,7 @@
-﻿#include "timestamp.h"
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include "timestamp.h"
 #include <quant1x/config/config.h>
 #include <quant1x/base/time.h>
 

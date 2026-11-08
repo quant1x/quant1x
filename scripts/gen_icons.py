@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
-# Copyright (C) 2026 Quant1X <wangfengxy@sina.cn>
-# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Quant1X Team
+# SPDX-License-Identifier: MIT
+
 """由根目录 logo.png 生成标准 app 图标与网站图标.
 
 用法::

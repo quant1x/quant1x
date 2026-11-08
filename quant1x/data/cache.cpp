@@ -1,4 +1,7 @@
-﻿#include "cache.h"
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include "cache.h"
 #include <quant1x/base/filesystem.h>
 #include <algorithm>
 #include <cctype>

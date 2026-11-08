@@ -1,4 +1,7 @@
-﻿#pragma once
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#pragma once
 #include <cmath>
 #ifndef QUANT1X_CONTRIB_DATA_TDX_HELPERS_H
 #define QUANT1X_CONTRIB_DATA_TDX_HELPERS_H 1

@@ -1,8 +1,5 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// tdx/instruments - TDX 证券列表缓存加载与初始化
-// 对齐 Python contrib/data/tdx/instruments.py 与 Rust instruments.rs / C++ instruments.cpp
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 package tdx
 

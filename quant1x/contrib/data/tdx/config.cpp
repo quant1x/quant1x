@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #include <quant1x/contrib/data/tdx/config.h>
 #include <quant1x/contrib/data/tdx/level1/std/hello.h>
 #include <quant1x/io/base.h>

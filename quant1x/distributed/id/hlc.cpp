@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // 混合逻辑时钟 (HLC) 的实现
 #include <quant1x/distributed/id/hlc.h>
 

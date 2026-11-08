@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #include "strategy-no0.h"
 #include <quant1x/contrib/data/tdx/bar.h>
 #include <quant1x/contrib/data/tdx/level1/std/security_quote.h>

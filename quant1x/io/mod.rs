@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 pub mod connection_pool;
 pub mod endpoint;
 pub mod operation_handler;

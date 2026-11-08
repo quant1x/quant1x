@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // test-round_up_to_power_of_two.cpp
 // 简单测试 round_up_to_power_of_two 实现（属于 tests，遵循 tests/CMakeLists.txt 约定）
 #include <iostream>

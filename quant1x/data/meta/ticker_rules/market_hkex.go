@@ -1,7 +1,5 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// HKEX 香港交易所规则, 与 Python market_hkex.py 对齐
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 package ticker_rules
 

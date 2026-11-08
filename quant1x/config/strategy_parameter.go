@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 package config
 
 // StrategyParameter mirrors key fields from C++ StrategyParameter

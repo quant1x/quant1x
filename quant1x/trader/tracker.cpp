@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // 执行交易流程
 // 1. 同步快照
 // 2. 输出有信号可交易的全部标的

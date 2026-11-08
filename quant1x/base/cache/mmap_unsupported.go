@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 //go:build !windows && !aix && !darwin && !dragonfly && !freebsd && !linux && !netbsd && !openbsd && !solaris
 // +build !windows,!aix,!darwin,!dragonfly,!freebsd,!linux,!netbsd,!openbsd,!solaris
 

@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #include <quant1x/backtest/backtest.h>
 #include <quant1x/backtest/stats.h>
 

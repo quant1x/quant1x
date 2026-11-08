@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #![cfg(feature = "vyukov")]
 
 // 针对 Vyukov 风格有界 MPMC 队列实现的特性门控测试. 

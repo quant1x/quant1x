@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // 相对包含路径: 从 examples 目录到 header 的相对路径
 #include "../quant1x/encoding/yaml.h"
 #include "test-config.h"

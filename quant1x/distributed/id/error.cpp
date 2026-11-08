@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // 分布式 ID 错误类型的实现 (消息文本对齐 Rust Error 的 Display 输出)
 #include <quant1x/distributed/id/error.h>
 

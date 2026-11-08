@@ -1,8 +1,5 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// datasource — 通达信数据源实现, 与 Python contrib/data/tdx/datasource.py 对齐
-// 实现 DataHandler trait, 作为通达信行情数据的统一入口
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use crate::data::datasource::{DataHandler, PlateCategory};
 use crate::data::meta::exchange::Exchange;

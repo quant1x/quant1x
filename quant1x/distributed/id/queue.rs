@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 //! ID 队列 (对应 Go Queue, 底层复用 runtime::Queue 即 Vyukov 有界 MPMC 队列)
 //!
 //! 语义对齐 Go:

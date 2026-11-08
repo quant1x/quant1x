@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // ID 生成器的实现
 #include <quant1x/distributed/id/generator.h>
 

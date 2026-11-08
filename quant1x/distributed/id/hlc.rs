@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 //! 混合逻辑时钟 (HLC, 对应 Go HLC) 与构建器 (对应 Go Option)
 
 use std::path::PathBuf;

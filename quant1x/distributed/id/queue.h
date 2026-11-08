@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // ID 队列 (对应 Go Queue, Python queue.py, Rust queue.rs)
 //
 // 底层复用 C++ 基建 runtime::ringbuffer::queue (Vyukov 有界 MPMC 队列).

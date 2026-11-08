@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // Vyukov 有界 MPMC 队列 (quant1x/runtime/ringbuffer.h) 的 C++ 基准测试
 // 对应 Rust 版本: benches/vyukov_bench.rs (Criterion), 使用 Google Benchmark.
 //

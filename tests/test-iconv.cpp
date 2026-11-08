@@ -1,4 +1,7 @@
-﻿#include <iconv.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <iconv.h>
 #include <iostream>
 #include <string.h>
 #include <stdlib.h>

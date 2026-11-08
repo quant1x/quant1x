@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #include "rule_engine.h"
 #include <spdlog/spdlog.h>
 

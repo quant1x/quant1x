@@ -1,10 +1,5 @@
-// -*- coding: utf-8 -*-
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// TDX helpers — 工具函数
-// 对应 Python quant1x/contrib/data/tdx/helpers.py
-// 对应 C++   quant1x/contrib/data/tdx/helpers.h
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use std::sync::atomic::{AtomicU32, Ordering};
 

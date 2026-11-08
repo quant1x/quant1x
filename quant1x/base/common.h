@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #pragma once
 #ifndef QUANT1X_BASE_COMMON_H
 #define QUANT1X_BASE_COMMON_H 1

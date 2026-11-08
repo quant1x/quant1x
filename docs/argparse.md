@@ -1,4 +1,4 @@
-﻿argparse（Go）使用说明
+argparse（Go）使用说明
 =====================
 
 本文档描述项目内 Go 版 argparse 的用法与行为约定。

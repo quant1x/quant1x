@@ -1,4 +1,7 @@
-﻿#include <quant1x/base/api.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <quant1x/base/api.h>
 #include <quant1x/base/strings.h>
 #include <quant1x/base/util.h>
 #include <quant1x/base/filesystem.h>

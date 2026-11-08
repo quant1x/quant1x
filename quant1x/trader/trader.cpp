@@ -1,4 +1,7 @@
-﻿#include <cpr/cpr.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <cpr/cpr.h>
 #include <quant1x/config/config.h>
 #include <quant1x/data/meta/exchange.h>
 #include <quant1x/data/market.h>

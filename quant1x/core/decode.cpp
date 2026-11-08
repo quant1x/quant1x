@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #include "decode.h"
 #include "defaults.h"
 #include <yaml-cpp/yaml.h>

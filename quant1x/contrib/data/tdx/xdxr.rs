@@ -1,8 +1,5 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// xdxr — 除权除息数据缓存读写，与 Python contrib/data/tdx/xdxr.py 对齐
-// 作为 DataAdapter 的 Rust 实现，负责网络拉取、本地 CSV 缓存和加载。
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use std::sync::Arc;
 

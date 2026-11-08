@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
-# Copyright (c) Quant1X <wangfengxy@sina.cn>.
-# Licensed under the MIT License.
+# Copyright (C) 2026 Quant1X Team
+# SPDX-License-Identifier: MIT
+
 """分布式 ID 测试 (对齐 Go id_test.go / Rust tests.rs 语义).
 
 运行: python -m unittest quant1x.distributed.id.tests

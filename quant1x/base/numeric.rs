@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 pub fn change_rate(base: f64, current: f64) -> f64 {
     if base == 0.0 {
         0.0

@@ -1,4 +1,7 @@
-﻿// unit test for lazy daily sink (self-contained)
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+// unit test for lazy daily sink (self-contained)
 #include <quant1x/test/test.h>
 #include <quant1x/base/strings.h>
 #include <quant1x/base/filesystem.h>

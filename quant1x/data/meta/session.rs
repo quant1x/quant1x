@@ -1,8 +1,5 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// 交易时段管理 - Rust 实现
-// 对应 Python 版 quant1x/data/meta/session.py
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use std::cmp::min;
 use std::collections::HashMap;

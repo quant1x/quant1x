@@ -1,4 +1,7 @@
-﻿#include <quant1x/base/simd.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <quant1x/base/simd.h>
 
 using vector_type = std::vector<double, xsimd::default_allocator<double>>;
 void sample_mean(const vector_type& a, const vector_type& b, vector_type& res)

@@ -1,4 +1,7 @@
-﻿#include <quant1x/contrib/data/tdx/datasource.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <quant1x/contrib/data/tdx/datasource.h>
 
 #include <algorithm>
 #include <cstdio>

@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 use encoding_rs::GBK;
 
 /// 将原始字节行解码为 UTF-8 Rust String. 

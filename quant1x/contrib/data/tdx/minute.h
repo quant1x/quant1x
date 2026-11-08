@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #pragma once
 #ifndef QUANT1X_TDX_MINUTE_ADAPTER_H
 #define QUANT1X_TDX_MINUTE_ADAPTER_H 1

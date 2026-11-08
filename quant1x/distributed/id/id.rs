@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 //! 64 位可排序 ID (对应 Go 的 ID)
 //!
 //! 布局: `elapsed(41bit) << 22 | nodeID(workerBits) << seqBits | seq(seqBits)`

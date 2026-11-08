@@ -1,9 +1,5 @@
-// -*- coding: utf-8 -*-
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// TDX command — 行情指令定义
-// 对应 Python quant1x/contrib/data/tdx/command.py
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 // ============================================================
 // 行情类型

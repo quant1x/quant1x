@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 use once_cell::sync::Lazy;
 use std::collections::BTreeMap;
 use std::collections::HashSet;

@@ -1,4 +1,7 @@
-﻿// macOS 特有宏定义必须放在最前面
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+// macOS 特有宏定义必须放在最前面
 #ifdef __APPLE__
 #define _DARWIN_C_SOURCE
 #include <fcntl.h>

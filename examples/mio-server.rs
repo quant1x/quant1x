@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use mio::net::{TcpListener, TcpStream};
 use mio::{Events, Interest, Poll, Token};

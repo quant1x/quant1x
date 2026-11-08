@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 function d(t) {
     var e, i, n, r, a, o, s, l = (arguments, 864e5),
         u = 7657,

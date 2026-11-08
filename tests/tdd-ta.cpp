@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #include <gtest/gtest.h>
 #include <quant1x/ta/ma.h>
 #include <quant1x/ta/ema.h>

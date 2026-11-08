@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 //! ID 发号器 (Rust 移植, 对应 Go quant1x/distributed/id)
 //!
 //! 提供 64 位可排序 ID, 基于混合逻辑时钟 (HLC) 与可选的状态持久化

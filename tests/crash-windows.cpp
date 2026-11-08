@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 //#define BACKWARD_HAS_DWARF 0
 //#define BACKWARD_SYSTEM_UNKNOWN 0
 //#define BACKWARD_SYSTEM_LINUX 0

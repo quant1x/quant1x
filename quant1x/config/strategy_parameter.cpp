@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #include <quant1x/config/strategy_parameter.h>
 #include <quant1x/contrib/data/tdx/instruments.h>
 #include <quant1x/data/meta/timestamp.h>

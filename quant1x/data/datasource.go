@@ -1,4 +1,7 @@
-﻿package data
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+package data
 
 import (
 	_ "unsafe" // for go:linkname

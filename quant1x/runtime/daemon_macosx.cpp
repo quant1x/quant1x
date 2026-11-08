@@ -1,4 +1,7 @@
-﻿#include <dirent.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <dirent.h>
 #include <fcntl.h>
 #include <mach-o/dyld.h>
 #include <pwd.h>

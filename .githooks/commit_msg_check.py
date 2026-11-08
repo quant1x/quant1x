@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-# Copyright (C) 2026 Quant1X <wangfengxy@sina.cn>
-# SPDX-License-Identifier: AGPL-3.0-only
+# -*- coding: UTF-8 -*-
+# Copyright (C) 2026 Quant1X Team
+# SPDX-License-Identifier: MIT
 
 """commit-msg 校验：提交信息编码完整性检查（拒绝乱码/损坏文本）。
 

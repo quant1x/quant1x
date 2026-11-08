@@ -1,4 +1,7 @@
-﻿#include <quant1x/base/safe.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <quant1x/base/safe.h>
 #include <chrono>
 #include <cstdlib>
 #include <thread>

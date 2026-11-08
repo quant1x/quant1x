@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 package cstruct
 
 func Pack(obj IStruct) ([]byte, error) {

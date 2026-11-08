@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // Vyukov 有界 MPMC 队列演示: 多生产者/多消费者并发生产消费并统计吞吐
 //
 // 本文件已注册为 CTest 用例 (见 examples/CMakeLists.txt), 因此除打印统计信息外

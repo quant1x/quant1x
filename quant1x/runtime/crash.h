@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #pragma once
 #ifndef API_CRASH_HANDLER_H
 #define API_CRASH_HANDLER_H 1

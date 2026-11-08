@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 use crate::data::cache;
 use crate::data::meta::exchange::Exchange;
 use crate::data::meta::session;

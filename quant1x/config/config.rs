@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 #![allow(dead_code)]
 use serde::{Deserialize, Serialize};
 use serde_yaml;

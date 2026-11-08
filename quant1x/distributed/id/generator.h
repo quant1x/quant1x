@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // ID 生成器 (对应 Go Generator, Python generator.py, Rust generator.rs)
 //
 // 由 HLC 提供 (physical, seq), 拼装节点编号生成 64 位 ID.

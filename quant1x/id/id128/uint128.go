@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // Package id 提供 128 位无符号整数和基于 HLC 的 ID 生成器。
 package id128
 

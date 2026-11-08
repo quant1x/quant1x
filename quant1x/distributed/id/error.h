@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // 分布式 ID 的统一错误类型 (对应 Rust distributed/id/error.rs, Go 包内 error 使用)
 //
 // 说明(中文):

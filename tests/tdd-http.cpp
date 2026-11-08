@@ -1,4 +1,7 @@
-﻿#include <quant1x/test/test.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <quant1x/test/test.h>
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include <httplib.h>
 #include <cpr/cpr.h>

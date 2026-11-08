@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 //! 异步调度器模块
 //!
 //! 该模块提供一个轻量的 cron 风格调度器 `AsyncScheduler`, 用于在运行时调度周期性任务. 

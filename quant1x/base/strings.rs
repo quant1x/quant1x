@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // Lightweight Rust implementations mirroring quant1x std strings helpers
 
 /// Convert ASCII letters to lower-case; leaves other characters unchanged.

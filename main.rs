@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 use clap::{Arg, ArgAction, Command};
 
 fn build_version_info() -> String {

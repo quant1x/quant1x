@@ -1,4 +1,7 @@
-﻿#include <quant1x/base/api.h>
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
+#include <quant1x/base/api.h>
 #include <chrono>
 #include <indicators/progress_bar.hpp>
 #include <thread>

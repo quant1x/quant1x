@@ -1,7 +1,5 @@
-// Copyright (c) Quant1X <wangfengxy@sina.cn>.
-// Licensed under the MIT License.
-//
-// SSE 上海证券交易所规则 — 与 Python data/meta/ticker_rules/market_sse.py 对齐
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
 
 use super::rule::{CodeRule, RulePrefix};
 use super::super::exchange::Exchange;

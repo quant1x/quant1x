@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Quant1X Team
+// SPDX-License-Identifier: MIT
+
 // 64 位可排序分布式 ID (对应 Go distributed/id/id.go, Python id.py, Rust id.rs)
 //
 // 位布局 (64 位, 大端):
