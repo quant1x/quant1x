@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-11-08
+### Changed
+- fix[multi]: 修复源代码的版权信息
+- release version 0.8.3
+
 ## [0.8.2] - 2026-11-03
 ### Changed
 - fix[md]: 调整logo现实的尺寸, 居中
@@ -2712,7 +2717,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.2...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.3...HEAD
+[0.8.3]: https://codeberg.org/quant1x/quant1x/compare/v0.8.2...v0.8.3
 [0.8.2]: https://codeberg.org/quant1x/quant1x/compare/v0.8.1...v0.8.2
 [0.8.1]: https://codeberg.org/quant1x/quant1x/compare/v0.8.0...v0.8.1
 [0.8.0]: https://codeberg.org/quant1x/quant1x/compare/v0.7.85...v0.8.0
