@@ -1,3 +1,14 @@
+# Quant1X 项目 Rust 工具链锁定
+#
+# 固定版本以保证开发、CI 与生产构建的一致性。
+# 安装/切换由 rustup 自动完成：首次执行 cargo 命令时若本地缺失该工具链会自动下载。
 [toolchain]
-channel = "1.98.1"
+# 编译器版本（1.100.0 起完整支持 edition 2024）
+channel = "1.100.0"
+# 组件：格式化、静态检查与语言服务器
+# rust-analyzer 必须与编译器同版本：它内置的 proc-macro-srv 要读宏 crate 的 metadata，
+# 版本错一天就会报 invalid metadata version。由 rustup 随工具链安装，编辑器指向
+# $CARGO_HOME/bin/rust-analyzer.exe 即可随 toolchain 自动切换。
+components = ["rustfmt", "clippy", "rust-analyzer"]
+# 最小安装，按需补齐目标平台与组件
 profile = "minimal"
