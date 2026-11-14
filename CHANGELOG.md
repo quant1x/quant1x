@@ -3,6 +3,38 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.7] - 2026-11-14
+### Changed
+- refactor[multi]：合并 id 目录并将 id64/id128 迁移到 distributed
+  - 变更概述：将 quant1x/id/id64、quant1x/id/id128 迁移到
+    quant1x/distributed/ 下，与 distributed/id 同级；删除仅含空
+    __init__.py 的 quant1x/id；Java 测试迁移到 tests/distributed/id64、
+    tests/distributed/id128
+  - 包路径：Python 改为 quant1x.distributed.id64/id128；Go import 改为
+    github.com/quant1x/quant1x/quant1x/distributed/id64/id128（包名不变）；
+    Java package 改为 quant1x.distributed.id64/id128，测试 package 改为
+    tests.distributed.id64/id128
+  - Java 可见性：为支持 tests.* 包下的白盒测试，公开 FileStateStore、
+    PersistentState 及测试所需方法，公开 HLC.PAYLOAD_BITS 并新增
+    HLC.sequence()
+  - 涉及语言与文件范围：Python/Go/Java 的 ID 模块与 Java 测试；C++/Rust 的
+    quant1x/distributed/id 未修改
+  - 语义一致性说明：ID 位布局、编码算法、状态文件格式与公开语义均未改变，
+    仅目录、包名与 import 路径变化；旧路径属于破坏性变更
+  - 验证方式：python -m unittest quant1x.distributed.id64.id_test
+    quant1x.distributed.id128.id_test（17 项通过）；go test
+    ./quant1x/distributed/...（id/id64/id128 全通过）；mvn -q -Dtest=IdTest
+    test（17 项通过）
+- docs[multi]：调整协作规范，补充需求/Issue 与 temp 规则
+  - CONTRIBUTING：补充目录 README 与模块关系要求、需求与 Issue 流程、
+    temp/ 使用规范，并将版本发布规则顺延为第 9 节
+  - AGENTS：同步 temp/ 禁止外部写入、配套产物同目录、工具链产物例外、
+    Issue 确认步骤与 README 关系要求
+  - README：更新分布式 ID 文档索引到 quant1x/distributed/id64、id128
+  - 语义一致性说明：仅文档调整，不修改任何语言实现、构建配置或运行时行为
+  - 验证方式：git diff --check 通过
+- release version 0.8.7
+
 ## [0.8.6] - 2026-11-14
 ### Changed
 - docs[multi]：补齐 fast-cpp-csv-parser 许可证声明与第三方归属
@@ -2844,7 +2876,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.6...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.7...HEAD
+[0.8.7]: https://codeberg.org/quant1x/quant1x/compare/v0.8.6...v0.8.7
 [0.8.6]: https://codeberg.org/quant1x/quant1x/compare/v0.8.5...v0.8.6
 [0.8.5]: https://codeberg.org/quant1x/quant1x/compare/v0.8.4...v0.8.5
 [0.8.4]: https://codeberg.org/quant1x/quant1x/compare/v0.8.3...v0.8.4
