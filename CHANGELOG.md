@@ -3,6 +3,53 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.6] - 2026-11-14
+### Changed
+- docs[multi]：补齐 fast-cpp-csv-parser 许可证声明与第三方归属
+  - 变更概述：恢复 quant1x/io/csv-reader.h 的 BSD-3 版权头与完整条款，标注
+    衍生来源及 Quant1X 修改内容；为 csv-reader.md 增加归属说明；新增
+    THIRD_PARTY_NOTICES.md 汇总 fast-cpp-csv-parser、third_party 组件与
+    Conan 依赖的许可证；README 许可证章节补充 MIT 例外；CMake 安装规则
+    增加 LICENSE、第三方声明与 third_party/LICENSE.* 的安装
+  - 涉及语言与文件范围：C++ 头文件与文档、CMake 安装规则；涉及
+    quant1x/io/csv-reader.h、quant1x/io/csv-reader.md、THIRD_PARTY_NOTICES.md、
+    README.md、CMakeLists.txt；未修改 third_party 下任何文件
+  - 语义一致性说明：仅版权声明、许可证文本与安装规则变化，解析代码、
+    接口、类型命名与 I/O 契约均未改变
+  - 验证方式：对 csv-reader.h 去注释后做 token 级对比，解析实现与上游
+    fast-cpp-csv-parser 574a9fe 一致；CMake 配置通过，生成的安装脚本包含
+    share/licenses/quant1x 与 third_party 许可证目录
+- chore[rust]：限制 crates.io 发布包为 Rust 源码与必要文档
+  - 变更概述：将 Cargo.toml 的 exclude 黑名单改为 include 白名单，只打包
+    Cargo 元数据、README/LICENSE/THIRD_PARTY_NOTICES、main.rs、
+    quant1x/**/*.rs、tools 下的两个 bin 与 benches/vyukov_bench.rs
+  - 涉及语言与文件范围：Rust 打包配置，仅 Cargo.toml
+  - 语义一致性说明：仅改变发布包内容，不修改任何 Rust 源码、特性开关、
+    二进制/基准目标或运行时行为
+  - 验证方式：cargo package --list 输出 122 个文件，除 Cargo 元数据与
+    根目录文档外全部为 .rs；cargo package --no-verify 成功生成
+    223 KiB 压缩包；examples/tests 等未包含文件按预期被忽略
+- chore[python]：限制 PyPI 发布包为 Python 源码与打包元数据
+  - 变更概述：pyproject 关闭 setuptools_scm 的自动包数据收集，显式排除
+    md/java/ipynb/proto/C++/Go/Rust/Zig 源码与字体等非 Python 文件；
+    MANIFEST.in 增加包内与根目录排除规则，包内仅保留 .py，根目录仅保留
+    README、LICENSE、pyproject 等打包必需文件
+  - 涉及语言与文件范围：Python 打包配置，涉及 pyproject.toml、MANIFEST.in
+  - 语义一致性说明：仅改变 sdist/wheel 内容，不修改任何 Python 源码、
+    依赖声明或导入行为
+  - 验证方式：清理 quant1x.egg-info 后执行 python -m build：
+    wheel 175 个文件（171 个 .py + dist-info），sdist 185 个文件
+    （171 个 .py + README/LICENSE/pyproject/MANIFEST/PKG-INFO 等元数据），
+    不再包含 C++/Go/Rust/Java/Zig、文档、notebook、字体或图片
+- chore[multi]：删除已由 foundations 重构替代的发布脚本
+  - 变更概述：删除根目录 publish.sh、publish.ps1、publish.bat；发布流程已
+    迁移到 foundations 的 Python 实现，旧脚本不再维护
+  - 涉及语言与文件范围：仅删除三个发布辅助脚本，不涉及源码与构建配置
+  - 语义一致性说明：不改变任何语言的实现、接口、构建产物或运行时行为
+  - 验证方式：全仓库检索确认除 CHANGELOG 历史记录外无 publish.* 引用；
+    Python 打包配置中对应的 exclude 项已在上一提交移除
+- release version 0.8.6
+
 ## [0.8.5] - 2026-11-14
 ### Changed
 - docs[multi]：新增构建指南并补充临时文件目录约束
@@ -2797,7 +2844,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.5...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.6...HEAD
+[0.8.6]: https://codeberg.org/quant1x/quant1x/compare/v0.8.5...v0.8.6
 [0.8.5]: https://codeberg.org/quant1x/quant1x/compare/v0.8.4...v0.8.5
 [0.8.4]: https://codeberg.org/quant1x/quant1x/compare/v0.8.3...v0.8.4
 [0.8.3]: https://codeberg.org/quant1x/quant1x/compare/v0.8.2...v0.8.3
