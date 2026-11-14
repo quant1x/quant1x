@@ -41,6 +41,7 @@ global-exclude *.ttf
 # 第三方 vendored 代码（Go/C++）不发布，其 LICENSE 也不必随之进入 sdist
 global-exclude LICENSE *.LICENSE
 
-# 4) 元数据依赖：README 用于生成 PKG-INFO，LICENSE 为许可证文件，必须保留
+# 4) 元数据与合规声明：README 用于生成 PKG-INFO，LICENSE 与第三方声明随包发布，必须保留
 include README.md
 include LICENSE
+include THIRD_PARTY_NOTICES.md

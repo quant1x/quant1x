@@ -8,9 +8,10 @@ dynamic = ["version"]  # 仅保留 version 为动态（由 setuptools_scm 提供
 description = "Quant1X量化研究"
 readme = {file = "README.md", content-type = "text/markdown"}
 # PEP 639：SPDX 表达式 + 许可证文件白名单（默认 glob 会连 quant1x/ 下
-# 第三方 vendored 代码的 LICENSE 一起收进 sdist，而那些代码本身并不发布）
+# 第三方 vendored 代码的 LICENSE 一起收进 sdist，而那些代码本身并不发布）。
+# 白名单内的文件会随 wheel 落到 dist-info/licenses/，供使用者查阅
 license = "MIT"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 # PEP 621 authors → core metadata: setuptools 将带 email 的条目映射到 Author-email，
 # 仅含 name 的条目映射到 Author。同一作者分两条声明以同时填充 Author 与 Author-email。
 # 分两条记录，是为了pip show时能够同时显示 Author 与 Author-email，如果只写一条带 email
