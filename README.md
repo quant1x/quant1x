@@ -475,6 +475,7 @@ fn main() {
 
 | 分类 | 文档 |
 |---|---|
+| 构建指南 | [BUILDING.md](BUILDING.md) |
 | 架构与开发规范 | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | AI 协作规则 | [AGENTS.md](AGENTS.md) |
 | 数据字典（数据项与更新时序） | [docs/README.md](docs/README.md) |

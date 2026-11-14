@@ -33,6 +33,9 @@ out/
 *build*/
 cmake-build*/
 
+# 临时工作目录（不跟踪）：测试性代码、一次性脚本、抓取数据与中间产物
+temp/
+
 # vcpkg specific
 vcpkg_installed/
 

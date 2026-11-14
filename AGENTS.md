@@ -20,6 +20,10 @@
 - Java 测试文件的 `package` 必须与 `tests/` 作为源码根目录时的目录层级一致；不应额外增加 `quant1x` 顶层包，但也不能省略 `tests` 根层级，例如 `tests/distributed/id` 对应 `package tests.distributed.id`
 - 若 IDE/编译器提示 `The declared package "distributed.id" does not match the expected package "tests.distributed.id"`，这是错误配置；必须修正为 `tests` 目录根层级与 package 一致，并禁止在 Java 测试里人为多加 `quant1x.` 这一层
 - 任何新增 Java 类/测试都必须遵循“模块目录 == package 层级（相对 tests 根目录）”的规则，避免出现 `quant1x.distributed.id`、`distributed.id` 这种与 `tests/` 根层级不一致的命名
+- **测试性代码与临时文件必须放入仓库根目录的 `temp/`**：为验证、复现、调试、抓取或导出而临时创建的脚本、程序、数据、日志与中间产物，一律不得散落在源码目录、仓库根或其他位置
+- **`temp/` 内路径必须复刻模块层级**：临时产物按其在仓库中的相对路径逐级存放，不得扁平化或改名，例如验证 `quant1x/runtime/ringbuffer.rs` 放入 `temp/quant1x/runtime/`，验证 `tests/tdd-bars.cpp` 放入 `temp/tests/`
+- **`temp/` 不纳入版本跟踪**：该目录已在 `.gitignore` 中忽略，不得提交其中的任何内容，也不得在交付物、文档或提交信息中引用 `temp/` 路径
+- 本条仅约束临时性产物；需要入库的正式测试用例与样本仍按项目约定放在源码对应位置（见 `tests/README.md`），不得塞进 `temp/`
 
 ## 三、命名规则
 
