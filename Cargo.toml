@@ -11,13 +11,20 @@ repository = "https://gitee.com/quant1x/quant1x"
 documentation = "https://gitee.com/quant1x/quant1x"
 
 
-# Use `exclude` only. Having both `include` and `exclude` causes Cargo to
-# ignore `exclude`, which is why vcpkg_installed/ ended up in the publish
-# list previously. Ensure vcpkg_installed is excluded so those license files
-# won't be packaged.
-exclude = [
-    "third_party/**",
-    "vcpkg_installed/**",
+# Cargo 只接受 include / exclude 之一。这里使用 include 白名单：
+# 仅发布 Rust 源码、必需的说明文档与许可证，不打包 C/C++/Python/Go、
+# 构建脚本、测试数据、图片等非 Rust 发布物。
+include = [
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/README.md",
+    "/LICENSE",
+    "/THIRD_PARTY_NOTICES.md",
+    "/main.rs",
+    "quant1x/**/*.rs",
+    "/tools/vyukov_perf.rs",
+    "/tools/vyukov_runner.rs",
+    "/benches/vyukov_bench.rs",
 ]
 
 [lib]
