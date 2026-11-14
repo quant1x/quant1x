@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.30)
 set(CMAKE_VERBOSE_MAKEFILE ON)
+# 关闭 Visual Studio 自带的 vcpkg 集成，避免其把全局 vcpkg include 路径
+# 注入编译命令，遮蔽 Conan 提供的依赖头文件。
+if (WIN32)
+    set(CMAKE_VS_GLOBALS "VcpkgEnabled=false" "VcpkgManifestInstall=false")
+endif ()
 # 加载基础 CMake 配置
 include(cmake/base.cmake)
 
@@ -32,7 +37,9 @@ endif()
 include(cmake/compile_options.cmake)
 
 # ============================================================
-# vcpkg Options/Dependencies
+# 依赖管理：Conan 2
+# 依赖由 conan install 生成 conan_toolchain.cmake 与 CMakeDeps 配置，
+# 必须在首次配置时通过 -DCMAKE_TOOLCHAIN_FILE 指定。
 # ============================================================
 add_library(third_libs INTERFACE)
 # 可选：显式链接静态版 pthread
@@ -46,64 +53,14 @@ if (MINGW OR GNU)
     set(CMAKE_MODULE_LINKER_FLAGS "-static -lpthread")
 endif ()
 
-message(STATUS "detect VCPKG")
-# 通过环境变量获取全局路径
-if (DEFINED ENV{VCPKG_ROOT})
-    file(TO_CMAKE_PATH "$ENV{VCPKG_ROOT}" VCPKG_ROOT)
-    string(REGEX REPLACE "/$" "" VCPKG_ROOT "${VCPKG_ROOT}")
-else ()
-    message(FATAL_ERROR "请设置 VCPKG_ROOT 环境变量指向全局 vcpkg 目录")
+if (NOT CMAKE_TOOLCHAIN_FILE MATCHES "conan_toolchain\\.cmake$")
+    message(FATAL_ERROR
+        "未使用 Conan 工具链配置本项目。\n"
+        "请先执行 conan install 生成依赖，再以 Conan 工具链配置，例如：\n"
+        "  conan install . -of build-msvc -pr:h conan/profiles/windows-msvc-static -pr:b default --build=missing\n"
+        "  cmake -S . -B build-msvc -DCMAKE_TOOLCHAIN_FILE=build-msvc/conan_toolchain.cmake ...")
 endif ()
-
-set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
-MESSAGE(STATUS "CMAKE_TOOLCHAIN_FILE = ${CMAKE_TOOLCHAIN_FILE}")
-
-# 修正VCPKG的installed目录
-if(MSVC OR (WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
-    set(VCPKG_INSTALLED_DIR "${PROJECT_SOURCE_DIR}/vcpkg_installed")
-else()
-    set(VCPKG_INSTALLED_DIR "${VCPKG_ROOT}/installed")
-endif()
-
-# 在 Triplet 文件中添加
-set(VCPKG_LIBRARY_LINKAGE static)
-set(VCPKG_CRT_LINKAGE static)
-#if (MSVC)
-#    message(STATUS "        MSVC_VERSION = ${MSVC_VERSION}")
-#    message(STATUS "MSVC_TOOLSET_VERSION = ${MSVC_TOOLSET_VERSION}")
-#endif ()
-# 根据平台自动选择 Triplet
-if (WIN32)
-    message("triplet windows...")
-    if (MSVC OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(VCPKG_TARGET_TRIPLET "x64-windows-static" CACHE STRING "Default Triplet for Windows" FORCE)
-    else ()
-        set(VCPKG_TARGET_TRIPLET "x64-mingw-static" CACHE STRING "Default Triplet for Windows" FORCE)
-    endif ()
-elseif (UNIX AND NOT APPLE)
-    set(VCPKG_TARGET_TRIPLET "x64-linux" CACHE STRING "Default Triplet for Linux" FORCE)
-elseif (APPLE)
-    if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
-        set(VCPKG_TARGET_TRIPLET "arm64-osx" CACHE STRING "Default Triplet for macOS" FORCE)
-    else ()
-        set(VCPKG_TARGET_TRIPLET "x64-osx" CACHE STRING "Default Triplet for macOS" FORCE)
-    endif ()
-else ()
-    message(status "other...")
-endif ()
-MESSAGE(STATUS "VCPKG_TARGET_TRIPLET = ${VCPKG_TARGET_TRIPLET}")
-
-# 设置cmake搜索路径
-set(VCPKG_LIBS_PATH "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}")
-message(STATUS "VCPKG_LIBS_PATH = ${VCPKG_LIBS_PATH}")
-set(CMAKE_PREFIX_PATH "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}")
-MESSAGE(STATUS "CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}")
-include_directories(${CMAKE_PREFIX_PATH}/include)
-link_directories(${CMAKE_PREFIX_PATH}/lib)
-set(VCPKG_INCLUDE_DIRS ${VCPKG_LIBS_PATH}/include)
-set(VCPKG_LIBRARY_DIRS ${VCPKG_LIBS_PATH}/lib)
-#target_include_directories(third_libs INTERFACE ${VCPKG_INCLUDE_DIRS})
-#target_link_directories(third_libs INTERFACE ${VCPKG_LIBRARY_DIRS})
+message(STATUS "Conan toolchain: ${CMAKE_TOOLCHAIN_FILE}")
 
 if (DEFINED ENV{MSF_RUNTIME})
     file(TO_CMAKE_PATH "$ENV{MSF_RUNTIME}" RUNTIME)
@@ -118,9 +75,9 @@ set(inner_third_party_dir "${CMAKE_SOURCE_DIR}/third_party")
 set(INNER_THIRD_PARTY_INCLUDE_DIRS ${inner_third_party_dir}/include)
 set(INNER_THIRD_PARTY_LIBRARY_DIRS ${inner_third_party_dir}/lib)
 if(WIN32)
-    link_directories(${CMAKE_PREFIX_PATH}/lib ${INNER_THIRD_PARTY_LIBRARY_DIRS})
+    link_directories(${INNER_THIRD_PARTY_LIBRARY_DIRS})
 else ()
-    link_directories(${CMAKE_PREFIX_PATH}/lib ${RUNTIME}/lib)
+    link_directories(${INNER_THIRD_PARTY_LIBRARY_DIRS} ${RUNTIME}/lib)
 endif ()
 
 message(STATUS "================== Crash Report Integration ==================")
@@ -165,44 +122,20 @@ message(STATUS "================== 基础功能库 ==================")
 # OpenSSL
 include(cmake/openssl.cmake)
 
-# zlib
-# vcpkg MinGW(x64-mingw-static) 生成的 zlib 静态库为 libzs.a, CMake 内置 FindZLIB 搜索
-# 库名为 z/zlib/zdll, 不匹配 zs, 需在 find_package 前显式指定 ZLIB_LIBRARY
-# 其余平台 vcpkg 生成的 zlib 静态库名各异: arm64-osx / x64-linux 为 libz.a,
-# MSVC(x64-windows-static) 为 zlib.lib. 统一通过 vcpkg 的 ZLIB::ZLIB 导入
-# target 链接, 避免按平台硬编码库名.
-if(DEFINED VCPKG_LIBS_PATH)
-    if(MINGW)
-        set(ZLIB_LIBRARY "${VCPKG_LIBS_PATH}/lib/libzs.a" CACHE FILEPATH "zlib library" FORCE)
-        set(ZLIB_INCLUDE_DIR "${VCPKG_LIBS_PATH}/include" CACHE PATH "zlib include dir" FORCE)
-    endif()
-endif()
-find_package(ZLIB REQUIRED)
-# MSVC 下 FindZLIB 会找到 zlib.lib, 无需手动指定 ZLIB_LIBRARY;
-# 非 MinGW 平台若 FindZLIB 未命中, 再按平台库名回退.
-if(NOT MINGW AND NOT TARGET ZLIB::ZLIB)
-    if(MSVC)
-        set(ZLIB_LIBRARY "${VCPKG_LIBS_PATH}/lib/zlib.lib" CACHE FILEPATH "zlib library" FORCE)
-    else()
-        set(ZLIB_LIBRARY "${VCPKG_LIBS_PATH}/lib/libz.a" CACHE FILEPATH "zlib library" FORCE)
-    endif()
-    set(ZLIB_INCLUDE_DIR "${VCPKG_LIBS_PATH}/include" CACHE PATH "zlib include dir" FORCE)
-    find_package(ZLIB REQUIRED)
-endif()
+# zlib（Conan 提供 ZLIB::ZLIB，无需按平台特判库名）
+find_package(ZLIB CONFIG REQUIRED)
 target_link_libraries(third_libs INTERFACE ZLIB::ZLIB)
 echo_lib_version(ZLIB ${ZLIB_VERSION})
 
 # minizip
 find_package(minizip CONFIG REQUIRED)
-# 各版本/各 triplet 的 target 名不统一: 旧包 MINIZIP::minizip / MINIZIP::minizipstatic,
-# 新包(minizip 1.3.2+)为 minizip::minizip. 生成期条件表达式在 MSVC 下无法命中
-# 目标名, 这里按实际存在的 target 依次回退.
-if(TARGET MINIZIP::minizip)
+# Conan 的 minizip 包提供 minizip::minizip；保留旧包名回退以兼容其他依赖来源
+if(TARGET minizip::minizip)
+    target_link_libraries(third_libs INTERFACE minizip::minizip)
+elseif(TARGET MINIZIP::minizip)
     target_link_libraries(third_libs INTERFACE MINIZIP::minizip)
 elseif(TARGET MINIZIP::minizipstatic)
     target_link_libraries(third_libs INTERFACE MINIZIP::minizipstatic)
-elseif(TARGET minizip::minizip)
-    target_link_libraries(third_libs INTERFACE minizip::minizip)
 else()
     message(FATAL_ERROR "minizip: 未找到可用的 CMake target")
 endif()
@@ -322,7 +255,7 @@ option(ENABLE_MIMALLOC_CHECK "Build small mimalloc_check executable that prints 
 
 if(ENABLE_MIMALLOC)
     find_package(mimalloc CONFIG REQUIRED)
-    # prefer static target when available (vcpkg provides mimalloc-static)
+    # Conan 的 mimalloc 静态包导出 target 名 mimalloc-static（共享包为 mimalloc）
     target_link_libraries(third_libs INTERFACE $<IF:$<TARGET_EXISTS:mimalloc-static>,mimalloc-static,mimalloc>)
 
     if(MIMALLOC_MODE STREQUAL "global")
@@ -1047,9 +980,8 @@ target_link_libraries(q1x PRIVATE quant1x)
 # directly into the q1x executable to ensure it is initialized as early as
 # possible on Windows (prefer static target if available).
 if(ENABLE_MIMALLOC AND MIMALLOC_MODE STREQUAL "global")
-    # prefer static target when available (vcpkg provides mimalloc-static)
-    # Prefer the static target when available. Also define MI_OVERRIDE so
-    # mimalloc will attempt to override the C allocator at runtime.
+    # Conan 的 mimalloc 静态包导出 target 名 mimalloc-static；
+    # 同时定义 MI_OVERRIDE，让 mimalloc 在运行时接管 C 分配器。
     target_link_libraries(q1x PRIVATE $<IF:$<TARGET_EXISTS:mimalloc-static>,mimalloc-static,mimalloc>)
     target_compile_definitions(q1x PRIVATE $<$<STREQUAL:${MIMALLOC_MODE},global>:MI_OVERRIDE=1>)
     message(STATUS "q1x: linking mimalloc into executable to enable global override")

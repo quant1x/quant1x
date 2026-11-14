@@ -32,11 +32,13 @@ out/
 # CMake specific
 *build*/
 cmake-build*/
+# Conan 生成的用户级预设（每次 conan install 重新生成）
+CMakeUserPresets.json
 
 # 临时工作目录（不跟踪）：测试性代码、一次性脚本、抓取数据与中间产物
 temp/
 
-# vcpkg specific
+# 历史遗留：vcpkg 已迁移到 Conan，保留忽略以防本地残留目录
 vcpkg_installed/
 
 # Rust specific

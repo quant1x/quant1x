@@ -1,0 +1,24 @@
+# Quant1X: Windows / MSVC 静态运行库（/MT）
+#
+# 用法:
+#   conan install . -of build-msvc -pr:h conan/profiles/windows-msvc-static -pr:b default --build=missing
+#
+# MSVC 版本按本机 Visual Studio 工具集调整（194 对应 VS 2022 17.14）。
+# 项目 USE_STATIC_CRT=ON，Conan 侧必须使用 static runtime，否则会出现
+# LNK2038 RuntimeLibrary mismatch。Debug 构建请复制本文件并把 build_type
+# 与 compiler.runtime_type 改为 Debug，并使用独立的构建目录。
+
+[settings]
+os=Windows
+arch=x86_64
+build_type=Release
+compiler=msvc
+compiler.version=194
+compiler.cppstd=20
+compiler.runtime=static
+compiler.runtime_type=Release
+
+[options]
+*:shared=False
+minizip/*:bzip2=False
+openssl/*:no_fips=True

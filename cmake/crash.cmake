@@ -15,7 +15,7 @@ if (WIN32)
         target_compile_definitions(third_libs INTERFACE BACKWARD_HAS_BFD=1)
     endif ()
 elseif (LINUX)
-    # vcpkg版本的libdwarf未实验成功
+    # 系统 libdwarf 未实验成功
     #target_link_libraries(third_libs PUBLIC libdwarf::dwarf)
     # #define BACKWARD_HAS_DW 1
     target_link_libraries(third_libs INTERFACE dw bfd) # apt-get install libdw-dev

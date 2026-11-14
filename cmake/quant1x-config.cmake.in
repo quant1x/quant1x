@@ -4,14 +4,18 @@ set_and_check(QUANT1X_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include")
 set_and_check(THIRD_PARTY_INCLUDE_DIR "@CMAKE_INSTALL_PREFIX@/include/third_party")
 
 include(CMakeFindDependencyMacro)
+# 依赖由 Conan 2 管理：下游需先执行 conan install，使 CMakeDeps 生成的
+# *-config.cmake 位于 CMAKE_PREFIX_PATH（或使用同一份 conan_toolchain.cmake）。
 find_dependency(Threads)
-find_dependency(OpenSSL REQUIRED)
-find_dependency(Iconv REQUIRED)
+find_dependency(OpenSSL CONFIG REQUIRED)
+find_dependency(Iconv CONFIG REQUIRED)
 find_dependency(yaml-cpp CONFIG REQUIRED)
 find_dependency(CapnProto CONFIG REQUIRED)
-find_dependency(mimalloc CONFIG REQUIRED)
+if("@HAVE_MIMALLOC@" STREQUAL "1")
+    find_dependency(mimalloc CONFIG REQUIRED)
+endif()
 find_dependency(cpr CONFIG REQUIRED)
-find_dependency(ZLIB REQUIRED)
+find_dependency(ZLIB CONFIG REQUIRED)
 #find_dependency(fmt CONFIG REQUIRED)
 # date dependency: some Clang builds (non-Windows) need date::date-tz
 # Only add this dependency when the consuming project is building with
@@ -21,10 +25,7 @@ if(NOT WIN32 AND (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_I
 endif()
 #find_dependency(spdlog CONFIG REQUIRED)
 #find_dependency(unofficial-duktape CONFIG REQUIRED)
-find_dependency(unofficial-minizip CONFIG REQUIRED)
-find_dependency(benchmark REQUIRED)
-find_dependency(Catch2 CONFIG REQUIRED)
-find_dependency(GTest CONFIG REQUIRED)
+find_dependency(minizip CONFIG REQUIRED)
 
 include("${CMAKE_CURRENT_LIST_DIR}/quant1x-targets.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/quant1x-config-version.cmake")

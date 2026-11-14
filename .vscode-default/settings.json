@@ -22,26 +22,18 @@
     // ===== CMake =====
     "cmake.launchBehavior": "reuseTerminal",
     "cmake.buildDirectory": "${workspaceFolder}/build",
+    // 依赖由 Conan 2 管理：先执行 conan install 生成 conan_toolchain.cmake。
+    // Windows 使用 MSVC（见 .vscode-windows），macOS 见 .vscode-macos。
+    // Debug 构建需要独立的 build 目录与 Debug 版依赖（见 BUILDING.md）。
     "cmake.configureSettings": {
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "${workspaceFolder}/build/conan_toolchain.cmake"
     },
-    // "cmake.configureArgs": [
-    //     "-DVCPKG_PREFER_SYSTEM_LIBS=OFF",
-    //     "-DVCPKG_MANIFEST_MODE=OFF"
-    // ],
     "cmake.buildArgs": [
         "--config",
-        "Debug"
+        "Release"
     ],
-
-    // ===== vcpkg =====
-    // triplet 与工具链路径随平台, 见 .vscode-windows / .vscode-macos
-    //"vcpkg.general.enable": true,
-    //"vcpkg.target.useStaticLib": false,
-    //"vcpkg.target.installDependencies": true,
-    //"vcpkg.target.preferSystemLibs": false,
-    //"vcpkg.target.useManifest": false,
 
     // ===== C++ 测试 (C++ TestMate) =====
     "testMate.cpp.test.advancedExecutables": [

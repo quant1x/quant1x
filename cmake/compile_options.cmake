@@ -88,6 +88,19 @@ set(quant1x_compiler_ver ${CMAKE_CXX_COMPILER_VERSION})
 set(quant1x_compiler "${quant1x_compiler_id}(${quant1x_compiler_ver})")
 message(STATUS "Compiler use: ${quant1x_compiler}")
 
+# 2.6 编译器策略校验：Windows -> MSVC，macOS -> Clang，其余 Unix -> GCC
+if (WIN32 AND NOT MSVC)
+    message(FATAL_ERROR
+        "Windows 构建统一使用 MSVC：请使用 Visual Studio 生成器"
+        "（-G \"Visual Studio 17 2022\" -A x64），当前编译器为 ${CMAKE_CXX_COMPILER_ID}")
+endif ()
+if (APPLE AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    message(FATAL_ERROR "macOS 构建统一使用 Clang，当前编译器为 ${CMAKE_CXX_COMPILER_ID}")
+endif ()
+if (UNIX AND NOT APPLE AND NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    message(FATAL_ERROR "Linux/Unix 构建统一使用 GCC，当前编译器为 ${CMAKE_CXX_COMPILER_ID}")
+endif ()
+
 # 强制告诉 CMake: C/C++ 编译器已正常工作, 无需执行测试编译
 set(CMAKE_C_COMPILER_WORKS TRUE)
 set(CMAKE_CXX_COMPILER_WORKS TRUE)
@@ -139,6 +152,8 @@ endif ()
 if (MSVC)
     # 对于MSVC编译器
     target_compile_options(global_compile_options INTERFACE /W3 /WX) # /W4显示所有警告，/WX将警告视为错误
+    # 禁用 windows.h 的 min/max 宏，避免与 std::min/std::max 冲突
+    target_compile_definitions(global_compile_options INTERFACE NOMINMAX)
 else ()
     # 对于GCC/Clang等编译器
     target_compile_options(global_compile_options INTERFACE

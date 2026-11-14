@@ -65,9 +65,9 @@ Quant1X 是一个多语言平行实现的量化交易框架，同时提供 C++�
 | Python | 3.12+ | 3.12.x |
 | Go | 1.27+ | 1.27.x |
 | Rust | 1.98.1+ | 1.98.1+（Edition 2024） |
-| C++ | C++20 | GCC 13+ / Clang 17+ / MSVC 14.3+ |
+| C++ | C++20 | Windows MSVC 14.3+ / macOS Clang 17+ / Linux GCC 13+ |
 
-C/C++ 构建另需 CMake 3.30+，推荐 Ninja 作为构建器。
+C/C++ 构建另需 CMake 3.30+ 与 Conan 2，推荐 Ninja 作为构建器。
 
 ## 项目结构
 
@@ -207,33 +207,29 @@ Options:
 
 ### 5. C/C++
 
-C/C++ 版本具备跨平台的生产能力，代码以 C++20 为目标。
+C/C++ 版本具备跨平台的生产能力，代码以 C++20 为目标，第三方依赖由 Conan 2 管理。
 
-跨平台构建（Ninja + Clang/GCC，推荐）：
+Windows（MSVC，推荐）：
 
-```shell
-mkdir -p build && cd build
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 ..
-cmake --build . --config Release
+```bat
+conan install . -of build-msvc -pr:h conan/profiles/windows-msvc-static -pr:b default -s build_type=Release --build=missing
+cmake -S . -B build-msvc -G "Visual Studio 17 2022" -A x64 ^
+      -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=build-msvc/conan_toolchain.cmake
+cmake --build build-msvc --config Release -j
+.\build-msvc\Release\q1x.exe --help
 ```
 
-Visual Studio（Windows）：
+Linux / macOS（Ninja）：
 
 ```shell
-mkdir build && cd build
-cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release ..
-cmake --build . --config Release
+conan install . -of build -pr:b default -s build_type=Release --build=missing
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake
+cmake --build build -j
+ctest --test-dir build --output-on-failure
 ```
 
-Debug 构建、安装、测试与运行：
-
-```shell
-cmake -DCMAKE_BUILD_TYPE=Debug -G Ninja -S . -B cmake-build-debug
-cmake --build cmake-build-debug --target q1x -j 18
-ninja -C cmake-build-debug install
-ctest --test-dir cmake-build-debug --output-on-failure
-./cmake-build-debug/bin/q1x --help
-```
+依赖清单、profile 管理、Debug 构建与安装说明见 [BUILDING.md](BUILDING.md)。
 
 ### 6. Python
 
@@ -325,9 +321,9 @@ rustup update                                                    # 更新工具�
 
 推荐工具链：
 
-- 编译器：GCC 14.3+ / Clang 18+ / MSVC（Visual Studio 2022，工具集 14.3+）
+- 编译器：Windows 使用 MSVC（Visual Studio 2022，工具集 14.3+）；macOS 使用 Clang；Linux/其他 Unix 使用 GCC 14.3+
 - CMake 3.30+，构建器推荐 Ninja
-- 包管理：vcpkg 或 Conan（可选）
+- 包管理：Conan 2（必需）
 
 常用依赖：OpenSSL（网络 / 加密）、protobuf（序列化）、fmt / spdlog（格式化与日志）。
 
@@ -338,16 +334,20 @@ rustup update                                                    # 更新工具�
 sudo apt update && sudo apt install -y build-essential cmake ninja-build clang pkg-config
 
 # macOS
-brew install cmake ninja llvm vcpkg
+brew install cmake ninja llvm
+
+# Conan 2
+pip install --user conan
+conan profile detect --force
 ```
 
-vcpkg 依赖安装示例：
+依赖由根目录 `conanfile.py` 声明，无需手工安装；首次执行：
 
 ```shell
-vcpkg install yaml-cpp zlib asio xtensor mimalloc spdlog fmt duktape benchmark catch2 flatbuffers capnproto
+conan install . -of build -pr:b default -s build_type=Release --build=missing
 ```
 
-protobuf 建议使用 3.21.11（更高版本依赖 abseil，会引入额外复杂度）：
+protobuf 3.21.11 在 Windows 下由 `third_party` 提供；其他平台可安装到 `$MSF_RUNTIME`（更高版本依赖 abseil，会引入额外复杂度）：
 
 ```shell
 wget https://gh-proxy.com/github.com/protocolbuffers/protobuf/releases/download/v21.11/protobuf-cpp-3.21.11.zip
@@ -374,7 +374,7 @@ cmake --build . --config Release
 
 平台注意事项：
 
-- Windows：选择 x64 构建，使用 vcpkg triplet（如 `x64-windows`）安装二进制依赖
+- Windows：选择 x64 构建，使用 MSVC 与 `conan/profiles/windows-msvc-static`（`/MT` 静态运行库）
 - Linux：容器 / CI 中固定基础镜像（如 `ubuntu:22.04`）以保证可重复构建
 - macOS：使用 Homebrew 管理依赖，注意 Apple Clang 与 LLVM Clang 的差异
 

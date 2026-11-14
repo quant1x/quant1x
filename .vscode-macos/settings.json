@@ -2,10 +2,8 @@
     // ===== Python =====
     "python-envs.defaultEnvManager": "ms-python.python:pyenv",
 
-    // ===== CMake =====
-    // CMakeLists.txt 在 DEFINED ENV{VCPKG_ROOT} 缺失时 FATAL_ERROR, 故显式给出根目录,
-    // 不依赖外部终端环境。
-    // "cmake.configureEnvironment": {
-    //     "VCPKG_ROOT": "/Users/wangfeng/runtime/vcpkg"
-    // }
+    // ===== Conan 2 =====
+    // macOS 先执行 conan profile detect，再安装依赖：
+    //   conan install . -of build -pr:b default --build=missing
+    // 配置时指定 CMAKE_TOOLCHAIN_FILE=${workspaceFolder}/build/conan_toolchain.cmake
 }

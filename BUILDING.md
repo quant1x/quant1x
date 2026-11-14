@@ -24,7 +24,8 @@ Quant1X 是**多语言平行实现**：C++、Rust、Go、Python、Java 各自独
 
 | 语言 | 版本来源文件 | 当前要求 |
 |---|---|---|
-| C/C++ | `cmake/compile_options.cmake` | C17、C++20 |
+| C/C++ | `cmake/compile_options.cmake` | C17、C++20；Windows 使用 MSVC |
+| C/C++ 依赖 | `conanfile.py`、`conan/profiles/` | Conan 2.x |
 | CMake | `CMakeLists.txt` | ≥ 3.30 |
 | Rust | `rust-toolchain.toml`、`Cargo.toml` | 工具链由 `rust-toolchain.toml` 锁定，Edition 2024 |
 | Go | `go.mod` | 以 `go` 指令声明的最低版本为准 |
@@ -39,137 +40,162 @@ Rust 工具链由 rustup 自动安装：首次在仓库内执行 `cargo` 命令�
 
 ```text
 build/          # C++ 通用构建目录（Ninja / Makefiles）
-build-msvc/     # C++ MSVC 构建目录
+build-msvc/     # C++ MSVC 构建目录（Windows 默认）
 build-clang/    # C++ Clang 构建目录
 target/         # Rust 构建目录
 build/java/     # Maven 输出目录
-vcpkg_installed/# Windows 下 vcpkg 的本地安装树
 ```
 
 临时验证脚本、抓取的数据与一次性产物请放在仓库根目录的 `temp/` 下，不要污染源码树。
 
 ---
 
-## 2. C/C++ 构建
+## 2. C/C++ 构建（Windows 使用 MSVC）
 
-C/C++ 是项目的生产实现。构建由根目录 `CMakeLists.txt` 统一驱动，子目录 `tests/`、`benches/`、`examples/` 各自追加目标。
+C/C++ 是项目的生产实现。第三方依赖统一由 **Conan 2** 获取，CMake 侧只消费 Conan 生成的工具链与 imported target，不再直接拼接依赖目录。
 
-### 2.1 依赖与环境变量
+### 2.1 前置要求
 
-CMake 配置阶段**强制要求两个环境变量**，缺失会直接报 `FATAL_ERROR`：
+| 组件 | 要求 |
+|---|---|
+| Conan | 2.x（`conan --version` 确认） |
+| CMake | ≥ 3.30 |
+| Windows | Visual Studio 2022，**统一使用 MSVC 编译** |
+| Linux / 其他 Unix | **GCC** 13+（不使用 Clang） |
+| macOS | **Clang**（Apple Clang） |
+
+编译器按平台固定：Windows → MSVC，macOS → Clang，Linux/其他 Unix → GCC；与平台不符时 CMake 配置阶段直接报错。
+
+首次使用 Conan 时生成默认 profile：
+
+```bash
+conan profile detect --force
+```
+
+环境变量 `MSF_RUNTIME` 仍然必须设置（与依赖管理器无关）：
 
 | 环境变量 | 作用 |
 |---|---|
-| `VCPKG_ROOT` | 指向 vcpkg 仓库根目录；用于加载 `vcpkg.cmake` 工具链文件 |
-| `MSF_RUNTIME` | 依赖与安装的根目录；既是 `CMAKE_INSTALL_PREFIX`，也是 protobuf 头文件的查找根（非 Windows 平台其 `lib/` 也进入链接搜索路径） |
+| `MSF_RUNTIME` | 安装前缀（`CMAKE_INSTALL_PREFIX`）；protobuf 头文件的查找根；非 Windows 平台其 `lib/` 也进入链接搜索路径 |
 
-Windows（cmd）示例：
+Windows（cmd）：
 
 ```bat
-set VCPKG_ROOT=d:/runtime/vcpkg
 set MSF_RUNTIME=d:/runtime
 ```
 
-Linux / macOS（bash）示例：
+Linux / macOS：
 
 ```bash
-export VCPKG_ROOT=$HOME/runtime/vcpkg
 export MSF_RUNTIME=$HOME/runtime
 ```
 
-vcpkg 依赖清单见根目录 `vcpkg.json`（manifest 模式）。若无网络或使用预装依赖，可关闭 manifest 模式：
+### 2.2 依赖清单
 
-```bash
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DVCPKG_MANIFEST_MODE=OFF
-```
+依赖声明在根目录 `conanfile.py`，版本固定在 Conan Center 可用版本：
 
-此时需保证 `VCPKG_INSTALLED_DIR` 对应的 triplet 目录下已装好依赖：
-
-```bash
-vcpkg install openssl libiconv zlib minizip yaml-cpp mimalloc cpr capnproto benchmark catch2 gtest
-```
-
-### 2.2 平台与 triplet
-
-CMake 会根据平台自动选择 vcpkg triplet（可用 `-DVCPKG_TARGET_TRIPLET=...` 覆盖）：
-
-| 平台 | 编译器 | triplet |
+| 包 | 版本 | CMake target |
 |---|---|---|
-| Windows | MSVC 或 Clang | `x64-windows-static` |
-| Windows | MinGW | `x64-mingw-static` |
-| Linux | GCC / Clang | `x64-linux` |
-| macOS | Apple Clang（arm64） | `arm64-osx` |
-| macOS | Apple Clang（x86_64） | `x64-osx` |
+| openssl | 3.6.4 | `OpenSSL::SSL` / `OpenSSL::Crypto` |
+| libiconv | 1.19 | `Iconv::Iconv` |
+| zlib | 1.3.2 | `ZLIB::ZLIB` |
+| minizip | 1.2.12 | `minizip::minizip` |
+| yaml-cpp | 0.9.0 | `yaml-cpp::yaml-cpp` |
+| mimalloc | 3.5.1 | `mimalloc-static`（静态包） |
+| cpr | 1.14.2 | `cpr::cpr` |
+| capnproto | 1.5.0 | `CapnProto::capnp` / `CapnProto::capnp-json` |
+| benchmark | 1.9.5 | `benchmark::benchmark` / `benchmark::benchmark_main` |
+| catch2 | 3.16.0 | `Catch2::Catch2` / `Catch2::Catch2WithMain` |
+| gtest | 1.18.0 | `GTest::gtest` / `GTest::gtest_main` / `GTest::gmock` |
 
-所有依赖按**静态链接**配置：`BUILD_SHARED_LIBS=OFF`、`VCPKG_LIBRARY_LINKAGE=static`、`VCPKG_CRT_LINKAGE=static`；Windows 默认 `USE_STATIC_CRT=ON`。使用 GNU 工具链（GCC / MinGW）时会额外追加 `-static -lpthread`。
+统一使用静态库（`*:shared=False`）。两点例外/说明：
 
-Windows 使用 MSVC 或 Clang 时，vcpkg 安装树会落在仓库内的 `vcpkg_installed/`；其他平台使用 `$VCPKG_ROOT/installed`。
+- **protobuf 不走 Conan**：`third_party` 已内置 3.21.11 的头文件与静态库，`cmake/protobuf.cmake` 保持原有查找方式（Windows 取 `third_party/lib`，其他平台取 `${MSF_RUNTIME}/lib`）。
+- **minizip 为 1.2.12**：Conan Center 未提供 1.3.x；现有代码只使用 `unz*` API，兼容。
+- **openssl 关闭 FIPS 模块**（`no_fips=True`）：项目不使用 FIPS，关闭后显著缩短源码构建时间。
 
-### 2.3 protobuf 的独立安装
+### 2.3 Windows / MSVC profile
 
-protobuf 不走 vcpkg 清单，而是按固定版本手工安装到 `MSF_RUNTIME`：
+Windows 固定使用 `conan/profiles/windows-msvc-static`：
 
-- `cmake/protobuf.cmake` 先尝试从 `${MSF_RUNTIME}/include/google/protobuf/port_def.inc` 解析版本号；
-- 库按名字直接链接：MSVC 为 `libprotobuf`（Debug 为 `libprotobufd`），Clang/Linux/GCC 为 `protobuf`（部分平台 Debug 为 `libprotobufd`）。
+```ini
+[settings]
+os=Windows
+arch=x86_64
+build_type=Release
+compiler=msvc
+compiler.version=194
+compiler.cppstd=20
+compiler.runtime=static
+compiler.runtime_type=Release
 
-推荐 3.21.x 系列：更高版本引入 abseil 依赖，会显著增加构建复杂度。
-
-### 2.4 配置
-
-Windows + MinGW（当前仓库 `build/` 使用的组合）：
-
-```bat
-cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+[options]
+*:shared=False
+minizip/*:bzip2=False
+openssl/*:no_fips=True
 ```
 
-Windows + Visual Studio 2022：
+要点：
+
+- `compiler.runtime=static` 对应 `/MT`，与项目 `USE_STATIC_CRT=ON`（`cmake/compile_options.cmake`）必须保持一致，否则会出现 `LNK2038 RuntimeLibrary mismatch`；
+- `compiler.version` 按本机 VS 工具集调整（`cl` 版本 19.4x 对应 `194`）；
+- **Debug 构建**：复制该 profile，把 `build_type` 与 `compiler.runtime_type` 改为 `Debug`，并使用独立构建目录（如 `build-msvc-debug`）。同一构建目录不能混用 Debug/Release 依赖。
+
+Linux / macOS 直接使用 `conan profile detect` 生成的默认 profile，`conanfile.py` 会强制静态库选项。profile 中的编译器必须与平台策略一致（macOS 为 `apple-clang`，Linux 为 `gcc`），可用 `conan profile show` 确认。
+
+### 2.4 配置与构建
+
+Windows（MSVC，Release）：
 
 ```bat
+conan install . -of build-msvc -pr:h conan/profiles/windows-msvc-static -pr:b default -s build_type=Release --build=missing
+
 cmake -S . -B build-msvc -G "Visual Studio 17 2022" -A x64 ^
-      -DCMAKE_BUILD_TYPE=Release -DVCPKG_TARGET_TRIPLET=x64-windows-static
+      -DCMAKE_BUILD_TYPE=Release ^
+      -DCMAKE_TOOLCHAIN_FILE=build-msvc/conan_toolchain.cmake
+
+cmake --build build-msvc --config Release -j
 ```
 
-Linux / macOS（推荐 Ninja）：
+也可以直接运行封装脚本：
+
+```bat
+scripts\msvc_configure.bat
+```
+
+Linux / macOS（Ninja）：
 
 ```bash
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+conan install . -of build -pr:b default -s build_type=Release --build=missing
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake
+cmake --build build -j
 ```
 
 说明：
 
-- 未显式指定 `CMAKE_BUILD_TYPE` 时默认 `Debug`；
-- Visual Studio 是多配置生成器，构建类型在 `--config` 中指定；
-- 配置阶段会输出编译器、标准、依赖版本汇总，便于排查环境问题；
-- 已开启 `CMAKE_EXPORT_COMPILE_COMMANDS`，供 clangd / IDE 使用。
+- `CMakeLists.txt` 会校验 `CMAKE_TOOLCHAIN_FILE` 是否以 `conan_toolchain.cmake` 结尾，未通过 Conan 配置时直接报错并给出上述命令；
+- Windows 下会关闭 Visual Studio 自带的 vcpkg 集成（`VcpkgEnabled=false`）并全局定义 `NOMINMAX`，避免系统级 vcpkg 头文件注入以及 `windows.h` 的 `min/max` 宏与 `std::min/std::max` 冲突；
+- `CMAKE_BUILD_TYPE` 必须与 `conan install -s build_type=...` 一致；
+- Conan Center 没有 MSVC 静态运行库（`/MT`）的预编译包，首次 `conan install --build=missing` 会从源码构建 openssl、libiconv、libcurl、cpr 等依赖，耗时较长；后续命中本地 Conan 缓存；
+- 如需强制清理 CMake 缓存后重配，使用 `cmake --fresh`。
 
-### 2.5 构建
-
-```bash
-# 全量构建
-cmake --build build -j
-
-# 只构建主库与命令行入口
-cmake --build build --target quant1x q1x -j
-```
-
-产物位置（单配置生成器，如 Ninja / MinGW Makefiles）：
+### 2.5 构建产物
 
 | 产物 | 路径 |
 |---|---|
-| 命令 `q1x` | `build/q1x`（Windows 为 `build/q1x.exe`） |
-| 静态库 | Release 为 `build/quant1x.a`（MSVC 为 `quant1x.lib`）；Debug 带 `DEBUG_POSTFIX`，如 `quant1x-debug-gnu-win.a` |
-| 测试可执行 | `build/tests/app-*`、`catch2-*`、`gtest-*` |
-| 基准可执行 | `build/benches/benchmark-*` |
-| 示例可执行 | `build/examples/*` |
-
-Visual Studio 生成器会在配置名子目录下，如 `build-msvc/Release/q1x.exe`。
+| 命令 `q1x` | `build-msvc/Release/q1x.exe`（单配置生成器为 `build/q1x`） |
+| 静态库 | `build-msvc/Release/quant1x.lib`；单配置生成器为 `build/quant1x.a`（Debug 带 `DEBUG_POSTFIX`） |
+| 测试可执行 | `build-msvc/tests/Release/*`（单配置生成器为 `build/tests/app-*`、`catch2-*`、`gtest-*`） |
+| 基准可执行 | `build-msvc/benches/Release/benchmark-*` |
+| 示例可执行 | `build-msvc/examples/Release/*` |
 
 ### 2.6 常用 CMake 选项
 
 | 选项 | 默认 | 说明 |
 |---|---|---|
-| `CMAKE_BUILD_TYPE` | `Debug` | `Debug` / `Release` / `RelWithDebInfo` / `MinSizeRel` |
-| `USE_STATIC_CRT` | `ON` | Windows 下使用静态 CRT（`MultiThreaded`） |
+| `CMAKE_BUILD_TYPE` | `Debug` | 需与 Conan 的 `build_type` 一致 |
+| `USE_STATIC_CRT` | `ON` | MSVC 静态 CRT（`/MT`），必须与 Conan profile 的 `compiler.runtime=static` 一致 |
 | `FAST_CRON_TEST` | `OFF` | 打开后缩短 cron 测试时序，用于快速回归 |
 | `ENABLE_MIMALLOC` | `OFF` | 启用 mimalloc；默认只重载 C++ `new/delete` |
 | `MIMALLOC_MODE` | `new_delete` | 设为 `global` 时重载 C 分配器（`MI_OVERRIDE=1`） |
@@ -177,66 +203,67 @@ Visual Studio 生成器会在配置名子目录下，如 `build-msvc/Release/q1x
 
 编译策略：
 
-- Release 下自动尝试 LTO（`-flto` / `/GL`，编译器支持时启用）；
-- 指令集按编译器与架构区分：MSVC 为 Release `/arch:AVX2`、Debug `/arch:AVX`；GCC / Clang 在 x86 上追加 `-mavx -mavx2 -march=native -mtune=native`，在 arm64 上追加 `-march=native -mtune=native`；
-- **带 `-march=native` 的二进制不可跨机分发**，发布/CI 构建应在目标平台编译，或手工去掉该选项。
+- Release 下自动尝试 LTO（`/GL`，编译器支持时启用）；
+- MSVC 为 Release `/arch:AVX2`、Debug `/arch:AVX`；GCC / Clang 使用 `-march=native` 等选项；
+- 带 `-march=native` 的 GCC/Clang 二进制不可跨机分发，发布构建应在目标平台编译。
 
 ### 2.7 测试
 
-C++ 测试通过 CTest 统一驱动。`tests/CMakeLists.txt` 中只有 Catch2 目标会自动注册用例（`catch_discover_tests`）并附加整程序的回退 `add_test`；`app-*`、`gtest-*` 目标只生成可执行文件，需要直接运行：
+```bat
+rem 构建测试目标
+cmake --build build-msvc --config Release -j
 
-```bash
-# 运行全部测试
-ctest --test-dir build --output-on-failure -j 8
+rem 列出 / 运行
+ctest --test-dir build-msvc -C Release -N
+ctest --test-dir build-msvc -C Release --output-on-failure -j 8
 
-# 按名称过滤（名称以 ctest -N 输出为准）
-ctest --test-dir build -R vyukov -V
-
-# 列出所有已注册用例
-ctest --test-dir build -N
+rem 按名称过滤
+ctest --test-dir build-msvc -C Release -R tdd-bars -V
 ```
 
-也可以直接运行测试进程，便于挂调试器：
+也可以直接运行测试进程：
 
-```bash
-build/tests/catch2-tdd-bars "某个测试名"
-build/tests/app-test-ringbuffer
+```bat
+build-msvc\tests\Release\catch2-tdd-bars.exe "某个测试名"
+build-msvc\tests\Release\app-test-ringbuffer.exe
 ```
 
-注意：部分用例依赖本地数据缓存、网络或平台特性（如 `tdd-http`、`tdd-history`、crash 相关），在离线环境可能失败，属预期现象，需结合用例注释判断。
+注意：`tests/CMakeLists.txt` 只为 Catch2 目标自动注册 CTest 用例；`app-*`、`gtest-*` 目标只生成可执行文件，需要直接运行。部分用例依赖本地数据缓存、网络或平台特性，在离线环境可能失败。
 
 ### 2.8 基准测试
 
-```bash
-cmake --build build --target benchmark-vyukov_bench -j
-build/benches/benchmark-vyukov_bench --benchmark_filter=...
+```bat
+cmake --build build-msvc --config Release --target benchmark-vyukov_bench -j
+build-msvc\benches\Release\benchmark-vyukov_bench.exe
 ```
 
 `benches/` 与 Rust 侧 `benches/vyukov_bench.rs` 参数对齐，用于跨语言性能对比。
 
 ### 2.9 安装
 
-```bash
-cmake --build build -j
-cmake --install build
+```bat
+cmake --install build-msvc --config Release
 ```
 
-安装前缀固定为 `MSF_RUNTIME`（`CMAKE_INSTALL_PREFIX=${MSF_RUNTIME}`），安装内容：
+安装前缀固定为 `MSF_RUNTIME`，安装内容：
 
 - `bin/`：`q1x`
 - `lib/`：`quant1x` 静态库
 - `include/quant1x/`：项目头文件 + 生成的 `build-info.h`
 - `include/third_party/`：聚合的第三方头文件
-- `lib/cmake/quant1x/`：`quant1x-config.cmake`、`quant1x-targets.cmake`，供下游 `find_package(quant1x)` 使用
+- `lib/cmake/quant1x/`：`quant1x-config.cmake`、`quant1x-targets.cmake`
+
+下游通过 `find_package(quant1x)` 使用时，也需要先执行 `conan install` 让依赖的 config 文件位于 `CMAKE_PREFIX_PATH`（这是外部依赖管理的通用约束）。
 
 ### 2.10 新增 C/C++ 源文件
 
 根 `CMakeLists.txt` **显式列举**了全部头文件（`quant1x-headers`）与源文件（`quant1x-sources`），没有使用 `file(GLOB)`。因此：
 
-- 新增 `.cpp` 必须加入 `quant1x-sources`，否则不会参与编译；
-- 新增对外头文件必须加入 `quant1x-headers`，否则安装时可能缺失；
+- 新增 `.cpp` 必须加入 `quant1x-sources`；
+- 新增对外头文件必须加入 `quant1x-headers`；
 - 新增测试需在 `tests/CMakeLists.txt` 中按类型登记（`add_catch2_executable` / `add_gtest_executable` / `add_app_executable`）；
-- 新增基准需在 `benches/CMakeLists.txt` 中登记 `add_benchmark_executable`。
+- 新增基准需在 `benches/CMakeLists.txt` 中登记 `add_benchmark_executable`；
+- 新增第三方依赖时，在 `conanfile.py` 的 `requirements()` 中声明，并在 CMake 中链接其 imported target。
 
 ---
 
@@ -438,12 +465,14 @@ mvnw.cmd -B -DskipTests package
 
 | 现象 | 原因与处理 |
 |---|---|
-| `请设置 VCPKG_ROOT 环境变量指向全局 vcpkg 目录` | 未设置 `VCPKG_ROOT`，或指向的目录不存在 |
+| `未使用 Conan 工具链配置本项目` | 配置时未传 `-DCMAKE_TOOLCHAIN_FILE=<build>/conan_toolchain.cmake`，或尚未执行 `conan install` |
 | `NOT found ENV MSF_RUNTIME` | 未设置 `MSF_RUNTIME`；它同时是安装前缀与 protobuf 查找根 |
-| 链接阶段找不到 protobuf | protobuf 需手工安装到 `$MSF_RUNTIME`；Debug 构建在 MSVC/Clang 下需 `libprotobufd` |
-| MinGW 下 zlib 链接失败 | vcpkg 的 MinGW 静态库名为 `libzs.a`，CMake 已自动指定；如仍失败，检查 triplet 是否为 `x64-mingw-static` |
+| 链接阶段找不到 protobuf | protobuf 由 `third_party/lib`（Windows）或 `$MSF_RUNTIME/lib`（其他平台）提供；Debug 构建需 `libprotobufd` |
+| `LNK2038 RuntimeLibrary mismatch` | MSVC profile 的 `compiler.runtime` 与 `USE_STATIC_CRT` 不一致；统一为 `static`（`/MT`） |
+| CMake 报找不到 `minizip` / `Iconv` / `ZLIB` 的 config | `conan install` 未执行，或输出目录与 `CMAKE_TOOLCHAIN_FILE` 所在目录不一致 |
+| 首次 `conan install` 构建极慢 | MSVC 静态运行库无 CCI 预编译包，openssl/libiconv/libcurl 会从源码构建；属正常现象 |
 | 二进制在别的机器上报非法指令 | GCC / Clang 构建默认带 `-march=native`，需在目标平台构建或去掉该选项 |
-| `ctest` 报 `No tests were found` | 未构建测试目标，先 `cmake --build build -j` 再执行 `ctest` |
+| `ctest` 报 `No tests were found` | 未构建测试目标；先构建，VS 生成器需指定 `-C Release` |
 | Rust 报 `invalid metadata version` | `rust-analyzer` 与工具链版本不一致；让 rustup 按 `rust-toolchain.toml` 重新安装组件 |
 | Rust 基准 `running 0 tests` | `[[bench]]` 的 `harness = false` 被改动，导致 libtest 覆盖了 Criterion 的 `main` |
 | `pip install -e .` 版本变成 `0.0.0` | 仓库没有可达的 Git Tag；`setuptools_scm` 回退到 `fallback_version` |
