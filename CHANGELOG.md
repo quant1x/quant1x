@@ -3,6 +3,58 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.5] - 2026-11-14
+### Changed
+- docs[multi]：新增构建指南并补充临时文件目录约束
+  - 新增 BUILDING.md，按 C/C++、Rust、Go、Python、Java 分别说明依赖、配置、
+    编译、测试、产物位置与常见问题；C++ 部分覆盖 VCPKG_ROOT/MSF_RUNTIME、
+    triplet 选择、protobuf 独立安装、CMake 选项、CTest/基准与安装布局
+  - 在 README.md 文档索引中登记构建指南入口
+  - 在 AGENTS.md 目录规则中新增约束：测试性代码与临时文件必须放入 temp/，
+    路径需复刻模块层级，且不纳入版本跟踪
+  - 在 .gitignore 中显式忽略 temp/，此前仅依赖本机全局忽略配置
+
+  涉及语言与文件范围：本次仅文档与仓库配置，不涉及任何语言源码；
+  文件为 BUILDING.md（新增）、README.md、AGENTS.md、.gitignore。
+
+  语义一致性说明：纯文档与忽略规则变更，不改变 C++/Rust/Go/Python/Java
+  任何实现、类型命名与 I/O 契约。
+
+  验证方式：BUILDING.md 内容逐项对照 CMakeLists.txt、cmake/*.cmake、
+  Cargo.toml、rust-toolchain.toml、go.mod、pyproject.toml、pom.xml、
+  vcpkg.json 与 tests/CMakeLists.txt；git check-ignore -v temp/ 确认忽略规则
+  生效。当前环境未安装 cmake/cargo/go，未执行实际编译验证。
+- refactor[cpp]：C++ 依赖管理从 vcpkg 迁移到 Conan 2
+  - 变更概述：新增 conanfile.py（固定依赖版本、全静态、minizip 关闭 bzip2、
+    openssl 关闭 FIPS）与 conan/profiles/windows-msvc-static；删除 vcpkg.json；
+    CMakeLists 移除 VCPKG_ROOT/triplet/CMAKE_PREFIX_PATH 及 zlib 库名特判，
+    改为校验并消费 conan_toolchain.cmake 与 imported target；iconv/openssl
+    改用 CONFIG 模式；quant1x-config.cmake 同步 Conan 包名与条件依赖
+  - 编译器策略：Windows 统一 MSVC、macOS Clang、Linux/其他 Unix GCC，
+    在 cmake/base.cmake 与 compile_options.cmake 中固定并在配置期校验；
+    MSVC 增加 NOMINMAX，Windows 下关闭 VS 自带 vcpkg 集成，避免系统级
+    vcpkg 头文件注入与 std::min/std::max 宏冲突
+  - 涉及语言与文件范围：C++ 构建配置与文档；涉及 CMakeLists.txt、
+    cmake/base.cmake、compile_options.cmake、iconv.cmake、openssl.cmake、
+    quant1x-config.cmake.in、scripts/msvc_configure.bat、conanfile.py、
+    conan/profiles/windows-msvc-static、BUILDING.md、README.md、
+    .vscode-* 模板与 .gitignore；未修改 third_party 下任何文件
+  - 语义一致性说明：仅替换第三方依赖的获取与查找方式，不改变 quant1x
+    库的接口、类型命名、I/O 字段契约与各语言实现；protobuf 继续使用
+    third_party 内置的 3.21.11 头文件与静态库
+  - 依赖差异：minizip 使用 Conan Center 可用的 1.2.12（现有代码仅用
+    unz* API）；cpr 沿用 Conan 默认 SSL 后端（Windows 为 winssl）
+  - 验证方式：
+    conan install . -of build-msvc -pr:h conan/profiles/windows-msvc-static
+    -pr:b default -s build_type=Release --build=missing
+    cmake -S . -B build-msvc -G "Visual Studio 17 2022" -A x64
+    -DCMAKE_BUILD_TYPE=Release
+    -DCMAKE_TOOLCHAIN_FILE=build-msvc/conan_toolchain.cmake
+    cmake --build build-msvc --config Release --target q1x
+    结果：配置通过，q1x.exe 构建并运行成功；CTest 注册 63 个用例，
+    catch2-tdd-iconv、catch2-tdd-yaml-deserialize、catch2-tdd-bars 均通过
+- release version 0.8.5
+
 ## [0.8.4] - 2026-11-14
 ### Changed
 - chore[rust]：移除未使用的 named_pipe 与 windows 依赖，显式声明 winapi feature
@@ -2745,7 +2797,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.4...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.5...HEAD
+[0.8.5]: https://codeberg.org/quant1x/quant1x/compare/v0.8.4...v0.8.5
 [0.8.4]: https://codeberg.org/quant1x/quant1x/compare/v0.8.3...v0.8.4
 [0.8.3]: https://codeberg.org/quant1x/quant1x/compare/v0.8.2...v0.8.3
 [0.8.2]: https://codeberg.org/quant1x/quant1x/compare/v0.8.1...v0.8.2
