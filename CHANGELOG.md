@@ -3,6 +3,46 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.8] - 2026-11-14
+### Changed
+- chore[python]：收敛 Python 打包清单，移除不可再分发的中易字体
+  - 变更概述：MANIFEST.in 改为白名单式（105 行 → 48 行），sdist 只含 .py 与必需元数据；
+    删除 no-op 与重复规则，用 global-exclude 覆盖包内各语言的平行实现与资源；
+    pyproject 删除在 include-package-data=false 下不生效的 exclude-package-data
+    与空 package-data，packages.find 去掉与 include 重复的 exclude，
+    license 改为 PEP 639 的 SPDX 表达式加 license-files 白名单
+  - 涉及语言与文件范围：Python 打包配置 MANIFEST.in、pyproject.toml；
+    删除 quant1x/util/SimHei.ttf（SimHei v3.02 版权属中易，随 Windows 授权使用、
+    无再分发权），删除全仓库无引用的 quant1x/util/font.py，
+    quant1x/util/__init__.py 移除 FONT_SimHei 与 CURRENT_PATH
+  - 语义一致性说明：仅改变发布产物内容与字体引用方式，不涉及任何量化算法、
+    数据契约与跨语言语义；绘图仍按字体族名使用，字体由使用者自备
+  - 验证方式：python -m build 全流程；sdist 182 个文件 = 169 个 .py + 13 个必需元数据，
+    wheel 174 项且非 .py payload 为 0，从 sdist 重建 wheel 版本一致，导入 quant1x.util 正常
+- docs[multi]：补充已移除 SimHei 字体的历史留存说明
+  - 变更概述：THIRD_PARTY_NOTICES.md 新增第 5 节，说明 quant1x/util/SimHei.ttf
+    （中易黑体 v3.02，无再分发权）已从当前工作树与 Python 发行包中移除，
+    代码侧引用一并删除，但受已发布标签与协作成本所限仍留存于历史提交；
+    同时声明任何派生版本、镜像与下游发行物不得重新引入该字体；
+    第 0 节补充 Python 侧不发布字体等非 Python 资源，第 4 节检查清单增加一条
+  - 涉及语言与文件范围：仅仓库级合规文档 THIRD_PARTY_NOTICES.md，
+    不涉及 python/cpp/rust/go 任一语言实现与构建配置
+  - 语义一致性说明：纯文档补充，不改变代码行为、数据契约与跨语言语义；
+    与 MANIFEST.in 排除字体的打包行为保持一致
+  - 验证方式：人工复核文档结构与措辞；确认本次仅 THIRD_PARTY_NOTICES.md 变更，
+    无源码改动，无需重跑构建
+- chore[python]：将第三方声明随 sdist 与 wheel 一并发布
+  - 变更概述：THIRD_PARTY_NOTICES.md 加入 PEP 639 的 license-files 白名单，
+    wheel 会将其落到 dist-info/licenses/ 并在 METADATA 记录 License-File；
+    同时加入 MANIFEST.in 的保留清单，避免被 global-exclude *.md 剔除出 sdist
+  - 涉及语言与文件范围：Python 打包配置 MANIFEST.in、pyproject.toml
+  - 语义一致性说明：仅调整合规声明文件的发布范围，不影响代码行为与包内容；
+    wheel 的 payload 仍只有 .py，声明文件位于 dist-info 元数据区
+  - 验证方式：python -m build 全流程；sdist 根目录含 THIRD_PARTY_NOTICES.md，
+    wheel 含 dist-info/licenses/THIRD_PARTY_NOTICES.md，METADATA 有
+    License-File 两条，三处内容与仓库文件字节一致
+- release version 0.8.8
+
 ## [0.8.7] - 2026-11-14
 ### Changed
 - refactor[multi]：合并 id 目录并将 id64/id128 迁移到 distributed
@@ -2876,7 +2916,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.7...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.8...HEAD
+[0.8.8]: https://codeberg.org/quant1x/quant1x/compare/v0.8.7...v0.8.8
 [0.8.7]: https://codeberg.org/quant1x/quant1x/compare/v0.8.6...v0.8.7
 [0.8.6]: https://codeberg.org/quant1x/quant1x/compare/v0.8.5...v0.8.6
 [0.8.5]: https://codeberg.org/quant1x/quant1x/compare/v0.8.4...v0.8.5
