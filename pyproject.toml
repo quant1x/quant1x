@@ -85,10 +85,21 @@ exclude = [
 ]
 
 [tool.setuptools.package-data]
-"*" = ["*.dll", "*.pyd", "*.ini", "*.log4cxx"]
+# 不打包任何非 Python 数据文件（含字体、DLL/PYD）
+"*" = []
+
+[tool.setuptools.exclude-package-data]
+# setuptools_scm 会把 git 跟踪的所有文件视为包数据；这里显式排除非 Python 文件
+"*" = [
+    "*.md", "*.java", "*.ipynb", "*.proto", "*.c++", "*.h", "*.hpp",
+    "*.in", "*.copy", "*.yaml", "*.yml", "*.inc", "LICENSE",
+    "*.go", "*.rs", "*.cpp", "*.cc", "*.zig", "*.zon",
+]
 
 [tool.setuptools]
 zip-safe = false
+# 关闭 setuptools_scm 的自动包数据收集，wheel 只包含 .py 与显式 package-data
+include-package-data = false
 
 [tool.setuptools_scm]
 write_to = "quant1x/_version.py"

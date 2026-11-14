@@ -42,5 +42,64 @@ recursive-exclude * *.lib
 recursive-exclude * CMakeLists.txt
 recursive-exclude * *.cmake
 
+# 4.1) Exclude Zig sources and package manifests
+recursive-exclude * *.zig
+recursive-exclude * *.zon
+
 # 5) Exclude Python bytecode caches and build artifacts
 recursive-exclude * __pycache__
+
+# 6) Python 包内只保留 .py，其它语言的源码/文档/资源不发布
+recursive-exclude quant1x *.md
+recursive-exclude quant1x *.java
+recursive-exclude quant1x *.ipynb
+recursive-exclude quant1x *.proto
+recursive-exclude quant1x *.c++
+recursive-exclude quant1x *.h
+recursive-exclude quant1x *.hpp
+recursive-exclude quant1x *.in
+recursive-exclude quant1x *.copy
+recursive-exclude quant1x *.yaml
+recursive-exclude quant1x *.yml
+recursive-exclude quant1x *.inc
+recursive-exclude quant1x *.ttf
+recursive-exclude quant1x LICENSE
+recursive-exclude quant1x *.LICENSE
+
+# 7) 根目录仅保留 README/LICENSE/pyproject，不发布其它语言与构建文件
+prune assets
+prune labs
+prune proto
+prune .githooks
+prune .vscode-default
+prune .vscode-windows
+prune .vscode-macos
+prune conan
+exclude AGENTS.md
+exclude BUILDING.md
+exclude CHANGELOG.md
+exclude CONTRIBUTING.md
+exclude CMakeLists.txt
+exclude Cargo.toml
+exclude Cargo.lock
+exclude conanfile.py
+exclude go.mod
+exclude go.sum
+exclude main.cpp
+exclude main.go
+exclude main.py
+exclude main.rs
+exclude mvnw
+exclude mvnw.cmd
+exclude pom.xml
+exclude rust-toolchain.toml
+exclude test_loop.sh
+exclude THIRD_PARTY_NOTICES.md
+exclude b2c.py
+exclude logo.png
+exclude .clang-format
+exclude .clang-tidy
+exclude .clock_state
+exclude .editorconfig
+exclude .gitattributes
+exclude .gitignore
