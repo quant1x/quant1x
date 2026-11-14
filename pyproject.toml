@@ -7,7 +7,10 @@ name = "quant1x"
 dynamic = ["version"]  # 仅保留 version 为动态（由 setuptools_scm 提供）
 description = "Quant1X量化研究"
 readme = {file = "README.md", content-type = "text/markdown"}
-license = {text = "MIT License"}
+# PEP 639：SPDX 表达式 + 许可证文件白名单（默认 glob 会连 quant1x/ 下
+# 第三方 vendored 代码的 LICENSE 一起收进 sdist，而那些代码本身并不发布）
+license = "MIT"
+license-files = ["LICENSE"]
 # PEP 621 authors → core metadata: setuptools 将带 email 的条目映射到 Author-email，
 # 仅含 name 的条目映射到 Author。同一作者分两条声明以同时填充 Author 与 Author-email。
 # 分两条记录，是为了pip show时能够同时显示 Author 与 Author-email，如果只写一条带 email
@@ -20,7 +23,6 @@ keywords = ["quant1x", "python"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
@@ -66,39 +68,14 @@ Homepage = "https://github.com/quant1x/quant1x"
 # quant1x-qmt = "quant1x.trader.qmt:main"
 
 [tool.setuptools.packages.find]
+# 只收 quant1x 包本身；仓库里其它语言/测试/文档目录不在 include 范围内，无需 exclude
 where = ["."]
 include = ["quant1x", "quant1x.*"]
-exclude = [
-    "third_party",
-    "third_party.*",
-    "tests*",
-    "docs*",
-    "examples*",
-    "cmake*",
-    "build*",
-    "benches*",
-    "target*",
-    "vcpkg_installed*",
-    "scripts*",
-    "tools*",
-    "user*",
-]
-
-[tool.setuptools.package-data]
-# 不打包任何非 Python 数据文件（含字体、DLL/PYD）
-"*" = []
-
-[tool.setuptools.exclude-package-data]
-# setuptools_scm 会把 git 跟踪的所有文件视为包数据；这里显式排除非 Python 文件
-"*" = [
-    "*.md", "*.java", "*.ipynb", "*.proto", "*.c++", "*.h", "*.hpp",
-    "*.in", "*.copy", "*.yaml", "*.yml", "*.inc", "LICENSE",
-    "*.go", "*.rs", "*.cpp", "*.cc", "*.zig", "*.zon",
-]
 
 [tool.setuptools]
 zip-safe = false
-# 关闭 setuptools_scm 的自动包数据收集，wheel 只包含 .py 与显式 package-data
+# setuptools_scm 会把 git 跟踪的所有文件当作包数据，这里显式关闭，
+# wheel 只包含 packages.find 命中的 .py，不含字体/DLL/PYD 等非 Python 文件
 include-package-data = false
 
 [tool.setuptools_scm]

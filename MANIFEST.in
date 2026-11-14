@@ -1,105 +1,46 @@
-# MANIFEST.in for Python sdist: keep only Python-related source and metadata.
-# The project contains multiple languages, so non-Python directories/files should be excluded.
+# MANIFEST.in — sdist 白名单：只发布 Python 源码与打包元数据
+#
+# 目标：PyPI 上的 sdist 只含 quant1x/**/*.py 与 README/LICENSE/pyproject 等元数据，
+#       其它语言（Go/Rust/C++/Java）源码、构建清单、文档、字体与数据资源一律不带。
+# 范围：本文件只作用于 sdist。wheel 侧由 pyproject.toml 的
+#       include-package-data = false 保证只收 .py，不要在这里重复维护 wheel 规则。
 
-# 1) Exclude top-level non-Python directories that are not part of the Python package.
+# 1) 顶层非 Python 目录整体剪掉（prune 不支持通配符，只能逐条列出）
 prune third_party
-prune build
-prune cmake
+prune tests
 prune docs
 prune examples
 prune benches
-prune target
-prune vcpkg_installed
-prune tools
-prune user
-prune scripts
-prune tests
-
-# 2) Exclude Go-related sources and metadata
-recursive-exclude * *.go
-exclude go.mod
-exclude go.sum
-
-# 3) Exclude Rust-related sources and metadata
-recursive-exclude * *.rs
-recursive-exclude * mod.rs
-recursive-exclude * lib.rs
-recursive-exclude * Cargo.toml
-recursive-exclude * Cargo.lock
-recursive-exclude * rust-toolchain
-recursive-exclude * rust-toolchain.toml
-
-# 4) Exclude C/C++ project sources and configuration files
-recursive-exclude * *.c
-recursive-exclude * *.cpp
-recursive-exclude * *.cc
-recursive-exclude * *.h
-recursive-exclude * *.o
-recursive-exclude * *.obj
-recursive-exclude * *.so
-recursive-exclude * *.a
-recursive-exclude * *.lib
-recursive-exclude * CMakeLists.txt
-recursive-exclude * *.cmake
-
-# 4.1) Exclude Zig sources and package manifests
-recursive-exclude * *.zig
-recursive-exclude * *.zon
-
-# 5) Exclude Python bytecode caches and build artifacts
-recursive-exclude * __pycache__
-
-# 6) Python 包内只保留 .py，其它语言的源码/文档/资源不发布
-recursive-exclude quant1x *.md
-recursive-exclude quant1x *.java
-recursive-exclude quant1x *.ipynb
-recursive-exclude quant1x *.proto
-recursive-exclude quant1x *.c++
-recursive-exclude quant1x *.h
-recursive-exclude quant1x *.hpp
-recursive-exclude quant1x *.in
-recursive-exclude quant1x *.copy
-recursive-exclude quant1x *.yaml
-recursive-exclude quant1x *.yml
-recursive-exclude quant1x *.inc
-recursive-exclude quant1x *.ttf
-recursive-exclude quant1x LICENSE
-recursive-exclude quant1x *.LICENSE
-
-# 7) 根目录仅保留 README/LICENSE/pyproject，不发布其它语言与构建文件
-prune assets
 prune labs
 prune proto
+prune assets
+prune scripts
+prune tools
+prune user
+prune cmake
+prune conan
 prune .githooks
 prune .vscode-default
 prune .vscode-windows
 prune .vscode-macos
-prune conan
-exclude AGENTS.md
-exclude BUILDING.md
-exclude CHANGELOG.md
-exclude CONTRIBUTING.md
-exclude CMakeLists.txt
-exclude Cargo.toml
-exclude Cargo.lock
-exclude conanfile.py
-exclude go.mod
-exclude go.sum
-exclude main.cpp
-exclude main.go
-exclude main.py
-exclude main.rs
-exclude mvnw
-exclude mvnw.cmd
-exclude pom.xml
-exclude rust-toolchain.toml
-exclude test_loop.sh
-exclude THIRD_PARTY_NOTICES.md
-exclude b2c.py
-exclude logo.png
-exclude .clang-format
-exclude .clang-tidy
-exclude .clock_state
-exclude .editorconfig
-exclude .gitattributes
-exclude .gitignore
+
+# 2) 顶层其它语言的构建清单，以及不属于 quant1x 包的 Python 脚本
+exclude Cargo.toml Cargo.lock go.mod go.sum CMakeLists.txt
+exclude pom.xml mvnw mvnw.cmd conanfile.py
+exclude main.cpp main.go main.py main.rs b2c.py test_loop.sh rust-toolchain.toml
+exclude .clang-format .clang-tidy .clock_state .editorconfig .gitattributes .gitignore
+
+# 3) 按扩展名剔除包内非 Python 内容（下面就是 quant1x/ 里实际存在的非 Python 类型；
+#    新增语言或资源类型时必须同步补上，否则会随 sdist 一起发布）
+global-exclude *.go *.rs *.cc *.cpp *.c++ *.h *.java
+global-exclude *.proto *.inc *.in *.copy *.ipynb
+global-exclude *.md *.yaml *.png
+# 字体一律不随包发布：SimHei 等中易字体不可再分发，需使用者自行准备；
+# 当前仓库已无字体文件，构建时会输出一条 '*.ttf' 的 no previously-included 提示，属预期
+global-exclude *.ttf
+# 第三方 vendored 代码（Go/C++）不发布，其 LICENSE 也不必随之进入 sdist
+global-exclude LICENSE *.LICENSE
+
+# 4) 元数据依赖：README 用于生成 PKG-INFO，LICENSE 为许可证文件，必须保留
+include README.md
+include LICENSE
