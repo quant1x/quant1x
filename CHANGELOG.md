@@ -3,6 +3,34 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-11-14
+### Changed
+- chore[rust]：移除未使用的 named_pipe 与 windows 依赖，显式声明 winapi feature
+  - 变更概述：删除 Cargo.toml 中 cfg(windows) 下未被任何代码引用的 named_pipe 与
+    windows 依赖；同时把 winapi 的 feature 列表补齐为代码实际引用的 12 个模块，
+    新增 fileapi / namedpipeapi / winnt / minwindef / winerror。
+  - 根因：这两个依赖是命名管道实现阶段遗留，最终实现直接调用 winapi（见
+    quant1x/app.rs）。named_pipe 自身依赖 winapi 并开启 namedpipeapi 等 feature，
+    通过 Cargo 的 feature unification 隐式补全了 Cargo.toml 未声明的 feature，
+    因此直接删除会导致 winapi::um::namedpipeapi 无法解析、编译失败。
+  - 涉及语言与文件范围：rust；Cargo.toml、Cargo.lock（cargo 自动更新，移除
+    named_pipe 0.4.1、windows 0.48.0 及 quant1x 对二者的依赖引用）。
+  - 语义一致性：仅调整依赖声明，不改变任何运行期逻辑；显式声明后 winapi 模块的
+    可用集合与修改前完全一致，不存在隐式 feature 依赖。
+  - 验证：cargo check、cargo check --all-targets 均通过，无 warning 无 error。
+- chore[rust]：升级并锁定 Rust 工具链，补齐 rustfmt/clippy/rust-analyzer
+  - 变更概述：rust-toolchain.toml 的 channel 由 1.98.1 升至 1.100.0，并显式声明
+    components = ["rustfmt", "clippy", "rust-analyzer"]、profile = "minimal"；
+    补充注释说明版本锁定、组件用途与 rust-analyzer 必须与编译器同版本的原因。
+  - 原因：edition 2024 自 1.100.0 起获得完整支持；rust-analyzer 内置的
+    proc-macro-srv 需读取宏 crate 的 metadata，版本偏差会报 invalid metadata
+    version，故工具链与组件统一锁定到同一版本，保证开发、CI 与生产构建一致。
+  - 涉及语言与文件范围：rust；rust-toolchain.toml。
+  - 语义一致性：仅约束构建所用工具链，不改变任何语言实现的语义与产物结构。
+  - 验证：cargo --version 报 1.100.0；cargo check 与 cargo check --all-targets
+    在该工具链下均通过。
+- release version 0.8.4
+
 ## [0.8.3] - 2026-11-08
 ### Changed
 - fix[multi]: 修复源代码的版权信息
@@ -2717,7 +2745,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.3...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.4...HEAD
+[0.8.4]: https://codeberg.org/quant1x/quant1x/compare/v0.8.3...v0.8.4
 [0.8.3]: https://codeberg.org/quant1x/quant1x/compare/v0.8.2...v0.8.3
 [0.8.2]: https://codeberg.org/quant1x/quant1x/compare/v0.8.1...v0.8.2
 [0.8.1]: https://codeberg.org/quant1x/quant1x/compare/v0.8.0...v0.8.1
