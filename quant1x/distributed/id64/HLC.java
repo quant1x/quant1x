@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Quant1X Team
 // SPDX-License-Identifier: MIT
 
-package quant1x.id.id64;
+package quant1x.distributed.id64;
 
 import java.io.IOException;
 import java.security.SecureRandom;
@@ -30,7 +30,7 @@ public final class HLC {
     static final int PHYSICAL_BITS = 41;
 
     /** 布局：1 位符号(恒 0) + PHYSICAL_BITS + workerBits + seqBits = 64，故 workerBits + seqBits = 22 */
-    static final int PAYLOAD_BITS = 22;
+    public static final int PAYLOAD_BITS = 22;
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -43,6 +43,11 @@ public final class HLC {
     // 以下字段为 package-private，供 Option 与同包测试直接读写
     long physical;
     long seq;
+
+    /** 当前序列号（测试与诊断使用）。 */
+    public long sequence() {
+        return seq;
+    }
     LongSupplier now;
     int seed;
     int seqBits;

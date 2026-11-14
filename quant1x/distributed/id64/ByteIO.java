@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Quant1X Team
 // SPDX-License-Identifier: MIT
 
-package quant1x.id.id64;
+package quant1x.distributed.id64;
 
 /**
  * BigEndian 字节编解码工具（替代 id128 中 Uint128 的 read/write helper）。

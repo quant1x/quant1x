@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Quant1X Team
 // SPDX-License-Identifier: MIT
 
-package quant1x.id.id128;
+package quant1x.distributed.id128;
 
 /**
  * HLC 生成器：将 {@link HLC} 推进结果与 nodeID 组装为完整的 128 位 ID。

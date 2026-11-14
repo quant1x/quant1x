@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Quant1X Team
 // SPDX-License-Identifier: MIT
 
-package quant1x.id.id64;
+package quant1x.distributed.id64;
 
 import java.util.function.LongSupplier;
 

@@ -20,7 +20,7 @@
 Go、Python 和 Java 同目录共存，靠文件后缀区分：
 
 ```
-id/id128/
+distributed/id128/
 ├── uint128.go       # Uint128（Go）
 ├── uint128.py       # Uint128（Python）
 ├── Uint128.java     # Uint128（Java）
@@ -46,10 +46,10 @@ id/id128/
 ├── state_lock_other.go   # 文件锁 兼容模式（Go）
 ├── id_test.go       # 测试（Go）
 ├── id_test.py       # 测试（Python）
-└── __init__.py      # Python 包入口（父包 id/__init__.py 仅转发到本子包）
+└── __init__.py      # Python 包入口（父包 distributed/__init__.py）
 ```
 
-各语言测试统一位于仓库 `tests/` 目录（Go / Python 例外，留在本目录）。Java 测试亦在 `tests/` 下，按 package 组织（如 `tests/id/id128/IdTest.java`），物理路径与模块目录保持一致。
+各语言测试统一位于仓库 `tests/` 目录（Go / Python 例外，留在本目录）。Java 测试亦在 `tests/` 下，按 package 组织（如 `tests/distributed/id128/IdTest.java`），物理路径与模块目录保持一致。
 
 ## ID 位布局
 
@@ -79,7 +79,7 @@ package main
 import (
     "fmt"
 
-    "github.com/quant1x/quant1x/quant1x/id/id128"
+    "github.com/quant1x/quant1x/quant1x/distributed/id128"
 )
 
 func main() {
@@ -95,7 +95,7 @@ func main() {
 ### Python
 
 ```python
-from quant1x.id.id128 import Generator, HLC, with_state_file
+from quant1x.distributed.id128 import Generator, HLC, with_state_file
 
 hlc = HLC(with_state_file("./data/id.state"))
 gen = Generator(1, hlc)
@@ -108,10 +108,10 @@ print(id.to_bytes().hex())
 ### Java
 
 ```java
-import quant1x.id.id128.HLC;
-import quant1x.id.id128.Generator;
-import quant1x.id.id128.Uint128;
-import quant1x.id.id128.Option;
+import quant1x.distributed.id128.HLC;
+import quant1x.distributed.id128.Generator;
+import quant1x.distributed.id128.Uint128;
+import quant1x.distributed.id128.Option;
 
 HLC hlc = new HLC(
         Option.withStateFile("./data/id.state"));
@@ -297,7 +297,7 @@ QUANT1X_ID128_SYNC_EVERY=100 ./your-binary
 ### Go
 
 ```powershell
-Push-Location .\quant1x\id\id128
+Push-Location .\quant1x\distributed\id128
 go test -v
 Pop-Location
 ```
@@ -315,7 +315,7 @@ Pop-Location
 ### Python
 
 ```powershell
-python -m unittest quant1x.id.id128.id_test
+python -m unittest quant1x.distributed.id128.id_test
 ```
 
 测试覆盖：
@@ -347,7 +347,7 @@ mvn -q test
 仅 Go 版提供（代码位于 `id_test.go`）：
 
 ```powershell
-Push-Location .\quant1x\id\id128
+Push-Location .\quant1x\distributed\id128
 go test -run '^$' -bench 'BenchmarkGeneratorNext$|BenchmarkGeneratorNextWithStateFile$|BenchmarkGeneratorNextWithStateFileSyncEvery256$|BenchmarkGeneratorNextWithStateFileStrict$' -benchmem
 Pop-Location
 ```

@@ -2,7 +2,7 @@
 
 `quant1x/distributed/id` 是 distributed 层的 Go 分布式 ID 实现，包名为 `id`。
 
-与默认实现 `quant1x/id/id64` 相互独立、互不引用：ID 编码、HLC、状态文件
+与默认实现 `quant1x/distributed/id64` 相互独立、互不引用：ID 编码、HLC、状态文件
 （mmap 双槽 checkpoint + 锁字互斥）均在本目录维护；
 MPMC 无锁队列复用 `quant1x/runtime.RingBuffer`（Go 版 Vyukov 环形缓冲）。
 
@@ -139,7 +139,7 @@ value, err := queue.TryPop()   // 消费：无锁
 
 ## 默认实现边界
 
-`quant1x/id/id64` 是项目默认的 id64 实现（追加式状态日志 + 平台文件锁）。
+`quant1x/distributed/id64` 是项目默认的 id64 实现（追加式状态日志 + 平台文件锁）。
 本包是 distributed 层的独立实现，不引用默认 `id64` 包；
 与它共享同一组测试语义（单调、唯一、恢复），但持久化格式不同，
 两者的状态文件不能混用。MPMC 无锁队列复用 `quant1x/runtime.RingBuffer`。

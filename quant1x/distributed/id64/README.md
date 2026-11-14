@@ -73,10 +73,10 @@ BenchmarkNextStateFileStrict  2.959 us/op       4 allocs/op
 
 ## 4. 各语言 API
 
-### Go（`quant1x/id/id64`，`package id64`）
+### Go（`quant1x/distributed/id64`，`package id64`）
 
 ```go
-import "github.com/quant1x/quant1x/quant1x/id/id64"
+import "github.com/quant1x/quant1x/quant1x/distributed/id64"
 
 // 预期节点总数（K8s 场景从环境变量读取，见下方示例）
 hlc := id64.NewHLC(id64.WithNodeCount(5000), id64.WithStateFile("./data/id64.state"))
@@ -102,10 +102,10 @@ if v := os.Getenv("EXPECTED_NODE_COUNT"); v != "" {
 hlc := id64.NewHLC(id64.WithNodeCount(nodeCount))
 ```
 
-### Python（`quant1x.id.id64`）
+### Python（`quant1x.distributed.id64`）
 
 ```python
-from quant1x.id.id64 import Generator, HLC, ID, with_node_count, with_state_file
+from quant1x.distributed.id64 import Generator, HLC, ID, with_node_count, with_state_file
 
 hlc = HLC(with_node_count(5000), with_state_file("./data/id64.state"))
 gen = Generator(node_id, hlc)
@@ -118,13 +118,13 @@ identifier.node_id(gen.worker_bits)
 identifier.seq(gen.worker_bits)
 ```
 
-### Java（`quant1x.id.id64`）
+### Java（`quant1x.distributed.id64`）
 
 ```java
-import quant1x.id.id64.Generator;
-import quant1x.id.id64.HLC;
-import quant1x.id.id64.Id;
-import quant1x.id.id64.Option;
+import quant1x.distributed.id64.Generator;
+import quant1x.distributed.id64.HLC;
+import quant1x.distributed.id64.Id;
+import quant1x.distributed.id64.Option;
 
 HLC hlc = new HLC(
         Option.withNodeCount(5000),
@@ -198,7 +198,7 @@ Go 实现的状态文件固定为 64 字节，包含两个 32 字节槽位。每
 ## 7. 文件清单
 
 ```text
-quant1x/id/id64/
+quant1x/distributed/id64/
 ├── id64.go             # ID 类型（Go）
 ├── hlc.go              # HLC（Go）
 ├── generator.go        # Generator（Go）
@@ -226,16 +226,16 @@ quant1x/id/id64/
 
 固定大小 mmap 文件封装位于 `quant1x/base/cache/mmap_file.go`。
 
-各语言测试统一位于仓库 `tests/` 目录（Go / Python 例外，留在本目录）。Java 测试在 `tests/id/id64/IdTest.java`（`package quant1x.id.id64`），物理路径与模块目录保持一致。
+各语言测试统一位于仓库 `tests/` 目录（Go / Python 例外，留在本目录）。Java 测试在 `tests/distributed/id64/IdTest.java`（`package tests.distributed.id64`），物理路径与模块目录保持一致。
 
 ## 8. 测试
 
 ```bash
 # Go
-go test ./quant1x/id/...
+go test ./quant1x/distributed/...
 
 # Python（在仓库根目录）
-python -m unittest quant1x.id.id64.id_test
+python -m unittest quant1x.distributed.id64.id_test
 
 # Java（在仓库根目录）
 mvn test

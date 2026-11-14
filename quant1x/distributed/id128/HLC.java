@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Quant1X Team
 // SPDX-License-Identifier: MIT
 
-package quant1x.id.id128;
+package quant1x.distributed.id128;
 
 import java.io.IOException;
 import java.security.SecureRandom;

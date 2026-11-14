@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Quant1X Team
 // SPDX-License-Identifier: MIT
 
-package quant1x.id.id64;
+package quant1x.distributed.id128;
 
 import java.util.Objects;
 
@@ -11,21 +11,24 @@ import java.util.Objects;
  * <p>字段语义与 Go/Python 版一致：
  * <ul>
  *   <li>{@code physical} — 物理时间（毫秒，对应 int64）</li>
- *   <li>{@code seq}     — 序列号（32 位语义，以 long 承载无符号值）</li>
+ *   <li>{@code logical} — 逻辑计数（16 位，对应 uint16）</li>
+ *   <li>{@code seq}     — 序列号（32 位，对应 uint32）</li>
  * </ul>
  */
-final class PersistentState {
+public final class PersistentState {
 
     final long physical;
+    final int logical;
     final long seq;
 
-    PersistentState(long physical, long seq) {
+    PersistentState(long physical, int logical, long seq) {
         this.physical = physical;
+        this.logical = logical & 0xFFFF;
         this.seq = seq & 0xFFFFFFFFL;
     }
 
-    static PersistentState of(long physical, long seq) {
-        return new PersistentState(physical, seq);
+    public static PersistentState of(long physical, int logical, long seq) {
+        return new PersistentState(physical, logical, seq);
     }
 
     @Override
@@ -37,16 +40,16 @@ final class PersistentState {
             return false;
         }
         PersistentState other = (PersistentState) obj;
-        return physical == other.physical && seq == other.seq;
+        return physical == other.physical && logical == other.logical && seq == other.seq;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(physical, seq);
+        return Objects.hash(physical, logical, seq);
     }
 
     @Override
     public String toString() {
-        return "PersistentState{physical=" + physical + ", seq=" + seq + "}";
+        return "PersistentState{physical=" + physical + ", logical=" + logical + ", seq=" + seq + "}";
     }
 }
