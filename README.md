@@ -484,7 +484,7 @@ fn main() {
 | 交易所费用 | [docs/exchange-license-fees.md](docs/exchange-license-fees.md) |
 | Vyukov Ringbuffer 契约 | [quant1x/runtime/ringbuffer.md](quant1x/runtime/ringbuffer.md) |
 | 技术分析算子 | [quant1x/ta/README.md](quant1x/ta/README.md) |
-| 分布式 ID（64/128 位） | [quant1x/id/id64/README.md](quant1x/id/id64/README.md)、[quant1x/id/id128/README.md](quant1x/id/id128/README.md) |
+| 分布式 ID（64/128 位） | [quant1x/distributed/id64/README.md](quant1x/distributed/id64/README.md)、[quant1x/distributed/id128/README.md](quant1x/distributed/id128/README.md) |
 | 结构化二进制编码 | [quant1x/encoding/binary/cstruct/README.md](quant1x/encoding/binary/cstruct/README.md) |
 | 市场状态识别 | [quant1x/learn/regime/README.md](quant1x/learn/regime/README.md) |
 
