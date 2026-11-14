@@ -1116,6 +1116,18 @@ install(FILES
 
 install(TARGETS q1x
     DESTINATION bin)
+
+# 安装许可证与第三方归属声明，满足 BSD-3 等许可证的随附分发要求
+file(GLOB QUANT1X_THIRD_PARTY_LICENSES "${CMAKE_SOURCE_DIR}/third_party/LICENSE.*")
+install(FILES
+    "${CMAKE_SOURCE_DIR}/LICENSE"
+    "${CMAKE_SOURCE_DIR}/THIRD_PARTY_NOTICES.md"
+    "${CMAKE_SOURCE_DIR}/quant1x/io/csv-reader.LICENSE"
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/quant1x
+)
+install(FILES ${QUANT1X_THIRD_PARTY_LICENSES}
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/quant1x/third_party
+)
 # 单元测试 (TODO: migration to new API pending)
 include(CTest)
 enable_testing()

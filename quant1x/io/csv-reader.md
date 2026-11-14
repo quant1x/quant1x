@@ -1,5 +1,9 @@
 # Fast C++ CSV Parser
 
+> Adapted from the fast-cpp-csv-parser documentation.
+> Copyright (c) 2012-2015 Ben Strasser, BSD-3-Clause.
+> See [csv-reader.LICENSE](csv-reader.LICENSE) for the full license text.
+
 This is a small, easy-to-use and fast header-only library for reading comma separated value (CSV) files. 
 
 ## Features

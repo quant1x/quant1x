@@ -515,7 +515,9 @@ fn main() {
 
 ## 许可证
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+本项目原创代码采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+
+例外：`quant1x/io/csv-reader.h`（及其文档 `csv-reader.md`）衍生自 [fast-cpp-csv-parser](https://github.com/ben-strasser/fast-cpp-csv-parser)，按 **BSD-3-Clause** 分发；`third_party/` 下的组件按各自许可证分发。完整归属与许可证文本见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
 ## 相关链接
 
