@@ -269,7 +269,7 @@ cmake --install build-msvc --config Release
 
 ## 3. Rust 构建
 
-Rust 实现以 C++ 为基准做 1:1 语义还原，库入口为 `quant1x/lib.rs`，命令行入口为 `main.rs`。
+Rust 实现与 Python spec 语义一致、与 C++ 实现逐项对位，库入口为 `quant1x/lib.rs`，命令行入口为 `main.rs`。
 
 ### 3.1 构建
 
@@ -485,7 +485,7 @@ mvnw.cmd -B -DskipTests package
 
 - 项目版本由 Git Tag（`vMAJOR.MINOR.PATCH`）唯一决定，C++ 在配置阶段通过 `cmake/git_tag_info.cmake` 读取，Python 通过 `setuptools_scm` 推导。
 - `Cargo.toml`、`pom.xml`、`pyproject.toml` 中的版本字段与 `CHANGELOG.md` **不得手工修改**，发布统一走 `autochangelog`。
-- 提交信息使用中文，主题格式为 `<type>[<language>]：<summary>`，具体规则见 `AGENTS.md` 与 `CONTRIBUTING.md`。
+- 提交信息使用中文，主题格式为 `<type>[<language>]：<summary>`，具体规则见 `CONTRIBUTING.md` 第 8 节。
 
 ---
 
@@ -494,8 +494,8 @@ mvnw.cmd -B -DskipTests package
 | 文档 | 内容 |
 |---|---|
 | [README.md](README.md) | 项目概览、快速开始、使用示例 |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | 架构理念、目录规范、命名与开发流程 |
-| [AGENTS.md](AGENTS.md) | AI 协作规则、提交规范、版本约束 |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | 规范源：语言角色、目录布局、命名与契约、注释、文档、测试、提交、工作准则 |
+| [AGENTS.md](AGENTS.md) | AI 入口索引：必读顺序、硬约束、主题索引、常用命令、交付自检 |
 | [docs/README.md](docs/README.md) | 数据项与更新时序 |
 | [tests/README.md](tests/README.md) | 测试约定与 parity 复现步骤 |
 | [examples/README.md](examples/README.md) | 示例程序说明 |

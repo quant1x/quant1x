@@ -4,7 +4,7 @@
 
 """pre-commit 校验：拦截混进本次提交内容的 BOM。
 
-仓库一律 UTF-8 无 BOM —— 规定见 AGENTS.md 的「文件编码与行尾约定」。这东西肉眼
+仓库一律 UTF-8 无 BOM —— 规定见 CONTRIBUTING.md 的「5.8 文件编码与行尾」。这东西肉眼
 不可见，Markdown 预览里往往也不显示，靠事后自查容易漏，故在提交这道口子上堵住。
 
 **为什么只查新增行，不扫整个文件**：CHANGELOG.md 现存 17 处行首 U+FEFF，是历史
@@ -31,7 +31,7 @@ import sys
 
 BOM = b"\xef\xbb\xbf"
 
-# Windows 批处理整体豁免, 见 AGENTS.md 的文件编码与行尾约定
+# Windows 批处理整体豁免, 见 CONTRIBUTING.md 5.8 文件编码与行尾
 EXEMPT_SUFFIXES = (".bat", ".cmd")
 
 
@@ -85,7 +85,7 @@ def main():
         sys.stderr.write("  %s  BOM=%d\n" % (path, bom))
     sys.stderr.write(
         "\nU+FEFF 多半是某次编辑把自带 BOM 的一段文本拼接进来的 —— 它肉眼看不见,\n"
-        "所见只是 `- ` 与正文之间多了个位置。修法见 AGENTS.md 的「文件编码与行尾约定」。\n"
+        "所见只是 `- ` 与正文之间多了个位置。修法见 CONTRIBUTING.md 的「5.8 文件编码与行尾」。\n"
     )
     return 1
 

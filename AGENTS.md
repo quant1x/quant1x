@@ -1,271 +1,93 @@
-# AGENTS.md — Quant1X 多语言 AI 协作规则
+# AGENTS.md — AI 助手入口
 
-本文件是 AI（CodeBuddy / GitHub Copilot）在参与 Quant1X 项目时的强制执行规则。
+> **本仓库的规范源是 [CONTRIBUTING.md](CONTRIBUTING.md)**：规则、约定与判据全部在那里。
+> 本文件只做三件事 —— 告诉 AI 该读什么、哪些线不能踩、改完怎么验。**与 CONTRIBUTING.md 冲突时以
+> 后者为准**；本文件不复制细则，只给指针。构建与依赖见 [BUILDING.md](BUILDING.md)。
 
-详细架构与背景请阅读：[CONTRIBUTING.md](CONTRIBUTING.md)
+## 1. 开工前必读
 
-## 一、总体原则（不可违反）
+按顺序读，读完再动手：
 
-- 本项目为**多语言平行实现**，严禁任何跨语言调用（FFI / Cgo / SWIG）
-- Python 负责探索验证，C/C++ 负责生产，Rust / Go 负责生态扩展
-- **语义一致性高于语言习惯**
-- 所有实现必须可通过同一组测试向量验证
+| 顺序 | 读什么 | 为什么 |
+| --- | --- | --- |
+| 1 | [CONTRIBUTING.md](CONTRIBUTING.md) | 规范全集：语言角色、目录布局、命名、注释、文档、测试、提交、工作准则 |
+| 2 | 目标模块的 `README.md` 与同名 `.md`（如 `quant1x/data/schema/bar.md`） | 该模块的口径、数据契约、跨语言对照、已知缺口（§5 TODO） |
+| 3 | **该语义的 Python 实现（spec）与 Python 用例** | 语义以此为准；不要拿其它语言的既有实现反推 spec |
+| 4 | 受影响的构建清单（`CMakeLists.txt` / `tests/CMakeLists.txt` / `benches/CMakeLists.txt`） | 新增源文件必须显式登记，见 BUILDING.md §2.10 |
 
-## 二、目录与文件结构规则
+## 2. 硬约束
 
-- 严格遵循 [CONTRIBUTING.md](CONTRIBUTING.md) 第 2 节定义的目录结构
-- Go 实现必须位于功能子目录中，例如 `data/t1/`
-- Go 包名必须与目录名完全一致（如 `package t1`）
-- **禁止**为了"方便"合并 Go 文件到根目录
-- Java 测试文件的 `package` 必须与 `tests/` 作为源码根目录时的目录层级一致；不应额外增加 `quant1x` 顶层包，但也不能省略 `tests` 根层级，例如 `tests/distributed/id` 对应 `package tests.distributed.id`
-- 若 IDE/编译器提示 `The declared package "distributed.id" does not match the expected package "tests.distributed.id"`，这是错误配置；必须修正为 `tests` 目录根层级与 package 一致，并禁止在 Java 测试里人为多加 `quant1x.` 这一层
-- 任何新增 Java 类/测试都必须遵循“模块目录 == package 层级（相对 tests 根目录）”的规则，避免出现 `quant1x.distributed.id`、`distributed.id` 这种与 `tests/` 根层级不一致的命名
-- **测试性代码与临时文件必须放入仓库根目录的 `temp/`**：为验证、复现、调试、抓取或导出而临时创建的脚本、程序、数据、日志与中间产物，一律不得散落在源码目录、仓库根或其他位置
-- **`temp/` 内路径必须复刻模块层级**：临时产物按其在仓库中的相对路径逐级存放，不得扁平化或改名，例如验证 `quant1x/runtime/ringbuffer.rs` 放入 `temp/quant1x/runtime/`，验证 `tests/tdd-bars.cpp` 放入 `temp/tests/`
-- **`temp/` 不纳入版本跟踪**：该目录已在 `.gitignore` 中忽略，不得提交其中的任何内容，也不得在交付物、文档或提交信息中引用 `temp/` 路径
-- 本条仅约束临时性产物；需要入库的正式测试用例与样本仍按项目约定放在源码对应位置（见 `tests/README.md`），不得塞进 `temp/`
-- **配套产物与脚本同目录**：截图、日志、导出数据跟随产生它的脚本存放；跨目录审计/迁移脚本放 `temp/<最近的相关目录>/`；`temp/` 根目录出现散落文件即视为放错
-- **只在项目目录内写**：禁止把临时文件写到用户目录、桌面、系统临时目录或外部仓库；确需写到项目外时，必须先得到用户明确要求，并在回复中点名具体路径
-- **工具链产物不手工挪入 `temp/`**：`target/`、`__pycache__/`、`Cargo.lock`、`_version.py` 由工具链管理；一次性脚本若三个月后仍有跨语言对拍价值，应转为正式测试用例
-- 临时文件的完整细则见 `CONTRIBUTING.md` 第 8 节
-- **每个目录必须有 `README.md`**：写明职责与边界、文件与子目录清单、与上下层/兄弟模块的关系及跨语言对应文件；缺少 `README.md` 视为未完成（见 `CONTRIBUTING.md` 第 2.3 节）
+| # | 约束 | 细则 |
+| --- | --- | --- |
+| 1 | **Python 是 spec**，语义、API、默认行为、失败约定一律以它为准；C++ 是生产实现，Rust / Go 是对齐实现，Java 为可选对照 | [§2.3](CONTRIBUTING.md#23-语言角色与演进顺序) |
+| 2 | **不自己造东西**：不造 Python 里没有的结构 / 函数名 / 逻辑；需要新能力先补 Python spec，再推广 | [§4.1](CONTRIBUTING.md#41-总纲snake_case-优先) |
+| 3 | **读 spec 代码，不读注释猜**；怀疑 spec 有错时先跑 Python 验证，再与用户商定是否改 spec | [§2.3](CONTRIBUTING.md#23-语言角色与演进顺序) |
+| 4 | **类型名查词表**：`Bar` / `Transaction` / `Sector` … 不得即兴发明，不得用拼音音译 | [§4.3](CONTRIBUTING.md#43-领域类型词表type-vocabulary) |
+| 5 | **注释只说"是什么 / 怎么做 / 为什么这样"**，不写"本轮改了啥、上一版是什么" | [§5.1](CONTRIBUTING.md#51-注释只说是什么怎么做) |
+| 6 | **通用能力先查 `quant1x/base/`**，不写私有副本；缺就补 base | [§5.2](CONTRIBUTING.md#52-通用能力优先落-base) |
+| 7 | **不擅自加开关**；调试开关一律 `debug_` 前缀 | [§5.3](CONTRIBUTING.md#53-调试开关) |
+| 8 | **写盘必须幂等**：同一批输入跑多遍，产物一致 | [§5.4](CONTRIBUTING.md#54-重复触发与幂等) |
+| 9 | **文档与代码同批**：新目录带 `README.md`，跨语言模块带同名 `.md` | [§6](CONTRIBUTING.md#6-文档规范) |
+| 10 | **编码与行尾**：UTF-8 无 BOM、LF、末尾一个换行（`.bat` / `.cmd` 例外为 GBK + CRLF） | [§5.8](CONTRIBUTING.md#58-文件编码与行尾) |
+| 11 | **不擅自 `git commit` / `push` / `rebase`**；提交信息按 `type[language]：summary` 模板，Windows 下用 `-F` 传文件 | [§8](CONTRIBUTING.md#8-git-提交规范) |
+| 12 | **对照表列序固定** `python → c++ → rust → go → java`；前四门必须实现，`java` 可选（缺失不影响状态） | [§2.3](CONTRIBUTING.md#23-语言角色与演进顺序) |
+| 13 | **`temp/` 才是垃圾站**：一次性脚本、中间产物、草稿落 `temp/`，层级复刻源码结构（不许扁平堆在根），不入库、文档与提交信息也不引用其路径 | [§3.6](CONTRIBUTING.md#36-temp仓库的垃圾站) |
+| 14 | **只在项目目录内写文件**：临时文件、导出物、调试脚本一律落 `temp/`；只有用户明确要求时才可写到项目外，并在回复里点名路径 | [§3.6](CONTRIBUTING.md#36-temp仓库的垃圾站) |
+| 15 | **Go 包名铁律**：`package <目录名>`；Java 测试包名 = `tests/` 下目录层级（不多 `quant1x.`、不省 `tests.`） | [§3.3](CONTRIBUTING.md#33-go-的目录与包名)、[§3.4](CONTRIBUTING.md#34-java-测试包的层级) |
+| 16 | **先建单**：每项功能或任务先在 Gitee 建 Issue（背景 / 目标与范围 / 验收 / 涉及语言 / 风险），完成后关单 | [§9.1](CONTRIBUTING.md#91-先建单再动手) |
+| 17 | **版本号与 tag 一律不碰**：不得改版本字符串、不建 tag、不调 `autochangelog`、不手工改 `CHANGELOG.md` | [§10](CONTRIBUTING.md#10-版本与发布) |
 
-## 三、命名规则
+## 3. 主题索引
 
-### 3.0 命名参考体系（Type Vocabulary）
+| 我要… | 去哪 |
+| --- | --- |
+| 查语言最低版本 / 编译器基线 | [§2.1](CONTRIBUTING.md#21-最低版本)、[§2.2](CONTRIBUTING.md#22-c-编译器基线) |
+| 判断"同构 / 异构"这类术语怎么用（语义 vs 实现） | [§2.4](CONTRIBUTING.md#24-术语语义与实现) |
+| 决定文件放哪、叫什么 | [§3](CONTRIBUTING.md#3-目录与多语言布局) |
+| 查跨语言导入 / 包含路径怎么对位 | [§3.1](CONTRIBUTING.md#31-仓库根与实现根) |
+| 临时脚本 / 一次性复现 / 中间产物放哪 | [§3.6](CONTRIBUTING.md#36-temp仓库的垃圾站) |
+| 定函数名 / 命名空间 / 头文件守卫宏 / 平台宏 | [§4](CONTRIBUTING.md#4-命名与数据契约) |
+| 查领域类型标准名（`Bar` / `Transaction` / `Sector` …） | [§4.3](CONTRIBUTING.md#43-领域类型词表type-vocabulary) |
+| 定整型 / 浮点的跨语言名与宽度 | [§4.6](CONTRIBUTING.md#46-标量类型) |
+| 定落盘字段名 / Go struct tag | [§4.7](CONTRIBUTING.md#47-边界态io-与序列化铁律) |
+| 写注释、判断该不该写某句 | [§5.1](CONTRIBUTING.md#51-注释只说是什么怎么做) |
+| 找某个通用能力该不该落 `base` | [§5.2](CONTRIBUTING.md#52-通用能力优先落-base) |
+| 处理重复触发 / 幂等 | [§5.4](CONTRIBUTING.md#54-重复触发与幂等) |
+| 跑 Python、写 import | [§5.5](CONTRIBUTING.md#55-python-包形态与导入) |
+| 写 `#include` | [§5.6](CONTRIBUTING.md#56-c-头文件引用) |
+| 处理字符串 | [§5.7](CONTRIBUTING.md#57-字符串与通用工具复用) |
+| 遇到缺依赖 / spec 未定 | [§5.9](CONTRIBUTING.md#59-卡点先抛不支持)、[§5.10](CONTRIBUTING.md#510-抽象接口留给实现方的方法必须抛异常) |
+| 写模块文档 / 判"算不算完成" | [§6](CONTRIBUTING.md#6-文档规范) |
+| 写测试 | [§7](CONTRIBUTING.md#7-测试规范) |
+| 写提交信息 | [§8.1](CONTRIBUTING.md#81-提交信息) |
+| 判断要不要立提案 | [§9.2](CONTRIBUTING.md#92-提案rfc变更受理与裁决) |
+| 定工作方式（假设 / 简洁 / 精准 / 目标驱动） | [§11](CONTRIBUTING.md#11-工作准则) |
+| 构建 / 依赖 / 发布 | [BUILDING.md](BUILDING.md) |
 
-本项目有一组核心领域类型的**标准名称**，以国际量化金融社区通用术语（Bloomberg / QuantLib / Backtrader / WRDS 等）为参考基准，四种语言必须使用同一名称。**拒绝拼音、音译、本地化翻译。** AI 生成代码时，必须以此表为准，不可即兴发明别名。
+## 4. 常用命令
 
-| 领域概念 | 标准类型名 | 说明 |
-|---------|-----------|------|
-| OHLCV K线数据结构 | **`Bar`** | 不得使用 `KLine`（已废弃的遗留别名，仅 C++ 保留 `using KLine = Bar` 向后兼容） |
-| 未复权原始K线 | **`BarRaw`** | 不得使用 `KLineRaw` |
-| K线周期枚举 | **`KLineType`** | 此处保留 "KLine" — 它是关于"K线类别"的元数据，非数据结构本身 |
-| K线数据适配器类 | **`DataKLine`** | 适配器类名保留 "KLine" — 这是"拉取K线数据"的功能模块名，非数据结构 |
-| 原始K线适配器 | **`DataKLineRaw`** | 同上 |
-| 分钟K线适配器 | **`DataMinuteKLine`** | 同上 |
-| 逐笔成交 | **`Transaction`** | 不得使用 `Tick`（`Tick` 仅作为方向常量前缀如 `TICK_BUY`，无 `Tick` struct） |
-| 复权信息 | **`XdxrInfo`** | 除权除息信息 |
-| 累积复权因子 | **`CumulativeAdjustment`** | 四种语言同名 |
-| 板块分类 | **`Sector`** | 行业/概念板块 |
-| 公司信息 | **`CompanyInfoChunk`** | 上市公司基本信息 |
-| 分红调整 | **`DividendAdjustment`** | 分红除权调整 |
-| 交易方向 | **`Direction`** | 买卖方向标志 |
-| 证券K线（协议层） | **`SecurityBar`** | 网络协议/存储层使用的中间结构，Python 端复用 `Bar` |
+| 目的 | 命令 |
+| --- | --- |
+| C++ 配置与构建（Windows） | `scripts\msvc_configure.bat`，或见 [BUILDING.md](BUILDING.md) §2.4 |
+| C++ 构建 | `cmake --build build-msvc --config Release -j` |
+| C++ 跑用例 | `ctest --test-dir build-msvc -C Release --output-on-failure -j 8`（按名过滤加 `-R <名称>`） |
+| Rust 构建 / 用例 | `cargo build --bin q1x`、`cargo test`（ringbuffer 相关需 `--features vyukov`） |
+| Rust 基准 | `cargo bench --bench vyukov_bench` |
+| Go 编译 / 用例 / 检查 | `go build ./...`、`go test ./...`、`go vet ./...` |
+| Python 可编辑安装 | `pip install -e .` |
+| Python 跑用例 | `python -m pytest tests -q`，或模块级 `python -m unittest quant1x.<模块>.<子模块>_test` |
+| Java 用例 | `mvnw.cmd -B test`（Linux / macOS 用 `./mvnw -B test`） |
+| 编码自查（BOM / CRLF） | [§5.8](CONTRIBUTING.md#58-文件编码与行尾) 的 PowerShell 片段 |
+| 提交（Windows） | 写入 `.git/commit-msg.tmp` 后 `git commit -F .git/commit-msg.tmp` |
+| 建 / 查 / 关工单 | Gitee Issues（仓库 `quant1x/quant1x`），正文模板见 [§9.1](CONTRIBUTING.md#91-先建单再动手) |
 
-**核心原则：以国际量化金融标准术语为准，拒绝本地化音译**
+## 5. 交付前自检
 
-本项目类型命名以**国际量化金融社区通用术语**为唯一参考标准。量化交易是一个全球化领域，代码应能被任何操盘手、量化研究员直接阅读，不依赖中文语境。
-
-**为什么用 `Bar` 而不用 `KLine`？**
-- `Bar` 是国际量化金融中 OHLCV 柱状数据的**标准术语**（Bloomberg Terminal、QuantLib、Backtrader 等均使用 `Bar`）
-- `KLine` 是中文"K线"的音译（源自日语"罫線" Keisen），属于本地化命名，不在国际通用术语范围内
-- 同理，`Transaction` 不用 `Tick`（`Tick` 在国际期货/外汇市场另有精确定义：最小价格变动单位）
-- 项目经历过 `kline-to-bar` 重构（v0.7.51），已将规范类型名从 `KLine` 统一为 `Bar`
-- C++ 中保留 `using KLine = schema::Bar` 仅用于**旧代码向后兼容**，新代码不得引用 `KLine` 作为类型名
-
-**新增类型的命名验收标准**：
-1. 该名称是否是 Bloomberg / QuantLib / Backtrader / WRDS 等国际平台的惯用名？
-2. 如果不是 → 拒绝，使用国际标准术语
-3. 如果在国际标准中不存在直接对应 → 以英文描述性命名，禁止拼音/音译
-
-**文件命名规则**：文件以**领域概念**命名，非以语言命名。同一概念在 `data/schema/` 下有平行的多语言文件：
-
-```
-data/schema/
-├── bar.md            # 文档（Spec）
-├── bar.h             # C++
-├── bar.rs            # Rust
-├── bar.go            # Go
-├── bar.py            # Python
-├── transaction.md
-├── transaction.h
-├── transaction.rs
-├── transaction.go
-├── transaction.py
-└── ...
-```
-
-### 3.1 内存态（代码内部）
-
-| 语言   | 函数 / 方法             | 类型 / Struct           | 变量 / 字段             |
-|--------|------------------------|------------------------|------------------------|
-| Python | `snake_case`           | `PascalCase`           | `snake_case`           |
-| C/C++  | `snake_case`           | `PascalCase`           | `snake_case`           |
-| Rust   | `snake_case`           | `PascalCase`           | `snake_case`           |
-| Go     | `PascalCase`（导出）    | `PascalCase`           | `PascalCase` / `camelCase` |
-
-**⚠️ AI 必须做到：**
-
-- 从 Python / C++ 生成 Go 代码时，自动将 `snake_case` → `PascalCase`
-- **绝不生成** `snake_case` 的 Go 导出符号
-- **新增类型名必须查 §3.0 参考体系**，不可即兴发明名称
-- 若发现某种语言使用了与 §3.0 不一致的名称，立即指出
-
-### 3.2 边界态（I/O 与序列化）【铁律】
-
-- 所有落盘字段名必须是**全小写 `snake_case`**
-- Go 结构体必须显式添加 struct tag：
-
-```go
-type Bar struct {
-    Open  float64 `json:"open" csv:"open"`
-    High  float64 `json:"high" csv:"high"`
-    Low   float64 `json:"low" csv:"low"`
-    Close float64 `json:"close" csv:"close"`
-    Volume float64 `json:"volume" csv:"volume"`
-}
-```
-
-- AI 生成 Go 代码时，必须自动补全 tag
-- **tag 内容永远是小写 snake_case**，不受内存命名影响
-- **tag 内字段名必须与 Python/C++ 的 snake_case 字段名一致**，不可自行翻译
-
-## 四、文档驱动的 AI 行为规则
-
-### 上下文读取顺序（强制执行）
-
-1. 优先读取同级 `*.md`（如 `t1.md`）
-2. 其次读取 Python / C++ 参考实现
-3. 最后才生成目标语言代码
-
-### 生成代码必须满足
-
-- **数学公式**：严格对照 `*.md` 中的 LaTeX
-- **数据契约**：字段类型、精度、Null/NaN 行为与文档一致
-- **边界条件**：必须实现文档中定义的所有异常分支
-
-## 五、语言职责与 AI 行为约束
-
-### Python
-
-- 作为 Spec 锚点
-- 所有新功能必须先有 Python 实现
-- docstring 视为跨语言契约的一部分
-
-### C / C++
-
-- 作为生产真相源
-- **严禁 UB**，严禁未定义行为
-- 内存管理必须显式、可审计
-
-### Rust
-
-- **严禁** `unwrap()` / `expect()` 在业务路径
-- 所有错误必须显式返回 `Result`
-- `unsafe` 必须说明理由
-
-### Go
-
-- **严禁** `panic` 作为控制流
-- 所有 error 必须显式返回
-- 并发安全必须显式标注
-
-## 六、AI 生成代码的硬性限制
-
-- ❌ 不允许"看起来差不多"的实现
-- ❌ 不允许省略边界条件处理
-- ❌ 不允许假设字段默认值
-- ❌ 不允许引入语言特有隐式行为
-- ✅ 必须保证四种语言对同一输入的数值结果在 epsilon 范围内一致
-
-## 七、开发工作流（AI 视角）
-
-当被要求"实现 / 移植 / 补齐某功能"时，AI 必须按以下顺序执行：
-
-1. 确认需求与 Issue：Issue 正文必须包含背景、目标与范围、验收标准、涉及语言与模块、风险与兼容性；需要提案的变更先按 `CONTRIBUTING.md` 第 7.2 节处理
-2. 阅读 `CONTRIBUTING.md` 了解整体架构
-3. 阅读对应 `t1.md`（如有）
-4. 阅读 Python / C++ 实现
-5. 按目标语言规范生成代码
-6. 自检：
-   - 命名是否符合本节规则
-   - 序列化 tag 是否正确
-   - 边界条件是否全覆盖
-
-## 八、AI 回复风格要求
-
-- 明确指出目标语言所属层级（探索 / 生产 / 生态）
-- 若发现 Python / C++ / Rust / Go 行为不一致，立即指出
-- **不擅自改变架构约定**，即使"看起来更优雅"
-
-## 九、版本与发布规则（AI 禁止触碰）
-
-- 版本号由 Git Tag（`vMAJOR.MINOR.PATCH`）唯一决定。
-- Rust / Python / Go / C++ 四种语言必须共享同一版本号，不可各自独立。
-- `autochangelog` 是唯一合法的版本发布入口。
-- **AI Agent 严禁以下行为**：
-  - ❌ 修改任何文件中的版本号字符串
-  - ❌ 创建、修改或删除 Git Tag
-  - ❌ 调用 `autochangelog` 或任何发布脚本
-  - ❌ 在代码或提交信息中自行推断版本号
-  - ❌ 修改 `CHANGELOG.md`、`pyproject.toml`、`Cargo.toml` 中的 `version` 字段
-
-## 提交信息规范
-
-- Git commit 的主题和正文必须使用中文，准确说明本次变更内容。
-- 提交信息不得自行添加版本号、Git Tag 或发布相关信息。
-- 所有代码变更（新特性、Bug 修复、重构、测试、文档、性能优化等）必须在提交主题中显式标注涉及的开发语言，确保多语言语义一致的审计性。
-- 主题必须采用统一模板：`<type>[<language>]：<summary>`。
-- `<type>` 取值建议：`feat`（新特性）、`fix`（修复）、`refactor`（重构）、`test`（测试）、`perf`（性能）、`docs`（文档）、`chore`（例行维护）。
-- `<language>` 允许值：`python`、`cpp`、`rust`、`go`、`multi`。若涉及多个语言，使用 `python+cpp`、`python+rust+go` 等形式，优先按语义顺序书写：`python+cpp` > `python+cpp+rust+go`。
-- 若是一处跨语言同步改动，正文必须补充：
-  1. 变更概述；
-  2. 涉及语言与文件范围；
-  3. 语义一致性说明；
-  4. 验证方式/测试命令。
-- 主题中禁止仅写“update / optimize / fix”这类空泛描述，必须指明对象和语言，例如：
-  - `feat[python]：为 runtime ringbuffer 增加原生 Python 语义实现`
-  - `fix[cpp+rust]：修正 vyukov 退避策略与 arm64 调度兼容性`
-  - `test[python]：补充 ringbuffer 回归测试覆盖 close 与 wait_for_close`
-  - `docs[multi]：同步更新 ringbuffer 契约与跨语言语义说明`
-- 若某次提交仅修改单一语言，主题中必须明确写出该语言；若跨语言同步提交，则必须写 `multi` 或多个语言组合；不得出现“无语言标记”的提交信息。
-- 主题和正文都应优先使用中文，必要时保留英文术语（如 `RingBuffer`、`QueueFullError`、`try_push`）作为对象标识。
-- 提交信息必须保持可审计、可分组、可检索，方便后续基于语言维度筛选 commit。
-
-示例：
-
-```text
-feat[python]：为 runtime ringbuffer 增加原生 Python 语义实现
-
-- 新增 quant1x/runtime/ringbuffer.py，保留 try_push / try_pop / push / pop / close / wait_for_close 语义
-- 目标为与 Go/C++/Rust 的 spec 契约保持一致，避免 Python 侧语义漂移
-- 验证：PYTHONPATH=. python -m unittest quant1x.runtime.ringbuffer_test
-```
-
-```text
-fix[cpp+rust]：修正 vyukov 退避策略，消除 arm64 争抢下的 convoy 效应
-
-- 调整 backoff 退避策略，统一 C++ 与 Rust 的调度行为
-- 重点修复 aarch64 上 yield/isb 差异导致的性能退化
-- 说明：该修复仅影响调度策略，不改变 ringbuffer 语义契约
-- 验证：cargo bench --bench vyukov_bench
-```
-
-```text
-test[python+go]：补充 ringbuffer 语义回归测试，覆盖 close 与阻塞等待行为
-
-- 以 Python 作为 spec 锚点，Go 侧对齐测试语义
-- 验证：python -m unittest quant1x.runtime.ringbuffer_test
-```
-
-### 提交前检查清单（Checklist）
-
-在执行 `git commit` 之前，AI 必须逐项核对：
-
-- [ ] 主题是否符合 `type[language]：summary` 模板？
-- [ ] `type` 是否真实反映本次变更类型（feat / fix / refactor / test / perf / docs / chore）？
-- [ ] `language` 是否准确标明本次涉及的开发语言，未标注或误标注均视为不合规？
-- [ ] 若涉及多语言，是否使用 `python+cpp`、`python+rust+go` 等组合形式，而非笼统写 `multi`？
-- [ ] 标题是否避免“update / optimize / fix”这类空泛描述，是否明确对象和影响？
-- [ ] 正文是否包含：变更概述、涉及语言与文件范围、语义一致性说明、验证方式/命令？
-- [ ] 若为跨语言同步改动，是否说明了语义一致性与测试验证方式？
-- [ ] 是否未包含版本号、Git Tag、发布相关字符串？
-- [ ] 是否使用中文为主，必要时保留英文术语作为对象标识？
-- [ ] 是否能在审计时根据语言维度快速过滤和回溯？
-
-提交未满足以上任一项，必须在提交前修正，不能直接提交。
-
-## 十、一句话总结（给 AI 的记忆锚点）
-
-> Quant1X 是多语言语义同构系统，Python 是 Spec，C++ 是 Truth，Rust / Go 是对齐实现，I/O 边界死守 `snake_case`。
+1. **语义**：与 Python spec 逐值对拍过（不是"看起来一样"）；有差异先改实现，或与用户商定改 spec。
+2. **构建与用例**：相关语言的编译通过、相关用例通过；跳过项（在线 / 依赖本地数据）要能说明原因。
+3. **一致性**：新增 / 修改的接口在四种语言里命名对位；落盘字段名全小写蛇形；Go tag 齐全。
+4. **注释**：没有"本轮 / 上一版 / 原来 / 曾经"这类变更叙事（[§5.1](CONTRIBUTING.md#51-注释只说是什么怎么做)）。
+5. **文档**：目录 `README.md`、模块 `.md` 的路线图 / 功能表 / 测试 / TODO 与实际一致，无陈旧条目。
+6. **编码**：UTF-8 无 BOM、LF、末尾换行（[§5.8](CONTRIBUTING.md#58-文件编码与行尾)）。
+7. **提交信息**：符合 `type[language]：summary`，正文分条含验证命令，无版本号 / 代理署名。
+8. **工单**：这轮任务在 Gitee 有对应 Issue，状态与正文和实际落地一致（[§9.1](CONTRIBUTING.md#91-先建单再动手)）。
