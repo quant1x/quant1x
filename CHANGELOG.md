@@ -3,6 +3,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.10] - 2026-11-16
+### Changed
+- docs[multi]：整合多语言协作规范，收敛为单一规范源
+  - CONTRIBUTING.md 重写为唯一规范源（11 节）：并入语言版本与编译器基线、语言角色与演进顺序、术语口径（实现异构·语义相同）、目录与多语言布局、命名与数据契约（含领域类型词表）、代码规范（注释三类格式、base 优先、debug_ 开关、幂等、包形态与导入、头文件引用、编码与行尾、卡点抛不支持、抽象方法抛异常）、文档规范（目录 README、模块 md 六段结构、状态三值）、测试规范（六维覆盖、进程级崩溃注入、跨语言对拍）、提交规范、提案与验证工作流、工作准则
+  - AGENTS.md 收敛为 AI 入口索引：开工前必读顺序、17 条硬约束（逐条指向 CONTRIBUTING.md 锚点）、主题索引、常用命令、交付前自检；不再复制细则
+  - 保留本仓既有约定：实现根为 quant1x/、Go 包边界规则、Java 测试包层级、提交主题全角冒号与 cpp 语言标记、C++ 包含写法 quant1x/<模块>/<头文件>.h、feature_detection.h 平台宏
+  - .githooks/text_check.py 三处规范指针改指 CONTRIBUTING.md 5.8（文件编码与行尾一节已从 AGENTS.md 迁出）
+  - BUILDING.md 去掉「以 C++ 为基准」的表述，改为与 Python spec 语义一致、与 C++ 实现对位；同步 AGENTS.md / CONTRIBUTING.md 的定位描述
+  - 语义一致性：规范口径统一为「Python 是 spec，C++ 是生产实现，Rust/Go 对齐，Java 可选」，四门语言命名与落盘契约规则不变
+  - 验证：锚点自检脚本比对 56 个标题锚点，两份文档内部链接 0 断裂；AGENTS.md、CONTRIBUTING.md、BUILDING.md、text_check.py 均 UTF-8 无 BOM、LF 行尾；引用的标量别名与 strings API 已核对存在
+- release version 0.8.10
+
 ## [0.8.9] - 2026-11-15
 ### Changed
 - feat[go]：将加权评分迁入 learn/scoring
@@ -2927,7 +2939,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.9...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.10...HEAD
+[0.8.10]: https://codeberg.org/quant1x/quant1x/compare/v0.8.9...v0.8.10
 [0.8.9]: https://codeberg.org/quant1x/quant1x/compare/v0.8.8...v0.8.9
 [0.8.8]: https://codeberg.org/quant1x/quant1x/compare/v0.8.7...v0.8.8
 [0.8.7]: https://codeberg.org/quant1x/quant1x/compare/v0.8.6...v0.8.7
