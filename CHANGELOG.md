@@ -3,6 +3,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.9] - 2026-11-15
+### Changed
+- feat[go]：将加权评分迁入 learn/scoring
+  - 从 foundations 的 mpr/scoring 迁入 Go 存量实现，落在 quant1x/learn/scoring，包名 scoring
+  - 收录 ScoreCalculator（自定义权重 + 自动分配余量）与 RangeProcessor / ThresholdProcessor 两个折算处理器
+  - 修缺陷：RangeProcessor 零宽区间不再除零、ThresholdProcessor 非正阈值返回错误、WeightDistribution 返回副本
+  - 单测由 printf 打印改为断言：权重分配、错误分支、零宽区间、零/负阈值、权重分布不被外部污染，共 11 项
+  - 文档：scoring.md 写公式、数据契约与边界；README.md 写职责边界、文件清单与跨语言对应（Python / C++ / Rust 未落地）
+  - 验证：go test ./quant1x/learn/scoring/ 全过；go vet 与 gofmt -l 无输出；go build ./quant1x/learn/... 通过
+- release version 0.8.9
+
 ## [0.8.8] - 2026-11-14
 ### Changed
 - chore[python]：收敛 Python 打包清单，移除不可再分发的中易字体
@@ -2916,7 +2927,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.8...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.9...HEAD
+[0.8.9]: https://codeberg.org/quant1x/quant1x/compare/v0.8.8...v0.8.9
 [0.8.8]: https://codeberg.org/quant1x/quant1x/compare/v0.8.7...v0.8.8
 [0.8.7]: https://codeberg.org/quant1x/quant1x/compare/v0.8.6...v0.8.7
 [0.8.6]: https://codeberg.org/quant1x/quant1x/compare/v0.8.5...v0.8.6
