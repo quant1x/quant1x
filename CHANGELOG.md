@@ -3,6 +3,131 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.13] - 2026-11-17
+### Changed
+- chore[go]：升级 num 到 0.8.4，移除 gox 依赖
+  - go.mod / go.sum：github.com/quant1x/num 0.8.3 → 0.8.4；该版本不再引用 gox，github.com/quant1x/gox 从间接依赖中移除，go.sum 同步删掉它的校验和
+  - golang.org/x/sys 0.49.0 → 0.50.0
+  - 语义一致：只动依赖清单，未改任何源码
+  - 验证：go mod tidy -diff 无差异；grep quant1x/gox go.mod go.sum 无结果；go build ./...；go vet ./quant1x/command/ ./quant1x/base/ ./quant1x/encoding/yaml/ ./quant1x/config/ ./tools/tail/；go test ./quant1x/command/ ./quant1x/base/ ./quant1x/encoding/yaml/ ./quant1x/config/
+  - 工单：#10
+- chore[python]：把 % 拼接改为格式化字符串
+  - .githooks/commit_msg_check.py / text_check.py、quant1x/io/connection_pool.py、quant1x/net/tcp_client_pool.py：%s / %d 改成 str.format()
+  - quant1x/contrib/data/tdx/level1/ext/__init__.py：日期与时间戳的 %d-%02d-%02d 拼接改成 str.format()
+  - quant1x/formula/formula.ipynb：9 个 cell 的 print("... %d" % (N)) 改成 f-string
+  - 语义一致：只改字符串构造方式，取值、判断与输出文案不变（%-9s 对齐改为 {:<9}）
+  - 验证：ruff check --select UP031 . 无告警（只剩 market.py 两条 invalid-syntax，属 Python 3.8 基线与 match 语句，不在本单）；改动过的 .py 全部 py_compile 通过；.githooks 两个脚本手工运行均通过
+  - 工单：#11
+- chore[python]：format 调用改为 f-string
+  - .githooks/commit_msg_check.py、.githooks/text_check.py、quant1x/io/connection_pool.py、quant1x/net/tcp_client_pool.py：str.format() 改为 f-string
+  - quant1x/contrib/data/tdx/level1/ext/__init__.py：日期与时间戳的 str.format() 改为带宽度说明符的 f-string（{month:02d} 等）
+  - 语义一致：只改字符串构造方式，取值、判断与输出文案不变
+  - 验证：ruff check --select UP031,UP032 . 除 market.py 的两条 invalid-syntax 外无告警；改动过的 .py 全部 py_compile 通过；.githooks 两个脚本手工运行通过
+  - 工单：#12
+- chore[python]：消除 .githooks 的未使用解包与 subprocess 缺 check 告警
+  - .githooks/commit_msg_check.py：detect_mojibake 返回的三元组里 enc 未使用，改名为 _enc
+  - .githooks/text_check.py：_git() 的 subprocess.run 显式传 check=False，失败仍由 returncode 判断后抛 RuntimeError
+  - 语义一致：无行为变化
+  - 验证：ruff check --select RUF059,PLW1510 .githooks 无告警；两个脚本 py_compile 通过并手工运行退出码 0
+  - 工单：#13
+- fix[python]：text_check 改用 capture_output，并分开取文本与字节输出
+  - .githooks/text_check.py：subprocess.run 改 capture_output=True；拆出 _run_git / _git / _git_bytes，让“取文本”和“取原始字节”各有明确返回类型，消除 split("\0")、split(b"\x0a")、startswith(b"+++") 三处 bytes/str 混用的类型错误；残留的 .format 改成 f-string
+  - scripts/run_lmax_benchmark.py：subprocess.run 显式 check=False，失败仍由输出匹配判断
+  - 语义一致：命令与失败判定逻辑不变
+  - 验证：ruff check --select UP022,PLW1510,UP031,UP032 . 无告警；pyright .githooks/text_check.py 0 errors；py_compile 通过；两个钩子脚本手工运行通过
+  - 工单：#14
+- refactor[python]：market 的 match 语句改为 if/elif，恢复 3.8 基线兼容
+  - quant1x/data/market.py：detect_instrument_type 的 match exchange 改为字典查表；detect_instrument 的 match code_len 改为 if/elif，逐分支与原 case 对齐（case _ 对应 else）
+  - 未使用的解包变量加下划线前缀（RUF059）
+  - 语义一致：分支互斥关系、返回值与规则选择顺序不变；3.8 下不再语法错误
+  - 验证：ruff check（py38 target）无语法告警与 RUF059/UP031/UP032 告警；pyright quant1x/data/market.py 0 errors；py_compile 通过
+  - 工单：#14
+- chore[python]：协议解析里未使用的解包变量加下划线前缀
+  - quant1x/contrib/data/tdx/（financial_report、level1/ext/__init__、level1/fund、level1/std/security_quote、level1/std/xdxr_info、level1/ext/xdxr_hkex）
+  - quant1x/factors/（f10、financial_report）、quant1x/learn/regime/regime_switching_framework.py、tests/test_connection_pool.py
+  - 都是 struct.unpack / 多返回值里没用到的占位字段，改名成 _name，不改取值顺序与逻辑
+  - 验证：ruff check --select RUF059 . 无告警；涉及文件全部 py_compile 通过
+  - 工单：#14
+- fix[cpp]：main 的 Argument 改用赋值构造，消除缺失字段告警
+  - main.cpp：--verbose / --debug / --version / --pipe 的 Argument 由聚合初始化改为先默认构造再赋值，不再跳过 names 等字段
+  - 语义一致：登记到解析器的参数与原来完全相同
+  - 验证：cmake --build build-msvc --config Release --target q1x 通过；q1x --help 退 0、update --help 退 0、--no-such 退 2
+  - 工单：#15
+- chore[python]：补 from __future__ import annotations
+  - main.py 与 18 个模块补 future 导入：argparser（complete、derive 及其用例）、base（dotenv、expandvars、hotreload）、contrib/data/tdx（config、datasource、level1/ext、xdxr）、data（datasource、ticker_rules/rule）、core/decode、version、scripts/run_lmax_benchmark
+  - 这些文件用 PEP 585 / PEP 604 写法（list[str]、X | Y），3.8 基线下需要延迟求值
+  - 语义一致：注解不再在运行期求值，typing.get_type_hints 仍按模块命名空间解析（derive 与 dataclass_utils 的用法已由用例覆盖）
+  - 验证：ruff check --select FA102 . 无告警；改动文件 py_compile 通过；argparser 的 parser/derive/help/complete 四个 Python 用例全通过；pyright main.py 0 errors
+  - 工单：#15
+- test[go]：基准循环改用 b.Loop()
+  - quant1x/base/filesystem_test.go、quant1x/data/meta/timestamp_test.go、quant1x/distributed/{id,id128,id64}/id_test.go、quant1x/encoding/binary/struc/bench_test.go：41 处 for i := 0; i < b.N; i++ 改为 for b.Loop()
+  - RunParallel 里的 pb.Next() 保持原样：b.Loop() 不适用于并行基准
+  - 语义一致：循环体不使用下标变量；b.Loop() 在首次迭代自动重置计时，循环前的 setup 不再计入耗时
+  - 验证：go build ./...；go vet（struc 的 Fields.String 告警为既有）；go test -run '^$' -bench . -benchtime=1x 在 base / data/meta / distributed/id{,128,64} / encoding/binary/struc 六个包通过
+  - 工单：#16
+- fix[python]：logger 改为导出公开名字，去掉 dunder 跨模块导入
+  - quant1x/log/__init__.py：from .logger import __logger as logger 改成 from .logger import logger
+  - 原因：__logger 是模块私有 dunder 名字，跨模块导入会被静态检查判为 unknown import symbol；logger.py 末尾已有 logger = __logger 的公开导出，__all__ 也是 logger
+  - 语义一致：绑定的仍是同一个 loguru Logger 实例
+  - 验证：pyright quant1x/log/__init__.py 0 errors；from quant1x.log import logger 实测导入成功（本机缺 python-dotenv，用临时桩补齐依赖链，桩不入库）
+  - 工单：#17
+- fix[python]：ext 协议的 serialize_request_body 返回真正的 bytes
+  - quant1x/contrib/data/tdx/level1/ext/__init__.py：6 处声明 -> bytes 却返回 bytearray 的方法改为返回 bytes —— padding / pkg / body 包一层 bytes()，两处 bytearray.fromhex 改成 bytes.fromhex
+  - 语义一致：字节内容与长度不变；调用方 protocol.py 只做 len() 与字节拼接，不修改返回值
+  - 验证：pyright quant1x/contrib/data/tdx/level1/ext/__init__.py 0 errors；全包 pyright 不再有 bytearray 报告；py_compile 通过
+  - 工单：#18
+- chore[go]：忽略本地 go.work（gox 已不在依赖图）
+  - .gitignore 增加 go.work 与 go.work.sum：这两类文件是本机多模块编排，不入库
+  - 背景：gopls 提示某个文件位于模块缓存 gox@v1.27.1 内、建议加 go.work；但 go mod graph / go list -m all 里已无 quant1x/gox，模块缓存目录只读且路径随版本变化，不应写进仓库
+  - 验证：.gitignore 含这两条；git status 干净
+  - 工单：#19
+- fix[python]：清理未使用变量，指标模块按公式保留步骤
+  - quant1x/indicators：9 处 pandas.eval('A & B') 改成直接表达式，变量引用改为静态可查；其余中间序列是公式移植的算法步骤，pyproject 为 quant1x/indicators/*.py 豁免 F841 并写明理由
+  - 其它文件的死赋值逐处清理：base/filesystem.py、base/system.py（删掉永远不返回的“方法2”调试扫描）、tdx/level1/{auction,ext/__init__,ext/hk_f10,ext/xdxr_hkex,std/security_quote,money,sector,xdxr}.py、learn/regime、runtime/ringbuffer_test.py、tests/test_share_holder.py、tests/test_xdxr.py
+  - 有副作用的读取保留：struct.unpack 的长度校验与 fh.read(384) 的文件指针推进改成 _ = ...；money.py 的 split_number 注释不再提已删的 ratio_shares
+  - 语义一致：删除项均无副作用
+  - 验证：ruff check --select F841 . 全绿；改动文件 py_compile 通过；cdtd / f89k / ma1x 用合成 OHLCV 跑通并返回 DataFrame
+  - 工单：#20
+- fix[python]：补齐 rich 与 python-dotenv 依赖
+  - pyproject.toml：dependencies 增加 rich~=15.0.0（main.py 的进度条与终端输出）与 python-dotenv~=1.0（quant1x/config/config.py 读取 .env）
+  - 这两项此前没有声明：按 pyproject 建出的环境一跑 main.py 就 ModuleNotFoundError: dotenv，静态检查也会报 rich.console / rich.progress 无法解析
+  - 语义一致：只补依赖声明，不改代码
+  - 验证：python main.py --help 退 0；update --help 退 0；--no-such 退 2；update 无插件打印 Nothing to update. 退 0；pyright main.py 0 errors
+  - 工单：#21
+- refactor[python]：main 的进度条改用 tqdm，去掉 rich 依赖
+  - main.py：移除 rich.console / rich.progress，进度改用已有依赖 tqdm：外层按 plugin、内层按股票，两级进度条；console.print 改成 print
+  - pyproject.toml：删除 rich 依赖
+  - 语义一致：plugin 与股票两级进度、成功/失败计数、SIGINT 中断与收尾提示都不变
+  - 验证：python main.py --help 退 0；update --help 退 0；--no-such 退 2；update 无插件打印 Nothing to update. 退 0；py_compile 通过
+  - 工单：#22
+- fix[python]：修正 formula_plus 的导入路径与弃用装饰器
+  - quant1x/formula/formula_plus.py：from formula import SUM, DMA, REF 改为 from quant1x.formula import ...
+  - 同文件的 deprecated.sphinx.deprecated 换成文件内的 warnings 装饰器，不再依赖未声明的 Deprecated 包；调用被标记函数仍发 DeprecationWarning
+  - 语义一致：函数行为不变，弃用提示保留「函数名 + 起始版本 + 原因」
+  - 验证：python -c "import quant1x.formula.formula_plus" 成功；调用 HHV 触发 DeprecationWarning；py_compile 通过
+  - 工单：#22
+- fix[python]：补齐 mlxtend 依赖
+  - pyproject.toml：dependencies 增加 mlxtend~=0.25（quant1x/learn/fpgrowth/fp_growth_example.py 的 FP Growth 示例）
+  - 之前未声明，包内该示例 import 即失败
+  - 语义一致：只补依赖声明
+  - 验证：python -m quant1x.learn.fpgrowth.fp_growth_example 退出码 0，正常输出频繁项集与关联规则
+  - 工单：#23
+- fix[python]：__init__ 的版本回退链改为记录异常
+  - quant1x/__init__.py：_get_version() 的 3 处 except ...: pass 改成 logger.debug，带上异常与「回退到下一步」的说明
+  - 日志用标准库 logging：quant1x.log 反向依赖 quant1x.config，包初始化阶段引入会成环
+  - 语义一致：三级回退顺序与最终 0.0.0-dev 兜底不变，只多 debug 级日志（默认不输出）
+  - 验证：import quant1x 取到 0.8.13.dev11；ruff check --select S110 quant1x/__init__.py 无告警；默认规则通过
+  - 工单：#24
+- chore[python]：可忽略的异常标注 S110，裸 except 收窄为 Exception
+  - 55 处「失败可忽略」的 except ...: pass 补 # noqa: S110 - 原因：文件时间与缓存标记、套接字选项与关闭连接、dotenv/文件探测、可选因子字段、临时文件清理、本地缓存读取失败后重取
+  - 3 处失败会影响结果的改为 logger.warning：data/meta/calendar.py 两处更新交易日历缓存、tdx/instruments.py 写证券列表缓存
+  - 7 处裸 except: 收窄为 except Exception:（base/time.py、ext/hk_f10.py×2、tdx/money.py、data/schema/adjustment.py、learn/regime、runtime/scheduler.py），KeyboardInterrupt / SystemExit 不再被吞
+  - labs/akshare.ipynb 的裸 except 同样收窄并标注
+  - 语义一致：除新增 warning 与不再吞 BaseException 外，处理路径不变
+  - 验证：ruff check --select S110,E722 . 全绿；改动文件 py_compile 通过；22 个相关模块导入成功（factors/{f10,financial_report,share_holder} 因 quant1x.std 缺失导入失败，属既有问题）
+  - 工单：#25
+- release version 0.8.13
+
 ## [0.8.12] - 2026-11-16
 ### Changed
 - refactor[go]：将 gox/encoding/yaml 迁入 quant1x/encoding/yaml
@@ -3095,7 +3220,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.12...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.13...HEAD
+[0.8.13]: https://codeberg.org/quant1x/quant1x/compare/v0.8.12...v0.8.13
 [0.8.12]: https://codeberg.org/quant1x/quant1x/compare/v0.8.11...v0.8.12
 [0.8.11]: https://codeberg.org/quant1x/quant1x/compare/v0.8.10...v0.8.11
 [0.8.10]: https://codeberg.org/quant1x/quant1x/compare/v0.8.9...v0.8.10
