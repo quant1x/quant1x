@@ -6,9 +6,11 @@
 
 **为什么单独成模块**: 读 `.env` 的优先级要被 base 下任意模块复用（数据根、缓存目录都从环境变量取），
 而把这段逻辑塞进文件操作模块会让"读配置"与"操作文件"耦在一起。这里只依赖标准库与同目录的
-`expandvars` / `reload`；项目根定位复用 `filesystem` 的向上查找，`filesystem` 不引用本模块，不会成环。
+`expandvars` / `hotreload`；项目根定位复用 `filesystem` 的向上查找，`filesystem` 不引用本模块，不会成环。
 
-**优先级**（与 spec 一致，别在别处另起一套）：
+只处理 `.env` 与系统环境变量；进程运行环境（入口应用定位、项目布局推演、当前用户）不在本模块。
+
+**优先级**（别在别处另起一套）：
 
 1. 项目根的 `.env`；
 2. 用户主目录的 `.env`；
@@ -17,7 +19,7 @@
 
 `.env` 只存在于两处 —— 用户主目录 `~/.env` 与项目根 `.env`（项目根按 `filesystem.find_project_root` 的标记定位）。
 两份都读、逐键合并：同一个键两处都有时取项目根，只有主目录那份有时就用主目录的值，不存在
-"先找到哪份就停"。合并结果在进程内缓存成一张键值表，热加载由 `base/reload.py` 负责 —— 每次取值
+"先找到哪份就停"。合并结果在进程内缓存成一张键值表，热加载由 `base/hotreload.py` 负责 —— 每次取值
 比对两处 `.env` 的存在性与修改时间，任一份动过才重新读盘。只读，不写 `os.environ`。
 
 **变量展开**：值的展开交给 `base/expandvars.py`，键值表是那份合并结果（另一份 `.env` 里的键同样
@@ -30,7 +32,7 @@ from pathlib import Path
 
 from . import filesystem
 from .expandvars import expand
-from .reload import Reloader
+from .hotreload import Reloader
 
 
 def get_os_env(key: str) -> str:
@@ -149,7 +151,7 @@ _loader = Reloader(_paths, _parse_all)
 def _load() -> dict[str, str]:
     """取键值表: 两处 `.env` 没动就回缓存, 动过就重新读盘
 
-    判定与重取在 `base/reload.Reloader`, 每次取值只比对文件的存在性与修改时间。
+    判定与重取在 `base/hotreload.Reloader`, 每次取值只比对文件的存在性与修改时间。
 
     :return: 合并并展开后的键值表
     """

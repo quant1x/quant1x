@@ -2,14 +2,14 @@
 # Copyright (C) 2026 Quant1X <wangfengxy@sina.cn>
 # SPDX-License-Identifier: MIT
 
-"""`base/reload` 的离线回归: 候选文件动过才重新取数, 没动就回缓存。"""
+"""`base/hotreload` 的离线回归: 候选文件动过才重新取数, 没动就回缓存。"""
 
 import os
 import tempfile
 import unittest
 from pathlib import Path
 
-from . import reload
+from . import hotreload
 
 
 class ReloaderTest(unittest.TestCase):
@@ -21,7 +21,7 @@ class ReloaderTest(unittest.TestCase):
         self.root = Path(temporary.name)
         self.calls = 0
 
-    def _loader(self, paths) -> reload.Reloader:
+    def _loader(self, paths) -> hotreload.Reloader:
         """造一个容器: 取数函数每调用一次计数加一, 返回 `v1` / `v2` ...
 
         :param paths: 候选路径提供者
@@ -31,7 +31,7 @@ class ReloaderTest(unittest.TestCase):
             self.calls += 1
             return f"v{self.calls}"
 
-        return reload.Reloader(paths, load)
+        return hotreload.Reloader(paths, load)
 
     def _touch(self, path: Path) -> None:
         """把文件 mtime 往前推一秒: 同一次测试内的两次写盘可能落在同一个时间刻度上
