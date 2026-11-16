@@ -3,15 +3,12 @@
 
 #include <quant1x/app.h>
 #include <sstream>
-#include "quant1x/app.h"
-// TODO: API migration — user strategy files masked
-// #include "user/no0.h"
-// #include "user/strategy-no0.h"
 #include <quant1x/command.h>
 #include <private/build-info.h>
 #include <quant1x/config/config.h>
 #include <quant1x/cache.h>
 #include <quant1x/base/api.h>
+#include <quant1x/base/argparser/parser.hpp>
 #include <quant1x/base/filesystem.h>
 #include <quant1x/runtime/core.h>
 
@@ -25,6 +22,28 @@
 // #if HAVE_MIMALLOC
 // #include <mimalloc.h>
 // #endif
+
+namespace {
+    /// 取选项的文本取值; 未给出时返回空串
+    std::string option_text(const ::argparser::Namespace &namespace_value, std::string_view key) {
+        const auto *value = namespace_value.find(key);
+        if (value == nullptr) {
+            return {};
+        }
+        const auto *text = value->as_string();
+        return text == nullptr ? std::string{} : *text;
+    }
+
+    /// 取开关的真值; 未给出或不是布尔时返回 false
+    bool option_flag(const ::argparser::Namespace &namespace_value, std::string_view key) {
+        const auto *value = namespace_value.find(key);
+        if (value == nullptr) {
+            return false;
+        }
+        const auto *flag = value->as_bool();
+        return flag != nullptr && *flag;
+    }
+}  // namespace
 
 static std::string build_version_info() {
     std::ostringstream oss;
@@ -66,72 +85,82 @@ int main(const int argc, const char *const argv[]) {
     // 提取默认的 program_name
     std::string program_name = filesystem::executable_name();
     std::string program_version = build_version_info();
-    // 创建主解析器, 使用动态的 program_name
-    argparse::ArgumentParser program(program_name, program_version);
-    bool verbose = false;
-    program.add_argument("--verbose")
-        .help("显示日志信息到终端")
-        .default_value(false)
-        .store_into(verbose)
-        .nargs(0);
-    bool debug = false;
-    program.add_argument("--debug")
-        .help("打开日志的调试模式")
-        .default_value(false)
-        .store_into(debug)
-        .nargs(0);
 
-    argparse::ArgumentParser service_command("service");
-    service_command.add_description("Manage the service.");
-    service_command.add_argument("action")
-        .help("install | uninstall | start | stop | status | run")
-        .choices("install", "uninstall", "start", "stop", "status", "run");
-    service_command.add_argument("--pipe");
-
-    program.add_subparser(service_command);
-
-    // 存储子命令解析器, 确保其生命周期与主解析器一致
-    std::vector<std::unique_ptr<argparse::ArgumentParser>> subparsers;
-
-    // 存储子命令名称与对应解析器的映射
-    std::map<std::string, argparse::ArgumentParser *> subparser_map;
     runtime::global_init();
     quant1x::app::init_datasource();
     {
         auto const &config = quant1x::config::TraderConfig();
         (void)config;
     }
+
+    // 创建主解析器, 使用动态的 program_name
+    ::argparser::Parser program(program_name);
+    program.add_argument({"--verbose"}, ::argparser::Argument{
+                                             .action = ::argparser::Action::STORE_TRUE,
+                                             .help   = "显示日志信息到终端",
+                                         });
+    program.add_argument({"--debug"}, ::argparser::Argument{
+                                           .action = ::argparser::Action::STORE_TRUE,
+                                           .help   = "打开日志的调试模式",
+                                       });
+    program.add_argument({"--version"}, ::argparser::Argument{
+                                             .action = ::argparser::Action::STORE_TRUE,
+                                             .help   = "Print build version information and exit",
+                                         });
+
+    auto &subparsers = program.add_subparsers("command", "命令", false);
+
+    // 服务子命令
+    auto &service_command = subparsers.add_parser("service", "Manage the service.");
+    ::argparser::Argument action_argument;
+    action_argument.help    = "install | uninstall | start | stop | status | run";
+    action_argument.choices = std::vector<::argparser::Choice>{
+        {::argparser::Value("install"), ""},
+        {::argparser::Value("uninstall"), ""},
+        {::argparser::Value("start"), ""},
+        {::argparser::Value("stop"), ""},
+        {::argparser::Value("status"), ""},
+        {::argparser::Value("run"), ""},
+    };
+    service_command.add_argument({"action"}, action_argument);
+    service_command.add_argument({"--pipe"}, ::argparser::Argument{});
+
+    // 存储子命令名称与对应解析器的映射
+    std::map<std::string, ::argparser::Parser *> subparser_map;
     // 动态注册子命令
     for (auto &subcommand: quant1x::subcommands) {
-        // 创建子命令解析器, 并使用 unique_ptr 管理其生命周期
-        auto sub_parser = std::make_unique<argparse::ArgumentParser>(subcommand.name);
-        sub_parser->add_description(subcommand.help);
-        for(auto flag : subcommand.args) {
-            sub_parser->add_argument(flag->use)
-                .help(flag->usage)
-                .default_value(flag->defaultValue)
-                .store_into(flag->value) // 不起作用的原因是default_value方法要提前执行
-                ;
+        auto &sub_parser = subparsers.add_parser(subcommand.name, subcommand.help);
+        for(auto *flag : subcommand.args) {
+            ::argparser::Argument argument;
+            if (flag->is_switch) {
+                argument.action = ::argparser::Action::STORE_TRUE;
+            } else if (!flag->defaultValue.empty()) {
+                argument.default_value = ::argparser::DefaultValue::of(::argparser::Value(flag->defaultValue));
+            }
+            if (!flag->usage.empty()) {
+                argument.help = flag->usage;
+            }
+            sub_parser.add_argument({flag->use}, argument);
         }
-
-        // 将子命令解析器添加到主解析器中
-        program.add_subparser(*sub_parser);
-
-        // 将子解析器存储到容器中, 确保其生命周期足够长
-        subparser_map[subcommand.name] = sub_parser.get();  // 保存子命令名称与解析器的映射
-        subparsers.push_back(std::move(sub_parser));
+        subparser_map[subcommand.name] = &sub_parser;  // 保存子命令名称与解析器的映射
     }
 
-    // 解析命令行参数
-    try {
-        program.parse_args(argc, argv);
-    } catch (const std::runtime_error &err) {
-        std::cerr << err.what() << std::endl;
-        std::cerr << program;
-        return 1;
+    // 解析命令行参数: 帮助 / 版本退 0, 用法错误退 2
+    std::vector<std::string> arguments(argv + 1, argv + argc);
+    auto outcome = program.parse_or_exit(arguments, std::cout, std::cerr);
+    if (std::holds_alternative<int>(outcome)) {
+        return std::get<int>(outcome);
     }
+    auto const &namespace_value = std::get<::argparser::Namespace>(outcome);
+
+    // 如果请求, 打印构建/版本信息并提前退出
+    if (option_flag(namespace_value, "version")) {
+        std::cout << program_version << std::endl;
+        return 0;
+    }
+
     // 设置日志信息
-    runtime::logger_set(verbose, debug);
+    runtime::logger_set(option_flag(namespace_value, "verbose"), option_flag(namespace_value, "debug"));
     quant1x::app::init([] {
         namespace data = quant1x::data;
 
@@ -147,34 +176,31 @@ int main(const int argc, const char *const argv[]) {
         // TDX 基础数据适配器已在 init_datasource() 中统一注册, 此处不再重复注册
     });
 
-    if(program.is_subcommand_used("service")) {
-        return quant1x::app::daemon(service_command);
+    const std::string command_name = option_text(namespace_value, "command");
+    if (command_name == "service") {
+        return quant1x::app::daemon(namespace_value);
     }
 
     // 判断激活的子命令并执行对应逻辑
-    bool command_found = false;
     for (const auto &subcommand: quant1x::subcommands) {
-        if (program.is_subcommand_used(subcommand.name)) {
-            command_found = true;
-
+        if (command_name == subcommand.name) {
             // 找到对应的子解析器
             if (auto it = subparser_map.find(subcommand.name); it != subparser_map.end()) {
-                subcommand.handler(*(it->second));  // 执行与子命令绑定的逻辑
+                subcommand.handler(*(it->second), namespace_value);  // 执行与子命令绑定的逻辑
                 spdlog::default_logger()->flush();
             }
-            break; // 只处理一个子命令
+            spdlog::default_logger()->flush();
+            return 0;
         }
     }
-    spdlog::default_logger()->flush();
+
     // 如果没有找到子命令
-    if (!command_found) {
-        for(int i = 0; i< argc; ++i) {
-            std::cerr << argv[i]<< " ";
-        }
-        std::cerr<< std::endl;
-        std::cerr << "Error: No command provided." << std::endl;
-        std::cerr << program;
-        return 1;
+    spdlog::default_logger()->flush();
+    for(int i = 0; i< argc; ++i) {
+        std::cerr << argv[i]<< " ";
     }
-    return 0;
+    std::cerr<< std::endl;
+    std::cerr << "Error: No command provided." << std::endl;
+    program.print_help(std::cerr);
+    return 1;
 }

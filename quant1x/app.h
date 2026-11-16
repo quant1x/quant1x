@@ -6,7 +6,7 @@
 #define QUANT1X_APP_H 1
 
 #include <utility>
-#include <argparse/argparse.hpp>
+#include <quant1x/base/argparser/parser.hpp>
 
 namespace quant1x::app {
 
@@ -24,10 +24,10 @@ namespace quant1x::app {
 
     /**
      * @brief 守护进程入口
-     * @param cmd
+     * @param cmd 解析后的命名空间
      */
     // (TODO: API migration — quant1x.cpp masked, stub provided)
-    int daemon(const argparse::ArgumentParser& cmd);
+    int daemon(const ::argparser::Namespace& cmd);
 } // namespace quant1x::app
 
 #endif // QUANT1X_APP_H

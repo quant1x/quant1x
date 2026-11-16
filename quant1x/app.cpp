@@ -3,7 +3,6 @@
 
 #include <quant1x/app.h>
 #include <quant1x/base/api.h>
-#include <argparse/argparse.hpp>
 #include "data/meta/exchange.h"
 #include <quant1x/runtime/service.h>
 #include <spdlog/spdlog.h>
@@ -75,28 +74,40 @@ namespace quant1x::app {
         data::Register(std::make_unique<::HistoryFeature>());
     }
 
-    int daemon(const argparse::ArgumentParser& cmd) {
-        auto action = cmd.get<std::string>("action");
+    namespace {
+        /// 取选项的文本取值; 未给出时为空
+        std::optional<std::string> option_text(const ::argparser::Namespace &namespace_value, std::string_view key) {
+            const auto *value = namespace_value.find(key);
+            if (value == nullptr) {
+                return std::nullopt;
+            }
+            const auto *text = value->as_string();
+            if (text == nullptr) {
+                return std::nullopt;
+            }
+            return *text;
+        }
+    }  // namespace
+
+    int daemon(const ::argparser::Namespace &cmd) {
+        const std::string action = option_text(cmd, "action").value_or("");
         spdlog::warn("service: {}", action);
 #if OS_IS_WINDOWS
         std::ofstream pipeFile;
-        if(cmd.is_used("--pipe")) {
-            auto pipe = cmd.get<std::string>("--pipe");
-            spdlog::warn("service runas: [{}]", pipe);
-            if (!pipe.empty()) {
-                pipeFile.open(pipe, std::ios::binary);
-                if (!pipeFile) {
-                    spdlog::error("无法打开输出文件[{}]", pipe);
-                    return 1;
-                }
-                std::cout.rdbuf(pipeFile.rdbuf()); // 重定向stdout到文件
-                if (std::cout.rdbuf() != pipeFile.rdbuf()) {
-                    spdlog::error("重定向 stdout 失败");
-                }
-                std::cerr.rdbuf(pipeFile.rdbuf()); // 重定向stderr到文件
-                if (std::cerr.rdbuf() != pipeFile.rdbuf()) {
-                    spdlog::error("重定向 stdout 失败");
-                }
+        if (const auto pipe = option_text(cmd, "pipe"); pipe.has_value() && !pipe->empty()) {
+            spdlog::warn("service runas: [{}]", *pipe);
+            pipeFile.open(*pipe, std::ios::binary);
+            if (!pipeFile) {
+                spdlog::error("无法打开输出文件[{}]", *pipe);
+                return 1;
+            }
+            std::cout.rdbuf(pipeFile.rdbuf()); // 重定向stdout到文件
+            if (std::cout.rdbuf() != pipeFile.rdbuf()) {
+                spdlog::error("重定向 stdout 失败");
+            }
+            std::cerr.rdbuf(pipeFile.rdbuf()); // 重定向stderr到文件
+            if (std::cerr.rdbuf() != pipeFile.rdbuf()) {
+                spdlog::error("重定向 stdout 失败");
             }
         }
 #endif

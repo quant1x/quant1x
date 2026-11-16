@@ -38,6 +38,13 @@ namespace runtime {
 
     static void shutdown();
 
+    /// 进程正常退出时只刷新日志, 不接管退出码也不跳过缓冲刷新
+    static void flush_logs() noexcept {
+        if (auto logger = spdlog::default_logger(); logger) {
+            logger->flush();
+        }
+    }
+
     void SetQuitFlag(bool flag) {
         global_quit_flag = flag;
     }
@@ -241,7 +248,7 @@ namespace runtime {
 
             // 现在可以直接使用 spdlog::info(), spdlog::error() 等
             spdlog::info("quant1x init");
-            std::atexit(shutdown);
+            std::atexit(flush_logs);
             std::set_terminate(global_terminate_handler);
             // 每3秒自动刷新一次(单位: 秒)
             spdlog::flush_every(std::chrono::seconds(3));
