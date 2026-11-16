@@ -152,7 +152,7 @@ def check(path, debug=False):
         text = raw.decode("utf-8")
         valid_utf8 = True
     except UnicodeDecodeError as e:
-        problems.append("不是合法 UTF-8：{}".format(e))
+        problems.append(f"不是合法 UTF-8：{e}")
         text = raw.decode("utf-8", errors="replace")
         valid_utf8 = False
 
@@ -176,7 +176,7 @@ def check(path, debug=False):
 
     if problems:
         for p in problems:
-            sys.stderr.write("commit-msg 校验未通过：{}\n".format(p))
+            sys.stderr.write(f"commit-msg 校验未通过：{p}\n")
         sys.stderr.write(
             "提示：Windows 下提交中文信息请走 UTF-8 文件方式，例如\n"
             "  git commit -F .git/commit-msg.tmp\n"

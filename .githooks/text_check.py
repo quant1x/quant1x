@@ -82,7 +82,7 @@ def main():
 
     sys.stderr.write("pre-commit 校验未通过：下列文件**本次新增的行**混进了 BOM\n\n")
     for path, bom in offenders:
-        sys.stderr.write("  {}  BOM={}\n".format(path, bom))
+        sys.stderr.write(f"  {path}  BOM={bom}\n")
     sys.stderr.write(
         "\nU+FEFF 多半是某次编辑把自带 BOM 的一段文本拼接进来的 —— 它肉眼看不见,\n"
         "所见只是 `- ` 与正文之间多了个位置。修法见 CONTRIBUTING.md 的「5.8 文件编码与行尾」。\n"

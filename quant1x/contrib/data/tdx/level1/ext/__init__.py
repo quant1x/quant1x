@@ -416,14 +416,14 @@ class InstrumentBars(protocol.BaseFrame):
             #     ("timestamp", "%d-%02d-%02d %02d:%02d:%02d" % (year, month, day, hour, minute, second)),
             # ])
             one = Bar(
-                date="{}-{:02d}-{:02d}".format(year, month, day),
+                date=f"{year}-{month:02d}-{day:02d}",
                 open=open_price,
                 close=close,
                 high=high,
                 low=low,
                 volume=volume,
                 amount=amount,
-                timestamp="{}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(year, month, day, hour, minute, second)
+                timestamp=f"{year}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:{second:02d}"
             )
             result.append(one)
         
@@ -879,7 +879,7 @@ class TodoCmd0X2489(protocol.BaseFrame):
             #print(raw_li[0])
             pos += 28
             one = OrderedDict([
-                ("datetime", "{}-{:02d}-{:02d} {:02d}:{:02d}".format(year, month, day, hour, minute)),
+                ("datetime", f"{year}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}"),
                 ("year", year),
                 ("month", month),
                 ("day", day),
