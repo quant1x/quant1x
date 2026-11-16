@@ -3,6 +3,82 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.12] - 2026-11-16
+### Changed
+- refactor[go]：将 gox/encoding/yaml 迁入 quant1x/encoding/yaml
+  - 新增 quant1x/encoding/yaml：Unmarshal（按结构体 tag 的 default 补默认值）/ Marshal / Node，语义与 gox v1.27.1 的 encoding/yaml 一致
+  - quant1x/config（trader_parameter.go、config_yaml_test.go）与 quant1x/core（base.go、decode.go）的导入改指仓内路径
+  - 新增文档：quant1x/encoding/README.md、quant1x/encoding/yaml/README.md、quant1x/encoding/yaml/yaml.md
+  - 语义一致：default 三条口径、空文档 no-op、非指针错误文案、Node 与 yaml.v3 的 UnmarshalYAML 兼容性均保持不变
+  - 验证：go build ./...；go vet ./quant1x/encoding/yaml/ ./quant1x/config/ ./quant1x/core/；go test ./quant1x/encoding/yaml/ ./quant1x/config/
+  - 工单：#3
+- refactor[go]：factors 时间解析改用 base，去掉 gox/api.ParseTime 依赖
+  - quant1x/base/time.go：日期格式表补 060102 / 20060102150405 / 2006-01-02 15:04:05.000，覆盖 gox 原有的 6 / 8 / 10 / 14 / 19 / 23 位输入
+  - quant1x/factors/option.go：3 处 api.ParseTime 改走 base.ParseDate + time.UnixMilli（0 视为无法解析），删除 gox/api 导入
+  - quant1x/base/time_test.go、quant1x/factors/option_test.go：补新格式与非法输入用例
+  - go.mod：github.com/quant1x/gox 由直接依赖降为间接依赖，仅剩 quant1x/num 的传递链
+  - 语义一致：ParseDate 只扩格式不回退，既有输入返回值不变；「无效的交易日期」文案与落零值时间的行为不变
+  - 验证：go build ./...；go vet ./quant1x/base/ ./quant1x/factors/；go test ./quant1x/base/；go test ./quant1x/factors/ -run TestParseTradeDate
+  - 工单：#4
+- fix[go]：修复 Export 漏关闭文件句柄，并让 embed 用例不再污染工作区
+  - quant1x/base/embed.go：Export 补 defer src.Close() 与显式 output.Close()，避免句柄泄漏导致 Windows 上导出文件无法删除或覆盖
+  - quant1x/base/embed_test.go：导出目标由 embed.go.copy 改为 embed_test.out（命中 .gitignore 的 *.out），补断言与 t.Cleanup 清理
+  - 删除入库的测试产物 quant1x/base/embed.go.copy
+  - 语义一致：Export 签名与导出结果不变，仅补齐资源释放
+  - 验证：go test ./quant1x/base/ -run TestEmbed；go test ./quant1x/base/；go build ./...；go vet ./quant1x/base/
+  - 工单：#5
+- chore[rust]：清理 cargo publish 的目标发现与 homepage 告警
+  - Cargo.toml：include 补 /examples/*.rs 与 /tests/*.rs，示例与集成测试源码随之入包
+  - 删除 tests/Cargo.toml 与 tests/Cargo.lock：空依赖的嵌套 crate 会把 tests/ 整体排除在父包之外，导致 include 对 /tests/*.rs 失效；该 crate 无引用，根目录 cargo test 本就通过 autotests 运行这两个集成测试
+  - Cargo.toml：删除与 repository 重复的 homepage，消除 redundant_homepage 告警
+  - 语义一致：不改任何 .rs 代码、不碰版本号与 tag；examples/ tests/ 下的非 Rust 资产仍不入包
+  - 验证：cargo package --allow-dirty 零 warning（133 files）；cargo package --list --allow-dirty 含 5 个新增 .rs；cargo test --test calendar_integration --no-run 与 --test fetch_securities --no-run 通过
+  - 工单：#6
+- refactor[go]：main 的命令行解析由 cobra 迁到 base/argparser
+  - main.go：拆成 run() int + os.Exit(run())，主流程末尾改调 command.Run(os.Args[1:], os.Stdout, os.Stderr)
+  - quant1x/command/app.go：newRootParser() 用 base/argparser 构建根命令（--debug / --avx2 / --cpu 均为 Global），Run() 负责解析、应用全局开关（取代 PersistentPreRun）与子命令分发
+  - quant1x/command/command_update.go：拆成 registerUpdate() 与 runUpdate()，业务逻辑与输出文案不变
+  - quant1x/command/command_flag.go：删除 cmdFlag[T] / commandInit / type Command，补 namespaceBool / namespaceString / namespaceInt
+  - 新增 quant1x/command/app_test.go：全局选项写在子命令之后、默认值、--help、未知选项退 2
+  - 语义一致：选项名、默认值、说明文字不变；退出码改为帮助 0 / 用法错误 2（原实现忽略 Execute 返回值，恒 0）
+  - 验证：go build ./...；go vet ./quant1x/command/ ./quant1x/base/argparser/；go test ./quant1x/command/ ./quant1x/base/argparser/；手工跑 q1x-go --help、update --help、--no-such-flag
+  - 工单：#7
+- refactor[python]：main 的命令行解析由 click 迁到 base/argparser
+  - main.py：click.group / @click.option → quant1x.base.argparser.Parser；build_parser() 建根命令与 update 子命令，run_update(namespace) 承接原 update 主体
+  - --all / --base / --feature 的选项名、帮助文字与逗号切分口径不变；并发、进度条与 SIGINT 逻辑未动
+  - 入口改为 parse_or_exit()：帮助退 0、用法错误退 2
+  - 语义一致：更新流程与输出文案逐行保留
+  - 验证：python -m py_compile main.py；解析器接线用临时脚本核对（update / --all / --base 落值、--help 退 0、未知选项退 2）；本机缺 python-dotenv，main.py 端到端未执行
+  - 工单：#8
+- refactor[cpp]：main 的命令行解析由 argparse 迁到 base/argparser
+  - main.cpp：p-ranav argparse::ArgumentParser → quant1x::argparser::Parser；--verbose / --debug / --version 与 service / update 子命令重新登记，parse_or_exit 的返回值决定退出码
+  - quant1x/command.h / command.cpp：cmdFlags 去掉 value 字段，SubCommand::handler 改收 (Parser&, const Namespace&)；update() 从命名空间读 all / base / features / start / end
+  - quant1x/app.h / app.cpp：daemon() 改收 const Namespace&，action 与 --pipe 从命名空间取
+  - quant1x/runtime/core.cpp：atexit 钩子由 shutdown()（内部 _exit(0)）换成只刷日志的 flush_logs()，否则帮助文本被缓冲吞掉、退出码恒为 0
+  - 语义一致：子命令、选项名、默认值与输出文案不变；update 的 --base / --features 现在能真正取到命令行取值（原先 store_into 未生效）
+  - 验证：cmake --build build-msvc --config Release --target q1x；q1x --help 退 0、update --help 退 0、--no-such 退 2、update 无参数提示无适配器
+  - 工单：#8
+- refactor[rust]：main 的命令行解析由 clap 迁到 base/argparser
+  - main.rs：clap 的 Command/Arg 构建换成 quant1x::argparser；根命令 --version / --verbose / --debug，service 与 update 子命令重新登记，parse_or_exit 决定退出码
+  - quant1x/app.rs：try_run_subcommand 的 &clap::ArgMatches 改为 &Namespace，取值改走 Value::as_bool / Value::as_list
+  - Cargo.toml / Cargo.lock：移除 clap 依赖
+  - 语义一致：子命令、选项名、帮助文案与 update 的默认行为（无开关时更新全部）不变
+  - 验证：cargo build --bin q1x；cargo test（228 passed / 14 ignored）；q1x --help、update --help、--version、未知选项退 2、无子命令退 1
+  - 工单：#8
+- docs[multi]：argparser 入向依赖补上四个 main 入口
+  - quant1x/base/argparser/argparser.md：路线图里 Python / C++ / Rust 三侧标注已接入；入向依赖表补 main.py / main.cpp / main.rs / quant1x/command
+  - 对应 #7（Go）与 #8（Python / C++ / Rust）的落地状态
+  - 工单：#8
+- refactor[go]：tail 工具的解析由 cobra 迁到 base/argparser
+  - tools/tail/main.go：去掉 cobra 与 DisableFlagParsing 的手写扫描，改用 base/argparser；-f / -q / -v 开关，-n / --lines 与 -c / --bytes 取值，file 为 OneOrMore 位置参数
+  - 保留 GNU 写法：解析前把裸数字 -10 / -+10 归一成 --lines=N；-n10、-n=10、--lines=+3、-c5、--bytes=+5 由解析器原生支持
+  - 同时给 --lines 与 --bytes 时报用法错误；没有文件参数时退 2（原实现打印 usage 后退 0）
+  - go.mod / go.sum：移除 spf13/cobra 与随之不再需要的 mousetrap、pflag
+  - 语义一致：读取 / 跟随 / 输出逻辑未改，各写法输出与系统 tail 逐项比对一致
+  - 验证：go build ./...；go vet ./tools/tail/；go mod tidy -diff 无差异；tail --help 退 0、--no-such 退 2、无文件退 2；对临时文件比对 -10 / -n 2 / -n2 / -n=2 / --lines=+3 / -c 5 / --bytes=+5
+  - 工单：#9
+- release version 0.8.12
+
 ## [0.8.11] - 2026-11-16
 ### Changed
 - fix[rust]: 调整rust工具链的说明
@@ -3019,7 +3095,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.11...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.12...HEAD
+[0.8.12]: https://codeberg.org/quant1x/quant1x/compare/v0.8.11...v0.8.12
 [0.8.11]: https://codeberg.org/quant1x/quant1x/compare/v0.8.10...v0.8.11
 [0.8.10]: https://codeberg.org/quant1x/quant1x/compare/v0.8.9...v0.8.10
 [0.8.9]: https://codeberg.org/quant1x/quant1x/compare/v0.8.8...v0.8.9
