@@ -42,13 +42,20 @@ func Export(resources embed.FS, source, target string) error {
 	if err != nil {
 		return err
 	}
+	defer func() { _ = src.Close() }()
+
 	output, err := os.Create(target)
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(output, src)
-	if err != nil {
-		return err
+	// 目标文件必须显式关闭: 句柄不释放时 Windows 上无法删除/覆盖该文件
+	_, copyErr := io.Copy(output, src)
+	closeErr := output.Close()
+	if copyErr != nil {
+		return copyErr
+	}
+	if closeErr != nil {
+		return closeErr
 	}
 	var mtime time.Time
 	fileinfo, err := src.Stat()
