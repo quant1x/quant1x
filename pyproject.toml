@@ -59,6 +59,10 @@ dependencies = [
     "joblib~=1.5.1",
     "inflection~=0.5.1",
     "apscheduler~=3.11.3",
+    # main.py 的进度条与终端输出
+    "rich~=15.0.0",
+    # quant1x/config/config.py 读取 .env
+    "python-dotenv~=1.0",
 ]
 
 [project.urls]
