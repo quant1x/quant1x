@@ -1,9 +1,11 @@
 // Copyright (C) 2026 Quant1X Team
 // SPDX-License-Identifier: MIT
 
-// 小型适配模块, 为 `src/main.rs` 提供应用级入口点. 
-// 这些实现有意保持最小且非侵入: 提供 no-op 回退实现, 
-// 上层的 Rust 实现可在本 crate 中提供更完整的实现来覆盖它们. 
+// 小型适配模块, 为 `src/main.rs` 提供应用级入口点.
+// 这些实现有意保持最小且非侵入: 提供 no-op 回退实现,
+// 上层的 Rust 实现可在本 crate 中提供更完整的实现来覆盖它们.
+
+use crate::argparser::spec::{Namespace, Value};
 
 pub fn global_init() {
     // 空实现(占位)
@@ -19,7 +21,7 @@ pub fn datasets_init() {
 }
 
 pub fn logger_set(_verbose: bool, _debug: bool) {
-    // 初始化 log4rs, 按级别拆分日志文件, 并使用按天轮转的滚动策略. 
+    // 初始化 log4rs, 按级别拆分日志文件, 并使用按天轮转的滚动策略.
     use log::LevelFilter;
     use log4rs::filter::threshold::ThresholdFilter;
     use std::path::PathBuf;
@@ -124,17 +126,17 @@ pub fn engine_init() {
     // no-op
 }
 
-// 应用级的 Windows 服务名. 在此处设置(不要从 CLI 或外部配置读取). 
-// 如需匹配已安装的服务, 请修改此常量. 
+// 应用级的 Windows 服务名. 在此处设置(不要从 CLI 或外部配置读取).
+// 如需匹配已安装的服务, 请修改此常量.
 const SERVICE_NAME: &str = "quant1x-rust";
-// 面向用户的服务描述. 将其保留在应用中以便安装程序和管理员在创建服务时参考. 
+// 面向用户的服务描述. 将其保留在应用中以便安装程序和管理员在创建服务时参考.
 const SERVICE_DESC: &str = "Quant1X background service for q1x operations";
-// 在 Windows 服务管理器中显示的人类友好名称. 
+// 在 Windows 服务管理器中显示的人类友好名称.
 const SERVICE_DISPLAY_NAME: &str = "Quant1X Service(Rust)";
 
 #[cfg(windows)]
 fn normalize_to_utf8(b: &[u8]) -> Vec<u8> {
-    // 检测常见编码并返回 UTF-8 字节. 
+    // 检测常见编码并返回 UTF-8 字节.
     // 1) 带 BOM 的 UTF-16LE
     if b.len() >= 2 && b[0] == 0xFF && b[1] == 0xFE {
         let mut u16s = Vec::with_capacity(b.len() / 2);
@@ -237,7 +239,7 @@ pub fn engine_daemon(
     _elevated_pipe: Option<&str>,
 ) -> i32 {
     // 默认实现: 在非 Windows 平台上不提供 service 管理器；
-    // 在 Windows 上尝试进行 UAC 提升, 并在 `pipe` 设置时将提升后子进程的 stdout/stderr 回传给父进程. 
+    // 在 Windows 上尝试进行 UAC 提升, 并在 `pipe` 设置时将提升后子进程的 stdout/stderr 回传给父进程.
     #[cfg(not(windows))]
     {
         log::error!("engine_daemon not implemented in Rust library (non-Windows)");
@@ -260,21 +262,21 @@ pub fn engine_daemon(
         let elevated_out = _elevated_out;
         let elevated_pipe = _elevated_pipe;
 
-        // 如果用户请求直接 'run', 则在进程内运行(如果 crate 提供 runner). 
+        // 如果用户请求直接 'run', 则在进程内运行(如果 crate 提供 runner).
         if action == "run" {
             log::info!("service run requested; no in-process runner provided in this build");
             return 1;
         }
 
-        // 对于 install/uninstall/start/stop/status 等操作通常需要提权. 
-        // 如果当前已经具有提权权限, 则调用 crate 提供的实现. 
+        // 对于 install/uninstall/start/stop/status 等操作通常需要提权.
+        // 如果当前已经具有提权权限, 则调用 crate 提供的实现.
         if is_current_process_elevated() {
-            // 提权子进程模式: 执行请求的操作(install/uninstall), 
-            // 并将命令输出通过命名管道回写给父进程(优先), 或作为回退写入 elevated_out 文件. 
+            // 提权子进程模式: 执行请求的操作(install/uninstall),
+            // 并将命令输出通过命名管道回写给父进程(优先), 或作为回退写入 elevated_out 文件.
             use std::ffi::OsStr;
             use std::os::windows::ffi::OsStrExt;
             use winapi::shared::minwindef::DWORD;
-            use winapi::um::fileapi::{CreateFileW, WriteFile, OPEN_EXISTING};
+            use winapi::um::fileapi::{CreateFileW, OPEN_EXISTING, WriteFile};
             use winapi::um::handleapi::CloseHandle;
             use winapi::um::winnt::FILE_ATTRIBUTE_NORMAL;
             use winapi::um::winnt::GENERIC_WRITE;
@@ -448,8 +450,8 @@ pub fn engine_daemon(
             )
         });
 
-        // 尽力检查目标服务在尝试 `start`/`stop` 之前是否已安装. 
-        // 我们将使用可执行文件的文件名作为服务名候选(例如 'stock'). 
+        // 尽力检查目标服务在尝试 `start`/`stop` 之前是否已安装.
+        // 我们将使用可执行文件的文件名作为服务名候选(例如 'stock').
         if action == "start" || action == "stop" || action == "status" {
             // Use compile-time SERVICE_NAME constant as the Windows service name.
             let svc_name = SERVICE_NAME;
@@ -465,14 +467,20 @@ pub fn engine_daemon(
             {
                 let stdout = String::from_utf8_lossy(&out.stdout).to_string();
                 if stdout.trim().is_empty() {
-                    eprintln!("Service '{}' not found ({}). Please install the service before calling '{}'.", svc_name, SERVICE_DESC, action);
-                    eprintln!("Hint: use sc.exe create <{}> binPath= \"<path-to-exe>\" DisplayName= \"{}\"", svc_name, SERVICE_DISPLAY_NAME);
+                    eprintln!(
+                        "Service '{}' not found ({}). Please install the service before calling '{}'.",
+                        svc_name, SERVICE_DESC, action
+                    );
+                    eprintln!(
+                        "Hint: use sc.exe create <{}> binPath= \"<path-to-exe>\" DisplayName= \"{}\"",
+                        svc_name, SERVICE_DISPLAY_NAME
+                    );
                     return 1;
                 }
             }
         }
 
-        // 在后台线程中创建一个命名管道服务端, 接收一个客户端并将数据流打印到 stdout. 
+        // 在后台线程中创建一个命名管道服务端, 接收一个客户端并将数据流打印到 stdout.
         let server_name = pipe_name.clone();
         let server_handle = std::thread::spawn(move || {
             use std::ffi::OsStr;
@@ -511,8 +519,8 @@ pub fn engine_daemon(
                     return;
                 }
 
-                // 等待客户端连接. ConnectNamedPipe 会阻塞直到客户端连接. 
-                // 如返回失败, 则检查是否为客户端已连接(ERROR_PIPE_CONNECTED), 若是则继续处理. 
+                // 等待客户端连接. ConnectNamedPipe 会阻塞直到客户端连接.
+                // 如返回失败, 则检查是否为客户端已连接(ERROR_PIPE_CONNECTED), 若是则继续处理.
                 use winapi::shared::winerror::ERROR_PIPE_CONNECTED;
                 use winapi::um::errhandlingapi::GetLastError;
                 use winapi::um::namedpipeapi::ConnectNamedPipe;
@@ -550,8 +558,8 @@ pub fn engine_daemon(
             }
         });
 
-        // 如果提升后的子进程通过管道回连(以提升方式运行), 子进程应打开该管道并写入日志. 
-        // 现在我们启动提升进程, 服务端线程将接受连接并打印数据. 
+        // 如果提升后的子进程通过管道回连(以提升方式运行), 子进程应打开该管道并写入日志.
+        // 现在我们启动提升进程, 服务端线程将接受连接并打印数据.
 
         // 构建参数: 在原参数基础上附加标记 --elevated-pipe <pipename>
         let mut args: Vec<String> = env::args().collect();
@@ -578,7 +586,7 @@ pub fn engine_daemon(
         }
         let arglist = arg_items.join(", ");
 
-        // 隐藏被启动的提升窗口以获得更简洁的用户体验；提升后的子进程将通过管道通信. 
+        // 隐藏被启动的提升窗口以获得更简洁的用户体验；提升后的子进程将通过管道通信.
         let ps_cmd = format!(
             "Start-Process -FilePath \"{}\" -ArgumentList {} -Verb RunAs -WindowStyle Hidden",
             exe.display(),
@@ -610,7 +618,7 @@ pub fn engine_daemon(
 
 #[cfg(windows)]
 fn is_current_process_elevated() -> bool {
-    // 使用 PowerShell 检查当前进程是否具有提升权限. 这避免引入原生 Windows crate, 保持此适配层轻量. 
+    // 使用 PowerShell 检查当前进程是否具有提升权限. 这避免引入原生 Windows crate, 保持此适配层轻量.
     use std::process::Command;
     let check = r#"[bool](([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))"#;
     let out = Command::new("powershell")
@@ -626,17 +634,37 @@ fn is_current_process_elevated() -> bool {
     false
 }
 
-// 库作者可以实现如下函数以扩展功能: 
-// pub fn try_run_subcommand(name: &str, matches: &clap::ArgMatches) -> Result<bool, Box<dyn std::error::Error>>
-// 如果提供了该函数, `src/main.rs` 将通过 crate 的公共 API 调用它. 我们在此未实现该函数, 
-// 以避免将 clap 泄露到库的公共接口中. 
+// 库作者可以实现如下函数以扩展功能:
+// pub fn try_run_subcommand(name: &str, namespace: &Namespace) -> Result<bool, Box<dyn std::error::Error>>
+// 如果提供了该函数, `src/main.rs` 将通过 crate 的公共 API 调用它. 我们在此未实现该函数,
+// 以避免将 clap 泄露到库的公共接口中.
 
-/// 一个内置的简易处理器, 用于处理若干顶层管理命令. 
-/// 当前支持: 
-/// - "update": 刷新日历和/或服务器缓存. 对应 CLI 标志 `--calendar`, `--servers`, `--all`. 
+/// 取开关取值; 未给出或不是布尔时为 false
+fn flag_value(namespace: &Namespace, key: &str) -> bool {
+    namespace.get(key).and_then(Value::as_bool).unwrap_or(false)
+}
+
+/// 取多值选项; 未给出时为空
+fn list_value(namespace: &Namespace, key: &str) -> Vec<String> {
+    namespace
+        .get(key)
+        .and_then(Value::as_list)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// 一个内置的简易处理器, 用于处理若干顶层管理命令.
+/// 当前支持:
+/// - "update": 刷新日历和/或服务器缓存. 对应 CLI 标志 `--calendar`, `--servers`, `--all`.
 pub fn try_run_subcommand(
     name: &str,
-    matches: &clap::ArgMatches,
+    namespace: &Namespace,
 ) -> Result<bool, Box<dyn std::error::Error>> {
     if name != "update" {
         return Ok(false);
@@ -646,19 +674,13 @@ pub fn try_run_subcommand(
     use std::time::{Duration, Instant};
 
     // 确定请求的更新范围
-    let only_calendar = matches.get_flag("calendar");
-    let only_servers = matches.get_flag("servers");
-    let all = matches.get_flag("all");
+    let only_calendar = flag_value(namespace, "calendar");
+    let only_servers = flag_value(namespace, "servers");
+    let all = flag_value(namespace, "all");
 
     // base and features keys (may be multi-valued)
-    let base_keys: Vec<String> = match matches.get_many::<String>("base") {
-        Some(vals) => vals.map(|s| s.to_string()).collect(),
-        None => Vec::new(),
-    };
-    let features_keys: Vec<String> = match matches.get_many::<String>("features") {
-        Some(vals) => vals.map(|s| s.to_string()).collect(),
-        None => Vec::new(),
-    };
+    let base_keys: Vec<String> = list_value(namespace, "base");
+    let features_keys: Vec<String> = list_value(namespace, "features");
 
     // 默认行为: 若未设置任何标志或 key, 更新所有(base + features)
     let do_calendar = if !only_calendar
