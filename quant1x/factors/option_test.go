@@ -44,6 +44,32 @@ func TestOptions(t *testing.T) {
 	}
 }
 
+func TestParseTradeDate(t *testing.T) {
+	cases := map[string]string{
+		"20240626":                "2024-06-26",
+		"2024-06-26":              "2024-06-26",
+		"240626":                  "2024-06-26",
+		"20240626143000":          "2024-06-26",
+		"2024-06-26 14:30:00.000": "2024-06-26",
+	}
+	for input, want := range cases {
+		got, err := parseTradeDate(input)
+		if err != nil {
+			t.Errorf("parseTradeDate(%q) 返回错误: %v", input, err)
+			continue
+		}
+		if got.Format("2006-01-02") != want {
+			t.Errorf("parseTradeDate(%q) = %s, want %s", input, got.Format("2006-01-02"), want)
+		}
+	}
+
+	for _, input := range []string{"", "invalid", "2024-13-45"} {
+		if _, err := parseTradeDate(input); err == nil {
+			t.Errorf("parseTradeDate(%q) 应返回错误", input)
+		}
+	}
+}
+
 func TestVIX(t *testing.T) {
 	now := meta.NowTimestamp()
 	latestTradingDay := meta.LastTradingDay(now)

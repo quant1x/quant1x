@@ -16,8 +16,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/quant1x/gox/api"
+	"github.com/quant1x/quant1x/quant1x/base"
 )
+
+// parseTradeDate 解析交易日, 支持 YYYY-MM-DD / YYYYMMDD / YYMMDD 等写法; 无法识别时返回错误
+func parseTradeDate(str string) (time.Time, error) {
+	ms := base.ParseDate(str)
+	if ms == 0 {
+		return time.Time{}, fmt.Errorf("无效的交易日期: %s", str)
+	}
+	return time.UnixMilli(ms), nil
+}
 
 // OptionFinanceBoardData 表示期权行情数据
 type OptionFinanceBoardData struct {
@@ -164,7 +173,7 @@ func OptionRiskIndicatorSSE(date string) ([]RiskIndicator, error) {
 	var indicators []RiskIndicator
 	for _, item := range result.Result {
 		// 解析日期
-		t, _ := api.ParseTime(item["TRADE_DATE"])
+		t, _ := parseTradeDate(item["TRADE_DATE"])
 
 		// 转换浮点数
 		delta, _ := strconv.ParseFloat(item["DELTA_VALUE"], 64)
@@ -244,9 +253,9 @@ func getFourthWednesday(year, month int) time.Time {
 // 提取并合并数据
 func extractAndMergeData(riskData []RiskIndicator, tradeDateStr string) ([]MergedOption, error) {
 	// 1. 将 tradeDateStr 解析为 time.Time
-	currentDate, err := api.ParseTime(tradeDateStr)
+	currentDate, err := parseTradeDate(tradeDateStr)
 	if err != nil {
-		return nil, fmt.Errorf("无效的交易日期: %s", tradeDateStr)
+		return nil, err
 	}
 
 	// 2. 从风险数据中提取所有 "华泰柏瑞沪深300ETF期权" 的价格数据
@@ -349,7 +358,7 @@ func extractAndMergeData(riskData []RiskIndicator, tradeDateStr string) ([]Merge
 
 // ------------------------------- 5. 计算“恐慌指数”(真实VIX) -------------------------------
 func calculateRealVix(mergedData []MergedOption, tradeDateStr string, riskFreeRate float64) (float64, error) {
-	currentDate, err := api.ParseTime(tradeDateStr)
+	currentDate, err := parseTradeDate(tradeDateStr)
 	if err != nil {
 		return 0, err
 	}

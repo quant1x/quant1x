@@ -9,7 +9,6 @@ require (
 	github.com/nxadm/tail v1.4.11
 	github.com/olekukonko/tablewriter v1.1.5
 	github.com/petermattis/goid v0.0.0-20261102161117-2a3fffa09998
-	github.com/quant1x/gox v1.27.1
 	github.com/quant1x/num v0.8.3
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
@@ -37,6 +36,7 @@ require (
 	github.com/olekukonko/errors v1.3.0 // indirect
 	github.com/olekukonko/ll v0.1.9 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/quant1x/gox v1.27.1 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
