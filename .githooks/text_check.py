@@ -38,7 +38,7 @@ EXEMPT_SUFFIXES = (".bat", ".cmd")
 def _git(args, binary=False):
     """执行 git 子命令。失败即抛, 让钩子明确报错而不是静默放过。"""
     proc = subprocess.run(
-        ["git"] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        ["git"] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False
     )
     if proc.returncode != 0:
         raise RuntimeError(

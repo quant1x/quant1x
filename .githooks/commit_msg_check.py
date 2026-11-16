@@ -168,7 +168,7 @@ def check(path, debug=False):
     if valid_utf8:
         hit = detect_mojibake(text)
         if hit:
-            enc, label, recovered = hit
+            _enc, label, recovered = hit
             preview = _clean_preview(recovered)
             problems.append(
                 "{}：round-trip 反推可还原为「{}{}」".format(label, preview, "…" if len(recovered) > 72 else "")
