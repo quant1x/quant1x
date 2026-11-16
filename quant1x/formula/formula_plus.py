@@ -6,13 +6,30 @@
 # 高级函数版本, 本文件函数计算结果经过验证完全正确, 可以正常使用, 但代码比较复杂, 做为进阶使用. 
 # MyTT团队对每个函数精益求精, 力争效率速度, 代码优雅的完美统一, 如果您有更好的实现方案, 请不吝赐教！
 # 感谢以下团队成员的努力和贡献:  火焰, jqz1226, stanene, bcq
+import functools
 import math
+import warnings
 
 import numpy as np
 import pandas as pd
-from deprecated.sphinx import deprecated
 
-from formula import SUM, DMA, REF
+from quant1x.formula import SUM, DMA, REF
+
+
+def deprecated(version: str, reason: str):
+    """标记已弃用的函数: 调用时发 DeprecationWarning, 行为不变"""
+
+    def decorator(func):
+        message = f"{func.__name__} 自 {version} 起弃用: {reason}"
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            warnings.warn(message, DeprecationWarning, stacklevel=2)
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 # ------------------------工具函数---------------------------------------------
