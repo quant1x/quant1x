@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![C++](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://isocpp.org/)
 [![Go](https://img.shields.io/badge/Go-1.27-blue.svg)](https://golang.org/)
-[![Rust](https://img.shields.io/badge/Rust-1.98.1+-orange.svg)](https://www.rust-lang.org/)
+[![Rust](https://img.shields.io/badge/Rust-1.100.0+-orange.svg)](https://www.rust-lang.org/)
 [![Python](https://img.shields.io/badge/Python-3.12+-yellow.svg)](https://www.python.org/)
 [![Zig](https://img.shields.io/badge/Zig-0.17+-f7a41d.svg)](https://ziglang.org/)
 [![CMake](https://img.shields.io/badge/CMake-3.30+-green.svg)](https://cmake.org/)
@@ -65,7 +65,8 @@ Quant1X 是一个多语言平行实现的量化交易框架，同时提供 C++�
 |---|---|---|
 | Python | 3.12+ | 3.12.x |
 | Go | 1.27+ | 1.27.x |
-| Rust | 1.98.1+ | 1.98.1+（Edition 2024） |
+| Rust | 1.100.0+ | 1.100.0（Edition 2024） |
+| Zig | 0.17+ | 0.17.x（扩展语言，当前只承载小功能） |
 | C++ | C++20 | Windows MSVC 14.3+ / macOS Clang 17+ / Linux GCC 13+ |
 
 C/C++ 构建另需 CMake 3.30+ 与 Conan 2，推荐 Ninja 作为构建器。
@@ -105,7 +106,7 @@ quant1x/
 ### 1. 获取源码
 
 ```shell
-git clone https://gitee.com/quant1x/quant1x.git
+git clone https://github.com/quant1x/quant1x.git
 cd quant1x
 ```
 
@@ -301,7 +302,7 @@ Matplotlib 中文乱码处理：
 ```shell
 go env -w GO111MODULE=on
 go env -w GOPROXY=https://goproxy.cn,direct
-go env -w GOPRIVATE=gitee.com
+go env -w GOPRIVATE=github.com
 ```
 
 安装 protobuf 代码生成插件：
@@ -426,7 +427,7 @@ package main
 
 import (
     "fmt"
-    "gitee.com/quant1x/quant1x/quant1x/factors"
+    "github.com/quant1x/quant1x/quant1x/factors"
 )
 
 func main() {
@@ -525,8 +526,8 @@ fn main() {
 
 - [文档](docs/)
 - [示例](examples/)
-- [问题跟踪](https://codeberg.org/quant1x/quant1x/issues)
-- [讨论区](https://gitee.com/quant1x/quant1x/discussions)
+- [问题跟踪](https://github.com/quant1x/quant1x/issues)
+- [讨论区](https://github.com/quant1x/quant1x/discussions)
 
 ---
 

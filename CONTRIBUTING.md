@@ -760,8 +760,8 @@ feat[python]：为 runtime ringbuffer 增加原生 Python 语义实现
 
 ### 9.1 先建单，再动手
 
-**每项功能或任务先在仓库的问题跟踪系统（当前为 Codeberg Issues）建一张 Issue**，再开始改代码；建 / 查 / 改 /
-关单一律走仓库自带的 `labs-git-issue`，`--host` 缺省按 `origin` 远端推断，不手写平台 API。Issue 正文
+**每项功能或任务先在仓库的问题跟踪系统建一张 Issue**，再开始改代码；建 / 查 / 改 / 关单一律走仓库自带的
+`labs-git-issue`，**不传 `--host` / `--repo`** —— 工具按 `origin` 自动识别托管平台与仓库，不手写平台 API。Issue 正文
 必须写清：
 
 - **背景**：为什么做，当前存在什么问题或缺口；

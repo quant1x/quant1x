@@ -34,7 +34,7 @@
 | 13 | **`temp/` 才是垃圾站**：一次性脚本、中间产物、草稿落 `temp/`，层级复刻源码结构（不许扁平堆在根），不入库、文档与提交信息也不引用其路径 | [§3.6](CONTRIBUTING.md#36-temp仓库的垃圾站) |
 | 14 | **只在项目目录内写文件**：临时文件、导出物、调试脚本一律落 `temp/`；只有用户明确要求时才可写到项目外，并在回复里点名路径 | [§3.6](CONTRIBUTING.md#36-temp仓库的垃圾站) |
 | 15 | **Go 包名铁律**：`package <目录名>`；Java 测试包名 = `tests/` 下目录层级（不多 `quant1x.`、不省 `tests.`） | [§3.3](CONTRIBUTING.md#33-go-的目录与包名)、[§3.4](CONTRIBUTING.md#34-java-测试包的层级) |
-| 16 | **先建单**：每项功能或任务先用仓库自带 `labs-git-issue` 建 Issue（`--host` 缺省按 `origin` 推断，当前为 Codeberg；背景 / 目标与范围 / 验收 / 涉及语言 / 风险），完成后关单 | [§9.1](CONTRIBUTING.md#91-先建单再动手) |
+| 16 | **先建单**：每项功能或任务先用仓库自带 `labs-git-issue` 建 Issue（不传 `--host` / `--repo`，平台与仓库按 `origin` 自动识别；背景 / 目标与范围 / 验收 / 涉及语言 / 风险），完成后关单 | [§9.1](CONTRIBUTING.md#91-先建单再动手) |
 | 17 | **版本号与 tag 一律不碰**：不得改版本字符串、不建 tag、不调 `autochangelog`、不手工改 `CHANGELOG.md` | [§10](CONTRIBUTING.md#10-版本与发布) |
 
 ## 3. 主题索引
@@ -80,7 +80,7 @@
 | Java 用例 | `mvnw.cmd -B test`（Linux / macOS 用 `./mvnw -B test`） |
 | 编码自查（BOM / CRLF） | [§5.8](CONTRIBUTING.md#58-文件编码与行尾) 的 PowerShell 片段 |
 | 提交（Windows） | 写入 `.git/commit-msg.tmp` 后 `git commit -F .git/commit-msg.tmp` |
-| 建 / 查 / 关工单 | `labs-git-issue`（`--host` 缺省按 `origin` 推断，当前 Codeberg），正文模板见 [§9.1](CONTRIBUTING.md#91-先建单再动手) |
+| 建 / 查 / 关工单 | `labs-git-issue`（不传 `--host` / `--repo`，按 `origin` 自动识别），正文模板见 [§9.1](CONTRIBUTING.md#91-先建单再动手) |
 
 ## 5. 交付前自检
 
@@ -91,4 +91,4 @@
 5. **文档**：目录 `README.md`、模块 `.md` 的路线图 / 功能表 / 测试 / TODO 与实际一致，无陈旧条目。
 6. **编码**：UTF-8 无 BOM、LF、末尾换行（[§5.8](CONTRIBUTING.md#58-文件编码与行尾)）。
 7. **提交信息**：符合 `type[language]：summary`，正文分条含验证命令，无版本号 / 代理署名。
-8. **工单**：这轮任务在 Codeberg 有对应 Issue，状态与正文和实际落地一致（[§9.1](CONTRIBUTING.md#91-先建单再动手)）。
+8. **工单**：这轮任务有对应 Issue，状态与正文和实际落地一致（[§9.1](CONTRIBUTING.md#91-先建单再动手)）。

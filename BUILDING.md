@@ -28,7 +28,7 @@ Quant1X 是**多语言平行实现**：C++、Rust、Go、Python、Zig、Java 各
 | C/C++ | `cmake/compile_options.cmake` | C17、C++20；Windows 使用 MSVC |
 | C/C++ 依赖 | `conanfile.py`、`conan/profiles/` | Conan 2.x |
 | CMake | `CMakeLists.txt` | ≥ 3.30 |
-| Rust | `rust-toolchain.toml`、`Cargo.toml` | 工具链由 `rust-toolchain.toml` 锁定，Edition 2024 |
+| Rust | `rust-toolchain.toml`、`Cargo.toml` | 1.100.0（Edition 2024），由 `rust-toolchain.toml` 锁定 |
 | Go | `go.mod` | 以 `go` 指令声明的最低版本为准 |
 | Python | `pyproject.toml` | `requires-python` 为下限，建议 3.12+ |
 | Zig | 无清单文件 | 0.17+（`std.Io` API），本地 0.17.1 实测 |
@@ -361,7 +361,7 @@ go test ./tests -run TestDecodeJavaScript -v
 
 ```bash
 go env -w GOPROXY=https://goproxy.cn,direct
-go env -w GOPRIVATE=gitee.com
+go env -w GOPRIVATE=github.com
 ```
 
 ---
