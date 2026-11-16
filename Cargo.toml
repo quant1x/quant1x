@@ -6,7 +6,6 @@ authors = ["Quant1X Team"]
 description = "Cross-language standard library for quantitative trading"
 license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/quant1x/quant1x"
 repository = "https://github.com/quant1x/quant1x"
 documentation = "https://github.com/quant1x/quant1x"
 
@@ -25,6 +24,8 @@ include = [
     "/tools/vyukov_perf.rs",
     "/tools/vyukov_runner.rs",
     "/benches/vyukov_bench.rs",
+    "/examples/*.rs",
+    "/tests/*.rs",
 ]
 
 [lib]
