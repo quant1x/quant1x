@@ -481,6 +481,7 @@ fn main() {
 | 数据字典（数据项与更新时序） | [docs/README.md](docs/README.md) |
 | 模块库说明 | [docs/library.md](docs/library.md) |
 | 命令行参数 | [docs/argparse.md](docs/argparse.md) |
+| 命令行解析（Python argparse 语义） | [quant1x/base/argparser/README.md](quant1x/base/argparser/README.md) |
 | 交易所费用 | [docs/exchange-license-fees.md](docs/exchange-license-fees.md) |
 | Vyukov Ringbuffer 契约 | [quant1x/runtime/ringbuffer.md](quant1x/runtime/ringbuffer.md) |
 | 技术分析算子 | [quant1x/ta/README.md](quant1x/ta/README.md) |

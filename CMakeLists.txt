@@ -402,6 +402,11 @@ set(quant1x-headers
     quant1x/base/numeric.h
     quant1x/base/safe.h
     quant1x/base/simd.h
+    quant1x/base/argparser/spec.hpp
+    quant1x/base/argparser/error.hpp
+    quant1x/base/argparser/parser.hpp
+    quant1x/base/argparser/help.hpp
+    quant1x/base/argparser/complete.hpp
     quant1x/base/cpu_info.h
 
     # 核心库
@@ -595,6 +600,11 @@ set(quant1x-sources
     quant1x/base/simd.cpp
     quant1x/base/cpu_info.cpp
     quant1x/base/affinity.cpp
+    quant1x/base/argparser/spec.cpp
+    quant1x/base/argparser/error.cpp
+    quant1x/base/argparser/parser.cpp
+    quant1x/base/argparser/help.cpp
+    quant1x/base/argparser/complete.cpp
     
     # 核心库
     quant1x/core/base.cpp

@@ -31,6 +31,8 @@ out/
 
 # CMake specific
 *build*/
+# `cmake --system-information` 的转储工程，由外部调用以仓库根为工作目录时产生
+__cmake_systeminformation/
 cmake-build*/
 # Conan 生成的用户级预设（每次 conan install 重新生成）
 CMakeUserPresets.json

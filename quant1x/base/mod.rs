@@ -12,3 +12,4 @@ pub mod strings;
 pub use strings::{to_lower, to_upper, trim, starts_with, ends_with};
 pub mod bits;
 pub use bits::*;
+pub mod argparser;
