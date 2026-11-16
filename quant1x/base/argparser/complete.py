@@ -7,6 +7,7 @@
 候选词只看「已敲定的子命令链」: 选项名、子命令名、位置参数的 `choices`;
 不区分「正在写取值」的语境, 也不补文件路径。
 """
+from __future__ import annotations
 
 from collections.abc import Iterator
 

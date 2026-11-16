@@ -9,6 +9,7 @@
 
 本模块与具体读取对象无关: `.env` 只是其一处用法, 任何"若干文件 -> 一个值"的过程都可套用。
 """
+from __future__ import annotations
 
 import os
 from pathlib import Path

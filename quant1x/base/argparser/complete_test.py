@@ -6,6 +6,7 @@
 
 运行: python -m quant1x.base.argparser.complete_test
 """
+from __future__ import annotations
 
 from quant1x.base.argparser import Parser
 from quant1x.base.argparser.complete import complete

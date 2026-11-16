@@ -2,6 +2,7 @@
 # Copyright (C) 2026 Quant1X Team
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
 import struct
 from typing import Dict, List, Tuple
 from collections import OrderedDict

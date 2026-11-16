@@ -11,6 +11,7 @@
 键名只认 `[A-Za-z_][A-Za-z0-9_]*`, 不认 `${NAME:-默认值}` 这类带修饰的写法 —— 需要默认值由调用方
 自己兜。不做引号区分: 传进来的文本是剥完引号的值, 一律展开。
 """
+from __future__ import annotations
 
 import re
 from typing import Mapping

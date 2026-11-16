@@ -3,6 +3,7 @@
 # Copyright (C) 2026 Quant1X Team
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
 import argparse
 import math
 import re

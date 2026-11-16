@@ -6,6 +6,7 @@
 
 运行: python -m quant1x.base.argparser.derive_test
 """
+from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum

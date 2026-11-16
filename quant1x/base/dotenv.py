@@ -25,6 +25,7 @@
 **变量展开**：值的展开交给 `base/expandvars.py`，键值表是那份合并结果（另一份 `.env` 里的键同样
 可用），兜底表是系统环境变量。
 """
+from __future__ import annotations
 
 import os
 import sys

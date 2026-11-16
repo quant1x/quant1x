@@ -2,6 +2,7 @@
 # Copyright (C) 2026 Quant1X Team
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
 from dataclasses import dataclass
 from quant1x.base.numeric import NumberRange
 from ..exchange import Exchange

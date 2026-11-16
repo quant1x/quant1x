@@ -2,6 +2,7 @@
 # Copyright (C) 2026 Quant1X Team
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
 import os.path
 
 from git import Repo

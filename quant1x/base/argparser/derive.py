@@ -8,6 +8,7 @@
 无默认值的字段是必填。`field(metadata={"positional": True})` 把字段登记成位置参数,
 `metadata={"help": "..."}` 给说明文字。认不出的注解在定义期报错, 不静默退回字符串。
 """
+from __future__ import annotations
 
 import dataclasses
 import typing
