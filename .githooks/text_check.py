@@ -42,7 +42,7 @@ def _git(args, binary=False):
     )
     if proc.returncode != 0:
         raise RuntimeError(
-            "git %s 失败: %s" % (" ".join(args), proc.stderr.decode("utf-8", "replace"))
+            "git {} 失败: {}".format(" ".join(args), proc.stderr.decode("utf-8", "replace"))
         )
     return proc.stdout if binary else proc.stdout.decode("utf-8", "replace")
 
@@ -82,7 +82,7 @@ def main():
 
     sys.stderr.write("pre-commit 校验未通过：下列文件**本次新增的行**混进了 BOM\n\n")
     for path, bom in offenders:
-        sys.stderr.write("  %s  BOM=%d\n" % (path, bom))
+        sys.stderr.write("  {}  BOM={}\n".format(path, bom))
     sys.stderr.write(
         "\nU+FEFF 多半是某次编辑把自带 BOM 的一段文本拼接进来的 —— 它肉眼看不见,\n"
         "所见只是 `- ` 与正文之间多了个位置。修法见 CONTRIBUTING.md 的「5.8 文件编码与行尾」。\n"

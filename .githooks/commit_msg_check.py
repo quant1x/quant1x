@@ -126,17 +126,18 @@ def _debug_report(text, valid_utf8):
     for enc, label in CANDIDATES:
         r = _roundtrip(enc, text)
         if r is None:
-            sys.stderr.write("  %-9s %s\n" % (enc, "encode 失败——不可能为该编码误读产物"))
+            sys.stderr.write("  {:<9} {}\n".format(enc, "encode 失败——不可能为该编码误读产物"))
             continue
         same = r["recovered"] == text
         hit = (not same and r["han"] >= 2 and r["loss"] <= r["han"])
         verdict = "命中" if hit else ("还原=原文" if same else "未命中")
         sys.stderr.write(
-            "  %-9s %s decode=%s han=%d loss=%d %s\n"
-            % (enc, r["mode"], verdict, r["han"], r["loss"], label)
+            "  {:<9} {} decode={} han={} loss={} {}\n".format(
+                enc, r["mode"], verdict, r["han"], r["loss"], label
+            )
         )
         if hit:
-            sys.stderr.write("      反推还原：%s\n" % _clean_preview(r["recovered"]))
+            sys.stderr.write("      反推还原：{}\n".format(_clean_preview(r["recovered"])))
 
 
 def check(path, debug=False):
@@ -151,7 +152,7 @@ def check(path, debug=False):
         text = raw.decode("utf-8")
         valid_utf8 = True
     except UnicodeDecodeError as e:
-        problems.append("不是合法 UTF-8：%s" % e)
+        problems.append("不是合法 UTF-8：{}".format(e))
         text = raw.decode("utf-8", errors="replace")
         valid_utf8 = False
 
@@ -170,13 +171,12 @@ def check(path, debug=False):
             enc, label, recovered = hit
             preview = _clean_preview(recovered)
             problems.append(
-                "%s：round-trip 反推可还原为「%s%s」"
-                % (label, preview, "…" if len(recovered) > 72 else "")
+                "{}：round-trip 反推可还原为「{}{}」".format(label, preview, "…" if len(recovered) > 72 else "")
             )
 
     if problems:
         for p in problems:
-            sys.stderr.write("commit-msg 校验未通过：%s\n" % p)
+            sys.stderr.write("commit-msg 校验未通过：{}\n".format(p))
         sys.stderr.write(
             "提示：Windows 下提交中文信息请走 UTF-8 文件方式，例如\n"
             "  git commit -F .git/commit-msg.tmp\n"

@@ -280,7 +280,7 @@ class TcpConnectionPool:
         try:
             return self.endpoint_manager.get_endpoint_stats(ep)
         except KeyError as e:
-            raise RuntimeError("Invalid endpoint: %s" % e)
+            raise RuntimeError("Invalid endpoint: {}".format(e))
 
     # ---------- 内部辅助函数 ----------
     def _start_heartbeat_timer(self) -> None:
