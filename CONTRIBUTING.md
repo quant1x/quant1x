@@ -32,7 +32,8 @@ Quant1X 是**多语言平行实现**的量化交易基础设施框架：同一�
 | --- | --- | --- |
 | Spec | 规范 | 确定语义、API、默认行为与失败约定；载体是 Python 实现 + 同目录 `.md` |
 | 生产实现 | C++ | 性能与内存的第一落地形态；严禁 UB |
-| 对齐实现 | Rust / Go / Java | 与 spec 逐词对应；Java 仅用于分布式 ID 等对照实现 |
+| 对齐实现 | Rust / Go | 与 spec 逐词对应 |
+| 扩展实现 | Zig / Java | Zig 与 Go 同为扩展语言，当前只承载小功能；Java 仅用于分布式 ID 等对照实现 |
 
 设计原则：
 
@@ -218,12 +219,12 @@ quant1x/data/schema/
 
 | 语言 | 公开函数 | 说明 |
 | --- | --- | --- |
-| Python / C++ / Rust | `get_quarter_by_date` | 必须蛇形 |
+| Python / C++ / Rust / Zig | `get_quarter_by_date` | 必须蛇形 |
 | Go | `GetQuarterByDate` | 导出标识符须大写开头，仅字形不同，逐词对应 |
 | Java | `getQuarterByDate` | 语言惯例，仅字形不同，逐词对应 |
 
 **禁止**反过来说"要与 Go 同名"而让 Python / C++ 保留驼峰。语义名以 Python 为准：新语义先在 Python
-定名，C++ / Rust / Go / Java 沿用；跨语言对应关系登记在模块 `.md` 的对照表。
+定名，C++ / Rust / Go / Zig / Java 沿用；跨语言对应关系登记在模块 `.md` 的对照表。
 
 ### 4.2 内存态书写惯例
 
