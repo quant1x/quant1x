@@ -41,7 +41,7 @@ class SynchronizeContext(protocol.BaseFrame):
         '1f32c6e5d53dfb41' \
         'a9325ac935dc0837' \
         '335a16e4ce17c1bb')
-        return padding
+        return bytes(padding)
         
     def deserialize_response_body(self, data: bytes) -> None:
         logger.debug(f"SynchronizeContext.deserialize_response_body: {data.hex()}")
@@ -254,7 +254,7 @@ class InstrumentQuote1(protocol.BaseFrame):
         pkg = bytearray()
         code = self.ticker.encode("utf-8")
         pkg.extend(struct.pack('<B9s', self.market, code))
-        return pkg
+        return bytes(pkg)
 
     def deserialize_response_body(self, data: bytes) -> None:
         if (len(data) < 20):
@@ -338,7 +338,7 @@ class InstrumentQuote2(protocol.BaseFrame):
             logger.debug(f"[Futures_Quotes] serialize: category={category}, code={code}")
             code = code.encode("gbk")
             body.extend(struct.pack('<B23s', category, code))
-        return body
+        return bytes(body)
     
     def deserialize_response_body(self, data: bytes) -> None:
         logger.debug(f"[Futures_Quotes] deserialize: {data.hex()}")
@@ -674,7 +674,7 @@ class TodoCmd0X2459(protocol.BaseFrame):
     def serialize_request_body(self) -> bytes:
         ticker = self.ticker.encode("utf-8")
         body = struct.pack('<6s', ticker)
-        return bytearray.fromhex('00 00 00 00 60 EA 00 00 69 77 73 68 6F 70 5F 68 6B 2F 30 39 39 38 38 2E 68 74 6D 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00')
+        return bytes.fromhex('00 00 00 00 60 EA 00 00 69 77 73 68 6F 70 5F 68 6B 2F 30 39 39 38 38 2E 68 74 6D 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00')
     def deserialize_response_body(self, data: bytes) -> None:
         logger.debug(f"[TodoCmd0X2459] deserialize: {data.hex()}")
         offset = 4
@@ -770,7 +770,7 @@ class TodoCmd0X2488(protocol.BaseFrame):
         self.reply = []
 
     def serialize_request_body(self) -> bytes:
-        return bytearray.fromhex('1F 30 39 39 38 38 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 37 00 00 00 00 00 00 00 00 00')
+        return bytes.fromhex('1F 30 39 39 38 38 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 37 00 00 00 00 00 00 00 00 00')
     
     def deserialize_response_body(self, data: bytes) -> None:
         logger.debug(f"[TodoCmd0X2488] deserialize: {data.hex()}")
@@ -987,7 +987,7 @@ class Futures_Quotes(protocol.BaseFrame):
             logger.debug(f"[Futures_Quotes] serialize: category={category}, code={code}")
             code = code.encode("gbk")
             body.extend(struct.pack('<B23s', category, code))
-        return body
+        return bytes(body)
     
     def deserialize_response_body(self, data: bytes) -> None:
         logger.debug(f"[Futures_Quotes] deserialize: {data.hex()}")
