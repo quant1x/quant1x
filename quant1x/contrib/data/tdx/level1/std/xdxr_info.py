@@ -125,7 +125,7 @@ class XdxrBatchContext(protocol.BaseFrame):
             for _ in range(count_):
                 if pos + 29 > body_len:
                     break
-                (market_, code_, u1) = struct.unpack('<B 6s B', data[pos:pos+8])
+                (market_, code_, _u1) = struct.unpack('<B 6s B', data[pos:pos+8])
                 assert market_ == market_id_ and code_ == ticker_
                 pos += 8
                 date_int = struct.unpack('<I', data[pos:pos+4])[0]

@@ -36,7 +36,7 @@ def _start_dummy_server(listen_ready: threading.Event, port_holder: list):
     srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     srv.bind(('127.0.0.1', 0))
     srv.listen(5)
-    addr, port = srv.getsockname()
+    _addr, port = srv.getsockname()
     port_holder.append(port)
     listen_ready.set()
 

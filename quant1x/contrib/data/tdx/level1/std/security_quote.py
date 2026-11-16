@@ -85,8 +85,8 @@ class SecurityQuoteContext(protocol.BaseFrame):
             tmp, pos = helpers.varint_decode(data, pos)
             low = float(price_base + tmp) / base_unit
 
-            reversed_bytes0, pos = helpers.varint_decode(data, pos)
-            reversed_bytes1, pos = helpers.varint_decode(data, pos)
+            _reversed_bytes0, pos = helpers.varint_decode(data, pos)
+            _reversed_bytes1, pos = helpers.varint_decode(data, pos)
 
             vol, pos = helpers.varint_decode(data, pos)
             vol *= 100
@@ -126,10 +126,10 @@ class SecurityQuoteContext(protocol.BaseFrame):
             reversed_bytes4 = struct.unpack('<H', data[pos:pos+2])[0]
             pos += 2
 
-            reversed_bytes5, pos = helpers.varint_decode(data, pos)
-            reversed_bytes6, pos = helpers.varint_decode(data, pos)
-            reversed_bytes7, pos = helpers.varint_decode(data, pos)
-            reversed_bytes8, pos = helpers.varint_decode(data, pos)
+            _reversed_bytes5, pos = helpers.varint_decode(data, pos)
+            _reversed_bytes6, pos = helpers.varint_decode(data, pos)
+            _reversed_bytes7, pos = helpers.varint_decode(data, pos)
+            _reversed_bytes8, pos = helpers.varint_decode(data, pos)
 
             if pos + 4 > len(data):
                 break

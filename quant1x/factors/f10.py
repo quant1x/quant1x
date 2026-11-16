@@ -283,7 +283,7 @@ def get_f10(code: str, date: str) -> F10:
         
     # 5. Safety Score
     try:
-        score, reason = safety_score.get_safety_score(security_code)
+        score, _reason = safety_score.get_safety_score(security_code)
         f10.safety_score = score
     except Exception:
         pass

@@ -132,7 +132,7 @@ def quarterly_reports(feature_date: str, page_no: int = 1) -> Tuple[List[Quarter
     """Fetch quarterly reports for a given date."""
     from quant1x.base.time import get_quarter_by_date
 
-    _, q_begin, q_end = get_quarter_by_date(feature_date, 1)
+    _, _q_begin, q_end = get_quarter_by_date(feature_date, 1)
     quarter_end_date = Timestamp.parse(q_end).only_date()
 
     params = {
@@ -323,7 +323,7 @@ def get_cache_quarterly_reports_by_security_code(security_code: str, date: str, 
     # 注意: cache_quarterly_reports_by_security_code 内部已通过 diff 参数做季度偏移,
     # 这里直接传原始 date, 避免双重偏移. 
     for diff in range(diff_quarters, 5):
-        all_reports, pages, err = cache_quarterly_reports_by_security_code(date, diff)
+        all_reports, _pages, err = cache_quarterly_reports_by_security_code(date, diff)
         if err:
             continue
         for v in all_reports:
@@ -336,7 +336,7 @@ def get_cache_quarterly_reports_by_security_code(security_code: str, date: str, 
     for diff in range(diff_quarters, 5):
         from quant1x.base.time import get_quarter_by_date
         _, _, qdate = get_quarter_by_date(date, diff)
-        reports, pages, err = quarterly_reports_by_security_code(security_code, qdate, 0)
+        reports, _pages, err = quarterly_reports_by_security_code(security_code, qdate, 0)
         if not err and reports:
             v = reports[0]
             _g_map_quarterly_reports[normalized_code] = v

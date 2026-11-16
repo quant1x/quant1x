@@ -183,7 +183,7 @@ class HistoryFundFlowDetails(protocol.BaseFrame):
 
     def deserialize_response_body(self, data: bytes) -> None:
         self.list.clear()
-        market, query_info, ext = struct.unpack("<H12s5x8s", data[:27])
+        _market, query_info, ext = struct.unpack("<H12s5x8s", data[:27])
 
         list_raw = struct.unpack(f"<{len(data) - 27}s", data[27:])[0]
         python_list = json.loads(list_raw.decode("gbk"))

@@ -434,7 +434,7 @@ class FactorModel:
         用 t 日数据更新 t 日所属 regime 的模型
         这是在线学习的核心: 每天只学一步, 逐步适应
         """
-        X, y, stocks = self._prepare_X(factor_panel, date, regime)
+        X, y, _stocks = self._prepare_X(factor_panel, date, regime)
         if X is None or len(X) < 10:
             return
 

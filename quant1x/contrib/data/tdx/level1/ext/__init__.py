@@ -79,15 +79,15 @@ class Synchronize2(protocol.BaseFrame):
         
     def deserialize_response_body(self, data: bytes) -> None:
         logger.debug(f"Synchronize2.deserialize_response_body: {data.hex()}")
-        maybe_delay, u2, u3, u4, info, version = struct.unpack('<4I25s29s', data[:70])
-        u5, u6, u7, u8, u9, date_now, time_now, f1, f2, u15, u16, u17, u18, date2, date3, date4, u22 = struct.unpack('<HHHHHIIffHHHBIIIH', data[70:117])
-        server_sign, maybe_switch = struct.unpack('<13sB', data[117:131])
+        maybe_delay, _u2, _u3, _u4, info, version = struct.unpack('<4I25s29s', data[:70])
+        _u5, _u6, _u7, _u8, _u9, date_now, time_now, _f1, _f2, _u15, _u16, _u17, _u18, _date2, _date3, _date4, _u22 = struct.unpack('<HHHHHIIffHHHBIIIH', data[70:117])
+        server_sign, _maybe_switch = struct.unpack('<13sB', data[117:131])
         
         name, = struct.unpack('<30s', data[159:189])
-        a, u23, date5, s0, u24, date6, s1, u25, date7, date8 = struct.unpack('<18s5IB3I', data[189:240])
+        _a, _u23, _date5, _s0, _u24, _date6, _s1, _u25, _date7, _date8 = struct.unpack('<18s5IB3I', data[189:240])
         server_sign2, = struct.unpack('<13s', data[240:253])
-        u26, date9, date10, s2, date11, date12, date13, s3, u28, s4, u29 = struct.unpack('<IIIBIIIBfBH', data[253:286])
-        date14, u30, date15, u31 = struct.unpack('<IfIf', data[311:327])
+        _u26, _date9, _date10, _s2, _date11, _date12, _date13, _s3, _u28, _s4, _u29 = struct.unpack('<IIIBIIIBfBH', data[253:286])
+        _date14, _u30, _date15, _u31 = struct.unpack('<IfIf', data[311:327])
         
         time_now = datetime(date_now // 10000, date_now % 10000 // 100, date_now % 100, time_now // 10000, time_now % 10000 // 100, time_now % 100)
         print({
@@ -132,7 +132,7 @@ class MarketList(protocol.BaseFrame):
         result = []
         for i in range(cnt):
             # 64byte for one
-            (category, raw_name, market, raw_short_name, ignore_bytes, unknown_bytes) = struct.unpack("<B32sB2s26s2s", data[pos: pos+64])
+            (category, raw_name, market, raw_short_name, _ignore_bytes, _unknown_bytes) = struct.unpack("<B32sB2s26s2s", data[pos: pos+64])
             pos += 64
 
             name = raw_name.decode("gbk")
@@ -394,7 +394,7 @@ class InstrumentBars(protocol.BaseFrame):
         for i in range(count):
             year, month, day, hour, minute, pos = get_datetime(self.category, data, pos)
             second = 0
-            (open_price, high, low, close, position, volume, price) = struct.unpack("<ffffIIf", data[pos: pos+28])
+            (open_price, high, low, close, _position, volume, _price) = struct.unpack("<ffffIIf", data[pos: pos+28])
             (amount, ) = struct.unpack("f", data[pos+16: pos+16+4])
 
             pos += 28
@@ -454,7 +454,7 @@ class TransactionData(protocol.BaseFrame):
     def deserialize_response_body(self, data: bytes) -> None:
         logger.debug(f"[TransactionData] deserialize: {data.hex()}")
         pos = 0
-        market, code, _, num = struct.unpack('<B9s4sH', data[pos: pos + 16])
+        market, _code, _, num = struct.unpack('<B9s4sH', data[pos: pos + 16])
         pos += 16
         result = []
         last_day = last_trading_day().to_datetime()
@@ -569,7 +569,7 @@ class DailyTransactionData(protocol.BaseFrame):
     def deserialize_response_body(self, data: bytes) -> None:
         logger.debug(f"[DailyTransactionData] deserialize: {data.hex()}")
         pos = 0
-        market, code, _, num = struct.unpack('<B9s4sH', data[pos: pos + 16])
+        market, _code, _, num = struct.unpack('<B9s4sH', data[pos: pos + 16])
         pos += 16
         result = []
         for i in range(num):
@@ -787,7 +787,7 @@ class TodoCmd0X2488(protocol.BaseFrame):
             # pos += 1 # Market
             # pos += 6 # Code
             # pos += 1 # Unknown
-            year, month, day, hour, minute, pos = helpers.get_datetime(9, data, pos)
+            year, month, day, _hour, _minute, pos = helpers.get_datetime(9, data, pos)
             # date_int = struct.unpack('<I', data[pos:pos+4])[0]
             # pos += 4
             
@@ -922,7 +922,7 @@ def unpack_futures(data, code_len: int = 23):
         'asks': [{'price': pending_list[i], 'vol': pending_list[i + 5]} for i in range(10, 15)]
     }
     u1, settlement_price, u2, average_price, pre_settlement_price, u3, u4, u5, u6, pre_close_price  = struct.unpack('<HfIffIIIIf', data[141 + code_len: 179 + code_len])
-    s1, pre_vol, u7, s2, u8, day3_raise, s3, settlement_price2, date, u9, raise_speed, u10, s4, u11, u12 = struct.unpack('<12sff12sff25sfIIff24sHB', data[179 + code_len: 291 + code_len])
+    _s1, pre_vol, _u7, _s2, _u8, day3_raise, _s3, settlement_price2, date, u9, raise_speed, u10, _s4, u11, u12 = struct.unpack('<12sff12sff25sfIIff24sHB', data[179 + code_len: 291 + code_len])
     
     code = code.decode('gbk').replace('\x00', '')
     secs = u9

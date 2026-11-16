@@ -515,9 +515,9 @@ def parse_rights(text, preferred_currency=None):
         # 跳过可能的表头行
         if '公告日期' in row[0] or row[0].strip().startswith('公告'):
             continue
-        price_, currency_= parse_money(row[1])
+        _price, currency_= parse_money(row[1])
         if not currency_:
-            price_, currency_ = parse_money(row[4])
+            _price, currency_ = parse_money(row[4])
         currency = currency_ if currency_ else ''
         record = {
             # 1. 基础信息

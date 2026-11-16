@@ -76,7 +76,7 @@ class QuarterlyReportSummary:
         self.QDate = v.QDATE
 
 def quarterly_reports(feature_date: str, page_no: int = 1) -> Tuple[List[QuarterlyReport], int, Optional[FinancialReportException]]:
-    _, q_begin, q_end = std.get_quarter_by_date(feature_date, 1)
+    _, _q_begin, q_end = std.get_quarter_by_date(feature_date, 1)
     quarter_end_date = Timestamp.parse(q_end).only_date()
 
     params = {
