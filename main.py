@@ -2,8 +2,9 @@
 # Copyright (C) 2026 Quant1X Team
 # SPDX-License-Identifier: MIT
 
+import os
 import signal
-import click
+import sys
 from typing import List, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed, Future
 from rich.console import Console
@@ -15,6 +16,7 @@ from rich.progress import (
     TaskProgressColumn,
     TimeElapsedColumn,
 )
+from quant1x.base.argparser import Namespace, Parser
 from quant1x.data.adapter import DataAdapter
 from quant1x.data import adapter
 from quant1x.data.meta.instrument import Instrument
@@ -34,11 +36,32 @@ MAX_WORKERS = 4  # 单 plugin 内并发下载线程数
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
-@click.group()
-def cli():
-    pass
+# CLI
+# ---------------------------------------------------------------------------
+def build_parser() -> Parser:
+    """构建命令行解析器: 根命令 + update 子命令"""
+    parser = Parser(os.path.basename(sys.argv[0]))
+    subparsers = parser.add_subparsers(dest="command")
+    update_parser = subparsers.add_parser("update", about="Update cached data (base / features)")
+    update_parser.add_argument(
+        "--all",
+        action="store_true",
+        dest="update_all",
+        help="Update all base and feature components.",
+    )
+    update_parser.add_argument(
+        "--base",
+        default=None,
+        help="Comma-separated base names to update (e.g., 'xdxr,bar').",
+    )
+    update_parser.add_argument(
+        "--feature",
+        default=None,
+        help="Comma-separated feature names to update (e.g., 'ma,macd').",
+    )
+    return parser
 
-def parse_comma_separated(ctx, param, value):
+def parse_comma_separated(value):
     """将逗号分隔字符串转为 list[str], 空值返回 None"""
     if not value:
         return None
@@ -80,27 +103,11 @@ def _signal_handler(signum, frame):
     global _interrupted
     _interrupted = True
 
-@click.command()
-@click.option(
-    "--all",
-    "update_all",
-    is_flag=True,
-    default=False,
-    help="Update all base and feature components.",
-)
-@click.option(
-    "--base",
-    default=None,
-    callback=parse_comma_separated,
-    help="Comma-separated base names to update (e.g., 'xdxr,bar').",
-)
-@click.option(
-    "--feature",
-    default=None,
-    callback=parse_comma_separated,
-    help="Comma-separated feature names to update (e.g., 'ma,macd').",
-)
-def update(update_all: bool, base: Optional[List[str]], feature: Optional[List[str]]):
+def run_update(namespace: Namespace) -> None:
+    """执行 update 子命令"""
+    update_all = namespace.update_all
+    base = parse_comma_separated(namespace.base)
+    feature = parse_comma_separated(namespace.feature)
     global _interrupted
     _interrupted = False
 
@@ -210,7 +217,17 @@ def update(update_all: bool, base: Optional[List[str]], feature: Optional[List[s
         # 恢复原始信号处理器
         signal.signal(signal.SIGINT, original_handler)
 
-cli.add_command(update)
+def main(argv=None) -> int:
+    """入口: 解析命令行并分发子命令"""
+    parser = build_parser()
+    namespace = parser.parse_or_exit(argv)
+    command = getattr(namespace, "command", None)
+    if command == "update":
+        run_update(namespace)
+    else:
+        parser.print_help()
+    return 0
+
 
 if __name__ == "__main__":
-    cli()
+    sys.exit(main())
