@@ -75,20 +75,16 @@ def detect_instrument_type_by_rule(exchange: Exchange, code: str) -> InstrumentT
     Returns:
         InstrumentType: 检测到的证券类型, 若无匹配则返回 Unknown
     """
-    rules = None
-    match exchange:
-        case Exchange.SSE:
-            rules = sse_rules
-        case Exchange.SZSE:
-            rules = szse_rules
-        case Exchange.BSE:
-            rules = bse_rules
-        case Exchange.HKEX:
-            rules = hkex_rules
-        case Exchange.USA:
-            rules = usa_rules
-        case _:
-            return InstrumentType.Unknown
+    rules_by_exchange = {
+        Exchange.SSE: sse_rules,
+        Exchange.SZSE: szse_rules,
+        Exchange.BSE: bse_rules,
+        Exchange.HKEX: hkex_rules,
+        Exchange.USA: usa_rules,
+    }
+    rules = rules_by_exchange.get(exchange)
+    if rules is None:
+        return InstrumentType.Unknown
 
     cr = match_rule(code, rules)
     return cr.type
@@ -165,60 +161,59 @@ def detect_symbol(input_str: str) -> Instrument:
     else:
         # 纯数字或者字母
         code_len = len(pure_code)
-        match code_len:
-            case 4:
-                if pure_code.isalpha():
-                    exchange = Exchange.USA
-                    typ = InstrumentType.STOCK
-                    return Instrument(exchange, typ, pure_code, "", 0, 0)
-            case 5:
-                if pure_code.isdigit():
-                    exchange = Exchange.HKEX
-                    typ = InstrumentType.STOCK
-                    return Instrument(exchange, typ, pure_code, "", 0, 0)
-            case 6:
-                # 1. 全局规则优先匹配
-                cr = match_rule(pure_code, global_rules)
-                if cr.exchange != Exchange.UNKNOWN:
-                    exchange = cr.exchange
-                    typ = cr.type
-                    return Instrument(exchange, typ, pure_code, "", 0, 0)
-                # 2. 按市场匹配规则
-                # 2.1 0, 159和3开头, 优先匹配深交所
-                if pure_code.startswith(('0', '159', '3')):
-                    cr = match_rule(pure_code, szse_rules)
-                    if cr.exchange != Exchange.UNKNOWN:
-                        exchange = cr.exchange
-                        typ = cr.type
-                        return Instrument(exchange, typ, pure_code, "", 0, 0)
-                # 2.2 6和5开头, 优先匹配上交所
-                if pure_code.startswith(('6', '5')):
-                    cr = match_rule(pure_code, sse_rules)
-                    if cr.exchange != Exchange.UNKNOWN:
-                        exchange = cr.exchange
-                        typ = cr.type
-                        return Instrument(exchange, typ, pure_code, "", 0, 0)
-                # 2.3 匹配上交所
-                cr = match_rule(pure_code, sse_rules)
-                if cr.exchange != Exchange.UNKNOWN:
-                    exchange = cr.exchange
-                    typ = cr.type
-                    return Instrument(exchange, typ, pure_code, "", 0, 0)
-                # 2.4 匹配深交所
+        if code_len == 4:
+            if pure_code.isalpha():
+                exchange = Exchange.USA
+                typ = InstrumentType.STOCK
+                return Instrument(exchange, typ, pure_code, "", 0, 0)
+        elif code_len == 5:
+            if pure_code.isdigit():
+                exchange = Exchange.HKEX
+                typ = InstrumentType.STOCK
+                return Instrument(exchange, typ, pure_code, "", 0, 0)
+        elif code_len == 6:
+            # 1. 全局规则优先匹配
+            cr = match_rule(pure_code, global_rules)
+            if cr.exchange != Exchange.UNKNOWN:
+                exchange = cr.exchange
+                typ = cr.type
+                return Instrument(exchange, typ, pure_code, "", 0, 0)
+            # 2. 按市场匹配规则
+            # 2.1 0, 159和3开头, 优先匹配深交所
+            if pure_code.startswith(('0', '159', '3')):
                 cr = match_rule(pure_code, szse_rules)
                 if cr.exchange != Exchange.UNKNOWN:
                     exchange = cr.exchange
                     typ = cr.type
                     return Instrument(exchange, typ, pure_code, "", 0, 0)
-                # 2.5 匹配北交所
-                cr = match_rule(pure_code, bse_rules)
+            # 2.2 6和5开头, 优先匹配上交所
+            if pure_code.startswith(('6', '5')):
+                cr = match_rule(pure_code, sse_rules)
                 if cr.exchange != Exchange.UNKNOWN:
                     exchange = cr.exchange
                     typ = cr.type
                     return Instrument(exchange, typ, pure_code, "", 0, 0)
-            case _:
-                exchange = Exchange.UNKNOWN
-                typ = InstrumentType.Unknown
+            # 2.3 匹配上交所
+            cr = match_rule(pure_code, sse_rules)
+            if cr.exchange != Exchange.UNKNOWN:
+                exchange = cr.exchange
+                typ = cr.type
+                return Instrument(exchange, typ, pure_code, "", 0, 0)
+            # 2.4 匹配深交所
+            cr = match_rule(pure_code, szse_rules)
+            if cr.exchange != Exchange.UNKNOWN:
+                exchange = cr.exchange
+                typ = cr.type
+                return Instrument(exchange, typ, pure_code, "", 0, 0)
+            # 2.5 匹配北交所
+            cr = match_rule(pure_code, bse_rules)
+            if cr.exchange != Exchange.UNKNOWN:
+                exchange = cr.exchange
+                typ = cr.type
+                return Instrument(exchange, typ, pure_code, "", 0, 0)
+        else:
+            exchange = Exchange.UNKNOWN
+            typ = InstrumentType.Unknown
 
     # 3. 如果exchange是UNKNOWN, 则返回未知规则
     if exchange == Exchange.UNKNOWN:
