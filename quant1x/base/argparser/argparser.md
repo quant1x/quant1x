@@ -180,6 +180,7 @@ CLI 特有，不属于通用字符串工具，因此不进 `quant1x/base`。
 | `main.cpp`（C++） | 根命令 `--verbose` / `--debug` / `--version`，`service` 与 `update` 子命令 | 取代原来的 p-ranav `argparse` |
 | `main.rs`（Rust） | 根命令 `--verbose` / `--debug` / `--version`，`service` 与 `update` 子命令 | 取代原来的 `clap` |
 | `quant1x/command`（Go） | `q1x-go` 的命令行入口：根命令的 `--debug` / `--avx2` / `--cpu` 与 `update` 子命令 | 取代原来的 `cobra` |
+| `tools/tail`（Go） | 文件末端阅览工具：`-f` / `-q` / `-v` / `-n` / `-c` 与文件位置参数 | 取代原来的 `cobra` + 手写扫描；GNU 的裸数字写法在解析前归一成 `--lines=N` |
 
 ## 4. 测试
 

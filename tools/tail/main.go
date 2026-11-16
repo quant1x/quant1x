@@ -14,271 +14,239 @@ import (
 
 	"github.com/nxadm/tail"
 	"github.com/quant1x/quant1x/quant1x/base"
-	cli "github.com/spf13/cobra"
+	"github.com/quant1x/quant1x/quant1x/base/argparser"
 )
 
+const (
+	flagFollow   = "follow"  // 跟随文件追加
+	flagQuiet    = "quiet"   // 多文件时不打印文件名标题
+	flagVerbose  = "verbose" // 始终打印文件名标题
+	flagLines    = "lines"   // 按行显示的取值
+	flagBytes    = "bytes"   // 按字节显示的取值
+	defaultLines = 10        // 默认显示的行数
+)
+
+// buildParser 构建 tail 的命令行定义
+func buildParser() (*argparser.Parser, error) {
+	parser := argparser.NewParser("tail")
+	parser.WithUsage("tail [-f] [-n #] [file]")
+	switches := []struct {
+		names []string
+		help  string
+	}{
+		{[]string{"-f", "--follow"}, "跟随文件追加"},
+		{[]string{"-q", "--quiet"}, "多文件时不打印文件名标题"},
+		{[]string{"-v", "--verbose"}, "始终打印文件名标题"},
+	}
+	for _, item := range switches {
+		if _, err := parser.AddArgument(item.names, argparser.Argument{
+			Action: argparser.StoreTrue,
+			Help:   item.help,
+		}); err != nil {
+			return nil, err
+		}
+	}
+	if _, err := parser.AddArgument([]string{"-n", "--lines"}, argparser.Argument{
+		Metavar: "NUM",
+		Help:    "显示末尾 N 行, +N 表示从第 N 行开始",
+	}); err != nil {
+		return nil, err
+	}
+	if _, err := parser.AddArgument([]string{"-c", "--bytes"}, argparser.Argument{
+		Metavar: "NUM",
+		Help:    "显示末尾 N 字节, +N 表示从第 N 字节开始",
+	}); err != nil {
+		return nil, err
+	}
+	if _, err := parser.AddArgument([]string{"file"}, argparser.Argument{
+		Nargs: argparser.NargsOneOrMore(),
+		Help:  "要查看的文件",
+	}); err != nil {
+		return nil, err
+	}
+	return parser, nil
+}
+
 func main() {
-	var tailConfig tail.Config
-
-	cmd := &cli.Command{
-		Use:     "tail [flags] FILE [FILE...]",
-		Example: "tail -f runtime.log",
-		Short:   "文件末端阅览",
-		// disable pflag parsing so we parse args in Run and support legacy '-10'
-		DisableFlagParsing: true,
-		Run: func(cmd *cli.Command, args []string) {
-			// custom parsing in Run (we are still within cobra's command lifecycle)
-			if len(args) < 1 {
-				_ = cmd.Usage()
-				return
-			}
-
-			// defaults
-			follow := false
-			quiet := false
-			verbose := false
-			linesMode := true
-			n := 10 // default lines
-			c := 0  // bytes
-			fromLines := false
-			fromBytes := false
-			files := make([]string, 0)
-
-			// parse args manually to support -10 and other legacy forms
-			for i := 0; i < len(args); {
-				a := args[i]
-				// help
-				if a == "-h" || a == "--help" {
-					_ = cmd.Help()
-					return
-				}
-				if a == "-f" || a == "--follow" {
-					follow = true
-					i++
-					continue
-				}
-				if a == "-q" || a == "--quiet" {
-					quiet = true
-					i++
-					continue
-				}
-				if a == "-v" || a == "--verbose" {
-					verbose = true
-					i++
-					continue
-				}
-
-				// --lines=NUM
-				if strings.HasPrefix(a, "--lines=") {
-					val := strings.TrimPrefix(a, "--lines=")
-					if strings.HasPrefix(val, "+") {
-						fromLines = true
-						val = strings.TrimPrefix(val, "+")
-					}
-					if vv, err := strconv.Atoi(val); err == nil {
-						n = vv
-					}
-					i++
-					continue
-				}
-				if a == "--lines" && i+1 < len(args) {
-					val := args[i+1]
-					if strings.HasPrefix(val, "+") {
-						fromLines = true
-						val = strings.TrimPrefix(val, "+")
-					}
-					if vv, err := strconv.Atoi(val); err == nil {
-						n = vv
-					}
-					i += 2
-					continue
-				}
-
-				// -nNUM or -n=NUM or -n NUM
-				if strings.HasPrefix(a, "-n") {
-					val := strings.TrimPrefix(a, "-n")
-					val = strings.TrimPrefix(val, "=")
-					if val == "" {
-						if i+1 < len(args) {
-							val = args[i+1]
-							i += 2
-						} else {
-							i++
-						}
-					} else {
-						i++
-					}
-					if strings.HasPrefix(val, "+") {
-						fromLines = true
-						val = strings.TrimPrefix(val, "+")
-					}
-					if vv, err := strconv.Atoi(val); err == nil {
-						n = vv
-					}
-					continue
-				}
-
-				// --bytes=NUM or --bytes NUM
-				if strings.HasPrefix(a, "--bytes=") {
-					val := strings.TrimPrefix(a, "--bytes=")
-					if strings.HasPrefix(val, "+") {
-						fromBytes = true
-						val = strings.TrimPrefix(val, "+")
-					}
-					if vv, err := strconv.Atoi(val); err == nil {
-						c = vv
-						linesMode = false
-					}
-					i++
-					continue
-				}
-				if a == "--bytes" && i+1 < len(args) {
-					val := args[i+1]
-					if strings.HasPrefix(val, "+") {
-						fromBytes = true
-						val = strings.TrimPrefix(val, "+")
-					}
-					if vv, err := strconv.Atoi(val); err == nil {
-						c = vv
-						linesMode = false
-					}
-					i += 2
-					continue
-				}
-
-				// -cNUM or -c=NUM or -c NUM
-				if strings.HasPrefix(a, "-c") {
-					val := strings.TrimPrefix(a, "-c")
-					val = strings.TrimPrefix(val, "=")
-					if val == "" {
-						if i+1 < len(args) {
-							val = args[i+1]
-							i += 2
-						} else {
-							i++
-						}
-					} else {
-						i++
-					}
-					if strings.HasPrefix(val, "+") {
-						fromBytes = true
-						val = strings.TrimPrefix(val, "+")
-					}
-					if vv, err := strconv.Atoi(val); err == nil {
-						c = vv
-						linesMode = false
-					}
-					continue
-				}
-
-				// bare -NUM (GNU style) -> treat as -n NUM
-				if strings.HasPrefix(a, "-") && len(a) > 1 {
-					body := strings.TrimPrefix(a, "-")
-					if strings.HasPrefix(body, "+") {
-						body = strings.TrimPrefix(body, "+")
-						if body != "" && isDigits(body) {
-							if vv, err := strconv.Atoi(body); err == nil {
-								n = vv
-								i++
-								continue
-							}
-						}
-					} else if isDigits(body) {
-						if vv, err := strconv.Atoi(body); err == nil {
-							n = vv
-							i++
-							continue
-						}
-					}
-				}
-
-				// otherwise treat as filename
-				files = append(files, a)
-				i++
-			}
-
-			// validation: need at least one file
-			if len(files) == 0 {
-				_ = cmd.Usage()
-				return
-			}
-
-			// apply parsed config
-			tailConfig.Location = &tail.SeekInfo{Offset: 0, Whence: 2} // start at end of file by default
-			tailConfig.Follow = follow
-			if tailConfig.Follow {
-				tailConfig.Poll = true
-			}
-
-			multiple := len(files) > 1
-			var wg sync.WaitGroup
-
-			for idx, filename := range files {
-				filename = strings.TrimSpace(filename)
-				filename, _ = base.ExpandUser(filename)
-
-				showHeader := multiple && !quiet
-				if verbose {
-					showHeader = true
-				}
-
-				if showHeader {
-					if idx > 0 {
-						fmt.Println()
-					}
-					fmt.Printf("==> %s <==\n", filename)
-				}
-
-				// initial dump
-				if linesMode {
-					if fromLines {
-						printFromLine(filename, n)
-					} else {
-						printLastLines(filename, n)
-					}
-				} else {
-					if fromBytes {
-						printFromByte(filename, c)
-					} else {
-						printLastBytes(filename, c)
-					}
-				}
-
-				if tailConfig.Follow {
-					wg.Add(1)
-					go func(fn string) {
-						defer wg.Done()
-						prefix := ""
-						if multiple {
-							prefix = fn + ": "
-						}
-						TailFileFollow(fn, tailConfig, prefix)
-					}(filename)
-				}
-			}
-
-			if tailConfig.Follow {
-				wg.Wait()
-			}
-		},
-		//PreRunE: func(cmd *cli.Command, args []string) error {
-		//	//fmt.Println(args)
-		//	if slices.Contains(args, "--help") || slices.Contains(args, "-h") {
-		//		cmd.Usage()
-		//	}
-		//	return nil
-		//},
+	parser, err := buildParser()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(2)
 	}
-	cmd.SetUsageFunc(func(command *cli.Command) error {
-		fmt.Println("Usage:\ntail [-f] [-n #] [file]")
+	namespace, code := parser.ParseOrExit(normalizeBareCount(os.Args[1:]), os.Stdout, os.Stderr)
+	if code != 0 || namespace == nil {
+		os.Exit(code)
+	}
+
+	linesText, hasLines := namespaceText(namespace, flagLines)
+	bytesText, hasBytes := namespaceText(namespace, flagBytes)
+	if hasLines && hasBytes {
+		fmt.Fprintln(os.Stderr, "error: cannot combine --lines and --bytes")
+		os.Exit(2)
+	}
+
+	linesMode := true
+	n := defaultLines
+	c := 0
+	fromLines := false
+	fromBytes := false
+	if hasBytes {
+		linesMode = false
+		c, fromBytes = parseCount(bytesText, c)
+	} else {
+		n, fromLines = parseCount(linesText, n)
+	}
+
+	files := namespaceStrings(namespace, "file")
+	if len(files) == 0 {
+		parser.PrintHelp(os.Stderr, false)
+		os.Exit(2)
+	}
+	runTail(files,
+		namespaceBool(namespace, flagFollow),
+		namespaceBool(namespace, flagQuiet),
+		namespaceBool(namespace, flagVerbose),
+		linesMode, n, c, fromLines, fromBytes)
+}
+
+// runTail 按解析结果输出文件内容, 需要时持续跟随
+func runTail(files []string, follow, quiet, verbose, linesMode bool, n, c int, fromLines, fromBytes bool) {
+	tailConfig := tail.Config{Location: &tail.SeekInfo{Offset: 0, Whence: 2}} // 默认从文件末尾开始
+	tailConfig.Follow = follow
+	if tailConfig.Follow {
+		tailConfig.Poll = true
+	}
+
+	multiple := len(files) > 1
+	var wg sync.WaitGroup
+	for idx, filename := range files {
+		filename = strings.TrimSpace(filename)
+		filename, _ = base.ExpandUser(filename)
+
+		showHeader := multiple && !quiet
+		if verbose {
+			showHeader = true
+		}
+		if showHeader {
+			if idx > 0 {
+				fmt.Println()
+			}
+			fmt.Printf("==> %s <==\n", filename)
+		}
+
+		// initial dump
+		if linesMode {
+			if fromLines {
+				printFromLine(filename, n)
+			} else {
+				printLastLines(filename, n)
+			}
+		} else {
+			if fromBytes {
+				printFromByte(filename, c)
+			} else {
+				printLastBytes(filename, c)
+			}
+		}
+
+		if tailConfig.Follow {
+			wg.Add(1)
+			go func(fn string) {
+				defer wg.Done()
+				prefix := ""
+				if multiple {
+					prefix = fn + ": "
+				}
+				TailFileFollow(fn, tailConfig, prefix)
+			}(filename)
+		}
+	}
+
+	if tailConfig.Follow {
+		wg.Wait()
+	}
+}
+
+// parseCount 解析行数 / 字节数; `+N` 表示从第 N 行 / 第 N 字节开始
+func parseCount(text string, fallback int) (value int, fromStart bool) {
+	if text == "" {
+		return fallback, false
+	}
+	if trimmed, ok := strings.CutPrefix(text, "+"); ok {
+		fromStart = true
+		text = trimmed
+	}
+	parsed, err := strconv.Atoi(text)
+	if err != nil {
+		return fallback, false
+	}
+	return parsed, fromStart
+}
+
+// normalizeBareCount 把 GNU 风格的裸数字 (-10 / -+10) 归一成 --lines=N
+func normalizeBareCount(args []string) []string {
+	normalized := make([]string, 0, len(args))
+	for _, token := range args {
+		if isBareCount(token) {
+			normalized = append(normalized, "--"+flagLines+"="+strings.TrimPrefix(token, "-"))
+			continue
+		}
+		normalized = append(normalized, token)
+	}
+	return normalized
+}
+
+// isBareCount token 是否形如 -10 或 -+10
+func isBareCount(token string) bool {
+	if !strings.HasPrefix(token, "-") || strings.HasPrefix(token, "--") {
+		return false
+	}
+	body := strings.TrimPrefix(token, "-")
+	body = strings.TrimPrefix(body, "+")
+	return isDigits(body)
+}
+
+// namespaceBool 读取布尔开关
+func namespaceBool(namespace *argparser.Namespace, key string) bool {
+	value, ok := namespace.Get(key)
+	if !ok {
+		return false
+	}
+	flag, _ := value.(bool)
+	return flag
+}
+
+// namespaceText 读取文本取值, 同时报告该选项是否出现
+func namespaceText(namespace *argparser.Namespace, key string) (string, bool) {
+	value, ok := namespace.Get(key)
+	if !ok {
+		return "", false
+	}
+	text, ok := value.(string)
+	return text, ok
+}
+
+// namespaceStrings 读取多值位置参数
+func namespaceStrings(namespace *argparser.Namespace, key string) []string {
+	value, ok := namespace.Get(key)
+	if !ok {
 		return nil
-	})
-
-	// Note: flag registration removed because we parse flags manually in Run
-
-	if err := cmd.Execute(); err != nil {
-		fmt.Println(err)
 	}
+	switch typed := value.(type) {
+	case []any:
+		files := make([]string, 0, len(typed))
+		for _, item := range typed {
+			if text, ok := item.(string); ok {
+				files = append(files, text)
+			}
+		}
+		return files
+	case []string:
+		return typed
+	case string:
+		return []string{typed}
+	}
+	return nil
 }
 
 // TailFile 跟踪文件更新 tail -f
