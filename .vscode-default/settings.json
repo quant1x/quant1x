@@ -1,5 +1,4 @@
 {
-    // ===== 编辑器与字体 (VS Code 内置) =====
     "editor.fontFamily": "'Source Code Pro', 'Courier New', monospace",
     "editor.fontVariations": false,
     "editor.inlayHints.fontFamily": "",
@@ -8,26 +7,19 @@
     "chat.editor.fontFamily": "default",
     "chat.fontFamily": "default",
 
-    // ===== 终端 (VS Code 内置) =====
     "terminal.integrated.fontFamily": "'FiraCode Nerd Font Mono', 'Courier New', monospace",
     "terminal.integrated.scrollback": 10000,
 
-    // ===== Python =====
     "python.analysis.autoImportCompletions": true,
     "python.envFile": "${workspaceFolder}/.env",
 
-    // ===== Go =====
     "go.diagnostic.vulncheck": "Imports",
 
-    // ===== CMake =====
     "cmake.launchBehavior": "reuseTerminal",
     "cmake.buildDirectory": "${workspaceFolder}/build",
-    // 依赖由 Conan 2 管理：先执行 conan install 生成 conan_toolchain.cmake。
-    // Windows 使用 MSVC（见 .vscode-windows），macOS 见 .vscode-macos。
-    // Debug 构建需要独立的 build 目录与 Debug 版依赖（见 BUILDING.md）。
     "cmake.configureSettings": {
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "CMAKE_TOOLCHAIN_FILE": "${workspaceFolder}/build/conan_toolchain.cmake"
     },
     "cmake.buildArgs": [
@@ -35,16 +27,13 @@
         "Release"
     ],
 
-    // ===== C++ 测试 (C++ TestMate) =====
     "testMate.cpp.test.advancedExecutables": [
         {
-            // macOS / Linux: 可执行文件通常无扩展名
             "pattern": "build/tests/catch2-*",
             "cwd": "${workspaceFolder}",
             "env": {}
         },
         {
-            // Windows: 保留 .exe 模式
             "pattern": "build/tests/catch2-*.exe",
             "cwd": "${workspaceFolder}",
             "env": {}
@@ -52,6 +41,11 @@
     ],
     "testMate.cpp.debug.configTemplate": {
         "type": "${assert:testMate.cpp.debug.configTemplate doesn't support this platform.}",
+        "preLaunchTask": "CMake: build",
+        "program": "${exec}",
+        "args": "${argsArray}",
+        "cwd": "${command:cmake.launchTargetDirectory}",
+        "sourceFileMap": "${sourceFileMapObj}",
         "linux": {
             "type": "cppdbg",
             "MIMode": "gdb"
@@ -66,16 +60,10 @@
         },
         "win32": {
             "type": "cppdbg"
-        },
-        "preLaunchTask": "CMake: build",
-        "program": "${exec}",
-        "args": "${argsArray}",
-        "cwd": "${command:cmake.launchTargetDirectory}",
-        "sourceFileMap": "${sourceFileMapObj}"
+        }
     },
     "testMate.cpp.debug.noThrow": false,
 
-    // ===== 代码运行 (Code Runner) =====
     "code-runner.executorMap": {
         "python": "python scripts/run_module.py $fullFileName"
     },

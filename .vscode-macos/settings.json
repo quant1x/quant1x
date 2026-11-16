@@ -1,9 +1,3 @@
 {
-    // ===== Python =====
-    "python-envs.defaultEnvManager": "ms-python.python:pyenv",
-
-    // ===== Conan 2 =====
-    // macOS 先执行 conan profile detect，再安装依赖：
-    //   conan install . -of build -pr:b default --build=missing
-    // 配置时指定 CMAKE_TOOLCHAIN_FILE=${workspaceFolder}/build/conan_toolchain.cmake
+    "python-envs.defaultEnvManager": "ms-python.python:pyenv"
 }

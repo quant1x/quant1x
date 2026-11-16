@@ -1,12 +1,8 @@
 {
-    // ===== Conan 2 / MSVC =====
-    // Windows 统一使用 MSVC 编译。依赖安装（Release）：
-    //   conan install . -of build-msvc -pr:h conan/profiles/windows-msvc-static -pr:b default --build=missing
-    // 工具链由 Conan 生成，profile 固定 /MT 静态运行库以匹配 USE_STATIC_CRT=ON。
     "cmake.buildDirectory": "${workspaceFolder}/build-msvc",
     "cmake.configureSettings": {
-        "CMAKE_TOOLCHAIN_FILE": "${workspaceFolder}/build-msvc/conan_toolchain.cmake",
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "${workspaceFolder}/build-msvc/conan_toolchain.cmake"
     },
     "cmake.buildArgs": [
         "--config",
