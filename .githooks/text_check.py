@@ -35,16 +35,24 @@ BOM = b"\xef\xbb\xbf"
 EXEMPT_SUFFIXES = (".bat", ".cmd")
 
 
-def _git(args, binary=False):
-    """执行 git 子命令。失败即抛, 让钩子明确报错而不是静默放过。"""
-    proc = subprocess.run(
-        ["git"] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False
-    )
+def _run_git(args):
+    """执行 git 子命令, 返回 CompletedProcess; 失败即抛, 让钩子明确报错而不是静默放过。"""
+    proc = subprocess.run(["git"] + args, capture_output=True, check=False)
     if proc.returncode != 0:
         raise RuntimeError(
-            "git {} 失败: {}".format(" ".join(args), proc.stderr.decode("utf-8", "replace"))
+            f"git {' '.join(args)} 失败: {proc.stderr.decode('utf-8', 'replace')}"
         )
-    return proc.stdout if binary else proc.stdout.decode("utf-8", "replace")
+    return proc
+
+
+def _git(args):
+    """执行 git 子命令, 返回解码后的标准输出文本。"""
+    return _run_git(args).stdout.decode("utf-8", "replace")
+
+
+def _git_bytes(args):
+    """执行 git 子命令, 返回标准输出原始字节。"""
+    return _run_git(args).stdout
 
 
 def staged_files():
@@ -55,7 +63,7 @@ def staged_files():
 
 def added_lines(path):
     """本次提交在该文件里新增的行(字节), 去掉 diff 的 `+` 号与 `+++` 文件头。"""
-    raw = _git(["diff", "--cached", "-U0", "--", path], binary=True)
+    raw = _git_bytes(["diff", "--cached", "-U0", "--", path])
     return [
         line[1:]
         for line in raw.split(b"\n")

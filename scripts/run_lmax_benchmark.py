@@ -43,7 +43,9 @@ def parse_args() -> argparse.Namespace:
 
 def run_once(repo_root: Path, test_name: str, timeout: int) -> int:
     cmd = [str(repo_root / "mvnw"), "-q", f"-Dtest={test_name}", "test"]
-    result = subprocess.run(cmd, cwd=str(repo_root), capture_output=True, text=True, timeout=timeout)
+    result = subprocess.run(
+        cmd, cwd=str(repo_root), capture_output=True, text=True, timeout=timeout, check=False
+    )
     combined = (result.stdout or "") + (result.stderr or "")
     match = BENCH_PATTERN.search(combined)
     if match is None:
