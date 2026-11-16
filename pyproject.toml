@@ -61,6 +61,8 @@ dependencies = [
     "apscheduler~=3.11.3",
     # quant1x/config/config.py 读取 .env
     "python-dotenv~=1.0",
+    # quant1x/learn/fpgrowth/fp_growth_example.py 的 FP Growth 示例
+    "mlxtend~=0.25",
 ]
 
 [project.urls]
