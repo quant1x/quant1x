@@ -16,10 +16,10 @@
 
 | 阶段 | 语言（角色） | 载体 / 文件 | 状态 | 说明 |
 | --- | --- | --- | --- | --- |
-| spec 定语义 | Python（spec） | `quant1x/base/argparser/spec.py` / `parser.py` / `help.py` / `error.py` / `complete.py` / `derive.py` | 已落地 | 由它确定语义、API 与失败口径 |
-| 生产实现 | C++（生产） | `quant1x/base/argparser/spec.hpp` / `spec.cpp` / `error.hpp` / `error.cpp` / `parser.hpp` / `parser.cpp` / `help.hpp` / `help.cpp` / `complete.hpp` / `complete.cpp` | 已落地 | 四层与入口齐，另加补全生成；源文件登记在根 `CMakeLists.txt`，当前无调用方 |
-| 对等实现 | Rust（对等） | `quant1x/base/argparser/spec.rs` / `error.rs` / `parser.rs` / `help.rs` / `complete.rs` | 已落地 | 四层与入口齐（`parse_or_exit` / `print_help`），另加补全生成，与 Python spec 同口径 |
-| 对等实现 | Go（对等） | `quant1x/base/argparser/spec.go` / `error.go` / `parser.go` / `help.go` / `complete.go` | 已落地 | 四层与入口齐，另加补全生成；包 `quant1x/base/argparser`，当前无调用方 |
+| spec 定语义 | Python（spec） | `quant1x/base/argparser/spec.py` / `parser.py` / `help.py` / `error.py` / `complete.py` / `derive.py` | 已落地 | 由它确定语义、API 与失败口径；`main.py` 已接入 |
+| 生产实现 | C++（生产） | `quant1x/base/argparser/spec.hpp` / `spec.cpp` / `error.hpp` / `error.cpp` / `parser.hpp` / `parser.cpp` / `help.hpp` / `help.cpp` / `complete.hpp` / `complete.cpp` | 已落地 | 四层与入口齐，另加补全生成；源文件登记在根 `CMakeLists.txt`；`main.cpp` 已接入 |
+| 对等实现 | Rust（对等） | `quant1x/base/argparser/spec.rs` / `error.rs` / `parser.rs` / `help.rs` / `complete.rs` | 已落地 | 四层与入口齐（`parse_or_exit` / `print_help`），另加补全生成，与 Python spec 同口径；`main.rs` 已接入 |
+| 对等实现 | Go（对等） | `quant1x/base/argparser/spec.go` / `error.go` / `parser.go` / `help.go` / `complete.go` | 已落地 | 四层与入口齐，另加补全生成；包 `quant1x/base/argparser`，已被 `quant1x/command`（`q1x-go` 命令行）接入 |
 | 扩展 | Zig（扩展 / 小功能） | `quant1x/base/argparser/spec.zig` / `error.zig` / `parser.zig` / `help.zig` / `complete.zig` | 已落地 | 四层与入口齐，另加补全生成；无 `build.zig`，用例直接 `zig test` |
 
 ## 2. 功能清单
@@ -176,7 +176,10 @@ CLI 特有，不属于通用字符串工具，因此不进 `quant1x/base`。
 
 | 调用方 | 用途 | 备注 |
 | --- | --- | --- |
-| 暂无 | — | 新模块，尚未接入调用方 |
+| `main.py`（Python） | `update` 子命令与 `--all` / `--base` / `--feature` | 取代原来的 `click` |
+| `main.cpp`（C++） | 根命令 `--verbose` / `--debug` / `--version`，`service` 与 `update` 子命令 | 取代原来的 p-ranav `argparse` |
+| `main.rs`（Rust） | 根命令 `--verbose` / `--debug` / `--version`，`service` 与 `update` 子命令 | 取代原来的 `clap` |
+| `quant1x/command`（Go） | `q1x-go` 的命令行入口：根命令的 `--debug` / `--avx2` / `--cpu` 与 `update` 子命令 | 取代原来的 `cobra` |
 
 ## 4. 测试
 
