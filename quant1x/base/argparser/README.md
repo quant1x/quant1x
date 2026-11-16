@@ -3,10 +3,6 @@
 做参数定义与解析：选项 / 位置参数、数量形态、取值动作与类型转换、子命令、互斥与校验、帮助与错误版式，
 以及由定义生成 bash / zsh / fish 的补全脚本。**不做** 命令分发与业务校验。
 
-与同目录的 `quant1x/base/argparse` 是两套独立口径：那个实现对齐
-`third_party/include/argparse/argparse.hpp`（p-ranav 风格 `AddArgument(...).Help(...)` 链式 API），
-本模块对齐 Python 标准库 `argparse` 的语义与 `clap` 的交互，两者互不调用。
-
 ## 文件
 
 | 文件 | 职责 |
