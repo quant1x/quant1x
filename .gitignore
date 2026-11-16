@@ -59,3 +59,7 @@ _version.py
 
 # Maven Wrapper 下载缓存（首次运行自动下载，不入库）
 .mvn/
+
+# Go 工作区：go.work / go.work.sum 属于本机多模块编排，不入库
+go.work
+go.work.sum
