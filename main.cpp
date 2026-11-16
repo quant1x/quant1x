@@ -95,18 +95,18 @@ int main(const int argc, const char *const argv[]) {
 
     // 创建主解析器, 使用动态的 program_name
     ::argparser::Parser program(program_name);
-    program.add_argument({"--verbose"}, ::argparser::Argument{
-                                             .action = ::argparser::Action::STORE_TRUE,
-                                             .help   = "显示日志信息到终端",
-                                         });
-    program.add_argument({"--debug"}, ::argparser::Argument{
-                                           .action = ::argparser::Action::STORE_TRUE,
-                                           .help   = "打开日志的调试模式",
-                                       });
-    program.add_argument({"--version"}, ::argparser::Argument{
-                                             .action = ::argparser::Action::STORE_TRUE,
-                                             .help   = "Print build version information and exit",
-                                         });
+    ::argparser::Argument verbose_argument;
+    verbose_argument.action = ::argparser::Action::STORE_TRUE;
+    verbose_argument.help   = "显示日志信息到终端";
+    program.add_argument({"--verbose"}, verbose_argument);
+    ::argparser::Argument debug_argument;
+    debug_argument.action = ::argparser::Action::STORE_TRUE;
+    debug_argument.help   = "打开日志的调试模式";
+    program.add_argument({"--debug"}, debug_argument);
+    ::argparser::Argument version_argument;
+    version_argument.action = ::argparser::Action::STORE_TRUE;
+    version_argument.help   = "Print build version information and exit";
+    program.add_argument({"--version"}, version_argument);
 
     auto &subparsers = program.add_subparsers("command", "命令", false);
 
@@ -123,7 +123,8 @@ int main(const int argc, const char *const argv[]) {
         {::argparser::Value("run"), ""},
     };
     service_command.add_argument({"action"}, action_argument);
-    service_command.add_argument({"--pipe"}, ::argparser::Argument{});
+    ::argparser::Argument pipe_argument;
+    service_command.add_argument({"--pipe"}, pipe_argument);
 
     // 存储子命令名称与对应解析器的映射
     std::map<std::string, ::argparser::Parser *> subparser_map;
