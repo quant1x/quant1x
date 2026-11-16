@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/quant1x/gox/encoding/yaml"
+	"github.com/quant1x/quant1x/quant1x/encoding/yaml"
 )
 
 // DecodeTo 将 src(通常是 map[string]any / []any / 基础类型)解码到 dst(通常是 *Struct).

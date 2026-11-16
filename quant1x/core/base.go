@@ -10,8 +10,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/quant1x/gox/encoding/yaml"
 	"github.com/quant1x/quant1x/quant1x/base"
+	"github.com/quant1x/quant1x/quant1x/encoding/yaml"
 )
 
 const (

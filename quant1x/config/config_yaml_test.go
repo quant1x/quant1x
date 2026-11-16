@@ -6,7 +6,7 @@ package config
 import (
 	"testing"
 
-	"github.com/quant1x/gox/encoding/yaml"
+	"github.com/quant1x/quant1x/quant1x/encoding/yaml"
 )
 
 // TestUnmarshalConfigDefaults 内置配置文件的解析

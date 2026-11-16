@@ -7,8 +7,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/quant1x/gox/encoding/yaml"
 	"github.com/quant1x/quant1x/quant1x/core"
+	"github.com/quant1x/quant1x/quant1x/encoding/yaml"
 )
 
 // TraderParameter mirrors C++ config::TraderParameter (fields only).
