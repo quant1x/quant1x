@@ -672,8 +672,6 @@ class TodoCmd0X2459(protocol.BaseFrame):
         self.reply = []
 
     def serialize_request_body(self) -> bytes:
-        ticker = self.ticker.encode("utf-8")
-        body = struct.pack('<6s', ticker)
         return bytes.fromhex('00 00 00 00 60 EA 00 00 69 77 73 68 6F 70 5F 68 6B 2F 30 39 39 38 38 2E 68 74 6D 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00')
     def deserialize_response_body(self, data: bytes) -> None:
         logger.debug(f"[TodoCmd0X2459] deserialize: {data.hex()}")

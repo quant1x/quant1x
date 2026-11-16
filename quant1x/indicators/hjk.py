@@ -62,9 +62,9 @@ def hjk(code:str, data:pandas.DataFrame):
     # C21:SL<=0.50,NODRAW;
     C21 = SL <= 0.50
     # C22:CJ/PN>=0.50 OR CJ=PN,NODRAW;
-    C22 = pandas.eval('CJ/PN>=0.50 | CJ==PN')
+    C22 = (CJ / PN >= 0.50) | (CJ == PN)
     # C23:PN>=4 AND PN<7,NODRAW;
-    C23 = pandas.eval('PN>=4 & PN<7')
+    C23 = (PN >= 4) & (PN < 7)
     # B:1*(C21 AND C22 AND C23),COLORRED,NODRAW;
     B = C21 & C22 & C23
     # DRAWICON(B>0,CLOSE*0.999,1);

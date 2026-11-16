@@ -46,7 +46,6 @@ class AuctionContext(protocol.BaseFrame):
         self.list: List[AuctionInfo] = []
 
     def serialize_request_body(self) -> bytes:
-        u1 = 0x00000000
         u2 = 0x00000000
         payload = struct.pack('<H 6s I I I I I',
                               self._market,

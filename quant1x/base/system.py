@@ -5,7 +5,6 @@
 import os
 import sys
 from typing import Tuple
-import inspect
 
 from . import filesystem
 
@@ -17,24 +16,7 @@ def _detect_main_module_name():
         main_mod.__spec__.name != '__main__'):
         return main_mod.__spec__.name.rsplit('.', 1)[-1]
 
-    # 方法2: 从调用栈找第一个非标准库, 非 frozen 的 .py 文件
-    try:
-        for frame_info in inspect.stack():
-            filename = frame_info.filename
-            
-            if (filename and not filename.startswith('<') and 
-                'site-packages' not in filename and 
-                'frozen' not in filename and
-                os.path.isfile(filename)):
-                print(f"Checking file: {filename}")
-                # 检查是否属于 quant1x 项目
-                if 'quant1x' in filename.replace('\\', '/'):
-                    basename = os.path.splitext(os.path.basename(filename))[0]
-                    #return basename
-    except Exception:
-        pass
-
-    # 方法3: fallback
+    # 方法2: fallback
     return 'main'
 
 def application() -> Tuple[str, str, str]:

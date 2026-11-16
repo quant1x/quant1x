@@ -124,11 +124,11 @@ def f89k(data:pandas.DataFrame):
     # C02:=IFF(C01>0,REF(C00,1),C01),NODRAW;
     # C03:=REF(CLOSE,C02-1),NODRAW;
     # C1:BARSLAST(CLOSE>ZS_LOW AND N9>N10),NODRAW,COLORLIGRAY;
-    C1C = pandas.eval('CLOSE>ZS_LOW & N9>N10')
+    C1C = (CLOSE > ZS_LOW) & (N9 > N10)
     C1 = BARSLAST(C1C)
     # {股价跌破止损线}
     # C2:BARSLAST(CLOSE<ZS_LOW AND N9>N10),NODRAW,COLORLIGRAY;
-    C2C = pandas.eval('CLOSE<ZS_LOW & N9>N10')
+    C2C = (CLOSE < ZS_LOW) & (N9 > N10)
     C2 = BARSLAST(C2C)
     # C3:N10>0,NODRAW;
     C3 = N10 > 0
@@ -137,7 +137,7 @@ def f89k(data:pandas.DataFrame):
     B1 = C2 == 1
     B2 = C3
     # B:50*B0,COLORYELLOW;
-    B = pandas.eval('B0 & B1 & B2')
+    B = B0 & B1 & B2
     date = df['date']
     df = pd.DataFrame()
     df['date'] = date

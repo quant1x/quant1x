@@ -67,7 +67,7 @@ class SecurityQuoteContext(protocol.BaseFrame):
 
             base_unit = helpers.default_base_unit(market, code)
 
-            active1 = struct.unpack('<H', data[pos:pos+2])[0]
+            _ = struct.unpack('<H', data[pos:pos+2])[0]
             pos += 2
 
             price_base, pos = helpers.varint_decode(data, pos)
@@ -102,11 +102,9 @@ class SecurityQuoteContext(protocol.BaseFrame):
             s_vol, pos = helpers.varint_decode(data, pos)
             b_vol, pos = helpers.varint_decode(data, pos)
 
-            val, pos = helpers.varint_decode(data, pos)
-            index_open_amount = val * 100
+            _, pos = helpers.varint_decode(data, pos)
 
-            val, pos = helpers.varint_decode(data, pos)
-            stock_open_amount = val * 100
+            _, pos = helpers.varint_decode(data, pos)
 
             # Bid/Ask levels (5 levels)
             bids = []
@@ -123,7 +121,7 @@ class SecurityQuoteContext(protocol.BaseFrame):
 
             if pos + 2 > len(data):
                 break
-            reversed_bytes4 = struct.unpack('<H', data[pos:pos+2])[0]
+            _ = struct.unpack('<H', data[pos:pos+2])[0]
             pos += 2
 
             _reversed_bytes5, pos = helpers.varint_decode(data, pos)
@@ -137,7 +135,7 @@ class SecurityQuoteContext(protocol.BaseFrame):
             pos += 2
             rate = float(reversed_bytes9) / 100.0
 
-            active2 = struct.unpack('<H', data[pos:pos+2])[0]
+            _ = struct.unpack('<H', data[pos:pos+2])[0]
             pos += 2
 
             self.quotes.append({

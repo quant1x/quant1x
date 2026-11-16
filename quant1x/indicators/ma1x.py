@@ -59,7 +59,7 @@ def ma1x(data:pandas.DataFrame):
     #X0 = IFF(CLOSE >= 100, X_INDEX, X_GENERAL) & C_ISMALE
     #X = X0 & C_VOL
     x0 = IFF(CLOSE >= 100, X_INDEX, X_GENERAL)
-    X = pd.eval('x0 & C_ISMALE & C_VOL')
+    X = x0 & C_ISMALE & C_VOL
     # {确定X上一次确立成立是在哪一天}
     # DN: BARSLAST(X),NODRAW;
     DN = BARSLAST(X)
@@ -118,7 +118,7 @@ def ma1x(data:pandas.DataFrame):
     # H0:=HHV(HIGH, C_N);
     H0 = HHV(HIGH, C_N)
     # YL_N:=BARSLAST(C_ISMALE AND HIGH=H0 AND C_VOL);
-    Y = pd.eval('C_ISMALE & HIGH==H0 & C_VOL')
+    Y = C_ISMALE & (HIGH == H0) & C_VOL
     #df['Y'] = Y
     YL_N = BARSLAST(Y)
     # YL_VOL:=REF(VOL,YL_N);
@@ -154,7 +154,7 @@ def ma1x(data:pandas.DataFrame):
     # 洗盘力度:=100*(昨日最高-今日最低)/昨日最高;
     洗盘力度 = 100 * (昨日最高 - 今日最低) / 昨日最高
     # 回踩:支撑周期>=2 AND 洗盘力度>=2.33 AND LOW<支撑线 AND CLOSE>=支撑线,COLORYELLOW, NODRAW;
-    HC = pandas.eval('支撑周期>=2 & 洗盘力度>=2.33 & LOW<支撑线 & CLOSE>=支撑线')
+    HC = (支撑周期 >= 2) & (洗盘力度 >= 2.33) & (LOW < 支撑线) & (CLOSE >= 支撑线)
     df['ma1x.hc'] = HC
     # DRAWICON(回踩>0,LOW,1);
     #
@@ -169,12 +169,12 @@ def ma1x(data:pandas.DataFrame):
     t10 = REF(CLOSE,1)<压力线
     t11 = REF(LOW,1)<压力线
     t12 = LOW<压力线
-    T1 = pandas.eval('t10 | t11 | t12')
+    T1 = t10 | t11 | t12
     # T2:=CLOSE>=压力线,NODRAW;
     T2 = CLOSE >= 压力线
     # {T3:=VOL>测试压力量,NODRAW;}
     # 突破:T1 AND T2 AND 压力周期>=2,COLORLIMAGENTA,NODRAW;
-    TP = pandas.eval('T1 & T2 & 压力周期>=2')
+    TP = T1 & T2 & (压力周期 >= 2)
     df['ma1x.tp'] = TP
     # DRAWICON(突破>0,LOW,38);
     #

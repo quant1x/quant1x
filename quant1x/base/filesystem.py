@@ -75,7 +75,7 @@ def touch(filename: str):
     """
     directory = os.path.dirname(filename)
     mkdirs(directory)
-    with open(filename, 'w') as done_file:
+    with open(filename, 'w'):
         pass
 
 def update_file_mtime(filename: str, timestamp: float = 0):

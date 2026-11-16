@@ -33,7 +33,7 @@ class TestXdxr(unittest.TestCase):
         mock_process.return_value = None
         
         # Mock XdxrInfoResponse.deserialize
-        with patch('quant1x.level1.xdxr_info.XdxrInfoResponse.deserialize') as mock_deserialize:
+        with patch('quant1x.level1.xdxr_info.XdxrInfoResponse.deserialize'):
             pass
 
     @patch('quant1x.level1.client.client')

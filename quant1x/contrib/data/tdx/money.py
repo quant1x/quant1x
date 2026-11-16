@@ -47,7 +47,6 @@ def parse_money(text):
     if match:
         currency = match.group(1)
         amount_str = match.group(2)
-        unit = match.group(3)  # 分或仙
         amount_str = amount_str.replace(',', '').replace(', ', '')
 
         # 规范化货币词
@@ -295,9 +294,8 @@ def parse_single_scheme(scheme_text):
     if m:
         result['bonus'] = True
         result['bonus_desc'] = f"每{m.group(1)}股送{m.group(2)}股"
-        # split_number 是基于 ratio_shares 的送股数(不是每股送股数)
+        # split_number 取送股数(不是每股送股数)
         try:
-            ratio_shares = int(m.group(1))
             bonus_shares = int(m.group(2))
             result['split_number'] = bonus_shares
         except ValueError:

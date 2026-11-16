@@ -31,7 +31,6 @@ def parse_money(text):
     if match:
         currency = match.group(1)
         amount_str = match.group(2)
-        unit = match.group(3)  # 分或仙
         amount_str = amount_str.replace(',', '').replace(', ', '')
 
         # 规范化货币词

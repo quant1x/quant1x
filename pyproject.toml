@@ -84,3 +84,8 @@ write_to = "quant1x/_version.py"
 fallback_version = "0.0.0"
 version_scheme = "guess-next-dev"
 local_scheme = "no-local-version"
+
+[tool.ruff.lint.per-file-ignores]
+# 指标模块是公式脚本的逐行移植: 中间序列按原步骤保留原名, 便于与公式对照;
+# 其中不少步骤最终没有落到输出列上, 不希望 F841 逼着删掉算法的中间态。
+"quant1x/indicators/*.py" = ["F841"]

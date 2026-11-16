@@ -160,7 +160,7 @@ def parse_raw_block_file(block_filename: str) -> List[dict]:
     try:
         with open(fn, 'rb') as fh:
             # skip 384 bytes header
-            header = fh.read(384)
+            _ = fh.read(384)
             cnt_bytes = fh.read(2)
             if len(cnt_bytes) < 2:
                 return []

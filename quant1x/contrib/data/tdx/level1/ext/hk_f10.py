@@ -230,7 +230,6 @@ def hk_parse_dividend_data(resp_json: dict, symbol: str=None, preferred_currency
     records = []
     for rs in resp_json.get('ResultSets', []):
         if rs.get('ResultSetKey') == 'table0':
-            col_names = rs['ColName']
             for row in rs['Content']:
                 ex_dividend_date = row[2] or ''
                 amount_str = row[7] or ''

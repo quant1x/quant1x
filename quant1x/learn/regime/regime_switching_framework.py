@@ -910,9 +910,6 @@ def run_full_pipeline(price_df: pd.DataFrame, market_index: pd.Series = None,
     regime_detector = RegimeDetector(n_regimes=n_regimes, market_index=market_index)
     regime_detector.fit(n_iter=30)
 
-    # 平滑状态序列
-    smoothed = regime_detector.get_regime_smooth(window=5)
-
     # ── Step 3: Factor Model (在线学习) ──────────────────────────────────
     print("\n[Step 3] 初始化在线学习因子模型...")
     factor_model = FactorModel(

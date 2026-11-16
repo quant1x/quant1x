@@ -68,7 +68,6 @@ class TestRingBuffer(unittest.TestCase):
 
     def test_blocking_pop_waits_until_producer(self):
         q = RingBuffer(2)
-        result = {}
 
         def producer():
             time.sleep(0.05)

@@ -26,7 +26,6 @@ class TestShareHolder(unittest.TestCase):
         # 2024-04-01 should look for 2024Q1 (ends 2024-03-31)
         # But reports are usually delayed. 
         # Let's use a very safe date: 2023-12-31 report, accessed from 2024-05-01
-        date = "2024-05-01" 
         
         # fetch_share_holder(code, date, diff=0) -> looks for quarter of date (2024Q2 if date is May)
         # Wait, get_quarter_by_date("2024-05-01") -> 2024Q2 (Apr-Jun).
