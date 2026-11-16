@@ -5,56 +5,46 @@ package command
 
 import (
 	"strings"
-	"unsafe"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/tw"
+	"github.com/quant1x/quant1x/quant1x/base/argparser"
 	"github.com/quant1x/quant1x/quant1x/base/meta"
 	"github.com/quant1x/quant1x/quant1x/data"
-	cli "github.com/spf13/cobra"
 )
 
 const (
 	defaultFlagAll = "all" // 全部
 )
 
-var (
-	flagAll       = cmdFlag[bool]{Name: "all", Value: false, Usage: "全部"}
-	flagBaseData  = cmdFlag[string]{Name: "base", Value: "", Usage: "基础数据"}
-	flagFeatures  = cmdFlag[string]{Name: "features", Value: "", Usage: "特征数据"}
-	flagStartDate = cmdFlag[string]{Name: "start", Value: data.LastTradingDay(data.NowTimestamp()).OnlyDate(), Usage: "开始日期"}
-	flagEndDate   = cmdFlag[string]{Name: "end", Value: data.LastTradingDay(data.NowTimestamp()).OnlyDate(), Usage: "结束日期"}
-	flagDate      = cmdFlag[string]{Name: "date", Value: "", Usage: "日期"}
-)
-
-type Command = cli.Command
-
-type cmdFlag[T ~int | ~bool | ~string] struct {
-	Name  string
-	Usage string
-	Value T
+// namespaceBool 读取布尔开关, 未出现或类型不符时取 false
+func namespaceBool(namespace *argparser.Namespace, key string) bool {
+	value, ok := namespace.Get(key)
+	if !ok {
+		return false
+	}
+	flag, _ := value.(bool)
+	return flag
 }
 
-func (cf *cmdFlag[T]) init(cmd *cli.Command) {
-	switch v := any(cf.Value).(type) {
-	case bool:
-		cmd.Flags().BoolVar((*bool)(unsafe.Pointer(&cf.Value)), cf.Name, v, cf.Usage)
-	case int:
-		cmd.Flags().IntVar((*int)(unsafe.Pointer(&cf.Value)), cf.Name, v, cf.Usage)
-	case string:
-		cmd.Flags().StringVar((*string)(unsafe.Pointer(&cf.Value)), cf.Name, v, cf.Usage)
+// namespaceString 读取字符串选项, 未出现或类型不符时取空串
+func namespaceString(namespace *argparser.Namespace, key string) string {
+	value, ok := namespace.Get(key)
+	if !ok {
+		return ""
 	}
+	text, _ := value.(string)
+	return text
 }
 
-func commandInit[T ~int | ~bool | ~string](cmd *cli.Command, cf *cmdFlag[T]) {
-	switch v := any(cf.Value).(type) {
-	case bool:
-		cmd.Flags().BoolVar((*bool)(unsafe.Pointer(&cf.Value)), cf.Name, v, cf.Usage)
-	case int:
-		cmd.Flags().IntVar((*int)(unsafe.Pointer(&cf.Value)), cf.Name, v, cf.Usage)
-	case string:
-		cmd.Flags().StringVar((*string)(unsafe.Pointer(&cf.Value)), cf.Name, v, cf.Usage)
+// namespaceInt 读取整数选项, 未出现或类型不符时取 0
+func namespaceInt(namespace *argparser.Namespace, key string) int {
+	value, ok := namespace.Get(key)
+	if !ok {
+		return 0
 	}
+	number, _ := value.(int64)
+	return int(number)
 }
 
 func parseFields(text string) (all bool, keywords []string) {

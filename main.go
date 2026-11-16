@@ -5,7 +5,7 @@ package main
 
 import (
 	"fmt"
-
+	"os"
 	"time"
 
 	"github.com/quant1x/quant1x/quant1x/command"
@@ -27,8 +27,12 @@ func resetVersions() {
 	}
 }
 
-// 更新数据工具
 func main() {
+	os.Exit(run())
+}
+
+// run 执行主流程并返回进程退出码
+func run() int {
 	mainStart := time.Now()
 	resetVersions()
 	defer func() {
@@ -42,6 +46,5 @@ func main() {
 	// quant1x模块内的更新版本号
 	command.UpdateApplicationVersion(MinVersion)
 	runtime.GoMaxProcs()
-	rootCommand := command.GlobalFlags()
-	_ = rootCommand.Execute()
+	return command.Run(os.Args[1:], os.Stdout, os.Stderr)
 }
