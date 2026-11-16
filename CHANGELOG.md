@@ -3,6 +3,86 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.11] - 2026-11-16
+### Changed
+- fix[rust]: 调整rust工具链的说明
+- chore[multi]：去除 VS Code 分层配置中的注释并按功能域重排
+  - 删除 .vscode-default / .vscode-windows / .vscode-macos 三份 settings.json 的全部 // 注释，
+    改为严格 JSON，消除 jsonc(521)“Comments are not permitted in JSON”告警
+  - 按编辑器与字体 / 终端 / Python / Go / CMake / C++ 测试 / 代码运行 分组重排键序，组间保留空行；
+    cmake.configureSettings 与 TestMate debug.configTemplate 内部改为公共键在前、平台覆盖在后
+  - 语义一致性：与提交前剥注释后的配置逐键比对完全一致，仅键序变化；被删注释中的 Conan 安装命令
+    与平台说明已在 BUILDING.md 中
+  - 验证：python 逐一 json.loads 三份文件通过；无 BOM、LF 行尾、末尾换行
+- feat[python+cpp+rust+go]：在 base 下落地跨语言命令行解析模块 argparser
+  - 新增 quant1x/base/argparser：spec / error / parser / help / complete 五层（.py / .hpp+.cpp / .rs / .go
+    同名不同后缀），Python 侧另有 derive.py 的 dataclass 派生式声明
+  - C++ 源文件登记进根 CMakeLists.txt 的 quant1x-headers / quant1x-sources；Rust 在 quant1x/base/mod.rs 声明
+    pub mod argparser；Go 包名随目录为 argparser
+  - C++ 用例按仓库约定落到 tests/test-argparser-parser.cpp 与 tests/test-argparser-complete.cpp，并在
+    tests/CMakeLists.txt 登记
+  - 模块文档 quant1x/base/argparser/argparser.md 与目录 README.md 随代码落地，README 文档索引补一行
+  - .gitignore 增加 __cmake_systeminformation/（`cmake --system-information` 的转储工程）
+  - 语义一致性：Python 为 spec；C++ / Rust / Go 三侧的帮助版式（短帮助 / 长帮助 / 子命令帮助 / 窄幅折行 /
+    错误块）与三种 shell 的补全脚本与 Python 输出逐字节一致
+  - 验证：python -m quant1x.base.argparser.parser_test / help_test / complete_test / derive_test；
+    go test ./quant1x/base/argparser；cargo test base::argparser（61 条通过）；
+    cmake --build build-msvc --config Release --target app-test-argparser-parser app-test-argparser-complete
+    后两个可执行文件退出码 0；gofmt -l、go vet、rustfmt --check 无输出
+  - 工单：#1
+- docs[multi]：文档增加 Zig 语言位并把工单平台切到 Codeberg
+  - CONTRIBUTING：§2.1 补 Zig 0.17+ 基线，§2.3 角色表增「Zig（扩展）」并把列序改为
+    python → c++ → rust → go → zig → java，§2.4 / §2.5 / §3.2 / §6 / §7 / §8.1 / §9.1 同步补位
+  - AGENTS：硬约束第 1 / 12 / 16 条、交付自检与常用命令补 Zig；工单入口改为仓库自带 labs-git-issue
+  - BUILDING：构建单元与版本要求表补 Zig，新增 §7「Zig（扩展）」章节，后续章节顺延
+  - README：语言表述改为「四门核心 + Zig 扩展」，问题跟踪链接改到 Codeberg
+  - Cargo.toml：repository / documentation 改到 codeberg.org
+  - 口径：Zig 与 Go 同为扩展语言，当前只承载小功能；未落地模块在对照表留 `—`，不影响该行状态
+  - 工单：#1
+- feat[zig]：argparser 补齐 Zig 侧实现
+  - 新增 quant1x/base/argparser/{spec,error,parser,help,complete}.zig 与三个用例
+    （parser_test.zig / help_test.zig / complete_test.zig）；模块无 build.zig，用例以 zig test 直接执行
+  - 语义与 Python spec 同口径：帮助版式（短 / 长 / 子命令 / 窄幅折行 / 错误块）与三种 shell 的补全脚本
+    与 Python 输出逐字节一致
+  - 模块文档 argparser.md 补回 zig 列与路线图行，README 文件表与运行命令同步补 zig
+  - 验证：zig test 三份用例 25 / 9 / 5 条全过；zig fmt --check 无差异
+  - 工单：#1
+- docs[multi]：README 徽章补 Zig 0.17+
+  - 与 CONTRIBUTING §2.1、BUILDING §1.1 的 Zig 版本基线保持一致
+  - 工单：#1
+- docs[multi]：仓库链接统一到 GitHub，Rust 基线 1.100.0、Zig 0.17
+  - README / BUILDING / docs/argparse.md / Cargo.toml 的仓库地址与 Go 导入路径统一为 github.com/quant1x/quant1x，
+    清掉 Gitee、Codeberg 的旧链接
+  - CONTRIBUTING §9.1 与 AGENTS 第 16 条、主题索引：工单只写 labs-git-issue，不传 --host / --repo，
+    平台与仓库由工具按 origin 自动识别
+  - Rust 最低版本 1.100.0（rust-toolchain.toml 已锁 1.100.0），README 徽章与环境要求表同步
+  - Zig 基线 0.17，README 环境要求表补 Zig 行（扩展语言，当前只承载小功能）
+  - 工单：#1
+- docs[multi]：概念表与命名表补 Zig
+  - CONTRIBUTING §1 概念表拆出「扩展实现 Zig / Java」，§4.1 蛇形命名表与沿用句补 Zig
+  - 工单：#1
+- refactor[go]：移除 base/argparse，命令行解析统一到 argparser
+  - 删除 quant1x/base/argparse（argparse.go / argparse_test.go）与 docs/argparse.md：该实现只覆盖
+    third_party argparse.hpp 的链式 API，与四语言对位的 base/argparser 重复，仓库内无调用方
+  - README 文档索引去掉「命令行参数」行；argparser 的 README / argparser.md 清理两套实现的对照说明
+  - 验证：go build ./... 通过，仓库内无 base/argparse 引用
+  - 工单：#2
+- feat[python]：迁移 dotenv（env / read_dotenv）与 expandvars / reload
+  - 新增 quant1x/base/dotenv.py：项目根 .env > 主目录 .env > 系统环境变量 > 默认值，两份逐键合并，只读不写 os.environ
+  - 新增 expandvars.py（$NAME / ${NAME} 展开，引用成环时整段原样返回）与 reload.py（按存在性与 mtime 热加载）
+  - filesystem 增加 find_upward / find_project_root（pyproject.toml → LICENSE → .git 向上定位），供 dotenv 复用
+  - 用例 dotenv_test / expandvars_test / reload_test，模块文档 dotenv.md 随代码落地
+  - 验证：python -m quant1x.base.dotenv_test / expandvars_test / reload_test 全绿
+  - 工单：#2
+- refactor[python]：reload 更名 hotreload，并厘清 dotenv 与运行环境的边界
+  - reload.py / reload_test.py 更名 hotreload.py / hotreload_test.py，dotenv 的导入与文档引用同步
+  - dotenv 模块与 dotenv.md 补边界：只管 .env 与系统环境变量；进程运行环境（入口应用定位、项目布局推演、
+    当前用户）不在本模块 —— 运行环境与“环境变量”是两回事
+  - 工单 #2 正文同步该口径
+  - 验证：python -m quant1x.base.dotenv_test / expandvars_test / hotreload_test 全绿
+  - 工单：#2
+- release version 0.8.11
+
 ## [0.8.10] - 2026-11-16
 ### Changed
 - docs[multi]：整合多语言协作规范，收敛为单一规范源
@@ -2939,7 +3019,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.10...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.11...HEAD
+[0.8.11]: https://codeberg.org/quant1x/quant1x/compare/v0.8.10...v0.8.11
 [0.8.10]: https://codeberg.org/quant1x/quant1x/compare/v0.8.9...v0.8.10
 [0.8.9]: https://codeberg.org/quant1x/quant1x/compare/v0.8.8...v0.8.9
 [0.8.8]: https://codeberg.org/quant1x/quant1x/compare/v0.8.7...v0.8.8
