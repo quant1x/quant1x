@@ -30,7 +30,7 @@ def get_quant1x_env(key: str) -> str:
         val = sys.read_dotenv(key)
         if val and len(val) > 0:
             return val
-    except Exception:
+    except Exception:  # noqa: S110 - 探测失败即走默认分支
         pass
     
     # 2. 尝试从系统环境变量中读取
@@ -56,7 +56,7 @@ def get_quant1x_work_keyword() -> str:
         val = sys.read_dotenv('QUANT1X_WORK')
         if val and len(val) > 0:
             return val
-    except Exception:
+    except Exception:  # noqa: S110 - 探测失败即走默认分支
         pass
 
     return ''

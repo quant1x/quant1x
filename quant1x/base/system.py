@@ -130,7 +130,7 @@ def read_dotenv(key: str) -> str:
                 #print('checking for .env at', env_file)
                 if env_file.is_file():
                     return str(env_file)
-        except Exception:
+        except Exception:  # noqa: S110 - 探测失败即走默认分支
             pass
         return None
 
@@ -170,8 +170,8 @@ def read_dotenv(key: str) -> str:
                 raw = vals.get(key)
                 if raw:
                     return str(raw).strip().strip('"\'')
-            except Exception:
+            except Exception:  # noqa: S110 - 尽力而为: 失败不影响主流程
                 pass
-    except Exception:
+    except Exception:  # noqa: S110 - 尽力而为: 失败不影响主流程
         pass
     return ''

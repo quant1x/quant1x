@@ -77,7 +77,7 @@ def parse_money(text):
         # 分/仙需要除以100
         try:
             amount = amount / 100.0
-        except Exception:
+        except Exception:  # noqa: S110 - 分/仙换算失败时保留原值
             pass
 
         return amount, currency_code
@@ -132,7 +132,7 @@ def parse_money(text):
         if currency in ('港仙', '美仙'):
             try:
                 amount = float(amount) / 100.0
-            except Exception:
+            except Exception:  # noqa: S110 - 分/仙换算失败时保留原值
                 pass
 
         return amount, currency_code
@@ -170,7 +170,7 @@ def parse_money_all(text):
         if isinstance(amount, (int, float)):
             try:
                 amount = amount / 100.0
-            except Exception:
+            except Exception:  # noqa: S110 - 分/仙换算失败时保留原值
                 pass
 
         currency_code = CURRENCY_MAP.get(currency, currency)
@@ -209,7 +209,7 @@ def parse_money_all(text):
         if currency_word in ('港仙', '美仙') and isinstance(amount, (int, float)):
             try:
                 amount = float(amount) / 100.0
-            except Exception:
+            except Exception:  # noqa: S110 - 分/仙换算失败时保留原值
                 pass
         currency_code = CURRENCY_MAP.get(currency_word, currency_word)
         results.append((amount, currency_code, currency_word, orig))
@@ -446,7 +446,7 @@ def parse_scheme_info(date:str, overview, preferred_currency:str=Region.HK.curre
             if preferred_currency != scheme_currency:
                 try:
                     rate = rates[scheme_currency] * (1-0.005)
-                except:
+                except Exception:
                     logger.error(f"无法获取汇率: {scheme_currency}, 回退到1.0")
                     rate = 1.0
                 logger.debug(f"{date}, 汇率: {scheme_currency} -> {preferred_currency}: {rate}")

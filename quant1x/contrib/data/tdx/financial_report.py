@@ -316,7 +316,7 @@ def get_cache_quarterly_reports_by_security_code(security_code: str, date: str, 
                                 setattr(r, field_name, val)
                         _g_map_quarterly_reports[normalized_code] = r
                         return r
-            except Exception:
+            except Exception:  # noqa: S110 - 忽略只读/未知属性
                 pass
 
     # 3. 全市场拉取, 写入文件缓存, 再从中查找
@@ -371,7 +371,7 @@ def load_quarterly_reports(date: str):
                                 val = ""
                         setattr(r, field_name, val)
                 _g_map_quarterly_reports[r.SecurityCode] = r
-        except Exception:
+        except Exception:  # noqa: S110 - 忽略只读/未知属性
             pass
 
 

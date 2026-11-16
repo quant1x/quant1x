@@ -345,7 +345,7 @@ def load_quarterly_reports(date: str):
                                 val = ""
                         setattr(r, field_name, val)
                 _g_map_quarterly_reports[r.SecurityCode] = r
-        except Exception:
+        except Exception:  # noqa: S110 - 忽略只读/未知属性
             pass
 
 def get_quarterly_report_summary(security_code: str, date: str) -> QuarterlyReportSummary:

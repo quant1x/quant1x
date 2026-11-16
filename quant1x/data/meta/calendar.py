@@ -79,7 +79,7 @@ def _update_calendar():
                 from email.utils import formatdate
 
                 headers['If-Modified-Since'] = formatdate(mtime, usegmt=True)
-            except Exception:
+            except Exception:  # noqa: S110 - 尽力而为: 生成 If-Modified-Since 失败则退回全量请求
                 pass
 
         resp = requests.get(SINA_CALENDAR_URL, timeout=15, headers=headers)
@@ -120,13 +120,13 @@ def _update_calendar():
                 try:
                     secs = int(now_ts)
                     os.utime(fn, (secs, secs))
-                except Exception:
+                except Exception:  # noqa: S110 - 尽力而为: 设置文件时间失败不影响调用方
                     pass
         else:
             try:
                 secs = int(now_ts)
                 os.utime(fn, (secs, secs))
-            except Exception:
+            except Exception:  # noqa: S110 - 尽力而为: 设置文件时间失败不影响调用方
                 pass
 
         # update the calendar marker next to the cache so RollingOnce and
@@ -136,7 +136,7 @@ def _update_calendar():
             os.makedirs(os.path.dirname(marker), exist_ok=True)
             # create or truncate marker file
             fs.update_file_mtime(marker, now_ts)
-        except Exception:
+        except Exception:  # noqa: S110 - 尽力而为: 写缓存标记失败不影响主流程
             pass
     except Exception as e:
         # match Go behaviour: let caller decide; raise to caller
@@ -153,8 +153,8 @@ def lazy_load_calendar():
         try:
             _update_calendar()
             fs.update_file_mtime(marker)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("更新交易日历缓存失败: %s", exc)
     else:
         logger.debug("交易日历缓存文件未过期, 跳过更新")
     logger.debug("加载交易日历缓存文件到内存")
@@ -184,7 +184,7 @@ def lazy_load_calendar():
                 try:
                     t = Timestamp.parse(date)
                     ts.append(t.get_pre_market_time())
-                except Exception:
+                except Exception:  # noqa: S110 - 跳过无法解析的日期
                     pass
     except Exception:
         logger.error("加载交易日历缓存文件失败, 跳过加载")
@@ -232,8 +232,8 @@ class Calendar(ThreadSafeSingletonABC):
             try:
                 _update_calendar()
                 fs.update_file_mtime(marker)
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("更新交易日历缓存失败: %s", exc)
         else:
             logger.debug("交易日历缓存文件未过期, 跳过更新")
 
@@ -263,7 +263,7 @@ class Calendar(ThreadSafeSingletonABC):
                     try:
                         t = Timestamp.parse(date)
                         ts.append(t.get_pre_market_time())
-                    except Exception:
+                    except Exception:  # noqa: S110 - 跳过无法解析的日期
                         pass
 
             self._calendars_string = ss

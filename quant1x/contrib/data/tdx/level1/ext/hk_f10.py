@@ -460,7 +460,7 @@ def get_ext_xdxr_info(inst: Instrument) -> List[XdxrInfo]:
             rates = fx.get_rate(row.ex_date)
             try:
                 rate = rates[divident_currency]
-            except:
+            except Exception:
                 rate = 1.0
             dividend_amount /= rate
         if key in merged:
@@ -486,7 +486,7 @@ def get_ext_xdxr_info(inst: Instrument) -> List[XdxrInfo]:
             rates = fx.get_rate(row.ex_date)
             try:
                 rate = rates[right_currency]
-            except:
+            except Exception:
                 rate = 1.0
             right_amount /= rate
         if key in merged:

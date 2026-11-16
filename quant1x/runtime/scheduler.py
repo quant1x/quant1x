@@ -545,7 +545,7 @@ class Scheduler:
                 try:
                     # 尝试强制关闭
                     self.scheduler.shutdown(wait=False)
-                except:
+                except Exception:  # noqa: S110 - 尽力而为: 关闭连接失败无需处理
                     pass
                 
                 self._is_running = False

@@ -48,7 +48,7 @@ def _start_dummy_server(listen_ready: threading.Event, port_holder: list):
     except Exception:
         try:
             srv.close()
-        except Exception:
+        except Exception:  # noqa: S110 - 尽力而为: 关闭连接失败无需处理
             pass
 
 

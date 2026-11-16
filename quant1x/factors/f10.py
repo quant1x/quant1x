@@ -134,7 +134,7 @@ def checkout_security_basic_info(security_code: str, feature_date: str) -> dict:
             one_year_later = ipo_dt + pd.DateOffset(years=1)
             if feature_dt < one_year_later:
                 info["SubNew"] = True
-        except Exception:
+        except Exception:  # noqa: S110 - 尽力而为: 失败不影响主流程
             pass
             
     inst = detect_symbol(security_code)
@@ -266,7 +266,7 @@ def get_f10(code: str, date: str) -> F10:
             f10.reduces = n.reduce
             f10.risk = n.risk
             f10.risk_keywords = n.risk_keywords
-    except Exception:
+    except Exception:  # noqa: S110 - 可选因子字段, 取不到就留空
         pass
         
     # 4. Quarterly Report
@@ -278,14 +278,14 @@ def get_f10(code: str, date: str) -> F10:
             f10.basic_eps = report.basic_eps
             f10.total_operate_income = report.total_operate_income
             f10.deduct_basic_eps = report.deduct_basic_eps
-    except Exception:
+    except Exception:  # noqa: S110 - 可选因子字段, 取不到就留空
         pass
         
     # 5. Safety Score
     try:
         score, _reason = safety_score.get_safety_score(security_code)
         f10.safety_score = score
-    except Exception:
+    except Exception:  # noqa: S110 - 可选因子字段, 取不到就留空
         pass
         
     # 6. Report Dates
@@ -293,7 +293,7 @@ def get_f10(code: str, date: str) -> F10:
         annual_date, quarterly_date = notice.notice_date_for_report(security_code, feature_date)
         f10.annual_report_date = annual_date
         f10.quarterly_report_date = quarterly_date
-    except Exception:
+    except Exception:  # noqa: S110 - 可选因子字段, 取不到就留空
         pass
         
     f10.update_time = int(pd.Timestamp.now().timestamp())

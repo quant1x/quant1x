@@ -126,7 +126,7 @@ def cache_share_holder(security_code: str, date_str: str, diff: int = 1) -> pd.D
             df = pd.read_csv(filename)
             if not df.empty:
                 return df
-        except Exception:
+        except Exception:  # noqa: S110 - 读取本地缓存失败则重新获取
             pass
 
     # Fetch from API

@@ -127,10 +127,10 @@ def download_block_raw_data(filename: str) -> Optional[str]:
             try:
                 if not market_status.should_initialize_file(fn):
                     return fn
-            except Exception:
+            except Exception:  # noqa: S110 - 探测失败即按需要下载处理
                 # on any error fall through to attempt download
                 pass
-    except Exception:
+    except Exception:  # noqa: S110 - 探测失败即按需要下载处理
         pass
 
     data = _get_block_info_from_level1(filename)
@@ -392,11 +392,11 @@ def sync_block_files():
                             if os.path.exists(extracted) and extracted != target:
                                 try:
                                     os.replace(extracted, target)
-                                except Exception:
+                                except Exception:  # noqa: S110 - 清理临时文件失败无需处理
                                     pass
-                        except Exception:
+                        except Exception:  # noqa: S110 - 清理临时文件失败无需处理
                             pass
-        except Exception:
+        except Exception:  # noqa: S110 - 清理临时文件失败无需处理
             pass
 
     # download standard block files

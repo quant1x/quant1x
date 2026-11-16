@@ -30,7 +30,7 @@ def decode_to(dst_type_or_obj: Any, src: Any) -> Any:
         # ensure defaults are present before applying config values
         try:
             apply_defaults(dst)
-        except Exception:
+        except Exception:  # noqa: S110 - 忽略默认值填充失败
             pass
     else:
         dst = dst_type_or_obj
@@ -77,9 +77,9 @@ def decode_to(dst_type_or_obj: Any, src: Any) -> Any:
                 except Exception:
                     try:
                         setattr(dst, k, v)
-                    except Exception:
+                    except Exception:  # noqa: S110 - 忽略只读/未知属性
                         pass
-            except Exception:
+            except Exception:  # noqa: S110 - 忽略只读/未知属性
                 # ignore unknown/read-only attributes
                 pass
         return dst
@@ -115,7 +115,7 @@ def decode_config(path: str, dst_type_or_obj: Any, root: dict) -> Any:
 
     try:
         apply_defaults(obj)
-    except Exception:
+    except Exception:  # noqa: S110 - 忽略默认值填充失败
         pass
 
     # then merge configuration values into the object, only overwriting when present

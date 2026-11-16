@@ -324,7 +324,7 @@ def _try_probe_one(handler: NetworkOperationHandler, candidate: Dict[str, Any], 
         # set TCP_NODELAY where possible
         try:
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        except Exception:
+        except Exception:  # noqa: S110 - 尽力而为: 套接字选项设置失败不影响流程
             pass
 
         # perform protocol handshake using level1 StandardProtocolHandler so we reuse same logic
@@ -362,7 +362,7 @@ def _try_probe_one(handler: NetworkOperationHandler, candidate: Dict[str, Any], 
         try:
             if sock is not None:
                 sock.close()
-        except Exception:
+        except Exception:  # noqa: S110 - 尽力而为: 关闭连接失败无需处理
             pass
 
 

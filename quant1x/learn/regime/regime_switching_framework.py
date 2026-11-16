@@ -328,7 +328,7 @@ class RegimeDetector:
     def _gaussian_pdf(self, x: np.ndarray, mean: np.ndarray, cov: np.ndarray) -> float:
         try:
             return multivariate_normal.pdf(x, mean=mean, cov=cov)
-        except:
+        except Exception:
             return 1e-10
 
     def predict_current_regime(self, recent_window: int = 60) -> int:

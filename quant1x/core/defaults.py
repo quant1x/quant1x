@@ -29,7 +29,7 @@ def apply_defaults(obj):
                 try:
                     setattr(obj, name, meta_default)
                     val = meta_default
-                except Exception:
+                except Exception:  # noqa: S110 - 忽略只读/未知属性
                     pass
             # recurse
             apply_defaults(val)

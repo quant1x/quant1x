@@ -43,7 +43,7 @@ class XdxrCategory(Enum):
                 13: "送认购权证",
                 14: "送认沽权证"
             }.get(category, f"Unknown({category})")
-        except:
+        except Exception:
             return f"Unknown({category})"
 @dataclass
 class XdxrInfo:

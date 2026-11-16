@@ -178,8 +178,8 @@ def init_securities():
                         #     r.ext_category
                         # ])
                         writer.writerow(r.to_iterable())
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("写入证券列表缓存失败: %s", exc)
         _ = _load_securities()
 
 

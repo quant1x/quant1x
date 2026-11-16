@@ -58,7 +58,7 @@ def get_quarter_by_date(date_str: str, diff_quarters: int = 0) -> Tuple[str, str
     """
     try:
         dt = pd.to_datetime(date_str)
-    except:
+    except Exception:
         dt = datetime.now()
     
     # Calculate total months and subtract

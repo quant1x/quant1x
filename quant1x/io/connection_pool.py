@@ -58,7 +58,7 @@ class Connection:
         try:
             try:
                 self._sock.shutdown(socket.SHUT_RDWR)
-            except Exception:
+            except Exception:  # noqa: S110 - 尽力而为: 关闭连接失败无需处理
                 pass
             self._sock.close()
         finally:
@@ -192,12 +192,12 @@ class TcpConnectionPool:
                 # 这样协议层的阻塞读(例如 process_request_std)在超时后会抛出 socket.timeout, 避免永久阻塞. 
                 try:
                     sock.settimeout(timeout)
-                except Exception:
+                except Exception:  # noqa: S110 - 尽力而为: 设置超时失败不影响后续读写
                     pass
                 # 设置 TCP_NODELAY 以禁用 Nagle 算法
                 try:
                     sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-                except Exception:
+                except Exception:  # noqa: S110 - 尽力而为: 套接字选项设置失败不影响流程
                     pass
 
                 # 进行握手
@@ -214,7 +214,7 @@ class TcpConnectionPool:
                 if sock is not None:
                     try:
                         sock.close()
-                    except Exception:
+                    except Exception:  # noqa: S110 - 尽力而为: 关闭连接失败无需处理
                         pass
                 # 释放端点预定(当连接创建失败或握手失败时)
                 if endpoint is not None:

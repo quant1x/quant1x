@@ -90,7 +90,7 @@ def parse_yaml_config(filename: str, config: BaseConfig) -> None:
     # Apply dataclass metadata defaults after parsing/normalization
     try:
         apply_defaults(config)
-    except Exception:
+    except Exception:  # noqa: S110 - 忽略默认值填充失败
         pass
 
 def lazy_init_cache_config() -> None:

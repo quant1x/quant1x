@@ -52,7 +52,7 @@ def _build_std_pool(*, min_conn: int, max_conn: int, servers: Optional[List[Tupl
         try:
             if detected:
                 default_concurrency = min(default_concurrency, max(1, len(detected)))
-        except Exception:
+        except Exception:  # noqa: S110 - 尽力而为: 失败不影响主流程
             pass
 
     # 读取缓存的服务器
@@ -157,7 +157,7 @@ def _build_ext_pool(*, min_conn: int, max_conn: int, servers: Optional[List[Tupl
         try:
             if detected:
                 default_concurrency = min(default_concurrency, max(1, len(detected)))
-        except Exception:
+        except Exception:  # noqa: S110 - 尽力而为: 失败不影响主流程
             pass
 
     # 读取缓存的服务器

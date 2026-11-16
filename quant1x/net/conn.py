@@ -33,7 +33,7 @@ class Connection:
         try:
             try:
                 self._sock.shutdown(socket.SHUT_RDWR)
-            except Exception:
+            except Exception:  # noqa: S110 - 尽力而为: 关闭连接失败无需处理
                 pass
             self._sock.close()
         finally:

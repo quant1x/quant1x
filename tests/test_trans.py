@@ -29,7 +29,7 @@ class TestTransReal(unittest.TestCase):
         if os.path.exists(cache_file):
             try:
                 os.remove(cache_file)
-            except Exception:
+            except Exception:  # noqa: S110 - 清理临时文件失败无需处理
                 pass
         
         # Initialize pool (this might take a few seconds)

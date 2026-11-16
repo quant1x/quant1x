@@ -61,7 +61,7 @@ def parse_money(text):
         # 分/仙需要除以100
         try:
             amount = amount / 100.0
-        except Exception:
+        except Exception:  # noqa: S110 - 分/仙换算失败时保留原值
             pass
 
         return amount, currency_code
@@ -107,7 +107,7 @@ def parse_money(text):
         if currency in ('港仙', '美仙'):
             try:
                 amount = float(amount) / 100.0
-            except Exception:
+            except Exception:  # noqa: S110 - 分/仙换算失败时保留原值
                 pass
 
         return amount, currency_code
@@ -156,7 +156,7 @@ def parse_money_all(text):
         if isinstance(amount, (int, float)):
             try:
                 amount = amount / 100.0
-            except Exception:
+            except Exception:  # noqa: S110 - 分/仙换算失败时保留原值
                 pass
 
         currency_code = currency_map.get(currency, currency)
@@ -180,7 +180,7 @@ def parse_money_all(text):
         if currency_word in ('港仙', '美仙') and isinstance(amount, (int, float)):
             try:
                 amount = float(amount) / 100.0
-            except Exception:
+            except Exception:  # noqa: S110 - 分/仙换算失败时保留原值
                 pass
         currency_code = currency_map.get(currency_word, currency_word)
         results.append((amount, currency_code, currency_word, orig))

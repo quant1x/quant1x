@@ -95,7 +95,7 @@ def update_file_mtime(filename: str, timestamp: float = 0):
         if not os.path.exists(filename):
             touch(filename)
         os.utime(filename, (int(timestamp), int(timestamp)))
-    except Exception:
+    except Exception:  # noqa: S110 - 尽力而为: 设置文件时间失败不影响调用方
         pass
 
 
