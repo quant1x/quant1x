@@ -329,13 +329,13 @@ func BenchmarkCompatVsGoNative(b *testing.B) {
 	ms := int64(1640995200000)
 
 	b.Run("Compat_Creation", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = NewTimestamp(ms)
 		}
 	})
 
 	b.Run("GoNative_Creation", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = NewTimestamp(ms)
 		}
 	})
@@ -344,27 +344,27 @@ func BenchmarkCompatVsGoNative(b *testing.B) {
 	goTs := NewTimestamp(ms)
 
 	b.Run("Compat_ToString", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = cppTs.String()
 		}
 	})
 
 	b.Run("GoNative_ToString", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = goTs.String()
 		}
 	})
 
 	b.Run("Compat_Comparison", func(b *testing.B) {
 		ts2 := NewTimestamp(ms + 1000)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = cppTs.Less(ts2)
 		}
 	})
 
 	b.Run("GoNative_Comparison", func(b *testing.B) {
 		ts2 := NewTimestamp(ms + 1000)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			_ = goTs.Less(ts2)
 		}
 	})

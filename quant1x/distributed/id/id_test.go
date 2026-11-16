@@ -273,7 +273,7 @@ func BenchmarkGeneratorNext(b *testing.B) {
 	generator := NewGenerator(1, hlc)
 	b.ReportAllocs()
 	b.ResetTimer()
-	for index := 0; index < b.N; index++ {
+	for b.Loop() {
 		_ = generator.Next()
 	}
 }
@@ -284,7 +284,7 @@ func benchmarkGeneratorNext(b *testing.B, options ...Option) {
 	generator := NewGenerator(1, hlc)
 	b.ReportAllocs()
 	b.ResetTimer()
-	for index := 0; index < b.N; index++ {
+	for b.Loop() {
 		_ = generator.Next()
 	}
 }
@@ -331,7 +331,7 @@ func BenchmarkHLCNow(b *testing.B) {
 	hlc := NewHLC(WithClock(func() int64 { return EpochMs }))
 	b.ReportAllocs()
 	b.ResetTimer()
-	for index := 0; index < b.N; index++ {
+	for b.Loop() {
 		_, _ = hlc.Now()
 	}
 }
@@ -351,7 +351,7 @@ func BenchmarkIDBytes(b *testing.B) {
 	value := ID(0x1234567890)
 	b.ReportAllocs()
 	b.ResetTimer()
-	for index := 0; index < b.N; index++ {
+	for b.Loop() {
 		benchmarkIDBytes = value.Bytes()
 	}
 }
@@ -360,7 +360,7 @@ func BenchmarkIDString(b *testing.B) {
 	value := ID(0x1234567890)
 	b.ReportAllocs()
 	b.ResetTimer()
-	for index := 0; index < b.N; index++ {
+	for b.Loop() {
 		benchmarkIDString = value.String()
 	}
 }
@@ -373,7 +373,7 @@ func BenchmarkQueuePushPop(b *testing.B) {
 	value := ID(42)
 	b.ReportAllocs()
 	b.ResetTimer()
-	for index := 0; index < b.N; index++ {
+	for b.Loop() {
 		if err := queue.TryPush(value); err != nil {
 			b.Fatal(err)
 		}
@@ -391,7 +391,7 @@ func BenchmarkQueueTryPushPop(b *testing.B) {
 	value := ID(42)
 	b.ReportAllocs()
 	b.ResetTimer()
-	for index := 0; index < b.N; index++ {
+	for b.Loop() {
 		if err := queue.TryPush(value); err != nil {
 			b.Fatal(err)
 		}
@@ -432,7 +432,7 @@ func BenchmarkGeneratorServeTryPop(b *testing.B) {
 	var sink ID
 	b.ReportAllocs()
 	b.ResetTimer()
-	for index := 0; index < b.N; index++ {
+	for b.Loop() {
 		for {
 			value, err := queue.TryPop()
 			if err == nil {

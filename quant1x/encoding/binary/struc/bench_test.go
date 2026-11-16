@@ -18,7 +18,7 @@ type BenchExample struct {
 }
 
 func BenchmarkArrayEncode(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		var buf bytes.Buffer
 		if err := Pack(&buf, arrayReference); err != nil {
 			b.Fatal(err)
@@ -27,7 +27,7 @@ func BenchmarkArrayEncode(b *testing.B) {
 }
 
 func BenchmarkSliceEncode(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		var buf bytes.Buffer
 		if err := Pack(&buf, sliceReference); err != nil {
 			b.Fatal(err)
@@ -37,7 +37,7 @@ func BenchmarkSliceEncode(b *testing.B) {
 
 func BenchmarkArrayDecode(b *testing.B) {
 	var out ExampleArray
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		buf := bytes.NewBuffer(arraySliceReferenceBytes)
 		if err := Unpack(buf, &out); err != nil {
 			b.Fatal(err)
@@ -47,7 +47,7 @@ func BenchmarkArrayDecode(b *testing.B) {
 
 func BenchmarkSliceDecode(b *testing.B) {
 	var out ExampleSlice
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		buf := bytes.NewBuffer(arraySliceReferenceBytes)
 		if err := Unpack(buf, &out); err != nil {
 			b.Fatal(err)
@@ -81,7 +81,7 @@ var benchStrucRef = &BenchStrucExample{
 }
 
 func BenchmarkEncode(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		var buf bytes.Buffer
 		err := Pack(&buf, benchStrucRef)
 		if err != nil {
@@ -91,7 +91,7 @@ func BenchmarkEncode(b *testing.B) {
 }
 
 func BenchmarkStdlibEncode(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		var buf bytes.Buffer
 		err := binary.Write(&buf, binary.BigEndian, benchRef)
 		if err != nil {
@@ -107,7 +107,7 @@ func BenchmarkStdlibEncode(b *testing.B) {
 func BenchmarkManualEncode(b *testing.B) {
 	order := binary.BigEndian
 	s := benchStrucRef
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		var buf bytes.Buffer
 		tmp := make([]byte, 29)
 		copy(tmp[0:5], s.Test[:])
@@ -132,7 +132,7 @@ func BenchmarkDecode(b *testing.B) {
 		b.Fatal(err)
 	}
 	bufBytes := buf.Bytes()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		buf := bytes.NewReader(bufBytes)
 		err := Unpack(buf, &out)
 		if err != nil {
@@ -151,7 +151,7 @@ func BenchmarkStdlibDecode(b *testing.B) {
 		b.Fatal(err)
 	}
 	bufBytes := buf.Bytes()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		buf := bytes.NewReader(bufBytes)
 		err := binary.Read(buf, binary.BigEndian, &out)
 		if err != nil {
@@ -173,7 +173,7 @@ func BenchmarkManualDecode(b *testing.B) {
 	}
 	tmp := buf.Bytes()
 	order := binary.BigEndian
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		copy(o.Test[:], tmp[0:5])
 		o.A = int(order.Uint32(tmp[5:9]))
 		o.B = int(order.Uint16(tmp[9:11]))
@@ -187,7 +187,7 @@ func BenchmarkManualDecode(b *testing.B) {
 }
 
 func BenchmarkFullEncode(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		var buf bytes.Buffer
 		if err := Pack(&buf, reference); err != nil {
 			b.Fatal(err)
@@ -197,7 +197,7 @@ func BenchmarkFullEncode(b *testing.B) {
 
 func BenchmarkFullDecode(b *testing.B) {
 	var out Example
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		buf := bytes.NewBuffer(referenceBytes)
 		if err := Unpack(buf, &out); err != nil {
 			b.Fatal(err)
