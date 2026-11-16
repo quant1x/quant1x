@@ -2,7 +2,7 @@
 
 本文说明 Quant1X 仓库中各个构建单元的依赖、配置、编译、测试与产物位置。
 
-Quant1X 是**多语言平行实现**：C++、Rust、Go、Python、Java 各自独立构建、独立运行，**不存在 FFI / Cgo / SWIG 等跨语言调用**。因此每种语言都有自己的一条构建链路，互不依赖；跨语言之间只通过同名接口、统一的数据契约和同一组黄金测试向量保持一致。
+Quant1X 是**多语言平行实现**：C++、Rust、Go、Python、Zig、Java 各自独立构建、独立运行，**不存在 FFI / Cgo / SWIG 等跨语言调用**。因此每种语言都有自己的一条构建链路，互不依赖；跨语言之间只通过同名接口、统一的数据契约和同一组黄金测试向量保持一致。
 
 若只想改代码、不关心构建细节，可直接跳到对应语言小节：
 
@@ -12,6 +12,7 @@ Quant1X 是**多语言平行实现**：C++、Rust、Go、Python、Java 各自独
 | Rust | `Cargo.toml` | 可执行 `q1x`、库 `libquant1x` | 生态扩展 |
 | Go | `go.mod` | 可执行 `q1x`（入口 `main.go`） | 生产/生态 |
 | Python | `pyproject.toml` | Python 包 `quant1x` | 探索验证（Spec 锚点） |
+| Zig | 无清单文件（源码与用例直跑） | 无安装物；`zig test` 直接执行 | 扩展（当前只承载小功能） |
 | Java | `pom.xml` | JAR | 分布式 ID / Disruptor 对照实现 |
 
 ---
@@ -30,6 +31,7 @@ Quant1X 是**多语言平行实现**：C++、Rust、Go、Python、Java 各自独
 | Rust | `rust-toolchain.toml`、`Cargo.toml` | 工具链由 `rust-toolchain.toml` 锁定，Edition 2024 |
 | Go | `go.mod` | 以 `go` 指令声明的最低版本为准 |
 | Python | `pyproject.toml` | `requires-python` 为下限，建议 3.12+ |
+| Zig | 无清单文件 | 0.17+（`std.Io` API），本地 0.17.1 实测 |
 | Java | `pom.xml` | 源码/字节码目标 Java 8 |
 
 Rust 工具链由 rustup 自动安装：首次在仓库内执行 `cargo` 命令时，若本地缺少 `rust-toolchain.toml` 指定的版本会自动下载，无需手工切换。
@@ -419,7 +421,7 @@ export QUANT1X_WORK=q1x-rust   # Rust
 
 ## 6. Java 构建
 
-Java 部分只承载分布式 ID 与 LMAX Disruptor 等对照实现/基准，不参与四语言核心链路。
+Java 部分只承载分布式 ID 与 LMAX Disruptor 等对照实现/基准，不参与核心链路（Python / C++ / Rust / Go）。
 
 ### 6.1 构建与测试
 
@@ -444,9 +446,26 @@ mvnw.cmd -B -DskipTests package
 
 ---
 
-## 7. 跨语言一致性验证
+## 7. Zig（扩展）
 
-构建完成后，四语言应能对同一输入给出 epsilon 内一致的结果。验证方式：
+Zig 侧与 Go 同属扩展语言，当前只承载小功能实现（如 `quant1x/base/argparser`），既没有 `build.zig` 也不产出
+安装物：源码与用例放在同一目录，直接以 `zig test` 执行。
+
+```bash
+zig test quant1x/base/argparser/parser_test.zig
+zig test quant1x/base/argparser/help_test.zig
+zig test quant1x/base/argparser/complete_test.zig
+zig fmt --check quant1x/base/argparser/*.zig
+```
+
+- 最低版本 0.17：文件读写等 API 自 0.17 起要求显式传入 `Io`；本地 0.17.1 实测通过。
+- 新增 `.zig` 文件不需要登记构建清单；将来某模块引入 `build.zig` 时，在本节补充该模块的构建与用例命令。
+
+---
+
+## 8. 跨语言一致性验证
+
+构建完成后，各语言实现应能对同一输入给出 epsilon 内一致的结果。验证方式：
 
 1. 准备同一组输入与黄金输出（`tests/` 下的 fixture、CSV、JSON，或由 Python 生成的基准数据）；
 2. 分别运行各语言实现；
@@ -457,11 +476,11 @@ mvnw.cmd -B -DskipTests package
 - 日历解码：`tests/calendar_decode_test.go`、`tests/calendar_decode.js`、`tests/calendar_integration.rs`
 - Ringbuffer 性能对齐：`quant1x/runtime/ringbuffer.md`、`benches/vyukov_bench.{cpp,rs}`
 
-新增功能时，按 Python → C++ → Rust/Go 的顺序落地，并在 `tests/` 中补齐对应语言的验证入口。
+新增功能时，按 Python → C++ → Rust / Go 的顺序落地（Zig 扩展项随其承载的功能同步），并在 `tests/` 中补齐对应语言的验证入口。
 
 ---
 
-## 8. 常见问题
+## 9. 常见问题
 
 | 现象 | 原因与处理 |
 |---|---|
@@ -481,7 +500,7 @@ mvnw.cmd -B -DskipTests package
 
 ---
 
-## 9. 版本与发布约束
+## 10. 版本与发布约束
 
 - 项目版本由 Git Tag（`vMAJOR.MINOR.PATCH`）唯一决定，C++ 在配置阶段通过 `cmake/git_tag_info.cmake` 读取，Python 通过 `setuptools_scm` 推导。
 - `Cargo.toml`、`pom.xml`、`pyproject.toml` 中的版本字段与 `CHANGELOG.md` **不得手工修改**，发布统一走 `autochangelog`。
@@ -489,7 +508,7 @@ mvnw.cmd -B -DskipTests package
 
 ---
 
-## 10. 相关文档
+## 11. 相关文档
 
 | 文档 | 内容 |
 |---|---|
