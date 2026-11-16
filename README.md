@@ -9,6 +9,7 @@
 [![Go](https://img.shields.io/badge/Go-1.27-blue.svg)](https://golang.org/)
 [![Rust](https://img.shields.io/badge/Rust-1.98.1+-orange.svg)](https://www.rust-lang.org/)
 [![Python](https://img.shields.io/badge/Python-3.12+-yellow.svg)](https://www.python.org/)
+[![Zig](https://img.shields.io/badge/Zig-0.17+-f7a41d.svg)](https://ziglang.org/)
 [![CMake](https://img.shields.io/badge/CMake-3.30+-green.svg)](https://cmake.org/)
 ![tag](https://img.shields.io/github/tag/quant1x/quant1x.svg?style=flat)
 ![Crates.io](https://img.shields.io/crates/d/quant1x.svg)
