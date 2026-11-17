@@ -14,6 +14,7 @@
 # V2.92 2021-11-30 新增 BARSSINCEN函数,现在可以 pip install MyTT 完成安装   
 # V3.0  2021-12-04 改进 DMA函数支持序列,新增XS2 薛斯通道II指标
 # V3.1  2021-12-19 新增 TOPRANGE,LOWRANGE一级函数
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Callable, Any
 
 import numpy as np
@@ -995,3 +996,41 @@ def XSII(CLOSE, HIGH, LOW, N=102, M=7):
     TD3 = (1 + M / 100) * DD
     TD4 = (1 - M / 100) * DD
     return TD1, TD2, TD3, TD4
+
+
+def ZTPRICE(price, ratio):
+    """
+    通达信 ZTPRICE: 按涨停比例计算涨停价.
+
+    前收盘价 * (1 + 涨停比例), 结果按 ROUND_HALF_UP 取两位小数(四舍五入到分).
+    支持标量、pandas.Series 与 numpy 数组; NaN 原样保留.
+
+    Args:
+        price: 前收盘价
+        ratio: 涨停比例, 如 0.10
+    Returns:
+        与 price 同形态的涨停价
+    """
+    if ratio <= 0:
+        return price
+    factor = Decimal(str(1.0 + ratio))
+
+    def convert(value):
+        if value is None:
+            return value
+        try:
+            if np.isnan(value):
+                return value
+        except TypeError:
+            return value
+        return float(
+            (Decimal(str(value)) * factor).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+        )
+
+    if isinstance(price, pd.Series):
+        return price.map(convert)
+    if isinstance(price, np.ndarray):
+        return np.array([convert(value) for value in price], dtype=float)
+    return convert(price)

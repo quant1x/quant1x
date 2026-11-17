@@ -7,7 +7,7 @@ import inspect
 
 import pandas
 
-from quant1x import basic
+from quant1x.data.market import limit_up_ratio
 from quant1x.formula.formula import *
 
 
@@ -29,9 +29,9 @@ def p2fb(code: str, data: pandas.DataFrame):
     AMOUNT = df['amount']
 
     # ZTBL:="BASIC.涨停比例";
-    ZTBL = basic.ZTBL(code)
+    ZTBL = limit_up_ratio(code)
     # ZTJ:=ZTPRICE(REF(CLOSE,1),ZTBL);
-    ZTJ = basic.ZTPRICE(REF(CLOSE, 1), ZTBL)
+    ZTJ = ZTPRICE(REF(CLOSE, 1), ZTBL)
     # C0:=CLOSE;
     C0 = CLOSE
     # X:=CLOSE=ZTJ;

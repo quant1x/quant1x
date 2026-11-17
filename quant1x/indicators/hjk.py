@@ -5,7 +5,7 @@
 
 import pandas
 
-from quant1x import basic
+from quant1x.data.market import limit_up_ratio
 from quant1x.formula.formula import *
 
 
@@ -22,11 +22,11 @@ def hjk(code:str, data:pandas.DataFrame):
     AMOUNT = df['amount']
 
     # ZTBL:="BASIC.涨停比例",NODRAW;
-    ZTBL = basic.ZTBL(code)
+    ZTBL = limit_up_ratio(code)
     # R_CLOSE:=REF(CLOSE,1);
     R_CLOSE = REF(CLOSE, 1)
     # ZTJ:=ZTPRICE(R_CLOSE, ZTBL);
-    ZTJ = basic.ZTPRICE(R_CLOSE, ZTBL)
+    ZTJ = ZTPRICE(R_CLOSE, ZTBL)
     # BL:=VOL/REF(VOL,1),NODRAW;
     BL = VOL / REF(VOL, 1)
     # {倍量}
