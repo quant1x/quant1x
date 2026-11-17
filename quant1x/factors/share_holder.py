@@ -9,7 +9,7 @@ from typing import List, Dict, Tuple, Optional
 from datetime import datetime
 from quant1x.data.market import detect_symbol, correct_security_code
 from quant1x.config import config, top10_holders_filename
-from quant1x import std
+from quant1x import base
 
 # Constants
 ERROR_CAPITAL_BASE = 90000
@@ -31,7 +31,7 @@ def fetch_share_holder(security_code: str, date_str: str, diff: int = 0) -> pd.D
     inst = detect_symbol(security_code)
     
     # Get quarter end date
-    _, _, q_end = std.get_quarter_by_date(date_str, diff)
+    _, _, q_end = base.get_quarter_by_date(date_str, diff)
     # q_end is YYYY-MM-DD 23:59:59 in C++, here we just need YYYY-MM-DD
     # But the API expects YYYY-MM-DD
     
@@ -111,7 +111,7 @@ def cache_share_holder(security_code: str, date_str: str, diff: int = 1) -> pd.D
     """
     Get share holder data from cache or fetch if missing.
     """
-    _, _, last = std.get_quarter_by_date(date_str, diff)
+    _, _, last = base.get_quarter_by_date(date_str, diff)
     filename = top10_holders_filename(security_code, last)
     
     if os.path.exists(filename):

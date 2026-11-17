@@ -9,7 +9,7 @@ from typing import List, Tuple, Optional, Dict
 from dataclasses import dataclass, field
 from quant1x.data.market import detect_symbol, correct_security_code, assert_index_by_security_code
 from quant1x.data.meta.timestamp import Timestamp
-from quant1x import std
+from quant1x import base
 from quant1x.config import config, reports_filename
 
 # Constants
@@ -76,7 +76,7 @@ class QuarterlyReportSummary:
         self.QDate = v.QDATE
 
 def quarterly_reports(feature_date: str, page_no: int = 1) -> Tuple[List[QuarterlyReport], int, Optional[FinancialReportException]]:
-    _, _q_begin, q_end = std.get_quarter_by_date(feature_date, 1)
+    _, _q_begin, q_end = base.get_quarter_by_date(feature_date, 1)
     quarter_end_date = Timestamp.parse(q_end).only_date()
 
     params = {
@@ -227,11 +227,11 @@ _map_reports: Dict[str, List[QuarterlyReport]] = {}
 
 def _quarter_str(date: str) -> str:
     """获取 date 对应的季度字符串, 如 2026Q1"""
-    quarter, _, _ = std.get_quarter_by_date(date)
+    quarter, _, _ = base.get_quarter_by_date(date)
     return quarter
 
 def cache_quarterly_reports_by_security_code(date: str, diff_quarters: int = 1) -> Tuple[List[QuarterlyReport], int, Optional[FinancialReportException]]:
-    _, _, last = std.get_quarter_by_date(date, diff_quarters)
+    _, _, last = base.get_quarter_by_date(date, diff_quarters)
     filename = reports_filename(last)
     expected_quarter = _quarter_str(last)
     
@@ -278,7 +278,7 @@ def cache_quarterly_reports_by_security_code(date: str, diff_quarters: int = 1) 
     # so we pass 'date' directly and use 'last' for cache path/validation.
     qdate = date
     if diff_quarters > 1:
-        _, _, tmp_date = std.get_quarter_by_date(date, diff_quarters - 1)
+        _, _, tmp_date = base.get_quarter_by_date(date, diff_quarters - 1)
         qdate = tmp_date
         
     all_reports, pages, err = quarterly_reports(qdate)
@@ -321,7 +321,7 @@ def get_cache_quarterly_reports_by_security_code(security_code: str, date: str, 
 _g_map_quarterly_reports: Dict[str, QuarterlyReport] = {}
 
 def load_quarterly_reports(date: str):
-    _, _, last = std.get_quarter_by_date(date, 1)
+    _, _, last = base.get_quarter_by_date(date, 1)
     filename = reports_filename(last)
     expected_quarter = _quarter_str(last)
     

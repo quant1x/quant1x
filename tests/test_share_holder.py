@@ -6,16 +6,16 @@ import unittest
 import pandas as pd
 from quant1x.factors import share_holder
 from quant1x.config import config
-from quant1x import std
+from quant1x import base
 
 class TestShareHolder(unittest.TestCase):
     def test_get_quarter_by_date(self):
-        q, f, l = std.get_quarter_by_date("2023-05-15")
+        q, f, l = base.get_quarter_by_date("2023-05-15")
         self.assertEqual(q, "2023Q2")
         self.assertEqual(f, "2023-04-01")
         self.assertEqual(l, "2023-06-30")
         
-        q, f, l = std.get_quarter_by_date("2023-05-15", diff_quarters=1)
+        q, f, l = base.get_quarter_by_date("2023-05-15", diff_quarters=1)
         self.assertEqual(q, "2023Q1")
         self.assertEqual(f, "2023-01-01")
         self.assertEqual(l, "2023-03-31")
