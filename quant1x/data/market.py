@@ -295,9 +295,10 @@ def correct_security_code(code: str) -> str:
 
 # 涨跌幅限制比例
 LIMIT_RATIO_MAIN_BOARD = 0.10
-LIMIT_RATIO_GROWTH_BOARD = 0.20  # 创业板 / 科创板
-LIMIT_RATIO_BSE = 0.30           # 北交所
-LIMIT_RATIO_MAIN_BOARD_ST = 0.05 # 沪深主板 ST
+LIMIT_RATIO_CHINEXT = 0.20    # 创业板
+LIMIT_RATIO_STAR = 0.30       # 科创板
+LIMIT_RATIO_BSE = 0.30        # 北交所
+LIMIT_RATIO_ST = 0.05         # ST 统一 5%
 
 # 北交所股票独有的代码前缀. detect_symbol 对 6 位纯数字先查上交所规则,
 # 其中 sse_rules 的 "8" 兜底会把 830/870 等老北交所代码判成上交所债券,
@@ -319,25 +320,28 @@ def limit_up_ratio(code: str, name: str = "") -> float:
     inst = detect_symbol(code)
     ticker = inst.ticker
     digits = "".join(ch for ch in (code or "") if ch.isdigit())
-    is_st = "ST" in (name or "").upper()
 
-    # 北交所: 30%, ST 同样 30%
+    # ST 统一 5%, 优先于板块判断
+    if "ST" in (name or "").upper():
+        return LIMIT_RATIO_ST
+
+    # 北交所: 30%
     if inst.exchange == Exchange.BSE or (
         len(digits) == 6 and digits.startswith(_BSE_STOCK_PREFIXES)
     ):
         return LIMIT_RATIO_BSE
 
-    # 上交所: 科创板 20%, 主板 10% (ST 5%)
+    # 上交所: 科创板 30%, 主板 10%
     if inst.exchange == Exchange.SSE:
         if ticker.startswith(("688", "689")):
-            return LIMIT_RATIO_GROWTH_BOARD
-        return LIMIT_RATIO_MAIN_BOARD_ST if is_st else LIMIT_RATIO_MAIN_BOARD
+            return LIMIT_RATIO_STAR
+        return LIMIT_RATIO_MAIN_BOARD
 
-    # 深交所: 创业板 20%, 主板 10% (ST 5%)
+    # 深交所: 创业板 20%, 主板 10%
     if inst.exchange == Exchange.SZSE:
         if ticker.startswith(("300", "301", "302")):
-            return LIMIT_RATIO_GROWTH_BOARD
-        return LIMIT_RATIO_MAIN_BOARD_ST if is_st else LIMIT_RATIO_MAIN_BOARD
+            return LIMIT_RATIO_CHINEXT
+        return LIMIT_RATIO_MAIN_BOARD
 
     return 0.0
 

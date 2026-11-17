@@ -4,7 +4,7 @@
 
 """`data/market` 的涨停比例与 `formula.ZTPRICE` 的离线回归。
 
-覆盖沪深主板、创业板、科创板、北交所、主板 ST 与无涨跌幅市场,
+覆盖沪深主板、创业板、科创板、北交所、ST 统一 5% 与无涨跌幅市场,
 以及涨停价四舍五入到分的边界(9.55 * 1.10 = 10.505 -> 10.51)。
 """
 
@@ -23,23 +23,25 @@ class LimitUpRatioTest(unittest.TestCase):
             with self.subTest(code=code):
                 self.assertAlmostEqual(limit_up_ratio(code), 0.10)
 
-    def test_growth_board(self):
-        for code in ("300750", "301269", "688981", "689009"):
+    def test_chinext(self):
+        for code in ("300750", "301269"):
             with self.subTest(code=code):
                 self.assertAlmostEqual(limit_up_ratio(code), 0.20)
+
+    def test_star(self):
+        for code in ("688981", "689009"):
+            with self.subTest(code=code):
+                self.assertAlmostEqual(limit_up_ratio(code), 0.30)
 
     def test_bse(self):
         for code in ("920077", "830799", "430047", "870508"):
             with self.subTest(code=code):
                 self.assertAlmostEqual(limit_up_ratio(code), 0.30)
 
-    def test_st_on_main_board(self):
-        self.assertAlmostEqual(limit_up_ratio("600000", "*ST某某"), 0.05)
-        self.assertAlmostEqual(limit_up_ratio("000001", "ST某某"), 0.05)
-
-    def test_st_on_growth_board_keeps_20(self):
-        self.assertAlmostEqual(limit_up_ratio("300750", "ST某某"), 0.20)
-        self.assertAlmostEqual(limit_up_ratio("688981", "ST某某"), 0.20)
+    def test_st_applies_to_all_boards(self):
+        for code in ("600000", "000001", "300750", "688981", "920077"):
+            with self.subTest(code=code):
+                self.assertAlmostEqual(limit_up_ratio(code, "*ST某某"), 0.05)
 
     def test_market_without_limit(self):
         self.assertAlmostEqual(limit_up_ratio("AAPL.US"), 0.0)
