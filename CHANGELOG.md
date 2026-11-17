@@ -3,6 +3,37 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.14] - 2026-11-17
+### Changed
+- fix[python]：修掉 factors 与测试里残留的 quant1x.std 引用
+  - quant1x/factors/share_holder.py、quant1x/factors/financial_report.py、tests/test_share_holder.py：from quant1x import std 改为 from quant1x import base，std.get_quarter_by_date 改为 base.get_quarter_by_date
+  - 0.7.56 把 quant1x.std 并入 quant1x.base，Python 侧这 3 个文件漏改，quant1x.std 已不存在，导入即失败
+  - 语义一致：get_quarter_by_date 是同一实现（quant1x/base/time.py），参数与返回值不变
+  - 验证：grep 无 import std / std.get_quarter_by_date 残留；三个模块导入成功并返回值正确；test_get_quarter_by_date 通过；py_compile 通过
+  - 工单：#26
+- feat[python]：补涨停比例与涨停价，修好 hjk/p2fb 的 basic 依赖
+  - quant1x/data/market.py：新增 limit_up_ratio(code, name="")——沪深主板 10%、创业板/科创板 20%、北交所 30%、主板 ST 5%、创业板/科创板 ST 20%、港股/美股 0；6 位 43/83/87/92 前缀兜底北交所（sse_rules 的 "8" 兜底会把老北交所代码误判为上交所债券）
+  - quant1x/formula/formula.py：新增 ZTPRICE(price, ratio)——前收 ×（1+比例），Decimal ROUND_HALF_UP 到分；支持标量/Series/ndarray，NaN 原样保留
+  - quant1x/indicators/hjk.py、p2fb.py：去掉 from quant1x import basic，改调 limit_up_ratio / ZTPRICE（对应原注释 ZTBL:="BASIC.涨停比例"、ZTJ:=ZTPRICE(...)）
+  - 新增 quant1x/data/market_test.py：11 项覆盖各板块、主板 ST、创业板/科创板 ST 仍 20%、无涨跌幅市场，以及 9.55*1.10=10.505 → 10.51 的 half-up 边界
+  - 语义一致：指标其余公式步骤未动；ST 比例需要名称，指标只传 code 时按板块基础比例
+  - 验证：python -m unittest quant1x.data.market_test（11 passed）；cdtd/f89k/hjk/ma1x/p2fb 用合成 OHLCV 跑通；py_compile 通过；ruff 无 F821 新增（指标文件的 F403/F405 为既有 import * 风格）
+  - 工单：#27
+- fix[python]：涨停比例改为 ST 统一 5%、科创板 30%
+  - quant1x/data/market.py：limit_up_ratio 口径调整为 ST 统一 5%（优先于板块判断）、创业板 20%、科创板 30%、北交所 30%、其它主板 10%
+  - 常量拆分为 LIMIT_RATIO_CHINEXT / LIMIT_RATIO_STAR / LIMIT_RATIO_BSE / LIMIT_RATIO_ST
+  - quant1x/data/market_test.py：拆分创业板与科创板用例，ST 用例覆盖主板、创业板、科创板、北交所
+  - 语义一致：ZTPRICE 与指标公式未动
+  - 验证：python -m unittest quant1x.data.market_test（11 passed）；cdtd/f89k/hjk/ma1x/p2fb 合成数据跑通；py_compile 通过
+  - 工单：#28
+- fix[python]：科创板涨停比例改回 20%
+  - quant1x/data/market.py：LIMIT_RATIO_STAR 0.30 → 0.20，北交所 LIMIT_RATIO_BSE 保持 0.30
+  - quant1x/data/market_test.py：科创板用例断言改为 0.20
+  - 语义一致：ST 统一 5%、创业板 20%、其它主板 10% 不变
+  - 验证：python -m unittest quant1x.data.market_test（11 passed）；hjk/p2fb 合成数据跑通；py_compile 通过
+  - 工单：#29
+- release version 0.8.14
+
 ## [0.8.13] - 2026-11-17
 ### Changed
 - chore[go]：升级 num 到 0.8.4，移除 gox 依赖
@@ -3220,7 +3251,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.13...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.14...HEAD
+[0.8.14]: https://codeberg.org/quant1x/quant1x/compare/v0.8.13...v0.8.14
 [0.8.13]: https://codeberg.org/quant1x/quant1x/compare/v0.8.12...v0.8.13
 [0.8.12]: https://codeberg.org/quant1x/quant1x/compare/v0.8.11...v0.8.12
 [0.8.11]: https://codeberg.org/quant1x/quant1x/compare/v0.8.10...v0.8.11
