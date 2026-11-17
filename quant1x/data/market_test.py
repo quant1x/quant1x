@@ -31,7 +31,7 @@ class LimitUpRatioTest(unittest.TestCase):
     def test_star(self):
         for code in ("688981", "689009"):
             with self.subTest(code=code):
-                self.assertAlmostEqual(limit_up_ratio(code), 0.30)
+                self.assertAlmostEqual(limit_up_ratio(code), 0.20)
 
     def test_bse(self):
         for code in ("920077", "830799", "430047", "870508"):

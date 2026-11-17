@@ -296,7 +296,7 @@ def correct_security_code(code: str) -> str:
 # 涨跌幅限制比例
 LIMIT_RATIO_MAIN_BOARD = 0.10
 LIMIT_RATIO_CHINEXT = 0.20    # 创业板
-LIMIT_RATIO_STAR = 0.30       # 科创板
+LIMIT_RATIO_STAR = 0.20       # 科创板
 LIMIT_RATIO_BSE = 0.30        # 北交所
 LIMIT_RATIO_ST = 0.05         # ST 统一 5%
 
