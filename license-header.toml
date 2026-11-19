@@ -1,0 +1,6 @@
+[ignore]
+paths = [
+#  "base/3rd/**",              # 目录连同其下所有文件
+#  "base/data/stb_image.h",    # 单个文件
+#  "**/*.inc",                 # 任意层级的同扩展名文件
+]
