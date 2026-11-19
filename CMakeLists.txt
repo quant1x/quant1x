@@ -399,6 +399,7 @@ set(quant1x-headers
     quant1x/base/util.h
     quant1x/base/format.h
     quant1x/base/feature_detection.h
+    quant1x/base/globmatch.hpp
     quant1x/base/numeric.h
     quant1x/base/safe.h
     quant1x/base/simd.h
@@ -600,6 +601,7 @@ set(quant1x-sources
     quant1x/base/simd.cpp
     quant1x/base/cpu_info.cpp
     quant1x/base/affinity.cpp
+    quant1x/base/globmatch.cpp
     quant1x/base/argparser/spec.cpp
     quant1x/base/argparser/error.cpp
     quant1x/base/argparser/parser.cpp

@@ -255,6 +255,9 @@ add_catch2_executable(tdd-logger.cpp)
 # 字符串测试
 add_catch2_executable(tdd-strings.cpp)
 
+# 锚定 glob 匹配测试
+add_catch2_executable(tdd-globmatch.cpp)
+
 # 文件系统/基础组件测试
 add_catch2_executable(tdd-all.cpp)
 
