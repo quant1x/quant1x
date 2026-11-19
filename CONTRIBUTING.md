@@ -53,7 +53,7 @@ Quant1X 是**多语言平行实现**的量化交易基础设施框架：同一�
 
 | 语言 | 最低版本 | 依据 |
 | --- | --- | --- |
-| Python | 3.8+ | `pyproject.toml` 的 `requires-python`（建议 3.12+） |
+| Python | 3.12+ | `pyproject.toml` 的 `requires-python` |
 | C / C++ | C17 / C++20 | `cmake/compile_options.cmake`；CMake ≥ 3.30 |
 | Rust | 1.100.0+ | `rust-toolchain.toml`（Edition 2024） |
 | Go | 1.27+ | `go.mod` 的 `go` 指令 |
