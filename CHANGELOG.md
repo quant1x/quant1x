@@ -3,6 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.16] - 2026-11-19
+### Changed
+- chore[rust]：全仓执行 cargo fmt 统一代码格式
+  - 对全仓 Rust 源文件执行 cargo fmt，覆盖 quant1x/、tests/、examples/、tools/ 共 82 个文件
+  - 仅换行、缩进与 import 排序等格式调整，无逻辑、接口、依赖与版本变更
+  - 关联工单 #32
+  - 验证：cargo fmt --check；cargo test --lib globmatch（8 项通过）
+- release version 0.8.16
+
 ## [0.8.15] - 2026-11-19
 ### Changed
 - add[license]: 新增可忽略源文件头部版权信息的配置文件
@@ -3270,7 +3279,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.15...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.16...HEAD
+[0.8.16]: https://codeberg.org/quant1x/quant1x/compare/v0.8.15...v0.8.16
 [0.8.15]: https://codeberg.org/quant1x/quant1x/compare/v0.8.14...v0.8.15
 [0.8.14]: https://codeberg.org/quant1x/quant1x/compare/v0.8.13...v0.8.14
 [0.8.13]: https://codeberg.org/quant1x/quant1x/compare/v0.8.12...v0.8.13
