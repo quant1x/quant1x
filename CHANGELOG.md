@@ -3,6 +3,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.18] - 2026-11-19
+### Changed
+- chore[python]：将最低 Python 版本提升到 3.12
+  - pyproject.toml 的 requires-python 改为 >=3.12，classifiers 移除 3.8 / 3.9 / 3.10 / 3.11
+  - CONTRIBUTING.md §2.1 与 BUILDING.md §1 的版本基线同步为 3.12+；README 原已是 Python 3.12+
+  - 依赖中的 numpy / scikit-learn / mlxtend 实际要求 Python >=3.11，旧下限已不可安装
+  - 关联工单 #34
+  - 验证：TOML 解析确认 requires-python 与 classifiers；README / CONTRIBUTING / BUILDING 无 3.8 残留
+- release version 0.8.18
+
 ## [0.8.17] - 2026-11-19
 ### Changed
 - fix[python]：对齐 scikit-learn 与 mlxtend 的版本约束
@@ -3288,7 +3298,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.17...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.18...HEAD
+[0.8.18]: https://codeberg.org/quant1x/quant1x/compare/v0.8.17...v0.8.18
 [0.8.17]: https://codeberg.org/quant1x/quant1x/compare/v0.8.16...v0.8.17
 [0.8.16]: https://codeberg.org/quant1x/quant1x/compare/v0.8.15...v0.8.16
 [0.8.15]: https://codeberg.org/quant1x/quant1x/compare/v0.8.14...v0.8.15
