@@ -3,6 +3,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.15] - 2026-11-19
+### Changed
+- add[license]: 新增可忽略源文件头部版权信息的配置文件
+- feat[python+cpp+rust+go+zig]：在 base 落地锚定 glob 匹配
+  - 新增 quant1x/base/globmatch.py 作为 spec，同步落地 globmatch.hpp / .cpp、globmatch.rs、globmatch.go、globmatch.zig 与模块文档 globmatch.md
+  - 语义与 Python 3.13 PurePath.full_match()、bash globstar 一致：整条锚定、** 跨段、其余段按 * / ? / [...] 通配，尾段 /** 要求至少一个条目，只做匹配不访问文件系统
+  - 五种语言使用同一批样本逐条对拍，覆盖 globstar 零/多段、锚定、单段通配、点文件与大小写、尾段 /**、空输入与任一命中
+  - C++ 用例按仓库约定落在 tests/tdd-globmatch.cpp；登记根 CMakeLists.txt、tests/CMakeLists.txt 与 quant1x/base/mod.rs
+  - 关联工单 #30
+  - 验证：python -m quant1x.base.globmatch_test；cargo test --lib globmatch；go test ./quant1x/base/；zig test quant1x/base/globmatch_test.zig；ctest --test-dir build-msvc -C Release -R globmatch
+- chore[multi]：统一项目元数据作者并补充 README 中文名
+  - pyproject.toml 的 authors 名称统一为 Quant1X Team，保留 wangfengxy@sina.cn
+  - Cargo.toml 的 authors 改为 Quant1X Team <wangfengxy@sina.cn>
+  - README 标题补充 Quant1X 的中文名「鲲腾」
+  - 两处许可证保持 MIT，未改动版本号、tag 与代码逻辑
+  - 关联工单 #31
+  - 验证：两个清单经 TOML 解析确认 authors / license 取值；三个文件均为 UTF-8 无 BOM、LF
+- release version 0.8.15
+
 ## [0.8.14] - 2026-11-17
 ### Changed
 - fix[python]：修掉 factors 与测试里残留的 quant1x.std 引用
@@ -3251,7 +3270,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.14...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.15...HEAD
+[0.8.15]: https://codeberg.org/quant1x/quant1x/compare/v0.8.14...v0.8.15
 [0.8.14]: https://codeberg.org/quant1x/quant1x/compare/v0.8.13...v0.8.14
 [0.8.13]: https://codeberg.org/quant1x/quant1x/compare/v0.8.12...v0.8.13
 [0.8.12]: https://codeberg.org/quant1x/quant1x/compare/v0.8.11...v0.8.12
