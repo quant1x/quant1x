@@ -17,8 +17,8 @@ license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 # 分两条记录，是为了pip show时能够同时显示 Author 与 Author-email，如果只写一条带 email
 # 的记录，pip show 只会显示 Author-email，而不会显示 Author。
 authors = [
-    { name = "Quant1X" },
-    { name = "Quant1X", email = "wangfengxy@sina.cn" },
+    { name = "Quant1X Team" },
+    { name = "Quant1X Team", email = "wangfengxy@sina.cn" },
 ]
 keywords = ["quant1x", "python"]
 classifiers = [

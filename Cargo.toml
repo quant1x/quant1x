@@ -2,7 +2,7 @@
 name = "quant1x"
 version = "0.8.14"
 edition = "2024"
-authors = ["Quant1X Team"]
+authors = ["Quant1X Team <wangfengxy@sina.cn>"]
 description = "Cross-language standard library for quantitative trading"
 license = "MIT"
 readme = "README.md"

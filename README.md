@@ -1,4 +1,4 @@
-# Quant1X 量化交易实验室
+# 鲲腾（Quant1X）量化交易实验室
 
 <p align="center">
   <img src="logo.png" alt="Quant1X Logo" width="360">
