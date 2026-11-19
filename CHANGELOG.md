@@ -3,6 +3,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.17] - 2026-11-19
+### Changed
+- fix[python]：对齐 scikit-learn 与 mlxtend 的版本约束
+  - pyproject.toml 的 scikit-learn 约束由 ~=1.7.1 提升到 ~=1.8.0，满足 mlxtend 0.25.0 的 scikit-learn>=1.8.0
+  - 现有 numpy / pandas / scipy / matplotlib / joblib 的 ~= 范围已能容纳 mlxtend 的补丁下限，未改动
+  - 关联工单 #33
+  - 验证：pip install --dry-run 在 Python 3.13 下同时解析出 scikit-learn 1.8.0、mlxtend 0.25.0、numpy 2.3.5、pandas 2.3.3、scipy 1.16.3、matplotlib 3.10.9、joblib 1.5.3
+- release version 0.8.17
+
 ## [0.8.16] - 2026-11-19
 ### Changed
 - chore[rust]：全仓执行 cargo fmt 统一代码格式
@@ -3279,7 +3288,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.16...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.17...HEAD
+[0.8.17]: https://codeberg.org/quant1x/quant1x/compare/v0.8.16...v0.8.17
 [0.8.16]: https://codeberg.org/quant1x/quant1x/compare/v0.8.15...v0.8.16
 [0.8.15]: https://codeberg.org/quant1x/quant1x/compare/v0.8.14...v0.8.15
 [0.8.14]: https://codeberg.org/quant1x/quant1x/compare/v0.8.13...v0.8.14
