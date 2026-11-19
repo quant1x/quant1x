@@ -53,7 +53,7 @@ dependencies = [
     "requests==2.32.0",
     "tqdm~=4.67.1",
     "xgboost~=3.0.0",
-    "scikit-learn~=1.7.1",
+    "scikit-learn~=1.8.0",
     "scipy~=1.16.0",
     "caerus~=1.0.1",
     "joblib~=1.5.1",
