@@ -22,8 +22,8 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use memmap2::MmapMut;
 
-use super::crc32::crc32_ieee;
 use super::Error;
+use super::crc32::crc32_ieee;
 
 /// 默认落盘间隔 (对应 Go defaultSyncEvery)
 pub(crate) const DEFAULT_SYNC_EVERY: u32 = 1000;
@@ -67,9 +67,16 @@ pub(crate) fn compare_persistent_state(a: PersistentState, b: PersistentState) -
 }
 
 /// 在给定水位上推进状态 (对应 Go advancePersistentState)
-pub(crate) fn advance_persistent_state(state: PersistentState, now: i64, seq_bits: u8) -> PersistentState {
+pub(crate) fn advance_persistent_state(
+    state: PersistentState,
+    now: i64,
+    seq_bits: u8,
+) -> PersistentState {
     if now > state.physical {
-        return PersistentState { physical: now, seq: 0 };
+        return PersistentState {
+            physical: now,
+            seq: 0,
+        };
     }
     let mask = (1u32 << seq_bits) - 1;
     if state.seq >= mask {
@@ -149,13 +156,17 @@ impl FileStateStore {
             .create(true)
             .truncate(false)
             .open(&self.path)
-            .map_err(|e| Error::StateFile(format!("open state file {:?} failed: {e}", self.path)))?;
-        file.set_len(STATE_FILE_SIZE as u64)
-            .map_err(|e| Error::StateFile(format!("resize state file {:?} failed: {e}", self.path)))?;
+            .map_err(|e| {
+                Error::StateFile(format!("open state file {:?} failed: {e}", self.path))
+            })?;
+        file.set_len(STATE_FILE_SIZE as u64).map_err(|e| {
+            Error::StateFile(format!("resize state file {:?} failed: {e}", self.path))
+        })?;
         // 状态文件由本包进程组独占维护 (锁字保证跨进程互斥), 映射期间无外部并发修改风险
         // SAFETY: 映射目标文件在本模块内以定长读写方式维护, 不会出现并发 truncate 导致 SIGBUS
-        let map = unsafe { MmapMut::map_mut(&file) }
-            .map_err(|e| Error::StateFile(format!("mmap state file {:?} failed: {e}", self.path)))?;
+        let map = unsafe { MmapMut::map_mut(&file) }.map_err(|e| {
+            Error::StateFile(format!("mmap state file {:?} failed: {e}", self.path))
+        })?;
         inner.mapped = Some(map);
         Ok(())
     }
@@ -190,7 +201,7 @@ impl FileStateStore {
                 return Err(Error::StateFile(format!(
                     "stat state file {:?} failed: {e}",
                     self.path
-                )))
+                )));
             }
         }
         self.open_mapped()?;
@@ -300,13 +311,13 @@ impl FileStateStore {
         let file = match File::open(&self.path) {
             Ok(f) => f,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                return Ok((PersistentState::default(), false, None))
+                return Ok((PersistentState::default(), false, None));
             }
             Err(e) => {
                 return Err(Error::StateFile(format!(
                     "open state file {:?} failed: {e}",
                     self.path
-                )))
+                )));
             }
         };
         let size = file
@@ -329,9 +340,10 @@ impl FileStateStore {
                 .map_err(|e| Error::StateFile(format!("read state record failed: {e}")))?;
             if let Some(st) = decode_state_record(&record) {
                 if size > offset + PERSISTENT_STATE_RECORD_SIZE as u64 {
-                    file.set_len(offset + PERSISTENT_STATE_RECORD_SIZE as u64).map_err(|e| {
-                        Error::StateFile(format!("truncate state file failed: {e}"))
-                    })?;
+                    file.set_len(offset + PERSISTENT_STATE_RECORD_SIZE as u64)
+                        .map_err(|e| {
+                            Error::StateFile(format!("truncate state file failed: {e}"))
+                        })?;
                 }
                 return Ok((st, true, None));
             }
@@ -344,7 +356,12 @@ impl FileStateStore {
     }
 
     /// 推进状态 (对应 Go Next)
-    pub(crate) fn next(&self, local: PersistentState, now: i64, seq_bits: u8) -> Result<PersistentState, Error> {
+    pub(crate) fn next(
+        &self,
+        local: PersistentState,
+        now: i64,
+        seq_bits: u8,
+    ) -> Result<PersistentState, Error> {
         if !self.strict {
             // 快速路径: 纯内存推进; 攒满 syncEvery 条才 checkpoint 一次
             let next = advance_persistent_state(local, now, seq_bits);
@@ -512,7 +529,7 @@ fn process_alive(pid: u32) -> bool {
     use winapi::um::handleapi::CloseHandle;
     use winapi::um::processthreadsapi::OpenProcess;
     use winapi::um::synchapi::WaitForSingleObject;
-    use winapi::um::winnt::{PROCESS_QUERY_LIMITED_INFORMATION, HANDLE};
+    use winapi::um::winnt::{HANDLE, PROCESS_QUERY_LIMITED_INFORMATION};
 
     const WAIT_OBJECT_0: DWORD = 0;
     const WAIT_ABANDONED: DWORD = 0x0000_0080;

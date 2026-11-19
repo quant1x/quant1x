@@ -2,14 +2,13 @@
 // SPDX-License-Identifier: MIT
 
 use super::sina::FinanceDecoder;
-use crate::runtime::RollingOnce;
-use crate::meta::Timestamp;
 use crate::config;
+use crate::meta::Timestamp;
+use crate::runtime::RollingOnce;
 use chrono::Local;
 use csv;
 use filetime::FileTime;
 use httpdate::parse_http_date;
-use std::time::SystemTime;
 use once_cell::sync::Lazy;
 use std::fs::File;
 use std::fs::OpenOptions;
@@ -17,6 +16,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
 static GLOBAL_CALENDAR_STRINGS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(Vec::new()));
@@ -278,8 +278,7 @@ pub fn last_trading_day(date: Timestamp, debug_timestamp: Option<Timestamp>) -> 
         let tss = GLOBAL_CALENDAR_TS.lock().unwrap();
         if tss.is_empty() {
             // fallback: return pre-market of current
-            return Timestamp::pre_market_time_from_current(&current)
-                .unwrap_or(current);
+            return Timestamp::pre_market_time_from_current(&current).unwrap_or(current);
         }
         // Use upper_bound semantics (aligned with C++ std::upper_bound):
         // find first element > date, then step back to the last <= date.
@@ -530,7 +529,8 @@ mod tests {
         let debug_ts =
             crate::data::meta::timestamp::Timestamp::from_date(2024, 6, 17, 10, 0, 0, 0).unwrap();
         let date_pre_market =
-            crate::data::meta::timestamp::Timestamp::from_date(2024, 6, 17, 8, 59, 59, 999).unwrap();
+            crate::data::meta::timestamp::Timestamp::from_date(2024, 6, 17, 8, 59, 59, 999)
+                .unwrap();
         let last = last_trading_day(date_pre_market, Some(debug_ts));
         println!(
             "last trading day before {:?} is {:?}",

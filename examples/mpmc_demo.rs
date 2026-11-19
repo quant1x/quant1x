@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: MIT
 
 use std::sync::{
-    atomic::{AtomicI64, Ordering},
     Arc,
+    atomic::{AtomicI64, Ordering},
 };
 use std::thread;
 use std::time::Instant;
@@ -45,12 +45,14 @@ fn main() {
     for _ in 0..NUM_CONSUMERS {
         let qc = q.clone();
         let c = consumed.clone();
-        consumers.push(thread::spawn(move || loop {
-            match qc.pop() {
-                Ok(_v) => {
-                    c.fetch_add(1, Ordering::Relaxed);
+        consumers.push(thread::spawn(move || {
+            loop {
+                match qc.pop() {
+                    Ok(_v) => {
+                        c.fetch_add(1, Ordering::Relaxed);
+                    }
+                    Err(_) => break,
                 }
-                Err(_) => break,
             }
         }));
     }

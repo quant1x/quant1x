@@ -9,7 +9,7 @@ pub mod filesystem;
 pub use filesystem::homedir;
 pub mod numeric;
 pub mod strings;
-pub use strings::{to_lower, to_upper, trim, starts_with, ends_with};
+pub use strings::{ends_with, starts_with, to_lower, to_upper, trim};
 pub mod bits;
 pub use bits::*;
 pub mod argparser;

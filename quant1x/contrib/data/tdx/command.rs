@@ -59,7 +59,11 @@ pub struct Command {
 
 impl Command {
     pub const fn new(quote_type: QuoteType, value: u16, desc: &'static str) -> Self {
-        Self { quote_type, value, desc }
+        Self {
+            quote_type,
+            value,
+            desc,
+        }
     }
 
     /// 从数值查找已定义的 Command(仅限标准+扩展命令)
@@ -69,7 +73,11 @@ impl Command {
 
     /// 创建未注册的临时 Command(不加入全局表)
     pub const fn adhoc(quote_type: QuoteType, value: u16, desc: &'static str) -> Self {
-        Self { quote_type, value, desc }
+        Self {
+            quote_type,
+            value,
+            desc,
+        }
     }
 }
 
@@ -77,59 +85,72 @@ impl Command {
 // 标准行情命令
 // ============================================================
 
-pub const CMD_UNKNOWN: Command                      = Command::new(QuoteType::Standard, 0x0000, "未知");
-pub const STD_SYNCHRONIZE1: Command                 = Command::new(QuoteType::Standard, 0x000d, "标准行情协议握手1");
-pub const STD_SYNCHRONIZE2: Command                 = Command::new(QuoteType::Standard, 0x0fdb, "标准行情协议握手2");
-pub const STD_HEARTBEAT: Command                    = Command::new(QuoteType::Standard, 0x0004, "心跳维持");
-pub const STD_XDXR_INFO: Command                    = Command::new(QuoteType::Standard, 0x000f, "除权除息信息");
-pub const STD_FINANCE_INFO: Command                 = Command::new(QuoteType::Standard, 0x0010, "财务信息");
-pub const STD_PING: Command                         = Command::new(QuoteType::Standard, 0x0015, "测试连接");
-pub const STD_COMPANY_CATEGORY: Command             = Command::new(QuoteType::Standard, 0x02cf, "公司信息分类");
-pub const STD_COMPANY_CONTENT: Command              = Command::new(QuoteType::Standard, 0x02d0, "公司信息数据");
-pub const STD_SECURITY_COUNT: Command               = Command::new(QuoteType::Standard, 0x044e, "证券数量");
-pub const STD_SECURITY_LIST: Command                = Command::new(QuoteType::Standard, 0x044d, "证券列表");
-pub const STD_OLD_SECURITY_LIST: Command            = Command::new(QuoteType::Standard, 0x0450, "证券列表(已废弃)");
-pub const STD_SECURITY_BARS: Command                = Command::new(QuoteType::Standard, 0x052d, "K线");
-pub const STD_SECURITY_QUOTES_OLD: Command          = Command::new(QuoteType::Standard, 0x053e, "旧版行情信息");
-pub const STD_SECURITY_QUOTES_NEW: Command          = Command::new(QuoteType::Standard, 0x054c, "新版行情信息");
-pub const STD_MINUTE_TIME_DATA: Command             = Command::new(QuoteType::Standard, 0x051d, "分时数据");
-pub const STD_BLOCK_META: Command                   = Command::new(QuoteType::Standard, 0x02c5, "板块文件信息");
-pub const STD_BLOCK_DATA: Command                   = Command::new(QuoteType::Standard, 0x06b9, "板块文件数据");
-pub const STD_TRANSACTION_DATA: Command             = Command::new(QuoteType::Standard, 0x0fc5, "分笔成交信息");
-pub const STD_HISTORY_MINUTE_DATA: Command          = Command::new(QuoteType::Standard, 0x0fb4, "历史分时信息");
-pub const STD_HISTORY_TRANSACTION_DATA: Command     = Command::new(QuoteType::Standard, 0x0fb5, "历史分笔成交信息");
-pub const STD_AUCTION_INFO: Command                 = Command::new(QuoteType::Standard, 0x056a, "集合竞价信息");
-pub const STD_FUND_FLOW: Command                    = Command::new(QuoteType::Standard, 0x1218, "资金流向信息");
+pub const CMD_UNKNOWN: Command = Command::new(QuoteType::Standard, 0x0000, "未知");
+pub const STD_SYNCHRONIZE1: Command =
+    Command::new(QuoteType::Standard, 0x000d, "标准行情协议握手1");
+pub const STD_SYNCHRONIZE2: Command =
+    Command::new(QuoteType::Standard, 0x0fdb, "标准行情协议握手2");
+pub const STD_HEARTBEAT: Command = Command::new(QuoteType::Standard, 0x0004, "心跳维持");
+pub const STD_XDXR_INFO: Command = Command::new(QuoteType::Standard, 0x000f, "除权除息信息");
+pub const STD_FINANCE_INFO: Command = Command::new(QuoteType::Standard, 0x0010, "财务信息");
+pub const STD_PING: Command = Command::new(QuoteType::Standard, 0x0015, "测试连接");
+pub const STD_COMPANY_CATEGORY: Command = Command::new(QuoteType::Standard, 0x02cf, "公司信息分类");
+pub const STD_COMPANY_CONTENT: Command = Command::new(QuoteType::Standard, 0x02d0, "公司信息数据");
+pub const STD_SECURITY_COUNT: Command = Command::new(QuoteType::Standard, 0x044e, "证券数量");
+pub const STD_SECURITY_LIST: Command = Command::new(QuoteType::Standard, 0x044d, "证券列表");
+pub const STD_OLD_SECURITY_LIST: Command =
+    Command::new(QuoteType::Standard, 0x0450, "证券列表(已废弃)");
+pub const STD_SECURITY_BARS: Command = Command::new(QuoteType::Standard, 0x052d, "K线");
+pub const STD_SECURITY_QUOTES_OLD: Command =
+    Command::new(QuoteType::Standard, 0x053e, "旧版行情信息");
+pub const STD_SECURITY_QUOTES_NEW: Command =
+    Command::new(QuoteType::Standard, 0x054c, "新版行情信息");
+pub const STD_MINUTE_TIME_DATA: Command = Command::new(QuoteType::Standard, 0x051d, "分时数据");
+pub const STD_BLOCK_META: Command = Command::new(QuoteType::Standard, 0x02c5, "板块文件信息");
+pub const STD_BLOCK_DATA: Command = Command::new(QuoteType::Standard, 0x06b9, "板块文件数据");
+pub const STD_TRANSACTION_DATA: Command = Command::new(QuoteType::Standard, 0x0fc5, "分笔成交信息");
+pub const STD_HISTORY_MINUTE_DATA: Command =
+    Command::new(QuoteType::Standard, 0x0fb4, "历史分时信息");
+pub const STD_HISTORY_TRANSACTION_DATA: Command =
+    Command::new(QuoteType::Standard, 0x0fb5, "历史分笔成交信息");
+pub const STD_AUCTION_INFO: Command = Command::new(QuoteType::Standard, 0x056a, "集合竞价信息");
+pub const STD_FUND_FLOW: Command = Command::new(QuoteType::Standard, 0x1218, "资金流向信息");
 
 // ============================================================
 // 扩展行情命令
 // ============================================================
 
-pub const EXT_SYNCHRONIZE: Command                  = Command::new(QuoteType::Extension, 0x2454, "扩展行情协议握手");
-pub const EXT_SYNCHRONIZE2: Command                 = Command::new(QuoteType::Extension, 0x2455, "心跳维持");
-pub const EXT_INSTRUMENT_COUNT: Command             = Command::new(QuoteType::Extension, 0x23f0, "证券数量");
-pub const EXT_MARKET_LIST: Command                  = Command::new(QuoteType::Extension, 0x23f4, "市场列表");
-pub const EXT_INSTRUMENT_INFO: Command              = Command::new(QuoteType::Extension, 0x23f5, "证券列表");
-pub const EXT_INSTRUMENT_QUOTE_X1: Command          = Command::new(QuoteType::Extension, 0x23fa, "即时行情1");
-pub const EXT_INSTRUMENT_QUOTE_X2: Command          = Command::new(QuoteType::Extension, 0x23fb, "即时行情2");
-pub const EXT_TRANSACTION_DATA: Command             = Command::new(QuoteType::Extension, 0x23fc, "分笔成交");
-pub const EXT_DAILY_TRANSACTION_DATA: Command       = Command::new(QuoteType::Extension, 0x2406, "分笔成交-某日");
-pub const EXT_INSTRUMENT_BARS: Command              = Command::new(QuoteType::Extension, 0x23ff, "K线");
-pub const EXT_TODO_2458: Command                    = Command::new(QuoteType::Extension, 0x2458, "除权除息信息");
-pub const EXT_TODO_2459: Command                    = Command::new(QuoteType::Extension, 0x2459, "除权除息信息");
-pub const EXT_XDXR_INFO: Command                    = Command::new(QuoteType::Extension, 0x2488, "除权除息信息");
-pub const EXT_TODO_2489: Command                    = Command::new(QuoteType::Extension, 0x2489, "K线-含抛空量");
-pub const EXT_FUTURES_QUOTES: Command               = Command::new(QuoteType::Extension, 0x248a, "期货行情");
-pub const EXT_COMPANY_INFO_CATEGORIES: Command      = Command::new(QuoteType::Extension, 0x24b8, "公司信息分类");
-pub const EXT_COMPANY_INFO_CONTENT: Command         = Command::new(QuoteType::Extension, 0x24b9, "公司信息数据");
-pub const EXT_INTRADAY_CHART_SAMPLING: Command      = Command::new(QuoteType::Extension, 0x254d, "图形采样");
+pub const EXT_SYNCHRONIZE: Command = Command::new(QuoteType::Extension, 0x2454, "扩展行情协议握手");
+pub const EXT_SYNCHRONIZE2: Command = Command::new(QuoteType::Extension, 0x2455, "心跳维持");
+pub const EXT_INSTRUMENT_COUNT: Command = Command::new(QuoteType::Extension, 0x23f0, "证券数量");
+pub const EXT_MARKET_LIST: Command = Command::new(QuoteType::Extension, 0x23f4, "市场列表");
+pub const EXT_INSTRUMENT_INFO: Command = Command::new(QuoteType::Extension, 0x23f5, "证券列表");
+pub const EXT_INSTRUMENT_QUOTE_X1: Command =
+    Command::new(QuoteType::Extension, 0x23fa, "即时行情1");
+pub const EXT_INSTRUMENT_QUOTE_X2: Command =
+    Command::new(QuoteType::Extension, 0x23fb, "即时行情2");
+pub const EXT_TRANSACTION_DATA: Command = Command::new(QuoteType::Extension, 0x23fc, "分笔成交");
+pub const EXT_DAILY_TRANSACTION_DATA: Command =
+    Command::new(QuoteType::Extension, 0x2406, "分笔成交-某日");
+pub const EXT_INSTRUMENT_BARS: Command = Command::new(QuoteType::Extension, 0x23ff, "K线");
+pub const EXT_TODO_2458: Command = Command::new(QuoteType::Extension, 0x2458, "除权除息信息");
+pub const EXT_TODO_2459: Command = Command::new(QuoteType::Extension, 0x2459, "除权除息信息");
+pub const EXT_XDXR_INFO: Command = Command::new(QuoteType::Extension, 0x2488, "除权除息信息");
+pub const EXT_TODO_2489: Command = Command::new(QuoteType::Extension, 0x2489, "K线-含抛空量");
+pub const EXT_FUTURES_QUOTES: Command = Command::new(QuoteType::Extension, 0x248a, "期货行情");
+pub const EXT_COMPANY_INFO_CATEGORIES: Command =
+    Command::new(QuoteType::Extension, 0x24b8, "公司信息分类");
+pub const EXT_COMPANY_INFO_CONTENT: Command =
+    Command::new(QuoteType::Extension, 0x24b9, "公司信息数据");
+pub const EXT_INTRADAY_CHART_SAMPLING: Command =
+    Command::new(QuoteType::Extension, 0x254d, "图形采样");
 
 // ============================================================
 // L2 行情命令
 // ============================================================
 
 #[allow(non_upper_case_globals)]
-pub const L2_0x0547: Command                        = Command::new(QuoteType::Level2, 0x0547, "L2-即时行情");
+pub const L2_0x0547: Command = Command::new(QuoteType::Level2, 0x0547, "L2-即时行情");
 
 // ============================================================
 // 全局命令表(用于 from_value 查找)
@@ -185,13 +206,13 @@ static ALL_COMMANDS: &[&Command] = &[
 // ============================================================
 
 /// 帧类型标志
-pub const FLAG_ZIP: u8           = 0x10;
+pub const FLAG_ZIP: u8 = 0x10;
 /// 未帧类型标志
-pub const FLAG_UNCOMPRESSED: u8  = 0x0C;
+pub const FLAG_UNCOMPRESSED: u8 = 0x0C;
 /// 帧类型标志(ZIP | UNCOMPRESSED)
-pub const FLAG_ZIPPED: u8        = FLAG_ZIP | FLAG_UNCOMPRESSED;
+pub const FLAG_ZIPPED: u8 = FLAG_ZIP | FLAG_UNCOMPRESSED;
 /// 一般性标志
-pub const FLAG_GENERIC: u8       = 0x01;
+pub const FLAG_GENERIC: u8 = 0x01;
 
 // ============================================================
 // 测试

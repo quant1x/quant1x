@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: MIT
 
 use csv;
+use reqwest;
 use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
-use reqwest;
 
 /// Integration test: when the local calendar cache is missing, the loader should
 /// download, decode using CalendarDecoder, and write the cache file.
@@ -71,10 +71,19 @@ fn download_and_cache_calendar_creates_file() {
     // Verify cache mtime matches remote Last-Modified (if available) and
     // marker mtime is recent (local completion time). Marker is located next
     // to the calendar file under meta path as `calendar.updated`.
-    let cache_secs = fs::metadata(&path).unwrap().modified().unwrap().duration_since(UNIX_EPOCH).unwrap().as_secs() as i64;
+    let cache_secs = fs::metadata(&path)
+        .unwrap()
+        .modified()
+        .unwrap()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64;
 
     // fetch HEAD to read Last-Modified
-    match reqwest::blocking::Client::new().head("https://finance.sina.com.cn/realstock/company/klc_td_sh.txt").send() {
+    match reqwest::blocking::Client::new()
+        .head("https://finance.sina.com.cn/realstock/company/klc_td_sh.txt")
+        .send()
+    {
         Ok(resp) => {
             if let Some(lm) = resp.headers().get(reqwest::header::LAST_MODIFIED) {
                 if let Ok(lm_str) = lm.to_str() {
@@ -83,7 +92,10 @@ fn download_and_cache_calendar_creates_file() {
                             let remote_secs = dur.as_secs() as i64;
                             println!("remote Last-Modified secs: {}", remote_secs);
                             println!("cache secs: {}", cache_secs);
-                            assert_eq!(cache_secs, remote_secs, "cache mtime does not match remote Last-Modified");
+                            assert_eq!(
+                                cache_secs, remote_secs,
+                                "cache mtime does not match remote Last-Modified"
+                            );
                         }
                     }
                 }
@@ -105,7 +117,10 @@ fn download_and_cache_calendar_creates_file() {
             if let Ok(mtime) = mi.modified() {
                 if let Ok(dur) = mtime.duration_since(UNIX_EPOCH) {
                     let marker_secs = dur.as_secs() as i64;
-                    let now_secs = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i64;
+                    let now_secs = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs() as i64;
                     println!("marker secs: {}  now secs: {}", marker_secs, now_secs);
                     assert!((now_secs - marker_secs) < 10, "marker mtime not recent");
                 }

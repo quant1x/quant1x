@@ -5,25 +5,25 @@
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BarFreq {
-    Freq5Min = 0,    // 5分钟K线
-    Freq15Min = 1,   // 15分钟K线
-    Freq30Min = 2,   // 30分钟K线
-    Freq1Hour = 3,   // 1小时K线
+    Freq5Min = 0,     // 5分钟K线
+    Freq15Min = 1,    // 15分钟K线
+    Freq30Min = 2,    // 30分钟K线
+    Freq1Hour = 3,    // 1小时K线
     FreqDaily = 4,    // 日K线
     FreqWeekly = 5,   // 周K线
     FreqMonthly = 6,  // 月K线
     FreqExHQ1Min = 7, // 扩展市场1分钟
-    Freq1Min = 8,    // 普通1分钟K线
+    Freq1Min = 8,     // 普通1分钟K线
     FreqRIK = 9,      // 日K线(同DAILY)
-    Freq3Month = 10, // 季K线
+    Freq3Month = 10,  // 季K线
     FreqYearly = 11,  // 年K线
 }
 
 use super::super::super::command::*;
 use super::super::super::helpers::{get_datetime_from_u32, int_to_float64};
 use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
-use crate::helpers;
 use crate::base::BinaryStream;
+use crate::helpers;
 
 /// SECURITY_BARS_PRE_REQUEST_MAX = 700
 pub const SECURITY_BARS_PRE_REQUEST_MAX: usize = 700;
@@ -67,12 +67,7 @@ impl SecurityBarsContext {
     /// 构造 K线请求
     ///
     /// 对应 Python `SecurityBarsContext.__init__(exchange, code, category, start, count, is_index)`
-    pub fn new(
-        security_code: &str,
-        category: u16,
-        start: u16,
-        count: u16,
-    ) -> Self {
+    pub fn new(security_code: &str, category: u16, start: u16, count: u16) -> Self {
         Self::with_is_index(security_code, category, start, count, false)
     }
 
@@ -153,10 +148,18 @@ impl SecurityBarsContext {
 }
 
 impl BaseFrame for SecurityBarsContext {
-    fn request_header(&self) -> &RequestHeader { &self.req_header }
-    fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
-    fn response_header(&self) -> &ResponseHeader { &self.resp_header }
-    fn response_header_mut(&mut self) -> &mut ResponseHeader { &mut self.resp_header }
+    fn request_header(&self) -> &RequestHeader {
+        &self.req_header
+    }
+    fn request_header_mut(&mut self) -> &mut RequestHeader {
+        &mut self.req_header
+    }
+    fn response_header(&self) -> &ResponseHeader {
+        &self.resp_header
+    }
+    fn response_header_mut(&mut self) -> &mut ResponseHeader {
+        &mut self.resp_header
+    }
 
     fn serialize_request_body(&mut self) -> Vec<u8> {
         // 对应 Python: struct.pack('<H 6s H H H H', market, code, category, i, start, count) + padding
@@ -171,7 +174,10 @@ impl BaseFrame for SecurityBarsContext {
         payload.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
+    fn deserialize_response_body(
+        &mut self,
+        data: &[u8],
+    ) -> Result<(), crate::base::DeserializeError> {
         self.list.clear();
         self.count = 0;
 
@@ -193,8 +199,7 @@ impl BaseFrame for SecurityBarsContext {
             if cat < 4 || cat == 7 || cat == 8 {
                 let zipday = bs.get_u16()? as u32;
                 let tminutes = bs.get_u16()?;
-                let (y, m, d, hh, mm) =
-                    get_datetime_from_u32(cat as i32, zipday, tminutes);
+                let (y, m, d, hh, mm) = get_datetime_from_u32(cat as i32, zipday, tminutes);
                 e.year = y;
                 e.month = m;
                 e.day = d;
@@ -315,8 +320,8 @@ impl SecurityBar {
     }
 }
 
-/// SecurityBarsResponse 已合并到 SecurityBarsContext 中. 
-/// 保留类型别名以兼容旧代码. 
+/// SecurityBarsResponse 已合并到 SecurityBarsContext 中.
+/// 保留类型别名以兼容旧代码.
 pub type SecurityBarsResponse = SecurityBarsContext;
 
 #[cfg(test)]

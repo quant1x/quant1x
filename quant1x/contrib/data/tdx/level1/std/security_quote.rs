@@ -1,8 +1,8 @@
 // Copyright (C) 2026 Quant1X Team
 // SPDX-License-Identifier: MIT
 
-use crate::market;
 use crate::base::BinaryStream;
+use crate::market;
 
 use super::super::super::command::*;
 use super::super::super::helpers;
@@ -133,10 +133,18 @@ fn format_timestamp_from_i64(stamp: i64) -> String {
 }
 
 impl BaseFrame for SecurityQuoteContext {
-    fn request_header(&self) -> &RequestHeader { &self.req_header }
-    fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
-    fn response_header(&self) -> &ResponseHeader { &self.resp_header }
-    fn response_header_mut(&mut self) -> &mut ResponseHeader { &mut self.resp_header }
+    fn request_header(&self) -> &RequestHeader {
+        &self.req_header
+    }
+    fn request_header_mut(&mut self) -> &mut RequestHeader {
+        &mut self.req_header
+    }
+    fn response_header(&self) -> &ResponseHeader {
+        &self.resp_header
+    }
+    fn response_header_mut(&mut self) -> &mut ResponseHeader {
+        &mut self.resp_header
+    }
 
     fn serialize_request_body(&mut self) -> Vec<u8> {
         let count = self.stock_list.len();
@@ -155,7 +163,10 @@ impl BaseFrame for SecurityQuoteContext {
         buf.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
+    fn deserialize_response_body(
+        &mut self,
+        data: &[u8],
+    ) -> Result<(), crate::base::DeserializeError> {
         self.quotes.clear();
         self.count = 0;
         let mut bs = BinaryStream::from_vec(data.to_vec());
@@ -177,7 +188,11 @@ impl BaseFrame for SecurityQuoteContext {
             ele.low = ((price_base + bs.varint_decode()?) as f64) / base_unit;
 
             let rb0 = bs.varint_decode()?;
-            let _server_time = if rb0 > 0 { format_timestamp_from_i64(rb0) } else { "0".to_string() };
+            let _server_time = if rb0 > 0 {
+                format_timestamp_from_i64(rb0)
+            } else {
+                "0".to_string()
+            };
             let _rb1 = bs.varint_decode()?;
 
             ele.vol = bs.varint_decode()?;

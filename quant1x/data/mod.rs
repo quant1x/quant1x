@@ -28,7 +28,6 @@ pub use schema::*;
 pub mod datasource;
 pub use datasource::*;
 
-
 pub mod status;
 pub use status::*;
 
@@ -45,10 +44,13 @@ macro_rules! apply_forward_adjustment_for_event {
             // nothing to do
         } else {
             let last_day = $bars.last().unwrap().date.clone();
-            let ts_last_day = crate::data::meta::Timestamp::parse(&last_day).unwrap_or(crate::data::meta::Timestamp::now());
+            let ts_last_day = crate::data::meta::Timestamp::parse(&last_day)
+                .unwrap_or(crate::data::meta::Timestamp::now());
             let ts_last_day =
-                crate::data::meta::Timestamp::pre_market_time_from_current(&ts_last_day).unwrap_or(ts_last_day);
-            let last_day_next = crate::data::meta::calendar::next_trading_day(ts_last_day).only_date();
+                crate::data::meta::Timestamp::pre_market_time_from_current(&ts_last_day)
+                    .unwrap_or(ts_last_day);
+            let last_day_next =
+                crate::data::meta::calendar::next_trading_day(ts_last_day).only_date();
             let start_date_only = $start_date.only_date();
 
             let xdxr_infos: Vec<crate::contrib::data::tdx::standard::XdxrInfo> = $dividends

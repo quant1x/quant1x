@@ -1,14 +1,16 @@
 // Copyright (C) 2026 Quant1X Team
 // SPDX-License-Identifier: MIT
 
-use crate::data::meta::instrument::{Instrument, InstrumentType};
 use crate::base::BinaryStream;
+use crate::data::meta::instrument::{Instrument, InstrumentType};
 use encoding_rs::GBK;
 
-use super::super::command::{EXT_INSTRUMENT_COUNT, EXT_INSTRUMENT_INFO, EXT_SYNCHRONIZE, FLAG_GENERIC};
-use super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
-use super::super::market::find_exchange_by_market_and_category;
+use super::super::command::{
+    EXT_INSTRUMENT_COUNT, EXT_INSTRUMENT_INFO, EXT_SYNCHRONIZE, FLAG_GENERIC,
+};
 use super::super::helpers::get_sequence_id;
+use super::super::market::find_exchange_by_market_and_category;
+use super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 
 // ============================================================
 // SynchronizeContext — 扩展行情握手请求
@@ -55,7 +57,10 @@ impl BaseFrame for ExtSynchronizeRequest {
         padding
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
+    fn deserialize_response_body(
+        &mut self,
+        data: &[u8],
+    ) -> Result<(), crate::base::DeserializeError> {
         // SynchronizeContext.deserialize_response_body:
         //   第一个字节是 result_code
         if data.is_empty() {
@@ -119,7 +124,10 @@ impl BaseFrame for InstrumentCountRequest {
         Vec::new()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
+    fn deserialize_response_body(
+        &mut self,
+        data: &[u8],
+    ) -> Result<(), crate::base::DeserializeError> {
         // InstrumentCountContext.deserialize_response_body:
         //   (name, reversed1, reversed2, num, reversed3, reversed4) = struct.unpack("<11s5I", data[:31])
         //   self.reply = {"source": name, "count": num}
@@ -263,7 +271,6 @@ impl BaseFrame for InstrumentInfoRequest {
         Ok(())
     }
 }
-
 
 fn decode_gbk_null_trimmed(buf: &[u8]) -> String {
     let nul = buf.iter().position(|&b| b == 0).unwrap_or(buf.len());

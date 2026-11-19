@@ -14,7 +14,7 @@ use crate::runtime::RollingOnce;
 use super::calendar;
 use super::exchange::Exchange;
 use super::region::Region;
-use super::timestamp::{Timestamp, MILLISECONDS_PER_MINUTE};
+use super::timestamp::{MILLISECONDS_PER_MINUTE, Timestamp};
 use crate::config::{PRE_MARKET_HOUR, PRE_MARKET_MINUTE};
 
 // ==========================================
@@ -271,20 +271,10 @@ impl TimeRange {
 
         let begin = Timestamp::parse_time(begin_str)
             .unwrap_or_else(|_| panic!("无法解析开始时间: {}", begin_str))
-            .offset(
-                zone_offset_hours,
-                0,
-                0,
-                0,
-            );
+            .offset(zone_offset_hours, 0, 0, 0);
         let end = Timestamp::parse_time(end_str)
             .unwrap_or_else(|_| panic!("无法解析结束时间: {}", end_str))
-            .offset(
-                zone_offset_hours,
-                0,
-                0,
-                0,
-            );
+            .offset(zone_offset_hours, 0, 0, 0);
 
         let (begin, end) = if begin > end {
             (end, begin)
@@ -301,7 +291,12 @@ impl TimeRange {
     }
 
     /// 直接从两个 Timestamp 构造 TimeRange
-    pub fn from_timestamps(begin: Timestamp, end: Timestamp, status: TimeStatus, reg: Region) -> Self {
+    pub fn from_timestamps(
+        begin: Timestamp,
+        end: Timestamp,
+        status: TimeStatus,
+        reg: Region,
+    ) -> Self {
         let (begin, end) = if begin > end {
             (end, begin)
         } else {
@@ -455,21 +450,15 @@ impl TradingSession {
     /// 更新交易时段的时间边界
     pub fn update_time_bounds(&mut self) {
         if self.sessions.is_empty() {
-            self.earliest_start =
-                Timestamp::parse_time("23:59:59").unwrap_or(Timestamp::zero());
-            self.latest_end =
-                Timestamp::parse_time("00:00:00").unwrap_or(Timestamp::zero());
-            self.closing_time =
-                Timestamp::parse_time("00:00:00").unwrap_or(Timestamp::zero());
+            self.earliest_start = Timestamp::parse_time("23:59:59").unwrap_or(Timestamp::zero());
+            self.latest_end = Timestamp::parse_time("00:00:00").unwrap_or(Timestamp::zero());
+            self.closing_time = Timestamp::parse_time("00:00:00").unwrap_or(Timestamp::zero());
             return;
         }
 
-        self.earliest_start =
-            Timestamp::parse_time("23:59:59").unwrap_or(Timestamp::zero());
-        self.latest_end =
-            Timestamp::parse_time("00:00:00").unwrap_or(Timestamp::zero());
-        self.closing_time =
-            Timestamp::parse_time("00:00:00").unwrap_or(Timestamp::zero());
+        self.earliest_start = Timestamp::parse_time("23:59:59").unwrap_or(Timestamp::zero());
+        self.latest_end = Timestamp::parse_time("00:00:00").unwrap_or(Timestamp::zero());
+        self.closing_time = Timestamp::parse_time("00:00:00").unwrap_or(Timestamp::zero());
 
         for session in &self.sessions {
             if session.begin < self.earliest_start {
@@ -600,7 +589,10 @@ pub fn init_cn_session() -> TradingSession {
     // 13:00~14:57, 连续竞价
     let tr5 = TimeRange::new("13:00:00 ~ 14:57:00", TS_TRADING);
     // 14:57~15:00, 收盘集合竞价
-    let tr6 = TimeRange::new("14:57:00 ~ 15:00:00", TS_AUCTION_MATCHING_TO_CLOSING | PERM_OPEN);
+    let tr6 = TimeRange::new(
+        "14:57:00 ~ 15:00:00",
+        TS_AUCTION_MATCHING_TO_CLOSING | PERM_OPEN,
+    );
 
     TradingSession::new(vec![tr1, tr2, tr3, tr4, tr5, tr6])
 }
@@ -630,7 +622,9 @@ pub fn init_hk_session() -> TradingSession {
     // 11. 收盘竞价 - 随机收盘 (16:06-16:10)
     let tr11 = TimeRange::new("16:06:00 ~ 16:10:00", TS_AUCTION_MATCHING_TO_CLOSING);
 
-    TradingSession::new(vec![tr1, tr2, tr3, tr4, tr5, tr6, tr7, tr8, tr9, tr10, tr11])
+    TradingSession::new(vec![
+        tr1, tr2, tr3, tr4, tr5, tr6, tr7, tr8, tr9, tr10, tr11,
+    ])
 }
 
 /// 初始化美股交易时段
@@ -682,7 +676,10 @@ pub fn latest_session_by_exchange(exchange: Exchange) -> TradingSession {
     match map.get(&key) {
         Some(session) => session.clone(),
         None => {
-            log::warn!("Unsupported exchange: {:?}, using default CN session", exchange);
+            log::warn!(
+                "Unsupported exchange: {:?}, using default CN session",
+                exchange
+            );
             default_trading_session()
         }
     }
@@ -838,7 +835,9 @@ mod tests {
         assert!(PERM_CONTINUOUS_TRADING.can_market_order());
         assert!(PERM_CONTINUOUS_TRADING.can_limit_order());
         assert!(PERM_CONTINUOUS_TRADING.can_match());
-        assert!(PermissionExt::is_continuous_trading(&PERM_CONTINUOUS_TRADING));
+        assert!(PermissionExt::is_continuous_trading(
+            &PERM_CONTINUOUS_TRADING
+        ));
         assert!(!PermissionExt::is_continuous_trading(&PERM_CLOSED));
     }
 
@@ -927,7 +926,10 @@ mod tests {
 
         // 休市 (午间)
         let ts_lunch = Timestamp::parse_time("12:00:00").unwrap();
-        assert_eq!(session.check_status(Some(&ts_lunch)), TS_EXCHANGE_HALT_TRADING);
+        assert_eq!(
+            session.check_status(Some(&ts_lunch)),
+            TS_EXCHANGE_HALT_TRADING
+        );
 
         // 盘前
         let ts_pre = Timestamp::parse_time("09:00:00").unwrap();
@@ -1004,6 +1006,11 @@ mod tests {
         // 使用一个周末日期来测试假日检测
         let rs = check_trading_timestamp(Exchange::SSE, None);
         // 至少应该有一个非 None 的状态
-        assert!(rs.status == TS_CLOSED || rs.is_holiday || rs.before_init_time || rs.before_last_trade_day);
+        assert!(
+            rs.status == TS_CLOSED
+                || rs.is_holiday
+                || rs.before_init_time
+                || rs.before_last_trade_day
+        );
     }
 }

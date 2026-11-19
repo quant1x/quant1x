@@ -51,10 +51,18 @@ impl BlockFileMetaContext {
 }
 
 impl BaseFrame for BlockFileMetaContext {
-    fn request_header(&self) -> &RequestHeader { &self.req_header }
-    fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
-    fn response_header(&self) -> &ResponseHeader { &self.resp_header }
-    fn response_header_mut(&mut self) -> &mut ResponseHeader { &mut self.resp_header }
+    fn request_header(&self) -> &RequestHeader {
+        &self.req_header
+    }
+    fn request_header_mut(&mut self) -> &mut RequestHeader {
+        &mut self.req_header
+    }
+    fn response_header(&self) -> &ResponseHeader {
+        &self.resp_header
+    }
+    fn response_header_mut(&mut self) -> &mut ResponseHeader {
+        &mut self.resp_header
+    }
 
     fn serialize_request_body(&mut self) -> Vec<u8> {
         let filename_bytes = self.filename.as_bytes();
@@ -66,7 +74,10 @@ impl BaseFrame for BlockFileMetaContext {
         buf.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
+    fn deserialize_response_body(
+        &mut self,
+        data: &[u8],
+    ) -> Result<(), crate::base::DeserializeError> {
         // Size(4) + C1(1) + HashValue(32) + C2(1) = 38 bytes
         if data.len() < 38 {
             return Ok(());

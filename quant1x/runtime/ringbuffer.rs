@@ -5,14 +5,14 @@
 use std::cell::UnsafeCell;
 use std::hint;
 use std::mem::MaybeUninit;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
 use std::time::Duration;
 
 /// 单个槽位(缓存行对齐)
 ///
-/// `Slot` 包含序列号用于确认读写阶段, 以及一个未初始化的数据存储区. 
+/// `Slot` 包含序列号用于确认读写阶段, 以及一个未初始化的数据存储区.
 #[repr(align(64))]
 struct Slot<T> {
     /// 序列号, 用于判断该槽位处于可读/可写的哪个阶段
@@ -55,7 +55,7 @@ impl AlignedAtomicUsize {
 
 /// Vyukov 有界 MPMC 队列(多生产者, 多消费者), 容量为 2 的幂
 ///
-/// 该实现基于无锁算法, 使用槽位序号做状态管理以支持并发推入/弹出. 
+/// 该实现基于无锁算法, 使用槽位序号做状态管理以支持并发推入/弹出.
 pub struct Queue<T> {
     /// 槽位数组, 长度为 capacity(向上取整到 2 的幂)
     buffer: Vec<Slot<T>>,
@@ -122,7 +122,7 @@ impl<T> Queue<T> {
 
     /// 向队列推入一个元素, 成功返回 Ok, 队列已满返回 Err
     ///
-    /// 该操作为无锁设计: 通过比较序号判断槽位是否空闲, 再通过 CAS 争夺写入权限. 
+    /// 该操作为无锁设计: 通过比较序号判断槽位是否空闲, 再通过 CAS 争夺写入权限.
     pub fn push(&self, value: T) -> Result<(), ()> {
         let mut backoff = 0u32;
         loop {
@@ -158,7 +158,7 @@ impl<T> Queue<T> {
 
     /// 从队列弹出一个元素, 成功返回 Ok(value), 当队列关闭且无数据时返回 Err
     ///
-    /// 该操作为无锁设计: 通过比较序号判断槽位是否可读, 再通过 CAS 争夺读取权限. 
+    /// 该操作为无锁设计: 通过比较序号判断槽位是否可读, 再通过 CAS 争夺读取权限.
     pub fn pop(&self) -> Result<T, ()> {
         let mut backoff = 0u32;
         loop {
@@ -180,8 +180,8 @@ impl<T> Queue<T> {
                     continue;
                 }
             } else if seq < pos + 1 {
-                // 如果序号落后, 说明当前没有可读数据. 
-                // 若队列已被关闭, 则返回 Err 表示没有更多元素可读. 
+                // 如果序号落后, 说明当前没有可读数据.
+                // 若队列已被关闭, 则返回 Err 表示没有更多元素可读.
                 if self.closed.load(Ordering::Acquire) != 0 {
                     return Err(());
                 }
@@ -202,7 +202,7 @@ impl<T> Queue<T> {
 
     /// 非阻塞推入: 队列已满或竞争失败时立即返回 Err, 不会自旋等待空位
     ///
-    /// 与 [`Queue::push`] 的区别在于满队列/竞争时快速失败而非内部退避. 
+    /// 与 [`Queue::push`] 的区别在于满队列/竞争时快速失败而非内部退避.
     pub fn try_push(&self, value: T) -> Result<(), ()> {
         // try_ 契约: 竞争失败最多以一次 spin_loop 吸收纳秒级瞬态并重试一次,
         // 仍不可行立即返回 Err; 绝不 yield/sleep, 阻塞等待策略由调用者控制
@@ -246,7 +246,7 @@ impl<T> Queue<T> {
 
     /// 非阻塞弹出: 队列为空或竞争失败时立即返回 Err, 不会自旋等待数据
     ///
-    /// 与 [`Queue::pop`] 的区别在于空队列/竞争时快速失败而非内部退避. 
+    /// 与 [`Queue::pop`] 的区别在于空队列/竞争时快速失败而非内部退避.
     pub fn try_pop(&self) -> Result<T, ()> {
         // try_ 契约: 竞争失败最多以一次 spin_loop 吸收纳秒级瞬态并重试一次,
         // 仍不可行立即返回 Err; 绝不 yield/sleep, 阻塞等待策略由调用者控制
@@ -345,12 +345,14 @@ mod tests {
         for _ in 0..NUM_CONS {
             let q2 = q.clone();
             let c = consumed.clone();
-            consumers.push(std::thread::spawn(move || loop {
-                match q2.pop() {
-                    Ok(_v) => {
-                        c.fetch_add(1, Ordering::Relaxed);
+            consumers.push(std::thread::spawn(move || {
+                loop {
+                    match q2.pop() {
+                        Ok(_v) => {
+                            c.fetch_add(1, Ordering::Relaxed);
+                        }
+                        Err(_) => break,
                     }
-                    Err(_) => break,
                 }
             }));
         }
@@ -406,12 +408,14 @@ mod tests {
         for _ in 0..NUM_CONSUMERS {
             let q2 = q.clone();
             let c2 = consumed.clone();
-            consumers.push(std::thread::spawn(move || loop {
-                match q2.pop() {
-                    Ok(_) => {
-                        c2.fetch_add(1, Ordering::Relaxed);
+            consumers.push(std::thread::spawn(move || {
+                loop {
+                    match q2.pop() {
+                        Ok(_) => {
+                            c2.fetch_add(1, Ordering::Relaxed);
+                        }
+                        Err(_) => break,
                     }
-                    Err(_) => break,
                 }
             }));
         }

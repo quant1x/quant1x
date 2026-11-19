@@ -3,10 +3,10 @@
 
 //! ID 生成器 (对应 Go Generator)
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
-use super::id::{Id, EPOCH_MS, PAYLOAD_BITS};
+use super::id::{EPOCH_MS, Id, PAYLOAD_BITS};
 use super::{Error, Hlc, Queue};
 
 /// ID 生成器: 由 HLC 提供 (physical, seq), 拼装节点编号生成 64 位 ID
@@ -42,11 +42,9 @@ impl Generator {
     pub fn next(&self) -> Result<Id, Error> {
         let (physical, sequence) = self.hlc.now()?;
         let elapsed = Id::check_epoch(physical - EPOCH_MS)?;
-        Ok(Id(
-            (elapsed as u64) << PAYLOAD_BITS
-                | (self.node_id as u64) << self.seq_bits
-                | (sequence as u64) & ((1u64 << self.seq_bits) - 1),
-        ))
+        Ok(Id((elapsed as u64) << PAYLOAD_BITS
+            | (self.node_id as u64) << self.seq_bits
+            | (sequence as u64) & ((1u64 << self.seq_bits) - 1)))
     }
 
     /// 把发号器接入 ID 队列: 持续发号并写入 `queue`, 队列满时阻塞等待消费腾位,

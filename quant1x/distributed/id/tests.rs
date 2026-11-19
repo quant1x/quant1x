@@ -5,7 +5,7 @@
 
 use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
-use std::sync::{mpsc, Arc};
+use std::sync::{Arc, mpsc};
 use std::time::Duration;
 
 use super::*;
@@ -25,7 +25,10 @@ fn test_default_generator() {
     let generator = Generator::new(1, hlc.clone()).unwrap();
     let first = generator.next().unwrap();
     let second = generator.next().unwrap();
-    assert!(second > first, "IDs are not increasing: {first} -> {second}");
+    assert!(
+        second > first,
+        "IDs are not increasing: {first} -> {second}"
+    );
     assert_eq!(first.node_id(generator.worker_bits()), 1);
 }
 

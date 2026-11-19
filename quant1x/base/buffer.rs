@@ -280,7 +280,7 @@ mod tests {
         s.push_u8(0x05);
         // negative small: sign bit 0x40
         s.push_u8(0x40 | 0x03); // -3
-                                // multi-byte: set continuation bits
+        // multi-byte: set continuation bits
         s.push_u8(0x80 | 0x01); // continuation
         s.push_u8(0x02);
 

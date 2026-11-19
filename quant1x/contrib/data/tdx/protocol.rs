@@ -58,7 +58,12 @@ impl RequestHeader {
     pub fn to_string(&self) -> String {
         format!(
             "RequestHeader(frame_type: {}, sequence_id: {}, packet_ctrl: {}, body_wire_len: {}, body_raw_len: {}, command: {:?})",
-            self.frame_type, self.sequence_id, self.packet_ctrl, self.body_wire_len, self.body_raw_len, self.command
+            self.frame_type,
+            self.sequence_id,
+            self.packet_ctrl,
+            self.body_wire_len,
+            self.body_raw_len,
+            self.command
         )
     }
 }
@@ -111,12 +116,10 @@ impl ResponseHeader {
         self.body_raw_len = bs.get_u16()?;
 
         // 尝试查找已知命令, 未知则用 UNKNOWN
-        self.command = Command::from_value(cmd_value)
-            .copied()
-            .unwrap_or_else(|| {
-                log::warn!("未知的命令值 0x{:04x}", cmd_value);
-                super::command::CMD_UNKNOWN
-            });
+        self.command = Command::from_value(cmd_value).copied().unwrap_or_else(|| {
+            log::warn!("未知的命令值 0x{:04x}", cmd_value);
+            super::command::CMD_UNKNOWN
+        });
 
         Ok(())
     }
@@ -124,7 +127,13 @@ impl ResponseHeader {
     pub fn to_string(&self) -> String {
         format!(
             "ResponseHeader(magic_number: {}, frame_type: {}, sequence_id: {}, packet_ctrl: {}, command: {:?}, body_wire_len: {}, body_raw_len: {})",
-            self.magic_number, self.frame_type, self.sequence_id, self.packet_ctrl, self.command, self.body_wire_len, self.body_raw_len
+            self.magic_number,
+            self.frame_type,
+            self.sequence_id,
+            self.packet_ctrl,
+            self.command,
+            self.body_wire_len,
+            self.body_raw_len
         )
     }
 }
@@ -135,7 +144,7 @@ impl ResponseHeader {
 
 /// 消息基类, 对应 Python `BaseFrame`
 ///
-/// 包含请求头和响应头, 子类需实现 `serialize_request_body` 和 `deserialize_response_body`. 
+/// 包含请求头和响应头, 子类需实现 `serialize_request_body` 和 `deserialize_response_body`.
 pub trait BaseFrame {
     fn request_header(&self) -> &RequestHeader;
     fn request_header_mut(&mut self) -> &mut RequestHeader;
@@ -146,7 +155,10 @@ pub trait BaseFrame {
     fn serialize_request_body(&mut self) -> Vec<u8>;
 
     /// 反序列化响应体
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError>;
+    fn deserialize_response_body(
+        &mut self,
+        data: &[u8],
+    ) -> Result<(), crate::base::DeserializeError>;
 
     /// 完整序列化请求(头 + 体)
     fn serialize_request(&mut self) -> Vec<u8> {
@@ -161,7 +173,10 @@ pub trait BaseFrame {
     }
 
     /// 反序列化响应头
-    fn deserialize_response_header(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
+    fn deserialize_response_header(
+        &mut self,
+        data: &[u8],
+    ) -> Result<(), crate::base::DeserializeError> {
         self.response_header_mut().deserialize(data)
     }
 
@@ -184,7 +199,7 @@ pub trait BaseFrame {
 ///
 /// 对应 Python `_recv_exact`
 ///
-/// 兼容阻塞和非阻塞 socket: 遇到 WouldBlock 时短暂等待后重试. 
+/// 兼容阻塞和非阻塞 socket: 遇到 WouldBlock 时短暂等待后重试.
 pub fn recv_exact<R: Read>(reader: &mut R, n: usize) -> std::io::Result<Vec<u8>> {
     let mut buf = vec![0u8; n];
     let mut offset = 0;
@@ -227,7 +242,7 @@ fn unzip(body: Vec<u8>, unzipped_size: usize) -> std::io::Result<Vec<u8>> {
 
 /// 泛型 process 函数, 对应 Python `transact_message_sync`
 ///
-/// 发送请求, 读取响应头, 按需解压响应体, 解析响应体. 
+/// 发送请求, 读取响应头, 按需解压响应体, 解析响应体.
 pub fn process_level1<M: BaseFrame, R: Read>(
     reader: &mut R,
     writer: &mut dyn std::io::Write,
@@ -247,8 +262,14 @@ pub fn transact_message_sync<M: BaseFrame, T: Read + Write>(
 
     // 1. 发送请求
     let req_buf = msg.serialize_request();
-    log::debug!("transact_message_sync: request={}", msg.request_header().to_string());
-    log::debug!("transact_message_sync: req_buf hex={}", hex::encode(&req_buf));
+    log::debug!(
+        "transact_message_sync: request={}",
+        msg.request_header().to_string()
+    );
+    log::debug!(
+        "transact_message_sync: req_buf hex={}",
+        hex::encode(&req_buf)
+    );
     stream
         .write_all(&req_buf)
         .map_err(|e| crate::base::DeserializeError::Other(e.to_string()))?;
@@ -266,7 +287,10 @@ pub fn transact_message_sync<M: BaseFrame, T: Read + Write>(
         return Ok(());
     }
 
-    log::debug!("transact_message_sync: response_header={}", msg.response_header().to_string());
+    log::debug!(
+        "transact_message_sync: response_header={}",
+        msg.response_header().to_string()
+    );
 
     // 5. 读取响应体
     let resp_body_bytes = recv_exact(stream, msg.response_zip_size())
@@ -301,7 +325,10 @@ fn process_level1_impl<M: BaseFrame, R: Read>(
 
     // 1. 发送请求
     let req_buf = msg.serialize_request();
-    log::debug!("process_level1: request={}", msg.request_header().to_string());
+    log::debug!(
+        "process_level1: request={}",
+        msg.request_header().to_string()
+    );
     log::debug!("process_level1: req_buf hex={}", hex::encode(&req_buf));
     writer
         .write_all(&req_buf)
@@ -309,7 +336,10 @@ fn process_level1_impl<M: BaseFrame, R: Read>(
 
     // 2. 读取 16 字节响应头
     let resp_header_len = msg.response_header().byte_size();
-    log::debug!("process_level1: response_header.byte_size={}", resp_header_len);
+    log::debug!(
+        "process_level1: response_header.byte_size={}",
+        resp_header_len
+    );
     let resp_header_bytes = recv_exact(reader, resp_header_len)
         .map_err(|e| crate::base::DeserializeError::Other(e.to_string()))?;
 
@@ -321,7 +351,10 @@ fn process_level1_impl<M: BaseFrame, R: Read>(
         return Ok(());
     }
 
-    log::debug!("process_level1: response_header={}", msg.response_header().to_string());
+    log::debug!(
+        "process_level1: response_header={}",
+        msg.response_header().to_string()
+    );
 
     // 5. 读取响应体
     let resp_body_bytes = recv_exact(reader, msg.response_zip_size())
@@ -360,8 +393,8 @@ use std::time::Duration;
 
 use crate::io::operation_handler::NetworkOperationHandler;
 
-use super::level1::std::hello::{StdLoginContext, UpgradeTipContext};
 use super::level1::std::heartbeat::HeartbeatContext;
+use super::level1::std::hello::{StdLoginContext, UpgradeTipContext};
 
 pub struct StandardProtocolHandler;
 
@@ -372,13 +405,24 @@ impl NetworkOperationHandler for StandardProtocolHandler {
         match transact_message_sync(stream, &mut req1) {
             Ok(()) => {
                 if req1.info.trim().is_empty() {
-                    log::error!("StandardProtocolHandler::handshake StdLoginContext validation failed: empty info");
-                    return Err(std::io::Error::new(std::io::ErrorKind::Other, "StdLoginContext response invalid or empty"));
+                    log::error!(
+                        "StandardProtocolHandler::handshake StdLoginContext validation failed: empty info"
+                    );
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        "StdLoginContext response invalid or empty",
+                    ));
                 }
             }
             Err(e) => {
-                log::error!("StandardProtocolHandler::handshake StdLoginContext failed: {}", e);
-                return Err(std::io::Error::new(std::io::ErrorKind::Other, e.to_string()));
+                log::error!(
+                    "StandardProtocolHandler::handshake StdLoginContext failed: {}",
+                    e
+                );
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    e.to_string(),
+                ));
             }
         }
 
@@ -387,13 +431,24 @@ impl NetworkOperationHandler for StandardProtocolHandler {
         match transact_message_sync(stream, &mut req2) {
             Ok(()) => {
                 if req2.info.trim().is_empty() {
-                    log::error!("StandardProtocolHandler::handshake UpgradeTipContext validation failed: empty info");
-                    return Err(std::io::Error::new(std::io::ErrorKind::Other, "UpgradeTipContext response invalid or empty"));
+                    log::error!(
+                        "StandardProtocolHandler::handshake UpgradeTipContext validation failed: empty info"
+                    );
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        "UpgradeTipContext response invalid or empty",
+                    ));
                 }
             }
             Err(e) => {
-                log::error!("StandardProtocolHandler::handshake UpgradeTipContext failed: {}", e);
-                return Err(std::io::Error::new(std::io::ErrorKind::Other, e.to_string()));
+                log::error!(
+                    "StandardProtocolHandler::handshake UpgradeTipContext failed: {}",
+                    e
+                );
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    e.to_string(),
+                ));
             }
         }
 
@@ -435,7 +490,10 @@ impl NetworkOperationHandler for ExtensionProtocolHandler {
                 std::io::ErrorKind::Other,
                 "ExtensionProtocolHandler: synchronize failed (success=false)",
             )),
-            Err(e) => Err(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())),
+            Err(e) => Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                e.to_string(),
+            )),
         }
     }
 
@@ -458,8 +516,8 @@ impl NetworkOperationHandler for ExtensionProtocolHandler {
 
 #[cfg(test)]
 mod tests {
+    use super::super::command::{FLAG_UNCOMPRESSED, STD_HEARTBEAT};
     use super::*;
-    use super::super::command::{STD_HEARTBEAT, FLAG_UNCOMPRESSED};
 
     #[test]
     fn test_request_header_byte_size() {
@@ -478,20 +536,23 @@ mod tests {
         assert_eq!(data[5], 0x01);
         // command value (little-endian)
         let cmd_bytes = &data[10..12];
-        assert_eq!(u16::from_le_bytes([cmd_bytes[0], cmd_bytes[1]]), STD_HEARTBEAT.value);
+        assert_eq!(
+            u16::from_le_bytes([cmd_bytes[0], cmd_bytes[1]]),
+            STD_HEARTBEAT.value
+        );
     }
 
     #[test]
     fn test_response_header_deserialize() {
         // 构造一个简单的响应头: magic=0x11223344, frame_type=0x0C, seq_id=42, packet_ctrl=0, cmd=0x0004, wire=100, raw=200
         let mut buf = Vec::new();
-        buf.extend_from_slice(&0x11223344u32.to_le_bytes());  // magic_number
-        buf.push(0x0C);                                        // frame_type
-        buf.extend_from_slice(&42u32.to_le_bytes());           // sequence_id
-        buf.push(0x00);                                        // packet_ctrl
-        buf.extend_from_slice(&0x0004u16.to_le_bytes());       // command = STD_HEARTBEAT
-        buf.extend_from_slice(&100u16.to_le_bytes());          // body_wire_len
-        buf.extend_from_slice(&200u16.to_le_bytes());          // body_raw_len
+        buf.extend_from_slice(&0x11223344u32.to_le_bytes()); // magic_number
+        buf.push(0x0C); // frame_type
+        buf.extend_from_slice(&42u32.to_le_bytes()); // sequence_id
+        buf.push(0x00); // packet_ctrl
+        buf.extend_from_slice(&0x0004u16.to_le_bytes()); // command = STD_HEARTBEAT
+        buf.extend_from_slice(&100u16.to_le_bytes()); // body_wire_len
+        buf.extend_from_slice(&200u16.to_le_bytes()); // body_raw_len
 
         let mut hdr = ResponseHeader::new();
         hdr.deserialize(&buf).unwrap();
@@ -511,7 +572,7 @@ mod tests {
         buf.push(0);
         buf.extend_from_slice(&0u32.to_le_bytes());
         buf.push(0);
-        buf.extend_from_slice(&0xFFFFu16.to_le_bytes());  // unknown command
+        buf.extend_from_slice(&0xFFFFu16.to_le_bytes()); // unknown command
         buf.extend_from_slice(&0u16.to_le_bytes());
         buf.extend_from_slice(&0u16.to_le_bytes());
 

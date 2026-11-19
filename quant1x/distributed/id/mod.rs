@@ -18,7 +18,7 @@ mod crc32;
 pub use error::Error;
 pub use generator::Generator;
 pub use hlc::{Hlc, HlcBuilder};
-pub use id::{Id, EPOCH_MS};
+pub use id::{EPOCH_MS, Id};
 pub use queue::Queue;
 pub use state_store::PersistentState;
 

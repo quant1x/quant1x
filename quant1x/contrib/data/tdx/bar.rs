@@ -4,10 +4,10 @@
 use std::sync::Arc;
 
 use crate::data::adapter::DataAdapter;
+use crate::data::meta::Timestamp;
 use crate::data::meta::calendar::next_trading_day;
 use crate::data::meta::exchange::Exchange;
 use crate::data::meta::instrument::{Instrument, InstrumentType};
-use crate::data::meta::Timestamp;
 use crate::data::schema::{Bar, CumulativeAdjustment, XdxrInfo};
 use crate::data::{BaseKLine, DEFAULT_DATA_PROVIDER};
 
@@ -417,10 +417,7 @@ pub fn init() {
 /// 与 Python get_cross_section_forward_adjusted_bars(inst, as_of_date) 对齐:
 ///   - Python 先调用 checkout_bar_raw(inst) 获取原始数据并复权
 ///   - Rust 版本通过 DataKLine adapter 确保缓存存在后再加载
-pub fn get_cross_section_forward_adjusted_bars(
-    inst: &Instrument,
-    as_of_date: &str,
-) -> Vec<Bar> {
+pub fn get_cross_section_forward_adjusted_bars(inst: &Instrument, as_of_date: &str) -> Vec<Bar> {
     let filename = get_bar_filename(inst);
     log::debug!(
         "[bar] loading forward adjusted bars for {} from {}",

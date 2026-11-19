@@ -56,10 +56,18 @@ impl HistoryMinuteTimeRequest {
 }
 
 impl BaseFrame for HistoryMinuteTimeRequest {
-    fn request_header(&self) -> &RequestHeader { &self.req_header }
-    fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
-    fn response_header(&self) -> &ResponseHeader { &self.resp_header }
-    fn response_header_mut(&mut self) -> &mut ResponseHeader { &mut self.resp_header }
+    fn request_header(&self) -> &RequestHeader {
+        &self.req_header
+    }
+    fn request_header_mut(&mut self) -> &mut RequestHeader {
+        &mut self.req_header
+    }
+    fn response_header(&self) -> &ResponseHeader {
+        &self.resp_header
+    }
+    fn response_header_mut(&mut self) -> &mut ResponseHeader {
+        &mut self.resp_header
+    }
 
     fn serialize_request_body(&mut self) -> Vec<u8> {
         let mut buf = BinaryStream::new();
@@ -69,7 +77,10 @@ impl BaseFrame for HistoryMinuteTimeRequest {
         buf.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
+    fn deserialize_response_body(
+        &mut self,
+        data: &[u8],
+    ) -> Result<(), crate::base::DeserializeError> {
         self.list.clear();
         if data.len() < 2 {
             return Ok(());
@@ -80,7 +91,10 @@ impl BaseFrame for HistoryMinuteTimeRequest {
             return Ok(());
         }
 
-        let base_unit = helpers::default_base_unit(self.market as i32, unsafe { std::str::from_utf8_unchecked(&self.code) }.trim_end_matches('\0'));
+        let base_unit = helpers::default_base_unit(
+            self.market as i32,
+            unsafe { std::str::from_utf8_unchecked(&self.code) }.trim_end_matches('\0'),
+        );
         let mut last_price: i64 = 0;
         bs.skip(4);
         for _ in 0..self.count {
@@ -98,23 +112,41 @@ impl BaseFrame for HistoryMinuteTimeRequest {
 }
 
 /// 获取指定证券指定日期的历史分时数据
-pub fn fetch_history_minute_time(security_code: &str, date: u32) -> Option<HistoryMinuteTimeRequest> {
+pub fn fetch_history_minute_time(
+    security_code: &str,
+    date: u32,
+) -> Option<HistoryMinuteTimeRequest> {
     match super::super::super::client::get_std_conn() {
         Ok(mut conn) => {
             let mut msg = HistoryMinuteTimeRequest::new(security_code, date);
             match super::super::super::protocol::transact_message_sync(conn.stream(), &mut msg) {
                 Ok(()) => {
-                    log::info!("level1::minute_time - code={} date={} count={}", security_code, date, msg.count);
+                    log::info!(
+                        "level1::minute_time - code={} date={} count={}",
+                        security_code,
+                        date,
+                        msg.count
+                    );
                     Some(msg)
                 }
                 Err(e) => {
-                    log::error!("level1 process error for minute_time code={} date={}: {}", security_code, date, e);
+                    log::error!(
+                        "level1 process error for minute_time code={} date={}: {}",
+                        security_code,
+                        date,
+                        e
+                    );
                     None
                 }
             }
         }
         Err(e) => {
-            log::error!("failed to acquire level1 client for minute_time code={} date={}: {}", security_code, date, e);
+            log::error!(
+                "failed to acquire level1 client for minute_time code={} date={}: {}",
+                security_code,
+                date,
+                e
+            );
             None
         }
     }

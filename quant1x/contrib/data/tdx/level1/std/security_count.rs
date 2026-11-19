@@ -26,10 +26,18 @@ impl SecurityCountContext {
 }
 
 impl BaseFrame for SecurityCountContext {
-    fn request_header(&self) -> &RequestHeader { &self.req_header }
-    fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
-    fn response_header(&self) -> &ResponseHeader { &self.resp_header }
-    fn response_header_mut(&mut self) -> &mut ResponseHeader { &mut self.resp_header }
+    fn request_header(&self) -> &RequestHeader {
+        &self.req_header
+    }
+    fn request_header_mut(&mut self) -> &mut RequestHeader {
+        &mut self.req_header
+    }
+    fn response_header(&self) -> &ResponseHeader {
+        &self.resp_header
+    }
+    fn response_header_mut(&mut self) -> &mut ResponseHeader {
+        &mut self.resp_header
+    }
 
     fn serialize_request_body(&mut self) -> Vec<u8> {
         let mut buf = BinaryStream::new();
@@ -38,7 +46,10 @@ impl BaseFrame for SecurityCountContext {
         buf.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
+    fn deserialize_response_body(
+        &mut self,
+        data: &[u8],
+    ) -> Result<(), crate::base::DeserializeError> {
         if data.len() < 2 {
             return Ok(());
         }
@@ -56,17 +67,29 @@ pub fn fetch_security_count(market: u16) -> Option<SecurityCountContext> {
             let mut msg = SecurityCountContext::new(market);
             match super::super::super::protocol::transact_message_sync(conn.stream(), &mut msg) {
                 Ok(()) => {
-                    log::info!("level1::security_count - market={} count={}", market, msg.count);
+                    log::info!(
+                        "level1::security_count - market={} count={}",
+                        market,
+                        msg.count
+                    );
                     Some(msg)
                 }
                 Err(e) => {
-                    log::error!("level1 process error for security_count market={}: {}", market, e);
+                    log::error!(
+                        "level1 process error for security_count market={}: {}",
+                        market,
+                        e
+                    );
                     None
                 }
             }
         }
         Err(e) => {
-            log::error!("failed to acquire level1 client for security_count market={}: {}", market, e);
+            log::error!(
+                "failed to acquire level1 client for security_count market={}: {}",
+                market,
+                e
+            );
             None
         }
     }

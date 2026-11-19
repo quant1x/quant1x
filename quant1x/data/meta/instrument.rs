@@ -186,7 +186,11 @@ impl Instrument {
         if self.exchange.region() == Region::CN {
             format!("{}{}", self.exchange.identifier(), self.ticker)
         } else {
-            format!("{}.{}", self.ticker.to_lowercase(), self.exchange.identifier())
+            format!(
+                "{}.{}",
+                self.ticker.to_lowercase(),
+                self.exchange.identifier()
+            )
         }
     }
 

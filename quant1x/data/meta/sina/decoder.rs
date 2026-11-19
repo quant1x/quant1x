@@ -116,11 +116,7 @@ impl FinanceDecoder {
         while self.y() {
             e += 1;
         }
-        if t {
-            e
-        } else {
-            -e
-        }
+        if t { e } else { -e }
     }
 
     fn w(&mut self, t: &[i32], r_param: Option<&[i32]>, a_param: Option<&[i32]>) -> Vec<i64> {

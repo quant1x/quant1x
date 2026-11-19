@@ -2,22 +2,20 @@
 // SPDX-License-Identifier: MIT
 
 use crate::data::schema::Sector;
+use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::fs;
 use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::Mutex;
-use once_cell::sync::Lazy;
 
-use encoding::{DecoderTrap, Encoding};
 use encoding::all::GBK;
+use encoding::{DecoderTrap, Encoding};
 
-use super::level1::std::block::BlockFileContext;
-use super::level1::std::block_meta::{
-    BLOCK_DEFAULT, BLOCK_FENGGE, BLOCK_GAINIAN, BLOCK_ZHISHU,
-};
-use super::protocol::transact_message_sync;
 use super::client::get_std_conn;
+use super::level1::std::block::BlockFileContext;
+use super::level1::std::block_meta::{BLOCK_DEFAULT, BLOCK_FENGGE, BLOCK_GAINIAN, BLOCK_ZHISHU};
+use super::protocol::transact_message_sync;
 
 /// 内存缓存: 板块列表
 static SECTOR_CACHE: Lazy<Mutex<Option<Vec<Sector>>>> = Lazy::new(|| Mutex::new(None));
@@ -53,7 +51,12 @@ fn get_block_info_from_level1(filename: &str) -> Option<Vec<u8>> {
         match transact_message_sync(conn.stream(), &mut msg) {
             Ok(()) => {}
             Err(e) => {
-                log::error!("sector: transact_message_sync for {} at offset {} failed: {}", filename, start, e);
+                log::error!(
+                    "sector: transact_message_sync for {} at offset {} failed: {}",
+                    filename,
+                    start,
+                    e
+                );
                 return None;
             }
         }
@@ -79,8 +82,14 @@ fn download_block_raw_data(filename: &str) -> Option<String> {
 
     // 文件已存在且不需要更新, 跳过下载
     if Path::new(&filepath).exists() {
-        if !crate::data::status::should_initialize_file(&filepath, crate::data::meta::exchange::Exchange::SSE) {
-            log::debug!("sector: {} exists and is up-to-date, skip download", filename);
+        if !crate::data::status::should_initialize_file(
+            &filepath,
+            crate::data::meta::exchange::Exchange::SSE,
+        ) {
+            log::debug!(
+                "sector: {} exists and is up-to-date, skip download",
+                filename
+            );
             return Some(filepath);
         }
     }
@@ -133,7 +142,8 @@ fn parse_raw_block_file(block_filename: &str) -> Vec<RawBlockRecord> {
     if data.len() < offset_after_header + 2 {
         return vec![];
     }
-    let count = u16::from_le_bytes([data[offset_after_header], data[offset_after_header + 1]]) as usize;
+    let count =
+        u16::from_le_bytes([data[offset_after_header], data[offset_after_header + 1]]) as usize;
 
     let mut records = Vec::with_capacity(count);
     let mut pos = offset_after_header + 2;
@@ -222,10 +232,7 @@ fn get_block_info_from_config(cfg_name: &str) -> Vec<BlockIndexEntry> {
         Err(_) => {
             // try GBK
             match fs::read(&filepath) {
-                Ok(bytes) => {
-                    GBK.decode(&bytes, DecoderTrap::Replace)
-                        .unwrap_or_default()
-                }
+                Ok(bytes) => GBK.decode(&bytes, DecoderTrap::Replace).unwrap_or_default(),
                 Err(_) => return vec![],
             }
         }
@@ -245,7 +252,11 @@ fn get_block_info_from_config(cfg_name: &str) -> Vec<BlockIndexEntry> {
             name: parts[0].to_string(),
             code: parts[1].to_string(),
             block_type: parts[2].parse().unwrap_or(0),
-            block: if parts.len() > 5 { parts[5].to_string() } else { String::new() },
+            block: if parts.len() > 5 {
+                parts[5].to_string()
+            } else {
+                String::new()
+            },
         });
     }
     entries
@@ -276,15 +287,10 @@ fn load_industry_blocks() -> Vec<IndustryInfo> {
 
     let content = match fs::read_to_string(&filepath) {
         Ok(c) => c,
-        Err(_) => {
-            match fs::read(&filepath) {
-                Ok(bytes) => {
-                    GBK.decode(&bytes, DecoderTrap::Replace)
-                        .unwrap_or_default()
-                }
-                Err(_) => return vec![],
-            }
-        }
+        Err(_) => match fs::read(&filepath) {
+            Ok(bytes) => GBK.decode(&bytes, DecoderTrap::Replace).unwrap_or_default(),
+            Err(_) => return vec![],
+        },
     };
 
     let mut out = Vec::new();
@@ -298,9 +304,17 @@ fn load_industry_blocks() -> Vec<IndustryInfo> {
             continue;
         }
         let bc = arr.get(2).map(|s| s.to_string()).unwrap_or_default();
-        let bc5 = if bc.len() >= 5 { bc[..5].to_string() } else { bc.clone() };
+        let bc5 = if bc.len() >= 5 {
+            bc[..5].to_string()
+        } else {
+            bc.clone()
+        };
         let xbc5 = arr.get(5).map(|s| s.to_string()).unwrap_or_default();
-        let xbc = if xbc5.len() >= 5 { xbc5[..5].to_string() } else { xbc5.clone() };
+        let xbc = if xbc5.len() >= 5 {
+            xbc5[..5].to_string()
+        } else {
+            xbc5.clone()
+        };
         let market_id = arr[0].parse::<i32>().unwrap_or(0);
 
         out.push(IndustryInfo {
@@ -404,7 +418,9 @@ fn parse_and_generate_block_file() -> Option<String> {
     for v in &block_index {
         let block_code = to_symbol(&v.code);
         if let Some(info) = name2block.get(&v.name) {
-            let mut entry_codes: Vec<String> = info.codes.iter()
+            let mut entry_codes: Vec<String> = info
+                .codes
+                .iter()
                 .filter(|s| s.len() >= 5)
                 .map(|s| to_symbol(s))
                 .collect();
@@ -456,13 +472,7 @@ fn parse_and_generate_block_file() -> Option<String> {
     let _ = wtr.write_record(&["name", "code", "type", "count", "constituent_stocks"]);
     for (name, code, btype, count, _block, constituent_stocks) in &rows {
         let cs_str = constituent_stocks.join(",");
-        let _ = wtr.write_record(&[
-            name,
-            code,
-            &btype.to_string(),
-            &count.to_string(),
-            &cs_str,
-        ]);
+        let _ = wtr.write_record(&[name, code, &btype.to_string(), &count.to_string(), &cs_str]);
     }
     let _ = wtr.flush();
 
@@ -487,7 +497,8 @@ pub fn sync_block_files() -> Option<String> {
                 let need_files = ["tdxzs.cfg", "tdxzs3.cfg"];
                 for i in 0..archive.len() {
                     if let Ok(mut file) = archive.by_index(i) {
-                        let base_opt = file.enclosed_name()
+                        let base_opt = file
+                            .enclosed_name()
                             .and_then(|n| n.file_name().map(|s| s.to_string_lossy().to_string()));
                         if let Some(base) = base_opt {
                             if need_files.contains(&base.as_str()) {
@@ -530,7 +541,12 @@ fn load_cache_block_infos() {
     let bk_filename = get_sector_filename();
 
     // 如果CSV不存在或需要更新, 先同步
-    if !Path::new(&bk_filename).exists() || crate::data::status::should_initialize_file(&bk_filename, crate::data::meta::exchange::Exchange::SSE) {
+    if !Path::new(&bk_filename).exists()
+        || crate::data::status::should_initialize_file(
+            &bk_filename,
+            crate::data::meta::exchange::Exchange::SSE,
+        )
+    {
         log::info!("sector: cache missing or outdated, triggering sync_block_files");
         match sync_block_files() {
             Some(_) => {}
@@ -567,7 +583,10 @@ fn load_sectors_from_csv(filename: &str) -> Option<Vec<Sector>> {
             let constituent_stocks: Vec<String> = if constituent_stocks_str.is_empty() {
                 Vec::new()
             } else {
-                constituent_stocks_str.split(',').map(|s| s.to_string()).collect()
+                constituent_stocks_str
+                    .split(',')
+                    .map(|s| s.to_string())
+                    .collect()
             };
 
             sectors.push(Sector {
@@ -627,7 +646,10 @@ mod tests {
     fn test_get_sector_list() {
         let _ = env_logger::try_init();
         let sectors = get_sector_list();
-        log::info!("[sector test] get_sector_list returned {} sectors", sectors.len());
+        log::info!(
+            "[sector test] get_sector_list returned {} sectors",
+            sectors.len()
+        );
         assert!(!sectors.is_empty(), "sector list should not be empty");
         for s in &sectors {
             assert!(!s.name.is_empty(), "sector name should not be empty");
@@ -635,7 +657,10 @@ mod tests {
             assert!(s.count >= 0, "sector count should be non-negative");
             log::debug!(
                 "[sector test] name={}, code={}, type={}, count={}",
-                s.name, s.code, s.sector_type, s.count
+                s.name,
+                s.code,
+                s.sector_type,
+                s.count
             );
         }
     }
@@ -661,7 +686,10 @@ mod tests {
     fn test_sync_block_files() {
         let _ = env_logger::try_init();
         let result = sync_block_files();
-        assert!(result.is_some(), "sync_block_files should return a file path");
+        assert!(
+            result.is_some(),
+            "sync_block_files should return a file path"
+        );
         let path = result.unwrap();
         log::info!("[sector test] sync_block_files produced: {}", path);
         assert!(Path::new(&path).exists(), "output file should exist");
@@ -672,7 +700,10 @@ mod tests {
     fn test_get_sector_filename_format() {
         let filename = get_sector_filename();
         // 应包含 "blocks." 格式
-        assert!(filename.contains("blocks."), "filename should contain 'blocks.'");
+        assert!(
+            filename.contains("blocks."),
+            "filename should contain 'blocks.'"
+        );
         log::info!("[sector test] sector filename: {}", filename);
     }
 
@@ -716,7 +747,10 @@ mod tests {
         let hys = load_industry_blocks();
         // 如果没有 tdxhy.cfg, 应返回空
         // 如果存在(测试环境), 至少有数据
-        log::info!("[sector test] load_industry_blocks returned {} entries", hys.len());
+        log::info!(
+            "[sector test] load_industry_blocks returned {} entries",
+            hys.len()
+        );
     }
 
     /// 测试 industry_constituent_stock_list 基本逻辑

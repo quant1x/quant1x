@@ -130,10 +130,7 @@ impl XdxrInfo {
 
     /// 是否为股本变动
     pub fn is_capital_change(&self) -> bool {
-        if matches!(
-            self.category,
-            1 | 11 | 12 | 13 | 14
-        ) {
+        if matches!(self.category, 1 | 11 | 12 | 13 | 14) {
             return false;
         }
         self.hou_liu_tong > 0.0 && self.hou_zong_gu_ben > 0.0

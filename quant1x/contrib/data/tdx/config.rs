@@ -46,7 +46,7 @@ pub const CRON_EXPR_SERVER_INIT: &str = "0 55 8 * * MON-FRI";
 // ServerInfo
 // ============================================================
 
-/// 服务器信息, 对应 Python `_config.py` 中的服务器字典. 
+/// 服务器信息, 对应 Python `_config.py` 中的服务器字典.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ServerInfo {
     pub source: String,
@@ -68,148 +68,958 @@ impl ServerInfo {
 // 完整对齐 Python `_config.py:StandardServerList`
 // ============================================================
 
-/// 返回完整的标准行情服务器候选列表. 
+/// 返回完整的标准行情服务器候选列表.
 pub fn standard_server_list() -> Vec<ServerInfo> {
     vec![
         // ======================== 通达信 ========================
-        ServerInfo { source: "通达信".into(), name: "深圳双线主站1".into(), host: "110.41.147.114".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "深圳双线主站2".into(), host: "110.41.2.72".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "深圳双线主站3".into(), host: "110.41.4.4".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "深圳双线主站4".into(), host: "47.113.94.204".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "深圳双线主站5".into(), host: "8.129.174.169".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "深圳双线主站6".into(), host: "110.41.154.219".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "上海双线主站1".into(), host: "124.70.176.52".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "上海双线主站2".into(), host: "47.100.236.28".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "上海双线主站3".into(), host: "123.60.186.45".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "上海双线主站4".into(), host: "123.60.164.122".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "上海双线主站5".into(), host: "47.116.105.28".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "上海双线主站6".into(), host: "124.70.199.56".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "北京双线主站1".into(), host: "121.36.54.217".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "北京双线主站2".into(), host: "121.36.81.195".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "北京双线主站3".into(), host: "123.249.15.60".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "广州双线主站1".into(), host: "124.71.85.110".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "广州双线主站2".into(), host: "139.9.51.18".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "广州双线主站3".into(), host: "139.159.239.163".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "上海双线主站7".into(), host: "106.14.201.131".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "上海双线主站8".into(), host: "106.14.190.242".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "上海双线主站9".into(), host: "121.36.225.169".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "上海双线主站10".into(), host: "123.60.70.228".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "上海双线主站11".into(), host: "123.60.73.44".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "上海双线主站12".into(), host: "124.70.133.119".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "上海双线主站13".into(), host: "124.71.187.72".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "上海双线主站14".into(), host: "124.71.187.122".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "武汉电信主站1".into(), host: "119.97.185.59".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "深圳双线主站7".into(), host: "47.107.64.168".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "北京双线主站4".into(), host: "124.70.75.113".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "广州双线主站4".into(), host: "124.71.9.153".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "上海双线主站15".into(), host: "123.60.84.66".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "深圳双线主站8".into(), host: "47.107.228.47".into(), port: 7719, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "北京双线主站5".into(), host: "120.46.186.223".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "北京双线主站6".into(), host: "124.70.22.210".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "北京双线主站7".into(), host: "139.9.133.247".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "广州双线主站5".into(), host: "116.205.163.254".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "广州双线主站6".into(), host: "116.205.171.132".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "广州双线主站7".into(), host: "116.205.183.150".into(), port: 7709, latency_ms: 0 },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "深圳双线主站1".into(),
+            host: "110.41.147.114".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "深圳双线主站2".into(),
+            host: "110.41.2.72".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "深圳双线主站3".into(),
+            host: "110.41.4.4".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "深圳双线主站4".into(),
+            host: "47.113.94.204".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "深圳双线主站5".into(),
+            host: "8.129.174.169".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "深圳双线主站6".into(),
+            host: "110.41.154.219".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "上海双线主站1".into(),
+            host: "124.70.176.52".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "上海双线主站2".into(),
+            host: "47.100.236.28".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "上海双线主站3".into(),
+            host: "123.60.186.45".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "上海双线主站4".into(),
+            host: "123.60.164.122".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "上海双线主站5".into(),
+            host: "47.116.105.28".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "上海双线主站6".into(),
+            host: "124.70.199.56".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "北京双线主站1".into(),
+            host: "121.36.54.217".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "北京双线主站2".into(),
+            host: "121.36.81.195".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "北京双线主站3".into(),
+            host: "123.249.15.60".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "广州双线主站1".into(),
+            host: "124.71.85.110".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "广州双线主站2".into(),
+            host: "139.9.51.18".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "广州双线主站3".into(),
+            host: "139.159.239.163".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "上海双线主站7".into(),
+            host: "106.14.201.131".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "上海双线主站8".into(),
+            host: "106.14.190.242".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "上海双线主站9".into(),
+            host: "121.36.225.169".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "上海双线主站10".into(),
+            host: "123.60.70.228".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "上海双线主站11".into(),
+            host: "123.60.73.44".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "上海双线主站12".into(),
+            host: "124.70.133.119".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "上海双线主站13".into(),
+            host: "124.71.187.72".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "上海双线主站14".into(),
+            host: "124.71.187.122".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "武汉电信主站1".into(),
+            host: "119.97.185.59".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "深圳双线主站7".into(),
+            host: "47.107.64.168".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "北京双线主站4".into(),
+            host: "124.70.75.113".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "广州双线主站4".into(),
+            host: "124.71.9.153".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "上海双线主站15".into(),
+            host: "123.60.84.66".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "深圳双线主站8".into(),
+            host: "47.107.228.47".into(),
+            port: 7719,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "北京双线主站5".into(),
+            host: "120.46.186.223".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "北京双线主站6".into(),
+            host: "124.70.22.210".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "北京双线主站7".into(),
+            host: "139.9.133.247".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "广州双线主站5".into(),
+            host: "116.205.163.254".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "广州双线主站6".into(),
+            host: "116.205.171.132".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "广州双线主站7".into(),
+            host: "116.205.183.150".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
         // ======================== 中信证券 ========================
-        ServerInfo { source: "中信证券".into(), name: "上海电信主站Z1".into(), host: "180.153.18.170".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "上海电信主站Z2".into(), host: "180.153.18.171".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "北京联通主站Z1".into(), host: "202.108.253.130".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "北京联通主站Z2".into(), host: "202.108.253.131".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "杭州电信主站J1".into(), host: "60.191.117.167".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "杭州电信主站J2".into(), host: "115.238.56.198".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "杭州电信主站J3".into(), host: "218.75.126.9".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "杭州电信主站J4".into(), host: "115.238.90.165".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "杭州联通主站J1".into(), host: "124.160.88.183".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "杭州联通主站J2".into(), host: "60.12.136.250".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "杭州华数主站J1".into(), host: "218.108.98.244".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "杭州华数主站J2".into(), host: "218.108.47.69".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "济南联通主站W1".into(), host: "27.221.115.131".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "青岛电信主站W1".into(), host: "58.56.180.60".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "深圳电信主站Z1".into(), host: "14.17.75.71".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "云行情上海电信Z1".into(), host: "114.80.63.12".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "云行情上海电信Z2".into(), host: "114.80.63.35".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "上海电信主站Z3".into(), host: "180.153.39.51".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "云行情北京联通Z1".into(), host: "123.125.108.23".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "云行情北京联通Z2".into(), host: "123.125.108.24".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "云行情广州电信Z1".into(), host: "121.201.83.106".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "云行情成都电信Z1".into(), host: "218.6.170.55".into(), port: 7709, latency_ms: 0 },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "上海电信主站Z1".into(),
+            host: "180.153.18.170".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "上海电信主站Z2".into(),
+            host: "180.153.18.171".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "北京联通主站Z1".into(),
+            host: "202.108.253.130".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "北京联通主站Z2".into(),
+            host: "202.108.253.131".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "杭州电信主站J1".into(),
+            host: "60.191.117.167".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "杭州电信主站J2".into(),
+            host: "115.238.56.198".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "杭州电信主站J3".into(),
+            host: "218.75.126.9".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "杭州电信主站J4".into(),
+            host: "115.238.90.165".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "杭州联通主站J1".into(),
+            host: "124.160.88.183".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "杭州联通主站J2".into(),
+            host: "60.12.136.250".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "杭州华数主站J1".into(),
+            host: "218.108.98.244".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "杭州华数主站J2".into(),
+            host: "218.108.47.69".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "济南联通主站W1".into(),
+            host: "27.221.115.131".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "青岛电信主站W1".into(),
+            host: "58.56.180.60".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "深圳电信主站Z1".into(),
+            host: "14.17.75.71".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "云行情上海电信Z1".into(),
+            host: "114.80.63.12".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "云行情上海电信Z2".into(),
+            host: "114.80.63.35".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "上海电信主站Z3".into(),
+            host: "180.153.39.51".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "云行情北京联通Z1".into(),
+            host: "123.125.108.23".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "云行情北京联通Z2".into(),
+            host: "123.125.108.24".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "云行情广州电信Z1".into(),
+            host: "121.201.83.106".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "云行情成都电信Z1".into(),
+            host: "218.6.170.55".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
         // ======================== 华泰证券 ========================
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(南京电信一)".into(), host: "180.101.48.170".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(南京电信二)".into(), host: "180.101.48.171".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(南京移动一)".into(), host: "120.195.71.155".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(南京移动二)".into(), host: "120.195.71.156".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(南京联通一)".into(), host: "122.96.107.242".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(南京联通二)".into(), host: "122.96.107.243".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(亚马逊一)".into(), host: "52.83.39.241".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(亚马逊二)".into(), host: "52.83.199.101".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(华南阿里云一)".into(), host: "8.135.57.58".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(华南阿里云二)".into(), host: "8.135.62.177".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(华东华为云一)".into(), host: "124.70.183.173".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(华东华为云二)".into(), host: "124.71.163.106".into(), port: 7709, latency_ms: 0 },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(南京电信一)".into(),
+            host: "180.101.48.170".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(南京电信二)".into(),
+            host: "180.101.48.171".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(南京移动一)".into(),
+            host: "120.195.71.155".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(南京移动二)".into(),
+            host: "120.195.71.156".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(南京联通一)".into(),
+            host: "122.96.107.242".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(南京联通二)".into(),
+            host: "122.96.107.243".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(亚马逊一)".into(),
+            host: "52.83.39.241".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(亚马逊二)".into(),
+            host: "52.83.199.101".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(华南阿里云一)".into(),
+            host: "8.135.57.58".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(华南阿里云二)".into(),
+            host: "8.135.62.177".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(华东华为云一)".into(),
+            host: "124.70.183.173".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(华东华为云二)".into(),
+            host: "124.71.163.106".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
         // ======================== 国泰君安 ========================
-        ServerInfo { source: "国泰君安".into(), name: "郑州网通行情一".into(), host: "182.118.47.141".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "郑州网通行情二".into(), host: "182.118.47.168".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "郑州网通行情三".into(), host: "182.118.47.169".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "武汉电信行情一".into(), host: "119.97.164.184".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "武汉电信行情二".into(), host: "119.97.164.189".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "武汉电信行情三".into(), host: "116.211.121.102".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "武汉电信行情四".into(), host: "116.211.121.108".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "武汉电信行情五".into(), host: "116.211.121.31".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "新疆电信云行情一".into(), host: "202.100.166.117".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "新疆电信云行情二".into(), host: "202.100.166.118".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "上海电信行情八".into(), host: "222.73.139.166".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "上海电信行情九".into(), host: "222.73.139.167".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "上海电信行情十".into(), host: "222.73.139.168".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "上海BGP行情一".into(), host: "103.251.85.90".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "北京联通行情一".into(), host: "123.125.108.213".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "北京联通行情二".into(), host: "123.125.108.214".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "上海电信行情六".into(), host: "222.73.139.151".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "上海电信行情七".into(), host: "222.73.139.152".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "成都BGP行情一".into(), host: "148.70.110.41".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "成都BGP行情二".into(), host: "148.70.93.117".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "成都BGP行情三".into(), host: "148.70.31.16".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "成都BGP行情四".into(), host: "148.70.111.63".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "广州BGP行情一".into(), host: "139.159.143.228".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "广州BGP行情二".into(), host: "139.159.183.76".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "广州BGP行情三".into(), host: "139.159.193.118".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "广州BGP行情四".into(), host: "139.159.195.177".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "广州BGP行情五".into(), host: "139.159.202.253".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "广州BGP行情六".into(), host: "139.159.214.78".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "广州BGP行情七".into(), host: "139.9.38.206".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "广州BGP行情八".into(), host: "139.9.43.104".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "广州BGP行情九".into(), host: "139.9.43.31".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "广州BGP行情十".into(), host: "139.9.50.246".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "广州BGP行情十一".into(), host: "139.9.52.158".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "广州BGP行情十二".into(), host: "139.9.90.169".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "上海电信行情十一".into(), host: "101.226.180.73".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "上海电信行情十二".into(), host: "101.226.180.74".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "上海BGP行情六".into(), host: "103.251.85.200".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "上海BGP行情七".into(), host: "103.251.85.201".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "南京电信行情一".into(), host: "103.221.142.65".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "南京电信行情二".into(), host: "103.221.142.66".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "南京电信行情三".into(), host: "103.221.142.67".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "南京电信行情四".into(), host: "103.221.142.68".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "南京电信行情五".into(), host: "103.221.142.69".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "南京电信行情六".into(), host: "103.221.142.70".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "南京电信行情七".into(), host: "103.221.142.71".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "南京电信行情八".into(), host: "103.221.142.72".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "西安电信行情一".into(), host: "117.34.114.13".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "西安电信行情二".into(), host: "117.34.114.14".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "西安电信行情三".into(), host: "117.34.114.15".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "西安电信行情四".into(), host: "117.34.114.16".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "西安电信行情五".into(), host: "117.34.114.17".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "西安电信行情六".into(), host: "117.34.114.18".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "西安电信行情七".into(), host: "117.34.114.20".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "西安电信行情八".into(), host: "117.34.114.27".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "西安电信行情九".into(), host: "117.34.114.30".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "上海BGP行情八".into(), host: "103.251.85.202".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "东莞电信行情一".into(), host: "183.60.224.142".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "东莞电信行情二".into(), host: "183.60.224.143".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "东莞电信行情三".into(), host: "183.60.224.144".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "东莞电信行情四".into(), host: "183.60.224.145".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "东莞电信行情五".into(), host: "183.60.224.146".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "东莞电信行情六".into(), host: "183.60.224.147".into(), port: 7709, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "东莞电信行情七".into(), host: "183.60.224.148".into(), port: 7709, latency_ms: 0 },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "郑州网通行情一".into(),
+            host: "182.118.47.141".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "郑州网通行情二".into(),
+            host: "182.118.47.168".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "郑州网通行情三".into(),
+            host: "182.118.47.169".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "武汉电信行情一".into(),
+            host: "119.97.164.184".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "武汉电信行情二".into(),
+            host: "119.97.164.189".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "武汉电信行情三".into(),
+            host: "116.211.121.102".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "武汉电信行情四".into(),
+            host: "116.211.121.108".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "武汉电信行情五".into(),
+            host: "116.211.121.31".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "新疆电信云行情一".into(),
+            host: "202.100.166.117".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "新疆电信云行情二".into(),
+            host: "202.100.166.118".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "上海电信行情八".into(),
+            host: "222.73.139.166".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "上海电信行情九".into(),
+            host: "222.73.139.167".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "上海电信行情十".into(),
+            host: "222.73.139.168".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "上海BGP行情一".into(),
+            host: "103.251.85.90".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "北京联通行情一".into(),
+            host: "123.125.108.213".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "北京联通行情二".into(),
+            host: "123.125.108.214".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "上海电信行情六".into(),
+            host: "222.73.139.151".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "上海电信行情七".into(),
+            host: "222.73.139.152".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "成都BGP行情一".into(),
+            host: "148.70.110.41".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "成都BGP行情二".into(),
+            host: "148.70.93.117".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "成都BGP行情三".into(),
+            host: "148.70.31.16".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "成都BGP行情四".into(),
+            host: "148.70.111.63".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "广州BGP行情一".into(),
+            host: "139.159.143.228".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "广州BGP行情二".into(),
+            host: "139.159.183.76".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "广州BGP行情三".into(),
+            host: "139.159.193.118".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "广州BGP行情四".into(),
+            host: "139.159.195.177".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "广州BGP行情五".into(),
+            host: "139.159.202.253".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "广州BGP行情六".into(),
+            host: "139.159.214.78".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "广州BGP行情七".into(),
+            host: "139.9.38.206".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "广州BGP行情八".into(),
+            host: "139.9.43.104".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "广州BGP行情九".into(),
+            host: "139.9.43.31".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "广州BGP行情十".into(),
+            host: "139.9.50.246".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "广州BGP行情十一".into(),
+            host: "139.9.52.158".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "广州BGP行情十二".into(),
+            host: "139.9.90.169".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "上海电信行情十一".into(),
+            host: "101.226.180.73".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "上海电信行情十二".into(),
+            host: "101.226.180.74".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "上海BGP行情六".into(),
+            host: "103.251.85.200".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "上海BGP行情七".into(),
+            host: "103.251.85.201".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "南京电信行情一".into(),
+            host: "103.221.142.65".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "南京电信行情二".into(),
+            host: "103.221.142.66".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "南京电信行情三".into(),
+            host: "103.221.142.67".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "南京电信行情四".into(),
+            host: "103.221.142.68".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "南京电信行情五".into(),
+            host: "103.221.142.69".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "南京电信行情六".into(),
+            host: "103.221.142.70".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "南京电信行情七".into(),
+            host: "103.221.142.71".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "南京电信行情八".into(),
+            host: "103.221.142.72".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "西安电信行情一".into(),
+            host: "117.34.114.13".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "西安电信行情二".into(),
+            host: "117.34.114.14".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "西安电信行情三".into(),
+            host: "117.34.114.15".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "西安电信行情四".into(),
+            host: "117.34.114.16".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "西安电信行情五".into(),
+            host: "117.34.114.17".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "西安电信行情六".into(),
+            host: "117.34.114.18".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "西安电信行情七".into(),
+            host: "117.34.114.20".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "西安电信行情八".into(),
+            host: "117.34.114.27".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "西安电信行情九".into(),
+            host: "117.34.114.30".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "上海BGP行情八".into(),
+            host: "103.251.85.202".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "东莞电信行情一".into(),
+            host: "183.60.224.142".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "东莞电信行情二".into(),
+            host: "183.60.224.143".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "东莞电信行情三".into(),
+            host: "183.60.224.144".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "东莞电信行情四".into(),
+            host: "183.60.224.145".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "东莞电信行情五".into(),
+            host: "183.60.224.146".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "东莞电信行情六".into(),
+            host: "183.60.224.147".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "东莞电信行情七".into(),
+            host: "183.60.224.148".into(),
+            port: 7709,
+            latency_ms: 0,
+        },
     ]
 }
 
@@ -218,35 +1028,185 @@ pub fn standard_server_list() -> Vec<ServerInfo> {
 // 完整对齐 Python `_config.py:ExtensionServerList`
 // ============================================================
 
-/// 返回通达信官方的扩展市场服务器候选列表 (支持港股金融指数). 
+/// 返回通达信官方的扩展市场服务器候选列表 (支持港股金融指数).
 pub fn extension_server_list() -> Vec<ServerInfo> {
     vec![
         // ======================== 通达信 ========================
-        ServerInfo { source: "通达信".into(), name: "扩展市场深圳双线1".into(), host: "112.74.214.43".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场深圳双线2".into(), host: "120.25.218.6".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场深圳双线3".into(), host: "43.139.173.246".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场深圳双线4".into(), host: "159.75.90.107".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场深圳双线5".into(), host: "106.52.170.195".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场上海双线1".into(), host: "150.158.9.199".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场上海双线2".into(), host: "150.158.20.127".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场上海双线3".into(), host: "49.235.119.116".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场上海双线4".into(), host: "49.234.13.160".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场广州双线1".into(), host: "116.205.143.214".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场广州双线2".into(), host: "124.71.223.19".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场广州双线3".into(), host: "139.9.191.175".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场广州双线4".into(), host: "113.45.175.47".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场上海双线5".into(), host: "123.60.173.210".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场上海双线6".into(), host: "118.89.69.202".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场上海双线7".into(), host: "175.24.47.69".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场深圳双线3".into(), host: "47.107.75.159".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场深圳双线4".into(), host: "47.106.204.218".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场深圳双线5".into(), host: "47.106.209.131".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场武汉主站1".into(), host: "119.97.185.5".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场深圳双线6".into(), host: "47.115.94.72".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场上海双线1".into(), host: "106.14.95.149".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场上海双线2".into(), host: "47.102.108.214".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场上海双线3".into(), host: "47.103.86.229".into(), port: 7727, latency_ms: 0 },
-        ServerInfo { source: "通达信".into(), name: "扩展市场上海双线4".into(), host: "47.103.88.146".into(), port: 7727, latency_ms: 0 },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场深圳双线1".into(),
+            host: "112.74.214.43".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场深圳双线2".into(),
+            host: "120.25.218.6".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场深圳双线3".into(),
+            host: "43.139.173.246".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场深圳双线4".into(),
+            host: "159.75.90.107".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场深圳双线5".into(),
+            host: "106.52.170.195".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场上海双线1".into(),
+            host: "150.158.9.199".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场上海双线2".into(),
+            host: "150.158.20.127".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场上海双线3".into(),
+            host: "49.235.119.116".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场上海双线4".into(),
+            host: "49.234.13.160".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场广州双线1".into(),
+            host: "116.205.143.214".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场广州双线2".into(),
+            host: "124.71.223.19".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场广州双线3".into(),
+            host: "139.9.191.175".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场广州双线4".into(),
+            host: "113.45.175.47".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场上海双线5".into(),
+            host: "123.60.173.210".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场上海双线6".into(),
+            host: "118.89.69.202".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场上海双线7".into(),
+            host: "175.24.47.69".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场深圳双线3".into(),
+            host: "47.107.75.159".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场深圳双线4".into(),
+            host: "47.106.204.218".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场深圳双线5".into(),
+            host: "47.106.209.131".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场武汉主站1".into(),
+            host: "119.97.185.5".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场深圳双线6".into(),
+            host: "47.115.94.72".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场上海双线1".into(),
+            host: "106.14.95.149".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场上海双线2".into(),
+            host: "47.102.108.214".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场上海双线3".into(),
+            host: "47.103.86.229".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "通达信".into(),
+            name: "扩展市场上海双线4".into(),
+            host: "47.103.88.146".into(),
+            port: 7727,
+            latency_ms: 0,
+        },
     ]
 }
 
@@ -255,41 +1215,215 @@ pub fn extension_server_list() -> Vec<ServerInfo> {
 // 完整对齐 Python `_config.py:ExtensionServerList2`
 // ============================================================
 
-/// 返回券商版本的扩展市场服务器候选列表 (不支持港股金融指数). 
+/// 返回券商版本的扩展市场服务器候选列表 (不支持港股金融指数).
 pub fn extension_server_list2() -> Vec<ServerInfo> {
     vec![
         // ======================== 中信证券 ========================
-        ServerInfo { source: "中信证券".into(), name: "上海电信主站Z1".into(), host: "180.153.18.176".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "北京联通主站Z1".into(), host: "202.108.253.154".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "杭州电信主站J1".into(), host: "115.238.56.196".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "杭州电信主站J2".into(), host: "115.238.90.170".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "杭州联通主站J1".into(), host: "60.12.136.251".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "杭州华数主站J1".into(), host: "218.108.98.244".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "济南联通主站W1".into(), host: "27.221.115.133".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "青岛电信主站W1".into(), host: "58.56.180.60".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "深圳电信主站Z1".into(), host: "14.17.75.71".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "中信证券".into(), name: "广州云电信主站Z1".into(), host: "121.201.83.104".into(), port: 7721, latency_ms: 0 },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "上海电信主站Z1".into(),
+            host: "180.153.18.176".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "北京联通主站Z1".into(),
+            host: "202.108.253.154".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "杭州电信主站J1".into(),
+            host: "115.238.56.196".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "杭州电信主站J2".into(),
+            host: "115.238.90.170".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "杭州联通主站J1".into(),
+            host: "60.12.136.251".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "杭州华数主站J1".into(),
+            host: "218.108.98.244".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "济南联通主站W1".into(),
+            host: "27.221.115.133".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "青岛电信主站W1".into(),
+            host: "58.56.180.60".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "深圳电信主站Z1".into(),
+            host: "14.17.75.71".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "中信证券".into(),
+            name: "广州云电信主站Z1".into(),
+            host: "121.201.83.104".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
         // ======================== 华泰证券 ========================
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(南京电信一)".into(), host: "180.101.48.170".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(南京电信二)".into(), host: "180.101.48.171".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(南京移动一)".into(), host: "120.195.71.155".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(南京移动二)".into(), host: "120.195.71.156".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(南京联通一)".into(), host: "122.96.107.242".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(南京联通二)".into(), host: "122.96.107.243".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(亚马逊一)".into(), host: "52.83.39.241".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(亚马逊二)".into(), host: "52.83.199.101".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(华南阿里云一)".into(), host: "8.135.57.58".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(华南阿里云二)".into(), host: "8.135.62.177".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(华东华为云一)".into(), host: "124.70.183.173".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "华泰证券".into(), name: "华泰证券(华东华为云二)".into(), host: "124.71.163.106".into(), port: 7721, latency_ms: 0 },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(南京电信一)".into(),
+            host: "180.101.48.170".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(南京电信二)".into(),
+            host: "180.101.48.171".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(南京移动一)".into(),
+            host: "120.195.71.155".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(南京移动二)".into(),
+            host: "120.195.71.156".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(南京联通一)".into(),
+            host: "122.96.107.242".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(南京联通二)".into(),
+            host: "122.96.107.243".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(亚马逊一)".into(),
+            host: "52.83.39.241".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(亚马逊二)".into(),
+            host: "52.83.199.101".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(华南阿里云一)".into(),
+            host: "8.135.57.58".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(华南阿里云二)".into(),
+            host: "8.135.62.177".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(华东华为云一)".into(),
+            host: "124.70.183.173".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "华泰证券".into(),
+            name: "华泰证券(华东华为云二)".into(),
+            host: "124.71.163.106".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
         // ======================== 国泰君安 ========================
-        ServerInfo { source: "国泰君安".into(), name: "扩展行情主站1".into(), host: "103.221.142.80".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "扩展行情主站2".into(), host: "114.118.82.205".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "扩展行情主站3".into(), host: "117.34.114.31".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "扩展行情主站4".into(), host: "139.9.52.158".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "扩展行情主站5".into(), host: "103.251.85.204".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "扩展行情主站6".into(), host: "114.118.82.204".into(), port: 7721, latency_ms: 0 },
-        ServerInfo { source: "国泰君安".into(), name: "扩展行情主站7".into(), host: "103.221.142.73".into(), port: 7721, latency_ms: 0 },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "扩展行情主站1".into(),
+            host: "103.221.142.80".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "扩展行情主站2".into(),
+            host: "114.118.82.205".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "扩展行情主站3".into(),
+            host: "117.34.114.31".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "扩展行情主站4".into(),
+            host: "139.9.52.158".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "扩展行情主站5".into(),
+            host: "103.251.85.204".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "扩展行情主站6".into(),
+            host: "114.118.82.204".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
+        ServerInfo {
+            source: "国泰君安".into(),
+            name: "扩展行情主站7".into(),
+            host: "103.221.142.73".into(),
+            port: 7721,
+            latency_ms: 0,
+        },
     ]
 }
 
@@ -311,9 +1445,9 @@ fn cache_filename() -> Option<PathBuf> {
     Some(p)
 }
 
-/// 将服务器字典写入 YAML 缓存文件. 
+/// 将服务器字典写入 YAML 缓存文件.
 ///
-/// 对应 Python `_config.py:save_cached_servers()`. 
+/// 对应 Python `_config.py:save_cached_servers()`.
 pub fn save_cached_servers(servers: &BTreeMap<String, Vec<ServerInfo>>) {
     let Some(path) = cache_filename() else {
         return;
@@ -328,9 +1462,9 @@ pub fn save_cached_servers(servers: &BTreeMap<String, Vec<ServerInfo>>) {
     }
 }
 
-/// 从 YAML 缓存文件中读取服务器列表. 
+/// 从 YAML 缓存文件中读取服务器列表.
 ///
-/// 对应 Python `_config.py:load_cached_servers()`. 
+/// 对应 Python `_config.py:load_cached_servers()`.
 /// - key: "standard" 或 "extension"
 pub fn load_cached_servers(key: &str) -> Vec<ServerInfo> {
     let Some(path) = cache_filename() else {
@@ -367,19 +1501,22 @@ pub fn load_cached_servers(key: &str) -> Vec<ServerInfo> {
 // 服务器探测
 // ============================================================
 
-/// 探测单个候选服务器的连通性. 
+/// 探测单个候选服务器的连通性.
 ///
-/// 对应 Python `_config.py:_try_probe_one()`. 
-/// 使用标准协议握手进行验证. 
-fn try_probe_one(
-    candidate: &ServerInfo,
-    connect_timeout_ms: i32,
-) -> Option<ServerInfo> {
+/// 对应 Python `_config.py:_try_probe_one()`.
+/// 使用标准协议握手进行验证.
+fn try_probe_one(candidate: &ServerInfo, connect_timeout_ms: i32) -> Option<ServerInfo> {
     let host = &candidate.host;
     let port = candidate.port;
     let addr_str = format!("{}:{}", host, port);
 
-    log::debug!("Probing {}:{} ({}) - timeout: {} ms", host, port, candidate.name, connect_timeout_ms);
+    log::debug!(
+        "Probing {}:{} ({}) - timeout: {} ms",
+        host,
+        port,
+        candidate.name,
+        connect_timeout_ms
+    );
 
     let timeout = Duration::from_millis(connect_timeout_ms as u64);
     let start = Instant::now();
@@ -389,12 +1526,23 @@ fn try_probe_one(
         Ok(mut addrs) => match addrs.next() {
             Some(a) => a,
             None => {
-                log::warn!("Probe failed for {}:{} ({}) - no address resolved", host, port, candidate.name);
+                log::warn!(
+                    "Probe failed for {}:{} ({}) - no address resolved",
+                    host,
+                    port,
+                    candidate.name
+                );
                 return None;
             }
         },
         Err(e) => {
-            log::warn!("Probe failed for {}:{} ({}) - resolve error: {}", host, port, candidate.name, e);
+            log::warn!(
+                "Probe failed for {}:{} ({}) - resolve error: {}",
+                host,
+                port,
+                candidate.name,
+                e
+            );
             return None;
         }
     };
@@ -403,7 +1551,14 @@ fn try_probe_one(
     let mut std_stream = match StdTcpStream::connect_timeout(&sock_addr, timeout) {
         Ok(s) => s,
         Err(e) => {
-            log::warn!("Probe timed out for {}:{} ({}) after {} ms: {}", host, port, candidate.name, connect_timeout_ms, e);
+            log::warn!(
+                "Probe timed out for {}:{} ({}) after {} ms: {}",
+                host,
+                port,
+                candidate.name,
+                connect_timeout_ms,
+                e
+            );
             return None;
         }
     };
@@ -419,13 +1574,19 @@ fn try_probe_one(
         crate::contrib::data::tdx::protocol::transact_message_sync(&mut std_stream, &mut req1)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
         if req1.info.trim().is_empty() {
-            return Err(std::io::Error::new(std::io::ErrorKind::Other, "StdLoginContext response empty"));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "StdLoginContext response empty",
+            ));
         }
         let mut req2 = crate::contrib::data::tdx::level1::std::UpgradeTipContext::new();
         crate::contrib::data::tdx::protocol::transact_message_sync(&mut std_stream, &mut req2)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
         if req2.info.trim().is_empty() {
-            return Err(std::io::Error::new(std::io::ErrorKind::Other, "UpgradeTipContext response empty"));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "UpgradeTipContext response empty",
+            ));
         }
         Ok(())
     })();
@@ -434,7 +1595,13 @@ fn try_probe_one(
         Ok(()) => {
             let elapsed = start.elapsed().as_millis() as i64;
             let _ = std_stream.shutdown(Shutdown::Both);
-            log::debug!("Probe succeeded for {}:{} ({}) - {} ms", host, port, candidate.name, elapsed);
+            log::debug!(
+                "Probe succeeded for {}:{} ({}) - {} ms",
+                host,
+                port,
+                candidate.name,
+                elapsed
+            );
             Some(ServerInfo {
                 source: candidate.source.clone(),
                 name: candidate.name.clone(),
@@ -445,15 +1612,21 @@ fn try_probe_one(
         }
         Err(e) => {
             let _ = std_stream.shutdown(Shutdown::Both);
-            log::warn!("Handshake failed for {}:{} ({}) - Error: {}", host, port, candidate.name, e);
+            log::warn!(
+                "Handshake failed for {}:{} ({}) - Error: {}",
+                host,
+                port,
+                candidate.name,
+                e
+            );
             None
         }
     }
 }
 
-/// 并行探测并筛选可用的服务器. 
+/// 并行探测并筛选可用的服务器.
 ///
-/// 对应 Python `_config.py:detect()`. 
+/// 对应 Python `_config.py:detect()`.
 ///
 /// # 参数
 /// * `elapsed_time_ms` - 探测超时时间 (毫秒), 默认 100ms
@@ -473,10 +1646,22 @@ pub fn detect(
 
     // ---- 探测标准行情服务器 ----
     let standard_candidates = standard_server_list();
-    log::info!("Starting detection for standard servers, total candidates: {}", standard_candidates.len());
+    log::info!(
+        "Starting detection for standard servers, total candidates: {}",
+        standard_candidates.len()
+    );
 
-    let standard_servers = detect_servers(&standard_candidates, elapsed_time_ms, conn_limit, connect_timeout_ms);
-    log::info!("Detection completed for standard servers: {}/{} available", standard_servers.len(), standard_candidates.len());
+    let standard_servers = detect_servers(
+        &standard_candidates,
+        elapsed_time_ms,
+        conn_limit,
+        connect_timeout_ms,
+    );
+    log::info!(
+        "Detection completed for standard servers: {}/{} available",
+        standard_servers.len(),
+        standard_candidates.len()
+    );
     selected.insert("standard".to_string(), standard_servers);
 
     // ---- 探测扩展行情服务器 ----
@@ -484,18 +1669,30 @@ pub fn detect(
     let extension_candidates = extension_server_list();
     // 合并券商版扩展服务器列表 (list2 端口不同, 暂不混用)
     //extension_candidates.extend(extension_server_list2());
-    log::info!("Starting detection for extension servers, total candidates: {}", extension_candidates.len());
+    log::info!(
+        "Starting detection for extension servers, total candidates: {}",
+        extension_candidates.len()
+    );
 
-    let extension_servers = detect_extension_servers(&extension_candidates, elapsed_time_ms, conn_limit, connect_timeout_ms);
-    log::info!("Detection completed for extension servers: {}/{} available", extension_servers.len(), extension_candidates.len());
+    let extension_servers = detect_extension_servers(
+        &extension_candidates,
+        elapsed_time_ms,
+        conn_limit,
+        connect_timeout_ms,
+    );
+    log::info!(
+        "Detection completed for extension servers: {}/{} available",
+        extension_servers.len(),
+        extension_candidates.len()
+    );
     selected.insert("extension".to_string(), extension_servers);
 
     selected
 }
 
-/// 并行探测扩展行情候选服务器列表. 
+/// 并行探测扩展行情候选服务器列表.
 ///
-/// 使用 ExtensionProtocolHandler 进行协议握手 (ExtSynchronizeRequest, 0x2454). 
+/// 使用 ExtensionProtocolHandler 进行协议握手 (ExtSynchronizeRequest, 0x2454).
 fn detect_extension_servers(
     candidates: &[ServerInfo],
     elapsed_time_ms: i64,
@@ -561,18 +1758,21 @@ fn detect_extension_servers(
     results.into_iter().take(limit).collect()
 }
 
-/// 探测单个扩展行情候选服务器的连通性. 
+/// 探测单个扩展行情候选服务器的连通性.
 ///
-/// 使用 ExtensionProtocolHandler 进行协议握手 (ExtSynchronizeRequest, 0x2454). 
-fn try_probe_extension_one(
-    candidate: &ServerInfo,
-    connect_timeout_ms: i32,
-) -> Option<ServerInfo> {
+/// 使用 ExtensionProtocolHandler 进行协议握手 (ExtSynchronizeRequest, 0x2454).
+fn try_probe_extension_one(candidate: &ServerInfo, connect_timeout_ms: i32) -> Option<ServerInfo> {
     let host = &candidate.host;
     let port = candidate.port;
     let addr_str = format!("{}:{}", host, port);
 
-    log::debug!("Probing extension {}:{} ({}) - timeout: {} ms", host, port, candidate.name, connect_timeout_ms);
+    log::debug!(
+        "Probing extension {}:{} ({}) - timeout: {} ms",
+        host,
+        port,
+        candidate.name,
+        connect_timeout_ms
+    );
 
     let timeout = Duration::from_millis(connect_timeout_ms as u64);
     let start = Instant::now();
@@ -582,12 +1782,23 @@ fn try_probe_extension_one(
         Ok(mut addrs) => match addrs.next() {
             Some(a) => a,
             None => {
-                log::warn!("Probe failed for extension {}:{} ({}) - no address resolved", host, port, candidate.name);
+                log::warn!(
+                    "Probe failed for extension {}:{} ({}) - no address resolved",
+                    host,
+                    port,
+                    candidate.name
+                );
                 return None;
             }
         },
         Err(e) => {
-            log::warn!("Probe failed for extension {}:{} ({}) - resolve error: {}", host, port, candidate.name, e);
+            log::warn!(
+                "Probe failed for extension {}:{} ({}) - resolve error: {}",
+                host,
+                port,
+                candidate.name,
+                e
+            );
             return None;
         }
     };
@@ -596,7 +1807,14 @@ fn try_probe_extension_one(
     let mut std_stream = match StdTcpStream::connect_timeout(&sock_addr, timeout) {
         Ok(s) => s,
         Err(e) => {
-            log::warn!("Probe timed out for extension {}:{} ({}) after {} ms: {}", host, port, candidate.name, connect_timeout_ms, e);
+            log::warn!(
+                "Probe timed out for extension {}:{} ({}) after {} ms: {}",
+                host,
+                port,
+                candidate.name,
+                connect_timeout_ms,
+                e
+            );
             return None;
         }
     };
@@ -612,7 +1830,10 @@ fn try_probe_extension_one(
         crate::contrib::data::tdx::protocol::transact_message_sync(&mut std_stream, &mut req)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
         if !req.success {
-            return Err(std::io::Error::new(std::io::ErrorKind::Other, "ExtSynchronize failed (success=false)"));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "ExtSynchronize failed (success=false)",
+            ));
         }
         Ok(())
     })();
@@ -621,7 +1842,13 @@ fn try_probe_extension_one(
         Ok(()) => {
             let elapsed = start.elapsed().as_millis() as i64;
             let _ = std_stream.shutdown(Shutdown::Both);
-            log::debug!("Extension probe succeeded for {}:{} ({}) - {} ms", host, port, candidate.name, elapsed);
+            log::debug!(
+                "Extension probe succeeded for {}:{} ({}) - {} ms",
+                host,
+                port,
+                candidate.name,
+                elapsed
+            );
             Some(ServerInfo {
                 source: candidate.source.clone(),
                 name: candidate.name.clone(),
@@ -632,13 +1859,19 @@ fn try_probe_extension_one(
         }
         Err(e) => {
             let _ = std_stream.shutdown(Shutdown::Both);
-            log::warn!("Extension handshake failed for {}:{} ({}) - Error: {}", host, port, candidate.name, e);
+            log::warn!(
+                "Extension handshake failed for {}:{} ({}) - Error: {}",
+                host,
+                port,
+                candidate.name,
+                e
+            );
             None
         }
     }
 }
 
-/// 并行探测给定候选服务器列表. 
+/// 并行探测给定候选服务器列表.
 fn detect_servers(
     candidates: &[ServerInfo],
     elapsed_time_ms: i64,

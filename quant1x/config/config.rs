@@ -18,7 +18,10 @@ pub const PRE_MARKET_MINUTE: u32 = 0;
 pub const PRE_MARKET_SECOND: u32 = 0;
 /// 每天9点整
 pub static GLOBAL_CRON_EXPR_DAILY_INIT: LazyLock<String> = LazyLock::new(|| {
-    format!( "{} {} {} * * *", PRE_MARKET_SECOND, PRE_MARKET_MINUTE, PRE_MARKET_HOUR)
+    format!(
+        "{} {} {} * * *",
+        PRE_MARKET_SECOND, PRE_MARKET_MINUTE, PRE_MARKET_HOUR
+    )
 });
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -440,27 +443,35 @@ mod tests {
     #[ignore = "requires config file"]
     fn test_get_bar_filename() {
         let filename = get_bar_filename("sh600000", true);
-        assert!(filename
-            .replace('\\', "/")
-            .ends_with("day/sh600/sh600000.csv"));
+        assert!(
+            filename
+                .replace('\\', "/")
+                .ends_with("day/sh600/sh600000.csv")
+        );
 
         let filename_raw = get_bar_filename("sh600000", false);
-        assert!(filename_raw
-            .replace('\\', "/")
-            .ends_with("day/sh600/sh600000.raw"));
+        assert!(
+            filename_raw
+                .replace('\\', "/")
+                .ends_with("day/sh600/sh600000.raw")
+        );
     }
 
     #[test]
     #[ignore = "requires config file"]
     fn test_get_minute_filename() {
         let filename = get_minute_filename("sh600000", "2023-01-01");
-        assert!(filename
-            .replace('\\', "/")
-            .ends_with("minutes/2023/20230101/sh600000.csv"));
+        assert!(
+            filename
+                .replace('\\', "/")
+                .ends_with("minutes/2023/20230101/sh600000.csv")
+        );
 
         let filename2 = get_minute_filename("sh600000", "20230101");
-        assert!(filename2
-            .replace('\\', "/")
-            .ends_with("minutes/2023/20230101/sh600000.csv"));
+        assert!(
+            filename2
+                .replace('\\', "/")
+                .ends_with("minutes/2023/20230101/sh600000.csv")
+        );
     }
 }

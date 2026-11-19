@@ -4,10 +4,10 @@
 use crate::data::meta::exchange::Exchange;
 use crate::data::meta::instrument::{Instrument, InstrumentType};
 use crate::data::meta::ticker_rules;
-use crate::data::meta::ticker_rules::rule::{match_rule, global_rules};
+use crate::data::meta::ticker_rules::rule::{global_rules, match_rule};
 
-use std::collections::HashSet;
 use once_cell::sync::Lazy;
+use std::collections::HashSet;
 
 // ============================================================
 // 常量: 交易所标识集合 — 对应 Python 的 PREFIX_EXCHANGE_IDENTIFIERS / ALL_EXCHANGE_IDENTIFIERS
@@ -140,7 +140,10 @@ pub fn detect_symbol(input_str: &str) -> Instrument {
 
                 // 3.2 按市场匹配规则
                 // 3.2.1 0, 159和3开头, 优先匹配深交所
-                if pure_code.starts_with('0') || pure_code.starts_with("159") || pure_code.starts_with('3') {
+                if pure_code.starts_with('0')
+                    || pure_code.starts_with("159")
+                    || pure_code.starts_with('3')
+                {
                     let cr = match_rule(&pure_code, &ticker_rules::szse_rules());
                     if cr.exchange != Exchange::UNKNOWN {
                         return Instrument {

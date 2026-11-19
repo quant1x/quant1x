@@ -4,8 +4,8 @@
 use std::sync::Arc;
 
 use crate::data::adapter::{DataAdapter, Schema};
-use crate::data::meta::instrument::Instrument;
 use crate::data::meta::Timestamp;
+use crate::data::meta::instrument::Instrument;
 use crate::data::schema::XdxrInfo;
 use crate::data::{BaseXdxr, DEFAULT_DATA_PROVIDER};
 
@@ -183,7 +183,8 @@ impl DataAdapter for DataXdxr {
         let ticker = inst.market_ticker();
         let exchange = inst.exchange;
 
-        match super::level1::std::xdxr_info::fetch_xdxr_batch(vec![(exchange, ticker.to_string())]) {
+        match super::level1::std::xdxr_info::fetch_xdxr_batch(vec![(exchange, ticker.to_string())])
+        {
             Some(batch) => {
                 let mut all_infos: Vec<XdxrInfo> = Vec::new();
                 for entry in batch.list.iter() {

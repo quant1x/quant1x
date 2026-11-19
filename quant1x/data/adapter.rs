@@ -34,8 +34,8 @@ pub trait Schema: Send + Sync + Debug {
 pub trait DataAdapter: Schema + Send + Sync {
     fn print(&self, inst: &Instrument, dates: &[Timestamp]);
     fn update(&self, inst: &Instrument, date: Timestamp);
-    /// 可选钩子: 如果该适配器是 FeatureAdapter, 则返回其 boxed 克隆. 
-    /// 默认实现返回 None；feature 适配器应重写并返回 Some(clone). 
+    /// 可选钩子: 如果该适配器是 FeatureAdapter, 则返回其 boxed 克隆.
+    /// 默认实现返回 None；feature 适配器应重写并返回 Some(clone).
     fn as_feature_clone(&self) -> Option<Box<dyn FeatureAdapter>> {
         None
     }
@@ -124,9 +124,9 @@ pub fn plugins_with_name(plugin_type: Kind, keywords: &[String]) -> Vec<Arc<dyn 
     candidates.into_iter().map(|(_, p)| p).collect()
 }
 
-/// 按顺序更新给定的适配器列表. 每个适配器决定其数据如何更新. 
-/// Feature 适配器(即 `as_feature_clone` 返回 Some 的适配器)会基于 codes 并行执行, 
-/// 其结果将被汇总并写入适配器指定的缓存文件(使用适配器提供的 headers/values). 
+/// 按顺序更新给定的适配器列表. 每个适配器决定其数据如何更新.
+/// Feature 适配器(即 `as_feature_clone` 返回 Some 的适配器)会基于 codes 并行执行,
+/// 其结果将被汇总并写入适配器指定的缓存文件(使用适配器提供的 headers/values).
 pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Timestamp) -> usize {
     use indicatif::{ProgressBar, ProgressStyle};
     let d = crate::contrib::data::tdx::TdxDataSource;
@@ -161,7 +161,8 @@ pub fn update_with_adapters(adapters: &[Arc<dyn DataAdapter>], feature_date: Tim
         if let Some(limit) = crate::contrib::data::tdx::client::pool_max_connections() {
             limit
         } else {
-            let fallback = std::cmp::min(crate::contrib::data::tdx::config::MAX_CONNECTIONS.max(1), 5);
+            let fallback =
+                std::cmp::min(crate::contrib::data::tdx::config::MAX_CONNECTIONS.max(1), 5);
             log::info!(
                 "[cache] level1 pool not initialized; falling back to concurrency limit {}",
                 fallback

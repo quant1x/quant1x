@@ -32,8 +32,17 @@ impl Bar {
     /// K线数据CSV头部
     pub fn headers() -> Vec<&'static str> {
         vec![
-            "date", "open", "close", "high", "low", "volume", "amount",
-            "up", "down", "timestamp", "adjustment_count",
+            "date",
+            "open",
+            "close",
+            "high",
+            "low",
+            "volume",
+            "amount",
+            "up",
+            "down",
+            "timestamp",
+            "adjustment_count",
         ]
     }
 }

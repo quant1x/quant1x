@@ -109,7 +109,7 @@ impl ActionType {
 
 /// 除权除息记录 - 扁平化设计
 ///
-/// 明确区分: 
+/// 明确区分:
 /// - Dividend(现金分红)
 /// - Bonus(送红股)
 /// - Split(拆股)
@@ -312,11 +312,7 @@ impl DividendAdjustmentRecord {
 
         if self.has_cash_dividend() {
             let currency = self.dividend_currency.as_deref().unwrap_or("");
-            parts.push(format!(
-                "派息{}{}",
-                self.dividend_amount.unwrap(),
-                currency
-            ));
+            parts.push(format!("派息{}{}", self.dividend_amount.unwrap(), currency));
         }
 
         if self.has_bonus() {
@@ -331,8 +327,7 @@ impl DividendAdjustmentRecord {
         }
 
         if self.has_consolidation() {
-            if let (Some(base), Some(target)) =
-                (self.consolidation_base, self.consolidation_target)
+            if let (Some(base), Some(target)) = (self.consolidation_base, self.consolidation_target)
             {
                 parts.push(format!("合并{}合{}", base, target));
             } else {
@@ -359,7 +354,7 @@ impl DividendAdjustmentRecord {
 
 /// 分红除权除息数据处理中心
 ///
-/// 功能: 
+/// 功能:
 /// 1. 统一存储 A 股, 港股, 美股, 英股等多市场数据
 /// 2. 明确区分 Dividend(现金), Bonus(红股), Split(拆股)
 /// 3. 金额与币种独立存储
@@ -398,18 +393,12 @@ impl DividendAdjustment {
 
     /// 获取某标的的所有除权除息记录
     pub fn get_all_records(&self, symbol: &str) -> Vec<&DividendAdjustmentRecord> {
-        self.records
-            .iter()
-            .filter(|r| r.symbol == symbol)
-            .collect()
+        self.records.iter().filter(|r| r.symbol == symbol).collect()
     }
 
     /// 获取某市场的所有记录
     pub fn get_by_market(&self, market: MarketType) -> Vec<&DividendAdjustmentRecord> {
-        self.records
-            .iter()
-            .filter(|r| r.market == market)
-            .collect()
+        self.records.iter().filter(|r| r.market == market).collect()
     }
 
     /// 获取某类型的公司行为记录
@@ -429,30 +418,29 @@ impl DividendAdjustment {
         self.records
             .iter()
             .filter(|r| {
-                r.ex_date
-                    .as_ref()
-                    .map_or(false, |d| d.as_str() >= start_date && d.as_str() <= end_date)
+                r.ex_date.as_ref().map_or(false, |d| {
+                    d.as_str() >= start_date && d.as_str() <= end_date
+                })
             })
             .collect()
     }
 
     /// 计算除息后的理论价格
-    pub fn calculate_ex_dividend_price(
-        &self,
-        symbol: &str,
-        price: f64,
-        ex_date: &str,
-    ) -> f64 {
+    pub fn calculate_ex_dividend_price(&self, symbol: &str, price: f64, ex_date: &str) -> f64 {
         let records = self.get_all_records(symbol);
-        let target = records.iter().find(|r| {
-            r.ex_date.as_ref().map_or(false, |d| d.as_str() == ex_date)
-        });
+        let target = records
+            .iter()
+            .find(|r| r.ex_date.as_ref().map_or(false, |d| d.as_str() == ex_date));
 
         match target {
             Some(record) => {
                 let (price_factor, _, cash_dividend) = record.get_adjustment_factor();
                 let adjusted = (price - cash_dividend)
-                    / if price_factor > 0.0 { price_factor } else { 1.0 };
+                    / if price_factor > 0.0 {
+                        price_factor
+                    } else {
+                        1.0
+                    };
                 (adjusted * 100.0).round() / 100.0
             }
             None => price,
@@ -460,16 +448,11 @@ impl DividendAdjustment {
     }
 
     /// 计算除权后的持股数量
-    pub fn calculate_adjusted_shares(
-        &self,
-        symbol: &str,
-        shares: i64,
-        ex_date: &str,
-    ) -> i64 {
+    pub fn calculate_adjusted_shares(&self, symbol: &str, shares: i64, ex_date: &str) -> i64 {
         let records = self.get_all_records(symbol);
-        let target = records.iter().find(|r| {
-            r.ex_date.as_ref().map_or(false, |d| d.as_str() == ex_date)
-        });
+        let target = records
+            .iter()
+            .find(|r| r.ex_date.as_ref().map_or(false, |d| d.as_str() == ex_date));
 
         match target {
             Some(record) => {

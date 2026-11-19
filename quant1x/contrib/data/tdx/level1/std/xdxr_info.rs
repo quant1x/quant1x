@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: MIT
 
 use crate::base::BinaryStream;
-use crate::data::schema::{XdxrInfo, XdxrEntry};
 use crate::data::meta::Exchange;
+use crate::data::schema::{XdxrEntry, XdxrInfo};
 
 use super::super::super::command::*;
-use super::super::super::helpers::{get_datetime_from_u32, int_to_float64, exchange_to_market, market_to_exchange};
+use super::super::super::helpers::{
+    exchange_to_market, get_datetime_from_u32, int_to_float64, market_to_exchange,
+};
 use super::super::super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 
 // ============================================================
@@ -31,8 +33,7 @@ pub struct XdxrInfoContext {
 
 impl XdxrInfoContext {
     pub fn new(exchange: Exchange, ticker: &str) -> Self {
-        let market_id = exchange_to_market(exchange.code())
-            .unwrap_or(0) as u8;
+        let market_id = exchange_to_market(exchange.code()).unwrap_or(0) as u8;
 
         Self {
             req_header: RequestHeader::new(STD_XDXR_INFO, FLAG_UNCOMPRESSED),
@@ -46,10 +47,18 @@ impl XdxrInfoContext {
 }
 
 impl BaseFrame for XdxrInfoContext {
-    fn request_header(&self) -> &RequestHeader { &self.req_header }
-    fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
-    fn response_header(&self) -> &ResponseHeader { &self.resp_header }
-    fn response_header_mut(&mut self) -> &mut ResponseHeader { &mut self.resp_header }
+    fn request_header(&self) -> &RequestHeader {
+        &self.req_header
+    }
+    fn request_header_mut(&mut self) -> &mut RequestHeader {
+        &mut self.req_header
+    }
+    fn response_header(&self) -> &ResponseHeader {
+        &self.resp_header
+    }
+    fn response_header_mut(&mut self) -> &mut ResponseHeader {
+        &mut self.resp_header
+    }
 
     fn serialize_request_body(&mut self) -> Vec<u8> {
         let mut bs = BinaryStream::new();
@@ -67,7 +76,10 @@ impl BaseFrame for XdxrInfoContext {
         bs.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
+    fn deserialize_response_body(
+        &mut self,
+        data: &[u8],
+    ) -> Result<(), crate::base::DeserializeError> {
         self.list.clear();
         if data.len() < 11 {
             // 9 bytes unknown + 2 bytes count = 11 minimum
@@ -160,8 +172,13 @@ impl BaseFrame for XdxrInfoContext {
             self.list.push(info);
         }
 
-        log::debug!("xdxr fetched market={} ticker={} count={} parsed={}",
-                    self.market, self.ticker, self.count, self.list.len());
+        log::debug!(
+            "xdxr fetched market={} ticker={} count={} parsed={}",
+            self.market,
+            self.ticker,
+            self.count,
+            self.list.len()
+        );
 
         Ok(())
     }
@@ -208,10 +225,18 @@ impl XdxrBatchRequest {
 }
 
 impl BaseFrame for XdxrBatchRequest {
-    fn request_header(&self) -> &RequestHeader { &self.req_header }
-    fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
-    fn response_header(&self) -> &ResponseHeader { &self.resp_header }
-    fn response_header_mut(&mut self) -> &mut ResponseHeader { &mut self.resp_header }
+    fn request_header(&self) -> &RequestHeader {
+        &self.req_header
+    }
+    fn request_header_mut(&mut self) -> &mut RequestHeader {
+        &mut self.req_header
+    }
+    fn response_header(&self) -> &ResponseHeader {
+        &self.resp_header
+    }
+    fn response_header_mut(&mut self) -> &mut ResponseHeader {
+        &mut self.resp_header
+    }
 
     fn serialize_request_body(&mut self) -> Vec<u8> {
         let mut bs = BinaryStream::new();
@@ -233,7 +258,10 @@ impl BaseFrame for XdxrBatchRequest {
         bs.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
+    fn deserialize_response_body(
+        &mut self,
+        data: &[u8],
+    ) -> Result<(), crate::base::DeserializeError> {
         self.list.clear();
         if data.len() < 2 {
             return Ok(());
@@ -266,8 +294,7 @@ impl BaseFrame for XdxrBatchRequest {
             let sub_count = bs.get_u16()? as usize;
 
             let exchange_str = market_to_exchange(market_id).unwrap_or("SSE");
-            let exchange = Exchange::parse(exchange_str)
-                .unwrap_or(Exchange::SSE);
+            let exchange = Exchange::parse(exchange_str).unwrap_or(Exchange::SSE);
 
             let mut entry = XdxrEntry {
                 exchange,
@@ -346,8 +373,11 @@ impl BaseFrame for XdxrBatchRequest {
             self.list.push(entry);
         }
 
-        log::debug!("xdxr_batch fetched count={} parsed={}",
-                    self.count, self.list.len());
+        log::debug!(
+            "xdxr_batch fetched count={} parsed={}",
+            self.count,
+            self.list.len()
+        );
 
         Ok(())
     }
@@ -365,13 +395,23 @@ pub fn fetch_xdxr(exchange: Exchange, ticker: &str) -> Option<XdxrInfoContext> {
             match super::super::super::protocol::transact_message_sync(conn.stream(), &mut msg) {
                 Ok(()) => Some(msg),
                 Err(e) => {
-                    log::error!("level1 xdxr process error for {} {}: {}", exchange.code(), ticker, e);
+                    log::error!(
+                        "level1 xdxr process error for {} {}: {}",
+                        exchange.code(),
+                        ticker,
+                        e
+                    );
                     None
                 }
             }
         }
         Err(e) => {
-            log::error!("failed to acquire level1 client for xdxr {} {}: {}", exchange.code(), ticker, e);
+            log::error!(
+                "failed to acquire level1 client for xdxr {} {}: {}",
+                exchange.code(),
+                ticker,
+                e
+            );
             None
         }
     }

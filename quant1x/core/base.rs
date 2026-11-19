@@ -70,8 +70,9 @@ impl BaseConfig {
                 typed_config.logdir =
                     Some(format!("{}/logs", typed_config.basedir.as_ref().unwrap()));
             } else {
-                typed_config.logdir =
-                    Some(crate::base::filesystem::expand_user(trimmed).unwrap_or(trimmed.to_string()));
+                typed_config.logdir = Some(
+                    crate::base::filesystem::expand_user(trimmed).unwrap_or(trimmed.to_string()),
+                );
             }
         } else {
             typed_config.logdir = Some(format!("{}/logs", typed_config.basedir.as_ref().unwrap()));

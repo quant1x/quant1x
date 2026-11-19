@@ -5,16 +5,16 @@ use super::region::Region;
 
 /// 交易所
 ///
-/// 每个变体持有 (mic, identifier, region, label) 四元组, 
-/// 与 Python 版 Exchange(Enum) 语义一致. 
+/// 每个变体持有 (mic, identifier, region, label) 四元组,
+/// 与 Python 版 Exchange(Enum) 语义一致.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Exchange {
     // 中国市场
-    SSE,   // 上海证券交易所
-    XSSC,  // XSSC: 上海证券交易所 - 沪股通
-    SZSE,  // 深圳证券交易所
-    XSEC,  // XSEC: 深证证券交易所 - 深股通
-    BSE,   // 北京证券交易所
+    SSE,  // 上海证券交易所
+    XSSC, // XSSC: 上海证券交易所 - 沪股通
+    SZSE, // 深圳证券交易所
+    XSEC, // XSEC: 深证证券交易所 - 深股通
+    BSE,  // 北京证券交易所
     // 期货交易所
     SHFE,  // 上海期货交易所
     XINE,  // 上海国际能源交易中心
@@ -24,12 +24,12 @@ pub enum Exchange {
     GFEX,  // 广州期货交易所
     SGE,   // 上海黄金交易所
     // 香港
-    HKEX,  // 香港交易所(现货股票)
-    HKSC,  // 香港交易所-港股通
-    HKFE,  // 香港期货交易所
+    HKEX, // 香港交易所(现货股票)
+    HKSC, // 香港交易所-港股通
+    HKFE, // 香港期货交易所
     // 指数
-    CSI,   // 中证指数
-    CNI,   // 国证指数
+    CSI, // 中证指数
+    CNI, // 国证指数
     // 扩展
     EXTENDED, // 扩展市场
     // 离岸/在岸
@@ -54,20 +54,40 @@ pub enum Exchange {
     UNKNOWN, // 未知交易所
 }
 
-/// 所有枚举变体构成的静态数组, 用于迭代查找(对应 Python 的 `for ex in cls`). 
+/// 所有枚举变体构成的静态数组, 用于迭代查找(对应 Python 的 `for ex in cls`).
 const ALL: &[Exchange] = &[
-    Exchange::SSE, Exchange::XSSC, Exchange::SZSE, Exchange::XSEC, Exchange::BSE,
-    Exchange::SHFE, Exchange::XINE, Exchange::CZCE, Exchange::DCE, Exchange::CFFEX,
-    Exchange::GFEX, Exchange::SGE,
-    Exchange::HKEX, Exchange::HKSC, Exchange::HKFE,
-    Exchange::CSI, Exchange::CNI,
+    Exchange::SSE,
+    Exchange::XSSC,
+    Exchange::SZSE,
+    Exchange::XSEC,
+    Exchange::BSE,
+    Exchange::SHFE,
+    Exchange::XINE,
+    Exchange::CZCE,
+    Exchange::DCE,
+    Exchange::CFFEX,
+    Exchange::GFEX,
+    Exchange::SGE,
+    Exchange::HKEX,
+    Exchange::HKSC,
+    Exchange::HKFE,
+    Exchange::CSI,
+    Exchange::CNI,
     Exchange::EXTENDED,
-    Exchange::OFFSHORE, Exchange::ONSHORE, Exchange::OTC, Exchange::OFFEX,
+    Exchange::OFFSHORE,
+    Exchange::ONSHORE,
+    Exchange::OTC,
+    Exchange::OFFEX,
     Exchange::MACRO,
-    Exchange::USA, Exchange::NYSE, Exchange::NASDAQ,
-    Exchange::LSE, Exchange::GBR,
+    Exchange::USA,
+    Exchange::NYSE,
+    Exchange::NASDAQ,
+    Exchange::LSE,
+    Exchange::GBR,
     Exchange::SGX,
-    Exchange::MIRROR, Exchange::TEMP, Exchange::UNKNOWN,
+    Exchange::MIRROR,
+    Exchange::TEMP,
+    Exchange::UNKNOWN,
 ];
 
 impl Exchange {
@@ -150,13 +170,22 @@ impl Exchange {
     /// 市场区域
     pub fn region(self) -> Region {
         match self {
-            Exchange::SSE | Exchange::XSSC | Exchange::SZSE | Exchange::XSEC |
-            Exchange::BSE | Exchange::SHFE | Exchange::XINE | Exchange::CZCE |
-            Exchange::DCE | Exchange::CFFEX | Exchange::GFEX | Exchange::SGE |
-            Exchange::CSI | Exchange::CNI => Region::CN,
+            Exchange::SSE
+            | Exchange::XSSC
+            | Exchange::SZSE
+            | Exchange::XSEC
+            | Exchange::BSE
+            | Exchange::SHFE
+            | Exchange::XINE
+            | Exchange::CZCE
+            | Exchange::DCE
+            | Exchange::CFFEX
+            | Exchange::GFEX
+            | Exchange::SGE
+            | Exchange::CSI
+            | Exchange::CNI => Region::CN,
             Exchange::HKEX | Exchange::HKSC | Exchange::HKFE => Region::HK,
-            Exchange::EXTENDED | Exchange::MACRO | Exchange::MIRROR |
-            Exchange::TEMP => Region::GLB,
+            Exchange::EXTENDED | Exchange::MACRO | Exchange::MIRROR | Exchange::TEMP => Region::GLB,
             Exchange::OFFSHORE => Region::OFFSHORE,
             Exchange::ONSHORE | Exchange::OTC | Exchange::OFFEX => Region::ONSHORE,
             Exchange::USA | Exchange::NYSE | Exchange::NASDAQ => Region::US,
@@ -420,9 +449,9 @@ mod tests {
 
     #[test]
     fn test_is_ext_quote() {
-        assert!(!Exchange::SSE.is_ext_quote());       // 标准行情
-        assert!(Exchange::HKEX.is_ext_quote());       // 扩展行情
-        assert!(!Exchange::UNKNOWN.is_ext_quote());   // UNKNOWN 不算扩展
+        assert!(!Exchange::SSE.is_ext_quote()); // 标准行情
+        assert!(Exchange::HKEX.is_ext_quote()); // 扩展行情
+        assert!(!Exchange::UNKNOWN.is_ext_quote()); // UNKNOWN 不算扩展
     }
 
     #[test]
@@ -452,7 +481,11 @@ mod tests {
     fn test_all_variants_have_data() {
         for ex in ALL {
             assert!(!ex.mic().is_empty(), "{:?}.mic() is empty", ex);
-            assert!(!ex.identifier().is_empty(), "{:?}.identifier() is empty", ex);
+            assert!(
+                !ex.identifier().is_empty(),
+                "{:?}.identifier() is empty",
+                ex
+            );
             assert!(!ex.label().is_empty(), "{:?}.label() is empty", ex);
             assert!(!ex.code().is_empty(), "{:?}.code() is empty", ex);
         }

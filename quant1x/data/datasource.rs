@@ -54,8 +54,8 @@ impl std::fmt::Display for PlateCategory {
 
 /// 市场接口抽象 trait
 ///
-/// 所有具体市场(如 A 股, 港股, 美股)应实现此 trait. 
-/// 与 Python `DataHandler(ABC)` 对齐. 
+/// 所有具体市场(如 A 股, 港股, 美股)应实现此 trait.
+/// 与 Python `DataHandler(ABC)` 对齐.
 pub trait DataHandler: Send + Sync {
     /// 返回该市场对应的市场列表
     ///
@@ -106,11 +106,7 @@ pub trait DataHandler: Send + Sync {
     ///
     /// date: 交易日期, 如 "2020-01-01", None 表示当天
     /// Python 版本返回 DataFrame, Rust 版本返回 Vec<Transaction>
-    fn transactions(
-        &self,
-        symbol: &str,
-        date: Option<&str>,
-    ) -> Option<Vec<Transaction>>;
+    fn transactions(&self, symbol: &str, date: Option<&str>) -> Option<Vec<Transaction>>;
 }
 
 #[cfg(test)]

@@ -11,7 +11,7 @@ use crate::io::operation_handler::NetworkOperationHandler;
 use mio::net::TcpStream;
 use std::net::TcpStream as StdTcpStream;
 
-/// 池化连接包装器. 池拥有连接, 并在丢弃时返回连接到池的守卫. 
+/// 池化连接包装器. 池拥有连接, 并在丢弃时返回连接到池的守卫.
 pub struct Connection {
     stream: TcpStream,
     addr: SocketAddr,
@@ -69,8 +69,8 @@ impl<H: NetworkOperationHandler> TcpConnectionPool<H> {
             active: Mutex::new(0),
         });
 
-        // 预热: 尝试创建 `min` 个连接并放入空闲队列. 
-        // 失败被忽略(启动时网络可能不可用). 
+        // 预热: 尝试创建 `min` 个连接并放入空闲队列.
+        // 失败被忽略(启动时网络可能不可用).
         if min > 0 {
             for _ in 0..min {
                 if let Some(ep) = pool.endpoint_manager.acquire_endpoint() {
@@ -130,21 +130,21 @@ impl<H: NetworkOperationHandler> TcpConnectionPool<H> {
             }
         }
 
-        // 生成一个后台心跳线程, 该线程定期通过调用处理器的 keepalive 来检查空闲连接. 使用 Weak 引用, 这样一旦池被丢弃, 线程会退出. 
+        // 生成一个后台心跳线程, 该线程定期通过调用处理器的 keepalive 来检查空闲连接. 使用 Weak 引用, 这样一旦池被丢弃, 线程会退出.
         let weak_pool: Weak<TcpConnectionPool<H>> = Arc::downgrade(&pool);
         thread::spawn(move || {
             loop {
-                // 尝试升级；如果池不存在, 则退出线程. 
+                // 尝试升级；如果池不存在, 则退出线程.
                 let pool_arc = match weak_pool.upgrade() {
                     Some(p) => p,
                     None => break,
                 };
 
-                // 根据处理器的首选间隔睡眠. 如果池在睡眠期间被丢弃, 则下次升级将失败并退出. 
+                // 根据处理器的首选间隔睡眠. 如果池在睡眠期间被丢弃, 则下次升级将失败并退出.
                 let interval = pool_arc.handler.check_interval();
                 thread::sleep(interval);
 
-                // 在持有锁的同时快速排出空闲连接, 然后在不持有互斥锁的情况下执行保活操作. 
+                // 在持有锁的同时快速排出空闲连接, 然后在不持有互斥锁的情况下执行保活操作.
                 let mut drained: Vec<Connection> = Vec::new();
                 {
                     let mut idle = pool_arc.idle.lock().unwrap();
@@ -157,7 +157,7 @@ impl<H: NetworkOperationHandler> TcpConnectionPool<H> {
                     continue;
                 }
 
-                // 对于每个排出的连接, 运行保活. 如果保活成功并返回 true, 则连接仍然健康并返回到空闲队列；否则将被丢弃. 
+                // 对于每个排出的连接, 运行保活. 如果保活成功并返回 true, 则连接仍然健康并返回到空闲队列；否则将被丢弃.
                 let mut survivors: Vec<Connection> = Vec::with_capacity(drained.len());
                 for mut conn in drained {
                     match pool_arc.handler.keepalive(conn.stream()) {
@@ -191,7 +191,7 @@ impl<H: NetworkOperationHandler> TcpConnectionPool<H> {
         pool
     }
 
-    /// 使用端点管理器获取连接(轮询 / 可用). 
+    /// 使用端点管理器获取连接(轮询 / 可用).
     pub fn acquire(self: &Arc<Self>) -> std::io::Result<PooledConnection<H>> {
         const WAIT_INTERVAL_MS: u64 = 50;
         const MAX_CONNECT_ATTEMPTS: usize = 5;
@@ -350,7 +350,7 @@ impl<H: NetworkOperationHandler> TcpConnectionPool<H> {
 
     fn release(&self, mut conn: Connection) {
         conn.last_used = Instant::now();
-        // 匹配 C++ release 行为: 始终将连接返回到空闲队列, 同时保留端点分配. 端点仅在连接被显式关闭或被视为不健康时才被释放. 
+        // 匹配 C++ release 行为: 始终将连接返回到空闲队列, 同时保留端点分配. 端点仅在连接被显式关闭或被视为不健康时才被释放.
         {
             let mut idle = self.idle.lock().unwrap();
             log::debug!(
@@ -375,7 +375,7 @@ impl<H: NetworkOperationHandler> TcpConnectionPool<H> {
         self.endpoint_manager.get_endpoint_stats(addr)
     }
 
-    /// 返回此池的配置最大连接数. 
+    /// 返回此池的配置最大连接数.
     pub fn max_connections(&self) -> usize {
         let endpoint_count = self.endpoint_manager.get_all_endpoints().len();
         if endpoint_count == 0 {
@@ -385,7 +385,7 @@ impl<H: NetworkOperationHandler> TcpConnectionPool<H> {
     }
 }
 
-/// RAII 守卫, 在丢弃时将连接返回到池. 
+/// RAII 守卫, 在丢弃时将连接返回到池.
 pub struct PooledConnection<H: NetworkOperationHandler> {
     pool: Arc<TcpConnectionPool<H>>,
     conn: Option<Connection>,
@@ -408,7 +408,7 @@ impl<H: NetworkOperationHandler> Drop for PooledConnection<H> {
             // 如果没有连接, 意味着连接创建失败, 减少活跃数
             let mut active = self.pool.active.lock().unwrap();
             *active = active.saturating_sub(1);
-            // 没有 Condvar 来通知；移除了等待语义以匹配 C++ 流程. 
+            // 没有 Condvar 来通知；移除了等待语义以匹配 C++ 流程.
         }
     }
 }
@@ -440,7 +440,7 @@ mod tests {
     #[test]
     fn test_endpoint_manager_basic() {
         let mgr = crate::io::endpoint::EndpointManager::new();
-        // add_endpoint 需要一个具体的端口；这里不能添加 0, 所以我们通过创建一个监听器来获取分配的端口来测试添加/删除语义. 
+        // add_endpoint 需要一个具体的端口；这里不能添加 0, 所以我们通过创建一个监听器来获取分配的端口来测试添加/删除语义.
         let listener = TcpListener::bind(("127.0.0.1", 0)).expect("bind");
         let addr = listener.local_addr().unwrap();
         assert!(mgr.add_endpoint(addr, 2));

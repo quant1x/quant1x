@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: MIT
 
 use quant1x::runtime::ringbuffer::Queue as VQueue;
-use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicI64, Ordering};
 use std::thread;
 use std::time::Instant;
 
@@ -40,12 +40,14 @@ fn run_vyukov_once() -> f64 {
     for _ in 0..NUM_CONSUMERS {
         let q2 = q.clone();
         let c2 = consumed.clone();
-        consumers.push(thread::spawn(move || loop {
-            match q2.pop() {
-                Ok(_) => {
-                    c2.fetch_add(1, Ordering::Relaxed);
+        consumers.push(thread::spawn(move || {
+            loop {
+                match q2.pop() {
+                    Ok(_) => {
+                        c2.fetch_add(1, Ordering::Relaxed);
+                    }
+                    Err(_) => break,
                 }
-                Err(_) => break,
             }
         }));
     }

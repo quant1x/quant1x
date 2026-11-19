@@ -6,9 +6,9 @@ use crate::data::meta::exchange::Exchange;
 use crate::data::meta::instrument::Instrument;
 use crate::data::schema::{Bar, Sector, Transaction};
 
-use super::instruments::get_instrument_info;
 use super::bar::get_cross_section_forward_adjusted_bars;
 use super::bar::resolve_as_of_date;
+use super::instruments::get_instrument_info;
 use super::sector::get_sector_list as get_tdx_sector_list;
 use super::trans::checkout_transaction_data;
 use super::trans::resolve_transaction_date;
@@ -62,8 +62,8 @@ fn is_need_ignore(code: &str) -> bool {
 
 /// 通达信数据源
 ///
-/// 实现 DataHandler trait, 作为 A 股(SSE/SZSE/BSE)行情的统一入口. 
-/// 数据来源: 本地 CSV 缓存文件. 
+/// 实现 DataHandler trait, 作为 A 股(SSE/SZSE/BSE)行情的统一入口.
+/// 数据来源: 本地 CSV 缓存文件.
 #[derive(Debug, Default)]
 pub struct TdxDataSource;
 
@@ -167,11 +167,7 @@ impl DataHandler for TdxDataSource {
 
         let bars = get_cross_section_forward_adjusted_bars(&inst, &as_of_date);
 
-        log::debug!(
-            "[tdx/datasource] Bars for {}: {} bars",
-            symbol,
-            bars.len()
-        );
+        log::debug!("[tdx/datasource] Bars for {}: {} bars", symbol, bars.len());
         Some(bars)
     }
 
@@ -288,9 +284,9 @@ mod tests {
     ///   3. df = D.bars(code); print(df)
     ///
     /// 已注释掉的部分(get_sector_list / get_index_list / get_stock_list / list_instruments / transactions)
-    /// Rust 测试同样注释掉, 只保留 Python 实际执行的部分. 
+    /// Rust 测试同样注释掉, 只保留 Python 实际执行的部分.
     ///
-    /// 注意: 此测试依赖本地缓存数据, 在没有缓存的环境下可能部分断言失败. 
+    /// 注意: 此测试依赖本地缓存数据, 在没有缓存的环境下可能部分断言失败.
     /// 标记为 #[ignore] 避免 CI 环境因缺少缓存文件而失败, 开发时手动运行:
     ///   cargo test --package quant1x -- test_tdx_datasource_main --ignored --nocapture
     #[test]

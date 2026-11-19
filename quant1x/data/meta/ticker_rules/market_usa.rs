@@ -1,18 +1,42 @@
 // Copyright (C) 2026 Quant1X Team
 // SPDX-License-Identifier: MIT
 
-use super::rule::{CodeRule, RulePrefix};
 use super::super::exchange::Exchange;
 use super::super::instrument::InstrumentType;
+use super::rule::{CodeRule, RulePrefix};
 use std::collections::HashMap;
 
 /// USA 美国证券交易所规则
 pub fn usa_rules() -> Vec<CodeRule> {
     vec![
-        CodeRule { exchange: Exchange::OFFSHORE, prefix: RulePrefix::Str("IXIC"), instrument_type: InstrumentType::INDEX, name: "指数", desc: "纳斯达克指数" },
-        CodeRule { exchange: Exchange::OFFSHORE, prefix: RulePrefix::Str("DAX"), instrument_type: InstrumentType::INDEX, name: "指数", desc: "德国DAX指数" },
-        CodeRule { exchange: Exchange::EXTENDED, prefix: RulePrefix::Str("US"), instrument_type: InstrumentType::SECTOR, name: "指数", desc: "美国板块指数" },
-        CodeRule { exchange: Exchange::USA, prefix: RulePrefix::Str(""), instrument_type: InstrumentType::STOCK, name: "挂牌公司普通股", desc: "" },
+        CodeRule {
+            exchange: Exchange::OFFSHORE,
+            prefix: RulePrefix::Str("IXIC"),
+            instrument_type: InstrumentType::INDEX,
+            name: "指数",
+            desc: "纳斯达克指数",
+        },
+        CodeRule {
+            exchange: Exchange::OFFSHORE,
+            prefix: RulePrefix::Str("DAX"),
+            instrument_type: InstrumentType::INDEX,
+            name: "指数",
+            desc: "德国DAX指数",
+        },
+        CodeRule {
+            exchange: Exchange::EXTENDED,
+            prefix: RulePrefix::Str("US"),
+            instrument_type: InstrumentType::SECTOR,
+            name: "指数",
+            desc: "美国板块指数",
+        },
+        CodeRule {
+            exchange: Exchange::USA,
+            prefix: RulePrefix::Str(""),
+            instrument_type: InstrumentType::STOCK,
+            name: "挂牌公司普通股",
+            desc: "",
+        },
     ]
 }
 
@@ -20,7 +44,7 @@ pub fn usa_rules() -> Vec<CodeRule> {
 fn ticker_to_code_map() -> HashMap<&'static str, &'static str> {
     let mut m = HashMap::new();
     m.insert("IXIC", "A_IXIC"); // 纳斯达克指数
-    m.insert("DAX", "B_DAX");   // 德国DAX指数
+    m.insert("DAX", "B_DAX"); // 德国DAX指数
     m
 }
 

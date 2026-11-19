@@ -4,8 +4,8 @@
 use std::marker::PhantomData;
 use std::path::Path;
 
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 
 use crate::data::meta::instrument::Instrument;
 use crate::meta::Timestamp;

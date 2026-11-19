@@ -1,8 +1,8 @@
 // Copyright (C) 2026 Quant1X Team
 // SPDX-License-Identifier: MIT
 
-use encoding::{DecoderTrap, Encoding};
 use encoding::all::GBK;
+use encoding::{DecoderTrap, Encoding};
 
 use crate::base::BinaryStream;
 
@@ -41,17 +41,29 @@ impl SecurityListContext {
             resp_header: ResponseHeader::new(),
             market,
             start,
-            count: if count == 0 || count > PRE_REQUEST_MAX { PRE_REQUEST_MAX } else { count },
+            count: if count == 0 || count > PRE_REQUEST_MAX {
+                PRE_REQUEST_MAX
+            } else {
+                count
+            },
             list: Vec::new(),
         }
     }
 }
 
 impl BaseFrame for SecurityListContext {
-    fn request_header(&self) -> &RequestHeader { &self.req_header }
-    fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
-    fn response_header(&self) -> &ResponseHeader { &self.resp_header }
-    fn response_header_mut(&mut self) -> &mut ResponseHeader { &mut self.resp_header }
+    fn request_header(&self) -> &RequestHeader {
+        &self.req_header
+    }
+    fn request_header_mut(&mut self) -> &mut RequestHeader {
+        &mut self.req_header
+    }
+    fn response_header(&self) -> &ResponseHeader {
+        &self.resp_header
+    }
+    fn response_header_mut(&mut self) -> &mut ResponseHeader {
+        &mut self.resp_header
+    }
 
     fn serialize_request_body(&mut self) -> Vec<u8> {
         let mut bs = BinaryStream::new();
@@ -62,7 +74,10 @@ impl BaseFrame for SecurityListContext {
         bs.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
+    fn deserialize_response_body(
+        &mut self,
+        data: &[u8],
+    ) -> Result<(), crate::base::DeserializeError> {
         self.list.clear();
         if data.is_empty() {
             return Ok(());
@@ -100,7 +115,10 @@ impl BaseFrame for SecurityListContext {
             let mut name_bytes = [0u8; 16];
             bs.get_byte_array(&mut name_bytes)?;
             let name = {
-                let nul_pos = name_bytes.iter().position(|&b| b == 0).unwrap_or(name_bytes.len());
+                let nul_pos = name_bytes
+                    .iter()
+                    .position(|&b| b == 0)
+                    .unwrap_or(name_bytes.len());
                 GBK.decode(&name_bytes[..nul_pos], DecoderTrap::Replace)
                     .unwrap_or_else(|_| String::from_utf8_lossy(&name_bytes[..nul_pos]).to_string())
                     .trim()
@@ -129,8 +147,13 @@ impl BaseFrame for SecurityListContext {
             });
         }
 
-        log::debug!("security_list fetched market={} start={} count={} parsed={}",
-                    self.market, self.start, cnt, self.list.len());
+        log::debug!(
+            "security_list fetched market={} start={} count={} parsed={}",
+            self.market,
+            self.start,
+            cnt,
+            self.list.len()
+        );
 
         Ok(())
     }
@@ -144,13 +167,23 @@ pub fn fetch_security_list(market: u16, start: u32, count: u32) -> Option<Securi
             match super::super::super::protocol::transact_message_sync(conn.stream(), &mut msg) {
                 Ok(()) => Some(msg),
                 Err(e) => {
-                    log::error!("level1 security_list process error for market={} start={}: {}", market, start, e);
+                    log::error!(
+                        "level1 security_list process error for market={} start={}: {}",
+                        market,
+                        start,
+                        e
+                    );
                     None
                 }
             }
         }
         Err(e) => {
-            log::error!("failed to acquire level1 client for security_list market={} start={}: {}", market, start, e);
+            log::error!(
+                "failed to acquire level1 client for security_list market={} start={}: {}",
+                market,
+                start,
+                e
+            );
             None
         }
     }

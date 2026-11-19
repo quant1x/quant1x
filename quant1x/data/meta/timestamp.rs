@@ -16,17 +16,17 @@ pub const MILLISECONDS_PER_DAY: i64 = SECONDS_PER_DAY * MILLISECONDS_PER_SECOND;
 // 盘前时间配置统一在 config 模块 (对应 C++ 中的 config::cn_pre_market_*)
 // pub use crate::config::{PRE_MARKET_HOUR, PRE_MARKET_MINUTE, PRE_MARKET_SECOND};
 
-/// 本地时间戳, 单位毫秒. 
+/// 本地时间戳, 单位毫秒.
 ///
-/// 该结构体提供与 C++ `timestamp` 类兼容的 API 与功能, 
-/// 用于处理本地时间戳的常用操作. 
+/// 该结构体提供与 C++ `timestamp` 类兼容的 API 与功能,
+/// 用于处理本地时间戳的常用操作.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Timestamp {
     ms: i64,
 }
 
 impl Timestamp {
-    /// 创建新的时间戳. 
+    /// 创建新的时间戳.
     ///
     /// # 参数
     /// * `ms` - 毫秒时间戳
@@ -40,7 +40,7 @@ impl Timestamp {
         Self { ms }
     }
 
-    /// 从 chrono::DateTime 创建时间戳. 
+    /// 从 chrono::DateTime 创建时间戳.
     ///
     /// # 参数
     /// * `dt` - chrono::DateTime 对象
@@ -48,7 +48,7 @@ impl Timestamp {
         Self::new(dt.timestamp_millis())
     }
 
-    /// 从字符串解析并创建时间戳. 
+    /// 从字符串解析并创建时间戳.
     ///
     /// # 参数
     /// * `s` - 时间字符串
@@ -56,7 +56,7 @@ impl Timestamp {
         Self::parse(s)
     }
 
-    /// 从年月日时分秒毫秒创建时间戳. 
+    /// 从年月日时分秒毫秒创建时间戳.
     ///
     /// # 参数
     /// * `year` - 年
@@ -81,12 +81,12 @@ impl Timestamp {
         Some(Self::from_datetime(dt))
     }
 
-    /// 获取毫秒时间戳值. 
+    /// 获取毫秒时间戳值.
     pub fn value(&self) -> i64 {
         self.ms
     }
 
-    /// 创建盘前时间戳. 
+    /// 创建盘前时间戳.
     ///
     /// # 参数
     /// * `year` - 年
@@ -104,20 +104,20 @@ impl Timestamp {
         )
     }
 
-    /// 当前时间戳. 
+    /// 当前时间戳.
     pub fn now() -> Self {
         Self::from_datetime(Local::now())
     }
 
-    /// 零值时间戳. 
+    /// 零值时间戳.
     pub fn zero() -> Self {
         Self::new(0)
     }
 
-    /// 解析日期时间字符串. 
-    /// 该方法主要用于解析可包含时间的日期格式, 也兼容纯日期字符串. 
+    /// 解析日期时间字符串.
+    /// 该方法主要用于解析可包含时间的日期格式, 也兼容纯日期字符串.
     ///
-    /// 支持多种格式示例: 
+    /// 支持多种格式示例:
     /// - "2022-01-01 15:30:45"
     /// - "2022-01-01"
     /// - "2022/01/01 15:30:45"
@@ -165,10 +165,10 @@ impl Timestamp {
         Err(chrono::NaiveDateTime::parse_from_str("invalid", "%Y-%m-%d").unwrap_err())
     }
 
-    /// 解析时间字符串. 
-    /// 主要用于解析时分秒格式, 但也兼容包含完整日期时间的输入. 
+    /// 解析时间字符串.
+    /// 主要用于解析时分秒格式, 但也兼容包含完整日期时间的输入.
     ///
-    /// 设计目的: 方便用户以只含时间或含日期时间的字符串作为输入. 
+    /// 设计目的: 方便用户以只含时间或含日期时间的字符串作为输入.
     ///
     /// # 参数
     /// * `s` - 时间字符串, 例如 "14:30:45" 或 "2022-01-01 14:30:45"
@@ -230,7 +230,7 @@ impl Timestamp {
         Err(chrono::NaiveTime::parse_from_str("invalid", "%H:%M:%S").unwrap_err())
     }
 
-    /// 获取当天零点的时间戳. 
+    /// 获取当天零点的时间戳.
     pub fn start_of_day(&self) -> Self {
         let dt = self.to_datetime();
         let start_of_day = dt.date_naive().and_hms_opt(0, 0, 0).unwrap();
@@ -238,12 +238,12 @@ impl Timestamp {
         Self::from_datetime(start_dt)
     }
 
-    /// 当前时间的零点整. 
+    /// 当前时间的零点整.
     pub fn midnight() -> Self {
         Self::now().start_of_day()
     }
 
-    /// 获取今天的指定时间. 
+    /// 获取今天的指定时间.
     ///
     /// # 参数
     /// * `hour` - 时
@@ -258,7 +258,7 @@ impl Timestamp {
         Some(Self::from_datetime(new_dt))
     }
 
-    /// 当天自 0 点开始的偏移时间. 
+    /// 当天自 0 点开始的偏移时间.
     ///
     /// # 参数
     /// * `hour` - 小时偏移
@@ -275,7 +275,7 @@ impl Timestamp {
         )
     }
 
-    /// 偏移指定时间. 
+    /// 偏移指定时间.
     ///
     /// # 参数
     /// * `hour` - 小时偏移
@@ -290,20 +290,25 @@ impl Timestamp {
         Self::new(self.ms + offset_ms)
     }
 
-    /// 转换为盘前时间. 
+    /// 转换为盘前时间.
     pub fn pre_market_time_from_current(&self) -> Option<Self> {
         let _dt = self.to_datetime();
-        self.today(crate::config::PRE_MARKET_HOUR, crate::config::PRE_MARKET_MINUTE, crate::config::PRE_MARKET_SECOND, 0)
+        self.today(
+            crate::config::PRE_MARKET_HOUR,
+            crate::config::PRE_MARKET_MINUTE,
+            crate::config::PRE_MARKET_SECOND,
+            0,
+        )
     }
 
-    /// 调整到分钟的开始(秒和毫秒归零). 
+    /// 调整到分钟的开始(秒和毫秒归零).
     pub fn floor(&self) -> Self {
         let dt = self.to_datetime();
         let floored = dt.with_second(0).unwrap().with_nanosecond(0).unwrap();
         Self::from_datetime(floored)
     }
 
-    /// 调整到分钟的结束(59 秒 999 毫秒). 
+    /// 调整到分钟的结束(59 秒 999 毫秒).
     pub fn ceil(&self) -> Self {
         let dt = self.to_datetime();
         let ceiled = dt
@@ -314,13 +319,13 @@ impl Timestamp {
         Self::from_datetime(ceiled)
     }
 
-    /// 提取年月日. 
+    /// 提取年月日.
     pub fn extract(&self) -> (i32, u32, u32) {
         let dt = self.to_datetime();
         (dt.year(), dt.month(), dt.day())
     }
 
-    /// 格式化为字符串. 
+    /// 格式化为字符串.
     ///
     /// # 参数
     /// * `layout` - 格式字符串, 默认为 "%Y-%m-%d %H:%M:%S"
@@ -329,7 +334,7 @@ impl Timestamp {
         dt.format(layout).to_string()
     }
 
-    /// 格式化为字符串(以秒为单位, 截断毫秒). 
+    /// 格式化为字符串(以秒为单位, 截断毫秒).
     ///
     /// # 参数
     /// * `layout` - 格式字符串, 默认为 "%H:%M:%S"
@@ -340,17 +345,17 @@ impl Timestamp {
         truncated.format(layout).to_string()
     }
 
-    /// 返回仅日期部分. 
+    /// 返回仅日期部分.
     pub fn only_date(&self) -> String {
         self.to_string_with_layout("%Y-%m-%d")
     }
 
-    /// 返回缓存用日期格式. 
+    /// 返回缓存用日期格式.
     pub fn cache_date(&self) -> String {
         self.to_string_with_layout("%Y%m%d")
     }
 
-    /// 返回仅时间部分. 
+    /// 返回仅时间部分.
     pub fn only_time(&self) -> String {
         self.to_string_with_layout("%H:%M:%S")
     }

@@ -5,12 +5,20 @@
 
 /// Convert ASCII letters to lower-case; leaves other characters unchanged.
 pub fn to_lower<S: AsRef<str>>(input: S) -> String {
-    input.as_ref().chars().map(|c| c.to_ascii_lowercase()).collect()
+    input
+        .as_ref()
+        .chars()
+        .map(|c| c.to_ascii_lowercase())
+        .collect()
 }
 
 /// Convert ASCII letters to upper-case; leaves other characters unchanged.
 pub fn to_upper<S: AsRef<str>>(input: S) -> String {
-    input.as_ref().chars().map(|c| c.to_ascii_uppercase()).collect()
+    input
+        .as_ref()
+        .chars()
+        .map(|c| c.to_ascii_uppercase())
+        .collect()
 }
 
 /// Trim ASCII whitespace characters (space, tab, LF, CR) from both ends.

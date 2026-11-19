@@ -3,19 +3,19 @@
 
 //! 异步调度器模块
 //!
-//! 该模块提供一个轻量的 cron 风格调度器 `AsyncScheduler`, 用于在运行时调度周期性任务. 
+//! 该模块提供一个轻量的 cron 风格调度器 `AsyncScheduler`, 用于在运行时调度周期性任务.
 //!
-//! 设计要点: 
+//! 设计要点:
 //! - 使用 `tokio` 运行时异步执行调度循环；
 //! - 支持通过 cron 表达式(`cron::Schedule`)注册周期性任务；
 //! - 对于 cron 任务, 调度器维护 `cron_running` 标志来避免同一任务的重入；当上一次仍在运行时, 调度器会记录 `skipped_running`；
-//! - 提供统计信息 `SchedulerStats`, 用于观测调度器的行为(调度次数, 执行次数, 跳过次数等). 
+//! - 提供统计信息 `SchedulerStats`, 用于观测调度器的行为(调度次数, 执行次数, 跳过次数等).
 //!
-//! 注意事项: 
+//! 注意事项:
 //! - 任务回调是同步闭包 `Fn()`, 如果回调是长时间运行的阻塞操作, 建议在回调内部将真正的工作交给异步任务或线程池处理, 以避免阻塞调度循环；
 //! - 测试中为简化逻辑会直接操作内部状态(如将 `cron_running` 标记为 true), 但生产代码不应这样做；
 //!
-//! 示例: 
+//! 示例:
 //! ```no_run
 //! use quant1x::runtime::AsyncScheduler;
 //! use std::sync::Arc;
@@ -48,7 +48,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{Mutex, Notify};
 use tokio::task;
-use tokio::time::{sleep_until, Instant};
+use tokio::time::{Instant, sleep_until};
 
 /// 任务ID类型
 pub type TaskId = i64;
@@ -472,7 +472,7 @@ impl Drop for AsyncScheduler {
 mod tests {
     use super::*;
     use std::sync::atomic::{AtomicU32, Ordering};
-    use tokio::time::{sleep, Duration};
+    use tokio::time::{Duration, sleep};
 
     #[tokio::test]
     async fn test_scheduler_basic() {
@@ -543,7 +543,7 @@ mod tests {
         let counter = Arc::new(AtomicU32::new(0));
 
         // 任务运行时间比调度间隔长(1.5s > 1s). 我们在第一个执行把
-        // `cron_running` 置为 true 后注入额外的调度项, 这会触发 skipped_running. 
+        // `cron_running` 置为 true 后注入额外的调度项, 这会触发 skipped_running.
         let counter_clone = counter.clone();
         let id = scheduler
             .schedule_cron("long_task".to_string(), "* * * * * *", move || {

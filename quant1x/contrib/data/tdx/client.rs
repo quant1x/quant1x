@@ -34,7 +34,10 @@ fn build_std_pool() -> Arc<TcpConnectionPool<StandardProtocolHandler>> {
             super::config::DEFAULT_CONNECT_TIMEOUT_MS,
         );
         let detected = detected_map.get("standard").cloned().unwrap_or_default();
-        log::debug!("[tdx/client] detect() returned {} std servers", detected.len());
+        log::debug!(
+            "[tdx/client] detect() returned {} std servers",
+            detected.len()
+        );
         if !detected.is_empty() {
             let mut cache_map = std::collections::BTreeMap::new();
             cache_map.insert("standard".to_string(), detected.clone());
@@ -64,10 +67,7 @@ fn build_std_pool() -> Arc<TcpConnectionPool<StandardProtocolHandler>> {
         log::error!("[tdx/client] no std servers available");
     }
 
-    let max_conn = std::cmp::min(
-        super::config::MAX_CONNECTIONS,
-        server_count.max(1),
-    );
+    let max_conn = std::cmp::min(super::config::MAX_CONNECTIONS, server_count.max(1));
 
     log::debug!(
         "[tdx/client] building std pool with max_connections={}, endpoints={}",

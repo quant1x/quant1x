@@ -18,7 +18,10 @@ pub struct CodeRule {
 #[derive(Debug, Clone)]
 pub enum RulePrefix {
     Str(&'static str),
-    Range { start: &'static str, end: &'static str },
+    Range {
+        start: &'static str,
+        end: &'static str,
+    },
 }
 
 impl RulePrefix {
@@ -54,9 +57,7 @@ impl RulePrefix {
     pub fn max_value_length(&self) -> usize {
         match self {
             RulePrefix::Str(s) => s.len(),
-            RulePrefix::Range { start, end } => {
-                std::cmp::max(start.len(), end.len())
-            }
+            RulePrefix::Range { start, end } => std::cmp::max(start.len(), end.len()),
         }
     }
 }

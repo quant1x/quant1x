@@ -7,9 +7,9 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use super::id::PAYLOAD_BITS;
-use super::state_store::{default_sync_every_value, FileStateStore, PersistentState};
 use super::Error;
+use super::id::PAYLOAD_BITS;
+use super::state_store::{FileStateStore, PersistentState, default_sync_every_value};
 
 /// 默认 seq 位数 (22 bit payload - 11 bit worker)
 pub(crate) const DEFAULT_SEQ_BITS: u8 = 11;
@@ -208,7 +208,10 @@ impl HlcBuilder {
             now: self.now,
             seq_bits: self.seq_bits,
             store,
-            state: Mutex::new(HlcState { physical: 0, seq: 0 }),
+            state: Mutex::new(HlcState {
+                physical: 0,
+                seq: 0,
+            }),
         };
         let mut restored: Option<PersistentState> = None;
         if let Some(store) = &hlc.store {

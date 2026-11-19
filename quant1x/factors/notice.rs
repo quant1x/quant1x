@@ -415,8 +415,7 @@ pub fn get_one_notice(security_code: &str, current_date: &str) -> CompanyNotice 
         return notice;
     }
 
-    let timestamp =
-        Timestamp::parse(current_date).unwrap_or_else(|_| Timestamp::now());
+    let timestamp = Timestamp::parse(current_date).unwrap_or_else(|_| Timestamp::now());
     // offset -24 * 30 hours? C++: timestamp.offset(-24 * 30)
     // Assuming offset takes hours in C++, but in Rust Timestamp implementation it might differ.
     // Let's assume we need to go back 30 days.

@@ -9,9 +9,9 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 static SEQ_ID: AtomicU32 = AtomicU32::new(0);
 
-/// 生成并返回一个全局唯一的序列ID. 
+/// 生成并返回一个全局唯一的序列ID.
 ///
-/// 每次调用时, 序列ID会递增1, 并保证在32位无符号整数范围内循环(0xFFFFFFFF). 
+/// 每次调用时, 序列ID会递增1, 并保证在32位无符号整数范围内循环(0xFFFFFFFF).
 pub fn get_sequence_id() -> u32 {
     SEQ_ID.fetch_add(1, Ordering::SeqCst).wrapping_add(1)
 }
@@ -20,9 +20,9 @@ pub fn get_sequence_id() -> u32 {
 // Varint 编解码 (Python helpers.py 28-85)
 // ============================================================
 
-/// 将整数编码为 varint 字节序列. 
+/// 将整数编码为 varint 字节序列.
 ///
-/// 返回值为包含编码后字节的 `Vec<u8>`. 
+/// 返回值为包含编码后字节的 `Vec<u8>`.
 pub fn varint_encode(value: i64) -> Vec<u8> {
     let mut buf = Vec::new();
     let sign = value < 0;
@@ -55,9 +55,9 @@ pub fn varint_encode(value: i64) -> Vec<u8> {
     buf
 }
 
-/// 从 `data` 的位置 `pos` 解码一个 varint. 
+/// 从 `data` 的位置 `pos` 解码一个 varint.
 ///
-/// 返回 `(value, new_pos)`, 其中 `new_pos` 是下一个未读取的索引位置. 
+/// 返回 `(value, new_pos)`, 其中 `new_pos` 是下一个未读取的索引位置.
 pub fn varint_decode(data: &[u8], pos: usize) -> (i64, usize) {
     if pos >= data.len() {
         panic!("varint_decode: index out of range");
@@ -117,9 +117,9 @@ pub fn get_datetime_from_u32(
 // 整数转浮点价格 (C++ helpers::integer_to_float64)
 // ============================================================
 
-/// 将 32 位无符号整数解释并转换为浮点数(与 level1 协议中使用的转换一致). 
+/// 将 32 位无符号整数解释并转换为浮点数(与 level1 协议中使用的转换一致).
 ///
-/// 该函数把输入分解成四个字节并依照协议的位权与指数规则重建浮点值. 
+/// 该函数把输入分解成四个字节并依照协议的位权与指数规则重建浮点值.
 pub fn int_to_float64(v: u32) -> f64 {
     if v == 0 {
         return 0.0;
@@ -178,13 +178,13 @@ pub const TDX_MARKET_HONGKONG: i32 = 31;
 pub const TDX_MARKET_HKFE: i32 = 27;
 pub const TDX_MARKET_USA: i32 = 74;
 
-/// 获取价格计算所用的默认基数(单位). 
+/// 获取价格计算所用的默认基数(单位).
 ///
-/// 参数: 
+/// 参数:
 ///     market_id: 市场编号(例如 0=深市, 1=沪市)
 ///     code: 证券代码
 ///
-/// 返回: 基数(`100.0` 或 `1000.0`). 
+/// 返回: 基数(`100.0` 或 `1000.0`).
 pub fn default_base_unit(market_id: i32, code: &str) -> f64 {
     let s = code.trim();
     if s.is_empty() {
@@ -208,19 +208,19 @@ pub fn default_base_unit(market_id: i32, code: &str) -> f64 {
 // 交易所 ↔ TDX market_id 映射 (Python helpers.py 211-230)
 // ============================================================
 
-use std::collections::HashMap;
 use once_cell::sync::Lazy;
+use std::collections::HashMap;
 
 static EXCHANGE_TO_MARKET: Lazy<HashMap<&'static str, i32>> = Lazy::new(|| {
     let mut m = HashMap::new();
     // 标准行情
-    m.insert("SSE", TDX_MARKET_SHANGHAI);   // 上海证券交易所
-    m.insert("SZSE", TDX_MARKET_SHENZHEN);  // 深圳证券交易所
-    m.insert("BSE", TDX_MARKET_BEIJING);    // 北京证券交易所
+    m.insert("SSE", TDX_MARKET_SHANGHAI); // 上海证券交易所
+    m.insert("SZSE", TDX_MARKET_SHENZHEN); // 深圳证券交易所
+    m.insert("BSE", TDX_MARKET_BEIJING); // 北京证券交易所
     // 扩展行情
-    m.insert("HKEX", TDX_MARKET_HONGKONG);  // 香港交易所
-    m.insert("HKFE", TDX_MARKET_HKFE);      // 香港期货交易所
-    m.insert("USA", TDX_MARKET_USA);        // 美国市场
+    m.insert("HKEX", TDX_MARKET_HONGKONG); // 香港交易所
+    m.insert("HKFE", TDX_MARKET_HKFE); // 香港期货交易所
+    m.insert("USA", TDX_MARKET_USA); // 美国市场
     m
 });
 
@@ -263,7 +263,21 @@ mod tests {
 
     #[test]
     fn test_varint_roundtrip() {
-        let test_values = vec![0i64, 1, -1, 127, -127, 128, 16383, -16383, 16384, 100000, -100000, i32::MAX as i64, i32::MIN as i64];
+        let test_values = vec![
+            0i64,
+            1,
+            -1,
+            127,
+            -127,
+            128,
+            16383,
+            -16383,
+            16384,
+            100000,
+            -100000,
+            i32::MAX as i64,
+            i32::MIN as i64,
+        ];
         for v in test_values {
             let encoded = varint_encode(v);
             let (decoded, pos) = varint_decode(&encoded, 0);

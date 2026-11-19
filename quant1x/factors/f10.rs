@@ -1,15 +1,15 @@
 // Copyright (C) 2026 Quant1X Team
 // SPDX-License-Identifier: MIT
 
+use crate::base::numeric;
 use crate::config;
+use crate::contrib::data::tdx::level1;
 use crate::data::market::detect_symbol;
 use crate::data::meta::Timestamp;
 use crate::factors::financial_report;
 use crate::factors::notice;
 use crate::factors::safety_score;
 use crate::factors::share_holder;
-use crate::contrib::data::tdx::level1;
-use crate::base::numeric;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -181,7 +181,11 @@ fn get_finance_info(security_code: &str, feature_date: &str) -> (f64, f64, Strin
                 }
             }
             Err(e) => {
-                log::warn!("[f10] finance_info request failed for {}: {}", security_code, e);
+                log::warn!(
+                    "[f10] finance_info request failed for {}: {}",
+                    security_code,
+                    e
+                );
             }
         }
     }

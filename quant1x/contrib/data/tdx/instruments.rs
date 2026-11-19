@@ -5,14 +5,14 @@ use crate::data::meta::exchange::Exchange;
 use crate::data::meta::instrument::{Instrument, InstrumentType};
 use crate::data::status;
 use crate::helpers;
-use std::collections::HashMap;
-use std::io;
-use std::fs::{self, File};
-use std::io::Write;
-use std::sync::Mutex;
+use csv::WriterBuilder;
 use once_cell::sync::Lazy;
+use std::collections::HashMap;
+use std::fs::{self, File};
+use std::io;
+use std::io::Write;
 use std::path::Path;
-use csv::WriterBuilder; // 引入 csv crate
+use std::sync::Mutex; // 引入 csv crate
 
 static SECURITY_MAP: Lazy<Mutex<HashMap<String, Instrument>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
@@ -22,10 +22,10 @@ fn get_security_filename() -> String {
     crate::config::get_security_filename()
 }
 
-/// 从 CSV 文件加载证券列表到全局安全映射中. 
+/// 从 CSV 文件加载证券列表到全局安全映射中.
 ///
-/// 读取由 `get_security_filename()` 指定的 CSV 文件, 逐行解析为 `Instrument` 对象, 
-/// 并以 `symbol` 为键插入全局 `SECURITY_MAP`. 加载前会清空已有数据. 
+/// 读取由 `get_security_filename()` 指定的 CSV 文件, 逐行解析为 `Instrument` 对象,
+/// 并以 `symbol` 为键插入全局 `SECURITY_MAP`. 加载前会清空已有数据.
 ///
 /// # Returns
 ///
@@ -34,7 +34,7 @@ fn get_security_filename() -> String {
 ///
 /// # Panics
 ///
-/// 当 `SECURITY_MAP` 的 Mutex 被 poison 时会 panic. 
+/// 当 `SECURITY_MAP` 的 Mutex 被 poison 时会 panic.
 fn load_securities() -> bool {
     let fname = get_security_filename();
     log::debug!("Loading securities from {}", fname);
@@ -82,9 +82,9 @@ fn load_securities() -> bool {
     !map.is_empty()
 }
 
-/// 根据证券代码字符串, 自动识别市场并返回标准化的证券代码. 
+/// 根据证券代码字符串, 自动识别市场并返回标准化的证券代码.
 ///
-/// 如果无法识别有效的市场或代码, 则返回空字符串. 
+/// 如果无法识别有效的市场或代码, 则返回空字符串.
 ///
 /// # Examples
 ///
@@ -104,10 +104,10 @@ fn correct_security_code(symbol: &str) -> String {
     }
 }
 
-/// 从指定交易所获取证券列表. 
+/// 从指定交易所获取证券列表.
 ///
-/// 根据交易所类型映射为对应的市场ID, 调用通达信协议获取证券列表, 
-/// 并将返回的原始数据转换为 `Instrument` 集合. 
+/// 根据交易所类型映射为对应的市场ID, 调用通达信协议获取证券列表,
+/// 并将返回的原始数据转换为 `Instrument` 集合.
 ///
 /// # Arguments
 ///
@@ -117,10 +117,12 @@ fn correct_security_code(symbol: &str) -> String {
 ///
 /// # Returns
 ///
-/// 返回该交易所指定范围内的证券列表. 若交易所不支持或协议请求失败, 返回空向量. 
+/// 返回该交易所指定范围内的证券列表. 若交易所不支持或协议请求失败, 返回空向量.
 fn fetch_security_list(exchange: Exchange, start: u32, count: u32) -> Vec<Instrument> {
     let market_id = helpers::exchange_to_market(exchange.code()).unwrap_or(0) as u16;
-    let resp = match crate::contrib::data::tdx::level1::std::security_list::fetch_security_list(market_id, start, count) {
+    let resp = match crate::contrib::data::tdx::level1::std::security_list::fetch_security_list(
+        market_id, start, count,
+    ) {
         Some(r) => r,
         None => return Vec::new(),
     };
@@ -143,14 +145,14 @@ fn fetch_security_list(exchange: Exchange, start: u32, count: u32) -> Vec<Instru
     instruments
 }
 
-/// 初始化证券列表, 从通达信服务器拉取并缓存到本地 CSV 文件. 
+/// 初始化证券列表, 从通达信服务器拉取并缓存到本地 CSV 文件.
 ///
 /// 首先检查是否需要更新(通过 `should_initialize_file` 判断), 若无需更新则尝试从已有 CSV 加载；
-/// 若 CSV 加载失败或标记为需要更新, 则从服务器分页拉取证券列表: 
+/// 若 CSV 加载失败或标记为需要更新, 则从服务器分页拉取证券列表:
 /// - 标准行情: 拉取沪市(SSE), 深市(SZSE), 北交所(BSE)的 A 股列表
 /// - 扩展行情: 拉取港交所(HKEX)的证券列表
 ///
-/// 拉取完成后写入 CSV 缓存文件, 并将证券列表加载到内存中的 `SECURITY_MAP`. 
+/// 拉取完成后写入 CSV 缓存文件, 并将证券列表加载到内存中的 `SECURITY_MAP`.
 pub fn init_securities() {
     let fname = get_security_filename();
     let mut create_or_update = status::should_initialize_file(fname.as_str(), Exchange::SSE);
@@ -205,13 +207,17 @@ pub fn init_securities() {
             let mut rows: Vec<Instrument> = Vec::new();
             loop {
                 let mut ii = super::level1::ext::InstrumentInfoRequest::new(start, offset);
-                let fetch_count = match super::protocol::transact_message_sync(pooled.stream(), &mut ii) {
-                    Ok(()) => ii.list.len(),
-                    Err(e) => {
-                        log::error!("[tdx/instruments] ext InstrumentInfo request failed: {}", e);
-                        break;
-                    }
-                };
+                let fetch_count =
+                    match super::protocol::transact_message_sync(pooled.stream(), &mut ii) {
+                        Ok(()) => ii.list.len(),
+                        Err(e) => {
+                            log::error!(
+                                "[tdx/instruments] ext InstrumentInfo request failed: {}",
+                                e
+                            );
+                            break;
+                        }
+                    };
                 if fetch_count > 0 {
                     rows.extend(ii.list);
                 } else {
@@ -224,7 +230,8 @@ pub fn init_securities() {
             }
             // 排序
             rows.sort_by(|a, b| {
-                a.ext_market.cmp(&b.ext_market)
+                a.ext_market
+                    .cmp(&b.ext_market)
                     .then_with(|| a.ext_category.cmp(&b.ext_category))
                     .then_with(|| a.ticker.cmp(&b.ticker))
             });
@@ -236,7 +243,10 @@ pub fn init_securities() {
         if !instruments.is_empty() {
             let result = write_securities_csv(&fname, &instruments);
             if result.is_err() {
-                panic!("init_securities write_securities_csv failed: {}", result.unwrap_err());
+                panic!(
+                    "init_securities write_securities_csv failed: {}",
+                    result.unwrap_err()
+                );
             }
         } else {
             panic!("init_securities instruments is empty");
@@ -246,13 +256,13 @@ pub fn init_securities() {
     }
 }
 
-/// 将证券列表写入 CSV 文件. 
+/// 将证券列表写入 CSV 文件.
 ///
-/// 自动创建目标文件所在的目录结构, 写入表头及所有证券记录. 
+/// 自动创建目标文件所在的目录结构, 写入表头及所有证券记录.
 ///
 /// # Errors
 ///
-/// 若文件创建或写入失败, 错误会被静默忽略(使用 `let _` 丢弃). 
+/// 若文件创建或写入失败, 错误会被静默忽略(使用 `let _` 丢弃).
 fn write_securities_csv_v1(fname: &str, instruments: &[Instrument]) {
     if let Some(parent) = std::path::Path::new(fname).parent() {
         let _ = fs::create_dir_all(parent);
@@ -277,7 +287,11 @@ fn write_securities_csv_v1(fname: &str, instruments: &[Instrument]) {
                 inst.alias_ticker,
             );
         }
-        log::info!("[tdx/instruments] wrote {} instruments to {}", instruments.len(), fname);
+        log::info!(
+            "[tdx/instruments] wrote {} instruments to {}",
+            instruments.len(),
+            fname
+        );
     }
 }
 
@@ -289,7 +303,7 @@ fn write_securities_csv(fname: &str, instruments: &[Instrument]) -> io::Result<(
     }
 
     let file = File::create(fname)?;
-    
+
     // 使用 csv::Writer, 它自带缓冲, 且自动处理 CSV 转义
     let mut wtr = WriterBuilder::new()
         .has_headers(true) // 自动处理表头
@@ -297,7 +311,7 @@ fn write_securities_csv(fname: &str, instruments: &[Instrument]) -> io::Result<(
 
     for inst in instruments {
         // serialize 会自动将结构体字段按顺序写入, 并安全处理特殊字符
-        // 注意: 这要求 Instrument 或其引用的字段实现了 serde::Serialize 
+        // 注意: 这要求 Instrument 或其引用的字段实现了 serde::Serialize
         // 如果不想用 serde, 也可以使用 wtr.write_record(&[ ... ]) 手动传入字符串切片
         wtr.write_record(&[
             inst.exchange.identifier().to_string(),
@@ -315,14 +329,18 @@ fn write_securities_csv(fname: &str, instruments: &[Instrument]) -> io::Result<(
     // flush 确保所有数据写入磁盘
     wtr.flush()?;
 
-    log::info!("[tdx/instruments] successfully wrote {} instruments to {}", instruments.len(), fname);
+    log::info!(
+        "[tdx/instruments] successfully wrote {} instruments to {}",
+        instruments.len(),
+        fname
+    );
     Ok(())
 }
 
 /// 根据证券代码获取证券信息
 ///
-/// 自动校正输入的证券代码格式, 并从全局证券映射表中查找对应的 [`Instrument`]. 
-/// 若映射表尚未初始化, 会先触发初始化再进行查找. 
+/// 自动校正输入的证券代码格式, 并从全局证券映射表中查找对应的 [`Instrument`].
+/// 若映射表尚未初始化, 会先触发初始化再进行查找.
 ///
 /// # Arguments
 ///
@@ -335,10 +353,14 @@ fn write_securities_csv(fname: &str, instruments: &[Instrument]) -> io::Result<(
 ///
 /// # Panics
 ///
-/// 当全局证券映射表的互斥锁被毒化(持有锁的线程 panic)时会 panic. 
+/// 当全局证券映射表的互斥锁被毒化(持有锁的线程 panic)时会 panic.
 pub fn get_instrument_info(symbol: &str) -> Option<Instrument> {
     let security_code = correct_security_code(symbol);
-    log::debug!("get_instrument_info: symbol={}, security_code={}", symbol, security_code);
+    log::debug!(
+        "get_instrument_info: symbol={}, security_code={}",
+        symbol,
+        security_code
+    );
 
     let map = SECURITY_MAP.lock().unwrap();
     if map.is_empty() {

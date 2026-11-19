@@ -25,7 +25,7 @@ macro_rules! impl_round_up_power_of_two {
 
                 // 核心逻辑：先减 1，天然处理了“x 已经是 2 的幂”的情况
                 let mut v = self - 1;
-                
+
                 // 使用 wrapping_shr 避免小位宽类型(如 u8, u16)在编译期的移位溢出检查报错
                 // wrapping_shr 会将移位量对位宽取模，对于超出位宽的移位，等价于移位 0 (即原值)，
                 // v |= v 在逻辑上不影响结果，且编译器会将其优化为零开销指令。
@@ -36,15 +36,15 @@ macro_rules! impl_round_up_power_of_two {
                 v |= v.wrapping_shr(16);
                 v |= v.wrapping_shr(32);
                 v |= v.wrapping_shr(64);
-                
+
                 let mut res = v.wrapping_add(1);
-                
+
                 // 溢出防护：如果 v+1 发生无符号整数溢出，结果必然是 0。
                 // 此时说明原值 > 2^(bits-1)，安全退化为该类型能表示的最大 2 的幂
                 if res == 0 {
                     res = (1 as $type) << ($bits - 1);
                 }
-                
+
                 res
             }
         }
@@ -78,7 +78,7 @@ mod tests {
         assert_eq!(round_up_to_power_of_two(5u64), 8);
         assert_eq!(round_up_to_power_of_two(1023u64), 1024);
         assert_eq!(round_up_to_power_of_two(1u64 << 63), 1u64 << 63);
-        
+
         // 测试溢出退化逻辑 (输入大于 2^63)
         assert_eq!(round_up_to_power_of_two((1u64 << 63) + 1), 1u64 << 63);
         assert_eq!(round_up_to_power_of_two(u64::MAX), 1u64 << 63);

@@ -1,18 +1,18 @@
 // Copyright (C) 2026 Quant1X Team
 // SPDX-License-Identifier: MIT
 
-use std::sync::Arc;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
-use crate::data::adapter::DataAdapter;
-use crate::data::meta::instrument::Instrument;
-use crate::data::meta::Timestamp;
-use crate::data::{BaseRawDailyKLine};
 use super::command::{EXT_INSTRUMENT_BARS, FLAG_GENERIC};
 use super::helpers::get_sequence_id;
-use super::level1::std::security_bars::{SecurityBarsContext, SecurityBar as StdSecurityBar};
+use super::level1::std::security_bars::{SecurityBar as StdSecurityBar, SecurityBarsContext};
 use super::protocol::{BaseFrame, RequestHeader, ResponseHeader};
 use crate::base::BinaryStream;
+use crate::data::BaseRawDailyKLine;
+use crate::data::adapter::DataAdapter;
+use crate::data::meta::Timestamp;
+use crate::data::meta::instrument::Instrument;
 
 /// 日线增量更新时丢弃的缓存天数, 与 Python MaxCachedDaysToDropOnIncrementalUpdate 对齐
 const MAX_CACHED_DAYS_TO_DROP: usize = 1;
@@ -54,7 +54,12 @@ pub struct SecurityBarsResponse {
 
 impl SecurityBarsResponse {
     pub fn new() -> Self {
-        Self { count: 0, list: Vec::new(), is_index: false, category: 0 }
+        Self {
+            count: 0,
+            list: Vec::new(),
+            is_index: false,
+            category: 0,
+        }
     }
 }
 
@@ -147,7 +152,10 @@ impl BaseFrame for InstrumentBars {
         bs.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
+    fn deserialize_response_body(
+        &mut self,
+        data: &[u8],
+    ) -> Result<(), crate::base::DeserializeError> {
         // 与 Python InstrumentBars.deserialize_response_body 对齐:
         //   body = data[14:]  # 跳过前14字节
         //   start, count = struct.unpack("<IH", body[:6])
@@ -159,8 +167,9 @@ impl BaseFrame for InstrumentBars {
         if pos + 6 > data.len() {
             return Ok(());
         }
-        let resp_start = u32::from_le_bytes([data[pos], data[pos+1], data[pos+2], data[pos+3]]);
-        let resp_count = u16::from_le_bytes([data[pos+4], data[pos+5]]);
+        let resp_start =
+            u32::from_le_bytes([data[pos], data[pos + 1], data[pos + 2], data[pos + 3]]);
+        let resp_count = u16::from_le_bytes([data[pos + 4], data[pos + 5]]);
         pos += 6;
 
         self.start = resp_start;
@@ -183,32 +192,51 @@ impl BaseFrame for InstrumentBars {
                 break;
             }
             // 日期: u32 YYYYMMDD (日线/周线/月线)
-            let zipday = u32::from_le_bytes([data[pos], data[pos+1], data[pos+2], data[pos+3]]);
+            let zipday =
+                u32::from_le_bytes([data[pos], data[pos + 1], data[pos + 2], data[pos + 3]]);
             let year = (zipday / 10000) as i32;
             let month = ((zipday % 10000) / 100) as i32;
             let day = (zipday % 100) as i32;
             pos += 4;
 
             // OHLC: 4 × f32 = 16 bytes
-            let open = f32::from_le_bytes([data[pos], data[pos+1], data[pos+2], data[pos+3]]) as f64;
-            let high = f32::from_le_bytes([data[pos+4], data[pos+5], data[pos+6], data[pos+7]]) as f64;
-            let low = f32::from_le_bytes([data[pos+8], data[pos+9], data[pos+10], data[pos+11]]) as f64;
-            let close = f32::from_le_bytes([data[pos+12], data[pos+13], data[pos+14], data[pos+15]]) as f64;
+            let open =
+                f32::from_le_bytes([data[pos], data[pos + 1], data[pos + 2], data[pos + 3]]) as f64;
+            let high =
+                f32::from_le_bytes([data[pos + 4], data[pos + 5], data[pos + 6], data[pos + 7]])
+                    as f64;
+            let low =
+                f32::from_le_bytes([data[pos + 8], data[pos + 9], data[pos + 10], data[pos + 11]])
+                    as f64;
+            let close = f32::from_le_bytes([
+                data[pos + 12],
+                data[pos + 13],
+                data[pos + 14],
+                data[pos + 15],
+            ]) as f64;
             pos += 16;
 
             // position(u32) + volume(u32) + price(f32) = 12 bytes
-            let _position = u32::from_le_bytes([data[pos], data[pos+1], data[pos+2], data[pos+3]]);
-            let volume = u32::from_le_bytes([data[pos+4], data[pos+5], data[pos+6], data[pos+7]]);
-            let _price = f32::from_le_bytes([data[pos+8], data[pos+9], data[pos+10], data[pos+11]]);
+            let _position =
+                u32::from_le_bytes([data[pos], data[pos + 1], data[pos + 2], data[pos + 3]]);
+            let volume =
+                u32::from_le_bytes([data[pos + 4], data[pos + 5], data[pos + 6], data[pos + 7]]);
+            let _price =
+                f32::from_le_bytes([data[pos + 8], data[pos + 9], data[pos + 10], data[pos + 11]]);
             pos += 12;
 
             let datetime = format!("{:04}-{:02}-{:02} 15:00:00", year, month, day);
 
             self.reply.push(SecurityBar {
-                open, close, high, low,
+                open,
+                close,
+                high,
+                low,
                 vol: volume as f64,
                 amount: 0.0,
-                year, month, day,
+                year,
+                month,
+                day,
                 hour: 15,
                 minute: 0,
                 datetime,
@@ -285,7 +313,12 @@ impl KLineRaw {
 pub fn get_bar_raw_filename(inst: &Instrument) -> String {
     let symbol = inst.symbol();
     let sub = format!("day_raw/{}", inst.cache_dir());
-    format!("{}/{}/{}.raw", crate::config::default_cache_path(), sub, symbol)
+    format!(
+        "{}/{}/{}.raw",
+        crate::config::default_cache_path(),
+        sub,
+        symbol
+    )
 }
 
 /// 从缓存文件加载原始K线数据
@@ -295,7 +328,10 @@ pub fn load_bar_raw(inst: &Instrument) -> Vec<KLineRaw> {
     match std::fs::File::open(&cache_filename) {
         Ok(f) => {
             let mut rdr = csv::ReaderBuilder::new().has_headers(true).from_reader(f);
-            match rdr.deserialize::<KLineRaw>().collect::<Result<Vec<KLineRaw>, csv::Error>>() {
+            match rdr
+                .deserialize::<KLineRaw>()
+                .collect::<Result<Vec<KLineRaw>, csv::Error>>()
+            {
                 Ok(v) => bars = v,
                 Err(e) => log::error!("[bar_raw] failed to deserialize {}: {}", cache_filename, e),
             }
@@ -348,7 +384,9 @@ fn save_bar_raw(filename: &str, values: &[KLineRaw]) {
                     row.down.to_string(),
                     row.datetime.clone(),
                 ];
-                if let Err(e) = w.write_record(rec) { log::error!("[bar_raw] write row failed: {}", e); }
+                if let Err(e) = w.write_record(rec) {
+                    log::error!("[bar_raw] write row failed: {}", e);
+                }
             }
             let _ = w.flush();
             if let Err(e) = std::fs::rename(&tmp, filename) {
@@ -365,11 +403,7 @@ fn save_bar_raw(filename: &str, values: &[KLineRaw]) {
 
 /// 根据交易所类型分发到标准行情或扩展行情获取原始K线
 /// 对应 Python fetch_bar_raw(inst, start, count, freq)
-pub fn fetch_bar_raw(
-    inst: &Instrument,
-    start: u32,
-    count: u16,
-) -> Option<SecurityBarsResponse> {
+pub fn fetch_bar_raw(inst: &Instrument, start: u32, count: u16) -> Option<SecurityBarsResponse> {
     if inst.exchange.is_std_quote() {
         fetch_bar_raw_from_std(inst, start, count)
     } else if inst.exchange.is_ext_quote() {
@@ -378,7 +412,6 @@ pub fn fetch_bar_raw(
         None
     }
 }
-
 
 /// 从标准行情获取原始K线
 /// 对应 Python bar_raw.py fetch_bar_raw_from_std:
@@ -406,23 +439,31 @@ fn fetch_bar_raw_from_std(
             );
             match super::protocol::transact_message_sync(conn.stream(), &mut bars) {
                 Ok(()) => {
-                        log::debug!("[bar_raw] fetch_bar_raw_from_std: {} bars for {}", bars.list.len(), inst.symbol());
-                    let list: Vec<SecurityBar> = bars.list.into_iter().map(|b| SecurityBar {
-                        open: b.open,
-                        close: b.close,
-                        high: b.high,
-                        low: b.low,
-                        vol: b.volume,
-                        amount: b.amount,
-                        year: b.year,
-                        month: b.month,
-                        day: b.day,
-                        hour: b.hour,
-                        minute: b.minute,
-                        datetime: b.timestamp,
-                        up_count: b.up as i32,
-                        down_count: b.down as i32,
-                    }).collect();
+                    log::debug!(
+                        "[bar_raw] fetch_bar_raw_from_std: {} bars for {}",
+                        bars.list.len(),
+                        inst.symbol()
+                    );
+                    let list: Vec<SecurityBar> = bars
+                        .list
+                        .into_iter()
+                        .map(|b| SecurityBar {
+                            open: b.open,
+                            close: b.close,
+                            high: b.high,
+                            low: b.low,
+                            vol: b.volume,
+                            amount: b.amount,
+                            year: b.year,
+                            month: b.month,
+                            day: b.day,
+                            hour: b.hour,
+                            minute: b.minute,
+                            datetime: b.timestamp,
+                            up_count: b.up as i32,
+                            down_count: b.down as i32,
+                        })
+                        .collect();
                     Some(SecurityBarsResponse {
                         count: list.len() as u16,
                         list,
@@ -431,7 +472,11 @@ fn fetch_bar_raw_from_std(
                     })
                 }
                 Err(e) => {
-                    log::error!("[bar_raw] fetch_bar_raw_from_std failed for {}: {}", inst.symbol(), e);
+                    log::error!(
+                        "[bar_raw] fetch_bar_raw_from_std failed for {}: {}",
+                        inst.symbol(),
+                        e
+                    );
                     None
                 }
             }
@@ -456,10 +501,15 @@ fn fetch_bar_raw_from_ext(
 
     match super::client::get_ext_conn() {
         Ok(mut conn) => {
-            let mut bars = InstrumentBars::new(inst.ext_market as u8, &ticker, category, start, count);
+            let mut bars =
+                InstrumentBars::new(inst.ext_market as u8, &ticker, category, start, count);
             match super::protocol::transact_message_sync(conn.stream(), &mut bars) {
                 Ok(()) => {
-                    log::debug!("[bar_raw] fetch_bar_raw_from_ext: {} bars for {}", bars.reply.len(), inst.symbol());
+                    log::debug!(
+                        "[bar_raw] fetch_bar_raw_from_ext: {} bars for {}",
+                        bars.reply.len(),
+                        inst.symbol()
+                    );
                     Some(SecurityBarsResponse {
                         count: bars.reply.len() as u16,
                         list: bars.reply,
@@ -468,7 +518,11 @@ fn fetch_bar_raw_from_ext(
                     })
                 }
                 Err(e) => {
-                    log::error!("[bar_raw] fetch_bar_raw_from_ext failed for {}: {}", inst.symbol(), e);
+                    log::error!(
+                        "[bar_raw] fetch_bar_raw_from_ext failed for {}: {}",
+                        inst.symbol(),
+                        e
+                    );
                     None
                 }
             }
@@ -488,11 +542,21 @@ fn fetch_bar_raw_from_ext(
 pub struct DataKLineRaw;
 
 impl crate::data::Schema for DataKLineRaw {
-    fn kind(&self) -> crate::data::Kind { BaseRawDailyKLine }
-    fn owner(&self) -> String { crate::data::DEFAULT_DATA_PROVIDER.to_string() }
-    fn key(&self) -> String { "day_raw".to_string() }
-    fn name(&self) -> String { "日K线RAW".to_string() }
-    fn usage(&self) -> String { "日K线RAW数据适配器".to_string() }
+    fn kind(&self) -> crate::data::Kind {
+        BaseRawDailyKLine
+    }
+    fn owner(&self) -> String {
+        crate::data::DEFAULT_DATA_PROVIDER.to_string()
+    }
+    fn key(&self) -> String {
+        "day_raw".to_string()
+    }
+    fn name(&self) -> String {
+        "日K线RAW".to_string()
+    }
+    fn usage(&self) -> String {
+        "日K线RAW数据适配器".to_string()
+    }
 }
 
 impl DataAdapter for DataKLineRaw {
@@ -526,7 +590,9 @@ impl DataAdapter for DataKLineRaw {
 
         log::debug!(
             "[DataKLineRaw] [{}]: from {} to {}",
-            symbol, current_start_date.only_date(), current_end_date.only_date()
+            symbol,
+            current_start_date.only_date(),
+            current_end_date.only_date()
         );
 
         // 3. 分页拉取数据
@@ -548,14 +614,24 @@ impl DataAdapter for DataKLineRaw {
             match reply {
                 Some(resp) => {
                     let resp_len = resp.list.len();
-                    if resp_len == 0 { break; }
+                    if resp_len == 0 {
+                        break;
+                    }
                     let last_bar_is_before_start = resp.list.last().map_or(false, |last_bar| {
-                        Timestamp::pre_market_time(last_bar.year, last_bar.month as u32, last_bar.day as u32)
-                            .map_or(false, |last_ts| last_ts < current_start_date)
+                        Timestamp::pre_market_time(
+                            last_bar.year,
+                            last_bar.month as u32,
+                            last_bar.day as u32,
+                        )
+                        .map_or(false, |last_ts| last_ts < current_start_date)
                     });
                     hs.push(resp.list);
-                    if last_bar_is_before_start { break; }
-                    if resp_len < count as usize { break; }
+                    if last_bar_is_before_start {
+                        break;
+                    }
+                    if resp_len < count as usize {
+                        break;
+                    }
                     start += count as u32;
                 }
                 None => break,
@@ -569,7 +645,9 @@ impl DataAdapter for DataKLineRaw {
         let mut incremental_bars: Vec<KLineRaw> = Vec::new();
         for page in hs.iter() {
             for row in page.iter() {
-                if let Some(date_time) = Timestamp::pre_market_time(row.year, row.month as u32, row.day as u32) {
+                if let Some(date_time) =
+                    Timestamp::pre_market_time(row.year, row.month as u32, row.day as u32)
+                {
                     if date_time < current_start_date || date_time > current_end_date {
                         continue;
                     }

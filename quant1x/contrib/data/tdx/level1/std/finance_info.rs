@@ -43,10 +43,18 @@ impl FinanceInfoContext {
 }
 
 impl BaseFrame for FinanceInfoContext {
-    fn request_header(&self) -> &RequestHeader { &self.req_header }
-    fn request_header_mut(&mut self) -> &mut RequestHeader { &mut self.req_header }
-    fn response_header(&self) -> &ResponseHeader { &self.resp_header }
-    fn response_header_mut(&mut self) -> &mut ResponseHeader { &mut self.resp_header }
+    fn request_header(&self) -> &RequestHeader {
+        &self.req_header
+    }
+    fn request_header_mut(&mut self) -> &mut RequestHeader {
+        &mut self.req_header
+    }
+    fn response_header(&self) -> &ResponseHeader {
+        &self.resp_header
+    }
+    fn response_header_mut(&mut self) -> &mut ResponseHeader {
+        &mut self.resp_header
+    }
 
     fn serialize_request_body(&mut self) -> Vec<u8> {
         let mut buf = BinaryStream::new();
@@ -56,7 +64,10 @@ impl BaseFrame for FinanceInfoContext {
         buf.data().clone()
     }
 
-    fn deserialize_response_body(&mut self, data: &[u8]) -> Result<(), crate::base::DeserializeError> {
+    fn deserialize_response_body(
+        &mut self,
+        data: &[u8],
+    ) -> Result<(), crate::base::DeserializeError> {
         let mut bs = BinaryStream::from_vec(data.to_vec());
         self.count = bs.get_u16()?;
         if self.count == 0 {
@@ -312,8 +323,8 @@ impl RawFinanceInfo {
     }
 }
 
-/// FinanceInfoResponse 已合并到 FinanceInfoContext 中. 
-/// 保留类型别名以兼容旧代码. 
+/// FinanceInfoResponse 已合并到 FinanceInfoContext 中.
+/// 保留类型别名以兼容旧代码.
 pub type FinanceInfoResponse = FinanceInfoContext;
 
 pub fn fetch_finance_info(security_code: &str) -> Option<FinanceInfoResponse> {
@@ -334,7 +345,6 @@ pub fn fetch_finance_info(security_code: &str) -> Option<FinanceInfoResponse> {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

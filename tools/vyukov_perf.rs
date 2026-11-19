@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: MIT
 
 // 使用库中 Vyukov 队列实现的轻量性能驱动.
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use std::sync::atomic::Ordering;
 use std::thread;
 use std::time::Instant;
 
@@ -40,12 +40,14 @@ fn run_perf() -> f64 {
     for _ in 0..NUM_CONSUMERS {
         let q_clone = q.clone();
         let consumed_clone = consumed.clone();
-        consumers.push(thread::spawn(move || loop {
-            match q_clone.pop() {
-                Ok(_v) => {
-                    consumed_clone.fetch_add(1, Ordering::Relaxed);
+        consumers.push(thread::spawn(move || {
+            loop {
+                match q_clone.pop() {
+                    Ok(_v) => {
+                        consumed_clone.fetch_add(1, Ordering::Relaxed);
+                    }
+                    Err(_) => break,
                 }
-                Err(_) => break,
             }
         }));
     }
