@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.8.19] - 2026-11-24
+### Changed
+- chore[python]: 调整依赖版本
+- release version 0.8.19
+
 ## [0.8.18] - 2026-11-19
 ### Changed
 - chore[python]：将最低 Python 版本提升到 3.12
@@ -3298,7 +3303,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.18...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.19...HEAD
+[0.8.19]: https://codeberg.org/quant1x/quant1x/compare/v0.8.18...v0.8.19
 [0.8.18]: https://codeberg.org/quant1x/quant1x/compare/v0.8.17...v0.8.18
 [0.8.17]: https://codeberg.org/quant1x/quant1x/compare/v0.8.16...v0.8.17
 [0.8.16]: https://codeberg.org/quant1x/quant1x/compare/v0.8.15...v0.8.16
