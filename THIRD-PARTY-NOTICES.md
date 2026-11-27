@@ -1,37 +1,8 @@
 # 第三方组件声明（Third-Party Notices）
 
 本文件列出来自第三方的组件及其许可证，按各许可证要求随本项目归档声明。
-Quant1X 本体版权与许可见根 `LICENSE`（Copyright (C) 2026 Quant1X <wangfengxy@sina.cn>，MIT）：在软件副本或实质部分中须保留版权声明与许可声明，完整条款见仓库根 `LICENSE`。
-许可证全文归档位于 `third_party/licenses/` 目录，按语言拆分为 `python/`、`cpp/`、`rust/`、`go/`、`java/` 五个子目录。
-
-## 分发形态
-
-Quant1X **仅发布源代码，不发布二进制发行版**（不提供预编译的 `q1x`、静态库、安装包；Python 侧只发布纯 Python 源码包/轮子，不含 C/C++ 产物与字体等非 Python 资源）。
-
-因此：
-
-- LGPL 等许可证中针对**二进制分发**的义务（提供可重链接的目标文件、随二进制附带库源码等）**不适用于本仓库的发布行为**；
-- 本仓库仍需履行**源码分发**义务：保留实际分发的第三方源码的版权声明与许可证文本（如 `quant1x/io/csv-reader.h`）；
-- Rust crate 通过 Cargo `include` 白名单发布，只含 Rust 源码与根目录文档；本文件中的 C/C++ 许可证信息供仓库使用者与下游二进制分发者参考；
-- 下游基于本源码构建并**发布二进制**时，相关义务由该分发者承担，「下游二进制分发检查清单」可作为其检查表。
-
-## 项目许可证与例外
-
-Quant1X 原创代码采用 **MIT License**（见根目录 `LICENSE`）。以下文件是第三方代码的衍生作品，**不适用 MIT，按原许可证分发**：
-
-| 文件 | 来源 | 许可证 |
-|---|---|---|
-| `quant1x/io/csv-reader.h` | [fast-cpp-csv-parser](https://github.com/ben-strasser/fast-cpp-csv-parser) | BSD-3-Clause |
-| `quant1x/io/csv-reader.md` | fast-cpp-csv-parser 文档 | BSD-3-Clause |
-
-`quant1x/io/csv-writer.h` 为 Quant1X 原创实现（写入 CSV、字段引号转义），按 MIT 分发。
-
-### fast-cpp-csv-parser
-
-- Copyright: (2012-2015) Ben Strasser <code@ben-strasser.net>
-- License: BSD-3-Clause
-- 本仓库中的修改：重命名 include guard、增加 `#pragma once`、代码格式化；解析逻辑未改动。
-- 完整许可证文本：`quant1x/io/csv-reader.LICENSE`
+panshi 本体版权与许可见根 `LICENSE`（Copyright (C) 2026 Quant1X <wangfengxy@sina.cn>，MIT）。panshi 本体以 MIT 许可授权：在软件副本或实质部分中须保留版权声明与许可声明，完整条款见仓库根 `LICENSE`。
+许可证全文归档位于 `third_party/licenses/` 目录（按语言拆分：`third_party/licenses/python/`、`third_party/licenses/rust/`）。
 
 ## 文档结构与维护边界
 
@@ -68,29 +39,30 @@ Quant1X 原创代码采用 **MIT License**（见根目录 `LICENSE`）。以下�
 <!--PYTHON_COMPONENTS_START-->
 | 组件 | 版本 | 许可证 | 版权 / 主页 |
 | --- | --- | --- | --- |
-| PyYAML | 6.0.4 | MIT |  |
-| akshare | 1.18.97 | MIT |  |
-| apscheduler | 3.11.3 | MIT |  |
-| caerus | 1.0.1 | MIT |  |
-| findpeaks | 2.7.5 | MIT |  |
-| gitpython | 3.1.62 | BSD-3-Clause |  |
-| icecream | 2.1.11 | MIT |  |
-| inflection | 0.5.1 | MIT |  |
-| joblib | 1.5.3 | BSD-3-Clause |  |
-| loguru | 0.8.0 | MIT License |  |
-| matplotlib | 3.10.9 | Python Software Foundation License |  |
-| mlxtend | 0.25.0 | BSD 3-Clause |  |
-| mootdx | 0.11.7 | MIT |  |
-| numba | 0.62.1 | BSD |  |
-| numpy | 2.3.5 | BSD License |  |
-| pandas | 3.1.1 | BSD-3-Clause |  |
-| python-dateutil | 2.9.0.post0 | Dual License |  |
-| python-dotenv | 1.2.4 | BSD-3-Clause |  |
-| requests | 2.34.2 | Apache-2.0 |  |
-| requests-toolbelt | 1.0.0 | Apache 2.0 |  |
-| scikit-learn | 1.8.0 | BSD-3-Clause |  |
-| scipy | 1.16.3 | BSD License |  |
-| tqdm | 4.67.3 | MPL-2.0 AND MIT |  |
+| PyYAML | 6.0.4 | MIT | （Copyright (c) 2017-2021 Ingy döt Net；Copyright (c) 2006-2016 Kirill Simonov） · <https://pyyaml.org/wiki/PyYAMLDocumentation> |
+| akshare | 1.18.97 | MIT | （Copyright (c) 2019-2026 Albert King） · <https://github.com/akfamily/akshare> |
+| apscheduler | 3.11.3 | MIT | （Copyright (c) Alex Grönholm） · <https://apscheduler.readthedocs.io/en/3.x/> |
+| caerus | 1.0.1 | MIT | （Copyright (c) 2020 Erdogan Taskesen） · <https://erdogant.github.io/caerus> |
+| findpeaks | 2.7.5 | MIT | （Copyright (c) 2020 Erdogan Taskesen） · <https://erdogant.github.io/findpeaks> |
+| gitpython | 3.1.62 | BSD-3-Clause | （Copyright (C) 2008, 2009 Michael Trier and contributors） · <https://github.com/gitpython-developers/GitPython> |
+| icecream | 2.1.11 | MIT | （Copyright 2018 Ansgar Grunseid） · <https://github.com/gruns/icecream> |
+| inflection | 0.5.1 | MIT | （Copyright (C) 2012-2020 Janne Vanhala） · <https://github.com/jpvanhal/inflection> |
+| joblib | 1.5.3 | BSD-3-Clause | （Copyright (c) 2008-2021, The joblib developers） · <https://joblib.readthedocs.io> |
+| loguru | 0.8.0 | MIT License | （Copyright (c) 2017） · <https://github.com/Delgan/loguru> |
+| matplotlib | 3.10.9 | Python Software Foundation License | （Copyright (c) 1997, 2009, American Mathematical Society (http://www.ams.org)；Copyright (C) 1994, 1995, Basil K. Malyshev. All Rights Reserved） · <https://matplotlib.org> |
+| mlxtend | 0.25.0 | BSD 3-Clause | （Copyright (c) 2014-2026, Sebastian Raschka. All rights reserved） · <https://github.com/rasbt/mlxtend> |
+| mootdx | 0.11.7 | MIT | （Copyright (c) 2017, mootdx） · <https://github.com/mootdx/mootdx> |
+| numba | 0.62.1 | BSD | （Copyright (c) 2012, Anaconda, Inc） · <https://numba.pydata.org> |
+| numpy | 2.3.5 | BSD License | （Copyright (c) 2005-2025, NumPy Developers；Copyright (c) 2011-2014, The OpenBLAS Project） · <https://numpy.org> |
+| pandas | 3.1.1 | BSD-3-Clause | （Copyright (c) 2008-2011, AQR Capital Management, LLC, Lambda Foundry, Inc. and PyData Development Team；Copyright (c) 2011-2026, Open source contributors） · <https://pandas.pydata.org> |
+| python-dateutil | 2.9.0.post0 | Dual License | （Copyright 2017- Paul Ganssle；Copyright 2017- dateutil contributors (see AUTHORS file)） · <https://github.com/dateutil/dateutil> |
+| python-dotenv | 1.2.4 | BSD-3-Clause | （Copyright (c) 2014, Saurabh Kumar (python-dotenv), 2013, Ted Tieken (django-dotenv-rw), 2013, Jacob Kaplan-Moss (django-dotenv)） · <https://github.com/theskumar/python-dotenv> |
+| requests | 2.34.2 | Apache-2.0 | （Copyright 2019 Kenneth Reitz） · <https://github.com/psf/requests> |
+| requests-toolbelt | 1.0.0 | Apache 2.0 | （Copyright 2014 Ian Cordasco, Cory Benfield） · <https://github.com/requests/toolbelt> |
+| scikit-learn | 1.8.0 | BSD-3-Clause | （Copyright (c) 2007-2024 The scikit-learn developers） · <https://scikit-learn.org> |
+| scipy | 1.16.3 | BSD License | （Copyright (c) 2001-2002 Enthought, Inc. 2003, SciPy Developers；Copyright (c) 2011-2014, The OpenBLAS Project） · <https://scipy.org/> |
+| tqdm | 4.67.3 | MPL-2.0 AND MIT | （Copyright (c) 2013 noamraph） · <https://tqdm.github.io> |
+| xgboost | 3.0.5 | Apache-2.0 | <https://github.com/dmlc/xgboost> |
 <!--PYTHON_COMPONENTS_END-->
 
 许可证全文：见 `third_party/licenses/python/<发行名>-<版本>/` 下的归档文件（wheel 未随附许可证文件者已按上游官方 LICENSE 文本人工补录；依赖声明与源码 import 交叉核对由 `panshi.tool.license.audit` 的 `python` 子命令审计核验，见「归档目录」与「更新流程」）。
@@ -100,49 +72,39 @@ Quant1X 原创代码采用 **MIT License**（见根目录 `LICENSE`）。以下�
 <!--CPP_COMPONENTS_START-->
 | 组件 | 版本 | 许可证 | 版权 / 主页 |
 | --- | --- | --- | --- |
-| asio | 1.38.2 | BSL-1.0 |  |
-| backward-cpp | 1.6 | MIT |  |
-| benchmark | 1.9.5 | Apache-2.0 |  |
-| boost | 1.90.0 | BSL-1.0 |  |
-| bshoshany-thread-pool | 5.1.0 | MIT |  |
-| capnproto | 1.5.0 | MIT |  |
-| catch2 | 3.16.0 | BSL-1.0 |  |
-| cpp-httplib | 0.65.0 | MIT |  |
-| cpr | 1.14.2 | MIT |  |
-| croncpp | 2023.03.30 | MIT |  |
-| csv2 | 0.2 | MIT |  |
-| date | 3.0.5 | MIT |  |
-| fmt | 11.2.0 | MIT |  |
-| gtest | 1.18.0 | BSD-3-Clause |  |
-| libcurl | 8.21.0 | curl |  |
-| libiconv | 1.19 | LGPL-2.1-or-later |  |
-| magic_enum | 0.9.8 | MIT |  |
-| mimalloc | 3.5.1 | MIT |  |
-| minizip | 1.2.12 | Zlib |  |
-| mio | cci.20230303 | MIT |  |
-| nlohmann_json | 3.11.3 | MIT |  |
-| openssl | 3.6.4 | Apache-2.0 |  |
-| protobuf | 3.21.12 | BSD-3-Clause |  |
-| spdlog | 1.15.3 | MIT |  |
-| tsl-robin-map | 1.4.0 | MIT |  |
-| xsimd | 13.2.0 | BSD-3-Clause |  |
-| xtensor | 0.27.1 | BSD-3-Clause |  |
-| xtl | 0.8.0 | BSD-3-Clause |  |
-| yaml-cpp | 0.9.0 | MIT |  |
-| zlib | 1.3.2 | Zlib |  |
+| asio | 1.38.2 | BSL-1.0 | <http://think-async.com/Asio> |
+| backward-cpp | 1.6 | MIT | （Copyright 2013 Google Inc. All Rights Reserved） · <https://github.com/bombela/backward-cpp> |
+| benchmark | 1.9.5 | Apache-2.0 | <https://github.com/google/benchmark> |
+| bshoshany-thread-pool | 5.1.0 | MIT | <https://github.com/bshoshany/thread-pool> |
+| capnproto | 1.5.0 | MIT | （Copyright (c) 2013-2017 Sandstorm Development Group, Inc.; Cloudflare, Inc） · <https://capnproto.org> |
+| catch2 | 3.16.0 | BSL-1.0 | <https://github.com/catchorg/Catch2> |
+| cpp-httplib | 0.65.0 | MIT | <https://github.com/yhirose/cpp-httplib> |
+| cpr | 1.14.2 | MIT | （Copyright (c) 2017-2021 Huu Nguyen；Copyright (c) 2022 libcpr and many other contributors） · <https://docs.libcpr.org/> |
+| croncpp | 2023.03.30 | MIT | <https://github.com/mariusbancila/croncpp/> |
+| csv2 | 0.2 | MIT | <https://github.com/p-ranav/csv2> |
+| date | 3.0.5 | MIT | <https://github.com/HowardHinnant/date> |
+| fmt | 11.2.0 | MIT | （Copyright (c) 2012 - present, Victor Zverovich and {fmt} contributors） · <https://github.com/fmtlib/fmt> |
+| gtest | 1.18.0 | BSD-3-Clause | （Copyright 2008, Google Inc） · <https://github.com/google/googletest> |
+| libcurl | 8.21.0 | curl | （Copyright (c) 1996 - 2026, Daniel Stenberg, , and many） · <https://curl.se> |
+| libiconv | 1.19 | LGPL-2.1-or-later | （Copyright (C) 2007 Free Software Foundation, Inc.；Copyright (C) 1991, 1999 Free Software Foundation, Inc） · <https://www.gnu.org/software/libiconv/> |
+| magic_enum | 0.9.8 | MIT | <https://github.com/Neargye/magic_enum> |
+| mimalloc | 3.5.1 | MIT | （Copyright (c) 2018-2025 Microsoft Corporation, Daan Leijen） · <https://github.com/microsoft/mimalloc> |
+| minizip | 1.2.12 | Zlib | <https://zlib.net> |
+| mio | cci.20230303 | MIT | <https://github.com/mandreyel/mio> |
+| nlohmann_json | 3.11.3 | MIT | <https://github.com/nlohmann/json> |
+| openssl | 3.6.4 | Apache-2.0 | （Copyright (C) 1989 Free Software Foundation, Inc；Copyright (C) 19yy） · <https://github.com/openssl/openssl> |
+| protobuf | 3.21.12 | BSD-3-Clause | （Copyright 2008 Google Inc. All rights reserved；Copyright (c) 2019 Yibo Cai） · <https://github.com/protocolbuffers/protobuf> |
+| spdlog | 1.15.3 | MIT | （Copyright (c) 2016 Gabi Melman） · <https://github.com/gabime/spdlog> |
+| tsl-robin-map | 1.4.0 | MIT | <https://github.com/Tessil/robin-map> |
+| xsimd | 13.2.0 | BSD-3-Clause | <https://github.com/xtensor-stack/xsimd> |
+| xtensor | 0.27.1 | BSD-3-Clause | <https://github.com/xtensor-stack/xtensor> |
+| xtl | 0.8.0 | BSD-3-Clause | <https://github.com/xtensor-stack/xtl> |
+| yaml-cpp | 0.9.0 | MIT | （Copyright (c) 2008-2015 Jesse Beder；Copyright 2008, Google Inc） · <https://github.com/jbeder/yaml-cpp> |
+| zlib | 1.3.2 | Zlib | （Copyright (c) 1990-2009 Info-ZIP. All rights reserved） · <https://zlib.net> |
+| pfr | 2.2.0 | BSL-1.0 | <https://github.com/boostorg/pfr> |
 <!--CPP_COMPONENTS_END-->
 
-上表来自 `conanfile.py` 的声明（版本固定在配方内），许可证全文归档在 `third_party/licenses/cpp/<name>-<version>/`。
-
-- **不再内置第三方库**：自 2026-11-27 起仓库不再携带 C/C++ 头文件与 protobuf 静态库，全部改由 Conan 2 在构建时获取；仓库内只保留自有的 `quant1x/io/csv-reader.h`（BSD-3-Clause，见「项目许可证与例外」）。
-- **csv2 本地配方**：Conan Center 未收录，配方在 `third_party/recipes/csv2`；打包 v0.2 时修复了 `read_value` 的引号解析（剥离最外层引号、折叠内部 `""`），修改后的头文件仍按 MIT 分发，许可证随 Conan 包携带。
-- **mpb**：`quant1x/mpb` 是 Quant1X 组织内的自有项目（MIT），不通过 Conan 分发，CMake / Meson 以同级目录 `../mpb` 直接编译其源码。
-- **libiconv（LGPL-2.1-or-later）**：本仓库只通过 Conan 引用，不分发其源码或二进制。下游发布二进制时须随包提供 libiconv 源码与 LGPL-2.1 文本，并提供可替换重链接机制——推荐改用动态链接（`libiconv/*:shared=True`），静态链接则需随包提供本程序完整源码或目标文件与可复现构建说明。
-
-  ```bash
-  conan cache path libiconv/1.19
-  conan install . -of build --build=missing -o "libiconv/*:shared=True"
-  ```
+本仓 `conanfile.py` 只生成 CMake 工具链、当前未声明第三方依赖，故 C++ 组件表为空；新增依赖后 `labs-license-audit cpp` 自动补齐本表并归档到 `third_party/licenses/cpp/<name>-<version>/`。
 
 ## Rust（直接依赖）
 
@@ -198,80 +160,38 @@ Quant1X 原创代码采用 **MIT License**（见根目录 `LICENSE`）。以下�
 <!--GO_COMPONENTS_START-->
 | 组件 | 版本 | 许可证 | 版权 / 主页 |
 | --- | --- | --- | --- |
-| github.com/cespare/xxhash/v2 | v2.3.0 | MIT | Copyright (c) 2016 Caleb Spare; https://github.com/cespare/xxhash |
-| github.com/clipperhouse/displaywidth | v0.11.0 | MIT | Copyright (c) 2025 Matt Sherman; https://github.com/clipperhouse/displaywidth |
-| github.com/clipperhouse/uax29/v2 | v2.7.0 | MIT | Copyright (c) 2020 Matt Sherman; https://github.com/clipperhouse/uax29 |
-| github.com/creack/pty | v1.1.9 | MIT | Copyright (c) 2011 Keith Rarick; https://github.com/creack/pty |
-| github.com/fatih/color | v1.19.0 | MIT | Copyright (c) 2013 Fatih Arslan; https://github.com/fatih/color |
-| github.com/fsnotify/fsnotify | v1.10.1 | BSD-3-Clause | Copyright © 2012 The Go Authors. All rights reserved.; https://github.com/fsnotify/fsnotify |
-| github.com/gocarina/gocsv | v0.0.0-20261121203658-07c44a65ffb9 | MIT | Copyright (c) 2014 Jonathan Picques; https://github.com/gocarina/gocsv |
-| github.com/goccy/go-json | v0.12.0 | MIT | Copyright (c) 2020 Masaaki Goshima; https://github.com/goccy/go-json |
-| github.com/golang/protobuf | v1.5.0 | BSD-3-Clause | Copyright 2010 The Go Authors. All rights reserved.; https://github.com/golang/protobuf |
-| github.com/jonboulle/clockwork | v0.5.0 | Apache-2.0 | "Licensor" shall mean the copyright owner or entity authorized by; https://github.com/jonboulle/clockwork |
-| github.com/klauspost/cpuid/v2 | v2.4.2 | MIT | Copyright (c) 2015 Klaus Post; https://github.com/klauspost/cpuid |
-| github.com/kr/pretty | v0.3.1 | MIT | Copyright 2012 Keith Rarick; https://github.com/kr/pretty |
-| github.com/kr/pty | v1.1.1 | MIT | Copyright (c) 2011 Keith Rarick; https://github.com/kr/pty |
-| github.com/kr/text | v0.2.0 | MIT | Copyright 2012 Keith Rarick; https://github.com/kr/text |
-| github.com/lestrrat-go/envload | v0.0.0-20180220234015-a3eb8ddeffcc | MIT | Copyright (c) 2016 lestrrat; https://github.com/lestrrat-go/envload |
-| github.com/lestrrat-go/file-rotatelogs | v2.4.0+incompatible | MIT | Copyright (c) 2014 lestrrat; https://github.com/lestrrat-go/file-rotatelogs |
-| github.com/lestrrat-go/strftime | v1.2.1 | MIT | Copyright (c) 2016 lestrrat; https://github.com/lestrrat-go/strftime |
-| github.com/mattn/go-colorable | v0.1.16 | MIT | Copyright (c) 2016 Yasuhiro Matsumoto; https://github.com/mattn/go-colorable |
-| github.com/mattn/go-isatty | v0.0.24 | MIT | Copyright (c) Yasuhiro MATSUMOTO <mattn.jp@gmail.com>; https://github.com/mattn/go-isatty |
-| github.com/mattn/go-runewidth | v0.0.31 | MIT | Copyright (c) 2016 Yasuhiro Matsumoto; https://github.com/mattn/go-runewidth |
-| github.com/nxadm/tail | v1.4.11 | MIT | © Copyright 2015 Hewlett Packard Enterprise Development LP; https://github.com/nxadm/tail |
-| github.com/olekukonko/cat | v0.0.0-20250911104152-50322a0618f6 | MIT | Copyright (c) 2025 Oleku Konko; https://github.com/olekukonko/cat |
-| github.com/olekukonko/errors | v1.3.0 | MIT | Copyright (c) 2025 Oleku Konko; https://github.com/olekukonko/errors |
-| github.com/olekukonko/ll | v0.1.9 | MIT | Copyright (c) 2025 Oleku Konko; https://github.com/olekukonko/ll |
-| github.com/olekukonko/tablewriter | v1.1.5 | MIT | Copyright (C) 2014 by Oleku Konko; https://github.com/olekukonko/tablewriter |
-| github.com/olekukonko/ts | v0.0.0-20171002115256-78ecb04241c0 | MIT | https://github.com/olekukonko/ts |
-| github.com/petermattis/goid | v0.0.0-20261125140513-578663ba5663 | Apache-2.0 | "Licensor" shall mean the copyright owner or entity authorized by; https://github.com/petermattis/goid |
-| github.com/pkg/diff | v0.0.0-20210226163009-20ebb0f2a09e | BSD-3-Clause | Copyright 2018 Joshua Bleecher Snyder; https://github.com/pkg/diff |
-| github.com/pkg/errors | v0.9.1 | BSD-2-Clause | Copyright (c) 2015, Dave Cheney <dave@cheney.net>; https://github.com/pkg/errors |
-| github.com/rogpeppe/go-internal | v1.14.1 | BSD-3-Clause | Copyright (c) 2018 The Go Authors. All rights reserved.; https://github.com/rogpeppe/go-internal |
-| github.com/stretchr/objx | v0.5.3 | MIT | Copyright (c) 2014 Stretchr, Inc.; https://github.com/stretchr/objx |
-| github.com/stretchr/testify | v1.12.1 | MIT | Copyright (c) 2012-2020 Mat Ryer, Tyler Bunnell and contributors.; https://github.com/stretchr/testify |
-| go.uber.org/goleak | v1.3.0 | MIT | Copyright (c) 2018 Uber Technologies, Inc.; https://pkg.go.dev/go.uber.org/goleak |
-| go.uber.org/multierr | v1.11.0 | MIT | Copyright (c) 2017-2021 Uber Technologies, Inc.; https://pkg.go.dev/go.uber.org/multierr |
-| go.uber.org/zap | v1.28.0 | MIT | Copyright (c) 2016-2024 Uber Technologies, Inc.; https://pkg.go.dev/go.uber.org/zap |
-| go.yaml.in/yaml/v3 | v3.0.5 | Apache-2.0, MIT | copyright staring in 2011 when the project was ported over:; https://pkg.go.dev/go.yaml.in/yaml/v3 |
-| golang.org/x/mod | v0.42.0 | BSD-3-Clause | Copyright 2009 The Go Authors.; https://pkg.go.dev/golang.org/x/mod |
-| golang.org/x/sync | v0.25.0 | BSD-3-Clause | Copyright 2009 The Go Authors.; https://pkg.go.dev/golang.org/x/sync |
-| golang.org/x/sys | v0.50.0 | BSD-3-Clause | Copyright 2009 The Go Authors.; https://pkg.go.dev/golang.org/x/sys |
-| golang.org/x/text | v0.44.0 | BSD-3-Clause | Copyright 2009 The Go Authors.; https://pkg.go.dev/golang.org/x/text |
-| golang.org/x/tools | v0.52.0 | BSD-3-Clause | Copyright 2009 The Go Authors.; https://pkg.go.dev/golang.org/x/tools |
-| google.golang.org/protobuf | v1.36.12 | BSD-3-Clause | Copyright (c) 2018 The Go Authors. All rights reserved.; https://pkg.go.dev/google.golang.org/protobuf |
-| gopkg.in/check.v1 | v1.0.0-20201130134442-10cb98267c6c | BSD-2-Clause | Copyright (c) 2010-2013 Gustavo Niemeyer <gustavo@niemeyer.net>; https://gopkg.in/check.v1 |
-| gopkg.in/tomb.v1 | v1.0.0-20141024135613-dd632973f1e7 | BSD-3-Clause | Copyright (c) 2010-2011 - Gustavo Niemeyer <gustavo@niemeyer.net>; https://gopkg.in/tomb.v1 |
-| gopkg.in/yaml.v3 | v3.0.1 | Apache-2.0, MIT | copyright staring in 2011 when the project was ported over:; https://gopkg.in/yaml.v3 |
-| github.com/google/go-cmp | v0.7.0 | BSD-3-Clause | Copyright (c) 2017 The Go Authors. All rights reserved.; https://github.com/google/go-cmp |
-| github.com/davecgh/go-spew | v1.1.1 | ISC | Copyright (c) 2012-2016 Dave Collins <dave@davec.name>; https://github.com/davecgh/go-spew |
-| github.com/pmezard/go-difflib | v1.0.0 | BSD-2-Clause | Copyright (c) 2013, Patrick Mezard; https://github.com/pmezard/go-difflib |
+| github.com/cespare/xxhash/v2 | v2.3.0 | MIT | （Copyright (c) 2016 Caleb Spare） · <https://pkg.go.dev/github.com/cespare/xxhash/v2> |
+| github.com/clipperhouse/displaywidth | v0.11.0 | MIT | （Copyright (c) 2025 Matt Sherman） · <https://pkg.go.dev/github.com/clipperhouse/displaywidth> |
+| github.com/clipperhouse/uax29/v2 | v2.7.0 | MIT | （Copyright (c) 2020 Matt Sherman） · <https://pkg.go.dev/github.com/clipperhouse/uax29/v2> |
+| github.com/fatih/color | v1.19.0 | MIT | （Copyright (c) 2013 Fatih Arslan） · <https://pkg.go.dev/github.com/fatih/color> |
+| github.com/fsnotify/fsnotify | v1.10.1 | BSD-3-Clause | （Copyright © 2012 The Go Authors. All rights reserved；Copyright © fsnotify Authors. All rights reserved） · <https://pkg.go.dev/github.com/fsnotify/fsnotify> |
+| github.com/gocarina/gocsv | v0.0.0-20261121203658-07c44a65ffb9 | MIT | （Copyright (c) 2014 Jonathan Picques） · <https://pkg.go.dev/github.com/gocarina/gocsv> |
+| github.com/goccy/go-json | v0.12.0 | MIT | （Copyright (c) 2020 Masaaki Goshima） · <https://pkg.go.dev/github.com/goccy/go-json> |
+| github.com/klauspost/cpuid/v2 | v2.4.2 | MIT | （Copyright (c) 2015 Klaus Post） · <https://pkg.go.dev/github.com/klauspost/cpuid/v2> |
+| github.com/lestrrat-go/file-rotatelogs | v2.4.0+incompatible | MIT | （Copyright (c) 2014 lestrrat） · <https://pkg.go.dev/github.com/lestrrat-go/file-rotatelogs> |
+| github.com/lestrrat-go/strftime | v1.2.1 | MIT | （Copyright (c) 2016 lestrrat） · <https://pkg.go.dev/github.com/lestrrat-go/strftime> |
+| github.com/mattn/go-colorable | v0.1.16 | MIT | （Copyright (c) 2016 Yasuhiro Matsumoto） · <https://pkg.go.dev/github.com/mattn/go-colorable> |
+| github.com/mattn/go-isatty | v0.0.24 | MIT | （Copyright (c) Yasuhiro MATSUMOTO） · <https://pkg.go.dev/github.com/mattn/go-isatty> |
+| github.com/mattn/go-runewidth | v0.0.31 | MIT | （Copyright (c) 2016 Yasuhiro Matsumoto） · <https://pkg.go.dev/github.com/mattn/go-runewidth> |
+| github.com/nxadm/tail | v1.4.11 | MIT | （Copyright (c) 2014 ActiveState） · <https://pkg.go.dev/github.com/nxadm/tail> |
+| github.com/olekukonko/cat | v0.0.0-20250911104152-50322a0618f6 | MIT | （Copyright (c) 2025 Oleku Konko） · <https://pkg.go.dev/github.com/olekukonko/cat> |
+| github.com/olekukonko/errors | v1.3.0 | MIT | （Copyright (c) 2025 Oleku Konko） · <https://pkg.go.dev/github.com/olekukonko/errors> |
+| github.com/olekukonko/ll | v0.1.9 | MIT | （Copyright (c) 2025 Oleku Konko） · <https://pkg.go.dev/github.com/olekukonko/ll> |
+| github.com/olekukonko/tablewriter | v1.1.5 | MIT | （Copyright (C) 2014 by Oleku Konko） · <https://pkg.go.dev/github.com/olekukonko/tablewriter> |
+| github.com/petermattis/goid | v0.0.0-20261125140513-578663ba5663 | Apache-2.0 | <https://pkg.go.dev/github.com/petermattis/goid> |
+| github.com/pkg/errors | v0.9.1 | BSD-2-Clause | （Copyright (c) 2015, Dave Cheney） · <https://pkg.go.dev/github.com/pkg/errors> |
+| github.com/stretchr/testify | v1.12.1 | MIT | （Copyright (c) 2012-2020 Mat Ryer, Tyler Bunnell and contributors） · <https://pkg.go.dev/github.com/stretchr/testify> |
+| go.uber.org/multierr | v1.11.0 | MIT | （Copyright (c) 2017-2021 Uber Technologies, Inc） · <https://pkg.go.dev/go.uber.org/multierr> |
+| go.uber.org/zap | v1.28.0 | MIT | （Copyright (c) 2016-2024 Uber Technologies, Inc） · <https://pkg.go.dev/go.uber.org/zap> |
+| go.yaml.in/yaml/v3 | v3.0.5 | Apache-2.0, MIT | （Copyright (c) 2006-2010 Kirill Simonov；Copyright (c) 2006-2011 Kirill Simonov） · <https://pkg.go.dev/go.yaml.in/yaml/v3> |
+| golang.org/x/sys | v0.50.0 | BSD-3-Clause | （Copyright 2009 The Go Authors） · <https://pkg.go.dev/golang.org/x/sys> |
+| golang.org/x/text | v0.44.0 | BSD-3-Clause | （Copyright 2009 The Go Authors） · <https://pkg.go.dev/golang.org/x/text> |
+| google.golang.org/protobuf | v1.36.12 | BSD-3-Clause | （Copyright (c) 2018 The Go Authors. All rights reserved） · <https://pkg.go.dev/google.golang.org/protobuf> |
+| gopkg.in/tomb.v1 | v1.0.0-20141024135613-dd632973f1e7 | BSD-3-Clause | （Copyright (c) 2010-2011 - Gustavo Niemeyer） · <https://pkg.go.dev/gopkg.in/tomb.v1> |
+| gopkg.in/yaml.v3 | v3.0.1 | Apache-2.0, MIT | （Copyright (c) 2006-2010 Kirill Simonov；Copyright (c) 2006-2011 Kirill Simonov） · <https://pkg.go.dev/gopkg.in/yaml.v3> |
 <!--GO_COMPONENTS_END-->
 
-上表按 `go.mod` 的模块图生成（含未直接 import 的间接依赖），许可证全文归档在 `third_party/licenses/go/<模块路径>/`。
-
-go-licenses 按「每个模块 `<module>/...`」展开，默认只读模式会因间接模块不在 `require` 列表而中止（`go: updates to go.mod needed`）；加 `-mod=mod` 才能扫描，但**它会把模块图里所有传递模块写成 `// indirect`**——包括我们从不构建的测试链依赖。典型例子：
-
-```text
-gopkg.in/yaml.v3（真实依赖）
-  └─ gopkg.in/check.v1（yaml.v3 的测试依赖）
-       └─ github.com/kr/pretty
-            └─ github.com/kr/text
-                 └─ github.com/creack/pty   ← kr/text 的 go.mod 里 require 了它
-```
-
-`go mod why github.com/creack/pty` 明确回答 `(main module does not need module ...)`，`go mod tidy` 也会把这些行全部删掉。**因此 go 段不要在仓库根跑**，否则 `go.mod` 会声明一批实际不存在的依赖，且每跑一轮还会继续增长（第二轮新增了 goldmark / x/net / x/telemetry / xerrors）。
-
-正确做法是在副本里扫描，只把结果拷回：
-
-```bash
-git archive HEAD | tar -x -C <临时目录>
-cd <临时目录>
-GOFLAGS=-mod=mod labs-license-audit go
-# 拷回 THIRD-PARTY-NOTICES.md 的 Go 区段与 third_party/licenses/go/
-```
-
-副本里的 `go.mod` 会被改写，但不会影响仓库。组件表按工具输出保留（含这些传递模块，属从严披露），仓库的 `go.mod` / `go.sum` 保持真实依赖。
+本仓 `go.mod` 当前未声明第三方模块，Go 组件表为空；新增依赖后 `labs-license-audit go`（读构建列表与本机模块缓存，缺源码时从 pkg.go.dev 补取，不改写 `go.mod` / `go.sum`）自动补齐本表并归档到 `third_party/licenses/go/<模块路径>/`。
 
 ## Java（pom.xml 声明依赖）
 
@@ -280,8 +200,8 @@ GOFLAGS=-mod=mod labs-license-audit go
 <!--JAVA_COMPONENTS_START-->
 | 组件 | 版本 | 许可证 | 版权 / 主页 |
 | --- | --- | --- | --- |
-| disruptor（dev 依赖：仅测试/基准使用，不随 jar 分发） | 3.4.4 | Apache-2.0 |  |
-| junit-jupiter（dev 依赖：仅测试/基准使用，不随 jar 分发） | 5.8.2 | EPL-2.0 |  |
+| disruptor（dev 依赖：仅测试/基准使用，不随 jar 分发） | 3.4.4 | Apache-2.0 | <http://lmax-exchange.github.com/disruptor> |
+| junit-jupiter（dev 依赖：仅测试/基准使用，不随 jar 分发） | 5.8.2 | EPL-2.0 | <https://junit.org/junit5/> |
 <!--JAVA_COMPONENTS_END-->
 
 许可证全文：`third_party/licenses/java/<artifactId>-<version>/`（从本机 m2 仓库 jar 内提取）；依赖声明、源码 import 与归档由 `panshi.tool.license.audit` 的 `java` 子命令审计核验，见「归档目录」与「更新流程」。
@@ -297,31 +217,31 @@ labs-license-audit rust
 组件按许可证分组如下（每组件附 purl 与 Cargo.lock checksum sha256，可与 CycloneDX SBOM / Dependency-Track 逐条对应；多许可组件按 SPDX "OR" 选择其一履行，选择依据与 copyleft 触发条件见各组标题与上文原则）：
 
 <!--RUST_CLOSURE_START-->
-**(Apache-2.0 OR MIT) AND BSD-3-Clause**
+**(Apache-2.0 OR MIT) AND BSD-3-Clause（各许可同时适用，同时履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | encoding_rs | 0.8.35 | pkg:cargo/encoding_rs@0.8.35 | 75030f3c4f45dafd7586dd6780965a8c7e8e285a5ecb86713e63a79c5b2766f3 |
 
-**(MIT OR Apache-2.0) AND Unicode-3.0**
+**(MIT OR Apache-2.0) AND Unicode-3.0（各许可同时适用，同时履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | unicode-ident | 1.0.24 | pkg:cargo/unicode-ident@1.0.24 | e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75 |
 
-**0BSD**
+**0BSD（单一许可，按 0BSD 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | mock_instant | 0.6.1 | pkg:cargo/mock_instant@0.6.1 | 9bb517913cfcfb9eeda59f36020269075a152701a01606c612f547e4890be399 |
 
-**0BSD OR MIT OR Apache-2.0**
+**0BSD OR MIT OR Apache-2.0（按 MIT 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | adler2 | 2.0.1 | pkg:cargo/adler2@2.0.1 | 320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa |
 
-**Apache-2.0**
+**Apache-2.0（单一许可，按 Apache-2.0 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -332,25 +252,25 @@ labs-license-audit rust
 | similar | 2.7.0 | pkg:cargo/similar@2.7.0 | bbbb5d9659141646ae647b42fe094daf6c6192d1620870b449d9557f748b2daa |
 | sync_wrapper | 0.1.2 | pkg:cargo/sync_wrapper@0.1.2 | 2047c6ded9c721764247e62cd3b03c09ffc529b2ba5b10ec482ae507a4a70160 |
 
-**Apache-2.0 / MIT**
+**Apache-2.0 / MIT（按 MIT 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | fnv | 1.0.7 | pkg:cargo/fnv@1.0.7 | 3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1 |
 
-**Apache-2.0 AND ISC**
+**Apache-2.0 AND ISC（各许可同时适用，同时履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | ring | 0.17.14 | pkg:cargo/ring@0.17.14 | a4689e6c2294d81e88dc6261c768b63bc4fcdb852be6d1352498b114f61383b7 |
 
-**Apache-2.0 OR BSL-1.0**
+**Apache-2.0 OR BSL-1.0（按 Apache-2.0 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | ryu | 1.0.23 | pkg:cargo/ryu@1.0.23 | 9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f |
 
-**Apache-2.0 OR ISC OR MIT**
+**Apache-2.0 OR ISC OR MIT（按 MIT 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -359,7 +279,7 @@ labs-license-audit rust
 | rustls-pemfile | 1.0.4 | pkg:cargo/rustls-pemfile@1.0.4 | 1c74cae0a4cf6ccbbf5f359f08efdf8ee7e1dc532573bf0db71968cb56b1448c |
 | sct | 0.7.1 | pkg:cargo/sct@0.7.1 | da046153aa2352493d6cb7da4b6e5c0c057d8a1d0a9aa8560baffdd945acd414 |
 
-**Apache-2.0 OR MIT**
+**Apache-2.0 OR MIT（按 MIT 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -378,7 +298,7 @@ labs-license-audit rust
 | utf8_iter | 1.0.4 | pkg:cargo/utf8_iter@1.0.4 | b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be |
 | uuid | 1.26.0 | pkg:cargo/uuid@1.26.0 | b5772d71c9be8a8a6ac2117d949c5b224c1b72241bb611d9a3012edcf8af7812 |
 
-**Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT**
+**Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT（按 MIT 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -388,27 +308,27 @@ labs-license-audit rust
 | wasip2 | 1.0.4+wasi-0.2.12 | pkg:cargo/wasip2@1.0.4+wasi-0.2.12 | b67efb37e106e55ce722a510d6b5f9c17f083e5fc79afc2badeb12cc313d9487 |
 | wit-bindgen | 0.57.1 | pkg:cargo/wit-bindgen@0.57.1 | 1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e |
 
-**Apache-2.0/MIT**
+**Apache-2.0/MIT（按 MIT 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | signal-hook | 0.3.18 | pkg:cargo/signal-hook@0.3.18 | d881a16cf4426aa584979d30bd82cb33429027e42122b169753d6ef1085ed6e2 |
 
-**BSD-2-Clause OR Apache-2.0 OR MIT**
+**BSD-2-Clause OR Apache-2.0 OR MIT（按 MIT 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | zerocopy | 0.8.56 | pkg:cargo/zerocopy@0.8.56 | 556764e583adb45a9f8d413c2a147fa7e8d821e48e12b14fd560b607998b75eb |
 | zerocopy-derive | 0.8.56 | pkg:cargo/zerocopy-derive@0.8.56 | f2ab42fc20575779bd240faa45f94a74256f755c0fa9e89f0ede20d91d0cdfc1 |
 
-**BSD-3-Clause**
+**BSD-3-Clause（单一许可，按 BSD-3-Clause 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | subtle | 2.6.1 | pkg:cargo/subtle@2.6.1 | 13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292 |
 | zstd-sys | 2.1.0+zstd.1.5.7 | pkg:cargo/zstd-sys@2.1.0+zstd.1.5.7 | 0ef0a8027ec3ee71300ab3bcbcd0393f434aa72b91ca6d635a39941deae8eea0 |
 
-**CC0-1.0**
+**CC0-1.0（单一许可，按 CC0-1.0 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -420,14 +340,14 @@ labs-license-audit rust
 | encoding-index-tradchinese | 1.20141219.5 | pkg:cargo/encoding-index-tradchinese@1.20141219.5 | fd0e20d5688ce3cab59eb3ef3a2083a5c77bf496cb798dc6fcdb75f323890c18 |
 | encoding_index_tests | 0.1.4 | pkg:cargo/encoding_index_tests@0.1.4 | a246d82be1c9d791c5dfde9a2bd045fc3cbba3fa2b11ad558f27d01712f00569 |
 
-**ISC**
+**ISC（单一许可，按 ISC 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | rustls-webpki | 0.101.7 | pkg:cargo/rustls-webpki@0.101.7 | 8b6275d1ee7a1cd780b64aca7726599a1dbc893b1e64144529e55c3c2f745765 |
 | untrusted | 0.9.0 | pkg:cargo/untrusted@0.9.0 | 8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1 |
 
-**MIT**
+**MIT（单一许可，按 MIT 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -489,7 +409,7 @@ labs-license-audit rust
 | zmij | 1.0.23 | pkg:cargo/zmij@1.0.23 | 29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b |
 | zstd | 0.11.2+zstd.1.5.2 | pkg:cargo/zstd@0.11.2+zstd.1.5.2 | 20cc960326ece64f010d2d2107537f26dc589a6573a316bd5b1dba685fa5fde4 |
 
-**MIT OR Apache-2.0**
+**MIT OR Apache-2.0（按 MIT 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -643,19 +563,19 @@ labs-license-audit rust
 | windows_x86_64_gnullvm | 0.52.6 | pkg:cargo/windows_x86_64_gnullvm@0.52.6 | 24d5b23dc417412679681396f2b49f3de8c1473deb516bd34410872eff51ed0d |
 | windows_x86_64_msvc | 0.52.6 | pkg:cargo/windows_x86_64_msvc@0.52.6 | 589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec |
 
-**MIT OR Apache-2.0 OR LGPL-2.1-or-later**
+**MIT OR Apache-2.0 OR LGPL-2.1-or-later（按 MIT 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | r-efi | 6.0.0 | pkg:cargo/r-efi@6.0.0 | f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf |
 
-**MIT OR Zlib OR Apache-2.0**
+**MIT OR Zlib OR Apache-2.0（按 MIT 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | miniz_oxide | 0.9.1 | pkg:cargo/miniz_oxide@0.9.1 | b63fbc4a50860e98e7b2aa7804ded1db5cbc3aff9193adaff57a6931bf7c4b4c |
 
-**MIT/Apache-2.0**
+**MIT/Apache-2.0（按 MIT 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -682,14 +602,14 @@ labs-license-audit rust
 | winapi-x86_64-pc-windows-gnu | 0.4.0 | pkg:cargo/winapi-x86_64-pc-windows-gnu@0.4.0 | 712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f |
 | zstd-safe | 5.0.2+zstd.1.5.2 | pkg:cargo/zstd-safe@5.0.2+zstd.1.5.2 | 1d2a5585e04f9eea4b2a3d1eca508c4dee9592a89ef6f450c11719da0726f4db |
 
-**MPL-2.0**
+**MPL-2.0（单一许可，按 MPL-2.0 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | colored | 3.1.1 | pkg:cargo/colored@3.1.1 | faf9468729b8cbcea668e36183cb69d317348c2e08e994829fb56ebfdfbaac34 |
 | webpki-roots | 0.25.4 | pkg:cargo/webpki-roots@0.25.4 | 5f20c57d8d7db6d3b86154206ae5d8fba62dd39573114de97c2cb0578251f8e1 |
 
-**Unicode-3.0**
+**Unicode-3.0（单一许可，按 Unicode-3.0 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -712,7 +632,7 @@ labs-license-audit rust
 | zerovec | 0.11.8 | pkg:cargo/zerovec@0.11.8 | bb0464e17806c1d976d5cba29399c7f08e516e279e2ba493f63123b5fca67dd8 |
 | zerovec-derive | 0.11.6 | pkg:cargo/zerovec-derive@0.11.6 | 34df6fc39dbd26ddc9c10e6a2984476e13acce22e64e4487636ef494369225da |
 
-**Unlicense OR MIT**
+**Unlicense OR MIT（按 MIT 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -722,7 +642,7 @@ labs-license-audit rust
 | termcolor | 1.4.1 | pkg:cargo/termcolor@1.4.1 | 06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755 |
 | winapi-util | 0.1.11 | pkg:cargo/winapi-util@0.1.11 | c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22 |
 
-**Unlicense/MIT**
+**Unlicense/MIT（按 MIT 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -731,13 +651,13 @@ labs-license-audit rust
 | same-file | 1.0.6 | pkg:cargo/same-file@1.0.6 | 93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502 |
 | walkdir | 2.5.0 | pkg:cargo/walkdir@2.5.0 | 29790946404f91d9c5d06f9874efddea1dc06c5efe94541a7d6863108e3a5e4b |
 
-**Zlib**
+**Zlib（单一许可，按 Zlib 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | zlib-rs | 0.6.7 | pkg:cargo/zlib-rs@0.6.7 | 34b31d188d9d685a4f9c7b46d6e36631b07058d2cfe190267adce54dc230bf12 |
 
-**Zlib OR Apache-2.0 OR MIT**
+**Zlib OR Apache-2.0 OR MIT（按 MIT 履行）**
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -749,35 +669,9 @@ labs-license-audit rust
 - `third_party/licenses/python/<name>-<version>/`：Python 组件许可证副本。生成/刷新：`labs-license-audit python`（pyproject 声明 + site-packages dist-info 导出；wheel 未随附许可证文件者已按上游官方 LICENSE 文本人工补录）；
 - `third_party/licenses/rust/<crate>-<version>/`：Rust 组件许可证副本。生成/刷新：`labs-license-audit rust`（取自 cargo registry 缓存；上游 `.crate` 未随包分发许可证文件者已按 upstream 官方文本人工补录）；
 - 同一组件库存在多个版本时只保留与声明一致的最高版本目录：`labs-license-audit <lang>` 刷新时删除被淘汰版本的 `<name>-<version>/`（人工补录的文本在升级前请自行确认）；目录缺失 / 同库多版本并存 / 版本与声明不符的三类情形会写入根 `THIRD-PARTY-TODO.md` 待办，人工清理后重跑即消失；依赖移除或改名后，其归档目录与表行一并消失（按声明面自动清理）；待办文案按成因给动作——归档版本高于声明说明本次扫描所用环境比归档时旧，先在发布所用环境重跑；库已不在声明里则确认后删除全部目录；
-- `third_party/licenses/cpp/<name>-<version>/`、`third_party/licenses/go/<模块路径>/`、`third_party/licenses/java/<artifactId>-<version>/`：分别由 `labs-license-audit cpp` / `go` / `java` 生成。
+- C++ / Go / Java 侧当前无第三方组件，`third_party/licenses/` 下相应目录不存在；新增依赖后由同一命令生成。
 
-生成脚本输出的"缺失组件"清单表示本地无缓存、需人工补录的项目——**发布二进制产物前必须补齐**（当前归档：python 23、cpp 17、rust 292、go 6、java 1 个归档目录）。
-
-## 下游二进制分发检查清单
-
-本项目不发布二进制；以下清单供基于本源码构建并对外分发二进制的一方使用：
-
-- [ ] 源码包保留 `LICENSE`、本文件、`quant1x/io/csv-reader.LICENSE` 与 `third_party/licenses/`
-- [ ] 二进制包/安装包包含本文件及上述许可证文本
-- [ ] `quant1x/io/csv-reader.h` 保留 upstream 版权声明与 BSD-3 文本
-- [ ] 修改过的第三方文件标注修改说明（如 `third_party/recipes/csv2` 的引号修复）
-- [ ] 发布说明中列出新增/升级的第三方组件及其许可证
-- [ ] 静态链接 libiconv 时按「C++（Conan 依赖）」小节履行 LGPL 义务
-- [ ] 不包含 SimHei 等中易／微软自带字体（见下节）
-
-## 已移除的受限资产（历史留存说明）
-
-`quant1x/util/SimHei.ttf` 为**中易黑体（SimHei）v3.02**，版权属 ZHONGYI Electronic Co.（北京中易中标电子信息技术有限公司），随 Windows 授权给终端用户在本机使用，**未授予再分发权**。
-
-该文件此前曾存在于本仓库，现已移除：
-
-- 当前工作树不再包含该文件，也不再进入 Python 源码包与轮子；
-- 代码侧引用（`FONT_SimHei` 常量、`quant1x/util/font.py`）已一并删除，绘图仅按字体族名使用，中文字体由使用者自行安装；
-- 受已发布标签与协作成本所限，**该文件仍存在于历史提交中**（自引入提交 `009bf0f` 起）。克隆完整历史或下载早期版本标签的源码归档时，仍可能获得该文件。
-
-**声明**：任何派生版本、镜像站点或下游发行物均不得重新引入、复制或以其他方式分发该字体文件。项目自本声明起不再主动分发该资产，并在发现重新引入时予以移除。
-
-需要内置中文字体时，请改用可再分发的替代方案：思源黑体 / Noto Sans CJK SC（SIL OFL-1.1）、文泉驿正黑（GPLv2 + 字体例外），并按其许可证附带声明。
+生成脚本输出的"缺失组件"清单表示本地无缓存、需人工补录的项目——**发布二进制产物前必须补齐**（当前归档：python 17 + rust 39 = 56 个组件目录，无缺失）。
 
 ## 更新流程
 
@@ -787,7 +681,7 @@ labs-license-audit rust
 2. Python：新增 pip 依赖须同步声明于 `pyproject.toml [project].dependencies`，`labs-license-audit python` 核验声明与源码 import 并刷新 `third_party/licenses/python/`（如有）；
 3. C++：待 conan2 完成新依赖解析/缓存后，`labs-license-audit cpp` 刷新 `third_party/licenses/cpp/`；
 4. Rust：`labs-license-audit rust` 刷新闭包表格（含 purl/sha256）与 `third_party/licenses/rust/` 归档；
-5. Go：`GOFLAGS=-mod=mod labs-license-audit go` 刷新 `third_party/licenses/go/`（依赖 go-licenses，未安装会自动装到 GOBIN）；
+5. Go：`labs-license-audit go` 刷新 `third_party/licenses/go/`（读构建列表与本机模块缓存，缺源码时从 pkg.go.dev 补取，不改写 `go.mod` / `go.sum`）；
 6. Java：新增 maven 依赖须同步声明于 `pom.xml <dependencies>`，`labs-license-audit java` 从本机 m2 仓库提取 jar 内许可证并刷新 `third_party/licenses/java/`（如有）；
 7. 各语言脚本新报的"缺失/待人工补录"项补齐后再发版；
 8. 版本发布时，各语言产物随附 `THIRD-PARTY-NOTICES.md` 与本语言归档 `third_party/licenses/<lang>/`；仓库根 `THIRD-PARTY-NOTICES.md` 与 `third_party/licenses/` 完整归档随源码发布。
@@ -815,7 +709,7 @@ labs-license-audit rust
 
 - 安装：`pip install panshi`，安装后即得 `labs-license-audit` 命令，也可用 `python -m panshi.tool.license.audit` 调用；在 panshi 源码树内作业时用 `pip install -e .`；
 - 调用：`labs-license-audit <lang>...`，`<lang>` 取 `python` / `cpp` / `rust` / `go` / `java`；不带语言时按 python → c++ → rust → go → java 全跑；
-- 数据来源：本机缓存（site-packages / conan 缓存 / cargo registry 源码缓存 / Go 模块缓存 / `~/.m2/repository`），全程离线，不访问网络；
+- 数据来源：本机缓存（site-packages / conan 缓存 / cargo registry 源码缓存 / Go 模块缓存 / `~/.m2/repository`），Go 侧缓存缺源码或许可证文件时从 pkg.go.dev 补取，其余全程离线；
 - 产物：刷新本文件的围栏区段、把各组件许可证全文归档到 `third_party/licenses/<lang>/<name>-<version>/`（同一库只留最高版本，旧版本目录随刷新清理）、把机器无法确定的事项写入根 `THIRD-PARTY-TODO.md`（无待办自动删除）；
 - 退出码：`0` 指定对象全部成功且无待办；`1` 存在缺失 / 待人工处理项或工具链错误（其余语言继续执行）；
 - 补录：缺许可证全文时用 `python -m panshi.tool.license.audit.fetch <url> <落盘路径>` 从上游取回，GitHub 来源自动加代理前缀，落盘后按响应的 `Last-Modified` 对齐文件时间；
