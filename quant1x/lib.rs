@@ -39,6 +39,12 @@ pub mod learn;
 // 数值规格层（与 quant1x/num 的 Python / C++ / Rust / Zig 实现同语义）
 pub mod num;
 
+// 公式函数（与 quant1x/formula 的 Python / C++ 实现同语义）
+pub mod formula;
+
+// 通达信指标（与 quant1x/indicators 的 Python / C++ 实现同语义）
+pub mod indicators;
+
 // // calendar decoder module
 // mod decoder;
 // pub use crate::decoder::*;

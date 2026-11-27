@@ -9,7 +9,7 @@
 | --- | --- | --- | --- | --- |
 | spec 定语义 | Python（spec） | `formula.py` | 已落地 | 全量 0 / 1 / 2 级函数与用例 |
 | 生产实现 | C++（生产） | `formula.h` | 已落地 | `Series = std::vector<double>`，逐值对拍 |
-| 对齐实现 | Rust | — | 未落地 | 见 §5 TODO |
+| 对齐实现 | Rust | `formula/mod.rs` | 已落地 | `Vec<f64>` + 显式循环，逐值对拍 |
 | 对齐实现 | Go | — | 未落地 | 见 §5 TODO |
 | 扩展实现 | Zig | — | 未落地 | 见 §5 TODO |
 
@@ -40,28 +40,28 @@
 
 | 功能 | python | c++ | rust | go | zig | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 绝对值 / 对数 / 幂 / 平方根 | `ABS` / `LN` / `POW` / `SQRT` | `abs` / `log` / `pow` / `sqrt` | — | — | — | 部分落地（缺 rust / go / zig） |
-| 取大 / 取小 / 条件选择 | `MAX` / `MIN` / `IF` / `IFF` / `IFN` | `maximum` / `minimum` / `if_select` | — | — | — | 部分落地（缺 rust / go / zig） |
-| 引用 / 差分 | `REF` / `DIFF` | `ref` / `diff` | — | — | — | 部分落地（缺 rust / go / zig） |
-| 累计和 / 常量序列 | `SUM` / `CONST` | `sum` / `const_series` | — | — | — | 部分落地（缺 rust / go / zig） |
-| 极值与位置 | `HHV` / `LLV` / `HHVBARS` / `LLVBARS` | `hhv` / `llv` / `hhvbars` / `llvbars` | — | — | — | 部分落地（缺 rust / go / zig） |
-| 均线 | `MA` / `EMA` / `SMA` / `WMA` / `DMA` | `ma` / `ema` / `sma` / `wma` / `dma` | — | — | — | 部分落地（缺 rust / go / zig） |
-| 波动与回归 | `STD` / `AVEDEV` / `SLOPE` / `FORCAST` | `stddev` / `avedev` / `slope` / `forcast` | — | — | — | 部分落地（缺 rust / go / zig） |
-| 区间条件 | `LAST` | `last` | — | — | — | 部分落地（缺 rust / go / zig） |
-| 计数与存在 | `COUNT` / `EVERY` / `EXIST` | `count` / `every` / `exist` | — | — | — | 部分落地（缺 rust / go / zig） |
-| 信号过滤 | `FILTER` | `filter` | — | — | — | 部分落地（缺 rust / go / zig） |
-| 条件周期数 | `BARSLAST` / `BARSLASTCOUNT` / `BARSSINCEN` | `barslast` / `barslastcount` / `barssincen` | — | — | — | 部分落地（缺 rust / go / zig） |
-| 交叉 | `CROSS` / `LONGCROSS` | `cross` / `longcross` | — | — | — | 部分落地（缺 rust / go / zig） |
-| 取值保持 / 区间 | `VALUEWHEN` / `BETWEEN` | `valuewhen` / `between` | — | — | — | 部分落地（缺 rust / go / zig） |
-| 区间位置 | `TOPRANGE` / `LOWRANGE` | `toprange` / `lowrange` | — | — | — | 部分落地（缺 rust / go / zig） |
-| MACD / KDJ / RSI | `MACD` / `KDJ` / `RSI` | `macd` / `kdj` / `rsi` | — | — | — | 部分落地（缺 rust / go / zig） |
-| WR / BIAS / BOLL / PSY | `WR` / `BIAS` / `BOLL` / `PSY` | `wr` / `bias` / `boll` / `psy` | — | — | — | 部分落地（缺 rust / go / zig） |
-| CCI / ATR / BBI / DMI | `CCI` / `ATR` / `BBI` / `DMI` | `cci` / `atr` / `bbi` / `dmi` | — | — | — | 部分落地（缺 rust / go / zig） |
-| TAQ / KTN / TRIX / VR | `TAQ` / `KTN` / `TRIX` / `VR` | `taq` / `ktn` / `trix` / `vr` | — | — | — | 部分落地（缺 rust / go / zig） |
-| EMV / DPO / BRAR / DFMA | `EMV` / `DPO` / `BRAR` / `DFMA` | `emv` / `dpo` / `brar` / `dfma` | — | — | — | 部分落地（缺 rust / go / zig） |
-| MTM / MASS / ROC / EXPMA | `MTM` / `MASS` / `ROC` / `EXPMA` | `mtm` / `mass` / `roc` / `expma` | — | — | — | 部分落地（缺 rust / go / zig） |
-| OBV / MFI / ASI / XSII | `OBV` / `MFI` / `ASI` / `XSII` | `obv` / `mfi` / `asi` / `xsii` | — | — | — | 部分落地（缺 rust / go / zig） |
-| 舍入 / 涨停价 | `RD` / `ZTPRICE` | `rd` / `ztprice` | — | — | — | 部分落地（缺 rust / go / zig） |
+| 绝对值 / 对数 / 幂 / 平方根 | `ABS` / `LN` / `POW` / `SQRT` | `abs` / `log` / `pow` / `sqrt` | `abs` / `log` / `pow` / `sqrt` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| 取大 / 取小 / 条件选择 | `MAX` / `MIN` / `IF` / `IFF` / `IFN` | `maximum` / `minimum` / `if_select` | `maximum` / `minimum` / `if_select` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| 引用 / 差分 | `REF` / `DIFF` | `ref` / `diff` | `ref_value` / `diff` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| 累计和 / 常量序列 | `SUM` / `CONST` | `sum` / `const_series` | `sum` / `const_series` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| 极值与位置 | `HHV` / `LLV` / `HHVBARS` / `LLVBARS` | `hhv` / `llv` / `hhvbars` / `llvbars` | `hhv` / `llv` / `hhvbars` / `llvbars` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| 均线 | `MA` / `EMA` / `SMA` / `WMA` / `DMA` | `ma` / `ema` / `sma` / `wma` / `dma` | `ma` / `ema` / `sma` / `wma` / `dma` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| 波动与回归 | `STD` / `AVEDEV` / `SLOPE` / `FORCAST` | `stddev` / `avedev` / `slope` / `forcast` | `stddev` / `avedev` / `slope` / `forcast` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| 区间条件 | `LAST` | `last` | `last` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| 计数与存在 | `COUNT` / `EVERY` / `EXIST` | `count` / `every` / `exist` | `count` / `every` / `exist` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| 信号过滤 | `FILTER` | `filter` | `filter` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| 条件周期数 | `BARSLAST` / `BARSLASTCOUNT` / `BARSSINCEN` | `barslast` / `barslastcount` / `barssincen` | `barslast` / `barslastcount` / `barssincen` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| 交叉 | `CROSS` / `LONGCROSS` | `cross` / `longcross` | `cross` / `longcross` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| 取值保持 / 区间 | `VALUEWHEN` / `BETWEEN` | `valuewhen` / `between` | `valuewhen` / `between` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| 区间位置 | `TOPRANGE` / `LOWRANGE` | `toprange` / `lowrange` | `toprange` / `lowrange` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| MACD / KDJ / RSI | `MACD` / `KDJ` / `RSI` | `macd` / `kdj` / `rsi` | `macd` / `kdj` / `rsi` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| WR / BIAS / BOLL / PSY | `WR` / `BIAS` / `BOLL` / `PSY` | `wr` / `bias` / `boll` / `psy` | `wr` / `bias` / `boll` / `psy` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| CCI / ATR / BBI / DMI | `CCI` / `ATR` / `BBI` / `DMI` | `cci` / `atr` / `bbi` / `dmi` | `cci` / `atr` / `bbi` / `dmi` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| TAQ / KTN / TRIX / VR | `TAQ` / `KTN` / `TRIX` / `VR` | `taq` / `ktn` / `trix` / `vr` | `taq` / `ktn` / `trix` / `vr` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| EMV / DPO / BRAR / DFMA | `EMV` / `DPO` / `BRAR` / `DFMA` | `emv` / `dpo` / `brar` / `dfma` | `emv` / `dpo` / `brar` / `dfma` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| MTM / MASS / ROC / EXPMA | `MTM` / `MASS` / `ROC` / `EXPMA` | `mtm` / `mass` / `roc` / `expma` | `mtm` / `mass` / `roc` / `expma` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| OBV / MFI / ASI / XSII | `OBV` / `MFI` / `ASI` / `XSII` | `obv` / `mfi` / `asi` / `xsii` | `obv` / `mfi` / `asi` / `xsii` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| 舍入 / 涨停价 | `RD` / `ZTPRICE` | `rd` / `ztprice` | `rd` / `ztprice` | — | — | 已对齐 c++/rust（缺 go / zig） |
 
 ## 3. 依赖
 
@@ -85,7 +85,7 @@
 | 维度 | 覆盖 |
 | --- | --- |
 | 单元测试 | `tests/test_num.py`、`tests/test_pandas_facade.py` 覆盖底层口径 |
-| 跨语言对拍 | `tests/fixtures/formula/cases.csv`（57 组）+ `tests/tdd-formula-parity.cpp`，逐位相等 |
+| 跨语言对拍 | `tests/fixtures/formula/cases.csv`（57 组）+ `tests/tdd-formula-parity.cpp`（C++）、`tests/formula_parity.rs`（Rust），逐位相等 |
 | fixture 守门 | `tests/test_formula_parity.py` 断言重生成与签入文件逐字节一致 |
 | 静态检查 | C++ 以 `/W4` 编译无警告；Python 走仓库 ruff 配置 |
 | 崩溃注入 / 并发 | 本模块不涉及（纯函数、无共享状态） |
@@ -96,6 +96,7 @@
 python tests/fixtures/formula/generate.py
 python tests/test_formula_parity.py
 cl /nologo /utf-8 /std:c++20 /EHsc /I . tests/tdd-formula-parity.cpp
+cargo test --test formula_parity
 ```
 
 ## 5. TODO
