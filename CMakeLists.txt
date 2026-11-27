@@ -424,6 +424,17 @@ set(quant1x-headers
     quant1x/runtime/ringbuffer.h
     
 
+    # 公式
+    quant1x/formula/formula.h
+
+    # 指标
+    quant1x/indicators/support.h
+    quant1x/indicators/cdtd.h
+    quant1x/indicators/f89k.h
+    quant1x/indicators/hjk.h
+    quant1x/indicators/ma1x.h
+    quant1x/indicators/p2fb.h
+
     # i/o 相关
     quant1x/io/csv-reader.h
     quant1x/io/csv-writer.h

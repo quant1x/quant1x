@@ -247,3 +247,14 @@ q1x = executable('q1x', 'main.cpp',
   dependencies: [quant1x_dep],
   cpp_args: cpp_args,
   install: true)
+
+foreach name, source : {
+  'tdd-formula-parity': 'tests/tdd-formula-parity.cpp',
+  'tdd-indicators': 'tests/tdd-indicators.cpp',
+}
+  exe = executable(name, source,
+    include_directories: inc,
+    dependencies: [quant1x_dep],
+    cpp_args: cpp_args)
+  test(name, exe, workdir: meson.project_source_root())
+endforeach
