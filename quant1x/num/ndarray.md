@@ -43,7 +43,7 @@ Python 用 numpy 承载（存储与互转），C++ / Rust / Go / Zig 按同一�
 | --- | --- | --- |
 | Python（spec） | `ndarray.py` | 已落地（numpy 承载） |
 | C++（生产） | `ndarray.h` | 待补 |
-| Rust（生产） | `ndarray.rs` | 待补 |
+| Rust（生产） | `ndarray.rs` | 已落地（`tests/ndarray_test.rs` 6 用例） |
 | Go | `ndarray.go` | 待补 |
 | Zig | `ndarray.zig` | 待补 |
 

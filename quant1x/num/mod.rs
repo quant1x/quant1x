@@ -45,3 +45,7 @@ pub use rolling::{
 };
 pub use shift::{cumsum, diff, ref_value, shift};
 pub use window::{Window, as_window, window_at};
+
+/// 一维数组容器（对标 numpy.ndarray）
+pub mod ndarray;
+pub use ndarray::NdArray;
