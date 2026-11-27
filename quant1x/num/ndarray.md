@@ -45,7 +45,7 @@ Python 用 numpy 承载（存储与互转），C++ / Rust / Go / Zig 按同一�
 | C++（生产） | `ndarray.h` | 已落地（`tests/tdd-num-ndarray.cpp` 6 用例） |
 | Rust（生产） | `ndarray.rs` | 已落地（`tests/ndarray_test.rs` 6 用例） |
 | Go | `ndarray.go` | 待补 |
-| Zig | `ndarray.zig` | 待补 |
+| Zig | `ndarray.zig` | 已落地（`quant1x/num/ndarray_test.zig` 5 用例） |
 
 ## 4. 测试
 

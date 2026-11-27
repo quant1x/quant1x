@@ -634,6 +634,24 @@ pub fn ones(allocator: std.mem.Allocator, length: usize) ![]f64 {
     return out;
 }
 
+/// 等差序列 [start, stop)
+pub fn arange(allocator: std.mem.Allocator, start: f64, stop: f64, step: f64) ![]f64 {
+    var count: usize = 0;
+    var value = start;
+    if (step > 0) {
+        while (value < stop) : (value += step) count += 1;
+    } else if (step < 0) {
+        while (value > stop) : (value += step) count += 1;
+    }
+    const out = try allocator.alloc(f64, count);
+    value = start;
+    for (0..count) |i| {
+        out[i] = value;
+        value += step;
+    }
+    return out;
+}
+
 pub fn linspace(allocator: std.mem.Allocator, start: f64, stop: f64, count: usize) ![]f64 {
     if (count == 0) return allocator.alloc(f64, 0);
     const out = try allocator.alloc(f64, count);
