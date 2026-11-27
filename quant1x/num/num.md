@@ -39,6 +39,7 @@
 
 | 功能 | python | c++ | rust | go | zig | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
+| 容器 ndarray | `NDArray` / `ndarray.py` | — | — | — | `num.zig` 之外 | 已落地（仅 python spec；见 `ndarray.md`） |
 | 类型与缺失值 | `dtype` | `dtype.h` | `dtype.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
 | 窗口归一化 | `window.as_window` / `window_at` | `window.h` | `window.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
 | 绝对值 / 平方根 / 对数 / 幂 | `elementwise.abs` / `sqrt` / `log` / `pow` | `elementwise.h` | `elementwise.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |

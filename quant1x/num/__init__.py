@@ -78,6 +78,7 @@ from .rolling import (
 )
 from .shift import cumsum, diff, ref, shift
 from .window import as_window, window_at
+from .ndarray import NDArray
 
 __all__ = [
     "DEFAULT", "NAN", "DType", "as_series", "default_like", "is_nan", "to_scalar",
@@ -96,4 +97,5 @@ __all__ = [
     "cumsum", "diff", "ref", "shift",
     "as_window", "window_at",
     "align", "pad_to", "repeat",
+    "NDArray",
 ]

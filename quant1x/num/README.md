@@ -20,6 +20,7 @@ Python 是 spec；C++ / Rust 只用标准库容器与显式循环，不跨语言
 
 | 模块 | python | c++ | rust | 用途 |
 | --- | --- | --- | --- | --- |
+| 容器 | `ndarray.py` | — | — | 对标 `np.ndarray` 的一维数组（C++/Rust/Go/Zig 待补，见 `ndarray.md`） |
 | 类型 | `dtype.py` | `dtype.h` | `dtype.rs` | 唯一数值类型与缺失值判定 |
 | 窗口 | `window.py` | `window.h` | `window.rs` | 固定窗口与逐位置窗口归一化 |
 | 逐元素 | `elementwise.py` | `elementwise.h` | `elementwise.rs` | 绝对值、平方根、对数、幂、加减乘除、取大取小、条件选择 |
