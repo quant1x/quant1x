@@ -433,6 +433,7 @@ set(quant1x-headers
     quant1x/num/fillna.h
     quant1x/num/logic.h
     quant1x/num/matrix.h
+    quant1x/num/ndarray.h
     quant1x/num/reduce.h
     quant1x/num/regression.h
     quant1x/num/rolling.h

@@ -22,6 +22,7 @@
 #include <quant1x/num/fillna.h>
 #include <quant1x/num/logic.h>
 #include <quant1x/num/matrix.h>
+#include <quant1x/num/ndarray.h>
 #include <quant1x/num/reduce.h>
 #include <quant1x/num/regression.h>
 #include <quant1x/num/rolling.h>
