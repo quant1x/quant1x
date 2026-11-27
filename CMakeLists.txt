@@ -155,7 +155,7 @@ target_link_libraries(third_libs INTERFACE croncpp::croncpp)
 echo_lib_version(croncpp ${croncpp_VERSION})
 
 # 其余头文件型依赖（原 third_party 内置副本已删除，全部由 Conan 提供）
-find_package(boost CONFIG REQUIRED)
+find_package(pfr CONFIG REQUIRED)
 find_package(csv2 CONFIG REQUIRED)
 find_package(date CONFIG REQUIRED)
 find_package(httplib CONFIG REQUIRED)
@@ -164,7 +164,7 @@ find_package(mio CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(bshoshany-thread-pool CONFIG REQUIRED)
 target_link_libraries(third_libs INTERFACE
-    boost::boost
+    pfr::pfr
     csv2::csv2
     date::date
     httplib::httplib

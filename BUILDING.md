@@ -112,7 +112,7 @@ export MSF_RUNTIME=$HOME/runtime
 | fmt | 11.2.0 | `fmt::fmt` |
 | spdlog | 1.15.3 | `spdlog::spdlog`（外部 fmt） |
 | asio | 1.38.2 | `asio::asio` |
-| boost | 1.90.0 | `boost::boost`（header-only，仅用 PFR） |
+| pfr | 2.2.0 | `pfr::pfr`（header-only；头文件仍为 `<boost/pfr.hpp>`、命名空间 `boost::pfr`） |
 | backward-cpp | 1.6 | `Backward::Backward` |
 | bshoshany-thread-pool | 5.1.0 | `bshoshany-thread-pool::bshoshany-thread-pool` |
 | croncpp | 2023.03.30 | `croncpp::croncpp` |
@@ -137,7 +137,7 @@ export MSF_RUNTIME=$HOME/runtime
 - **mpb 不在 Conan 里**：`quant1x/mpb` 是与本仓库同级的组织内项目，CMake 用
   `QUANT1X_MPB_DIR`（默认 `../mpb`）把源码直接编入 `quant1x`；Meson 同样按相对路径编译。
   可用 `-DQUANT1X_MPB_DIR=<path>` 覆盖。
-- **boost 只开 `header_only=True`**：项目只使用 `boost.pfr`，不编译整套 Boost 库。
+- **反射用独立的 `pfr`**：依赖从 `boost/1.90.0`（`header_only`）换成 standalone `pfr/2.2.0`，不再引入整套 Boost；该包仍以 `boost/pfr.hpp` 与 `boost::pfr` 命名空间提供，代码侧无需改动。
 - **minizip 为 1.2.12**：Conan Center 未提供 1.3.x；现有代码只使用 `unz*` API，兼容。
 - **openssl 关闭 FIPS 模块**（`no_fips=True`）：项目不使用 FIPS，关闭后显著缩短源码构建时间。
 

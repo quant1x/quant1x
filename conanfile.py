@@ -37,7 +37,7 @@ class Quant1XDependencies(ConanFile):
         self.requires("fmt/11.2.0")
         self.requires("spdlog/1.15.3")
         self.requires("asio/1.38.2")
-        self.requires("boost/1.90.0")  # 只用于 boost.pfr，header_only
+        self.requires("pfr/2.2.0")  # 反射（原 boost.pfr 的独立版）
         self.requires("backward-cpp/1.6")
         self.requires("bshoshany-thread-pool/5.1.0")
         self.requires("croncpp/2023.03.30")
@@ -55,8 +55,6 @@ class Quant1XDependencies(ConanFile):
     def configure(self):
         # 全静态构建，与项目的 BUILD_SHARED_LIBS=OFF 保持一致
         self.options["*"].shared = False
-        # 只使用 boost.pfr，避免编译整套 boost 库
-        self.options["boost"].header_only = True
         # spdlog 走 header-only：与项目原先的用法一致，也避免与外部 fmt 的 ABI 差异
         self.options["spdlog"].header_only = True
         # minizip 默认启用 bzip2，项目未使用，关闭以减少依赖

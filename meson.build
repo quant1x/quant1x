@@ -18,7 +18,7 @@ deps = [
   dependency('fmt', method: 'pkg-config'),
   dependency('spdlog', method: 'pkg-config'),
   dependency('asio', method: 'pkg-config'),
-  dependency('boost-headers', method: 'pkg-config'),
+  dependency('pfr', method: 'pkg-config'),
   dependency('backward-cpp', method: 'pkg-config'),
   dependency('bshoshany-thread-pool', method: 'pkg-config'),
   dependency('croncpp', method: 'pkg-config'),
