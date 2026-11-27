@@ -3,16 +3,16 @@ module github.com/quant1x/quant1x
 go 1.27.3
 
 require (
-	github.com/gocarina/gocsv v0.0.0-20261101205459-d0dd027dcbfa
-	github.com/klauspost/cpuid/v2 v2.4.1
+	github.com/gocarina/gocsv v0.0.0-20261121203658-07c44a65ffb9
+	github.com/klauspost/cpuid/v2 v2.4.2
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/nxadm/tail v1.4.11
 	github.com/olekukonko/tablewriter v1.1.5
-	github.com/petermattis/goid v0.0.0-20261102161117-2a3fffa09998
+	github.com/petermattis/goid v0.0.0-20261125140513-578663ba5663
 	github.com/stretchr/testify v1.12.1
 	go.uber.org/zap v1.28.0
 	golang.org/x/sys v0.50.0
-	golang.org/x/text v0.43.0
+	golang.org/x/text v0.44.0
 	google.golang.org/protobuf v1.36.12
 	gopkg.in/yaml.v3 v3.0.1
 )
