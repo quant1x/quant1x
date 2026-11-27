@@ -33,11 +33,11 @@
 
 | 指标 | python | c++ | rust | go | zig | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `cdtd` | `cdtd.py` | `cdtd.h` | `mod.rs` | — | — | 已对齐 c++/rust（缺 go / zig） |
-| `f89k` | `f89k.py` | `f89k.h` | `mod.rs` | — | — | 已对齐 c++/rust（缺 go / zig） |
-| `hjk` | `hjk.py` | `hjk.h` | `mod.rs` | — | — | 已对齐 c++/rust（缺 go / zig） |
-| `ma1x` | `ma1x.py` | `ma1x.h` | `mod.rs` | — | — | 已对齐 c++/rust（缺 go / zig） |
-| `p2fb` | `p2fb.py` | `p2fb.h` | `mod.rs` | — | — | 已对齐 c++/rust（缺 go / zig） |
+| `cdtd` | `cdtd.py` | `cdtd.h` | `mod.rs` | `indicators_go.go` | — | 已对齐 c++/rust/go（缺 zig） |
+| `f89k` | `f89k.py` | `f89k.h` | `mod.rs` | `indicators_go.go` | — | 已对齐 c++/rust/go（缺 zig） |
+| `hjk` | `hjk.py` | `hjk.h` | `mod.rs` | `indicators_go.go` | — | 已对齐 c++/rust/go（缺 zig） |
+| `ma1x` | `ma1x.py` | `ma1x.h` | `mod.rs` | `indicators_go.go` | — | 已对齐 c++/rust/go（缺 zig） |
+| `p2fb` | `p2fb.py` | `p2fb.h` | `mod.rs` | `indicators_go.go` | — | 已对齐 c++/rust/go（缺 zig） |
 
 ## 统一口径
 
