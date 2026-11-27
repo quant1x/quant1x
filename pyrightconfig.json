@@ -1,0 +1,15 @@
+{
+  "exclude": [
+    "build",
+    "build-msvc",
+    "build-meson",
+    "target",
+    "temp",
+    "output",
+    "vcpkg_installed",
+    ".cache",
+    ".ruff_cache",
+    ".zig-cache",
+    "third_party/licenses"
+  ]
+}
