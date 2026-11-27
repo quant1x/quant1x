@@ -81,6 +81,8 @@ quant1x/
 │   ├── indicators/     # 技术指标
 │   ├── ta/             # 技术分析算子
 │   ├── formula/        # 公式引擎（含 MyTT 兼容实现）
+│   ├── num/            # 数值规格层（窗口/NaN/回归口径）
+│   ├── pandas/         # 列容器规格层（Series / DataFrame）
 │   ├── backtest/       # 回测引擎
 │   ├── trader/         # 交易相关
 │   ├── realtime/       # 实时行情
