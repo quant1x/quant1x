@@ -138,7 +138,7 @@ endif()
 include(cmake/iconv.cmake)
 
 # argparse 由项目自带的 quant1x/base/argparser 承载，仅保留版本展示
-set(argparse_VERSION "3.2.0")
+set(argparse_VERSION "3.2.0")  # cmake-lint: disable=C0103
 echo_lib_version(argparse ${argparse_VERSION})
 
 # yaml-cpp yaml-cpp::yaml-cpp
@@ -282,7 +282,7 @@ if(ENABLE_MIMALLOC)
     echo_lib_version(mimalloc ${mimalloc_VERSION})
 else()
     message(STATUS "mimalloc support disabled (ENABLE_MIMALLOC=OFF)")
-    set(mimalloc_VERSION "0.0.0")
+    set(mimalloc_VERSION "0.0.0")  # cmake-lint: disable=C0103
 endif()
 
 # spdlog
@@ -391,7 +391,7 @@ set(DEPENDENCY_CATCH2 "v${Catch2_VERSION}")
 # 量化基础设施
 # ============================================================
 
-set(quant1x-headers
+set(quant1x-headers  # cmake-lint: disable=C0103
     # 标准库
     quant1x/base/affinity.h
     quant1x/base/api.h
@@ -532,12 +532,12 @@ set(quant1x-headers
 
     # 数据客户端
     quant1x/contrib/data/tdx/client.h
-    
+
     # tdx (moved from level1 to align with Rust/Python)
     quant1x/contrib/data/tdx/protocol.h
     quant1x/contrib/data/tdx/helpers.h
     quant1x/contrib/data/tdx/config.h
-    
+
     # level1
     quant1x/contrib/data/tdx/level1/std/minute_time.h
 
@@ -605,7 +605,7 @@ set(quant1x-headers
     quant1x/app.h
 
     # 数据处理功能 quant1x/data
-    
+
     # 机器学习
     quant1x/learn/fpgrowth/fp_growth.h
     quant1x/learn/fpgrowth/fp_growth_core.h
@@ -620,7 +620,7 @@ set(quant1x-headers
     quant1x/distributed/id/generator.h
 )
 
-set(quant1x-sources
+set(quant1x-sources  # cmake-lint: disable=C0103
     # 标准库兼容
     quant1x/base/strings.cpp
     quant1x/base/time.cpp
@@ -637,7 +637,7 @@ set(quant1x-sources
     quant1x/base/argparser/parser.cpp
     quant1x/base/argparser/help.cpp
     quant1x/base/argparser/complete.cpp
-    
+
     # 核心库
     quant1x/core/base.cpp
 
@@ -659,10 +659,10 @@ set(quant1x-sources
     quant1x/pandas/rule.cpp
 
     # 引擎
-    
+
     # 数据客户端
     quant1x/contrib/data/tdx/client.cpp
-    
+
     quant1x/contrib/data/tdx/config.cpp
     quant1x/contrib/data/tdx/protocol.cpp
 
@@ -745,7 +745,7 @@ set(quant1x-sources
     quant1x/app.cpp
 
     # 数据处理功能 quant1x/data
-    
+
     # 机器学习
     quant1x/learn/fpgrowth/fp_growth.cpp
     quant1x/learn/fpgrowth/fp_growth_core.cpp
@@ -961,6 +961,7 @@ message(STATUS "quant1x (C) Defines: ${compile_defines}")
 message(STATUS "quant1x (C) Options: ${compile_options}")
 message(STATUS "quant1x (L) Options: ${link_options}")
 
+# 递归收集 target 直接与间接链接的全部库名，去重后写入 result_var。
 function(get_all_linked_targets target result_var)
     set(result "")
 
@@ -1059,13 +1060,14 @@ string(TOLOWER ${quant1x_build_type} lib_build_type)
 # 设置编译器
 string(TOLOWER ${CMAKE_CXX_COMPILER_ID} lib_compiler)
 # 设置 Debug 版本后缀, 并标记为高级选项(默认不显示在 CMake GUI 中)
-set(lib_suffix "-${lib_build_type}-${lib_compiler}" CACHE STRING "Default debug/release postfix")
+set(lib_suffix "-${lib_build_type}-${lib_compiler}"  # cmake-lint: disable=C0103
+    CACHE STRING "Default debug/release postfix")
 if (WIN32)
-    set(lib_suffix "${lib_suffix}-win")
+    set(lib_suffix "${lib_suffix}-win")  # cmake-lint: disable=C0103
 elseif(APPLE)
-    set(lib_suffix "${lib_suffix}-darwin")
+    set(lib_suffix "${lib_suffix}-darwin")  # cmake-lint: disable=C0103
 endif ()
-set(quant1x_DEBUG_POSTFIX ${lib_suffix})
+set(quant1x_DEBUG_POSTFIX ${lib_suffix})  # cmake-lint: disable=C0103
 message(STATUS ${quant1x_DEBUG_POSTFIX})
 
 mark_as_advanced(quant1x_DEBUG_POSTFIX)
