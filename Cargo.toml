@@ -18,7 +18,7 @@ include = [
     "/Cargo.lock",
     "/README.md",
     "/LICENSE",
-    "/THIRD_PARTY_NOTICES.md",
+    "/THIRD-PARTY-NOTICES.md",
     "/main.rs",
     "quant1x/**/*.rs",
     "/tools/vyukov_perf.rs",

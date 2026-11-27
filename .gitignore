@@ -65,3 +65,6 @@ _version.py
 # Go 工作区：go.work / go.work.sum 属于本机多模块编排，不入库
 go.work
 go.work.sum
+
+# 许可证审计待办（工具生成，无待办时自动删除，不入库）
+THIRD-PARTY-TODO.md

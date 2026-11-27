@@ -11,7 +11,7 @@ readme = {file = "README.md", content-type = "text/markdown"}
 # 第三方 vendored 代码的 LICENSE 一起收进 sdist，而那些代码本身并不发布）。
 # 白名单内的文件会随 wheel 落到 dist-info/licenses/，供使用者查阅
 license = "MIT"
-license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+license-files = ["LICENSE", "THIRD-PARTY-NOTICES.md"]
 # PEP 621 authors → core metadata: setuptools 将带 email 的条目映射到 Author-email，
 # 仅含 name 的条目映射到 Author。同一作者分两条声明以同时填充 Author 与 Author-email。
 # 分两条记录，是为了pip show时能够同时显示 Author 与 Author-email，如果只写一条带 email
