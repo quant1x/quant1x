@@ -13,6 +13,8 @@
 *.copy
 
 *.csv
+# 跨语言对拍样本需要入库（其余 csv 仍忽略）
+!tests/fixtures/**/*.csv
 __pycache__/
 .eggs/
 build/
