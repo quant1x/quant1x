@@ -109,10 +109,35 @@ export MSF_RUNTIME=$HOME/runtime
 | benchmark | 1.9.5 | `benchmark::benchmark` / `benchmark::benchmark_main` |
 | catch2 | 3.16.0 | `Catch2::Catch2` / `Catch2::Catch2WithMain` |
 | gtest | 1.18.0 | `GTest::gtest` / `GTest::gtest_main` / `GTest::gmock` |
+| fmt | 11.2.0 | `fmt::fmt` |
+| spdlog | 1.15.3 | `spdlog::spdlog`（外部 fmt） |
+| asio | 1.38.2 | `asio::asio` |
+| boost | 1.90.0 | `boost::boost`（header-only，仅用 PFR） |
+| backward-cpp | 1.6 | `Backward::Backward` |
+| bshoshany-thread-pool | 5.1.0 | `bshoshany-thread-pool::bshoshany-thread-pool` |
+| croncpp | 2023.03.30 | `croncpp::croncpp` |
+| csv2 | 0.2 | `csv2::csv2`（本地配方） |
+| date | 3.0.5 | `date::date` |
+| cpp-httplib | 0.65.0 | `httplib::httplib` |
+| magic_enum | 0.9.8 | `magic_enum::magic_enum` |
+| mio | cci.20230303 | `mio::mio` |
+| nlohmann_json | 3.11.3 | `nlohmann_json::nlohmann_json` |
+| tsl-robin-map | 1.4.0 | `tsl::robin_map` |
+| protobuf | 3.21.12 | `protobuf::protobuf` |
+| xtl | 0.8.0 | `xtl` |
+| xsimd | 13.2.0 | `xsimd` |
+| xtensor | 0.27.1 | `xtensor` |
 
-统一使用静态库（`*:shared=False`）。两点例外/说明：
+统一使用静态库（`*:shared=False`）。说明：
 
-- **protobuf 不走 Conan**：`third_party` 已内置 3.21.11 的头文件与静态库，`cmake/protobuf.cmake` 保持原有查找方式（Windows 取 `third_party/lib`，其他平台取 `${MSF_RUNTIME}/lib`）。
+- **csv2 不在 Conan Center**：配方在 `third_party/recipes/csv2`，首次构建前执行
+  `conan create third_party/recipes/csv2` 放入本地缓存，之后 `conan install` 才能解析。
+  该配方在打包时修复 v0.2 的引号解析：字段最外层的一对 `"` 会被剥离，内部的 `""` 折叠为
+  `"`；单引号不参与 CSV 转义，原样保留。
+- **mpb 不在 Conan 里**：`quant1x/mpb` 是与本仓库同级的组织内项目，CMake 用
+  `QUANT1X_MPB_DIR`（默认 `../mpb`）把源码直接编入 `quant1x`；Meson 同样按相对路径编译。
+  可用 `-DQUANT1X_MPB_DIR=<path>` 覆盖。
+- **boost 只开 `header_only=True`**：项目只使用 `boost.pfr`，不编译整套 Boost 库。
 - **minizip 为 1.2.12**：Conan Center 未提供 1.3.x；现有代码只使用 `unz*` API，兼容。
 - **openssl 关闭 FIPS 模块**（`no_fips=True`）：项目不使用 FIPS，关闭后显著缩短源码构建时间。
 
@@ -250,9 +275,8 @@ cmake --install build-msvc --config Release
 安装前缀固定为 `MSF_RUNTIME`，安装内容：
 
 - `bin/`：`q1x`
-- `lib/`：`quant1x` 静态库
+- `lib/`：`quant1x` 静态库（含 mpb 编译产物）
 - `include/quant1x/`：项目头文件 + 生成的 `build-info.h`
-- `include/third_party/`：聚合的第三方头文件
 - `lib/cmake/quant1x/`：`quant1x-config.cmake`、`quant1x-targets.cmake`
 
 下游通过 `find_package(quant1x)` 使用时，也需要先执行 `conan install` 让依赖的 config 文件位于 `CMAKE_PREFIX_PATH`（这是外部依赖管理的通用约束）。
@@ -268,6 +292,31 @@ cmake --install build-msvc --config Release
 - 新增第三方依赖时，在 `conanfile.py` 的 `requirements()` 中声明，并在 CMake 中链接其 imported target。
 
 ---
+
+### 2.11 Meson 构建（可选）
+
+CMake 仍是主构建；Meson 覆盖 `quant1x` 库、`q1x` 与两个跨语言对拍程序。
+
+```bash
+# 1) 依赖：与 CMake 共用 conanfile.py，额外生成 Meson 原生文件与 pkg-config 文件
+conan install . -of build-meson -pr:h conan/profiles/windows-msvc-static \
+    -pr:b default -s build_type=Release --build=missing \
+    -g MesonToolchain -g PkgConfigDeps
+
+# 2) 配置（Windows 需先进入 VS 开发者环境）
+meson setup build-meson/build --native-file build-meson/conan_meson_native.ini
+
+# 3) 编译与测试
+meson compile -C build-meson/build
+meson test -C build-meson/build
+```
+
+说明：
+
+- 依赖通过 Conan 生成的 `.pc` 文件解析，`MesonToolchain` 已把 `pkg_config_path` 指向 `build-meson`；
+- `mpb` 按 `../mpb` 相对路径直接编译（与 CMake 的 `QUANT1X_MPB_DIR` 默认值一致）；
+- 目前 Meson 只登记 `q1x` 与 `app-tdd-formula-parity` / `app-tdd-indicators` 两个对拍程序；
+  catch2 / gtest 承载的其余用例仍由 CMake 构建，后续按需迁移。
 
 ## 3. Rust 构建
 
@@ -485,8 +534,8 @@ zig fmt --check quant1x/base/argparser/*.zig
 | 现象 | 原因与处理 |
 |---|---|
 | `未使用 Conan 工具链配置本项目` | 配置时未传 `-DCMAKE_TOOLCHAIN_FILE=<build>/conan_toolchain.cmake`，或尚未执行 `conan install` |
-| `NOT found ENV MSF_RUNTIME` | 未设置 `MSF_RUNTIME`；它同时是安装前缀与 protobuf 查找根 |
-| 链接阶段找不到 protobuf | protobuf 由 `third_party/lib`（Windows）或 `$MSF_RUNTIME/lib`（其他平台）提供；Debug 构建需 `libprotobufd` |
+| `NOT found ENV MSF_RUNTIME` | 未设置 `MSF_RUNTIME`；它同时是安装前缀 |
+| 链接阶段找不到 protobuf | protobuf 由 Conan 的 `protobuf/3.21.12` 提供；先确认 `conan install` 成功，且 `protobuf::protobuf` 已链接 |
 | `LNK2038 RuntimeLibrary mismatch` | MSVC profile 的 `compiler.runtime` 与 `USE_STATIC_CRT` 不一致；统一为 `static`（`/MT`） |
 | CMake 报找不到 `minizip` / `Iconv` / `ZLIB` 的 config | `conan install` 未执行，或输出目录与 `CMAKE_TOOLCHAIN_FILE` 所在目录不一致 |
 | 首次 `conan install` 构建极慢 | MSVC 静态运行库无 CCI 预编译包，openssl/libiconv/libcurl 会从源码构建；属正常现象 |

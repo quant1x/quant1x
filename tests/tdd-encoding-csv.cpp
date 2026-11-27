@@ -215,3 +215,26 @@ TEST_CASE("csv-write-slices", "[encoding]") {
     }
 }
 
+
+// 引号回归：字段值含逗号、双引号、单引号或换行时，read_value 必须去掉最外层引号
+// 并把内部的 "" 折叠为 "，单引号不参与 CSV 转义。
+TEST_CASE("csv2-quoted-values", "[encoding]") {
+    std::string text = "\"a,b\",\"a\"\"b\",a'b,\"line1\nline2\"\n";
+    csv2::Reader<csv2::delimiter<','>, csv2::quote_character<'"'>, csv2::first_row_is_header<false>> reader;
+    REQUIRE(reader.parse(text));
+
+    std::vector<std::string> values;
+    for (const auto &row : reader) {
+        for (const auto &cell : row) {
+            std::string value;
+            cell.read_value(value);
+            values.push_back(value);
+        }
+    }
+
+    REQUIRE(values.size() == 4);
+    REQUIRE(values[0] == "a,b");
+    REQUIRE(values[1] == "a\"b");
+    REQUIRE(values[2] == "a'b");
+    REQUIRE(values[3] == "line1\nline2");
+}

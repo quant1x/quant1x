@@ -14,7 +14,7 @@
 #include <spdlog/spdlog.h>
 #include <quant1x/data/meta/timestamp.h>
 #include <quant1x/data/market.h>
-#include <indicators/progress_bar.hpp>
+#include <mpb.h>
 #include <quant1x/realtime/snapshot.h>
 #include <quant1x/trader/trader.h>
 #include <quant1x/trader/order_state.h>
@@ -28,7 +28,6 @@ namespace instruments = quant1x::contrib::data::tdx::instruments;
 using namespace quant1x::contrib::data;
 
 namespace trader {
-    namespace mpb = ::indicators;
 
     void tracker(void) {
         uint64_t strategy_id = 1; // 默认1号策略
@@ -58,21 +57,10 @@ namespace trader {
         auto all_codes = instruments::get_code_list();
         auto codeCount = all_codes.size();
         {
-            mpb::ProgressBar bar{
-                mpb::option::BarWidth{50},
-                mpb::option::ForegroundColor{mpb::Color::cyan},
-                mpb::option::Start{"["},
-                mpb::option::Fill{"="},
-                mpb::option::Lead{">"},
-                mpb::option::Remainder{" "},
-                mpb::option::End{"]"},
-                mpb::option::ShowElapsedTime{true},
-                mpb::option::ShowRemainingTime{true},
-                mpb::option::FontStyles{std::vector<mpb::FontStyle>{mpb::FontStyle::bold}},
-                mpb::option::ShowPercentage{true},
-                mpb::option::ShowSpeed{true},
-                mpb::option::MaxProgress{codeCount + 0},
-            };
+            auto style = mpb::progress_style_with_template(
+                "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}");
+            auto bar = mpb::ProgressBar::make(codeCount);
+            bar->set_style(style);
             int processed_codes = 0;
             auto timestamp = meta::Timestamp::now();
             strategy->setTimestamp(timestamp);
@@ -83,7 +71,7 @@ namespace trader {
             for (auto const &code: all_codes) {
                 size_t current = ++processed_codes;
                 std::string codePrefix = std::format("{}({}/{})", code, current, codeCount);
-                bar.set_option(mpb::option::PrefixText{codePrefix + ""});
+                bar->set_message(codePrefix);
                 // 4. 运行回测
                 std::string securityCode = data::correct_security_code(code);
                 // result.date = feature_date;
@@ -117,10 +105,10 @@ namespace trader {
                         }
                     }
                 }
-                bar.tick();
+                bar->inc(1);
                 //std::cout << "code: " << code << std::endl;
             }
-            //bar.mark_as_completed();
+            bar->finish();
             // 执行买入
             auto strategy_name = (*strategy).QmtStrategyName();
             auto strategy_remark = (*strategy).OrderFlag();

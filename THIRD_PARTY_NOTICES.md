@@ -9,8 +9,8 @@ Quant1X **仅发布源代码，不发布二进制发行版**（不提供预编�
 因此：
 
 - LGPL 等许可证中针对**二进制分发**的义务（提供可重链接的目标文件、随二进制附带库源码等）**不适用于本仓库的发布行为**；
-- 本仓库仍需履行**源码分发**相关的义务：保留其实际分发的第三方源码的版权声明与许可证文本（如 `quant1x/io/csv-reader.h`、`third_party/` 下的头文件）；
-- Rust crate 通过 Cargo `include` 白名单发布，只包含 Rust 源码与根目录文档，不包含 `third_party/`、C++ 头文件等非 Rust 发布物；本文件中的 C++ 许可证信息供仓库使用者与下游二进制分发者参考；
+- 本仓库仍需履行**源码分发**相关的义务：保留其实际分发的第三方源码的版权声明与许可证文本（如 `quant1x/io/csv-reader.h`）；
+- Rust crate 通过 Cargo `include` 白名单发布，只包含 Rust 源码与根目录文档，不包含 C++ 头文件等非 Rust 发布物；本文件中的 C++ 许可证信息供仓库使用者与下游二进制分发者参考；
 - 下游用户若基于本源码构建并**发布二进制**，相关义务由该分发者承担；本文件第 3 节可作为其检查清单。
 
 ## 1. 项目许可证与例外
@@ -63,34 +63,27 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-## 2. third_party 内置组件
+## 2. 内置第三方组件
 
-`third_party/include` 下的头文件按各自许可证分发，许可证原文位于 `third_party/LICENSE.*`：
-
-| 组件 | 许可证文件 |
-|---|---|
-| argparse | `third_party/LICENSE.argparse` |
-| backward-cpp | `third_party/LICENSE.backward-cpp` |
-| cpp-httplib | `third_party/LICENSE.cpp-httplib` |
-| croncpp | `third_party/LICENSE.croncpp` |
-| csv2 | `third_party/LICENSE.csv2` |
-| date | `third_party/LICENSE.date` |
-| fmt | `third_party/LICENSE.fmt` |
-| indicators | `third_party/LICENSE.indicators` |
-| magic_enum | `third_party/LICENSE.magic_enum` |
-| mio | `third_party/LICENSE.mio` |
-| Boost.PFR | `third_party/LICENSE.pfr` |
-| protobuf | `third_party/LICENSE.protobuf` |
-| robin-map | `third_party/LICENSE.robin-map` |
-| spdlog | `third_party/LICENSE.spdlog` |
-| BS::thread_pool | `third_party/LICENSE.thread-pool` |
-| xsimd | `third_party/LICENSE.xsimd` |
-| xtensor | `third_party/LICENSE.xtensor` |
-| xtl | `third_party/LICENSE.xtl` |
+自 2026-11-27 起，仓库**不再内置任何 C/C++ 第三方库**：原 `third_party/` 下的头文件与
+protobuf 静态库全部移除，改为由 Conan 2 在构建时获取。仓库内只保留项目自有的
+`quant1x/io/csv-reader.h`（BSD-3-Clause，见 §1）。
 
 ## 3. Conan 管理的依赖
 
-C++ 构建通过 Conan 2 获取 openssl、libiconv、zlib、minizip、yaml-cpp、mimalloc、cpr、capnproto、benchmark、catch2、gtest 等依赖。这些组件不随本仓库源码分发，其许可证由 Conan 包携带；本仓库只在构建说明与本节中列明依赖及其许可证，供下游构建者参考。
+C++ 构建通过 Conan 2 获取全部第三方依赖：openssl、libiconv、zlib、minizip、yaml-cpp、
+mimalloc、cpr、capnproto、benchmark、catch2、gtest、fmt、spdlog、asio、boost、backward-cpp、
+bshoshany-thread-pool、croncpp、csv2、date、cpp-httplib、magic_enum、mio、nlohmann_json、
+tsl-robin-map、protobuf、xtensor、xsimd、xtl。版本固定在 `conanfile.py`；`csv2` 使用仓库内
+`third_party/recipes/csv2` 的本地配方。这些组件不随本仓库源码分发，其许可证由 Conan 包携带；
+本仓库只在构建说明与本节中列明依赖及其许可证，供下游构建者参考。
+
+**mpb**（`quant1x/mpb`）是 Quant1X 组织内的自有项目（MIT），不通过 Conan 分发；CMake / Meson
+在本仓库同级目录直接编译其 C++ 源码。
+
+**csv2 的本地修改**：`third_party/recipes/csv2` 在打包 v0.2 时修复了 `read_value` 的引号解析
+（剥离字段最外层引号、折叠内部 `""`）。修改后的头文件仍按 csv2 的 MIT 许可证分发，许可证随
+Conan 包携带。
 
 **下游若发布二进制或安装包**，必须：
 

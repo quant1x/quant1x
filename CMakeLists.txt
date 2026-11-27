@@ -70,19 +70,8 @@ else ()
 endif ()
 MESSAGE(STATUS "RUNTIME = ${RUNTIME}")
 
-# 项目内聚合的第三方库
-set(inner_third_party_dir "${CMAKE_SOURCE_DIR}/third_party")
-set(INNER_THIRD_PARTY_INCLUDE_DIRS ${inner_third_party_dir}/include)
-set(INNER_THIRD_PARTY_LIBRARY_DIRS ${inner_third_party_dir}/lib)
-if(WIN32)
-    link_directories(${INNER_THIRD_PARTY_LIBRARY_DIRS})
-else ()
-    link_directories(${INNER_THIRD_PARTY_LIBRARY_DIRS} ${RUNTIME}/lib)
-endif ()
-
 message(STATUS "================== Crash Report Integration ==================")
 #include(cmake/crash.cmake)
-include(cmake/backward.cmake)
 
 # check if compiler is nvcc or nvcc_wrapper
 set(COMPILER_IS_NVCC false)
@@ -110,11 +99,9 @@ endif()
 
 #add_library(backward_interface INTERFACE)
 #set_target_properties(backward_interface PROPERTIES EXPORT_NAME Interface)
-target_compile_definitions(third_libs INTERFACE ${BACKWARD_DEFINITIONS})
-target_include_directories(third_libs INTERFACE ${BACKWARD_INCLUDE_DIRS})
-if(BACKWARD_HAS_EXTERNAL_LIBRARIES)
-    target_link_libraries(third_libs INTERFACE ${BACKWARD_LIBRARIES})
-endif()
+find_package(Backward CONFIG REQUIRED)
+target_link_libraries(third_libs INTERFACE Backward::Backward)
+echo_lib_version(Backward ${Backward_VERSION})
 
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -Xclang -gcodeview -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd")
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -Xclang -gcodeview -D_DEBUG -D_MT -Xclang --dependent-lib=msvcrtd")
@@ -148,13 +135,8 @@ endif()
 # libiconv
 include(cmake/iconv.cmake)
 
-# argparse, argparse::argparse, header-only方式库, 收敛到项目内
-#find_package(argparse CONFIG REQUIRED)
+# argparse 由项目自带的 quant1x/base/argparser 承载，仅保留版本展示
 set(argparse_VERSION "3.2.0")
-target_include_directories(third_libs INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party/include>
-    $<INSTALL_INTERFACE:include>
-)
 echo_lib_version(argparse ${argparse_VERSION})
 
 # yaml-cpp yaml-cpp::yaml-cpp
@@ -163,39 +145,58 @@ target_link_libraries(third_libs INTERFACE yaml-cpp::yaml-cpp)
 echo_lib_version(yaml-cpp ${yaml-cpp_VERSION})
 
 # tsl::robin_map(robin-map)
-#find_package(tsl-robin-map CONFIG REQUIRED)
-#target_link_libraries(main PRIVATE tsl::robin_map)
-set(_tsl_robin_header "${CMAKE_SOURCE_DIR}/third_party/include/tsl/robin_growth_policy.h")
-if(EXISTS "${_tsl_robin_header}")
-    file(STRINGS "${_tsl_robin_header}" _tsl_robin_version_lines
-        REGEX "TSL_RH_VERSION_(MAJOR|MINOR|PATCH)[ 	]+[0-9]+")
-    set(_tsl_robin_major "0")
-    set(_tsl_robin_minor "0")
-    set(_tsl_robin_patch "0")
-    foreach(_line IN LISTS _tsl_robin_version_lines)
-        if(_line MATCHES "TSL_RH_VERSION_MAJOR[ 	]+([0-9]+)")
-            set(_tsl_robin_major "${CMAKE_MATCH_1}")
-        elseif(_line MATCHES "TSL_RH_VERSION_MINOR[ 	]+([0-9]+)")
-            set(_tsl_robin_minor "${CMAKE_MATCH_1}")
-        elseif(_line MATCHES "TSL_RH_VERSION_PATCH[ 	]+([0-9]+)")
-            set(_tsl_robin_patch "${CMAKE_MATCH_1}")
-        endif()
-    endforeach()
-    set(tsl-robin-map_VERSION "${_tsl_robin_major}.${_tsl_robin_minor}.${_tsl_robin_patch}")
-else()
-    set(tsl-robin-map_VERSION "unknown")
-endif()
-unset(_tsl_robin_header)
-unset(_tsl_robin_version_lines)
-unset(_tsl_robin_major)
-unset(_tsl_robin_minor)
-unset(_tsl_robin_patch)
+find_package(tsl-robin-map CONFIG REQUIRED)
+target_link_libraries(third_libs INTERFACE tsl::robin_map)
 echo_lib_version(tsl-robin-map ${tsl-robin-map_VERSION})
 
 # croncpp
-#find_package(croncpp CONFIG REQUIRED)
-set(croncpp_VERSION "2026.08.12")
+find_package(croncpp CONFIG REQUIRED)
+target_link_libraries(third_libs INTERFACE croncpp::croncpp)
 echo_lib_version(croncpp ${croncpp_VERSION})
+
+# 其余头文件型依赖（原 third_party 内置副本已删除，全部由 Conan 提供）
+find_package(boost CONFIG REQUIRED)
+find_package(csv2 CONFIG REQUIRED)
+find_package(date CONFIG REQUIRED)
+find_package(httplib CONFIG REQUIRED)
+find_package(magic_enum CONFIG REQUIRED)
+find_package(mio CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+find_package(bshoshany-thread-pool CONFIG REQUIRED)
+target_link_libraries(third_libs INTERFACE
+    boost::boost
+    csv2::csv2
+    date::date
+    httplib::httplib
+    magic_enum::magic_enum
+    mio::mio
+    nlohmann_json::nlohmann_json
+    bshoshany-thread-pool::bshoshany-thread-pool
+)
+
+# ==============================
+# mpb —— quant1x 组织内的多语言进度条库（与本仓库同级）
+# 源码直接编进 quant1x，避免第三方目录内嵌副本，也不额外导出 target。
+# ==============================
+set(QUANT1X_MPB_DIR "${CMAKE_SOURCE_DIR}/../mpb" CACHE PATH "quant1x/mpb 源码目录")
+if (NOT EXISTS "${QUANT1X_MPB_DIR}/progress_bar.h")
+    message(FATAL_ERROR "未找到 mpb 源码: ${QUANT1X_MPB_DIR}（用 -DQUANT1X_MPB_DIR=... 指定）")
+endif ()
+set(QUANT1X_MPB_SOURCES
+    "${QUANT1X_MPB_DIR}/format.cpp"
+    "${QUANT1X_MPB_DIR}/style.cpp"
+    "${QUANT1X_MPB_DIR}/term_like.cpp"
+    "${QUANT1X_MPB_DIR}/in_memory.cpp"
+    "${QUANT1X_MPB_DIR}/state.cpp"
+    "${QUANT1X_MPB_DIR}/draw_target.cpp"
+    "${QUANT1X_MPB_DIR}/multi.cpp"
+    "${QUANT1X_MPB_DIR}/progress_bar.cpp"
+    "${QUANT1X_MPB_DIR}/platform.cpp")
+if (MSVC)
+    set_source_files_properties(${QUANT1X_MPB_SOURCES} PROPERTIES
+        COMPILE_DEFINITIONS "_CRT_SECURE_NO_WARNINGS")
+endif ()
+target_include_directories(third_libs INTERFACE $<BUILD_INTERFACE:${QUANT1X_MPB_DIR}>)
 
 # ==============================
 # BS::thread_pool(bshoshany-thread-pool)
@@ -787,12 +788,12 @@ message(STATUS "third_libs  Options: ${_options}")
 add_library(quant1x STATIC
     ${quant1x-headers}
     ${quant1x-sources}
+    ${QUANT1X_MPB_SOURCES}
 )
 target_include_directories(quant1x
     SYSTEM        # 关键选项：标记为系统头文件路径
     PUBLIC        # 仅当前目标可见（或 PUBLIC/INTERFACE）
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third_party/include>
     $<INSTALL_INTERFACE:include>
 )
 
@@ -864,7 +865,6 @@ message(STATUS "                         Iconv(libiconv) : v${Iconv_VERSION}")
 message(STATUS "                                     fmt : v${fmt_VERSION}")
 message(STATUS "                                    zlib : v${ZLIB_VERSION}")
 message(STATUS "                                 minizip : v${minizip_VERSION}")
-message(STATUS "                                    inja : v${inja_VERSION}")
 message(STATUS "                           nlohmann_json : v${nlohmann_json_VERSION}")
 message(STATUS "                                     xtl : v${xtl_VERSION}")
 message(STATUS "                                   xsimd : v${xsimd_VERSION}")
@@ -972,7 +972,7 @@ set(MIMALLOC_MODE "${MIMALLOC_MODE}")
 
 configure_file(
     "${CMAKE_SOURCE_DIR}/quant1x/build-info.h.in"
-    "${CMAKE_BINARY_DIR}/include/private/build-info.h"
+    "${CMAKE_BINARY_DIR}/include/build-info.h"
 )
 
 add_executable(q1x
@@ -982,7 +982,6 @@ target_include_directories(q1x
     SYSTEM        # 关键选项：标记为系统头文件路径
     PUBLIC       # 仅当前目标可见（或 PUBLIC/INTERFACE）
     ${CMAKE_SOURCE_DIR}/include  # 头文件目录
-    ${CMAKE_SOURCE_DIR}/third_party/include  # 头文件目录
     ${CMAKE_BINARY_DIR}/include  # 私有头文件
 )
 
@@ -1025,7 +1024,6 @@ endif()
 # 设置安装路径变量
 include(GNUInstallDirs)
 MESSAGE(STATUS "CMAKE_INSTALL_PREFIX = ${CMAKE_INSTALL_PREFIX}")
-set(THIRD_PARTY_INSTALL_INCDIR "${CMAKE_INSTALL_INCLUDEDIR}/third_party")
 
 # 设置编译模式
 string(TOLOWER ${quant1x_build_type} lib_build_type)
@@ -1044,15 +1042,6 @@ message(STATUS ${quant1x_DEBUG_POSTFIX})
 mark_as_advanced(quant1x_DEBUG_POSTFIX)
 set_target_properties(quant1x PROPERTIES
     DEBUG_POSTFIX "${quant1x_DEBUG_POSTFIX}"
-)
-# 将第三方头文件声明为安装目标
-install(
-    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/third_party/include/
-    DESTINATION ${THIRD_PARTY_INSTALL_INCDIR}
-    #FILES_MATCHING
-    #PATTERN "*.h"
-    #PATTERN "*.hpp"
-    #PATTERN "*.inl"
 )
 
 # 安装配置（可选）
@@ -1130,15 +1119,11 @@ install(TARGETS q1x
     DESTINATION bin)
 
 # 安装许可证与第三方归属声明，满足 BSD-3 等许可证的随附分发要求
-file(GLOB QUANT1X_THIRD_PARTY_LICENSES "${CMAKE_SOURCE_DIR}/third_party/LICENSE.*")
 install(FILES
     "${CMAKE_SOURCE_DIR}/LICENSE"
     "${CMAKE_SOURCE_DIR}/THIRD_PARTY_NOTICES.md"
     "${CMAKE_SOURCE_DIR}/quant1x/io/csv-reader.LICENSE"
     DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/quant1x
-)
-install(FILES ${QUANT1X_THIRD_PARTY_LICENSES}
-    DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/quant1x/third_party
 )
 # 单元测试 (TODO: migration to new API pending)
 include(CTest)

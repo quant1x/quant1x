@@ -7,6 +7,7 @@
 #include <spdlog/sinks/base_sink.h>
 #include <spdlog/sinks/sink.h>
 #include <memory>
+#include <mutex>
 #include <string>
 
 namespace quant1x::log {

@@ -12,7 +12,6 @@ macro(add_app_executable source_file)
     # 添加头文件路径
     target_include_directories(${target_name} PUBLIC
         ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/third_party/include
     )
 
     # 链接依赖库（例如你提到的 utils）
@@ -55,7 +54,6 @@ macro(add_catch2_executable source_file)
     # 添加头文件路径
     target_include_directories(${target_name} PUBLIC
         ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/third_party/include
     )
 
     # 链接依赖库（例如你提到的 utils）
@@ -87,7 +85,6 @@ macro(add_gtest_executable source_file)
     # 添加头文件路径
     target_include_directories(${target_name} PUBLIC
         ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/third_party/include
     )
 
     # 链接依赖库（例如你提到的 utils）
@@ -120,7 +117,6 @@ macro(add_benchmark_executable source_file)
     # 添加头文件路径
     target_include_directories(${target_name} PUBLIC
         ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/third_party/include
     )
 
     # 链接依赖库（例如你提到的 utils）

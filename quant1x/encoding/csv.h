@@ -12,6 +12,12 @@
 #include <boost/pfr.hpp>
 #include <spdlog/spdlog.h>
 
+#include <map>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
 namespace encoding {
     namespace csv {
 

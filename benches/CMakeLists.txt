@@ -8,10 +8,9 @@ macro(add_benchmark_executable source_file)
 
     add_executable(${target_name} ${source_file})
 
-    # 头文件路径: 仓库根 (quant1x/ 下所有头文件) 与 third_party
+    # 头文件路径: 仓库根 (quant1x/ 下所有头文件)
     target_include_directories(${target_name} PUBLIC
         ${CMAKE_SOURCE_DIR}
-        ${CMAKE_SOURCE_DIR}/third_party/include
     )
 
     # 链接 quant1x (BUILD_INTERFACE include) 与 Google Benchmark

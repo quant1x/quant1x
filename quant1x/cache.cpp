@@ -4,8 +4,7 @@
 #include <quant1x/cache.h>
 #include <quant1x/base/filesystem.h>
 #include <quant1x/contrib/data/tdx/datasource.h>
-#include <indicators/dynamic_progress.hpp>
-#include <indicators/progress_bar.hpp>
+#include <mpb.h>
 #include <boost/pfr/core.hpp>
 #include <csv2/writer.hpp>
 #include <deque>
@@ -16,7 +15,6 @@
 namespace cache {
 
     namespace fs = std::filesystem;
-    namespace mpb = indicators;
 
     namespace {
         // 常量定义
@@ -27,20 +25,6 @@ namespace cache {
         const size_t default_concurrency_max = std::min<size_t>(std::thread::hardware_concurrency(), 8);
         const std::string default_concurrency_key = "default";
     } // 匿名命名空间
-
-    // RAII guard 确保控制台光标在作用域结束时恢复
-    struct ConsoleCursorGuard {
-        ConsoleCursorGuard() noexcept { mpb::show_console_cursor(false); }
-        ConsoleCursorGuard(const ConsoleCursorGuard &) = delete;
-        ConsoleCursorGuard &operator=(const ConsoleCursorGuard &) = delete;
-        ~ConsoleCursorGuard() noexcept {
-            try {
-                mpb::show_console_cursor(true);
-            } catch (...) {
-                // 忽略任何异常, 析构函数必须 noexcept
-            }
-        }
-    };
 
     // RAII guard: 在作用域结束时尽力 flush 日志到磁盘
     struct LogFlushGuard {
@@ -106,52 +90,30 @@ namespace cache {
     int update_with_adapters(const std::vector<data::DataAdapter*> &adapters, const meta::Timestamp& feature_date) {
         auto const & config = quant1x::config::global_config();
         auto const & cfg_concurrency = config.data.concurrency;
-        // 隐藏终端光标以获得更流畅的显示效果, 使用 RAII 确保恢复
-        ConsoleCursorGuard cursor_guard;
         // 确保在函数退出时尽力 flush 日志到磁盘
         LogFlushGuard log_flush_guard;
 
         // 创建多进度条管理器
-        mpb::DynamicProgress<mpb::ProgressBar> bars;
+        auto multi = mpb::MultiProgress::default_instance();
+        auto style = mpb::progress_style_with_template(
+            "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}");
 
         // 主进度条为适配器
         auto count = adapters.size();
         if (count == 0) {
             spdlog::warn("[update] no adapters provided");
-            mpb::show_console_cursor(true);
             return 0;
         }
-        mpb::ProgressBar barMain{
-            mpb::option::BarWidth{50},
-            mpb::option::ForegroundColor{mpb::Color::cyan},
-            mpb::option::Start{"["},
-            mpb::option::Fill{"="},
-            mpb::option::Lead{">"},
-            mpb::option::Remainder{" "},
-            mpb::option::End{"]"},
-            mpb::option::ShowElapsedTime{true},
-            mpb::option::ShowRemainingTime{true},
-            mpb::option::FontStyles{std::vector<mpb::FontStyle>{mpb::FontStyle::bold}},
-            mpb::option::ShowPercentage{true},
-            mpb::option::ShowSpeed{true},
-            mpb::option::MaxProgress{count}
-        };
-        bars.push_back(barMain);
-        bars[0].set_progress(0);
+        auto barMain = multi->add(mpb::ProgressBar::make(count));
+        barMain->set_style(style);
+        barMain->set_message("adapters");
+        barMain->set_position(0);
 
         auto first = adapters[0]->Key();
         auto allCodes = quant1x::contrib::data::tdx::list_instruments();
-        mpb::ProgressBar barCodes(
-            mpb::option::BarWidth{50},
-            mpb::option::ForegroundColor{mpb::Color::yellow},
-            mpb::option::ShowElapsedTime{true},
-            mpb::option::ShowRemainingTime{true},
-            mpb::option::PrefixText{first + ": fetching..."},
-            mpb::option::FontStyles{std::vector<mpb::FontStyle>{mpb::FontStyle::bold}},
-            mpb::option::ShowPercentage{true},
-            mpb::option::ShowSpeed{true},
-            mpb::option::MaxProgress(static_cast<size_t>(allCodes.size())));
-        bars.push_back(barCodes);
+        auto barCodes = multi->add(mpb::ProgressBar::make(allCodes.size()));
+        barCodes->set_style(style);
+        barCodes->set_message(first + ": fetching...");
 
         // 缓存日期
         auto cache_date = meta::next_trading_day(feature_date);
@@ -176,7 +138,7 @@ namespace cache {
             if (!adapter) {
                 spdlog::warn("[update] adapter at index {} is null, skipping", idx);
                 // 保持主进度前进
-                bars[0].tick();
+                barMain->inc(1);
                 continue;
             }
             std::string module_name;
@@ -188,13 +150,11 @@ namespace cache {
             }
 
             spdlog::info("[update] plugin={}, start", module_name);
-            bars[0].set_option(mpb::option::PrefixText{module_name + ""});
-            bars[1].set_option(mpb::option::PrefixText{module_name + ""});
-            bars[1].set_progress(0);
-            bars[1].mark_as_started();
-            bars[1].set_option(mpb::option::Completed {false});
+            barMain->set_message(module_name);
+            barCodes->set_message(module_name);
+            barCodes->set_position(0);
             auto codeCount = allCodes.size();
-            bars[1].set_option(mpb::option::MaxProgress(static_cast<size_t>(codeCount + 0)));
+            barCodes->set_length(codeCount);
             size_t num_threads = default_concurrency;
             auto const & cfg_adapter = cfg_concurrency.find(adapter->Key());
             if (cfg_adapter != cfg_concurrency.end() && cfg_adapter->second > 0) {
@@ -269,8 +229,8 @@ namespace cache {
                         {
                             //std::lock_guard<std::mutex> lock(progress_mutex);
                             std::string codePrefix = std::format("{}({}/{})", inst.symbol(), current, codeCount);
-                            bars[1].set_option(mpb::option::PrefixText{codePrefix + ""});
-                            bars[1].tick();
+                            barCodes->set_message(codePrefix);
+                            barCodes->set_position(current);
                         }
                     } catch (const std::exception &e) {
                         spdlog::error("处理代码 {} 时出错: {}", inst.symbol(), e.what());
@@ -426,13 +386,14 @@ namespace cache {
                 }
             }
 
-            bars[1].set_option(mpb::option::PrefixText{module_name + ""});
-            bars[1].mark_as_completed();
-            bars[0].tick();
+            barCodes->set_message(module_name);
+            barCodes->set_position(barCodes->length().value_or(0));
+            barMain->inc(1);
             spdlog::info("[update] plugin={}, end", module_name);
         }
 
-        bars[0].mark_as_completed();
+        barMain->set_position(count);
+        barMain->finish();
         return int(count);
     }
 

@@ -4,6 +4,8 @@
 #include "rule_engine.h"
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
+
 namespace engine {
 
     void RuleEngine::UpdateSortedCache() const {

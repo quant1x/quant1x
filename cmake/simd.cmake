@@ -1,17 +1,23 @@
 # ==============================
-# xsimd 13.2.0
-# find_package(xsimd CONFIG REQUIRED)
+# xsimd / xtensor / xtl —— 由 Conan 提供（conanfile.py 声明）
+# 不再随 third_party 分发，避免仓库内嵌一份与 Conan 版本漂移的副本。
 # ==============================
-#message("xsimd_INCLUDE_DIRS = ${xsimd_INCLUDE_DIRS}")
-file(STRINGS "${INNER_THIRD_PARTY_INCLUDE_DIRS}/xsimd/config/xsimd_config.hpp" xsimd_version_defines
-    REGEX "#define XSIMD_VERSION_(MAJOR|MINOR|PATCH)")
-foreach (ver ${xsimd_version_defines})
-    if (ver MATCHES "#define XSIMD_VERSION_(MAJOR|MINOR|PATCH) +([^ ]+)$")
-        set(XSIMD_VERSION_${CMAKE_MATCH_1} "${CMAKE_MATCH_2}" CACHE INTERNAL "")
-    endif ()
-endforeach ()
-set(xsimd_VERSION ${XSIMD_VERSION_MAJOR}.${XSIMD_VERSION_MINOR}.${XSIMD_VERSION_PATCH})
+find_package(xsimd CONFIG REQUIRED)
+find_package(xtensor CONFIG REQUIRED)
+find_package(xtl CONFIG REQUIRED)
+
+if (NOT xsimd_VERSION)
+    set(xsimd_VERSION "unknown")
+endif ()
+if (NOT xtensor_VERSION)
+    set(xtensor_VERSION "unknown")
+endif ()
+if (NOT xtl_VERSION)
+    set(xtl_VERSION "unknown")
+endif ()
 echo_lib_version(xsimd ${xsimd_VERSION})
+echo_lib_version(xtensor ${xtensor_VERSION})
+echo_lib_version(xtl ${xtl_VERSION})
 
 # AVX2
 if (MSVC)
@@ -39,37 +45,23 @@ else ()
     endif ()
 endif ()
 
-# ==============================
-# xtensor 0.26.0
-# find_package(xtensor CONFIG REQUIRED)
-# ==============================
-file(STRINGS "${INNER_THIRD_PARTY_INCLUDE_DIRS}/xtensor/core/xtensor_config.hpp" xtensor_version_defines
-    REGEX "#define XTENSOR_VERSION_(MAJOR|MINOR|PATCH)")
-foreach (ver ${xtensor_version_defines})
-    if (ver MATCHES "#define XTENSOR_VERSION_(MAJOR|MINOR|PATCH) +([^ ]+)$")
-        set(XTENSOR_VERSION_${CMAKE_MATCH_1} "${CMAKE_MATCH_2}" CACHE INTERNAL "")
-    endif ()
-endforeach ()
-set(xtensor_VERSION ${XTENSOR_VERSION_MAJOR}.${XTENSOR_VERSION_MINOR}.${XTENSOR_VERSION_PATCH})
-echo_lib_version(xtensor ${xtensor_VERSION})
+# Conan 的 CMakeDeps 可能生成带命名空间或不带命名空间的两套 target，二者都接受
+if (TARGET xsimd::xsimd)
+    set(_xsimd_target xsimd::xsimd)
+elseif (TARGET xsimd)
+    set(_xsimd_target xsimd)
+else ()
+    message(FATAL_ERROR "xsimd: 未找到可用的 CMake target")
+endif ()
 
-# ==============================
-# xtl 0.8.0
-# find_package(xtl CONFIG REQUIRED)
-# ==============================
-file(STRINGS "${INNER_THIRD_PARTY_INCLUDE_DIRS}/xtl/xtl_config.hpp" xtl_version_defines
-    REGEX "#define XTL_VERSION_(MAJOR|MINOR|PATCH)")
-foreach (ver ${xtl_version_defines})
-    if (ver MATCHES "#define XTL_VERSION_(MAJOR|MINOR|PATCH) +([^ ]+)$")
-        set(XTL_VERSION_${CMAKE_MATCH_1} "${CMAKE_MATCH_2}" CACHE INTERNAL "")
-    endif ()
-endforeach ()
-set(xtl_VERSION ${XTL_VERSION_MAJOR}.${XTL_VERSION_MINOR}.${XTL_VERSION_PATCH})
-echo_lib_version(xtl ${xtl_VERSION})
+if (TARGET xtensor::xtensor)
+    set(_xtensor_target xtensor::xtensor)
+elseif (TARGET xtensor)
+    set(_xtensor_target xtensor)
+else ()
+    message(FATAL_ERROR "xtensor: 未找到可用的 CMake target")
+endif ()
 
-# nlohmann-json 依赖 inja:x64-mingw-static@3.4.0
-set(inja_VERSION 3.4.0)
-set(nlohmann_json_VERSION "3.1.1")
 add_library(xtensor_optimize INTERFACE)
 if(MSVC)
     target_compile_options(xtensor_optimize INTERFACE /EHsc)
@@ -86,4 +78,5 @@ else()
         target_compile_options(xtensor_optimize INTERFACE -march=native)
     endif()
 endif()
-target_link_libraries(third_libs INTERFACE xtensor_optimize)
+
+target_link_libraries(third_libs INTERFACE ${_xtensor_target} ${_xsimd_target} xtensor_optimize)

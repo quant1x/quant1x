@@ -16,8 +16,6 @@
 
 #include <boost/pfr/core.hpp>
 #include <csv2/writer.hpp>
-#include <indicators/dynamic_progress.hpp>
-#include <indicators/progress_bar.hpp>
 
 #include <quant1x/data/meta/timestamp.h>
 

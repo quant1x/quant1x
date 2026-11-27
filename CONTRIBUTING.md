@@ -122,9 +122,10 @@ Quant1X 是**多语言平行实现**的量化交易基础设施框架：同一�
 
 ### 3.1 仓库根与实现根
 
-仓库根只放构建与打包入口（`CMakeLists.txt`、`Cargo.toml`、`go.mod`、`pyproject.toml`、`pom.xml`、
-`main.*`）与跨语言基础设施（`cmake/`、`conan/`、`tests/`、`benches/`、`docs/`、`tools/`、`third_party/`）；
-**实现根是 `quant1x/`**，功能模块目录直接平铺在它下面。
+仓库根只放构建与打包入口（`CMakeLists.txt`、`meson.build`、`Cargo.toml`、`go.mod`、`pyproject.toml`、`pom.xml`、
+`main.*`）与跨语言基础设施（`cmake/`、`third_party/`、`tests/`、`benches/`、`docs/`、`tools/`）；
+**实现根是 `quant1x/`**，功能模块目录直接平铺在它下面。`third_party/` 只放 Conan 本地配方与合规检查
+写入的许可证，不再内置第三方头文件或静态库。
 
 **导入 / 包含路径本身属于语义**：同一功能在各语言的模块路径必须对位 ——
 

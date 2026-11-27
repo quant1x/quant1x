@@ -1,3 +1,0 @@
-- 节流刷新（Throttled Refresh）
-- 视觉优先模式（Visual-first Mode）
-- 批量化渲染（Batched Rendering）

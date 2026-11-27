@@ -4,7 +4,7 @@
 #include <quant1x/app.h>
 #include <sstream>
 #include <quant1x/command.h>
-#include <private/build-info.h>
+#include <build-info.h>
 #include <quant1x/config/config.h>
 #include <quant1x/cache.h>
 #include <quant1x/base/api.h>
