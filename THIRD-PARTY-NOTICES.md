@@ -244,6 +244,8 @@ Quant1X 原创代码采用 **MIT License**（见根目录 `LICENSE`）。以下�
 | gopkg.in/tomb.v1 | v1.0.0-20141024135613-dd632973f1e7 | BSD-3-Clause | Copyright (c) 2010-2011 - Gustavo Niemeyer <gustavo@niemeyer.net>; https://gopkg.in/tomb.v1 |
 | gopkg.in/yaml.v3 | v3.0.1 | Apache-2.0, MIT | copyright staring in 2011 when the project was ported over:; https://gopkg.in/yaml.v3 |
 | github.com/google/go-cmp | v0.7.0 | BSD-3-Clause | Copyright (c) 2017 The Go Authors. All rights reserved.; https://github.com/google/go-cmp |
+| github.com/davecgh/go-spew | v1.1.1 | ISC | Copyright (c) 2012-2016 Dave Collins <dave@davec.name>; https://github.com/davecgh/go-spew |
+| github.com/pmezard/go-difflib | v1.0.0 | BSD-2-Clause | Copyright (c) 2013, Patrick Mezard; https://github.com/pmezard/go-difflib |
 <!--GO_COMPONENTS_END-->
 
 上表按 `go.mod` 的模块图生成（含未直接 import 的间接依赖），许可证全文归档在 `third_party/licenses/go/<模块路径>/`。
