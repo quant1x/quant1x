@@ -141,6 +141,69 @@ def minimum(x, y) -> np.ndarray:
     return np.minimum(a, b)
 
 
+def add_scalar(x, value: float) -> np.ndarray:
+    """**序列与标量加**: `x + value`
+
+    :param x: 输入序列
+    :param value: 标量
+    :return: 和序列
+    """
+    return as_series(x) + float(value)
+
+
+def sub_scalar(x, value: float) -> np.ndarray:
+    """**序列与标量减**: `x - value`
+
+    :param x: 输入序列
+    :param value: 标量
+    :return: 差序列
+    """
+    return as_series(x) - float(value)
+
+
+def mul_scalar(x, value: float) -> np.ndarray:
+    """**序列与标量乘**: `x * value`
+
+    :param x: 输入序列
+    :param value: 标量
+    :return: 积序列
+    """
+    return as_series(x) * float(value)
+
+
+def div_scalar(x, value: float) -> np.ndarray:
+    """**序列与标量除**: `x / value`，除零得 `±inf` 或 NaN
+
+    :param x: 输入序列
+    :param value: 标量
+    :return: 商序列
+    """
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return as_series(x) / float(value)
+
+
+def maximum_scalar(x, value: float) -> np.ndarray:
+    """**序列与标量取大**: 任一侧 NaN 则结果 NaN
+
+    :param x: 输入序列
+    :param value: 标量
+    :return: 逐元素较大值
+    """
+    values = as_series(x)
+    return np.maximum(values, float(value))
+
+
+def minimum_scalar(x, value: float) -> np.ndarray:
+    """**序列与标量取小**: 任一侧 NaN 则结果 NaN
+
+    :param x: 输入序列
+    :param value: 标量
+    :return: 逐元素较小值
+    """
+    values = as_series(x)
+    return np.minimum(values, float(value))
+
+
 def where(condition, true_value, false_value) -> np.ndarray:
     """**条件选择**: `condition` 非零取 `true_value`，否则取 `false_value`
 

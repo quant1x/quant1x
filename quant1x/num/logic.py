@@ -92,6 +92,16 @@ def not_equal(left, right) -> np.ndarray:
     return a != b
 
 
+def to_bools(values) -> np.ndarray:
+    """**数值转布尔**: 非零且非 NaN 为真
+
+    :param values: 数值序列
+    :return: 布尔序列
+    """
+    array = np.asarray(values, dtype=np.float64)
+    return (~np.isnan(array)) & (array != 0)
+
+
 def _extend(values: np.ndarray, length: int) -> np.ndarray:
     """**补齐布尔序列**: 不足部分补 False，超出部分截断
 

@@ -14,7 +14,25 @@ from __future__ import annotations
 from .align import align, pad_to, repeat
 from .decimals import change_rate, decimal, net_change_rate
 from .dtype import DEFAULT, NAN, DType, as_series, default_like, is_nan, to_scalar
-from .elementwise import abs, add, div, log, maximum, minimum, mul, pow, sqrt, sub, where
+from .elementwise import (
+    abs,
+    add,
+    add_scalar,
+    div,
+    div_scalar,
+    log,
+    maximum,
+    maximum_scalar,
+    minimum,
+    minimum_scalar,
+    mul,
+    mul_scalar,
+    pow,
+    sqrt,
+    sub,
+    sub_scalar,
+    where,
+)
 from .ewm import ewm_mean
 from .fillna import fill, fill_na, is_na
 from .logic import (
@@ -30,6 +48,7 @@ from .logic import (
     lt,
     lte,
     not_equal,
+    to_bools,
 )
 from .matrix import arange, concat1d, linspace, ones, shape, transpose2d, zeros
 from .reduce import (
@@ -62,11 +81,12 @@ from .window import as_window, window_at
 
 __all__ = [
     "DEFAULT", "NAN", "DType", "as_series", "default_like", "is_nan", "to_scalar",
-    "abs", "add", "div", "log", "maximum", "minimum", "mul", "pow", "sqrt", "sub", "where",
+    "abs", "add", "add_scalar", "div", "div_scalar", "log", "maximum", "maximum_scalar",
+    "minimum", "minimum_scalar", "mul", "mul_scalar", "pow", "sqrt", "sub", "sub_scalar", "where",
     "ewm_mean",
     "fill", "fill_na", "is_na",
     "all_of", "any_of", "count_true", "equal", "gt", "gte", "logic_and", "logic_not",
-    "logic_or", "lt", "lte", "not_equal",
+    "logic_or", "lt", "lte", "not_equal", "to_bools",
     "arange", "concat1d", "linspace", "ones", "shape", "transpose2d", "zeros",
     "argmax", "argmin", "covariance", "max_value", "mean", "median", "min_value", "std",
     "sum_value", "variance",

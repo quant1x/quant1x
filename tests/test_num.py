@@ -143,5 +143,36 @@ class AlignTest(unittest.TestCase):
         self.assertEqual(result[1:].tolist(), [1.0, 2.0])
 
 
+class ScalarTest(unittest.TestCase):
+    """序列与标量算子: 与二元算子的 NaN 口径一致."""
+
+    def test_arith(self):
+        """**用例**: 序列与标量的加减乘除
+        """
+        self.assertEqual(num.add_scalar([1.0, 2.0], 0.5).tolist(), [1.5, 2.5])
+        self.assertEqual(num.sub_scalar([1.0, 2.0], 0.5).tolist(), [0.5, 1.5])
+        self.assertEqual(num.mul_scalar([1.0, 2.0], 2.0).tolist(), [2.0, 4.0])
+        self.assertEqual(num.div_scalar([1.0, 2.0], 2.0).tolist(), [0.5, 1.0])
+
+    def test_extreme_nan(self):
+        """**用例**: 取大取小遇 NaN 结果为 NaN
+        """
+        result = num.maximum_scalar([1.0, math.nan], 3.0)
+        self.assertEqual(result[0], 3.0)
+        self.assertTrue(math.isnan(result[1]))
+        self.assertTrue(math.isnan(num.minimum_scalar([math.nan], 0.0)[0]))
+
+    def test_to_bools(self):
+        """**用例**: 非零且非 NaN 为真
+        """
+        self.assertEqual(num.to_bools([1.0, 0.0, -1.0, math.nan]).tolist(),
+                         [True, False, True, False])
+
+    def test_to_scalar_empty(self):
+        """**用例**: 空序列收敛为 NaN
+        """
+        self.assertTrue(math.isnan(num.to_scalar([])))
+
+
 if __name__ == "__main__":
     unittest.main()

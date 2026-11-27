@@ -62,9 +62,11 @@ def to_scalar(value) -> float:
     """**收敛为标量**: 把 0 维数组 / 单元素序列取成 float
 
     :param value: 标量或单元素序列
-    :return: float 标量
+    :return: float 标量, 空序列返回 NAN
     """
     array = np.asarray(value, dtype=np.float64)
     if array.ndim == 0:
         return float(array)
+    if array.size == 0:
+        return NAN
     return float(array[-1])
