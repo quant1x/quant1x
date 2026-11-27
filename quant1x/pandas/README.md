@@ -32,10 +32,10 @@
 
 | 语义 | python | c++ | rust | go | zig |
 | --- | --- | --- | --- | --- | --- |
-| Series | `series.py` | `series.h` | `series.rs` | — | — |
+| Series | `series.py` | `series.h` | `series.rs` | — | `series.zig` |
 | DataFrame | `dataframe.py` | `dataframe.h` | — | — | — |
-| EWM | `ewm.py` | `ewm.h` | `series.rs` | — | — |
-| Rolling | `rolling.py` | `series.h` | `series.rs` | — | — |
+| EWM | `ewm.py` | `ewm.h` | `series.rs` | — | `series.zig` |
+| Rolling | `rolling.py` | `series.h` | `series.rs` | — | `series.zig` |
 
 C++ 的 `Series` / `EWM` 已收敛到 `quant1x::pandas`；`dataframe.h` / `periods.h` / `rule.*`
 仍是早期原型（`ta` 命名空间），按模块逐个收敛。

@@ -23,12 +23,12 @@
 
 | 功能 | python | c++ | rust | go | zig | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
-| Series 构造与取值 | `series.py` | `series.h` | `series.rs` | — | — | 已对齐 python/c++/rust（go/zig 待补） |
-| 算术运算符 | `series.py` | `series.h` | `series.rs` | — | — | 已对齐 python/c++/rust（go/zig 待补） |
-| 比较 / 逻辑运算符 | `series.py` | `series.h` | `series.rs` | — | — | 已对齐 python/c++/rust（go/zig 待补） |
-| shift / diff / cumsum | `series.py` | `series.h` | `series.rs` | — | — | 已对齐 python/c++/rust（go/zig 待补） |
-| rolling 入口 | `rolling.py` | `series.h` | `series.rs` | — | — | 已对齐 python/c++/rust（go/zig 待补） |
-| ewm 入口 | `ewm.py` | `ewm.h` | `series.rs` | — | — | 已对齐 python/c++/rust（go/zig 待补） |
+| Series 构造与取值 | `series.py` | `series.h` | `series.rs` | — | `series.zig` | 已对齐 python/c++/rust/zig（go 待补） |
+| 算术运算符 | `series.py` | `series.h` | `series.rs` | — | `series.zig` | 已对齐 python/c++/rust/zig（go 待补） |
+| 比较 / 逻辑运算符 | `series.py` | `series.h` | `series.rs` | — | `series.zig` | 已对齐 python/c++/rust/zig（go 待补） |
+| shift / diff / cumsum | `series.py` | `series.h` | `series.rs` | — | `series.zig` | 已对齐 python/c++/rust/zig（go 待补） |
+| rolling 入口 | `rolling.py` | `series.h` | `series.rs` | — | `series.zig` | 已对齐 python/c++/rust/zig（go 待补） |
+| ewm 入口 | `ewm.py` | `ewm.h` | `series.rs` | — | `series.zig` | 已对齐 python/c++/rust/zig（go 待补） |
 | DataFrame 取列 / 写列 | `dataframe.py` | `dataframe.h` | — | — | — | 部分落地（c++ 原型） |
 
 ## 3. 依赖
