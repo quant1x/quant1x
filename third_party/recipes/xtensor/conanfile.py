@@ -1,11 +1,14 @@
-from conan import ConanFile
+import os
+from typing import TYPE_CHECKING, Any, ClassVar, cast
+
 from conan.errors import ConanInvalidConfiguration
 from conan.tools.build import check_min_cppstd
-from conan.tools.cmake import CMake, CMakeToolchain, CMakeDeps
+from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain
 from conan.tools.files import copy, get, rmdir
 from conan.tools.layout import basic_layout
 from conan.tools.scm import Version
-import os
+
+from conan import ConanFile
 
 required_conan_version = ">=2"
 
@@ -30,16 +33,23 @@ class XtensorConan(ConanFile):
     homepage = "https://github.com/xtensor-stack/xtensor"
     topics = ("numpy", "multidimensional-arrays", "tensors")
     settings = "os", "arch", "compiler", "build_type"
-    options = {
+    options: ClassVar[Any] = {
         "xsimd": [True, False],
         "tbb": [True, False],
         "openmp": [True, False],
     }
-    default_options = {
+    default_options: ClassVar[Any] = {
         "xsimd": True,
         "tbb": False,
         "openmp": False,
     }
+
+    if TYPE_CHECKING:
+        # conan 在加载配方时注入这些实例属性，基类把它们声明为 None，静态检查需要收窄。
+        requires: Any
+        tool_requires: Any
+        info: Any
+        conan_data: Any
 
     def layout(self):
         basic_layout(self, src_folder="src")
@@ -79,7 +89,7 @@ class XtensorConan(ConanFile):
 
     def source(self):
         get(self, **self.conan_data["sources"][self.version],
-            destination=self.source_folder, strip_root=True)
+            destination=cast(str, self.source_folder), strip_root=True)
 
     def generate(self):
         tc = CMakeToolchain(self)
@@ -95,10 +105,11 @@ class XtensorConan(ConanFile):
         cmake.build()
 
     def package(self):
-        copy(self, "LICENSE", src=self.source_folder, dst=os.path.join(self.package_folder, "licenses"))
+        package_folder = cast(str, self.package_folder)
+        copy(self, "LICENSE", src=self.source_folder, dst=os.path.join(package_folder, "licenses"))
         cmake = CMake(self)
         cmake.install()
-        rmdir(self, os.path.join(self.package_folder, "share"))
+        rmdir(self, os.path.join(package_folder, "share"))
 
     def package_info(self):
         self.cpp_info.set_property("cmake_file_name", "xtensor")
