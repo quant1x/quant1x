@@ -9,7 +9,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/quant1x/num"
+	"github.com/quant1x/quant1x/quant1x/num"
 	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx"
 	"github.com/quant1x/quant1x/quant1x/data"
 	"github.com/quant1x/quant1x/quant1x/learn/preprocessing"

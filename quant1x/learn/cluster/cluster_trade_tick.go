@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/quant1x/num"
+	"github.com/quant1x/quant1x/quant1x/num"
 	"github.com/quant1x/quant1x/quant1x/contrib/data/tdx/level1/std"
 	"github.com/quant1x/quant1x/quant1x/learn/preprocessing"
 )
