@@ -9,7 +9,7 @@
 | --- | --- | --- | --- | --- |
 | spec 定语义 | Python（spec） | `series.py` / `dataframe.py` / `rolling.py` / `ewm.py` | 已落地 | 运算符与容器 |
 | 生产实现 | C++（生产） | `series.h` / `ewm.h` / `dataframe.h` | 部分落地 | Series/EWM 已在 `quant1x::pandas`；DataFrame 仍原型 |
-| 对齐实现 | Rust / Go / Zig | — | 未落地 | 指标侧暂用各语言原生切片 |
+| 生产对齐 | Rust / Zig / Go | `series.rs` / `series.zig` / `series.go` | 已落地 | Series / Rolling / EWM；Go 排在最后，为兼容既有 Go 量化栈 |
 
 ## 2. 功能清单
 
@@ -23,12 +23,12 @@
 
 | 功能 | python | c++ | rust | go | zig | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
-| Series 构造与取值 | `series.py` | `series.h` | `series.rs` | — | `series.zig` | 已对齐 python/c++/rust/zig（go 待补） |
-| 算术运算符 | `series.py` | `series.h` | `series.rs` | — | `series.zig` | 已对齐 python/c++/rust/zig（go 待补） |
-| 比较 / 逻辑运算符 | `series.py` | `series.h` | `series.rs` | — | `series.zig` | 已对齐 python/c++/rust/zig（go 待补） |
-| shift / diff / cumsum | `series.py` | `series.h` | `series.rs` | — | `series.zig` | 已对齐 python/c++/rust/zig（go 待补） |
-| rolling 入口 | `rolling.py` | `series.h` | `series.rs` | — | `series.zig` | 已对齐 python/c++/rust/zig（go 待补） |
-| ewm 入口 | `ewm.py` | `ewm.h` | `series.rs` | — | `series.zig` | 已对齐 python/c++/rust/zig（go 待补） |
+| Series 构造与取值 | `series.py` | `series.h` | `series.rs` | `series.go` | `series.zig` | 已对齐 python/c++/rust/go/zig |
+| 算术运算符 | `series.py` | `series.h` | `series.rs` | `series.go` | `series.zig` | 已对齐 python/c++/rust/go/zig |
+| 比较 / 逻辑运算符 | `series.py` | `series.h` | `series.rs` | `series.go` | `series.zig` | 已对齐 python/c++/rust/go/zig |
+| shift / diff / cumsum | `series.py` | `series.h` | `series.rs` | `series.go` | `series.zig` | 已对齐 python/c++/rust/go/zig |
+| rolling 入口 | `rolling.py` | `series.h` | `series.rs` | `series.go` | `series.zig` | 已对齐 python/c++/rust/go/zig |
+| ewm 入口 | `ewm.py` | `ewm.h` | `series.rs` | `series.go` | `series.zig` | 已对齐 python/c++/rust/go/zig |
 | DataFrame 取列 / 写列 | `dataframe.py` | `dataframe.h` | — | — | — | 部分落地（c++ 原型） |
 
 ## 3. 依赖
@@ -58,4 +58,4 @@
 
 - C++ 侧 `series.h` / `dataframe.h` 仍用 `ta` 命名空间，与 §4.4 的 `quant1x::pandas` 不一致；
   等指标 C++ 实现落地后一并收敛。
-- Rust / Go / Zig 侧暂不设容器层：指标直接接收 `Bar` 切片，避免为一个用例造一套 DataFrame。
+- Rust / Zig / Go 已有 `Series` 容器；`DataFrame` 仍只有 Python / C++ 原型。
