@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING, Any
+
 from conan import ConanFile
 
 
@@ -19,6 +21,12 @@ class Quant1XDependencies(ConanFile):
     settings = "os", "arch", "compiler", "build_type"
 
     generators = "CMakeToolchain", "CMakeDeps"
+
+    if TYPE_CHECKING:
+        # conan 在加载配方时注入这两个实例属性（Requirements / Options），
+        # 基类把它们声明为 None，静态检查需要收窄。
+        requires: Any
+        options: Any
 
     def requirements(self):
         self.requires("openssl/3.6.4")
