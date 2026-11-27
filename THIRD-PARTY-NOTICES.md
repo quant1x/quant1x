@@ -217,31 +217,31 @@ labs-license-audit rust
 组件按许可证分组如下（每组件附 purl 与 Cargo.lock checksum sha256，可与 CycloneDX SBOM / Dependency-Track 逐条对应；多许可组件按 SPDX "OR" 选择其一履行，选择依据与 copyleft 触发条件见各组标题与上文原则）：
 
 <!--RUST_CLOSURE_START-->
-**(Apache-2.0 OR MIT) AND BSD-3-Clause（各许可同时适用，同时履行）**
+### (Apache-2.0 OR MIT) AND BSD-3-Clause（各许可同时适用，同时履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | encoding_rs | 0.8.35 | pkg:cargo/encoding_rs@0.8.35 | 75030f3c4f45dafd7586dd6780965a8c7e8e285a5ecb86713e63a79c5b2766f3 |
 
-**(MIT OR Apache-2.0) AND Unicode-3.0（各许可同时适用，同时履行）**
+### (MIT OR Apache-2.0) AND Unicode-3.0（各许可同时适用，同时履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | unicode-ident | 1.0.24 | pkg:cargo/unicode-ident@1.0.24 | e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75 |
 
-**0BSD（单一许可，按 0BSD 履行）**
+### 0BSD（单一许可，按 0BSD 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | mock_instant | 0.6.1 | pkg:cargo/mock_instant@0.6.1 | 9bb517913cfcfb9eeda59f36020269075a152701a01606c612f547e4890be399 |
 
-**0BSD OR MIT OR Apache-2.0（按 MIT 履行）**
+### 0BSD OR MIT OR Apache-2.0（按 MIT 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | adler2 | 2.0.1 | pkg:cargo/adler2@2.0.1 | 320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa |
 
-**Apache-2.0（单一许可，按 Apache-2.0 履行）**
+### Apache-2.0（单一许可，按 Apache-2.0 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -252,25 +252,25 @@ labs-license-audit rust
 | similar | 2.7.0 | pkg:cargo/similar@2.7.0 | bbbb5d9659141646ae647b42fe094daf6c6192d1620870b449d9557f748b2daa |
 | sync_wrapper | 0.1.2 | pkg:cargo/sync_wrapper@0.1.2 | 2047c6ded9c721764247e62cd3b03c09ffc529b2ba5b10ec482ae507a4a70160 |
 
-**Apache-2.0 / MIT（按 MIT 履行）**
+### Apache-2.0 / MIT（按 MIT 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | fnv | 1.0.7 | pkg:cargo/fnv@1.0.7 | 3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1 |
 
-**Apache-2.0 AND ISC（各许可同时适用，同时履行）**
+### Apache-2.0 AND ISC（各许可同时适用，同时履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | ring | 0.17.14 | pkg:cargo/ring@0.17.14 | a4689e6c2294d81e88dc6261c768b63bc4fcdb852be6d1352498b114f61383b7 |
 
-**Apache-2.0 OR BSL-1.0（按 Apache-2.0 履行）**
+### Apache-2.0 OR BSL-1.0（按 Apache-2.0 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | ryu | 1.0.23 | pkg:cargo/ryu@1.0.23 | 9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f |
 
-**Apache-2.0 OR ISC OR MIT（按 MIT 履行）**
+### Apache-2.0 OR ISC OR MIT（按 MIT 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -279,7 +279,7 @@ labs-license-audit rust
 | rustls-pemfile | 1.0.4 | pkg:cargo/rustls-pemfile@1.0.4 | 1c74cae0a4cf6ccbbf5f359f08efdf8ee7e1dc532573bf0db71968cb56b1448c |
 | sct | 0.7.1 | pkg:cargo/sct@0.7.1 | da046153aa2352493d6cb7da4b6e5c0c057d8a1d0a9aa8560baffdd945acd414 |
 
-**Apache-2.0 OR MIT（按 MIT 履行）**
+### Apache-2.0 OR MIT（按 MIT 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -298,7 +298,7 @@ labs-license-audit rust
 | utf8_iter | 1.0.4 | pkg:cargo/utf8_iter@1.0.4 | b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be |
 | uuid | 1.26.0 | pkg:cargo/uuid@1.26.0 | b5772d71c9be8a8a6ac2117d949c5b224c1b72241bb611d9a3012edcf8af7812 |
 
-**Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT（按 MIT 履行）**
+### Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT（按 MIT 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -308,27 +308,27 @@ labs-license-audit rust
 | wasip2 | 1.0.4+wasi-0.2.12 | pkg:cargo/wasip2@1.0.4+wasi-0.2.12 | b67efb37e106e55ce722a510d6b5f9c17f083e5fc79afc2badeb12cc313d9487 |
 | wit-bindgen | 0.57.1 | pkg:cargo/wit-bindgen@0.57.1 | 1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e |
 
-**Apache-2.0/MIT（按 MIT 履行）**
+### Apache-2.0/MIT（按 MIT 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | signal-hook | 0.3.18 | pkg:cargo/signal-hook@0.3.18 | d881a16cf4426aa584979d30bd82cb33429027e42122b169753d6ef1085ed6e2 |
 
-**BSD-2-Clause OR Apache-2.0 OR MIT（按 MIT 履行）**
+### BSD-2-Clause OR Apache-2.0 OR MIT（按 MIT 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | zerocopy | 0.8.56 | pkg:cargo/zerocopy@0.8.56 | 556764e583adb45a9f8d413c2a147fa7e8d821e48e12b14fd560b607998b75eb |
 | zerocopy-derive | 0.8.56 | pkg:cargo/zerocopy-derive@0.8.56 | f2ab42fc20575779bd240faa45f94a74256f755c0fa9e89f0ede20d91d0cdfc1 |
 
-**BSD-3-Clause（单一许可，按 BSD-3-Clause 履行）**
+### BSD-3-Clause（单一许可，按 BSD-3-Clause 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | subtle | 2.6.1 | pkg:cargo/subtle@2.6.1 | 13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292 |
 | zstd-sys | 2.1.0+zstd.1.5.7 | pkg:cargo/zstd-sys@2.1.0+zstd.1.5.7 | 0ef0a8027ec3ee71300ab3bcbcd0393f434aa72b91ca6d635a39941deae8eea0 |
 
-**CC0-1.0（单一许可，按 CC0-1.0 履行）**
+### CC0-1.0（单一许可，按 CC0-1.0 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -340,14 +340,14 @@ labs-license-audit rust
 | encoding-index-tradchinese | 1.20141219.5 | pkg:cargo/encoding-index-tradchinese@1.20141219.5 | fd0e20d5688ce3cab59eb3ef3a2083a5c77bf496cb798dc6fcdb75f323890c18 |
 | encoding_index_tests | 0.1.4 | pkg:cargo/encoding_index_tests@0.1.4 | a246d82be1c9d791c5dfde9a2bd045fc3cbba3fa2b11ad558f27d01712f00569 |
 
-**ISC（单一许可，按 ISC 履行）**
+### ISC（单一许可，按 ISC 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | rustls-webpki | 0.101.7 | pkg:cargo/rustls-webpki@0.101.7 | 8b6275d1ee7a1cd780b64aca7726599a1dbc893b1e64144529e55c3c2f745765 |
 | untrusted | 0.9.0 | pkg:cargo/untrusted@0.9.0 | 8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1 |
 
-**MIT（单一许可，按 MIT 履行）**
+### MIT（单一许可，按 MIT 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -409,7 +409,7 @@ labs-license-audit rust
 | zmij | 1.0.23 | pkg:cargo/zmij@1.0.23 | 29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b |
 | zstd | 0.11.2+zstd.1.5.2 | pkg:cargo/zstd@0.11.2+zstd.1.5.2 | 20cc960326ece64f010d2d2107537f26dc589a6573a316bd5b1dba685fa5fde4 |
 
-**MIT OR Apache-2.0（按 MIT 履行）**
+### MIT OR Apache-2.0（按 MIT 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -563,19 +563,19 @@ labs-license-audit rust
 | windows_x86_64_gnullvm | 0.52.6 | pkg:cargo/windows_x86_64_gnullvm@0.52.6 | 24d5b23dc417412679681396f2b49f3de8c1473deb516bd34410872eff51ed0d |
 | windows_x86_64_msvc | 0.52.6 | pkg:cargo/windows_x86_64_msvc@0.52.6 | 589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec |
 
-**MIT OR Apache-2.0 OR LGPL-2.1-or-later（按 MIT 履行）**
+### MIT OR Apache-2.0 OR LGPL-2.1-or-later（按 MIT 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | r-efi | 6.0.0 | pkg:cargo/r-efi@6.0.0 | f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf |
 
-**MIT OR Zlib OR Apache-2.0（按 MIT 履行）**
+### MIT OR Zlib OR Apache-2.0（按 MIT 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | miniz_oxide | 0.9.1 | pkg:cargo/miniz_oxide@0.9.1 | b63fbc4a50860e98e7b2aa7804ded1db5cbc3aff9193adaff57a6931bf7c4b4c |
 
-**MIT/Apache-2.0（按 MIT 履行）**
+### MIT/Apache-2.0（按 MIT 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -602,14 +602,14 @@ labs-license-audit rust
 | winapi-x86_64-pc-windows-gnu | 0.4.0 | pkg:cargo/winapi-x86_64-pc-windows-gnu@0.4.0 | 712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f |
 | zstd-safe | 5.0.2+zstd.1.5.2 | pkg:cargo/zstd-safe@5.0.2+zstd.1.5.2 | 1d2a5585e04f9eea4b2a3d1eca508c4dee9592a89ef6f450c11719da0726f4db |
 
-**MPL-2.0（单一许可，按 MPL-2.0 履行）**
+### MPL-2.0（单一许可，按 MPL-2.0 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | colored | 3.1.1 | pkg:cargo/colored@3.1.1 | faf9468729b8cbcea668e36183cb69d317348c2e08e994829fb56ebfdfbaac34 |
 | webpki-roots | 0.25.4 | pkg:cargo/webpki-roots@0.25.4 | 5f20c57d8d7db6d3b86154206ae5d8fba62dd39573114de97c2cb0578251f8e1 |
 
-**Unicode-3.0（单一许可，按 Unicode-3.0 履行）**
+### Unicode-3.0（单一许可，按 Unicode-3.0 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -632,7 +632,7 @@ labs-license-audit rust
 | zerovec | 0.11.8 | pkg:cargo/zerovec@0.11.8 | bb0464e17806c1d976d5cba29399c7f08e516e279e2ba493f63123b5fca67dd8 |
 | zerovec-derive | 0.11.6 | pkg:cargo/zerovec-derive@0.11.6 | 34df6fc39dbd26ddc9c10e6a2984476e13acce22e64e4487636ef494369225da |
 
-**Unlicense OR MIT（按 MIT 履行）**
+### Unlicense OR MIT（按 MIT 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -642,7 +642,7 @@ labs-license-audit rust
 | termcolor | 1.4.1 | pkg:cargo/termcolor@1.4.1 | 06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755 |
 | winapi-util | 0.1.11 | pkg:cargo/winapi-util@0.1.11 | c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22 |
 
-**Unlicense/MIT（按 MIT 履行）**
+### Unlicense/MIT（按 MIT 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
@@ -651,13 +651,13 @@ labs-license-audit rust
 | same-file | 1.0.6 | pkg:cargo/same-file@1.0.6 | 93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502 |
 | walkdir | 2.5.0 | pkg:cargo/walkdir@2.5.0 | 29790946404f91d9c5d06f9874efddea1dc06c5efe94541a7d6863108e3a5e4b |
 
-**Zlib（单一许可，按 Zlib 履行）**
+### Zlib（单一许可，按 Zlib 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
 | zlib-rs | 0.6.7 | pkg:cargo/zlib-rs@0.6.7 | 34b31d188d9d685a4f9c7b46d6e36631b07058d2cfe190267adce54dc230bf12 |
 
-**Zlib OR Apache-2.0 OR MIT（按 MIT 履行）**
+### Zlib OR Apache-2.0 OR MIT（按 MIT 履行）
 
 | 组件 | 版本 | purl | sha256 |
 | --- | --- | --- | --- |
