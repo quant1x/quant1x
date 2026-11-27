@@ -281,7 +281,7 @@ catch2_groups = {
     'tests/tdd-datasets.cpp',
     'tests/tdd-chips.cpp',
     'tests/tdd-xdxr.cpp',
-    # tests/tdd-snapshot.cpp：capnp 头在 MSVC 下触发 mswsockdef.h 的 UCHAR 语法错误，待单独排查
+    'tests/tdd-snapshot.cpp',
     'tests/tdd-encoding-csv.cpp',
     'tests/tdd-encoding-json.cpp',
     'tests/tdd-json.cpp',

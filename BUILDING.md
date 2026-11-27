@@ -268,10 +268,7 @@ build-msvc\tests\Release\app-test-ringbuffer.exe
 
 为什么不一个文件一个可执行：每个可执行都要过一遍 1 GB 级的 `quant1x` 静态库，60 多次链接
 是纯浪费；合并后仍保留用例级粒度（`catch_discover_tests` 每条 `TEST_CASE` 一个 ctest 条目、
-独立进程）。以下文件因自身编译问题暂未纳入分组，修复后再加回：
-
-- `tdd-snapshot.cpp`：capnp 头在 MSVC 下触发 `mswsockdef.h` 的 `UCHAR` 语法错误；
-- `tdd-ta.cpp`：gtest，仍按旧 `ta::Series` 接口编写。
+独立进程）。`tdd-ta.cpp`（gtest）仍按旧 `ta::Series` 接口编写，编译不过，暂未纳入，修复后再加回。
 
 部分用例依赖本地数据缓存、网络或平台特性，缺数据时用例内部 `SKIP` 而不是失败。
 

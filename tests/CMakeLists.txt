@@ -98,7 +98,7 @@ set(CATCH2_DATA_SOURCES
     tdd-datasets.cpp
     tdd-chips.cpp
     tdd-xdxr.cpp
-    # tdd-snapshot.cpp：capnp 头在 MSVC 下触发 mswsockdef.h 的 UCHAR 语法错误，待单独排查
+    tdd-snapshot.cpp
     # 编解码
     tdd-encoding-csv.cpp
     tdd-encoding-json.cpp

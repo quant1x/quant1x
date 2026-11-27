@@ -1,6 +1,10 @@
 // Copyright (C) 2026 Quant1X Team
 // SPDX-License-Identifier: MIT
 
+// 先引入 asio：capnp/schema.h 会 #undef CONST（Windows 的 minwindef.h 把它定义为 const），
+// 之后再引入 mswsock.h 会因 CONST/UCHAR 缺失编译失败
+#include <quant1x/io/base.h>
+
 #include <quant1x/test/test.h>
 #include <quant1x/runtime/core.h>
 #include <quant1x/config/config.h>
@@ -62,6 +66,7 @@ namespace instruments = quant1x::contrib::data::tdx::instruments;
 #include <quant1x/proto/data.h>
 #include <capnp/message.h>
 #include <capnp/serialize-packed.h>
+
 
 TEST_CASE("capnp-snapshot", "[runtime]") {
     runtime::logger_set(true, true);
