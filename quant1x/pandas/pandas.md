@@ -23,12 +23,12 @@
 
 | 功能 | python | c++ | rust | go | zig | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
-| Series 构造与取值 | `series.py` | `series.h` | — | — | — | 部分落地（c++ 原型） |
-| 算术运算符 | `series.py` | `series.h`（部分） | — | — | — | 部分落地（c++ 原型） |
-| 比较 / 逻辑运算符 | `series.py` | `series.h`（部分） | — | — | — | 部分落地（c++ 原型） |
-| shift / diff / cumsum | `series.py` | `series.h`（shift） | — | — | — | 部分落地（c++ 原型） |
-| rolling 入口 | `rolling.py` | `series.h`（`ewm` 之外） | — | — | — | 部分落地（c++ 原型） |
-| ewm 入口 | `ewm.py` | `ewm.h` | — | — | — | 部分落地（c++ 原型） |
+| Series 构造与取值 | `series.py` | `series.h` | `series.rs` | — | — | 已对齐 python/rust（c++ 原型） |
+| 算术运算符 | `series.py` | `series.h`（部分） | `series.rs` | — | — | 已对齐 python/rust（c++ 原型） |
+| 比较 / 逻辑运算符 | `series.py` | `series.h`（部分） | `series.rs` | — | — | 已对齐 python/rust（c++ 原型） |
+| shift / diff / cumsum | `series.py` | `series.h`（shift） | `series.rs` | — | — | 已对齐 python/rust（c++ 原型） |
+| rolling 入口 | `rolling.py` | `series.h`（`ewm` 之外） | `series.rs` | — | — | 已对齐 python/rust（c++ 原型） |
+| ewm 入口 | `ewm.py` | `ewm.h` | `series.rs` | — | — | 已对齐 python/rust（c++ 原型） |
 | DataFrame 取列 / 写列 | `dataframe.py` | `dataframe.h` | — | — | — | 部分落地（c++ 原型） |
 
 ## 3. 依赖
