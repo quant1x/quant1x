@@ -233,7 +233,7 @@ Quant1X 原创代码采用 **MIT License**（见根目录 `LICENSE`）。以下�
 | go.uber.org/goleak | v1.3.0 | MIT | Copyright (c) 2018 Uber Technologies, Inc.; https://pkg.go.dev/go.uber.org/goleak |
 | go.uber.org/multierr | v1.11.0 | MIT | Copyright (c) 2017-2021 Uber Technologies, Inc.; https://pkg.go.dev/go.uber.org/multierr |
 | go.uber.org/zap | v1.28.0 | MIT | Copyright (c) 2016-2024 Uber Technologies, Inc.; https://pkg.go.dev/go.uber.org/zap |
-| go.yaml.in/yaml/v3 | v3.0.5 | MIT | copyright staring in 2011 when the project was ported over:; https://pkg.go.dev/go.yaml.in/yaml/v3 |
+| go.yaml.in/yaml/v3 | v3.0.5 | Apache-2.0, MIT | copyright staring in 2011 when the project was ported over:; https://pkg.go.dev/go.yaml.in/yaml/v3 |
 | golang.org/x/mod | v0.42.0 | BSD-3-Clause | Copyright 2009 The Go Authors.; https://pkg.go.dev/golang.org/x/mod |
 | golang.org/x/sync | v0.25.0 | BSD-3-Clause | Copyright 2009 The Go Authors.; https://pkg.go.dev/golang.org/x/sync |
 | golang.org/x/sys | v0.50.0 | BSD-3-Clause | Copyright 2009 The Go Authors.; https://pkg.go.dev/golang.org/x/sys |
@@ -242,7 +242,8 @@ Quant1X 原创代码采用 **MIT License**（见根目录 `LICENSE`）。以下�
 | google.golang.org/protobuf | v1.36.12 | BSD-3-Clause | Copyright (c) 2018 The Go Authors. All rights reserved.; https://pkg.go.dev/google.golang.org/protobuf |
 | gopkg.in/check.v1 | v1.0.0-20201130134442-10cb98267c6c | BSD-2-Clause | Copyright (c) 2010-2013 Gustavo Niemeyer <gustavo@niemeyer.net>; https://gopkg.in/check.v1 |
 | gopkg.in/tomb.v1 | v1.0.0-20141024135613-dd632973f1e7 | BSD-3-Clause | Copyright (c) 2010-2011 - Gustavo Niemeyer <gustavo@niemeyer.net>; https://gopkg.in/tomb.v1 |
-| gopkg.in/yaml.v3 | v3.0.1 | MIT | copyright staring in 2011 when the project was ported over:; https://gopkg.in/yaml.v3 |
+| gopkg.in/yaml.v3 | v3.0.1 | Apache-2.0, MIT | copyright staring in 2011 when the project was ported over:; https://gopkg.in/yaml.v3 |
+| github.com/google/go-cmp | v0.7.0 | BSD-3-Clause | Copyright (c) 2017 The Go Authors. All rights reserved.; https://github.com/google/go-cmp |
 <!--GO_COMPONENTS_END-->
 
 上表按 `go.mod` 的模块图生成（含未直接 import 的间接依赖），许可证全文归档在 `third_party/licenses/go/<模块路径>/`。
