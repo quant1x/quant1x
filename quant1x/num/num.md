@@ -16,7 +16,7 @@
 | 生产实现 | C++（生产） | `quant1x/num/*.h` | 已落地 | `std::vector` + 显式循环，逐位对拍通过 |
 | 对齐实现 | Rust | `quant1x/num/*.rs` | 已落地 | `Vec<f64>` + 显式循环 |
 | 对齐实现 | Go | `quant1x/num/*.go` | 已落地 | `[]float64` + 显式循环；已移除对 `github.com/quant1x/num` 的依赖 |
-| 扩展 | Zig | — | 不设 | 当前只承载小功能 |
+| 扩展 | Zig | `quant1x/num/num.zig` | 部分落地 | 扩展角色；核心算子已对齐，矩阵构造与极值位置待补 |
 
 `quant1x/formula/formula.h` 仍就地实现公式所需算子；它迁移到本层后删除重复实现。
 本包不为「以后可能用到」预置扩展点。
@@ -39,29 +39,29 @@
 
 | 功能 | python | c++ | rust | go | zig | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 类型与缺失值 | `dtype` | `dtype.h` | `dtype.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 窗口归一化 | `window.as_window` / `window_at` | `window.h` | `window.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 绝对值 / 平方根 / 对数 / 幂 | `elementwise.abs` / `sqrt` / `log` / `pow` | `elementwise.h` | `elementwise.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 加减乘除 | `elementwise.add` / `sub` / `mul` / `div` | `elementwise.h` | `elementwise.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 序列与标量 / 取大 / 取小 / 条件选择 | `elementwise.*_scalar` / `maximum` / `minimum` / `where` | `elementwise.h` | `elementwise.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 比较 | `logic.gt` / `gte` / `lt` / `lte` / `equal` / `not_equal` | `logic.h` | `logic.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 逻辑与 / 或 / 非 / 数值转布尔 | `logic.logic_and` / `logic_or` / `logic_not` / `to_bools` | `logic.h` | `logic.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 全真 / 任一 / 计数 | `logic.all_of` / `any_of` / `count_true` | `logic.h` | `logic.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 求和 / 均值 / 中位数 | `reduce.sum_value` / `mean` / `median` | `reduce.h` | `reduce.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 极值与下标 | `reduce.min_value` / `max_value` / `argmin` / `argmax` | `reduce.h` | `reduce.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 方差 / 标准差 / 协方差 | `reduce.variance` / `std` / `covariance` | `reduce.h`（`stddev`） | `reduce.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 滚动框架 | `rolling.rolling` / `rolling_apply` | `rolling.h` | `rolling.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 滚动求和 / 均值 / 标准差 | `rolling.rolling_sum` / `rolling_mean` / `rolling_std` | `rolling.h` | `rolling.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 滚动极值与位置 | `rolling.rolling_min` / `rolling_max` / `rolling_hhvbars` / `rolling_llvbars` | `rolling.h` | `rolling.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 滚动平均绝对偏差 | `rolling.rolling_avedev` | `rolling.h` | `rolling.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 指数加权均值 | `ewm.ewm_mean` | `ewm.h` | `ewm.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 移位 / 引用 | `shift.shift` / `ref` | `shift.h` | `shift.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 差分 / 累计和 | `shift.diff` / `cumsum` | `shift.h` | `shift.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 缺失值填充 | `fillna.fill` / `fill_na` / `is_na` | `fillna.h` | `fillna.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 对齐 / 平铺 | `align.align` / `pad_to` / `repeat` | `align.h` | `align.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 一元线性回归 | `regression.linear_regression` / `slope` / `forcast` | `regression.h` | `regression.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 小数位 / 变化率 | `decimals.decimal` / `change_rate` / `net_change_rate` | `decimals.h` | `decimals.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
-| 形状与构造 | `matrix.shape` / `concat1d` / `transpose2d` / `zeros` / `ones` / `arange` / `linspace` | `matrix.h` | `matrix.rs` | `*.go` | — | 已对齐 c++/rust/go（缺 zig） |
+| 类型与缺失值 | `dtype` | `dtype.h` | `dtype.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 窗口归一化 | `window.as_window` / `window_at` | `window.h` | `window.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 绝对值 / 平方根 / 对数 / 幂 | `elementwise.abs` / `sqrt` / `log` / `pow` | `elementwise.h` | `elementwise.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 加减乘除 | `elementwise.add` / `sub` / `mul` / `div` | `elementwise.h` | `elementwise.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 序列与标量 / 取大 / 取小 / 条件选择 | `elementwise.*_scalar` / `maximum` / `minimum` / `where` | `elementwise.h` | `elementwise.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 比较 | `logic.gt` / `gte` / `lt` / `lte` / `equal` / `not_equal` | `logic.h` | `logic.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 逻辑与 / 或 / 非 / 数值转布尔 | `logic.logic_and` / `logic_or` / `logic_not` / `to_bools` | `logic.h` | `logic.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 全真 / 任一 / 计数 | `logic.all_of` / `any_of` / `count_true` | `logic.h` | `logic.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 求和 / 均值 / 中位数 | `reduce.sum_value` / `mean` / `median` | `reduce.h` | `reduce.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 极值与下标 | `reduce.min_value` / `max_value` / `argmin` / `argmax` | `reduce.h` | `reduce.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 方差 / 标准差 / 协方差 | `reduce.variance` / `std` / `covariance` | `reduce.h`（`stddev`） | `reduce.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 滚动框架 | `rolling.rolling` / `rolling_apply` | `rolling.h` | `rolling.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 滚动求和 / 均值 / 标准差 | `rolling.rolling_sum` / `rolling_mean` / `rolling_std` | `rolling.h` | `rolling.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 滚动极值与位置 | `rolling.rolling_min` / `rolling_max` / `rolling_hhvbars` / `rolling_llvbars` | `rolling.h` | `rolling.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 滚动平均绝对偏差 | `rolling.rolling_avedev` | `rolling.h` | `rolling.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 指数加权均值 | `ewm.ewm_mean` | `ewm.h` | `ewm.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 移位 / 引用 | `shift.shift` / `ref` | `shift.h` | `shift.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 差分 / 累计和 | `shift.diff` / `cumsum` | `shift.h` | `shift.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 缺失值填充 | `fillna.fill` / `fill_na` / `is_na` | `fillna.h` | `fillna.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 对齐 / 平铺 | `align.align` / `pad_to` / `repeat` | `align.h` | `align.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 一元线性回归 | `regression.linear_regression` / `slope` / `forcast` | `regression.h` | `regression.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 小数位 / 变化率 | `decimals.decimal` / `change_rate` / `net_change_rate` | `decimals.h` | `decimals.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
+| 形状与构造 | `matrix.shape` / `concat1d` / `transpose2d` / `zeros` / `ones` / `arange` / `linspace` | `matrix.h` | `matrix.rs` | `*.go` | `num.zig` | 已对齐 c++/rust/go + zig 扩展 |
 
 C++ 与 Python 的命名差异只有一处：`reduce.std` → `stddev`（`std` 会遮蔽 `std::` 命名空间）。
 同时提供 Rust 关键字规避名 `where_select` / `ref_value` 的对齐别名。
@@ -89,7 +89,7 @@ C++ 与 Python 的命名差异只有一处：`reduce.std` → `stddev`（`std` �
 | 维度 | 覆盖 |
 | --- | --- |
 | 单元测试 | `tests/test_num.py`：窗口不足、窗口含 NaN、空输入、除零、回归退化、小数位半程远离零 |
-| 跨语言对拍 | `tests/fixtures/num/generate.py` 由 Python spec 生成 163 组样本；`tests/tdd-num-parity.cpp`（C++）、`quant1x/num/num_parity_test.go`（Go）逐位比较（NaN 视为相等）；CMake / Meson / `go test` 均已登记。Go 的 `math.Log` / `math.Pow` 与 NumPy 相差至多 1 ULP，这两类按相对误差 1e-12 比较，纯算术与归约逐位相等 |
+| 跨语言对拍 | `tests/fixtures/num/generate.py` 由 Python spec 生成 163 组样本；`tests/tdd-num-parity.cpp`（C++）、`quant1x/num/num_parity_test.go`（Go）逐位比较（NaN 视为相等）；CMake / Meson / `go test` 均已登记。Go 的 `math.Log` / `math.Pow` 与 NumPy 相差至多 1 ULP，这两类按相对误差 1e-12 比较，纯算术与归约逐位相等。Zig 侧用 `zig test quant1x/num/num_test.zig` 覆盖同一批口径 |
 | 静态检查 | 仓库既有 ruff 配置；C++ 头文件经 `app-tdd-num-parity` 编译验证 |
 | 基准测试 | 本模块不涉及；性能由调用方模块各自度量 |
 | 崩溃注入 / 并发 | 本模块不涉及（纯函数、无共享状态） |

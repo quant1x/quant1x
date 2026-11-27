@@ -46,8 +46,9 @@ Python 是 spec；C++ / Rust 只用标准库容器与显式循环，不跨语言
 
 | 语义 | python | c++ | rust | go | zig |
 | --- | --- | --- | --- | --- | --- |
-| 数值算子 | `quant1x/num/*.py` | `quant1x/num/*.h` | `quant1x/num/*.rs` | `quant1x/num/*.go` | — |
+| 数值算子 | `quant1x/num/*.py` | `quant1x/num/*.h` | `quant1x/num/*.rs` | `quant1x/num/*.go` | `quant1x/num/num.zig` |
 
-四种语言的口径以 `num.md` §2 为准；Go 不再依赖外部 `github.com/quant1x/num`，Zig 为扩展。
+四种语言的口径以 `num.md` §2 为准；Go 不再依赖外部 `github.com/quant1x/num`。Zig 为扩展角色，
+`num.zig` 覆盖核心算子（矩阵构造与极值位置待补）。
 
 四种语言的口径以 `num.md` §2 为准；Go 复用组织级 num 库，Zig 当前只承载小功能。
