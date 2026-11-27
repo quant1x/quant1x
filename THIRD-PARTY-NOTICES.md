@@ -247,16 +247,13 @@ Quant1X 原创代码采用 **MIT License**（见根目录 `LICENSE`）。以下�
 
 上表按 `go.mod` 的模块图生成（含未直接 import 的间接依赖），许可证全文归档在 `third_party/licenses/go/<模块路径>/`。
 
-go-licenses 按「每个模块 `<module>/...`」展开，默认只读模式会因间接模块不在 `require` 列表而中止（`go: updates to go.mod needed`）；加 `-mod=mod` 才能扫描，**但它会把测试引用的间接依赖写进 `go.mod` / `go.sum`**（实测新增 13 条 `// indirect`）。因此不要在仓库根直接跑，按下面的方式在副本里扫描后把结果拷回：
+go-licenses 按「每个模块 `<module>/...`」展开，默认只读模式会因间接模块不在 `require` 列表而中止（`go: updates to go.mod needed`）；直接在仓库根执行时需加 `-mod=mod`：
 
 ```bash
-git archive HEAD | tar -x -C <临时目录>
-cd <临时目录>
 GOFLAGS=-mod=mod labs-license-audit go
-# 拷回 THIRD-PARTY-NOTICES.md 的 Go 区段与 third_party/licenses/go/
 ```
 
-这样仓库根的 `go.mod` / `go.sum` 保持提交态不变。
+该模式会把测试引用的间接依赖补写进 `go.mod` / `go.sum`（本次新增 13 条 `// indirect`）。**这是合规扫描的固有代价，按合规优先原则接受**：这些增量随合规提交一起入库，重跑后只需确认 `go build ./...` 与 `go test ./...` 仍通过。
 
 ## Java（pom.xml 声明依赖）
 
