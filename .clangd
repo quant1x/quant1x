@@ -1,0 +1,8 @@
+CompileFlags:
+  # 完整编译参数（含 include / define）来自 Meson 生成的编译数据库；
+  # 生成方式见 BUILDING.md：meson setup build-meson/build ...
+  CompilationDatabase: build-meson/build
+  # 项目基线是 C++20（CMake: CMAKE_CXX_STANDARD=20，Meson: cpp_std=c++20）。
+  # 数据库缺失时 clangd 会退到 -std=c++14，把嵌套命名空间
+  # （namespace quant1x::pandas）误报成 “C++17 extension”，这里兜底修正。
+  Add: [-std=c++20]

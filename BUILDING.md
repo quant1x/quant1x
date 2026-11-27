@@ -318,6 +318,33 @@ meson test -C build-meson/build
 - 目前 Meson 只登记 `q1x` 与 `app-tdd-formula-parity` / `app-tdd-indicators` 两个对拍程序；
   catch2 / gtest 承载的其余用例仍由 CMake 构建，后续按需迁移。
 
+### 2.12 IDE 与静态检查（clangd / clang-tidy）
+
+仓库根目录的 `.clangd` 把 clangd 指向 Meson 生成的编译数据库，并兜底 `-std=c++20`：
+
+```yaml
+CompileFlags:
+  CompilationDatabase: build-meson/build
+  Add: [-std=c++20]
+```
+
+为什么需要它：clangd 在找不到 `compile_commands.json` 时会退到 `-std=c++14`，于是本仓库
+大量使用的嵌套命名空间（`namespace quant1x::pandas`）被判成 “nested namespace definition
+is a C++17 extension”，一次能报出数百条误诊。项目的真实基线是 C++20
+（CMake `CMAKE_CXX_STANDARD=20`、Meson `cpp_std=c++20`）。
+
+配套约定：
+
+- 编译数据库由 §2.11 的 `meson setup build-meson/build ...` 生成；CMake 的 Visual Studio
+  生成器不产出 `compile_commands.json`，想用 CMake 的编译参数请改用 Ninja 生成器并加
+  `-DCMAKE_EXPORT_COMPILE_COMMANDS=ON`，再把 `.clangd` 的 `CompilationDatabase` 指过去。
+- 没有编译数据库时 `Add: [-std=c++20]` 仍然生效，嵌套命名空间的误报会消失，但 Conan 依赖
+  的头文件路径缺失，会出现 “file not found” 噪声；此时补数据库而不是改代码。
+- `clang-tidy` 读取根目录 `.clang-tidy`，需要编译参数时用
+  `clang-tidy -p build-meson/build <file>`。
+- 不要把嵌套命名空间改写成 `namespace a { namespace b {` 来迁就工具：项目基线是 C++20，
+  改写只会增加缩进层级。
+
 ## 3. Rust 构建
 
 Rust 实现与 Python spec 语义一致、与 C++ 实现逐项对位，库入口为 `quant1x/lib.rs`，命令行入口为 `main.rs`。
