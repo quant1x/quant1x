@@ -9,16 +9,13 @@
 
 
 TEST_CASE("base-1", "[series]") {
-    std::vector<int> data1 = {1, 2, 3, 4, 5, 6};
-    std::vector<int> data2 = {0, 2, 3, 4, 5, 6};
-
-    ta::Series<int> s1(data1);
-    ta::Series<int> s2(data2);
+    quant1x::pandas::Series s1(std::vector<double>{1, 2, 3, 4, 5, 6});
+    quant1x::pandas::Series s2(std::vector<double>{0, 2, 3, 4, 5, 6});
 
     // shift 示例
     auto shifted = s1.shift(1);
     std::cout << "Shifted:\n";
-    for (auto v : shifted.data()) {
+    for (double v : shifted.values()) {
         std::cout << v << " ";
     }
     std::cout << "\n";
@@ -26,21 +23,14 @@ TEST_CASE("base-1", "[series]") {
     // 比较示例
     auto eq = s1 == s2;
     std::cout << "Equal results:\n";
-    for (auto v : eq) {
+    for (bool v : eq.to_bools()) {
         std::cout << (v ? "true" : "false") << " ";
     }
     std::cout << "\n";
 
     auto r1 = eq.shift(1);
     std::cout << "Eq shift 1 results:\n";
-    for (auto v : r1) {
-        std::cout << (v ? "true" : "false") << " ";
-    }
-    std::cout << "\n";
-
-    auto r2 = r1.align(10);
-    std::cout << "Eq algin 10 results:\n";
-    for (auto v : r2) {
+    for (bool v : r1.to_bools()) {
         std::cout << (v ? "true" : "false") << " ";
     }
     std::cout << "\n";
@@ -49,19 +39,19 @@ TEST_CASE("base-1", "[series]") {
     std::vector<double> fdata1 = {1.0, 2.0, NAN, 4.0, 5.0, 6.0};
     std::vector<double> fdata2 = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
 
-    ta::Series<double> fs1(fdata1);
-    ta::Series<double> fs2(fdata2);
+    quant1x::pandas::Series fs1(fdata1);
+    quant1x::pandas::Series fs2(fdata2);
 
     auto feq = fs1 == fs2;
     std::cout << "Float equal:\n";
-    for (auto v : feq) {
+    for (bool v : feq.to_bools()) {
         std::cout << (v ? "true" : "false") << " ";
     }
     std::cout << "\n";
 
-    auto filled = fs1.fill_nan(999.0);
+    auto filled = fs1.fill_na(999.0);
     std::cout << "Fill NaN with 999:\n";
-    for (auto v : filled.data()) std::cout << v << " ";
+    for (double v : filled.values()) std::cout << v << " ";
     std::cout << "\n";
 }
 

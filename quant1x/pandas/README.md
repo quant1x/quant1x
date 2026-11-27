@@ -18,7 +18,8 @@
 | `rolling.py` | `Rolling`：委托 `quant1x.num.rolling_*` |
 | `ewm.py` | `EWM`：委托 `quant1x.num.ewm_mean` |
 | `pandas.md` | 跨语言口径与功能对照表 |
-| `series.h` / `dataframe.h` / `ewm.h` / `periods.h` / `rule.h` / `rule.cpp` | C++ 侧容器原型（早于本规格层，尚未按 §4.4 收敛命名空间） |
+| `series.h` / `ewm.h` | C++ 侧 Series / EWM，命名空间已收敛到 `quant1x::pandas` |
+| `dataframe.h` / `periods.h` / `rule.h` / `rule.cpp` | C++ 侧早期原型（`ta` 命名空间，待收敛） |
 | `mod.rs` | Rust 侧模块声明（仅周期解析） |
 
 ## 与上下层的关系
@@ -31,10 +32,10 @@
 
 | 语义 | python | c++ | rust | go | zig |
 | --- | --- | --- | --- | --- | --- |
-| Series | `series.py` | `series.h` | — | — | — |
+| Series | `series.py` | `series.h` | `series.rs` | — | — |
 | DataFrame | `dataframe.py` | `dataframe.h` | — | — | — |
-| EWM | `ewm.py` | `ewm.h` | — | — | — |
-| Rolling | `rolling.py` | `series.h`（`ewm` 之外） | — | — | — |
+| EWM | `ewm.py` | `ewm.h` | `series.rs` | — | — |
+| Rolling | `rolling.py` | `series.h` | `series.rs` | — | — |
 
-C++ 头文件是早期原型，命名空间为 `ta`，与 §4.4 的 `quant1x::pandas` 尚不一致；
-本规格层落地后再按模块逐个收敛，不做一次性改名。
+C++ 的 `Series` / `EWM` 已收敛到 `quant1x::pandas`；`dataframe.h` / `periods.h` / `rule.*`
+仍是早期原型（`ta` 命名空间），按模块逐个收敛。

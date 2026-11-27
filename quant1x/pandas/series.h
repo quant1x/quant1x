@@ -5,244 +5,215 @@
 #ifndef QUANT1X_PANDAS_SERIES_H
 #define QUANT1X_PANDAS_SERIES_H 1
 
-#include <quant1x/base/simd.h>
-#include "ewm.h"
+/// Series —— 一列同构数据的可移植容器
+///
+/// 对齐 quant1x/pandas/series.py：Python 用 pandas 承载是 spec，本类以
+/// quant1x::num::NdArray 为底座（float64 / bool），数值算子委托 quant1x::num。
+///
+/// 与 Python 的命名差异：`std` 方法在 C++ 叫 `stddev`（避免遮蔽 `std::`）。
 
-// 前置声明EWM(避免循环引用)
-//struct EW;
-//class ExponentialMovingWindow;
+#include <quant1x/num/ndarray.h>
 
-namespace ta {
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <string>
+#include <utility>
+#include <vector>
 
-    template <typename T>
-    class Series {
-    public:
-        //=== 构造函数组 ===//
-        explicit Series(std::span<T> data) : data_(data) {}
-        explicit Series(std::vector<T>& vec)
-            : data_(vec.data(), vec.size()) {}
+namespace quant1x::pandas {
 
-        // 手动实现拷贝构造函数
-        Series(const Series& other) : data_(other.data_) {}
+/// 滚动窗口
+class Rolling;
 
-        //=== 禁止拷贝(避免意外的数据共享)===//
-        //Series(const Series&) = delete;
-        //Series& operator=(const Series&) = delete;
+/// 指数加权窗口
+class Ewm;
 
-        //== 允许移动 ===//
-        Series<T>(Series<T>&&) = default;
-        Series<T>& operator=(Series<T>&&) = default;
+/// 一列同构数据：值 + 名称
+class Series {
+  public:
+    Series() = default;
 
-        //=== 数据访问 ===//
-        std::span<T> data() const noexcept { return data_; }
-        size_t size() const noexcept { return data_.size(); }
-        bool empty() const noexcept { return data_.empty(); }
+    explicit Series(std::vector<double> values) : data_(std::move(values)) {}
 
-        //=== 移位操作 ===//
-        Series<T> shift(int periods) {
-            std::vector<T> res(data_.size(), T{});
-            if (periods > 0) {
-                size_t offset = static_cast<size_t>(periods);
-                if (offset < data_.size()) {
-                    std::copy(data_.begin(), data_.end() - offset,
-                              res.begin() + offset);
-                }
-            } else if (periods < 0) {
-                size_t offset = static_cast<size_t>(-periods);
-                if (offset < data_.size()) {
-                    std::copy(data_.begin() + offset, data_.end(),
-                              res.begin());
-                }
-            }
-            return Series<T>(res);
-        }
+    explicit Series(std::vector<bool> values) : data_(std::move(values)) {}
 
-        Series<T> align(size_t target_size, T fill_value=T{}) const {
-            if (data_.size() >= target_size) {
-                // 裁剪模式: 只保留前 target_size 个元素
-                return Series<T>(std::vector<T>(data_.data(), data_.data() + target_size));
-            } else {
-                // 扩展模式: 复制原数据, 并用 fill_value 填充剩余部分
-                std::vector<T> new_data(data_.begin(), data_.end());
-                new_data.insert(new_data.end(), target_size - data_.size(), fill_value);
-                return Series<T>(new_data);
-            }
-        }
+    Series(std::vector<double> values, std::string name)
+        : data_(std::move(values)), name_(std::move(name)) {}
 
-        //=== NaN处理 ===//
-        template <typename U = T>
-        auto fill_nan(U value) const -> std::enable_if_t<std::is_floating_point_v<U>, Series<T>> {
-            std::vector<T> res(data_.begin(), data_.end());
-            for (auto& v : res) {
-                if (std::isnan(v)) v = value;
-            }
-            return Series<T>(res);
-        }
+    Series(std::vector<bool> values, std::string name)
+        : data_(std::move(values)), name_(std::move(name)) {}
 
-        // 禁止非浮点类型调用
-        template <typename U = T>
-        auto fill_nan(U) const -> std::enable_if_t<!std::is_floating_point_v<U>, void> {
-            static_assert(std::is_floating_point_v<U>,
-                          "fill_nan() requires floating-point type");
-        }
+    Series(num::NdArray data, std::string name) : data_(std::move(data)), name_(std::move(name)) {}
 
-        void check_size(const Series<T>& other) const {
-            if (data_.size() != other.data_.size()) {
-                throw std::invalid_argument(
-                    "Series size mismatch: " +
-                    std::to_string(data_.size()) + " vs " +
-                    std::to_string(other.data_.size()));
-            }
-        }
+    // -- 属性 -------------------------------------------------------------
+    std::size_t size() const { return data_.size(); }
 
-        // ewm()方法实现移至类定义内
-        template <typename EWType>
-        ExponentialMovingWindow<T> ewm(EWType&& param) {
-            return ExponentialMovingWindow<T>(*this, std::forward<EWType>(param));
-        }
+    bool empty() const { return data_.empty(); }
 
-    private:
-        std::span<T> data_;
-    };
+    bool is_bool() const { return data_.is_bool(); }
 
-    #include <iterator>
-    class bool_iterator {
-    public:
-        using iterator_category = std::random_access_iterator_tag;
-        using value_type = bool;
-        using difference_type = std::ptrdiff_t;
-        using pointer = const bool*;
-        using reference = const bool&;
+    const char *dtype() const { return data_.dtype(); }
 
-        explicit bool_iterator(const uint8_t* ptr) : ptr_(ptr) {}
+    const std::string &name() const { return name_; }
 
-        bool operator*() const { return *ptr_ != 0; }
-
-        bool_iterator& operator++() { ++ptr_; return *this; }
-        bool_iterator operator++(int) { bool_iterator tmp(*this); ++ptr_; return tmp; }
-
-        bool_iterator& operator--() { --ptr_; return *this; }
-        bool_iterator operator--(int) { bool_iterator tmp(*this); --ptr_; return tmp; }
-
-        bool_iterator& operator+=(difference_type n) { ptr_ += n; return *this; }
-        bool_iterator& operator-=(difference_type n) { ptr_ -= n; return *this; }
-
-        friend bool_iterator operator+(const bool_iterator& it, difference_type n) {
-            return bool_iterator(it.ptr_ + n);
-        }
-
-        friend bool_iterator operator-(const bool_iterator& it, difference_type n) {
-            return bool_iterator(it.ptr_ - n);
-        }
-
-        difference_type operator-(const bool_iterator& other) const {
-            return ptr_ - other.ptr_;
-        }
-
-        bool operator==(const bool_iterator& other) const { return ptr_ == other.ptr_; }
-        bool operator!=(const bool_iterator& other) const { return ptr_ != other.ptr_; }
-
-        bool operator<(const bool_iterator& other) const { return ptr_ < other.ptr_; }
-        bool operator>(const bool_iterator& other) const { return ptr_ > other.ptr_; }
-        bool operator<=(const bool_iterator& other) const { return ptr_ <= other.ptr_; }
-        bool operator>=(const bool_iterator& other) const { return ptr_ >= other.ptr_; }
-
-    private:
-        const uint8_t* ptr_;
-    };
-
-    template <>
-    class Series<bool> {
-    public:
-        explicit Series(const std::vector<bool>& data) {
-            data_.reserve(data.size());
-            for(const auto & v : data) {
-                data_.push_back(v?1:0);
-            }
-        }
-        explicit Series(const std::vector<uint8_t>& data) : data_(data) {}
-
-        //=== 移位操作 ===//
-        Series<bool> shift(int periods) {
-            std::vector<bool> res(data_.size(), false);
-            if (periods > 0) {
-                size_t offset = static_cast<size_t>(periods);
-                if (offset < data_.size()) {
-                    std::copy(data_.begin(), data_.end() - offset,
-                              res.begin() + offset);
-                }
-            } else if (periods < 0) {
-                size_t offset = static_cast<size_t>(-periods);
-                if (offset < data_.size()) {
-                    std::copy(data_.begin() + offset, data_.end(),
-                              res.begin());
-                }
-            }
-            return Series<bool>(res);
-        }
-
-        bool operator[](size_t idx) const {
-            return data_[idx] != 0;
-        }
-
-
-        size_t size() const { return data_.size(); }
-
-        std::span<const bool> data() const {
-            temp_bool_.clear();
-            temp_bool_.reserve(data_.size());
-            for (auto v : data_) {
-                temp_bool_.push_back(v != 0 ? 1 : 0); // 显式转换为 uint8_t
-            }
-
-            if (temp_bool_.empty()) {
-                return {};
-            } else {
-                return std::span<const bool>(
-                    reinterpret_cast<const bool*>(temp_bool_.data()),
-                    temp_bool_.size()
-                );
-            }
-        }
-
-        bool_iterator begin() const {
-            return bool_iterator(data_.data());
-        }
-
-        bool_iterator end() const {
-            return bool_iterator(data_.data() + data_.size());
-        }
-
-        Series<bool> align(size_t target_size, bool fill_value = false) const {
-            if (data_.size() >= target_size) {
-                // 裁剪
-                std::vector<uint8_t> truncated(data_.begin(), data_.begin() + target_size);
-                return Series<bool>(truncated);
-            } else {
-                // 扩展
-                std::vector<uint8_t> expanded = data_;
-                expanded.insert(expanded.end(), target_size - data_.size(), fill_value ? 1 : 0);
-                return Series<bool>(expanded);
-            }
-        }
-
-    private:
-        std::vector<uint8_t> data_;
-        mutable std::vector<uint8_t> temp_bool_;
-    };
-
-    // 在 ta 命名空间内声明为非成员函数
-    template <typename T>
-    Series<bool> operator==(const Series<T>& lhs, const Series<T>& rhs) {
-        lhs.check_size(rhs);
-        std::vector<bool> res;
-        res.reserve(lhs.size());
-        for (size_t i = 0; i < lhs.size(); ++i) {
-            res.push_back(lhs.data()[i] == rhs.data()[i]);
-        }
-        return Series<bool>(res);
+    Series &set_name(std::string name) {
+        name_ = std::move(name);
+        return *this;
     }
 
-} // namespace ta
+    /// 收敛为 float64 序列（布尔转 0/1）
+    std::vector<double> values() const { return data_.to_vector(); }
 
-#endif // QUANT1X_PANDAS_SERIES_H
+    /// 收敛为布尔序列
+    std::vector<bool> to_bools() const { return data_.to_bools(); }
+
+    double get_f64(std::size_t index) const { return data_.get_f64(index); }
+
+    bool get_bool(std::size_t index) const { return data_.get_bool(index); }
+
+    void set_f64(std::size_t index, double value) { data_.set_f64(index, value); }
+
+    void set_bool(std::size_t index, bool value) { data_.set_bool(index, value); }
+
+    Series copy() const { return Series(data_.copy(), name_); }
+
+    Series slice(std::size_t start, std::size_t end) const {
+        return Series(data_.slice(start, end), name_);
+    }
+
+    // -- 变换 -------------------------------------------------------------
+    Series shift(std::int64_t periods) const { return Series(data_.shift(periods), name_); }
+
+    Series diff(std::int64_t periods) const { return Series(data_.diff(periods), name_); }
+
+    Series cumsum() const { return Series(data_.cumsum(), name_); }
+
+    Series fill_na(double value) const { return Series(data_.fill_na(value), name_); }
+
+    Series apply(const std::function<double(double)> &func) const {
+        const auto input = data_.to_vector();
+        std::vector<double> out(input.size());
+        for (std::size_t index = 0; index < input.size(); ++index) {
+            out[index] = func(input[index]);
+        }
+        return Series(std::move(out), name_);
+    }
+
+    // -- 四则 -------------------------------------------------------------
+    Series add(const Series &other) const { return Series(data_.add(other.data_), name_); }
+    Series sub(const Series &other) const { return Series(data_.sub(other.data_), name_); }
+    Series mul(const Series &other) const { return Series(data_.mul(other.data_), name_); }
+    Series div(const Series &other) const { return Series(data_.div(other.data_), name_); }
+    Series add_scalar(double value) const { return Series(data_.add_scalar(value), name_); }
+    Series sub_scalar(double value) const { return Series(data_.sub_scalar(value), name_); }
+    Series mul_scalar(double value) const { return Series(data_.mul_scalar(value), name_); }
+    Series div_scalar(double value) const { return Series(data_.div_scalar(value), name_); }
+
+    // -- 比较（返回布尔 Series） ------------------------------------------
+    Series gt(const Series &other) const { return Series(data_.gt(other.data_), name_); }
+    Series gte(const Series &other) const { return Series(data_.gte(other.data_), name_); }
+    Series lt(const Series &other) const { return Series(data_.lt(other.data_), name_); }
+    Series lte(const Series &other) const { return Series(data_.lte(other.data_), name_); }
+    Series equal(const Series &other) const { return Series(data_.equal(other.data_), name_); }
+    Series not_equal(const Series &other) const { return Series(data_.not_equal(other.data_), name_); }
+    Series gt_scalar(double value) const { return Series(data_.gt_scalar(value), name_); }
+    Series lt_scalar(double value) const { return Series(data_.lt_scalar(value), name_); }
+    Series equal_scalar(double value) const { return Series(data_.equal_scalar(value), name_); }
+
+    // -- 逻辑 -------------------------------------------------------------
+    Series logic_and(const Series &other) const { return Series(data_.logic_and(other.data_), name_); }
+    Series logic_or(const Series &other) const { return Series(data_.logic_or(other.data_), name_); }
+    Series logic_not() const { return Series(data_.logic_not(), name_); }
+
+    // -- 归约 -------------------------------------------------------------
+    double sum() const { return data_.sum(); }
+    double mean() const { return data_.mean(); }
+    double median() const { return data_.median(); }
+    double min_value() const { return data_.min_value(); }
+    double max_value() const { return data_.max_value(); }
+    std::int64_t argmin() const { return data_.argmin(); }
+    std::int64_t argmax() const { return data_.argmax(); }
+    double variance() const { return data_.variance(); }
+    /// 总体标准差（Python 的 std）
+    double stddev() const { return data_.stddev(); }
+
+    // -- 滚动 / EWM -------------------------------------------------------
+    Rolling rolling(std::int64_t window) const;
+
+    Ewm ewm(double alpha) const;
+
+    Ewm ewm_span(std::int64_t span) const;
+
+    // -- 运算符糖（映射到上面的方法） ------------------------------------
+    Series operator+(const Series &other) const { return add(other); }
+    Series operator-(const Series &other) const { return sub(other); }
+    Series operator*(const Series &other) const { return mul(other); }
+    Series operator/(const Series &other) const { return div(other); }
+    Series operator+(double value) const { return add_scalar(value); }
+    Series operator-(double value) const { return sub_scalar(value); }
+    Series operator*(double value) const { return mul_scalar(value); }
+    Series operator/(double value) const { return div_scalar(value); }
+    Series operator>(const Series &other) const { return gt(other); }
+    Series operator>=(const Series &other) const { return gte(other); }
+    Series operator<(const Series &other) const { return lt(other); }
+    Series operator<=(const Series &other) const { return lte(other); }
+    Series operator==(const Series &other) const { return equal(other); }
+    Series operator!=(const Series &other) const { return not_equal(other); }
+    Series operator&(const Series &other) const { return logic_and(other); }
+    Series operator|(const Series &other) const { return logic_or(other); }
+    Series operator~() const { return logic_not(); }
+
+  private:
+    friend class Rolling;
+    friend class Ewm;
+
+    num::NdArray data_;
+    std::string name_;
+};
+
+/// 滚动窗口
+class Rolling {
+  public:
+    Rolling(const Series &series, std::int64_t window) : series_(&series), window_(window) {}
+
+    Series sum() const { return Series(series_->data_.rolling_sum(window_), series_->name()); }
+    Series mean() const { return Series(series_->data_.rolling_mean(window_), series_->name()); }
+    Series stddev() const { return Series(series_->data_.rolling_std(window_), series_->name()); }
+    Series min_value() const { return Series(series_->data_.rolling_min(window_), series_->name()); }
+    Series max_value() const { return Series(series_->data_.rolling_max(window_), series_->name()); }
+
+    template <typename Apply>
+    Series apply(Apply func) const {
+        return Series(series_->data_.rolling_apply(window_, func), series_->name());
+    }
+
+  private:
+    const Series *series_;
+    std::int64_t window_;
+};
+
+/// 指数加权窗口
+class Ewm {
+  public:
+    Ewm(const Series &series, double alpha) : series_(&series), alpha_(alpha) {}
+
+    Series mean() const { return Series(series_->data_.ewm_mean(alpha_), series_->name()); }
+
+  private:
+    const Series *series_;
+    double alpha_;
+};
+
+inline Rolling Series::rolling(std::int64_t window) const { return Rolling(*this, window); }
+
+inline Ewm Series::ewm(double alpha) const { return Ewm(*this, alpha); }
+
+inline Ewm Series::ewm_span(std::int64_t span) const {
+    const double period = span <= 0 ? 1.0 : static_cast<double>(span);
+    return Ewm(*this, 2.0 / (period + 1.0));
+}
+
+}  // namespace quant1x::pandas
+
+#endif  // QUANT1X_PANDAS_SERIES_H
