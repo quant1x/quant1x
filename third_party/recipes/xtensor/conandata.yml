@@ -1,0 +1,4 @@
+sources:
+  "0.27.2":
+    url: "https://github.com/xtensor-stack/xtensor/archive/refs/tags/0.27.2.tar.gz"
+    sha256: "4421d2f710c5817bc8864f952edb5ffdd8202c31681c4f26b49a0e4197ac6d70"

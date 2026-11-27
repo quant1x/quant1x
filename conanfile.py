@@ -50,7 +50,7 @@ class Quant1XDependencies(ConanFile):
         self.requires("tsl-robin-map/1.4.0")
         self.requires("protobuf/3.21.12")
         # 数值容器与 SIMD 后端：xtensor 传递引入 xtl / xsimd
-        self.requires("xtensor/0.27.1")
+        self.requires("xtensor/0.27.2")
 
     def configure(self):
         # 全静态构建，与项目的 BUILD_SHARED_LIBS=OFF 保持一致

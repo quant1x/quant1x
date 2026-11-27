@@ -126,12 +126,13 @@ export MSF_RUNTIME=$HOME/runtime
 | protobuf | 3.21.12 | `protobuf::protobuf` |
 | xtl | 0.8.0 | `xtl` |
 | xsimd | 13.2.0 | `xsimd` |
-| xtensor | 0.27.1 | `xtensor` |
+| xtensor | 0.27.2 | `xtensor`（本地配方，见下） |
 
 统一使用静态库（`*:shared=False`）。说明：
 
-- **csv2 不在 Conan Center**：配方在 `third_party/recipes/csv2`，首次构建前执行
-  `conan create third_party/recipes/csv2` 放入本地缓存，之后 `conan install` 才能解析。
+- **csv2 / xtensor 不在 Conan Center**（xtensor 只到 0.27.1，本项目用 0.27.2）：配方在
+  `third_party/recipes/{csv2,xtensor}`，首次构建前各执行一次
+  `conan create third_party/recipes/<name>` 放入本地缓存，之后 `conan install` 才能解析。
   该配方在打包时修复 v0.2 的引号解析：字段最外层的一对 `"` 会被剥离，内部的 `""` 折叠为
   `"`；单引号不参与 CSV 转义，原样保留。
 - **mpb 不在 Conan 里**：`quant1x/mpb` 是与本仓库同级的组织内项目，CMake 用
