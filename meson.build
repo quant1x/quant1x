@@ -249,6 +249,7 @@ q1x = executable('q1x', 'main.cpp',
   install: true)
 
 foreach name, source : {
+  'tdd-num-parity': 'tests/tdd-num-parity.cpp',
   'tdd-formula-parity': 'tests/tdd-formula-parity.cpp',
   'tdd-indicators': 'tests/tdd-indicators.cpp',
 }

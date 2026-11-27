@@ -422,7 +422,22 @@ set(quant1x-headers
     quant1x/runtime/core.h
     quant1x/runtime/scheduler.h
     quant1x/runtime/ringbuffer.h
-    
+
+    # 数值规格层
+    quant1x/num/num.h
+    quant1x/num/align.h
+    quant1x/num/decimals.h
+    quant1x/num/dtype.h
+    quant1x/num/elementwise.h
+    quant1x/num/ewm.h
+    quant1x/num/fillna.h
+    quant1x/num/logic.h
+    quant1x/num/matrix.h
+    quant1x/num/reduce.h
+    quant1x/num/regression.h
+    quant1x/num/rolling.h
+    quant1x/num/shift.h
+    quant1x/num/window.h
 
     # 公式
     quant1x/formula/formula.h
