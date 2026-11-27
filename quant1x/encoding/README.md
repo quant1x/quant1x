@@ -2,7 +2,7 @@
 
 做**外部表示 ↔ 内存结构**的转换：字符集转码、CSV / YAML / JSON 的解析与序列化、Base64 编解码、定长二进制
 打包。**不做** 业务字段校验、配置加载策略（谁读哪个文件由 `quant1x/config` 决定）、网络协议编解码（在
-`quant1x/net` / `quant1x/proto`）。
+`quant1x/io` / `quant1x/proto`）。
 
 ## 文件与子目录
 

@@ -12,7 +12,7 @@ import threading
 from typing import List, Dict, Any
 from collections import OrderedDict
 from quant1x.config import config
-from quant1x.net.handler import NetworkOperationHandler
+from quant1x.io.operation_handler import NetworkOperationHandler
 from quant1x.log import logger
 
 

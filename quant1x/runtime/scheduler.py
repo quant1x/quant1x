@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import atexit
+import logging
 from math import log
 import signal
 import threading
@@ -15,11 +16,11 @@ from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.job import Job
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from quant1x.log import logger
-import logging
 
-logger = logging.getLogger('apscheduler')
-logger.setLevel(logging.CRITICAL)
-logger.propagate = False  # 阻止日志向上传播到父 logger
+# apscheduler 自带的日志会与 quant1x 日志重复, 这里静音
+_apscheduler_logger = logging.getLogger('apscheduler')
+_apscheduler_logger.setLevel(logging.CRITICAL)
+_apscheduler_logger.propagate = False  # 阻止日志向上传播到父 logger
 
 # 全局单例
 _GLOBAL_SCHEDULER: Optional['Scheduler'] = None

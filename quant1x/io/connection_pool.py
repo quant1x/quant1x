@@ -24,13 +24,12 @@ from __future__ import annotations
 import socket
 import threading
 import time
-import logging
 from collections import deque
-from typing import Optional, Callable, Deque, Tuple
+from typing import Optional, Callable, Deque
 
 from .endpoint import EndpointManager, Endpoint
 
-log = logging.getLogger(__name__)
+from quant1x.log import logger
 
 
 class Connection:
@@ -117,7 +116,7 @@ class ConnectionHandle:
         try:
             self.release()
         except Exception:
-            log.exception("Error during auto-release of connection")
+            logger.exception("Error during auto-release of connection")
 
 
 class TcpConnectionPool:
@@ -172,15 +171,15 @@ class TcpConnectionPool:
             if self._idle_connections:
                 raw_conn = self._idle_connections.popleft()
                 self.idle_connection_count -= 1
-                log.debug("Reused connection from pool: %s", raw_conn)
+                logger.debug("Reused connection from pool: {}", raw_conn)
 
         # 2. 若无空闲连接则创建新连接
         endpoint = None
         if raw_conn is None:
-            log.debug("Creating new connection...")
+            logger.debug("Creating new connection...")
             ep = self.endpoint_manager.acquire_endpoint()
             if ep is None:
-                log.error("No available endpoints")
+                logger.error("No available endpoints")
                 raise RuntimeError("No available endpoints")
             endpoint = ep
             sock = None
@@ -205,11 +204,11 @@ class TcpConnectionPool:
                 if not ok:
                     sock.close()
                     self.endpoint_manager.release_endpoint(endpoint)
-                    log.error("Handshake failed with %s:%s", endpoint[0], endpoint[1])
+                    logger.error("Handshake failed with {}:{}", endpoint[0], endpoint[1])
                     raise RuntimeError("Handshake failed")
 
                 raw_conn = Connection(sock, endpoint)
-                log.debug("Created new connection %s", raw_conn)
+                logger.debug("Created new connection {}", raw_conn)
             except Exception:
                 if sock is not None:
                     try:
@@ -226,7 +225,7 @@ class TcpConnectionPool:
             try:
                 self.release(conn)
             except Exception:
-                log.exception("Error during auto-release")
+                logger.exception("Error during auto-release")
 
         self.active_connection_count += 1
         return ConnectionHandle(raw_conn, deleter)
@@ -235,30 +234,30 @@ class TcpConnectionPool:
         if conn is None:
             return
         conn_id = id(conn)
-        log.debug("Returning connection %s", conn_id)
+        logger.debug("Returning connection {}", conn_id)
 
         # 注意: 此处不要释放端点(与 C++ 的语义一致)
         with self._connections_mutex:
             self._idle_connections.append(conn)
             self.idle_connection_count += 1
             self.active_connection_count -= 1
-            log.debug("Connection %s returned to pool", conn_id)
+            logger.debug("Connection {} returned to pool", conn_id)
 
     def close_connection(self, conn: Optional[Connection]) -> None:
         if conn is None:
             return
         conn_id = id(conn)
-        log.debug("Closing connection %s", conn_id)
+        logger.debug("Closing connection {}", conn_id)
         # 1. 释放端点
         try:
             self.endpoint_manager.release_endpoint(conn.endpoint)
         except Exception:
-            log.exception("Error releasing endpoint")
+            logger.exception("Error releasing endpoint")
         # 2. 关闭套接字
         try:
             conn.close()
         except Exception:
-            log.exception("Error closing connection socket")
+            logger.exception("Error closing connection socket")
         # 3. 更新计数器
         with self._connections_mutex:
             self.idle_connection_count = max(0, self.idle_connection_count - 1)
@@ -293,7 +292,7 @@ class TcpConnectionPool:
                 self._check_connections()
                 self._try_create_connections()
             except Exception:
-                log.exception("Exception in heartbeat tick")
+                logger.exception("Exception in heartbeat tick")
             # 重新调度定时器
             if self.running:
                 self._heartbeat_timer = threading.Timer(interval, tick)
@@ -329,7 +328,7 @@ class TcpConnectionPool:
         while self.active_connection_count + self.idle_connection_count < self.min_connections and retry_count < max_retries:
             available = self.endpoint_manager.get_available_resources()
             if available == 0:
-                log.warning("endpoint resources exhausted, retry %s/%s", retry_count, max_retries)
+                logger.warning("endpoint resources exhausted, retry {}/{}", retry_count, max_retries)
                 time.sleep(0.1)
                 retry_count += 1
                 continue
@@ -339,9 +338,9 @@ class TcpConnectionPool:
                     # 立即释放以将连接放回空闲池
                     handle.release()
                     retry_count += 1
-                    log.debug("Supplemented 1 connection")
+                    logger.debug("Supplemented 1 connection")
                 except Exception:
-                    log.exception("Error acquiring new connection")
+                    logger.exception("Error acquiring new connection")
                     break
 
     def _close_all_connections(self) -> None:
@@ -351,7 +350,7 @@ class TcpConnectionPool:
                     if conn and conn.is_open():
                         conn.close()
                 except Exception:
-                    log.exception("Error closing idle connection")
+                    logger.exception("Error closing idle connection")
             self._idle_connections.clear()
             self.idle_connection_count = 0
 

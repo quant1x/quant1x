@@ -5,14 +5,13 @@
 import threading
 import socket
 import time
-import logging
 
 
 from quant1x.io.connection_pool import TcpConnectionPool
-from quant1x.io.operation_handler import OperationHandler
+from quant1x.io.operation_handler import NetworkOperationHandler
 
 
-class MockNetworkHandler(OperationHandler):
+class MockNetworkHandler(NetworkOperationHandler):
     def __init__(self):
         super().__init__()
         # shorter values for tests
@@ -43,8 +42,8 @@ def _start_dummy_server(listen_ready: threading.Event, port_holder: list):
     try:
         while True:
             conn, _ = srv.accept()
-            # keep connection open until closed by client
-            threading.Thread(target=lambda c: c.recv(1), args=(conn,), daemon=True).start()
+            # 逐字节回声, 连接在客户端主动关闭前一直保持
+            threading.Thread(target=_echo_until_closed, args=(conn,), daemon=True).start()
     except Exception:
         try:
             srv.close()
@@ -52,8 +51,20 @@ def _start_dummy_server(listen_ready: threading.Event, port_holder: list):
             pass
 
 
+def _echo_until_closed(conn: socket.socket) -> None:
+    try:
+        while True:
+            data = conn.recv(1)
+            if not data:
+                break
+            conn.sendall(data)
+    except Exception:  # noqa: S110 - 尽力而为: 对端断开即结束回声
+        pass
+    finally:
+        conn.close()
+
+
 def test_basic_acquire_release():
-    logging.basicConfig(level=logging.DEBUG)
     ready = threading.Event()
     port_holder = []
     t = threading.Thread(target=_start_dummy_server, args=(ready, port_holder), daemon=True)
@@ -65,13 +76,16 @@ def test_basic_acquire_release():
     pool = TcpConnectionPool(1, 2, handler)
     pool.add_endpoint('127.0.0.1', port, 2)
 
-    # Acquire a connection via context manager
-    with pool.acquire() as conn:
-        assert conn is not None
-        assert conn.is_open()
-        assert conn.endpoint[1] == port
+    # acquire 返回 ConnectionHandle, 用它做一次实际收发, 确认连到的是刚登记的端点
+    with pool.acquire() as handle:
+        assert handle is not None
+        handle.settimeout(2.0)
+        handle.sendall(b'q')
+        assert handle.recv(1) == b'q'
 
-    # after context exit, connection should be returned to pool
+    # 退出 with 后连接归还空闲池, 活跃计数归零
     time.sleep(0.1)
+    assert pool.active_connection_count == 0
+    assert pool.idle_connection_count == 1
     # cleanup
     pool.stop()

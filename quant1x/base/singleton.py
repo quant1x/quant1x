@@ -11,11 +11,6 @@ from contextlib import contextmanager
 import weakref
 from enum import Enum, auto
 from functools import wraps
-import logging
-
-# 配置日志
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
 class SingletonInitPolicy(Enum):
@@ -88,14 +83,9 @@ class ThreadSafeSingletonMeta(ABCMeta):
         """提前初始化单例实例"""
         with cls._class_lock:
             if cls not in cls._instances and len(cls.__abstractmethods__) == 0:
-                try:
-                    instance = super().__call__()
-                    cls._instances[cls] = instance
-                    cls._initialized[cls] = True
-                    logger.info(f"类 {cls.__name__} 已提前初始化")
-                except Exception as e:
-                    logger.error(f"类 {cls.__name__} 提前初始化失败: {e}")
-                    raise
+                instance = super().__call__()
+                cls._instances[cls] = instance
+                cls._initialized[cls] = True
     
     def _check_abstract(cls):
         """检查是否是抽象类"""
@@ -193,7 +183,6 @@ class ThreadSafeSingletonMeta(ABCMeta):
                 cls._instances.pop(cls, None)
                 cls._initialized.pop(cls, False)
                 cls._initializing.pop(cls, False)
-                logger.info(f"已重置 {cls.__name__} 的单例实例")
     
     def is_initialized(cls) -> bool:
         """检查单例是否已初始化"""
@@ -253,8 +242,6 @@ class ThreadSafeSingletonABC(ABC, metaclass=ThreadSafeSingletonMeta):
             del ThreadSafeSingletonMeta._instances[cls]
         ThreadSafeSingletonMeta._initialized[cls] = False
         ThreadSafeSingletonMeta._initializing[cls] = False
-        
-        logger.debug(f"初始化单例子类: {cls.__name__}")
     
     @abstractmethod
     def initialize(self) -> None:
@@ -279,8 +266,8 @@ class ThreadSafeSingletonABC(ABC, metaclass=ThreadSafeSingletonMeta):
         """
         try:
             self.cleanup()
-        except Exception as e:
-            logger.error(f"清理资源时出错: {e}")
+        except Exception:  # noqa: S110 - 尽力而为: 清理失败不影响实例重置
+            pass
     
     @classmethod
     def get_instance(cls, *args, **kwargs) -> 'ThreadSafeSingletonABC':
@@ -305,11 +292,6 @@ class ThreadSafeSingletonABC(ABC, metaclass=ThreadSafeSingletonMeta):
     def __repr__(self) -> str:
         """统一的字符串表示"""
         return f"<{self.__class__.__name__} singleton at {id(self):#x}>"
-    
-    @final
-    def __del__(self):
-        """析构函数, 记录清理信息"""
-        logger.debug(f"单例实例 {self.__class__.__name__} 正在被销毁")
 
 
 # 辅助装饰器
@@ -335,10 +317,7 @@ def singleton_method(method):
     """
     标记单例关键方法
     
-    功能:
-    1. 记录方法调用日志
-    2. 验证方法是否在单例实例上调用
-    3. 可选地添加线程安全保护
+    为方法打上 `_is_singleton_method` 标记, 供反射与检查使用
     
     用法:
         @singleton_method
@@ -347,22 +326,6 @@ def singleton_method(method):
     """
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        # 记录方法调用
-        logger.debug(f"调用单例方法: {method.__name__} on {self}")
-        
-        # 验证是否在单例实例上调用
-        cls = self.__class__
-        if hasattr(cls, '_instances') and cls in cls._instances:
-            if self is not cls._instances[cls]:
-                logger.warning(
-                    f"方法 {method.__name__} 在非单例实例上调用! "
-                    f"实例ID: {id(self)}, 单例ID: {id(cls._instances[cls])}"
-                )
-        elif hasattr(cls, 'is_initialized') and cls.is_initialized():
-            logger.warning(
-                f"方法 {method.__name__} 可能不在正确的单例实例上调用"
-            )
-        
         return method(self, *args, **kwargs)
     
     # 标记为单例方法, 可用于反射和检查

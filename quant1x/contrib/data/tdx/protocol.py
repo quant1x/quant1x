@@ -6,7 +6,7 @@ import abc
 import struct
 import zlib
 
-from quant1x.net.conn import ConnectionHandle
+from quant1x.io.connection_pool import ConnectionHandle
 from quant1x.log import logger
 from .helpers import get_sequence_id
 from .command import FLAG_GENERIC, FLAG_UNCOMPRESSED
@@ -266,7 +266,7 @@ def transact_message_sync(conn_handle: ConnectionHandle, msg: BaseFrame) -> None
     msg.deserialize_response_body(resp_body_bytes)
     #logger.debug(f"process_level1: response_body={msg.reply}")
 
-from quant1x.net.handler import NetworkOperationHandler
+from quant1x.io.operation_handler import NetworkOperationHandler
 
 class StandardProtocolHandler(NetworkOperationHandler):
     """标准协议处理器, 执行Synchronize1/Synchronize2握手和心跳. 
