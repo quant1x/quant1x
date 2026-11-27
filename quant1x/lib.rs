@@ -36,6 +36,9 @@ static GLOBAL: MiMalloc = MiMalloc;
 // Machine Learning module
 pub mod learn;
 
+// 数值规格层（与 quant1x/num 的 Python / C++ / Rust / Zig 实现同语义）
+pub mod num;
+
 // // calendar decoder module
 // mod decoder;
 // pub use crate::decoder::*;
