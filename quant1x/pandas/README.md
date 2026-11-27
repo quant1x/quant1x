@@ -14,7 +14,7 @@
 | 文件 | 用途 |
 | --- | --- |
 | `series.py` | `Series`：一列数据，运算符与 `rolling` / `ewm` 入口 |
-| `dataframe.py` | `DataFrame`：列容器，取列 / 写列 / 复制 |
+| `dataframe.py` | `DataFrame`：列容器，取列 / 写列 / 复制；跨语言契约见 `dataframe.md` |
 | `rolling.py` | `Rolling`：委托 `quant1x.num.rolling_*` |
 | `ewm.py` | `EWM`：委托 `quant1x.num.ewm_mean` |
 | `pandas.md` | 跨语言口径与功能对照表 |
@@ -33,7 +33,7 @@
 | 语义 | python | c++ | rust | go | zig |
 | --- | --- | --- | --- | --- | --- |
 | Series | `series.py` | `series.h` | `series.rs` | `series.go` | `series.zig` |
-| DataFrame | `dataframe.py` | `dataframe.h`（异构列原型） | `dataframe.rs` | `dataframe.go` | `dataframe.zig` |
+| DataFrame | `dataframe.py` | `dataframe.h` | `dataframe.rs` | `dataframe.go` | `dataframe.zig` |
 | EWM | `ewm.py` | `ewm.h` | `series.rs` | `series.go` | `series.zig` |
 | Rolling | `rolling.py` | `series.h` | `series.rs` | `series.go` | `series.zig` |
 

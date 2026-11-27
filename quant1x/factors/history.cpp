@@ -69,20 +69,20 @@ void HistoryFeature::Update(const quant1x::data::meta::Instrument &inst, const q
         spdlog::warn("[HistoryFeature] code={},date={}, 日线数据不足", code, feature_date);
         return;
     }
-    DataFrame df = DataFrame::from_struct_vector(bars);
-    // 直接获取列
-    auto const& col_open = df.get<f64>("open");
+    auto df = quant1x::pandas::DataFrame::from_struct_vector(bars);
+    // 取数值列（Series），再适配成 xtensor
+    auto col_open = df.get("open")->values();
     const xt::xarray<f64>& OPEN = xt::adapt(col_open);
-    auto const& col_close = df.get<f64>("close");
+    auto col_close = df.get("close")->values();
     const xt::xarray<f64>& CLOSE = xt::adapt(col_close);
-    auto const& col_high = df.get<f64>("high");
+    auto col_high = df.get("high")->values();
     const xt::xarray<f64>& HIGH = xt::adapt(col_high);
-    auto const& col_low = df.get<f64>("low");
+    auto col_low = df.get("low")->values();
     const xt::xarray<f64>& LOW = xt::adapt(col_low);
 
-    auto const& col_vol = df.get<f64>("volume");
+    auto col_vol = df.get("volume")->values();
     const xt::xarray<f64>& VOL = xt::adapt(col_vol);
-    auto const& col_amount = df.get<f64>("amount");
+    auto col_amount = df.get("amount")->values();
     const xt::xarray<f64>& AMOUNT = xt::adapt(col_amount);
 
     auto r1Close = formula::ref(CLOSE,1);

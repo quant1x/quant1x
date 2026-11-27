@@ -34,27 +34,38 @@ Python 的 `df[name]` / `df[name] = value` / `df[name_list]` 是 `get` / `set` /
 | Python（spec） | `dataframe.py` | 已落地（pandas 承载） |
 | Rust（生产） | `dataframe.rs` | 已落地（`tests/dataframe_test.rs`） |
 | Go | `dataframe.go` | 已落地（`quant1x/pandas/dataframe_test.go`） |
-| C++（生产） | `dataframe.h` | 原型，待迁移（见 §4） |
+| C++（生产） | `dataframe.h` | 已落地（`tests/tdd-dataframe-release.cpp`） |
 | Zig | `dataframe.zig` | 已落地（`quant1x/pandas/dataframe_test.zig`） |
 
-## 4. C++ 的现状与差异
+## 4. 字符串列（展示扩展）
 
-`quant1x/pandas/dataframe.h` 是异构列原型：列类型为 `std::variant<std::vector<int>,
-std::vector<int64_t>, std::vector<float>, std::vector<double>, std::vector<bool>,
-std::vector<std::string>>`，另有 `from_struct_vector`（Boost.PFR 反射结构体字段）与
-`to_string()` 表格打印；`quant1x/factors/history.cpp` 用它把 `Bar` 切片转成表并按列取数。
+`Bar` 有 `date` / `timestamp` 两个字符串字段，打印表格时需要它们，但可移植契约只覆盖
+`float64` / `bool` 的 `Series`。C++ 因此额外承载**字符串列**（对照 pandas 的 object dtype）：
 
-它与本契约的差别有二：
+| 方法 | 说明 |
+| --- | --- |
+| `set_strings(name, vector<string>)` | 写展示列 |
+| `get_strings(name)` | 取展示列；不是字符串列时返回 `nullptr` |
 
-1. 列不是 `Series`，无法复用滚动/归约算子；
-2. 支持字符串列（`Bar.date` / `Bar.timestamp`），本契约不覆盖。
+字符串列不参与任何数值算子，也不参与 `get`（`get` 只返回 `Series`）。
+`from_struct_vector` 会按字段类型自动分流：算数字段（含 `int` / `float`）→ `Series(double)`，
+`bool` → `Series(bool)`，`std::string` → 字符串列，其它类型跳过。
+Rust / Go / Zig 目前只实现数值列；需要打印带字符串的表时再按同一口径补。
 
-迁移方向：数值列改为 `Series`，字符串列保留为独立的展示列（或把 `date` 收敛成数值时间戳），
-再把 `factors/history.cpp` 的调用点切过去。迁移前 C++ 侧继续用现有原型。
+## 5. 打印
 
-## 5. 测试
+`to_string()` 对齐 pandas 的表格版式：
+
+- 索引列 + 每列右对齐（pandas 默认 `justify='right'`），列间两个空格；
+- 浮点按列统一小数位（至少 1 位），如 `10.0` / `10.50`；
+- 量级在 `[1e-4, 1e16)` 外走科学计数法，`NaN` / `inf` 用 pandas 的写法；
+- 行数超过 60 时显示首尾各 5 行，中间用 `..`（索引列）/ `...`（数据列）省略，
+  末尾附 `[N rows x M columns]`；未截断时没有页脚；
+- 空表输出 `Empty DataFrame` / `Columns: []` / `Index: []`。
+
+## 6. 测试
 
 | 维度 | 覆盖 |
 | --- | --- |
-| 单元测试 | Python `tests/test_pandas_facade.py`；Rust `tests/dataframe_test.rs`；Go `quant1x/pandas/dataframe_test.go` |
-| 覆盖点 | 构造与列序、取列、子集、写入替换/追加、列长校验、深拷贝 |
+| 单元测试 | Python `tests/test_pandas_facade.py`；C++ `tests/tdd-dataframe-release.cpp`；Rust `tests/dataframe_test.rs`；Go `quant1x/pandas/dataframe_test.go`；Zig `quant1x/pandas/dataframe_test.zig` |
+| 覆盖点 | 构造与列序、取列、子集、写入替换/追加、列长校验、深拷贝、结构体反射构造、打印版式与截断 |

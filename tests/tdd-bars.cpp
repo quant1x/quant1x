@@ -8,6 +8,7 @@
 #include <quant1x/contrib/data/tdx/bar.h>
 #include <quant1x/contrib/data/tdx/bar_minute.h>
 #include <quant1x/factors/base_compat.h>
+#include <quant1x/pandas/dataframe.h>
 #include <quant1x/runtime/core.h>
 
 // Note: ::runtime is a global namespace, not under quant1x::
@@ -55,14 +56,14 @@ TEST_CASE("minute-bar", "[data]") {
     adapter->Update(inst, now);
 }
 
-#if 0
-// DataFrame class (pandas/dataframe.h) removed in refactoring
 TEST_CASE("checkout-bars", "[data]") {
     std::string code = "300773";
     std::string date = "2025-05-29";
     auto bars = tdx::checkout_bars(code, date);
-    std::cout << bars.size() << std::endl;
-    DataFrame df = DataFrame::from_struct_vector(bars);
+    if (bars.empty()) {
+        SKIP("本地无 " + code + "@" + date + " 的数据, 跳过");
+    }
+    auto df = quant1x::pandas::DataFrame::from_struct_vector(bars);
     std::cout << df.to_string() << std::endl;
 }
 
@@ -70,8 +71,9 @@ TEST_CASE("bars_forward_adjusted_to_date", "[data]") {
     std::string code = "300773";
     std::string date = "2025-10-24";
     auto bars = tdx::bars_forward_adjusted_to_date(code, date);
-    std::cout << bars.size() << std::endl;
-    DataFrame df = DataFrame::from_struct_vector(bars);
+    if (bars.empty()) {
+        SKIP("本地无 " + code + "@" + date + " 的数据, 跳过");
+    }
+    auto df = quant1x::pandas::DataFrame::from_struct_vector(bars);
     std::cout << df.to_string() << std::endl;
 }
-#endif

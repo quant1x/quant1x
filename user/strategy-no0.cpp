@@ -93,7 +93,7 @@ void No0Strategy::Evaluate(const SecurityCode &code, ResultInfo &result) const {
         result.limit_up = true;
         return;
     }
-    DataFrame df = DataFrame::from_struct_vector(bars);
+    auto df = quant1x::pandas::DataFrame::from_struct_vector(bars);
     
     (void)df;
 }
@@ -150,7 +150,7 @@ void No0Strategy::updateIndicators(const SecurityCode &code) {
         }
     }
 
-    DataFrame df = DataFrame::from_struct_vector(market_data_);
+    auto df = quant1x::pandas::DataFrame::from_struct_vector(market_data_);
     (void)df;
     // Log detected signals for debugging (use warn so it's visible in verbose runs)
     size_t buy_count = std::count(buys_.begin(), buys_.end(), true);
