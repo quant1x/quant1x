@@ -592,7 +592,9 @@ TEST_CASE("simd-add", "[datasets]") {
     std::cout << std::endl;
 }
 
+#ifndef XTENSOR_USE_XSIMD
 #define XTENSOR_USE_XSIMD
+#endif
 
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/io/xio.hpp>
@@ -658,7 +660,9 @@ void vector_add_avx_hand_crafted(const double* a, const double* b, double* res, 
 }
 #endif // __AVX__
 // xtensor + xsimd
+#ifndef XTENSOR_USE_XSIMD
 #define XTENSOR_USE_XSIMD
+#endif
 #include <xtensor/containers/xarray.hpp>
 #include <xtensor/io/xio.hpp>
 #include <xtensor/views/xstrided_view.hpp>

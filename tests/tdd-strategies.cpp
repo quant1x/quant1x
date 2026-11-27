@@ -5,8 +5,6 @@
 #include <quant1x/engine/strategy.h>
 #include <capnp/message.h>
 #include <quant1x/base/numeric.h>
-#include <indicators/dynamic_progress.hpp>
-#include <indicators/progress_bar.hpp>
 // #include <users/no1.h>  // removed in refactor
 
 // TEST_CASE("strategy-no0", "[strategies]") {  // HousNo1Strategy removed in refactor

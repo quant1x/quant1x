@@ -236,9 +236,11 @@ cmake --build build -j
 
 ### 2.7 测试
 
+测试默认不参与普通构建（全部 `EXCLUDE_FROM_ALL`），先构建 `tests` 聚合目标：
+
 ```bat
-rem 构建测试目标
-cmake --build build-msvc --config Release -j
+rem 构建全部测试目标（4 个 Catch2 分组 + app-* + gtest-*）
+cmake --build build-msvc --config Release --target tests -j 8
 
 rem 列出 / 运行
 ctest --test-dir build-msvc -C Release -N
@@ -251,11 +253,27 @@ ctest --test-dir build-msvc -C Release -R tdd-bars -V
 也可以直接运行测试进程：
 
 ```bat
-build-msvc\tests\Release\catch2-tdd-bars.exe "某个测试名"
+build-msvc\tests\Release\catch2-num.exe "某个测试名"
 build-msvc\tests\Release\app-test-ringbuffer.exe
 ```
 
-注意：`tests/CMakeLists.txt` 只为 Catch2 目标自动注册 CTest 用例；`app-*`、`gtest-*` 目标只生成可执行文件，需要直接运行。部分用例依赖本地数据缓存、网络或平台特性，在离线环境可能失败。
+分组约定（`tests/CMakeLists.txt` 与 `meson.build` 保持同一份清单）：
+
+| 可执行 | 覆盖 |
+| --- | --- |
+| `catch2-num` | 公式 / 指标 / 数值 / DataFrame |
+| `catch2-data` | 行情、编解码、协议、时间与日历 |
+| `catch2-runtime` | 基础组件、日志、网络与调度 |
+| `catch2-contrib` | 特色数据、回测、策略与实盘 |
+
+为什么不一个文件一个可执行：每个可执行都要过一遍 1 GB 级的 `quant1x` 静态库，60 多次链接
+是纯浪费；合并后仍保留用例级粒度（`catch_discover_tests` 每条 `TEST_CASE` 一个 ctest 条目、
+独立进程）。以下文件因自身编译问题暂未纳入分组，修复后再加回：
+
+- `tdd-snapshot.cpp`：capnp 头在 MSVC 下触发 `mswsockdef.h` 的 `UCHAR` 语法错误；
+- `tdd-ta.cpp`：gtest，仍按旧 `ta::Series` 接口编写。
+
+部分用例依赖本地数据缓存、网络或平台特性，缺数据时用例内部 `SKIP` 而不是失败。
 
 ### 2.8 基准测试
 
@@ -315,8 +333,10 @@ meson test -C build-meson/build
 
 - 依赖通过 Conan 生成的 `.pc` 文件解析，`MesonToolchain` 已把 `pkg_config_path` 指向 `build-meson`；
 - `mpb` 按 `../mpb` 相对路径直接编译（与 CMake 的 `QUANT1X_MPB_DIR` 默认值一致）；
-- 目前 Meson 只登记 `q1x` 与 `app-tdd-formula-parity` / `app-tdd-indicators` 两个对拍程序；
-  catch2 / gtest 承载的其余用例仍由 CMake 构建，后续按需迁移。
+- 测试与 CMake 分组一致：4 个 `catch2-*` 分组合并、`app-*` 独立、gtest 独立，全部
+  `build_by_default: false`——`meson compile` 只编库与 `q1x`，`meson test` 按需构建并运行。
+  Meson 的 `test()` 是整包粒度（Catch2 无 TAP 协议），要跑单条用例直接调
+  `build-meson/build/catch2-num.exe "用例名"`。
 
 ### 2.12 IDE 与静态检查（clangd / clang-tidy）
 

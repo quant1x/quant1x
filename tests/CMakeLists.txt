@@ -1,26 +1,36 @@
-# 定义一个宏，用于创建 一般性的测试 可执行文件
-macro(add_app_executable source_file)
-    # 获取源文件名（不含扩展名）
-    get_filename_component(test_name ${source_file} NAME_WE)
+# Copyright (C) 2026 Quant1X Team
+# SPDX-License-Identifier: MIT
+#
+# C++ 测试构建：
+#   - Catch2 用例按模块合并成 4 个可执行文件（num / data / runtime / contrib），
+#     不再一文件一可执行：每个可执行都要过一遍 1 GB 级的 quant1x 静态库，65 次链接是主要浪费；
+#     用例粒度不受影响，catch_discover_tests 仍按单条 TEST_CASE 注册 ctest 条目。
+#   - 全部测试目标 EXCLUDE_FROM_ALL：默认构建只编库与 q1x，跑测试时构建 `tests` 目标。
 
-    # 添加前缀 "app-"
+# 测试目标收集，供末尾的 `tests` 聚合目标使用
+set(QUANT1X_TEST_TARGETS "")
+
+# 一般性测试可执行文件（自带 main）
+macro(add_app_executable source_file)
+    get_filename_component(test_name ${source_file} NAME_WE)
     set(target_name "app-${test_name}")
 
-    # 创建带前缀的可执行文件
-    add_executable(${target_name} ${source_file})
-
-    # 添加头文件路径
+    add_executable(${target_name} EXCLUDE_FROM_ALL ${source_file})
     target_include_directories(${target_name} PUBLIC
         ${CMAKE_SOURCE_DIR}/include
     )
-
-    # 链接依赖库（例如你提到的 utils）
     target_link_libraries(${target_name} PRIVATE
         quant1x
     )
+
+    list(APPEND QUANT1X_TEST_TARGETS ${target_name})
 endmacro()
 
 include(GoogleTest)
+
+# Catch2 的用例发现模块（根 CMakeLists 已完成 find_package(Catch2)）；
+# 没有它 catch_discover_tests 不存在，ctest 只能拿到整包一个条目。
+include(Catch OPTIONAL)
 
 # Ensure CTest is available and tests are enabled so test discovery (or add_test)
 # entries are registered into the generated build tree. Without this, `ctest`
@@ -28,20 +38,137 @@ include(GoogleTest)
 include(CTest)
 enable_testing()
 
-# 定义一个宏，用于创建 Catch2单元测试 可执行文件
-macro(add_catch2_executable source_file)
-    # 获取源文件名（不含扩展名）
+# GTest 可执行文件
+macro(add_gtest_executable source_file)
     get_filename_component(test_name ${source_file} NAME_WE)
+    set(target_name "gtest-${test_name}")
 
-    # 添加前缀 "catch2-"
-    set(target_name "catch2-${test_name}")
+    add_executable(${target_name} EXCLUDE_FROM_ALL ${source_file})
+    target_include_directories(${target_name} PUBLIC
+        ${CMAKE_SOURCE_DIR}/include
+    )
+    target_link_libraries(${target_name} PRIVATE
+        quant1x test-gtest
+    )
 
-    # 创建带前缀的可执行文件
+    list(APPEND QUANT1X_TEST_TARGETS ${target_name})
+endmacro()
+
+# benchmark 基准测试可执行文件（不并入 tests 目标）
+macro(add_benchmark_executable source_file)
+    get_filename_component(test_name ${source_file} NAME_WE)
+    set(target_name "benchmark-${test_name}")
+
     add_executable(${target_name} ${source_file})
+    target_include_directories(${target_name} PUBLIC
+        ${CMAKE_SOURCE_DIR}/include
+    )
+    target_link_libraries(${target_name} PRIVATE
+        quant1x test-benchmark
+    )
+endmacro()
 
-    # 自动为该可执行中的每个 Catch2 测试用例创建 CTest 条目
-    # 如果项目已经包含 Catch2 的 CMake helpers，则使用 catch_discover_tests，
-    # 否则退回到为整个可执行添加一个单独的 add_test（可通过 exe 参数过滤具体测试）
+# ==============================
+# Catch2 用例分组
+# ==============================
+set(CATCH2_NUM_SOURCES
+    # 公式 / 指标 / 数值
+    tdd-formula.cpp
+    tdd-num-ndarray.cpp
+    tdd-rolling.cpp
+    tdd-series.cpp
+    tdd-ta-ma.cpp
+    tdd-ta-dbscan.cpp
+    tdd-linear-regression.cpp
+    tdd-number-range.cpp
+    tdd-peaks.cpp
+    tdd-waves.cpp
+    tdd-patterns-wave-release.cpp
+    tdd-std-util.cpp
+    tdd-globmatch.cpp
+    # DataFrame
+    tdd-dataframe-ewm.cpp
+    tdd-dataframe-data.cpp
+    tdd-dataframe-release.cpp
+)
+
+set(CATCH2_DATA_SOURCES
+    # 行情与数据契约
+    tdd-bars.cpp
+    tdd-datasets.cpp
+    tdd-chips.cpp
+    tdd-xdxr.cpp
+    # tdd-snapshot.cpp：capnp 头在 MSVC 下触发 mswsockdef.h 的 UCHAR 语法错误，待单独排查
+    # 编解码
+    tdd-encoding-csv.cpp
+    tdd-encoding-json.cpp
+    tdd-json.cpp
+    tdd-yaml-deserialize.cpp
+    tdd-yaml-deserialize-config.cpp
+    tdd-charsets.cpp
+    tdd-iconv.cpp
+    # 协议
+    tdd-level1.cpp
+    tdd-level1-detect-server.cpp
+    tdd-level1-encoding.cpp
+    # 时间与日历
+    tdd-calendar.cpp
+    test-calender.cpp
+    tdd-timestamp.cpp
+    tdd-times.cpp
+)
+
+set(CATCH2_RUNTIME_SOURCES
+    # 基础组件
+    tdd-error.cpp
+    tdd-homedir.cpp
+    tdd-config.cpp
+    tdd-strings.cpp
+    tdd-all.cpp
+    tdd-session.cpp
+    tdd-touch.cpp
+    tdd-filelock.cpp
+    # 日志
+    tdd-logger.cpp
+    tdd-logger-dist.cpp
+    tdd-lazy-log.cpp
+    # 网络与调度
+    tdd-http.cpp
+    tdd-asio.cpp
+    tdd-cron.cpp
+    tdd-distributed-id.cpp
+)
+
+set(CATCH2_CONTRIB_SOURCES
+    # 特色数据
+    tdd-f10-notices.cpp
+    tdd-f10-safety-score.cpp
+    tdd-f10-margin-trading.cpp
+    tdd-f10-capital.cpp
+    # 回测
+    tdd-backtest-roundtrip.cpp
+    tdd-backtest-roundtrip-extra.cpp
+    tdd-backtest-result-compat.cpp
+    tdd-backtest-order.cpp
+    # 策略与实盘
+    tdd-strategies.cpp
+    tdd-trader-order.cpp
+    tdd-trader-price.cpp
+    tdd-history.cpp
+)
+
+# 一个分组 = 一个可执行文件；用例仍按 TEST_CASE 逐条注册到 ctest
+function(add_catch2_group group_name)
+    set(target_name "catch2-${group_name}")
+
+    add_executable(${target_name} EXCLUDE_FROM_ALL ${ARGN})
+    target_include_directories(${target_name} PUBLIC
+        ${CMAKE_SOURCE_DIR}/include
+    )
+    target_link_libraries(${target_name} PRIVATE
+        quant1x test-catch2 test-benchmark
+    )
+
     if(COMMAND catch_discover_tests)
         catch_discover_tests(${target_name}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -51,81 +178,18 @@ macro(add_catch2_executable source_file)
         add_test(NAME ${target_name} COMMAND $<TARGET_FILE:${target_name}>)
     endif()
 
-    # 添加头文件路径
-    target_include_directories(${target_name} PUBLIC
-        ${CMAKE_SOURCE_DIR}/include
-    )
+    set(QUANT1X_TEST_TARGETS "${QUANT1X_TEST_TARGETS};${target_name}" PARENT_SCOPE)
+endfunction()
 
-    # 链接依赖库（例如你提到的 utils）
-    target_link_libraries(${target_name} PRIVATE
-        quant1x test-catch2 test-benchmark
-    )
-    # Fallback: register a single CTest entry for the whole executable only if
-    # a test with the same name hasn't been registered already. This avoids
-    # duplicate add_test errors when discovery helpers have already added tests
-    # or when the same macro is processed multiple times for any reason.
-    get_property(_registered_tests DIRECTORY PROPERTY TESTS)
-    list(FIND _registered_tests ${target_name} _test_index)
-    if(_test_index EQUAL -1)
-        add_test(NAME ${target_name} COMMAND $<TARGET_FILE:${target_name}>)
-    endif()
-endmacro()
+add_catch2_group(num ${CATCH2_NUM_SOURCES})
+add_catch2_group(data ${CATCH2_DATA_SOURCES})
+add_catch2_group(runtime ${CATCH2_RUNTIME_SOURCES})
+add_catch2_group(contrib ${CATCH2_CONTRIB_SOURCES})
 
-# 定义一个宏，用于创建 GTest单元测试 可执行文件
-macro(add_gtest_executable source_file)
-    # 获取源文件名（不含扩展名）
-    get_filename_component(test_name ${source_file} NAME_WE)
-
-    # 添加前缀 "gtest-"
-    set(target_name "gtest-${test_name}")
-
-    # 创建带前缀的可执行文件
-    add_executable(${target_name} ${source_file})
-
-    # 添加头文件路径
-    target_include_directories(${target_name} PUBLIC
-        ${CMAKE_SOURCE_DIR}/include
-    )
-
-    # 链接依赖库（例如你提到的 utils）
-    target_link_libraries(${target_name} PRIVATE
-        quant1x test-gtest
-    )
-
-    # # 自动为 GoogleTest 可执行注册 CTest 条目（如果可用则使用 gtest_discover_tests）
-    # if(COMMAND gtest_discover_tests)
-    #     gtest_discover_tests(${target_name}
-    #         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    #         PROPERTIES TIMEOUT 60
-    #     )
-    # else()
-    #     add_test(NAME ${target_name} COMMAND $<TARGET_FILE:${target_name}>)
-    # endif()
-endmacro()
-
-# 定义一个宏，用于创建 benchmark基准测试 可执行文件
-macro(add_benchmark_executable source_file)
-    # 获取源文件名（不含扩展名）
-    get_filename_component(test_name ${source_file} NAME_WE)
-
-    # 添加前缀 "benchmark-"
-    set(target_name "benchmark-${test_name}")
-
-    # 创建带前缀的可执行文件
-    add_executable(${target_name} ${source_file})
-
-    # 添加头文件路径
-    target_include_directories(${target_name} PUBLIC
-        ${CMAKE_SOURCE_DIR}/include
-    )
-
-    # 链接依赖库（例如你提到的 utils）
-    target_link_libraries(${target_name} PRIVATE
-        quant1x test-benchmark
-    )
-endmacro()
-
-# crash测试
+# ==============================
+# 自带 main 的测试程序
+# ==============================
+# crash 测试
 if (WIN32)
     add_app_executable(crash-windows.cpp)
 elseif (LINUX)
@@ -133,164 +197,30 @@ elseif (LINUX)
 endif ()
 add_app_executable(test-crash.cpp)
 
-# 错误码测试
-add_catch2_executable(tdd-error.cpp)
-
-# 测试宿主目录
-add_catch2_executable(tdd-homedir.cpp)
-# 字符集测试
-add_catch2_executable(tdd-iconv.cpp)
-# 测试配置
-add_catch2_executable(tdd-config.cpp)
-
-# io测试
-add_catch2_executable(tdd-logger-dist.cpp)
-add_catch2_executable(tdd-lazy-log.cpp)
-
-# cron测试
-add_catch2_executable(tdd-cron.cpp)
-
-# 网络测试
-add_catch2_executable(tdd-http.cpp)
-
-# 基础组件测试
+# 基础组件
 add_app_executable(test-ringbuffer.cpp)
 add_app_executable(test-highest_one_bit.cpp)
 
-# 命令行解析测试
+# 命令行解析
 add_app_executable(test-argparser-parser.cpp)
 add_app_executable(test-argparser-complete.cpp)
 
-# 编解码测试
-add_catch2_executable(tdd-encoding-csv.cpp)
-add_catch2_executable(tdd-encoding-json.cpp)
-
-add_catch2_executable(tdd-yaml-deserialize.cpp)
-add_catch2_executable(tdd-yaml-deserialize-config.cpp)
-
-# 测试缓存
-add_catch2_executable(tdd-calendar.cpp)
-add_catch2_executable(test-calender.cpp)
-
-# 测试协议
-add_catch2_executable(tdd-level1.cpp)
-add_catch2_executable(tdd-level1-detect-server.cpp)
-add_catch2_executable(tdd-level1-encoding.cpp)
-
-# ta 测试
-add_gtest_executable(tdd-ta.cpp)
-add_gtest_executable(test_security_quote_implicit_spread.cpp)
-add_catch2_executable(tdd-formula.cpp)
-add_catch2_executable(tdd-num-ndarray.cpp)
+# 跨语言对拍：输出即结论，不并入 Catch2
 add_app_executable(tdd-num-parity.cpp)
 add_test(NAME app-tdd-num-parity COMMAND app-tdd-num-parity WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_app_executable(tdd-formula-parity.cpp)
 add_test(NAME app-tdd-formula-parity COMMAND app-tdd-formula-parity WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_app_executable(tdd-indicators.cpp)
 add_test(NAME app-tdd-indicators COMMAND app-tdd-indicators WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-add_catch2_executable(tdd-rolling.cpp)
-add_catch2_executable(tdd-series.cpp)
-add_catch2_executable(tdd-ta-ma.cpp)
-add_catch2_executable(tdd-ta-dbscan.cpp)
 
-# DataFrame 测试
-add_catch2_executable(tdd-dataframe-ewm.cpp)
-add_catch2_executable(tdd-dataframe-data.cpp)
-add_catch2_executable(tdd-dataframe-release.cpp)
-
-# numerics 数值类功能测试
-add_catch2_executable(tdd-number-range.cpp)
-
-# 时间功能 测试
-add_catch2_executable(tdd-session.cpp)
-add_catch2_executable(tdd-timestamp.cpp)
-add_catch2_executable(tdd-times.cpp)
-
-# 文件锁/落地标识
-add_catch2_executable(tdd-touch.cpp)
-add_catch2_executable(tdd-filelock.cpp)
-
-# 基础数据测试
-add_catch2_executable(tdd-datasets.cpp)
-add_catch2_executable(tdd-bars.cpp)
-
-# f10
-add_catch2_executable(tdd-f10-notices.cpp)
-add_catch2_executable(tdd-f10-safety-score.cpp)
-add_catch2_executable(tdd-f10-margin-trading.cpp)
-add_catch2_executable(tdd-f10-capital.cpp)
-
-# 筹码分布
-add_catch2_executable(tdd-chips.cpp)
-
-# 技术形态
-add_catch2_executable(tdd-peaks.cpp)
-add_catch2_executable(tdd-waves.cpp)
-add_catch2_executable(tdd-linear-regression.cpp)
-add_catch2_executable(tdd-patterns-wave-release.cpp)
-
-# 回测框架测试
-add_catch2_executable(tdd-backtest-release.cpp)
-
-# round-trip matching unit test
-add_catch2_executable(tdd-backtest-roundtrip.cpp)
-
-# additional round-trip edge cases
-add_catch2_executable(tdd-backtest-roundtrip-extra.cpp)
-add_catch2_executable(tdd-backtest-result-compat.cpp)
-
-# FP growth测试
-add_catch2_executable(test_fp_growth.cpp)
-
-# ================================================
-# 以下为之前被屏蔽、现已打开的测试文件
-# ================================================
-
-# 字符集转换测试
-add_catch2_executable(tdd-charsets.cpp)
-
-# json测试
-add_catch2_executable(tdd-json.cpp)
-
-# 日志测试
-add_catch2_executable(tdd-logger.cpp)
-
-# 字符串测试
-add_catch2_executable(tdd-strings.cpp)
-
-# 锚定 glob 匹配测试
-add_catch2_executable(tdd-globmatch.cpp)
-
-# 文件系统/基础组件测试
-add_catch2_executable(tdd-all.cpp)
-
-# 网络/asio测试
-add_catch2_executable(tdd-asio.cpp)
-
-# 通用工具测试
-add_catch2_executable(tdd-std-util.cpp)
-
-# 历史数据测试
-add_catch2_executable(tdd-history.cpp)
-
-# 快照测试
-add_catch2_executable(tdd-snapshot.cpp)
-
-# 除权除息测试
-add_catch2_executable(tdd-xdxr.cpp)
-
-# 策略测试
-add_catch2_executable(tdd-strategies.cpp)
-
-# 实盘交易测试
-add_catch2_executable(tdd-trader-order.cpp)
-add_catch2_executable(tdd-trader-price.cpp)
-
-# A股回测测试
-add_catch2_executable(tdd-backtest-order.cpp)
-
-# A股回测应用测试 (standalone with main)
+# A股回测应用测试
 add_app_executable(tdd-backtest-ashare.cpp)
+
+# 自带 main 的独立程序（不属于 Catch2 用例集）
+add_app_executable(tdd-backtest-release.cpp)
+add_test(NAME app-tdd-backtest-release COMMAND app-tdd-backtest-release WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_app_executable(test_fp_growth.cpp)
+add_test(NAME app-test_fp_growth COMMAND app-test_fp_growth WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # 其他应用测试
 add_app_executable(debug_snake_case.cpp)
@@ -300,9 +230,19 @@ add_app_executable(test-iconv.cpp)
 add_app_executable(test-multibar.cpp)
 add_app_executable(test_go_strings_port.cpp)
 
-# 分布式 ID 测试
-add_catch2_executable(tdd-distributed-id.cpp)
+# ==============================
+# GTest 用例（框架不同，单独可执行）
+# ==============================
+# gtest-tdd-ta 仍按旧 ta::Series 接口编写（ta/rolling.h 编译失败），待迁移后再启用
+# add_gtest_executable(tdd-ta.cpp)
+add_gtest_executable(test_security_quote_implicit_spread.cpp)
 
+# ==============================
 # 基准测试
+# ==============================
 add_benchmark_executable(test-benchmark.cpp)
 
+# ==============================
+# 聚合目标：cmake --build . --target tests
+# ==============================
+add_custom_target(tests DEPENDS ${QUANT1X_TEST_TARGETS})

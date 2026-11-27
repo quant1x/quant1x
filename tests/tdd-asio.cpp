@@ -385,7 +385,7 @@ private:
     std::thread io_thread_;
 };
 
-TEST_CASE("TcpConnectionPool endpoint validation") {
+TEST_CASE("TcpConnectionPool endpoint validation (basic)") {
     auto handler = std::make_shared<DefaultNetworkHandler>();
     TcpConnectionPool<DefaultNetworkHandler> pool(1, 3, handler);
 

@@ -219,7 +219,7 @@ TEST_CASE("Test trim function", "[strings]") {
 
 #include <quant1x/runtime/once.h>
 static int test_number = 0;
-void test_once() {
+static void test_once() {
     std::cout << "test_number incr" << std::endl;
     test_number+= 1;
 }

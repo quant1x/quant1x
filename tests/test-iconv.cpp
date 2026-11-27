@@ -43,7 +43,7 @@ int g2u(char *inbuf, size_t inlen, char *outbuf, size_t outlen) {
 }
 
 std::string GBKToUTF8(const std::string &strGBK) {
-    int length = strGBK.size() * 2 + 1;
+    int length = static_cast<int>(strGBK.size() * 2 + 1);
 
     char *temp = (char *) malloc(sizeof(char) * length);
 
@@ -59,7 +59,7 @@ std::string GBKToUTF8(const std::string &strGBK) {
 }
 
 std::string UTFtoGBK(const char *utf8) {
-    int length = strlen(utf8);
+    int length = static_cast<int>(strlen(utf8));
 
     char *temp = (char *) malloc(sizeof(char) * length);
 

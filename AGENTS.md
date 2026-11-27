@@ -70,7 +70,7 @@
 | --- | --- |
 | C++ 配置与构建（Windows） | `scripts\msvc_configure.bat`，或见 [BUILDING.md](BUILDING.md) §2.4 |
 | C++ 构建 | `cmake --build build-msvc --config Release -j` |
-| C++ 跑用例 | `ctest --test-dir build-msvc -C Release --output-on-failure -j 8`（按名过滤加 `-R <名称>`） |
+| C++ 跑用例 | `cmake --build build-msvc --config Release --target tests -j` 后 `ctest --test-dir build-msvc -C Release --output-on-failure -j 8`（按名过滤加 `-R <名称>`） |
 | Rust 构建 / 用例 | `cargo build --bin q1x`、`cargo test`（ringbuffer 相关需 `--features vyukov`） |
 | Rust 基准 | `cargo bench --bench vyukov_bench` |
 | Go 编译 / 用例 / 检查 | `go build ./...`、`go test ./...`、`go vet ./...` |

@@ -1,43 +1,28 @@
 // Copyright (C) 2026 Quant1X Team
 // SPDX-License-Identifier: MIT
 
+// 多进度条冒烟：quant1x/mpb 的 MultiProgress + ProgressBar 基本用法。
+
 #include <quant1x/base/api.h>
-#include <chrono>
-#include <indicators/progress_bar.hpp>
-#include <thread>
-#include <indicators/dynamic_progress.hpp>
+
+#include <mpb.h>
+
+#include <fmt/format.h>
 
 int main() {
-    indicators::DynamicProgress<indicators::ProgressBar> bars;
-    indicators::ProgressBar bar{indicators::option::BarWidth{50},
-                                indicators::option::Start{"["},
-                                indicators::option::Fill{"="},
-                                indicators::option::Lead{">"},
-                                indicators::option::Remainder{" "},
-                                indicators::option::End{" ]"},
-                                indicators::option::PostfixText{"Getting started"},
-                                indicators::option::ForegroundColor{indicators::Color::green},
-                                indicators::option::FontStyles{
-                                    std::vector<indicators::FontStyle>{indicators::FontStyle::bold}},
-                                indicators::option::ShowPercentage{true},
-                                indicators::option::ShowSpeed{true},
-                                indicators::option::ShowElapsedTime{true},
-                                indicators::option::ShowRemainingTime{true},
-                                //indicators::option::Sho
-    };
-    bars.push_back(bar);
-    int64_t count = 10000 * 10000;
-    // Update bar state
-    bars[0].set_option(indicators::option::MaxProgress{count});
-    int64_t i = 0;
-    while (true) {
-        bars[0].set_option(indicators::option::PrefixText{ fmt::format("[{}/{}]", ++i, count)});
-        bars[0].tick();
-        if (bars[0].is_completed()) {
-            break;
-        }
-        //std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
+    auto multi = mpb::MultiProgress::default_instance();
+    auto style = mpb::progress_style_with_template(
+        "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}");
 
+    const int64_t count = 10000;
+    auto bar = multi->add(mpb::ProgressBar::make(count));
+    bar->set_style(style);
+    bar->set_message("multibar");
+
+    for (int64_t i = 1; i <= count; ++i) {
+        bar->set_message(fmt::format("[{}/{}]", i, count));
+        bar->inc();
+    }
+    bar->finish();
     return 0;
 }

@@ -10,12 +10,11 @@
 
 namespace instruments = quant1x::contrib::data::tdx::instruments;
 
-#include <indicators/dynamic_progress.hpp>
-#include <indicators/progress_bar.hpp>
 #include <regex>
 
+#include <mpb.h>
+
 int main(int argc, char **argv) {
-    namespace mpb = indicators;
     runtime::global_init();
     // Enable console logger and debug level to see strategy/engine spdlog output during tests
     runtime::logger_set(/*verbose=*/true, /*debug=*/true);
@@ -115,28 +114,17 @@ int main(int argc, char **argv) {
     auto codeCount = static_cast<int64_t>(debug_codes.size());
 
     // Progress bar (pattern follows tests/test-multibar.cpp)
-    mpb::DynamicProgress<mpb::ProgressBar> bars;
-    mpb::ProgressBar                       bar{
-        indicators::option::BarWidth{50},
-        indicators::option::Start{"["},
-        indicators::option::Fill{"="},
-        indicators::option::Lead{">"},
-        indicators::option::Remainder{" "},
-        indicators::option::End{" ]"},
-        indicators::option::PostfixText{"Backtesting"},
-        indicators::option::ForegroundColor{indicators::Color::cyan},
-        indicators::option::FontStyles{std::vector<indicators::FontStyle>{indicators::FontStyle::bold}},
-        indicators::option::ShowPercentage{true},
-        indicators::option::ShowSpeed{true},
-        indicators::option::ShowElapsedTime{true},
-        indicators::option::ShowRemainingTime{true}};
-    bars.push_back(bar);
-    bars[0].set_option(indicators::option::MaxProgress{codeCount});
+    auto multi = mpb::MultiProgress::default_instance();
+    auto style = mpb::progress_style_with_template(
+        "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}");
+    auto bar = multi->add(mpb::ProgressBar::make(codeCount));
+    bar->set_style(style);
+    bar->set_message("backtest");
 
     int processed_codes = 0;
     for (auto const &code : debug_codes) {
         ++processed_codes;
-        bars[0].set_option(indicators::option::PrefixText{fmt::format("{}({}/{})", code, processed_codes, codeCount)});
+        bar->set_message(fmt::format("{}({}/{})", code, processed_codes, codeCount));
 
         // 4. 运行回测
         std::string securityCode = data::correct_security_code(code);
@@ -147,9 +135,10 @@ int main(int argc, char **argv) {
             std::cout << "skipping non-stock: " << securityCode << "\n";
         }
 
-        bars[0].tick();
+        bar->inc();
     }
 
+    bar->finish();
     runtime::console_set_utf8();
 
     engine.printResults();

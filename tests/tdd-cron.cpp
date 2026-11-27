@@ -11,7 +11,7 @@ namespace meta = quant1x::data::meta;
 
 static int test_number =0;
 
-void test_once() {
+static void test_once() {
     std::cout << "test_number incr" << std::endl;
     test_number+= 1;
 }

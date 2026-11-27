@@ -1,10 +1,15 @@
 // Copyright (C) 2026 Quant1X Team
 // SPDX-License-Identifier: MIT
 
-#include <quant1x/test/test.h>
+// 本文件自带 main，不使用 Catch2；去掉 test.h 以避免依赖 catch2 头
 
 #include <iostream>
+#include <map>
 #include <vector>
+
+#if defined(_WIN32)
+#include <windows.h>  // SetConsoleOutputCP / SetConsoleCP
+#endif
 #include <unordered_map>
 #include <string>
 #include <algorithm>

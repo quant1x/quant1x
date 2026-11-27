@@ -248,14 +248,148 @@ q1x = executable('q1x', 'main.cpp',
   cpp_args: cpp_args,
   install: true)
 
-foreach name, source : {
-  'tdd-num-parity': 'tests/tdd-num-parity.cpp',
-  'tdd-formula-parity': 'tests/tdd-formula-parity.cpp',
-  'tdd-indicators': 'tests/tdd-indicators.cpp',
+# ==============================
+# 测试
+# 与 tests/CMakeLists.txt 同一套分组：Catch2 用例按模块合并成 4 个可执行，
+# 自带 main 的测试程序与 gtest 各自独立；全部 build_by_default: false，
+# `meson compile` 不构建，`meson test` 按需构建并运行。
+# ==============================
+catch2_dep = dependency('catch2-with-main', method: 'pkg-config')
+gtest_dep = dependency('gtest_main', method: 'pkg-config')
+
+catch2_groups = {
+  'num': [
+    'tests/tdd-formula.cpp',
+    'tests/tdd-num-ndarray.cpp',
+    'tests/tdd-rolling.cpp',
+    'tests/tdd-series.cpp',
+    'tests/tdd-ta-ma.cpp',
+    'tests/tdd-ta-dbscan.cpp',
+    'tests/tdd-linear-regression.cpp',
+    'tests/tdd-number-range.cpp',
+    'tests/tdd-peaks.cpp',
+    'tests/tdd-waves.cpp',
+    'tests/tdd-patterns-wave-release.cpp',
+    'tests/tdd-std-util.cpp',
+    'tests/tdd-globmatch.cpp',
+    'tests/tdd-dataframe-ewm.cpp',
+    'tests/tdd-dataframe-data.cpp',
+    'tests/tdd-dataframe-release.cpp',
+  ],
+  'data': [
+    'tests/tdd-bars.cpp',
+    'tests/tdd-datasets.cpp',
+    'tests/tdd-chips.cpp',
+    'tests/tdd-xdxr.cpp',
+    # tests/tdd-snapshot.cpp：capnp 头在 MSVC 下触发 mswsockdef.h 的 UCHAR 语法错误，待单独排查
+    'tests/tdd-encoding-csv.cpp',
+    'tests/tdd-encoding-json.cpp',
+    'tests/tdd-json.cpp',
+    'tests/tdd-yaml-deserialize.cpp',
+    'tests/tdd-yaml-deserialize-config.cpp',
+    'tests/tdd-charsets.cpp',
+    'tests/tdd-iconv.cpp',
+    'tests/tdd-level1.cpp',
+    'tests/tdd-level1-detect-server.cpp',
+    'tests/tdd-level1-encoding.cpp',
+    'tests/tdd-calendar.cpp',
+    'tests/test-calender.cpp',
+    'tests/tdd-timestamp.cpp',
+    'tests/tdd-times.cpp',
+  ],
+  'runtime': [
+    'tests/tdd-error.cpp',
+    'tests/tdd-homedir.cpp',
+    'tests/tdd-config.cpp',
+    'tests/tdd-strings.cpp',
+    'tests/tdd-all.cpp',
+    'tests/tdd-session.cpp',
+    'tests/tdd-touch.cpp',
+    'tests/tdd-filelock.cpp',
+    'tests/tdd-logger.cpp',
+    'tests/tdd-logger-dist.cpp',
+    'tests/tdd-lazy-log.cpp',
+    'tests/tdd-http.cpp',
+    'tests/tdd-asio.cpp',
+    'tests/tdd-cron.cpp',
+    'tests/tdd-distributed-id.cpp',
+  ],
+  'contrib': [
+    'tests/tdd-f10-notices.cpp',
+    'tests/tdd-f10-safety-score.cpp',
+    'tests/tdd-f10-margin-trading.cpp',
+    'tests/tdd-f10-capital.cpp',
+    'tests/tdd-backtest-roundtrip.cpp',
+    'tests/tdd-backtest-roundtrip-extra.cpp',
+    'tests/tdd-backtest-result-compat.cpp',
+    'tests/tdd-backtest-order.cpp',
+    'tests/tdd-strategies.cpp',
+    'tests/tdd-trader-order.cpp',
+    'tests/tdd-trader-price.cpp',
+    'tests/tdd-history.cpp',
+  ],
 }
-  exe = executable(name, source,
+
+foreach group_name, sources : catch2_groups
+  test_exe = executable('catch2-' + group_name, sources,
+    include_directories: inc,
+    dependencies: [quant1x_dep, catch2_dep],
+    cpp_args: cpp_args,
+    build_by_default: false)
+  test('catch2-' + group_name, test_exe,
+    workdir: meson.project_source_root(),
+    timeout: 60)
+endforeach
+
+app_tests = {
+  'app-test-crash': 'tests/test-crash.cpp',
+  'app-test-ringbuffer': 'tests/test-ringbuffer.cpp',
+  'app-test-highest_one_bit': 'tests/test-highest_one_bit.cpp',
+  'app-test-argparser-parser': 'tests/test-argparser-parser.cpp',
+  'app-test-argparser-complete': 'tests/test-argparser-complete.cpp',
+  'app-tdd-num-parity': 'tests/tdd-num-parity.cpp',
+  'app-tdd-formula-parity': 'tests/tdd-formula-parity.cpp',
+  'app-tdd-indicators': 'tests/tdd-indicators.cpp',
+  'app-tdd-backtest-ashare': 'tests/tdd-backtest-ashare.cpp',
+  'app-tdd-backtest-release': 'tests/tdd-backtest-release.cpp',
+  'app-test_fp_growth': 'tests/test_fp_growth.cpp',
+  'app-debug_snake_case': 'tests/debug_snake_case.cpp',
+  'app-mmap-read': 'tests/mmap-read.cpp',
+  'app-mmap-write': 'tests/mmap-write.cpp',
+  'app-test-iconv': 'tests/test-iconv.cpp',
+  'app-test-multibar': 'tests/test-multibar.cpp',
+  'app-test_go_strings_port': 'tests/test_go_strings_port.cpp',
+}
+
+if host_machine.system() == 'windows'
+  app_tests += {'app-crash-windows': 'tests/crash-windows.cpp'}
+else
+  app_tests += {'app-crash-linux': 'tests/crash-linux.cpp'}
+endif
+
+foreach app_name, source : app_tests
+  test_exe = executable(app_name, source,
     include_directories: inc,
     dependencies: [quant1x_dep],
-    cpp_args: cpp_args)
-  test(name, exe, workdir: meson.project_source_root())
+    cpp_args: cpp_args,
+    build_by_default: false)
+  test(app_name, test_exe,
+    workdir: meson.project_source_root(),
+    timeout: 60)
+endforeach
+
+# gtest-tdd-ta 仍按旧 ta::Series 接口编写（ta/rolling.h 编译失败），待迁移后再启用
+gtest_tests = {
+  'gtest-test_security_quote_implicit_spread': 'tests/test_security_quote_implicit_spread.cpp',
+}
+
+foreach test_name, source : gtest_tests
+  test_exe = executable(test_name, source,
+    include_directories: inc,
+    dependencies: [quant1x_dep, gtest_dep],
+    cpp_args: cpp_args,
+    build_by_default: false)
+  test(test_name, test_exe,
+    workdir: meson.project_source_root(),
+    timeout: 60)
 endforeach
