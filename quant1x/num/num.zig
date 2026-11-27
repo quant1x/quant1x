@@ -546,6 +546,9 @@ pub fn isNa(allocator: std.mem.Allocator, values: []const f64) ![]bool {
 }
 
 // align 是 Zig 关键字, 用 padTo 命名 (对应 Python 的 align / pad_to)
+//
+// 跨语言参考算法: Python spec 自身不调用 align / padTo / repeat, 应用层请用
+// quant1x/pandas 的容器对齐; 这里只为与 Python 的对齐口径逐位对照而存在.
 pub fn padTo(allocator: std.mem.Allocator, values: []const f64, length: usize, fillValue: f64) ![]f64 {
     const out = try allocator.alloc(f64, length);
     @memset(out, fillValue);

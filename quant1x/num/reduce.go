@@ -200,6 +200,9 @@ func NetChangeRate(base, current float64) float64 { return (ChangeRate(base, cur
 
 // ---------------------------------------------------------------------------
 // 对齐与重复
+//
+// 跨语言参考算法: Python spec 自身不调用 align / padTo / repeat, 应用层请用
+// quant1x/pandas 的容器对齐; 这里只为与 Python 的对齐口径逐位对照而存在.
 // ---------------------------------------------------------------------------
 
 // Align 对齐到指定长度: 超长截断, 不足补 fillValue。

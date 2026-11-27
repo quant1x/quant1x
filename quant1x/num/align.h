@@ -6,6 +6,9 @@
 #define QUANT1X_NUM_ALIGN_H 1
 
 /// 序列对齐与重复 —— 按目标长度裁剪或补缺。
+///
+/// 跨语言参考算法: Python spec 自身不调用 align / pad_to / repeat, 应用层请用
+/// quant1x/pandas 的容器对齐; 本文件只为与 Python 的对齐口径逐位对照而存在。
 
 #include <quant1x/num/dtype.h>
 

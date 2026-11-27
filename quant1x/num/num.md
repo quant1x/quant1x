@@ -66,6 +66,15 @@
 C++ 与 Python 的命名差异只有一处：`reduce.std` → `stddev`（`std` 会遮蔽 `std::` 命名空间）。
 同时提供 Rust 关键字规避名 `where_select` / `ref_value` 的对齐别名。
 
+**关于 `align` / `pad_to` / `repeat`（对齐与平铺）**：这三者是**跨语言参考算法**，不是 Python 的运行依赖。
+
+- NumPy 已提供等价能力（`repeat` 等价 `np.resize`，`align` 等价切片 + `np.pad`）；本包再写一遍，
+  是为了给 C++ / Rust / Go / Zig 一个逐位可复刻的对齐口径，避免各语言自行猜测 NumPy 的行为。
+- **本项目 Python 代码本身不调用**它们（formula / indicators / pandas 都不用）；`elementwise`
+  的二元算子内部自带对齐。
+- **应用层请勿调用**：容器级列对齐用 `quant1x.pandas` 的 `Series.align`，直接数值处理用 NumPy。
+  本模块只为跨语言对照存在。
+
 ## 3. 依赖
 
 **出向**

@@ -29,7 +29,7 @@ Python 是 spec；C++ / Rust 只用标准库容器与显式循环，不跨语言
 | 指数加权 | `ewm.py` | `ewm.h` | `ewm.rs` | 通达信 `EMA` / `SMA` 的底层递推 |
 | 移位 | `shift.py` | `shift.h` | `shift.rs` | 移位、引用、差分、累计和 |
 | 缺失值 | `fillna.py` | `fillna.h` | `fillna.rs` | 缺失值填充与判定 |
-| 对齐 | `align.py` | `align.h` | `align.rs` | 按目标长度对齐、平铺 |
+| 对齐 | `align.py` | `align.h` | `align.rs` | **跨语言参考算法**：按目标长度对齐/平铺；Python 自身不调用，应用层用 `pandas` 容器 |
 | 回归 | `regression.py` | `regression.h` | `regression.rs` | 均值中心化最小二乘：斜率与预测值 |
 | 小数位 | `decimals.py` | `decimals.h` | `decimals.rs` | 半程远离零的小数位、变化率 |
 | 形状 | `matrix.py` | `matrix.h` | `matrix.rs` | 形状、一维拼接、二维转置、全零/全一、等差/等分序列 |
