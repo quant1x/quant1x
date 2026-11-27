@@ -198,62 +198,77 @@ Quant1X 原创代码采用 **MIT License**（见根目录 `LICENSE`）。以下�
 <!--GO_COMPONENTS_START-->
 | 组件 | 版本 | 许可证 | 版权 / 主页 |
 | --- | --- | --- | --- |
-| github.com/cespare/xxhash/v2 | v2.3.0 | MIT |  |
-| github.com/clipperhouse/displaywidth | v0.11.0 | MIT |  |
-| github.com/clipperhouse/uax29/v2 | v2.7.0 | MIT |  |
-| github.com/creack/pty | v1.1.9 | MIT |  |
-| github.com/fatih/color | v1.19.0 | MIT |  |
-| github.com/fsnotify/fsnotify | v1.10.1 | BSD-3-Clause |  |
-| github.com/gocarina/gocsv | v0.0.0-20261121203658-07c44a65ffb9 | MIT |  |
-| github.com/goccy/go-json | v0.12.0 | MIT |  |
-| github.com/golang/protobuf | v1.5.0 | BSD-3-Clause |  |
-| github.com/jonboulle/clockwork | v0.5.0 | Apache-2.0 |  |
-| github.com/klauspost/cpuid/v2 | v2.4.2 | MIT |  |
-| github.com/kr/pretty | v0.3.1 | MIT |  |
-| github.com/kr/pty | v1.1.1 | MIT |  |
-| github.com/kr/text | v0.2.0 | MIT |  |
-| github.com/lestrrat-go/envload | v0.0.0-20180220234015-a3eb8ddeffcc | MIT |  |
-| github.com/lestrrat-go/file-rotatelogs | v2.4.0+incompatible | MIT |  |
-| github.com/lestrrat-go/strftime | v1.2.1 | MIT |  |
-| github.com/mattn/go-colorable | v0.1.16 | MIT |  |
-| github.com/mattn/go-isatty | v0.0.24 | MIT |  |
-| github.com/mattn/go-runewidth | v0.0.31 | MIT |  |
-| github.com/nxadm/tail | v1.4.11 | MIT |  |
-| github.com/olekukonko/cat | v0.0.0-20250911104152-50322a0618f6 | MIT |  |
-| github.com/olekukonko/errors | v1.3.0 | MIT |  |
-| github.com/olekukonko/ll | v0.1.9 | MIT |  |
-| github.com/olekukonko/tablewriter | v1.1.5 | MIT |  |
-| github.com/olekukonko/ts | v0.0.0-20171002115256-78ecb04241c0 | MIT |  |
-| github.com/petermattis/goid | v0.0.0-20261125140513-578663ba5663 | Apache-2.0 |  |
-| github.com/pkg/diff | v0.0.0-20210226163009-20ebb0f2a09e | BSD-3-Clause |  |
-| github.com/pkg/errors | v0.9.1 | BSD-2-Clause |  |
-| github.com/rogpeppe/go-internal | v1.14.1 | BSD-3-Clause |  |
-| github.com/stretchr/objx | v0.5.3 | MIT |  |
-| github.com/stretchr/testify | v1.12.1 | MIT |  |
-| go.uber.org/goleak | v1.3.0 | MIT |  |
-| go.uber.org/multierr | v1.11.0 | MIT |  |
-| go.uber.org/zap | v1.28.0 | MIT |  |
-| go.yaml.in/yaml/v3 | v3.0.5 | MIT |  |
-| golang.org/x/mod | v0.42.0 | BSD-3-Clause |  |
-| golang.org/x/sync | v0.25.0 | BSD-3-Clause |  |
-| golang.org/x/sys | v0.50.0 | BSD-3-Clause |  |
-| golang.org/x/text | v0.44.0 | BSD-3-Clause |  |
-| golang.org/x/tools | v0.52.0 | BSD-3-Clause |  |
-| google.golang.org/protobuf | v1.36.12 | BSD-3-Clause |  |
-| gopkg.in/check.v1 | v1.0.0-20201130134442-10cb98267c6c | BSD-2-Clause |  |
-| gopkg.in/tomb.v1 | v1.0.0-20141024135613-dd632973f1e7 | BSD-3-Clause |  |
-| gopkg.in/yaml.v3 | v3.0.1 | MIT |  |
+| github.com/cespare/xxhash/v2 | v2.3.0 | MIT | Copyright (c) 2016 Caleb Spare; https://github.com/cespare/xxhash |
+| github.com/clipperhouse/displaywidth | v0.11.0 | MIT | Copyright (c) 2025 Matt Sherman; https://github.com/clipperhouse/displaywidth |
+| github.com/clipperhouse/uax29/v2 | v2.7.0 | MIT | Copyright (c) 2020 Matt Sherman; https://github.com/clipperhouse/uax29 |
+| github.com/creack/pty | v1.1.9 | MIT | Copyright (c) 2011 Keith Rarick; https://github.com/creack/pty |
+| github.com/fatih/color | v1.19.0 | MIT | Copyright (c) 2013 Fatih Arslan; https://github.com/fatih/color |
+| github.com/fsnotify/fsnotify | v1.10.1 | BSD-3-Clause | Copyright © 2012 The Go Authors. All rights reserved.; https://github.com/fsnotify/fsnotify |
+| github.com/gocarina/gocsv | v0.0.0-20261121203658-07c44a65ffb9 | MIT | Copyright (c) 2014 Jonathan Picques; https://github.com/gocarina/gocsv |
+| github.com/goccy/go-json | v0.12.0 | MIT | Copyright (c) 2020 Masaaki Goshima; https://github.com/goccy/go-json |
+| github.com/golang/protobuf | v1.5.0 | BSD-3-Clause | Copyright 2010 The Go Authors. All rights reserved.; https://github.com/golang/protobuf |
+| github.com/jonboulle/clockwork | v0.5.0 | Apache-2.0 | "Licensor" shall mean the copyright owner or entity authorized by; https://github.com/jonboulle/clockwork |
+| github.com/klauspost/cpuid/v2 | v2.4.2 | MIT | Copyright (c) 2015 Klaus Post; https://github.com/klauspost/cpuid |
+| github.com/kr/pretty | v0.3.1 | MIT | Copyright 2012 Keith Rarick; https://github.com/kr/pretty |
+| github.com/kr/pty | v1.1.1 | MIT | Copyright (c) 2011 Keith Rarick; https://github.com/kr/pty |
+| github.com/kr/text | v0.2.0 | MIT | Copyright 2012 Keith Rarick; https://github.com/kr/text |
+| github.com/lestrrat-go/envload | v0.0.0-20180220234015-a3eb8ddeffcc | MIT | Copyright (c) 2016 lestrrat; https://github.com/lestrrat-go/envload |
+| github.com/lestrrat-go/file-rotatelogs | v2.4.0+incompatible | MIT | Copyright (c) 2014 lestrrat; https://github.com/lestrrat-go/file-rotatelogs |
+| github.com/lestrrat-go/strftime | v1.2.1 | MIT | Copyright (c) 2016 lestrrat; https://github.com/lestrrat-go/strftime |
+| github.com/mattn/go-colorable | v0.1.16 | MIT | Copyright (c) 2016 Yasuhiro Matsumoto; https://github.com/mattn/go-colorable |
+| github.com/mattn/go-isatty | v0.0.24 | MIT | Copyright (c) Yasuhiro MATSUMOTO <mattn.jp@gmail.com>; https://github.com/mattn/go-isatty |
+| github.com/mattn/go-runewidth | v0.0.31 | MIT | Copyright (c) 2016 Yasuhiro Matsumoto; https://github.com/mattn/go-runewidth |
+| github.com/nxadm/tail | v1.4.11 | MIT | © Copyright 2015 Hewlett Packard Enterprise Development LP; https://github.com/nxadm/tail |
+| github.com/olekukonko/cat | v0.0.0-20250911104152-50322a0618f6 | MIT | Copyright (c) 2025 Oleku Konko; https://github.com/olekukonko/cat |
+| github.com/olekukonko/errors | v1.3.0 | MIT | Copyright (c) 2025 Oleku Konko; https://github.com/olekukonko/errors |
+| github.com/olekukonko/ll | v0.1.9 | MIT | Copyright (c) 2025 Oleku Konko; https://github.com/olekukonko/ll |
+| github.com/olekukonko/tablewriter | v1.1.5 | MIT | Copyright (C) 2014 by Oleku Konko; https://github.com/olekukonko/tablewriter |
+| github.com/olekukonko/ts | v0.0.0-20171002115256-78ecb04241c0 | MIT | https://github.com/olekukonko/ts |
+| github.com/petermattis/goid | v0.0.0-20261125140513-578663ba5663 | Apache-2.0 | "Licensor" shall mean the copyright owner or entity authorized by; https://github.com/petermattis/goid |
+| github.com/pkg/diff | v0.0.0-20210226163009-20ebb0f2a09e | BSD-3-Clause | Copyright 2018 Joshua Bleecher Snyder; https://github.com/pkg/diff |
+| github.com/pkg/errors | v0.9.1 | BSD-2-Clause | Copyright (c) 2015, Dave Cheney <dave@cheney.net>; https://github.com/pkg/errors |
+| github.com/rogpeppe/go-internal | v1.14.1 | BSD-3-Clause | Copyright (c) 2018 The Go Authors. All rights reserved.; https://github.com/rogpeppe/go-internal |
+| github.com/stretchr/objx | v0.5.3 | MIT | Copyright (c) 2014 Stretchr, Inc.; https://github.com/stretchr/objx |
+| github.com/stretchr/testify | v1.12.1 | MIT | Copyright (c) 2012-2020 Mat Ryer, Tyler Bunnell and contributors.; https://github.com/stretchr/testify |
+| go.uber.org/goleak | v1.3.0 | MIT | Copyright (c) 2018 Uber Technologies, Inc.; https://pkg.go.dev/go.uber.org/goleak |
+| go.uber.org/multierr | v1.11.0 | MIT | Copyright (c) 2017-2021 Uber Technologies, Inc.; https://pkg.go.dev/go.uber.org/multierr |
+| go.uber.org/zap | v1.28.0 | MIT | Copyright (c) 2016-2024 Uber Technologies, Inc.; https://pkg.go.dev/go.uber.org/zap |
+| go.yaml.in/yaml/v3 | v3.0.5 | MIT | copyright staring in 2011 when the project was ported over:; https://pkg.go.dev/go.yaml.in/yaml/v3 |
+| golang.org/x/mod | v0.42.0 | BSD-3-Clause | Copyright 2009 The Go Authors.; https://pkg.go.dev/golang.org/x/mod |
+| golang.org/x/sync | v0.25.0 | BSD-3-Clause | Copyright 2009 The Go Authors.; https://pkg.go.dev/golang.org/x/sync |
+| golang.org/x/sys | v0.50.0 | BSD-3-Clause | Copyright 2009 The Go Authors.; https://pkg.go.dev/golang.org/x/sys |
+| golang.org/x/text | v0.44.0 | BSD-3-Clause | Copyright 2009 The Go Authors.; https://pkg.go.dev/golang.org/x/text |
+| golang.org/x/tools | v0.52.0 | BSD-3-Clause | Copyright 2009 The Go Authors.; https://pkg.go.dev/golang.org/x/tools |
+| google.golang.org/protobuf | v1.36.12 | BSD-3-Clause | Copyright (c) 2018 The Go Authors. All rights reserved.; https://pkg.go.dev/google.golang.org/protobuf |
+| gopkg.in/check.v1 | v1.0.0-20201130134442-10cb98267c6c | BSD-2-Clause | Copyright (c) 2010-2013 Gustavo Niemeyer <gustavo@niemeyer.net>; https://gopkg.in/check.v1 |
+| gopkg.in/tomb.v1 | v1.0.0-20141024135613-dd632973f1e7 | BSD-3-Clause | Copyright (c) 2010-2011 - Gustavo Niemeyer <gustavo@niemeyer.net>; https://gopkg.in/tomb.v1 |
+| gopkg.in/yaml.v3 | v3.0.1 | MIT | copyright staring in 2011 when the project was ported over:; https://gopkg.in/yaml.v3 |
 <!--GO_COMPONENTS_END-->
 
 上表按 `go.mod` 的模块图生成（含未直接 import 的间接依赖），许可证全文归档在 `third_party/licenses/go/<模块路径>/`。
 
-go-licenses 按「每个模块 `<module>/...`」展开，默认只读模式会因间接模块不在 `require` 列表而中止（`go: updates to go.mod needed`）；直接在仓库根执行时需加 `-mod=mod`：
+go-licenses 按「每个模块 `<module>/...`」展开，默认只读模式会因间接模块不在 `require` 列表而中止（`go: updates to go.mod needed`）；加 `-mod=mod` 才能扫描，但**它会把模块图里所有传递模块写成 `// indirect`**——包括我们从不构建的测试链依赖。典型例子：
 
-```bash
-GOFLAGS=-mod=mod labs-license-audit go
+```text
+gopkg.in/yaml.v3（真实依赖）
+  └─ gopkg.in/check.v1（yaml.v3 的测试依赖）
+       └─ github.com/kr/pretty
+            └─ github.com/kr/text
+                 └─ github.com/creack/pty   ← kr/text 的 go.mod 里 require 了它
 ```
 
-该模式会把测试引用的间接依赖补写进 `go.mod` / `go.sum`（本次新增 13 条 `// indirect`）。**这是合规扫描的固有代价，按合规优先原则接受**：这些增量随合规提交一起入库，重跑后只需确认 `go build ./...` 与 `go test ./...` 仍通过。
+`go mod why github.com/creack/pty` 明确回答 `(main module does not need module ...)`，`go mod tidy` 也会把这些行全部删掉。**因此 go 段不要在仓库根跑**，否则 `go.mod` 会声明一批实际不存在的依赖，且每跑一轮还会继续增长（第二轮新增了 goldmark / x/net / x/telemetry / xerrors）。
+
+正确做法是在副本里扫描，只把结果拷回：
+
+```bash
+git archive HEAD | tar -x -C <临时目录>
+cd <临时目录>
+GOFLAGS=-mod=mod labs-license-audit go
+# 拷回 THIRD-PARTY-NOTICES.md 的 Go 区段与 third_party/licenses/go/
+```
+
+副本里的 `go.mod` 会被改写，但不会影响仓库。组件表按工具输出保留（含这些传递模块，属从严披露），仓库的 `go.mod` / `go.sum` 保持真实依赖。
 
 ## Java（pom.xml 声明依赖）
 
