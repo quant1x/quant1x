@@ -48,3 +48,7 @@ pub fn parse_frequency(freq: &str) -> Result<(i64, String), String> {
 // 列容器（与 quant1x/pandas/series.py 同语义）
 pub mod series;
 pub use series::*;
+
+/// 多列容器（与 quant1x/pandas/dataframe.py 同语义）
+pub mod dataframe;
+pub use dataframe::DataFrame;

@@ -8,7 +8,7 @@
 | 阶段 | 语言（角色） | 载体 | 状态 | 说明 |
 | --- | --- | --- | --- | --- |
 | spec 定语义 | Python（spec） | `series.py` / `dataframe.py` / `rolling.py` / `ewm.py` | 已落地 | 运算符与容器 |
-| 生产实现 | C++（生产） | `series.h` / `ewm.h` / `dataframe.h` | 部分落地 | Series/EWM 已在 `quant1x::pandas`；DataFrame 仍原型 |
+| 生产实现 | C++（生产） | `series.h` / `ewm.h` / `dataframe.h` | 部分落地 | Series/EWM 已在 `quant1x::pandas`；DataFrame 为异构列原型，待迁移 |
 | 生产对齐 | Rust / Zig / Go | `series.rs` / `series.zig` / `series.go` | 已落地 | Series / Rolling / EWM；Go 排在最后，为兼容既有 Go 量化栈 |
 
 ## 2. 功能清单
@@ -29,7 +29,7 @@
 | shift / diff / cumsum | `series.py` | `series.h` | `series.rs` | `series.go` | `series.zig` | 已对齐 python/c++/rust/go/zig |
 | rolling 入口 | `rolling.py` | `series.h` | `series.rs` | `series.go` | `series.zig` | 已对齐 python/c++/rust/go/zig |
 | ewm 入口 | `ewm.py` | `ewm.h` | `series.rs` | `series.go` | `series.zig` | 已对齐 python/c++/rust/go/zig |
-| DataFrame 取列 / 写列 | `dataframe.py` | `dataframe.h` | — | — | — | 部分落地（c++ 原型） |
+| DataFrame 取列 / 写列 | `dataframe.py` | `dataframe.h` | `dataframe.rs` | `dataframe.go` | `dataframe.zig` | 已对齐 python/rust/go/zig（c++ 待迁移） |
 
 ## 3. 依赖
 
@@ -58,4 +58,5 @@
 
 - C++ 侧 `series.h` / `dataframe.h` 仍用 `ta` 命名空间，与 §4.4 的 `quant1x::pandas` 不一致；
   等指标 C++ 实现落地后一并收敛。
-- Rust / Zig / Go 已有 `Series` 容器；`DataFrame` 仍只有 Python / C++ 原型。
+- C++ 的 `dataframe.h` 仍是异构列原型（含字符串列、Boost.PFR 反射构造），
+  与 `dataframe.md` 的「列 = Series」契约不一致，迁移待做。

@@ -74,7 +74,7 @@
 | Rust 构建 / 用例 | `cargo build --bin q1x`、`cargo test`（ringbuffer 相关需 `--features vyukov`） |
 | Rust 基准 | `cargo bench --bench vyukov_bench` |
 | Go 编译 / 用例 / 检查 | `go build ./...`、`go test ./...`、`go vet ./...` |
-| Zig 用例 | `zig test quant1x/base/argparser/parser_test.zig`（同目录另有 help / complete 用例）；`zig test quant1x/num/num_test.zig`、`zig test quant1x/num/ndarray_test.zig`；`zig test --dep num_ndarray -Mroot=quant1x/pandas/series_test.zig -Mnum_ndarray=quant1x/num/ndarray.zig`（无 `build.zig`） |
+| Zig 用例 | `zig test quant1x/base/argparser/parser_test.zig`（同目录另有 help / complete 用例）；`zig test quant1x/num/num_test.zig`、`zig test quant1x/num/ndarray_test.zig`；`zig test --dep num_ndarray -Mroot=quant1x/pandas/series_test.zig -Mnum_ndarray=quant1x/num/ndarray.zig`、`zig test --dep num_ndarray -Mroot=quant1x/pandas/dataframe_test.zig -Mnum_ndarray=quant1x/num/ndarray.zig`（无 `build.zig`） |
 | Python 可编辑安装 | `pip install -e .` |
 | Python 跑用例 | `python -m pytest tests -q`，或模块级 `python -m unittest quant1x.<模块>.<子模块>_test` |
 | Java 用例 | `mvnw.cmd -B test`（Linux / macOS 用 `./mvnw -B test`） |

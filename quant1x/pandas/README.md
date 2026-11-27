@@ -33,7 +33,7 @@
 | 语义 | python | c++ | rust | go | zig |
 | --- | --- | --- | --- | --- | --- |
 | Series | `series.py` | `series.h` | `series.rs` | `series.go` | `series.zig` |
-| DataFrame | `dataframe.py` | `dataframe.h` | — | — | — |
+| DataFrame | `dataframe.py` | `dataframe.h`（异构列原型） | `dataframe.rs` | `dataframe.go` | `dataframe.zig` |
 | EWM | `ewm.py` | `ewm.h` | `series.rs` | `series.go` | `series.zig` |
 | Rolling | `rolling.py` | `series.h` | `series.rs` | `series.go` | `series.zig` |
 
