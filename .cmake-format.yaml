@@ -1,0 +1,5 @@
+# cmake-format / cmake-lint 配置
+# 项目 CMake 里存在较长的 target_link_libraries 与依赖清单，按 120 列约定，
+# 避免 C0301（行长）对正常写法反复报警。
+format:
+  line_width: 120

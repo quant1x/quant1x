@@ -103,8 +103,10 @@ find_package(Backward CONFIG REQUIRED)
 target_link_libraries(third_libs INTERFACE Backward::Backward)
 echo_lib_version(Backward ${Backward_VERSION})
 
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -Xclang -gcodeview -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd")
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -Xclang -gcodeview -D_DEBUG -D_MT -Xclang --dependent-lib=msvcrtd")
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -Xclang -gcodeview -D_DEBUG -D_DLL -D_MT
+#                             -Xclang --dependent-lib=msvcrtd")
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -Xclang -gcodeview -D_DEBUG -D_MT
+#                             -Xclang --dependent-lib=msvcrtd")
 message(STATUS "================== 基础功能库 ==================")
 # OpenSSL
 include(cmake/openssl.cmake)
