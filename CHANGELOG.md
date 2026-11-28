@@ -3,6 +3,598 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-28
+### Changed
+- fix[cpp]：修复 csv2 引号字段解析并补 Conan 回归用例
+  - 新增 third_party/recipes/csv2 本地配方：csv2 0.2 打包时把 read_value 改为先剥离字段最外层引号，再折叠内部 ""
+  - 补丁在 build 目录的副本上定点替换，幂等且不改 source 缓存；结构变化时抛 ConanException 提示重新核对
+  - 新增 test_package：覆盖含逗号、双引号、单引号、换行与空字段的解析
+  - 验证：conan create third_party/recipes/csv2（test_package 输出 csv2 quote test passed）
+  - 工单 #35
+- feat[python]：新增 num 数值规格层
+  - 新增 quant1x/num：dtype/NaN、窗口归一化、逐元素、逻辑、归约、滚动、EWM、移位/差分、填充、对齐、回归、小数位与矩阵构造
+  - 口径写入 num.md：完整窗口才计算、NaN 传播、顺序累加、总体方差、均值中心化回归、半程远离零
+  - 新增 tests/test_num.py 覆盖窗口不足、窗口含 NaN、空输入、回归退化与舍入
+  - 验证：python tests/test_num.py（16 passed）
+  - 工单 #35
+- feat[python]：新增 pandas 列容器门面
+  - 新增 Series / DataFrame / Rolling / EWM：按位置对齐，数值算子全部转调 quant1x.num
+  - README.md 与 pandas.md 记录容器边界、跨语言对照与 TODO
+  - 根 README 项目结构补充 num/ 与 pandas/
+  - 新增 tests/test_pandas_facade.py 覆盖运算符、位置对齐、rolling/ewm 转发与列读写
+  - 验证：python tests/test_pandas_facade.py（7 passed）
+  - 工单 #35
+- refactor[python]：formula 收敛到可移植口径并落地对拍样本
+  - 数值算子改走 quant1x.num：滚动完整窗口、EWM 跳 NaN、顺序归约
+  - SLOPE/FORCAST 改均值中心化最小二乘闭式解，不再依赖 numpy.polyfit 的 LAPACK 实现
+  - RD 改为半程远离零；FILTER 返回 0/1 序列，修复 bool 入参在 NumPy 2.x 下抛 TypeError
+  - 新增 tests/fixtures/formula：57 组公式样本与 120 根 K 线的五个指标样本，由 Python spec 生成
+  - tests/test_formula_parity.py 断言重新生成与签入文件逐字节一致
+  - tests/fixtures 下的 csv 加入 .gitignore 白名单
+  - 验证：python tests/test_formula_parity.py（2 passed）
+  - 工单 #35
+- chore[cpp]：C/C++ 依赖全部迁移到 Conan 并支持 Meson
+  - 删除 third_party 内置依赖（含 protobuf 静态库），全部改为 conanfile.py 声明
+  - cmake 模块改用 imported target：spdlog 取 header-only，xsimd/xtensor、asio、protobuf、backward 等重写
+  - 进度条改用组织内 mpb（QUANT1X_MPB_DIR，默认 ../mpb），cache/tracker 的进度条改写
+  - 新增 meson.build：Conan MesonToolchain + PkgConfigDeps，构建库与 q1x
+  - 补齐去内嵌头文件后暴露的标准库包含（map/optional/mutex/algorithm）
+  - csv2 引号回归用例随构建迁移接入
+  - 验证：conan install；cmake 配置与 quant1x 构建；meson compile
+  - 工单 #35
+- feat[cpp]：实现 formula 与 indicators 的 C++ 版本并对拍
+  - 新增 quant1x/formula/formula.h：xtensor 容器 + 全量 0/1/2 级公式函数，Series/Bools 与 NumPy 对标
+  - 新增 quant1x/indicators 的 cdtd/f89k/hjk/ma1x/p2fb C++ 实现与 support.h，逐行对照 Python
+  - 新增 tests/tdd-formula-parity.cpp 与 tests/tdd-indicators.cpp，读同一份 fixture 逐位比较
+  - formula.md 与 indicators/README.md 记录统一口径、跨语言差异与已知坑（== 整表比较、&& / ||、ADL 限定）
+  - CMake 与 Meson 登记两个对拍目标
+  - 验证：cmake 构建后 formula 57 组、indicators 五个指标逐位通过；meson test 2/2
+  - 工单 #35
+- feat[python]：补齐 num 序列-标量算子与数值转布尔
+  - elementwise 新增 add_scalar / sub_scalar / mul_scalar / div_scalar /
+    maximum_scalar / minimum_scalar，与二元算子的 NaN 口径一致
+  - logic 新增 to_bools：非零且非 NaN 为真
+  - dtype.to_scalar 空序列返回 NAN（此前会 IndexError），与 Rust / C++ 端口一致
+  - tests/test_num.py 补 4 个用例：标量四则、极值 NaN、数值转布尔、空序列收敛
+  - 验证：python tests/test_num.py → 20 passed
+
+  这三个 API 此前只有 Rust / C++ 端口实现，Python spec 缺位；按「Python 是 spec」
+  先补齐再推广。工单 #35。
+- feat[rust]：落地 num 数值规格层的 Rust 对齐实现
+  - 新增 quant1x/num/ 下 13 个模块：dtype / window / elementwise / logic /
+    reduce / rolling / ewm / shift / fillna / align / regression / decimals / matrix
+  - 容器用 Vec<f64> / Vec<bool>，窗口用 Window::{Scalar, Series}，全程显式循环
+  - 与 Python spec 同口径：完整窗口、NaN 传播、顺序累加、总体方差、
+    均值中心化回归、半程远离零；关键字规避 ref→ref_value、where→where_select
+  - lib.rs 注册 pub mod num
+  - 验证：cargo check --lib 通过
+
+  本层是 quant1x/formula 与 indicators 的数值底座；C++ 对齐实现在下一提交。工单 #35。
+- feat[cpp]：落地 num 数值规格层的 C++ 实现与逐位对拍
+  - 新增 quant1x/num/ 下 13 个模块头与 num.h 汇总头，命名空间 quant1x::num
+  - 容器 std::vector<double> / std::vector<bool>，全程显式循环，不依赖 xtensor
+    的广播与比较运算符，与 Python spec 逐位一致
+  - 命名：reduce.std → stddev（std 会遮蔽 std:: 命名空间）；另提供
+    where_select / ref_value 别名与 Rust 对齐
+  - 新增对拍：tests/fixtures/num/generate.py 由 Python spec 生成 163 组样本，
+    tests/tdd-num-parity.cpp 逐位比较（NaN 视为相等）
+  - CMake / Meson 登记 app-tdd-num-parity；num 头文件登记入 quant1x-headers
+  - num.md / README.md 更新为 python→c++→rust→go→zig 五列对照
+  - 验证：app-tdd-num-parity 163/163；app-tdd-formula-parity 57 组；
+    app-tdd-indicators；CMake ctest 3/3、Meson test 3/3；fixture 二次生成 md5 一致
+
+  工单 #35。
+- feat[rust]：落地 formula 与 indicators 的 Rust 对齐实现并对拍
+  - 新增 quant1x/formula/mod.rs：0/1/2 级全部公式函数，与 C++ formula.h 逐函数对应
+    - 容器 Vec<f64> / Vec<bool>，全程显式循环；复用 quant1x::num 的窗口与基础算子
+    - 命名：ref→ref_value、const→const_series、if→if_select、std→stddev（Rust 关键字/标准库冲突）
+    - ZTPRICE 沿用十进制字符串相乘 + 按分四舍五入，与 C++ 一致
+  - 新增 quant1x/indicators/mod.rs：cdtd / f89k / hjk / ma1x / p2fb，输入 &[Bar]
+  - lib.rs 注册 pub mod formula / indicators
+  - 新增对拍：tests/formula_parity.rs（读 cases.csv，57 组）、
+    tests/indicators_parity.rs（读 indicators/*.csv 与 bars.csv，5 指标）
+  - formula.md / indicators/README.md 更新 rust 列与状态
+  - 验证：cargo build 无警告；cargo test --test formula_parity 57 组通过；
+    cargo test --test indicators_parity 5 指标通过
+
+  Go 复用组织级 quant1x/num，Zig 为扩展，均未在本轮落地。工单 #35。
+- feat[go]：落地 num 的 Go 实现并移除外部 github.com/quant1x/num 依赖
+  - 新增 quant1x/num/*.go：与 Python spec 同语义的 Go 对齐实现
+    - 容器 []float64 / []bool，全程显式循环；覆盖 dtype / window / elementwise /
+      logic / reduce / rolling / ewm / shift / fillna / align / regression / decimals / matrix
+    - mulOnly 用 //go:noinline 阻断 FMA 收缩，保证 GOAMD64>=v3 下归约与递推逐位稳定
+    - builtin 保留 SetAvx2Enabled / GetAvx2Enabled（本包不做向量化，只存开关）
+  - 移除 go.mod / go.sum 对 github.com/quant1x/num 的依赖；command 与 learn/cluster
+    改用内部 github.com/quant1x/quant1x/quant1x/num
+  - 新增 quant1x/num/num_parity_test.go：读 cases.csv，逐值对拍；Go 的 math.Log /
+    math.Pow 与 NumPy 至多 1 ULP 差异，这两类按相对误差 1e-12 比较，其余逐位相等
+  - num.md / README.md 更新 Go 列与状态；注明已不再依赖外部 num
+
+  说明：本仓库从未依赖 github.com/quant1x/pandas（go.mod 无此条目，Go 侧无引用）；
+  如后续新增 Go pandas 能力将放在内部 quant1x/pandas 包，不引入外部模块。
+
+  验证：go vet ./quant1x/num/ 通过；go test ./quant1x/num/ 通过；
+  go build ./quant1x/command/ ./quant1x/learn/cluster/ 通过；go mod tidy 已移除外部 num。工单 #35。
+- feat[go]：落地 formula 与 indicators 的 Go 对齐实现并对拍
+  - 新增 quant1x/formula/formula_go.go、rolling_go.go：0/1/2 级全部公式函数，
+    与 C++ formula.h、Rust formula/mod.rs 逐函数对应
+    - 容器 []float64 / []bool，复用内部 quant1x/num 的滚动与归约
+    - Go 导出名 CamelCase，与其它语言的 snake_case 一一对应（Ref / Sum / IfSelect / Std）
+    - Wma / DmaSeries 用 noinline mulOnly 阻断 FMA 收缩
+    - Ztprice 沿用十进制字符串相乘 + 按分四舍五入
+  - 新增 quant1x/indicators/indicators_go.go：Cdtd / F89k / Hjk / Ma1x / P2fb，输入 []schema.Bar
+  - 新增对拍：quant1x/formula/formula_parity_test.go（57 组）、
+    quant1x/indicators/indicators_parity_test.go（5 指标读 bars.csv 与指标列）
+  - formula.md / indicators/README.md 更新 Go 列与状态为「已对齐 c++/rust/go（缺 zig）」
+  - 验证：go vet 通过；go test ./quant1x/num/ ./quant1x/formula/ ./quant1x/indicators/ 全部通过；
+    go build ./quant1x/... 通过
+
+  Go 的 math.Log / math.Pow 与 NumPy 至多 1 ULP 差异，对拍按相对误差 1e-12 比较，其余逐位相等。工单 #35。
+- feat[zig]：落地 num 数值规格层的 Zig 扩展实现
+  - 新增 quant1x/num/num.zig：与 Python spec 同语义的 Zig 对齐实现（扩展角色）
+    - 容器 []f64 / []bool，调用方传 allocator；覆盖 dtype / elementwise / logic /
+      reduce / rolling / ewm / shift / diff / fillna / padTo / regression / decimals /
+      zeros / ones / linspace
+    - mulOnly 阻断 FMA 收缩，保证递推与归约末位稳定
+    - align 是 Zig 关键字，改用 padTo（对应 Python 的 align / pad_to）
+  - 新增 quant1x/num/num_test.zig：10 个用例覆盖窗口不足、含 NaN、空输入、ewm 种子、
+    小数位半程远离零、移位越界、条件选择、回归、对齐与等分
+  - num.md / README.md 更新 Zig 列与状态为「扩展，核心算子已对齐，矩阵构造与极值位置待补」
+  - AGENTS.md 增加 zig test 命令
+
+  说明：Zig 为扩展角色（当前只承载小功能），matrix 的 shape/concat1d/transpose2d/arange
+  与 rolling 的 hhvbars/llvbars 尚未补，已在 num.md §1 标注。
+
+  验证：zig test quant1x/num/num_test.zig → 10/10 passed。工单 #35。
+- docs[multi]：注明 num 的 align/pad_to/repeat 为跨语言参考算法
+  - align.py 模块文档改为「跨语言对齐的参考算法」：说明 NumPy 已提供等价能力
+    （repeat ≈ np.resize，align ≈ 切片 + np.pad），本包再写一遍是为给 C++/Rust/Go/Zig
+    一个逐位可复刻的口径；明确「本项目 Python 代码本身不调用」「应用层请勿调用，
+    列对齐用 quant1x.pandas 的 Series.align」
+  - num.md 在功能表后补同名说明段落；README.md 的文件表标注为参考算法
+  - elementwise.py 的引导注释改为「对齐口径参考 num.align，应用层不要调用」
+  - C++ align.h / Rust align.rs / Go reduce.go / Zig num.zig 各加一行同样的说明
+
+  不改任何实现与行为。验证：python tests/test_num.py 20 passed；go test ./quant1x/num/
+  通过；zig test quant1x/num/num_test.zig 10/10。工单 #35。
+- feat[rust]：落地 pandas Series 的可移植实现（含 Rolling / EWM）
+  - 新增 quant1x/pandas/series.rs：按 quant1x/pandas/series.py 的契约用 Vec<f64> / Vec<bool>
+    复刻同一语义，数值算子全部委托 crate::num
+    - 覆盖: 构造、name/dtype/len、get/set、slice、copy、to_f64/to_bool、shift/diff/cumsum/fill_na、
+      apply、四则（add/sub/mul/div 与标量版）、比较（gt/gte/lt/lte/equal/not_equal）、
+      逻辑（and/or/not）、归约（sum/mean/median/min/max/argmin/argmax/var/std）、rolling、ewm
+    - Go 无运算符重载，故契约以命名方法为准；Python 的运算符一一映射到这些方法
+  - pandas/mod.rs 仅新增 series 子模块声明与再导出（保留原 parse_frequency）
+  - 新增 tests/series_test.rs：6 个用例覆盖移位/差分/累计、四则与比较、逻辑、归约、
+    滚动与 EWM、fill_na 与切片
+  - pandas.md 的 rust 列更新为 series.rs
+
+  说明：C++ 侧 series.h 仍是 ta 命名空间下的原型（仅 shift/align/==），与 Python 契约有差距，
+  列为后续；Go / Zig 的 Series 亦待补。
+
+  验证：cargo build 无警告；cargo test --test series_test 6/6 通过；python tests/test_pandas_facade.py
+  7 passed。工单 #37。
+- feat[python]：新增 num.ndarray 容器（对标 np.ndarray）
+  - 新增 quant1x/num/ndarray.py：一维 NDArray 容器，numpy 承载存储与互转，语义全部委托
+    quant1x.num 的自由函数
+    - 构造 zeros/ones/full/arange/linspace；属性 size/shape/ndim/dtype/values
+    - 序列协议：len / 迭代 / getitem（int 或 slice）/ setitem / slice / copy / astype
+    - 四则 add/sub/mul/div（数组或标量）、maximum/minimum、abs/sqrt/log/pow
+    - 比较 gt/gte/lt/lte/equal/not_equal（返回 bool NDArray）、逻辑 logic_and/or/not
+    - 归约 sum/mean/median/min/max/argmin/argmax/var/std/cumsum
+    - shift/diff/fill_na、rolling_*、ewm_mean
+    - Python 额外提供运算符糖（+ - * / > >= < <= == != & | ~），一一映射到同名方法，
+      方便 Go 等无运算符重载的语言照抄同一张方法表
+  - 新增 quant1x/num/ndarray.md：跨语言契约（方法表 / 语义边界 / 各语言状态）
+  - __init__.py 导出 NDArray；num.md、README.md 登记容器行
+  - 新增 tests/test_ndarray.py：14 个用例覆盖构造、四则、比较逻辑、归约、移位差分、
+    滚动、EWM、切片填充与类型转换
+
+  说明：本轮只落 Python spec；C++ / Rust / Go / Zig 的 ndarray 待补（按生产顺位 c++/rust 优先）。
+  验证：python tests/test_ndarray.py 14 passed；test_num 20 passed；test_pandas_facade 7 passed；
+  test_formula_parity 通过。工单 #37。
+- feat[rust]：落地 num.ndarray 容器（对标 numpy.ndarray）
+  - 新增 quant1x/num/ndarray.rs：NdArray 容器，Vec<f64> / Vec<bool> 复刻 ndarray.py 的方法表，
+    算子全部委托 crate::num
+    - 构造 new/from_bools/zeros/ones/full/arange/linspace
+    - dtype/len/to_f64/to_bool/get/set/slice/copy/astype
+    - 四则 add/sub/mul/div（数组与标量）、maximum/minimum、abs/sqrt/log/pow
+    - 比较 gt/gte/lt/lte/equal/not_equal（含标量版）、逻辑 logic_and/or/not
+    - 归约 sum/mean/median/min/max/argmin/argmax/var/std/cumsum
+    - shift/diff/fill_na、rolling_*、ewm_mean
+  - num/mod.rs 注册 pub mod ndarray 与再导出
+  - 新增 tests/ndarray_test.rs：6 个用例
+  - ndarray.md 的 Rust 状态更新为已落地
+
+  说明：C++ / Go / Zig 的 ndarray 待补（生产顺位 c++ 随后）。
+  验证：cargo build 无警告；cargo test --test ndarray_test 6/6。工单 #37。
+- feat[cpp]：落地 num.ndarray 容器（对标 numpy.ndarray）
+  - 新增 quant1x/num/ndarray.h：NdArray 容器（namespace quant1x::num），
+    std::vector<double> / std::vector<bool> 复刻 ndarray.py / ndarray.rs 的方法表，
+    算子全部委托 quant1x::num 的自由函数
+    - 构造 zeros/ones/full/arange/linspace；属性 is_bool/dtype/size/ndim/shape
+    - to_vector/to_bools/get/set/slice/copy/astype
+    - 四则 add/sub/mul/div（数组与标量）、maximum/minimum、abs/sqrt/log/pow
+    - 比较 gt/gte/lt/lte/equal/not_equal（含标量版）、逻辑 logic_and/or/not
+    - 归约 sum/mean/median/min_value/max_value/argmin/argmax/variance/stddev/cumsum
+    - shift/diff/fill_na、rolling_*、rolling_apply、ewm_mean
+    - 命名差异: Python 的 std 方法在 C++ 命名为 stddev（避免遮蔽 std:: 命名空间）
+  - num.h 汇总头纳入 ndarray.h；CMake quant1x-headers 登记
+  - 新增 tests/tdd-num-ndarray.cpp（6 用例 45 断言），tests/CMakeLists.txt 以 catch2 登记
+
+  说明: Go / Zig 的 ndarray 待补。
+  验证: cmake 构建 catch2-tdd-num-ndarray 无警告；运行 45 assertions in 6 test cases 全过。工单 #37。
+- refactor[cpp]：ta::Series 迁移到 quant1x::pandas::Series
+  - 重写 quant1x/pandas/series.h：删除 ta 命名空间下的模板原型，新增 spec 对齐的
+    quant1x::pandas::Series（以 quant1x::num::NdArray 为底座，float64 / bool）
+    - name/dtype/size/empty、values/to_bools、get/set、copy/slice、apply
+    - shift/diff/cumsum/fill_na
+    - 四则（add/sub/mul/div 与标量）、比较（gt/gte/lt/lte/equal/not_equal、标量版）、
+      逻辑（and/or/not）
+    - 归约 sum/mean/median/min_value/max_value/argmin/argmax/variance/stddev
+    - rolling(window).sum/mean/stddev/min_value/max_value/apply、ewm(alpha)/ewm_span
+    - 运算符糖（+ - * / > >= < <= == != & | ~）映射到同名方法
+  - 重写 quant1x/pandas/ewm.h：ExponentialMovingWindow 改为非模板、基于新 Series；
+    保留 com/span/half_life/alpha 与 adjust / ignore_na，新增便捷 free 函数 ewm(Series, 参数)
+  - formula.h 不再靠 series.h 间接引入 xtensor，改为自包含包含 quant1x/base/simd.h
+  - 迁移 tests/tdd-series.cpp 与 tests/tdd-dataframe-ewm.cpp 到新 Series
+  - pandas.md / README.md 更新 C++ 状态：Series/EWM 已收敛到 quant1x::pandas，DataFrame 仍原型
+  - 全仓已无 ta::Series 引用
+
+  验证：catch2-tdd-series 10 assertions / 16 cases 通过；catch2-tdd-dataframe-ewm 通过；
+  catch2-tdd-formula、catch2-tdd-history 编译通过。工单 #37。
+- feat[zig]：落地 num.ndarray 容器（对标 numpy.ndarray）
+  - 新增 quant1x/num/ndarray.zig：NdArray 容器（union 存 []f64 / []bool），
+    方法表与 ndarray.py / ndarray.h / ndarray.rs 一致，算子委托 num.zig
+    - 构造 initFloat/initBool/zeros/ones/full/arange/linspace；deinit 释放
+    - dtype/len/isEmpty/toF64/toBools/get/set/copy/slice/astype
+    - 四则（数组与标量）、maximum/minimum、abs/sqrt/log/pow
+    - 比较 gt/gte/lt/lte/equal/notEqual（含标量版）、逻辑 logicAnd/logicOr/logicNot
+    - 归约 sum/mean/median/minValue/maxValue/argmin/argmax/variance/stddev/cumsum
+    - shift/diff/fillNa、rollingSum/Mean/Std/Min/Max/Avedev、ewmMean
+  - num.zig 补 arange（等差序列）
+  - 新增 quant1x/num/ndarray_test.zig：5 个用例
+  - ndarray.md 的 Zig 状态更新为已落地；AGENTS.md 增加 zig test 命令
+
+  说明：Go 的 ndarray 与 Go / Zig 的 Series 仍待补。
+  验证：zig test quant1x/num/ndarray_test.zig 5/5；zig test quant1x/num/num_test.zig 10/10。工单 #37。
+- feat[zig]：落地 pandas Series 的可移植实现（含 Rolling / EWM）
+  - 新增 quant1x/pandas/series.zig：以 quant1x/num/ndarray.zig 的 NdArray 为底座，
+    方法表对齐 series.py / series.h / series.rs；Zig 无运算符重载，契约以命名方法为准
+    - name/dtype/len/isEmpty/isBool、values/toBools、get/set、copy/slice、apply
+    - shift/diff/cumsum/fillNa
+    - 四则（add/sub/mul/div 与标量）、比较（gt/gte/lt/lte/equal/notEqual、标量版）、
+      逻辑（logicAnd/logicOr/logicNot）
+    - 归约 sum/mean/median/minValue/maxValue/argmin/argmax/variance/stddev
+    - rolling(window).sum/mean/stddev/minValue/maxValue、ewm(alpha)/ewmSpan
+  - 新增 quant1x/pandas/series_test.zig：6 个用例
+  - series.zig 通过模块名 num_ndarray 引用 ndarray（Zig 跨目录 import 受限）；
+    AGENTS.md 记录命令：
+    zig test --dep num_ndarray -Mroot=quant1x/pandas/series_test.zig
+             -Mnum_ndarray=quant1x/num/ndarray.zig
+  - pandas.md / README.md 更新 Zig 列与状态为「已对齐 python/c++/rust/zig（go 待补）」
+
+  说明：Go 的 ndarray 与 Series 仍待补。
+  验证：上述 zig test 命令 6/6 通过；zig test quant1x/num/ndarray_test.zig 5/5；
+  zig test quant1x/num/num_test.zig 10/10。工单 #37。
+- feat[go]：落地 num.ndarray 与 pandas Series 容器
+  - 新增 quant1x/num/ndarray.go：NdArray 容器（floats / bools 两套切片），
+    方法表与 ndarray.py / ndarray.h / ndarray.rs / ndarray.zig 一致，算子委托内部 num
+    - 构造 NewNdArray/NewNdArrayBools 与 NdArrayZeros/Ones/Full/Arange/Linspace
+    - Dtype/Len/IsEmpty/IsBool/ToF64/ToBools/GetF64/GetBool/SetF64/SetBool/Copy/Slice/Astype
+    - 四则（数组与标量）、Maximum/Minimum、Abs/Sqrt/Log/Pow/Neg
+    - 比较 Gt/Gte/Lt/Lte/Equal/NotEqual（含标量版）、逻辑 LogicAnd/LogicOr/LogicNot
+    - 归约 Sum/Mean/Median/MinValue/MaxValue/Argmin/Argmax/Variance/Stddev/Cumsum
+    - Shift/Diff/FillNa、RollingSum/Mean/Std/Min/Max/Avedev/Apply、EwmMean
+  - 新增 quant1x/pandas/series.go：Series 基于 num.NdArray，列名随切片与运算传递，
+    方法表与 series.py / series.h / series.rs / series.zig 一致；Go 无运算符重载，
+    契约一律以命名方法为准（Add/Sub/…、Gt/Gte/…、And/Or/Not）
+  - 新增 quant1x/num/ndarray_test.go（5 个用例）与 quant1x/pandas/series_test.go（6 个用例）
+  - ndarray.md / pandas.md / pandas README 的 Go 列更新为已落地；
+    pandas.md 路线图去掉「Rust / Go / Zig 未落地」的旧结论
+  - 语义一致性：数值口径全部走内部 num（窗口不足、NaN 传播、移位越界、EWM 种子均无本地算法），
+    与 python spec 及其它语言实现逐位一致
+  - 验证：go build ./quant1x/num/ ./quant1x/pandas/、go vet、go test ./quant1x/num/ ./quant1x/pandas/、
+    gofmt -l 无输出
+
+  工单 #37
+- feat[rust+go+zig]：落地 pandas.DataFrame 可移植容器
+  - 新增 quant1x/pandas/dataframe.md：DataFrame 跨语言契约（列名 → Series 的有序表，
+    只做按列名存取；列序按插入序、列必须等长、不做隐式补位）
+  - 新增 quant1x/pandas/dataframe.rs：Rust 实现（from_columns / columns / shape / len /
+    get / select / set / copy，Display 输出形状与列名）
+  - 新增 quant1x/pandas/dataframe.go + dataframe_test.go：Go 实现，Column 结构承载
+    「列名 + 数据」，DataFrameFromColumns 保序构造；df[name] 的三种写法对应
+    Get / Set / Select
+  - 新增 quant1x/pandas/dataframe.zig + dataframe_test.zig：Zig 实现，ArrayList 持有列，
+    deinit 释放；格式化走 Zig 0.17 的 `{f}` 说明符
+  - 新增 tests/dataframe_test.rs：7 个用例（列序与形状、取列与子集、原位替换、追加、
+    列长校验、深拷贝、文本表示），Go / Zig 各对齐同一批用例
+  - pandas.md / README 的 DataFrame 行更新为已对齐 python/rust/go/zig；AGENTS.md 补
+    Zig dataframe 测试命令
+  - 语义一致性：三个实现与 dataframe.py 同批口径；Python 的 pandas 隐式补 NaN 未沿用，
+    统一改为拒绝长度不符，避免各语言分叉
+  - 验证：cargo test --test dataframe_test（7 passed）、go test ./quant1x/pandas/（13 passed）、
+    zig test dataframe_test.zig（7/7）
+  - 未迁移：C++ 的 dataframe.h 仍是异构列原型（含字符串列与 Boost.PFR 反射构造），
+    在 dataframe.md §4 记录差异与迁移方向
+
+  工单 #37
+- refactor[cpp]：DataFrame 迁移到 quant1x::pandas 并保留 pandas 风格打印
+  - 重写 quant1x/pandas/dataframe.h：列改为 Series（float64 / bool），
+    取消旧的 std::variant 异构列存储、全局作用域类与 ta 命名空间依赖
+    - 接口：row_count / column_count / shape / columns / contains / get / select /
+      set / copy，与 dataframe.py 及 rust / go / zig 同一张方法表
+    - from_struct_vector 保留：按字段类型分流，算数字段（含 int / float）→ Series(double)、
+      bool → Series(bool)、std::string → 字符串展示列、其它类型跳过
+    - 字符串列（set_strings / get_strings）只用于展示与 IO，对照 pandas 的 object dtype，
+      不参与数值算子
+  - to_string 对齐 pandas 的表格版式
+    - 索引列 + 全右对齐（pandas 默认 justify='right'）、列间两个空格
+    - 浮点按列统一小数位（至少一位，如 10.0 / 10.50）；量级超出 [1e-4, 1e16) 走科学计数法；
+      NaN / inf 用 pandas 写法
+    - 超过 60 行显示首尾各 5 行，中间索引列 `..`、数据列 `...` 省略，末尾附
+      `[N rows x M columns]`；未截断无页脚；空表输出 Empty DataFrame / Columns / Index
+  - 调用点迁移：quant1x/factors/history.cpp 改为 df.get("open")->values()；
+    user/strategy-no0.cpp 补 quant1x::pandas 限定
+  - 测试：tests/tdd-dataframe-release.cpp 去掉内嵌的 DataFrame 副本，改为针对真实头文件的
+    6 个用例（结构体字段分流、打印列序、70 行截断、列操作、空表、真实 Bar 数据）；
+    tests/tdd-bars.cpp 恢复此前因类被删而 #if 0 的两条 DataFrame 用例，本地无数据时 SKIP
+  - 文档：dataframe.md 增 §4 字符串列、§5 打印口径，状态表 C++ 改为已落地；
+    pandas.md / README 的 DataFrame 行同步
+  - 语义一致性：数值列与 python / rust / go / zig 完全同口径（列长不符一律报错）；
+    C++ 多出的字符串列已单独标注为展示扩展
+  - 验证：cmake --build build-msvc --config Release --target quant1x catch2-tdd-dataframe-release
+    catch2-tdd-bars catch2-tdd-dataframe-data；ctest -R "tdd-dataframe|tdd-bars|tdd-series"
+    （tdd-dataframe-data 的 Case-insensitive CSV loading 依赖本地缓存，缺 sh603338.csv 时失败，
+    该文件本轮未改动）
+
+  工单 #37
+- chore[cpp]：新增 .clangd 声明 C++20 并接入 Meson 编译数据库
+  - 现象：IDE 的 clangd 静态检查把大量 `namespace quant1x::pandas` 误报为
+    “nested namespace definition is a C++17 extension”，一次 512 处
+  - 根因：仓库根目录没有 compile_commands.json，clangd 按默认参数解析，
+    `clangd --check` 的 cc1 参数是 `-std=c++14`；项目基线是 C++20
+    （CMake CMAKE_CXX_STANDARD=20、Meson cpp_std=c++20）
+  - 新增 .clangd：CompilationDatabase 指向 build-meson/build（Meson 产出，
+    含全部 include / define），再用 Add: [-std=c++20] 兜底数据库缺失的情况
+  - BUILDING.md 新增 §2.12「IDE 与静态检查（clangd / clang-tidy）」：说明数据库来源、
+    改用 CMake 时的做法（Ninja + -DCMAKE_EXPORT_COMPILE_COMMANDS=ON）、
+    clang-tidy -p build-meson/build 的用法，并注明不要为迁就工具拆开嵌套命名空间
+  - 不改动任何 C++ 代码：全部是工具配置问题
+  - 验证：clangd --check=quant1x/pandas/dataframe.h 与 quant1x/num/ndarray.h
+    均加载 compile_commands.json、带 -std=c++20，`C++17 extension` 与
+    `file not found` 各 0 处
+
+  工单 #38
+- chore[cpp]：C++ 测试按模块合并目标并接入 Meson 测试
+  - tests/CMakeLists.txt 重写：64 个一文件一可执行改为 4 个 Catch2 分组可执行
+    （catch2-num / catch2-data / catch2-runtime / catch2-contrib），
+    每个 exe 只链接一次 1 GB 级 quant1x 静态库
+    - 全部测试目标 EXCLUDE_FROM_ALL，新增 `tests` 聚合目标；默认构建只编库与 q1x
+    - include(Catch) 启用 catch_discover_tests，用例粒度不变：每条 TEST_CASE 一个 ctest 条目
+    - app-* / gtest-* 保持独立（对拍程序的"断言"是输出比对，gtest 框架不同）
+  - meson.build 增加测试：同一份分组清单，catch2-with-main / gtest_main 走 pkg-config，
+    全部 build_by_default: false —— `meson compile` 不构建，`meson test` 按需构建并运行
+  - 修复并入分组后暴露的编译问题
+    - tdd-asio.cpp：两个 TEST_CASE 重名，其一改名
+    - tdd-all.cpp / tdd-cron.cpp：test_once 补 static（否则同组重复定义）
+    - tdd-datasets.cpp：XTENSOR_USE_XSIMD 已由构建系统定义，补 #ifndef 防止 C4005
+    - test-iconv.cpp：size_t → int 显式收敛（/WX 下 C4267 视为错误）
+    - test-multibar.cpp / tdd-backtest-release.cpp：进度条从 indicators 迁到 mpb
+    - tdd-strategies.cpp：删除已废弃的 indicators 头（相关代码早已注释）
+    - tdd-backtest-ashare.cpp：去掉多余的 test.h，补 <map> 与 <windows.h>
+  - test_fp_growth.cpp / tdd-backtest-release.cpp 自带 main，移出 Catch2 分组改为 app 目标
+    （其 main 会顶掉 Catch2WithMain，导致 --list-tests 失效）
+  - 暂未纳入分组并在 BUILDING.md §2.7 记录原因：tdd-snapshot.cpp（capnp 头触发
+    mswsockdef.h 的 UCHAR 语法错误）、tdd-ta.cpp（gtest，仍按旧 ta::Series 接口编写）
+  - 验证
+    - cmake --build build-msvc --config Release --target tests → 通过
+    - ctest -N → 282 条（num 97 / data 77 / runtime 78 / contrib 24 + app 6）
+    - ctest -R "rolling|formula|ndarray|series|dataframe" → 19/19 通过（1 条 SKIP）
+    - meson setup --reconfigure、meson compile（只编库与 q1x）、meson test catch2-num
+      构建并运行成功；该组含依赖本地缓存的用例，缺数据时失败属既有情况
+- fix[cpp]：修正 capnp 与 asio 的 CONST 宏冲突，tdd-snapshot 重新纳入测试分组
+  - 根因：capnp/schema.h 里 `#undef CONST`（Windows 的 minwindef.h 把 CONST 定义为
+    const，而 capnp 的枚举有同名成员），同一 TU 随后经 quant1x/trader/tracker.h 引入
+    asio → mswsock.h → mswsockdef.h，SDK 头里的 `extern CONST UCHAR sockaddr_size[AF_MAX];`
+    因 CONST 已被 undef 报 C2146（错误位置指向 UCHAR，容易误判为 winsock 头顺序问题）
+  - 处理：在 tdd-snapshot.cpp 顶部先引入 quant1x/io/base.h（asio 入口），让 mswsockdef.h
+    在 CONST 仍有效时完成处理；capnp 的 undef 只影响它之后的头
+    - capnp 自己在 schema.h 注释里给的就是这个方案（"change the header ordering"）
+  - tests/CMakeLists.txt 与 meson.build 把 tdd-snapshot.cpp 放回 catch2-data 分组
+  - BUILDING.md §2.7 的排除清单只剩 tdd-ta.cpp（gtest，旧 ta::Series 接口）
+  - 验证：--target tests 通过；ctest -N 287 条（原 282 + snapshot 5 条）
+- refactor[go]: 更新go依赖库版本
+- chore[multi]：重新执行许可证合规检查并统一声明文件命名
+  - 用 labs-license-audit 重跑全语言合规检查，产物落到工具约定的
+    THIRD-PARTY-NOTICES.md（连字符）：python / cpp / rust / go / java 五段机器区段刷新
+  - go 段此前报 “go: updates to go.mod needed”：工具按每个模块 <module>/... 展开，
+    只读模式无法解析未直接 import 的间接模块；改用 GOFLAGS=-mod=mod 后通过，
+    实测不修改 go.mod / go.sum（工作区保持干净）
+  - 把原手写 THIRD_PARTY_NOTICES.md 的正文并入新文件：分发形态（只发源码）、
+    项目许可证与例外（csv-reader.h BSD-3）、Conan 依赖说明（csv2 本地配方引号修复、
+    mpb、libiconv LGPL 履行）、下游二进制检查清单、SimHei 历史说明
+  - 修正工具模板残留：正文里的 “panshi 本体” 改为 Quant1X；删掉与表格矛盾的
+    “C++/Go 组件表为空”“无第三方组件” 等模板句；归档计数按实际目录填写
+  - 删除旧 THIRD_PARTY_NOTICES.md，同步 4 处引用：Cargo.toml（include）、
+    CMakeLists.txt（安装规则）、pyproject.toml（license-files）、README.md
+  - 新增 third_party/licenses/（632 个许可证文件，4.2 MB，按语言/组件归档）
+  - THIRD-PARTY-TODO.md 加入 .gitignore（工具生成、无待办时自动删除，不入库）
+  - 验证：labs-license-audit cpp python rust 重跑后，围栏外正文逐字节不变
+    （工具只重建围栏内表格）；go.mod / go.sum 无改动
+
+  剩余：THIRD-PARTY-TODO.md 当前 165 条待办，主要是各组件「版权 / 主页」列需人工补录。
+- docs[multi]：修正 go 许可证扫描的正确做法
+  - go-licenses 按每个模块 <module>/... 展开，只读模式会因间接模块不在 require 列表
+    而中止；加 -mod=mod 能扫描，但会把测试引用的 13 条间接依赖写进 go.mod / go.sum
+  - 因此改为在 git archive 导出的副本里扫描，再把 Go 区段与 third_party/licenses/go/
+    拷回；仓库根 go.mod / go.sum 保持提交态（本轮已还原误写入的内容）
+  - 验证：副本内 GOFLAGS=-mod=mod labs-license-audit 全语言退出码 0，
+    THIRD-PARTY-TODO.md 164 条待办；仓库 go.mod / go.sum 无改动
+- chore[go]：为许可证扫描补齐 go.mod 间接依赖声明
+  - 合规优先：labs-license-audit 的 go 段按每个模块 <module>/... 展开，只读模式无法解析
+    测试引用的间接模块；按 GOFLAGS=-mod=mod 在仓库根直接扫描，接受工具补写的依赖声明
+  - go.mod 新增 13 条 // indirect（creack/pty、davecgh/go-spew、golang/protobuf、
+    google/go-cmp、kr/pty、kr/text、lestrrat-go/envload 等），go.sum 同步 28 条校验和
+  - THIRD-PARTY-NOTICES.md：把「在副本里扫描」改为「仓库根直跑、增量随提交入库」，
+    写明这是合规扫描的固有代价
+  - 验证：五个语言子命令退出码均为 0；go build ./quant1x/... 通过；
+    go test ./quant1x/{num,formula,indicators,pandas}/ 全部 ok
+- fix[go]：回退许可证审计写入的伪依赖声明
+  - labs-license-audit 的 go 段按「每个模块 <module>/...」展开，-mod=mod 下会把模块图里
+    所有传递模块写成 // indirect，包括我们从不构建的测试链依赖
+  - 典型链路：gopkg.in/yaml.v3 →（测试依赖）check.v1 → kr/pretty → kr/text → creack/pty；
+    go mod why github.com/creack/pty 明确返回 main module does not need module，
+    go mod tidy 也会把这些行全部删掉
+  - 因此 go.mod / go.sum 回到真实依赖状态（撤销 43 行审计增量，含上一轮提交的 13 条与
+    本轮新增的 goldmark / x/net / x/telemetry / xerrors）
+  - THIRD-PARTY-NOTICES.md 的 go 段操作说明改为「在 git archive 副本里扫描后拷回」，
+    并写明伪依赖的来源与判断方法；组件表保留这些传递模块（从严披露）
+  - 验证：go build ./quant1x/... 通过；go test ./quant1x/{num,formula,indicators,pandas}/ 全 ok；
+    git diff 5db60de -- go.mod go.sum 为空
+- chore[go]：按真实依赖刷新 go 段许可证数据
+  - labs-license-audit 默认只读模式跑通（不加 -mod=mod），go.mod / go.sum 无改动
+  - Go 组件表收敛到真实依赖 46 行：之前因 -mod=mod 被写进模块图的测试链模块
+    （creack/pty、kr/pty、kr/text、goldmark、x/net、x/telemetry 等）随 require 回退一并消失
+  - 归档同步清理 13 个不再被扫描的许可证副本（go-spew、go-cmp、difflib、goldmark、
+    x/net、x/telemetry 及 yaml 的 NOTICE）
+  - 补录 github.com/google/go-cmp 的版权/主页（取自模块缓存 LICENSE 首行）
+  - yaml 两个包的许可证表达式按本次扫描更新为 Apache-2.0, MIT
+  - 待办从 164 条降到 124 条；go 段剩 4 条（go-spew / go-difflib 缺本地模块源码缓存）
+  - 验证：go build ./quant1x/... 通过；git diff go.mod go.sum 为空
+- chore[go]：go 段待办清零（补录 go-spew / go-difflib）
+  - 本次扫描把 go-spew、go-difflib 的许可证文本补齐并归档：
+    third_party/licenses/go/github.com/{davecgh/go-spew,pmezard/go-difflib}/LICENSE
+  - 按归档文本补录两行的「版权 / 主页」：Dave Collins（ISC）、Patrick Mezard（BSD-3-Clause）
+  - labs-license-audit go 退出码 0，THIRD-PARTY-TODO.md 中 go 条目清零（文件随之删除）
+  - 全量复跑：五个语言退出码均为 0，全局待办 119 条（cpp 43 / python 26 / rust 19 /
+    java 4 / rust 闭包注文 27），go 段 0 条
+  - go.mod / go.sum 无改动（git diff 为空）
+- chore[cpp]：把 boost 换成独立的 pfr/2.2.0
+  - conanfile.py：移除 boost/1.90.0 与 header_only 选项，改为 requires pfr/2.2.0
+  - CMakeLists.txt：find_package(boost) → find_package(pfr)，链接 boost::boost → pfr::pfr
+  - meson.build：dependency('boost-headers') → dependency('pfr')
+  - 代码侧无需改动：该包仍以 <boost/pfr.hpp> 与 boost::pfr 命名空间提供，
+    实测 tuple_size_v / names_as_array / get_name / for_each_field 行为一致
+  - BUILDING.md：依赖表与说明同步（记录头文件路径仍是 boost/ 前缀）
+  - 验证：conan install（CMake/Meson 两套）成功；CMake 配置通过；
+    app-tdd-formula-parity（57 组）、app-tdd-indicators 通过；
+    catch2-num / catch2-data 构建通过；yaml 用例 13 断言通过；
+    Meson 解析到 pfr 2.2.0
+  - 另外：catch2-data 的 [json] 两条用例断言全部通过，但进程在退出阶段崩溃（rc=127），
+    用同一序列化路径写的独立探针正常退出，属退出期问题，与本次依赖替换无关，另行排查
+- chore[multi]：按审计输出更新第三方声明与许可证归档
+  - THIRD-PARTY-NOTICES.md 由 labs-license-audit 重建：python / cpp / rust / go / java
+    五段机器区段按当前依赖刷新，Rust 闭包带 purl 与 sha256
+  - third_party/licenses/ 同步：新增 cpp（pfr、asio、csv2、xtensor 等）、java、
+    python/xgboost、rust 若干组件；移除已不在模块图中的 go 传递依赖
+    （creack/pty、kr/text、goldmark、x/net、x/telemetry 等）
+  - 说明：文件中不再包含此前手写的「分发形态 / 项目许可证与例外 / libiconv 义务 /
+    SimHei 说明」章节，这些内容可从提交 ea7aa1f 取回
+- chore[python]：新增 pyrightconfig.json 排除构建产物
+  - basedpyright 枚举工作区超过 10 秒：target（23G）、build-msvc（3.6G）、
+    vcpkg_installed（970M）、build-meson（567M）、temp（250M）等目录与 Python 无关
+  - 排除 build / build-msvc / build-meson / target / temp / output / vcpkg_installed /
+    .cache / .ruff_cache / .zig-cache / third_party/licenses（632 个许可证文本目录）
+  - 保留 third_party/recipes 与 quant1x、tests、scripts、tools 的检查范围
+- chore[cpp]：xtensor 升级到 0.27.2（本地配方）
+  - 0.27.2 未收录于 Conan Center（当前只到 0.27.1），新增 third_party/recipes/xtensor：
+    按 CCI 配方结构编写 conanfile.py，conandata.yml 固定 0.27.2 源码与 sha256
+    （4421d2f7…7ac6d70）
+  - 首次构建前需执行 conan create third_party/recipes/xtensor
+  - conanfile.py 依赖由 xtensor/0.27.1 改为 0.27.2，xtl/0.8.0、xsimd/13.2.0、
+    nlohmann_json/3.11.3 保持不变
+  - BUILDING.md 依赖表更新，并把「本地配方」说明扩到 csv2 / xtensor 两项
+  - 验证：conan create 成功（75 个 .hpp + LICENSE）；CMake 与 Meson 两套输出均解析到
+    0.27.2（xtensor.pc Version: 0.27.2，meson clearcache 后显示 YES 0.27.2）；
+    CMake 构建 0 错误，app-tdd-formula-parity 57 组、app-tdd-indicators 通过；
+    catch2-num / catch2-data 构建通过；Meson 全量重编（96 步）通过
+- chore[cpp]：修掉 CMakeLists 的行长告警（C0301）
+  - 新增 .cmake-format.yaml：format.line_width = 120，cmake-lint 的 C0301 按此行宽判定
+    （lint.max_line_length 在 cmake_format 0.6 里不被识别，只认 format.line_width）
+  - CMakeLists.txt：把两条超过 120 字符的注释（CMAKE_CXX_FLAGS_DEBUG 示例）折成两行；
+    补回文件末尾换行（C0304）
+  - 验证：cmake-lint CMakeLists.txt 的 C0301 / C0304 均为 0；CMake 配置仍可正常生成
+  - 说明：cmake-lint 另外报 143 条 C0307（缩进）等既有风格问题，与本次行长告警无关，
+    需要时可用 cmake-format 统一格式化
+- chore[cpp]：清掉 CMakeLists.txt 的 cmake-lint 风格告警（C0307/C0303/C0103/C0111）
+  - .cmake-format.yaml：补 format.tab_size = 4，与仓库统一的 4 空格缩进对齐，C0307（缩进）127 → 0；
+    不跑 cmake-format -i，CMakeLists.txt 的写法与折行保持原样
+  - CMakeLists.txt：清 7 处行尾空白（C0303）；get_all_linked_targets 补 docstring（C0111）
+  - CMakeLists.txt：C0103（命名）按站点写 # cmake-lint: disable 说明，不重命名既有变量与 CACHE 键：
+    argparse_VERSION / mimalloc_VERSION 沿用 find_package 的 <包名>_VERSION 约定，
+    quant1x-headers / quant1x-sources 是 BUILDING.md 登记的清单名，lib_suffix / quant1x_DEBUG_POSTFIX
+    为内部变量
+  - 验证：cmake-lint CMakeLists.txt 为 0 条；cmake -S . -B build-msvc 改动前后配置日志逐行一致，
+    DEBUG_POSTFIX 仍为 -release-msvc-win；git diff --check 无空白错误
+  - 工单：#40
+- refactor[python]：以 quant1x/io 为准裁撤 quant1x/net 并统一日志后端
+  - 删除 quant1x/net（conn / endpoint / handler / tcp_client_pool）：它是 quant1x/io 连接池的副本，
+    逻辑等价但已与 io 出现日志后端、告警级别、日志内容三处分歧；io 才是跨语言 spec 所在
+    （connection_pool.h/.rs/.go、endpoint.h/.rs/.go、operation_handler.h/.rs/.go）
+  - quant1x/contrib/data/tdx/{client,protocol,config}.py：导入改到 quant1x.io.connection_pool
+    与 quant1x.io.operation_handler
+  - quant1x/io/connection_pool.py：日志从 stdlib logging 换成 quant1x.log.logger（loguru），
+    占位符 %s 改为 {}；删除未使用的 Tuple 导入；端点耗尽仍为 warning
+  - quant1x/log/logger.py：配置收进 LoggingSetup(ThreadSafeSingletonABC) 单例，替代
+    getattr(__logger, "_quant1x_configured") 的模块级判断，进程内只注册一组 sink
+  - quant1x/base/singleton.py：去掉 logging 与全部日志调用（含导入时执行的 logging.basicConfig）
+  - quant1x/runtime/scheduler.py：原先 logger 被覆盖为静音的 apscheduler logger，本模块日志被整体吞掉；
+    改回 quant1x.log，apscheduler 自带日志用 _apscheduler_logger 单独静音
+  - quant1x/__init__.py：_logger 换成 quant1x.log.logger（实测无循环导入），占位符改为 {}
+  - tests/test_connection_pool.py：修正导入名（OperationHandler -> NetworkOperationHandler）；
+    is_open() / endpoint 断言换成句柄公开 API 的回声往返，用例由收集失败恢复为通过
+  - quant1x/encoding/README.md：协议编解码目录指向 quant1x/io
+  - 验证：python -m pytest tests/test_connection_pool.py -q（1 passed）；
+    import quant1x / quant1x.io.connection_pool / tdx.client / runtime.scheduler 均通过；
+    8 线程并发取日志单例后 handlers 仍为 2、get_instance_count() 为 1；
+    grep "quant1x.net" 无结果（CHANGELOG 历史条目除外）
+  - 工单：#41
+- chore[python]：conanfile.py 收窄 requires / options 的静态类型
+  - ConanFile 把 requires / options 声明为类属性 None，真正对象由 conan 在加载配方时
+    注入实例属性，静态检查于是在这两处报 31 个 reportOptionalCall / reportOptionalSubscript
+  - 类体内以 `if TYPE_CHECKING` 声明这两个属性为 Any：只做类型收窄，不生成类属性，
+    运行期行为不变（配方模块可正常加载，两属性仍由 conan 注入）
+  - 验证：pyright conanfile.py 0 error；ruff check conanfile.py 通过
+- chore[multi]：Rust 依赖闭包组标题改用三级标题
+  - 用更新后的 labs-license-audit 重新生成：闭包渲染改为输出 `### <表达式>（<注文>）`，
+    27 个许可证分组标题由整行加粗改为真标题，消除 markdownlint MD036（emphasis-as-heading）
+  - 解析侧同时兼容旧文件里的 `**…**` 组标题，故重建继承了原有分组顺序、履行注文与组件行；
+    third_party/licenses/ 无变化
+  - 验证：重跑 `python -m panshi.tool.license.audit rust` 退出码 0 且 diff 不增长（幂等）；
+    git diff 仅标题行变化（27 增 27 删）；文件诊断只剩既有的 MD034（机器生成的版权列裸 URL）
+- chore[cpp]：xtensor 本地配方消除 Pylance / Ruff 告警
+  - ConanFile 把 requires / tool_requires / info / conan_data 声明为类属性 None，真正
+    对象由 conan 注入实例属性；options 在配方里是 dict、运行期却是 Options 对象。
+    静态检查因此在两处报 23 个 reportOptionalCall / reportOptionalSubscript /
+    reportAttributeAccessIssue
+  - 类体内以 `if TYPE_CHECKING` 声明上述注入属性为 Any；options / default_options 加
+    ClassVar[Any]，一并消除 RUF012（mutable class default）
+  - source_folder / package_folder 是基类返回 Optional 的 property，不能在被继承方重标类型，
+    故在使用处 cast(str, ...) 收窄（source() 的 destination、package() 内绑定一次供两次 join）
+  - 导入按 ruff 重排（I001）：os 提到首行、新增 typing、conan.tools.cmake 成员按字典序；
+    仓库根有 conan/（profiles）目录，ruff 把 conan 判为 first-party，`from conan import ConanFile`
+    因此单独成段排在最后，这是该目录结构下过的了 I001 的稳定形态
+  - 验证：pyright 对该文件 0 error；ruff check 通过；配方类可正常加载，
+    name / version / options / default_options 取值与改前一致
+- chore[cpp]：csv2 测试包配方收窄 requires / cpp 的静态类型
+  - ConanFile 把 requires / cpp 声明为类属性 None，真正对象由 conan 注入实例属性，
+    静态检查因此在 `self.requires(...)` 与 `self.cpp.build.bindirs[0]` 两处报
+    reportOptionalCall / reportOptionalMemberAccess
+  - 类体内以 `if TYPE_CHECKING` 声明这两个属性为 Any：只做类型收窄，运行期不生成属性
+  - 导入按 ruff 重排（I001）：os 提到首行、新增 typing；`CMakeToolchain` 仅以
+    generators 字符串形式使用、类未引用，随 F401 移除，行为不变
+  - 验证：pyright 对该文件 0 error；ruff check 通过
+- fix[java]：DistributedIdTest 改用 Java 8 可用的 orElseThrow 形态
+  - `Optional.orElseThrow()` 无参版本自 Java 10 才有，本项目 java.version=8，
+    该调用按编译合规性判为错误（ECJ 报 method not applicable）
+  - 改为 `orElseThrow(() -> new AssertionError("state file not found after restart"))`，
+    与 Java 8 兼容，同时把「重启后状态文件缺失」这一失败原因写清
+  - 验证：mvnw -B test-compile 通过；mvnw -B -Dtest=DistributedIdTest test → Tests run: 5,
+    Failures: 0, Errors: 0；IDE 诊断 0 条
+- release version 0.9.0
+
 ## [0.8.19] - 2026-11-24
 ### Changed
 - chore[python]: 调整依赖版本
@@ -3303,7 +3895,8 @@ All notable changes to this project will be documented in this file.
 - 链接 python win64版本的简易交易客户端
 
 
-[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.8.19...HEAD
+[Unreleased]: https://codeberg.org/quant1x/quant1x/compare/v0.9.0...HEAD
+[0.9.0]: https://codeberg.org/quant1x/quant1x/compare/v0.8.19...v0.9.0
 [0.8.19]: https://codeberg.org/quant1x/quant1x/compare/v0.8.18...v0.8.19
 [0.8.18]: https://codeberg.org/quant1x/quant1x/compare/v0.8.17...v0.8.18
 [0.8.17]: https://codeberg.org/quant1x/quant1x/compare/v0.8.16...v0.8.17
