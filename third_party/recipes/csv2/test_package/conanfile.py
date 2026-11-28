@@ -1,11 +1,19 @@
-from conan import ConanFile
-from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
 import os
+from typing import TYPE_CHECKING, Any
+
+from conan.tools.cmake import CMake, cmake_layout
+
+from conan import ConanFile
 
 
 class Csv2TestPackage(ConanFile):
     settings = "os", "arch", "compiler", "build_type"
     generators = "CMakeDeps", "CMakeToolchain"
+
+    if TYPE_CHECKING:
+        # conan 在加载配方时注入这些实例属性，基类把它们声明为 None，静态检查需要收窄。
+        requires: Any
+        cpp: Any
 
     def layout(self):
         cmake_layout(self)
