@@ -130,7 +130,8 @@ class DistributedIdTest {
         assertTrue(firstId < secondId, "state did not resume across restart");
         assertTrue(secondId > 0, "second id must be valid");
 
-        PersistentState latest = new FileStateStore(stateFile.toString()).load().orElseThrow();
+        PersistentState latest = new FileStateStore(stateFile.toString()).load()
+                .orElseThrow(() -> new AssertionError("state file not found after restart"));
         assertTrue(latest.physical >= 0, "state should persist");
     }
 }
